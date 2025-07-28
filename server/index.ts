@@ -1,19 +1,12 @@
-// Import our configuration first, which loads environment variables
-import path from 'path';
-import config from './config';
-
-// Log environment variables being loaded
-console.log('[Server] Starting with environment configuration:');
-console.log('[Server] NODE_ENV:', config.NODE_ENV);
-console.log('[Server] DATABASE_URL:', config.DATABASE_URL ? 'Set' : 'Not set');
-console.log('[Server] GMAIL_USER:', process.env.GMAIL_USER ? 'Set' : 'Not set');
-console.log('[Server] GMAIL_APP_PASSWORD:', process.env.GMAIL_APP_PASSWORD ? 'Set' : 'Not set');
-
 import express from "express";
 import { createServer } from "http";
-import { setupVite, serveStatic } from "./vite";
+import { setupVite, serveStatic, log } from "./vite";
 import { registerRoutes } from "./routes";
 import { db } from "./db"; // Using the direct Neon database connection
+import { posts } from "@shared/schema";
+import { count } from "drizzle-orm";
+import { seedDatabase } from "./seed";
+import path from "path";
 import helmet from "helmet";
 import compression from "compression";
 import crypto from "crypto";
@@ -21,186 +14,138 @@ import session from "express-session";
 import { setupAuth } from "./auth";
 import { setupOAuth } from "./oauth";
 import { storage } from "./storage";
-import { createSecureLogger } from "./utils/secure-logger";
-import { globalErrorHandler } from "./utils/error-handler";
-import { requestLogger } from "./utils/debug-logger";
-import { registerModularRoutes } from "./routes/index";
+import { createLogger, requestLogger, errorLogger } from "./utils/debug-logger";
 import { registerUserFeedbackRoutes } from "./routes/user-feedback";
 import { registerRecommendationsRoutes } from "./routes/recommendations";
-// User Data Export routes removed
+import { registerPostRecommendationsRoutes } from "./routes/simple-posts-recommendations";
+
 import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
 import { setupWordPressSyncSchedule } from "./wordpress-sync"; // Using the declaration file
 import { registerAnalyticsRoutes } from "./routes/analytics"; // Analytics endpoints
 import { registerEmailServiceRoutes } from "./routes/email-service"; // Email service routes
 import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark routes
-
-// CSRF protection completely removed as per user request
-import { globalRateLimiter } from "./middlewares/rate-limiter"; // Rate limiters
+import { setCsrfToken, validateCsrfToken, csrfTokenToLocals, CSRF_TOKEN_NAME } from "./middleware/csrf-protection";
+import { runMigrations } from "./migrations"; // Import our custom migrations
 import { setupCors } from "./cors-setup";
-// Import performance middleware
-import { 
-  cacheControlMiddleware, 
-  responseTimeMiddleware, 
-  queryPerformanceMiddleware,
-  wrapDbWithProfiler
-} from "./middleware";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
-// Setup port with fallback options in case of conflicts
-const DEFAULT_PORT = parseInt(process.env.PORT || "3003", 10);
+// Use port 3002 to avoid conflicts with other running processes
+const PORT = parseInt(process.env.PORT || "3002", 10);
 const HOST = '0.0.0.0';
-// We'll try a range of ports starting with DEFAULT_PORT
-let PORT = DEFAULT_PORT;
-// Alternative ports to try if the default is in use
-const ALTERNATIVE_PORTS = [3004, 3005, 3006, 3007, 3008];
 
 // Create server instance outside startServer for proper cleanup
 let server: ReturnType<typeof createServer>;
 
-// Apply our new performance monitoring middleware
-// This wraps the database with profiling capabilities
-wrapDbWithProfiler(db);
-
 // Configure basic middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(compression({ level: 6 })); // Improved compression settings
-
-// Add response time monitoring
-app.use(responseTimeMiddleware);
-
-// Apply global rate limiting to all routes
-app.use(globalRateLimiter);
-
-// Add query performance monitoring
-app.use(queryPerformanceMiddleware);
+app.use(compression());
 
 // Configure CORS for cross-domain requests when deployed on Vercel/Render
 setupCors(app);
-
-// Serve attached assets directly
-app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets'), {
-  maxAge: '30d',  // Cache for 30 days
-  immutable: true // Files never change
-}));
-
-// Serve files from public directory
-app.use('/public', express.static(path.join(process.cwd(), 'public'), {
-  maxAge: '1d'  // Cache for 1 day
-}));
-
-// Add cache control headers for better browser caching
-app.use(cacheControlMiddleware);
-
-// Apply our enhanced browser caching middleware for optimized performance
-import { browserCache, etagCache } from './middlewares/browser-cache';
-app.use(browserCache());
-app.use(etagCache());
 
 // Session already handles cookies for us
 // No additional cookie parser needed for CSRF protection
 
 // Increase body parser limit for file uploads
-app.use((_req, _res, next) => {
+app.use((req, res, next) => {
   // Skip content-type check for multipart requests
-  if (_req.headers['content-type']?.includes('multipart/form-data')) {
+  if (req.headers['content-type']?.includes('multipart/form-data')) {
     return next();
   }
   next();
 });
 
-// Generate a secure session secret if not provided
-const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
-
-// Configure session with enhanced security
+// Configure session
 app.use(session({
-  secret: sessionSecret,
+  secret: process.env.SESSION_SECRET || 'horror-stories-session-secret',
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production', // Only secure in production
     httpOnly: true,
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Required for cross-domain cookies
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    path: '/'
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
   },
-  store: storage.sessionStore as any
+  store: storage.sessionStore
 }));
 
-// CSRF protection has been completely removed as requested
-app.use((_req, _res, next) => {
-  // No CSRF token generation or validation
-  next();
-});
+// Setup CSRF protection
+app.use(setCsrfToken(!isDev)); // Secure cookies in production
+app.use(csrfTokenToLocals);
 
-// Apply security validation middleware (but skip for public routes)
-// This is commented out temporarily to allow reader access
-// app.use(validateSession);
+// Apply CSRF validation after routes that don't need it
+app.use(validateCsrfToken({
+  ignorePaths: [
+    '/health', 
+    '/api/health',
+    '/api/auth/status', 
+    '/api/auth/login',
+    '/api/auth/register',
+    '/api/auth/forgot-password', // Allow password reset requests without CSRF protection (for testing)
+    '/api/auth/reset-password', // Allow password reset without CSRF protection (for testing)
+    '/api/auth/verify-reset-token', // Allow token verification without CSRF protection (for testing)
+    '/api/feedback',
+    '/api/posts',
+    '/api/recommendations',
+    '/api/analytics', // Exclude all analytics endpoints from CSRF checks
+    '/api/analytics/vitals', // Explicitly exclude analytics/vitals endpoint 
+    '/api/wordpress/sync',
+    '/api/wordpress/sync/status',
+    '/api/wordpress/posts',
+    '/api/reader/bookmarks', // Allow anonymous bookmarks without CSRF protection
+    '/admin-cleanup' // Special admin cleanup route that bypasses CSRF protection
+  ]
+}));
 
 // Setup authentication
 setupAuth(app);
 setupOAuth(app);
 
-// Add enhanced health check endpoint with performance metrics
+// Add health check endpoint with CSRF token initialization
 app.get('/health', (req, res) => {
+  // Ensure a CSRF token is set
+  if (!req.session.csrfToken) {
+    const token = require('crypto').randomBytes(32).toString('hex');
+    req.session.csrfToken = token;
+    
+    // Set the token as a cookie for client-side access
+    res.cookie(CSRF_TOKEN_NAME, token, {
+      httpOnly: false, // Must be accessible by JavaScript
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Required for cross-domain cookies
+    });
+  }
+  
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    csrfToken: req.session.csrfToken || 'not set',
-    performance: {
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-      cpu: process.cpuUsage()
-    }
+    csrfToken: req.session.csrfToken 
   });
 });
 
-// Enhanced security headers with strict CSP
+// Basic security headers
 app.use(helmet({
-  // Apply CSP in both development and production
-  contentSecurityPolicy: {
+  contentSecurityPolicy: isDev ? false : {
     directives: {
       defaultSrc: ["'self'"],
-      // Reduce unsafe-inline usage where possible 
-      styleSrc: ["'self'", ...(isDev ? ["'unsafe-inline'"] : []), "fonts.googleapis.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
       fontSrc: ["'self'", "fonts.gstatic.com"],
-      // Restrict image sources to self and specific data URIs
-      imgSrc: ["'self'", "data:image/svg+xml", "data:image/png", "data:image/jpeg", "data:image/webp", "https:"],
-      // Eliminate unsafe-eval in production
-      scriptSrc: ["'self'", ...(isDev ? ["'unsafe-inline'", "'unsafe-eval'"] : [])],
-      // Add frame-ancestors restriction
-      frameAncestors: ["'self'"],
-      // Add form action restriction
-      formAction: ["'self'"],
-      // Add connect-src for API calls
-      connectSrc: ["'self'", "api.wordpress.com", "https:"],
-      // Upgrade insecure requests
-      upgradeInsecureRequests: [],
-      // Block all mixed content
-      blockAllMixedContent: []
+      imgSrc: ["'self'", "data:", "https:"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
     }
-  },
-  // Force HTTPS in production
-  hsts: {
-    maxAge: 15552000, // 180 days
-    includeSubDomains: true,
-    preload: true
-  },
-  // Prevent clickjacking
-  frameguard: {
-    action: 'deny'
-  },
-  // Disable X-Powered-By header
-  hidePoweredBy: true
+  }
 }));
 
 // Create a server logger
-const serverLogger = createSecureLogger('Server');
+const serverLogger = createLogger('Server');
 
-// Import our permanent startup utilities
-import { permanentStartup } from '../scripts/permanent-startup';
+// Import our database setup utilities
+import setupDatabase from '../scripts/setup-db';
+import pushSchema from '../scripts/db-push';
+import seedFromWordPressAPI from '../scripts/api-seed';
 
 async function startServer() {
   try {
@@ -210,19 +155,58 @@ async function startServer() {
       port: PORT
     });
 
-    // Run permanent startup setup (includes database initialization)
+    // Setup database connection first
     try {
-      serverLogger.info('Running permanent startup setup...');
-      await permanentStartup();
-      serverLogger.info('Permanent startup setup completed successfully');
-    } catch (startupError) {
-      serverLogger.error('Startup setup failed, continuing in partial mode', { 
-        error: startupError instanceof Error ? startupError.message : 'Unknown error' 
-      });
-      // Continue with application startup even if setup fails
-      // This ensures the app starts for debugging purposes
-    }
+      // Ensure DATABASE_URL is properly set
+      serverLogger.info('Setting up database connection...');
+      await setupDatabase();
+      
+      // Check database connection
+      try {
+        // This may fail if tables don't exist yet
+        const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
+        serverLogger.info('Database connected, tables exist', { postsCount });
+        
+        // Run migrations to ensure all tables defined in the schema exist
+        serverLogger.info('Running database migrations to create missing tables...');
+        await runMigrations();
+        serverLogger.info('Database migrations completed');
     
+        if (postsCount === 0) {
+          serverLogger.info('Tables exist but no posts - seeding database from WordPress API...');
+          await seedFromWordPressAPI();
+          serverLogger.info('Database seeding from WordPress API completed');
+        }
+      } catch (tableError) {
+        serverLogger.warn('Database tables check failed, attempting to create schema', { 
+          error: tableError instanceof Error ? tableError.message : 'Unknown error' 
+        });
+        
+        // If tables don't exist, push the schema
+        serverLogger.info('Creating database schema...');
+        await pushSchema();
+        serverLogger.info('Schema created, seeding data from WordPress API...');
+        
+        try {
+          await seedFromWordPressAPI();
+          serverLogger.info('Database seeding from WordPress API completed');
+        } catch (seedError) {
+          serverLogger.error('Error seeding from WordPress API, falling back to XML seeding', {
+            error: seedError instanceof Error ? seedError.message : 'Unknown error'
+          });
+          
+          // Fall back to XML seeding if WordPress API fails
+          await seedDatabase();
+          serverLogger.info('Database seeding from XML completed');
+        }
+      }
+    } catch (dbError) {
+      serverLogger.error('Critical database setup error', { 
+        error: dbError instanceof Error ? dbError.message : 'Unknown error' 
+      });
+      throw dbError;
+    }
+
     // Create server instance
     server = createServer(app);
 
@@ -236,17 +220,12 @@ async function startServer() {
       // Register main routes
       registerRoutes(app);
       
-      // Register optimized modular routes
-      registerModularRoutes(app);
-      
       // Register user feedback routes
       registerUserFeedbackRoutes(app, storage);
       
       // Register recommendation routes
       registerRecommendationsRoutes(app, storage);
       
- // User data export routes removed
- 
       
       // Register privacy settings routes
       registerPrivacySettingsRoutes(app, storage);
@@ -260,144 +239,11 @@ async function startServer() {
       // Register email service routes
       registerEmailServiceRoutes(app);
       
-      // Register bookmark routes - only once to avoid duplicates
+      // Register bookmark routes
       registerBookmarkRoutes(app);
-      
-      // Add global error handler (must be after all routes)
-      app.use(globalErrorHandler);
       
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);
-      
-      // Register direct game API routes that bypass Vite middleware
-
-      // Legacy direct API endpoints - keeping for reference
-      app.get('/direct-api/game/scenes', async (_req, res) => {
-        try {
-          // Set correct Content-Type for JSON response
-          res.setHeader('Content-Type', 'application/json');
-          
-          // First, try to get scenes from the database
-          const dbScenes = await storage.getGameScenes();
-          
-          if (dbScenes && dbScenes.length > 0) {
-            return res.json({ scenes: dbScenes });
-          }
-          
-          // If no scenes in DB, use default game scenes
-          console.log('No database scenes found, using default scenes');
-          
-          // Default scene data
-          const defaultScenes = [
-            {
-              sceneId: 'village_entrance',
-              name: "Village Entrance",
-              description: "A dilapidated wooden sign reading 'Eden's Hollow' creaks in the wind.",
-              backgroundImage: "/assets/eden/scenes/village_entrance.jpg",
-              type: "exploration",
-              data: {
-                exits: [
-                  { target: "village_square", label: "Enter the village" }
-                ],
-                items: [],
-                characters: []
-              }
-            },
-            {
-              sceneId: 'village_square',
-              name: "Village Square",
-              description: "A once-bustling village square now stands eerily empty.",
-              backgroundImage: "/assets/eden/scenes/village_square.jpg",
-              type: "exploration",
-              data: {
-                exits: [
-                  { target: "village_entrance", label: "Return to entrance" },
-                  { target: "abandoned_church", label: "Visit the church" },
-                  { target: "old_tavern", label: "Enter the tavern" }
-                ],
-                items: [],
-                characters: []
-              }
-            }
-          ];
-          
-          return res.json({
-            scenes: defaultScenes,
-            source: "default",
-            message: "Using default game scenes. Database scenes not available."
-          });
-        } catch (error) {
-          console.error('Error fetching game scenes:', error);
-          res.setHeader('Content-Type', 'application/json');
-          return res.status(500).json({ error: 'Failed to fetch game scenes' });
-        }
-      });
-      
-      // Direct API endpoint for a specific game scene by ID
-      app.get('/direct-api/game/scenes/:sceneId', async (_req, res) => {
-        try {
-          const { sceneId } = _req.params;
-          
-          // Set correct Content-Type for JSON response
-          res.setHeader('Content-Type', 'application/json');
-          
-          // Try to get the scene from the database
-          const scene = await storage.getGameScene(sceneId);
-          
-          if (scene) {
-            return res.json(scene);
-          }
-          
-          // Check for default scenes
-          const defaultScenes: Record<string, any> = {
-            'village_entrance': {
-              sceneId: 'village_entrance',
-              name: "Village Entrance",
-              description: "A dilapidated wooden sign reading 'Eden's Hollow' creaks in the wind.",
-              backgroundImage: "/assets/eden/scenes/village_entrance.jpg",
-              type: "exploration",
-              data: {
-                exits: [
-                  { target: "village_square", label: "Enter the village" }
-                ],
-                items: [],
-                characters: []
-              }
-            },
-            'village_square': {
-              sceneId: 'village_square',
-              name: "Village Square",
-              description: "A once-bustling village square now stands eerily empty.",
-              backgroundImage: "/assets/eden/scenes/village_square.jpg",
-              type: "exploration",
-              data: {
-                exits: [
-                  { target: "village_entrance", label: "Return to entrance" },
-                  { target: "abandoned_church", label: "Visit the church" },
-                  { target: "old_tavern", label: "Enter the tavern" }
-                ],
-                items: [],
-                characters: []
-              }
-            }
-          };
-          
-          // Check if requested scene is one of our defaults
-          if (defaultScenes[sceneId]) {
-            return res.json({
-              ...defaultScenes[sceneId],
-              source: "default"
-            });
-          }
-          
-          // If scene not found, return 404
-          return res.status(404).json({ error: 'Scene not found' });
-        } catch (error) {
-          console.error(`Error fetching game scene ${_req.params.sceneId}:`, error);
-          res.setHeader('Content-Type', 'application/json');
-          return res.status(500).json({ error: 'Failed to fetch game scene' });
-        }
-      });
       
       // We've moved the post recommendations endpoint to main routes.ts
       // registerPostRecommendationsRoutes(app);
@@ -415,8 +261,6 @@ async function startServer() {
       // Register recommendation routes
       registerRecommendationsRoutes(app, storage);
       
- // User data export routes removed
- 
       
       // Register privacy settings routes
       registerPrivacySettingsRoutes(app, storage);
@@ -430,141 +274,11 @@ async function startServer() {
       // Register email service routes
       registerEmailServiceRoutes(app);
       
-      // Register bookmark routes - only once to avoid duplicates
+      // Register bookmark routes
       registerBookmarkRoutes(app);
       
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);
-      
-      // Register direct game API routes that bypass Vite middleware
-
-      // Legacy direct API endpoints - keeping for reference
-      app.get('/direct-api/game/scenes', async (_req, res) => {
-        try {
-          // Set correct Content-Type for JSON response
-          res.setHeader('Content-Type', 'application/json');
-          
-          // First, try to get scenes from the database
-          const dbScenes = await storage.getGameScenes();
-          
-          if (dbScenes && dbScenes.length > 0) {
-            return res.json({ scenes: dbScenes });
-          }
-          
-          // If no scenes in DB, use default game scenes
-          console.log('No database scenes found, using default scenes');
-          
-          // Default scene data
-          const defaultScenes = [
-            {
-              sceneId: 'village_entrance',
-              name: "Village Entrance",
-              description: "A dilapidated wooden sign reading 'Eden's Hollow' creaks in the wind.",
-              backgroundImage: "/assets/eden/scenes/village_entrance.jpg",
-              type: "exploration",
-              data: {
-                exits: [
-                  { target: "village_square", label: "Enter the village" }
-                ],
-                items: [],
-                characters: []
-              }
-            },
-            {
-              sceneId: 'village_square',
-              name: "Village Square",
-              description: "A once-bustling village square now stands eerily empty.",
-              backgroundImage: "/assets/eden/scenes/village_square.jpg",
-              type: "exploration",
-              data: {
-                exits: [
-                  { target: "village_entrance", label: "Return to entrance" },
-                  { target: "abandoned_church", label: "Visit the church" },
-                  { target: "old_tavern", label: "Enter the tavern" }
-                ],
-                items: [],
-                characters: []
-              }
-            }
-          ];
-          
-          return res.json({
-            scenes: defaultScenes,
-            source: "default",
-            message: "Using default game scenes. Database scenes not available."
-          });
-        } catch (error) {
-          console.error('Error fetching game scenes:', error);
-          res.setHeader('Content-Type', 'application/json');
-          return res.status(500).json({ error: 'Failed to fetch game scenes' });
-        }
-      });
-      
-      // Direct API endpoint for a specific game scene by ID
-      app.get('/direct-api/game/scenes/:sceneId', async (_req, res) => {
-        try {
-          const { sceneId } = _req.params;
-          
-          // Set correct Content-Type for JSON response
-          res.setHeader('Content-Type', 'application/json');
-          
-          // Try to get the scene from the database
-          const scene = await storage.getGameScene(sceneId);
-          
-          if (scene) {
-            return res.json(scene);
-          }
-          
-          // Check for default scenes
-          const defaultScenes: Record<string, any> = {
-            'village_entrance': {
-              sceneId: 'village_entrance',
-              name: "Village Entrance",
-              description: "A dilapidated wooden sign reading 'Eden's Hollow' creaks in the wind.",
-              backgroundImage: "/assets/eden/scenes/village_entrance.jpg",
-              type: "exploration",
-              data: {
-                exits: [
-                  { target: "village_square", label: "Enter the village" }
-                ],
-                items: [],
-                characters: []
-              }
-            },
-            'village_square': {
-              sceneId: 'village_square',
-              name: "Village Square",
-              description: "A once-bustling village square now stands eerily empty.",
-              backgroundImage: "/assets/eden/scenes/village_square.jpg",
-              type: "exploration",
-              data: {
-                exits: [
-                  { target: "village_entrance", label: "Return to entrance" },
-                  { target: "abandoned_church", label: "Visit the church" },
-                  { target: "old_tavern", label: "Enter the tavern" }
-                ],
-                items: [],
-                characters: []
-              }
-            }
-          };
-          
-          // Check if requested scene is one of our defaults
-          if (defaultScenes[sceneId]) {
-            return res.json({
-              ...defaultScenes[sceneId],
-              source: "default"
-            });
-          }
-          
-          // If scene not found, return 404
-          return res.status(404).json({ error: 'Scene not found' });
-        } catch (error) {
-          console.error(`Error fetching game scene ${_req.params.sceneId}:`, error);
-          res.setHeader('Content-Type', 'application/json');
-          return res.status(500).json({ error: 'Failed to fetch game scene' });
-        }
-      });
       
       // We've moved the post recommendations endpoint to main routes.ts
       // registerPostRecommendationsRoutes(app);
@@ -587,7 +301,7 @@ async function startServer() {
           bootTime: `${bootDuration}ms`
         });
 
-        // Send port readiness signal - make it clearer for Replit
+        // Send port readiness signal
         if (process.send) {
           process.send({
             port: PORT,
@@ -596,13 +310,6 @@ async function startServer() {
           });
           console.log('Sent port readiness signal to process');
           serverLogger.debug('Sent port readiness signal');
-          
-          // Output more detailed message for debug purposes
-          console.log(`\n🚀 APPLICATION READY! 🚀`);
-          console.log(`\n- Server URL: http://${HOST}:${PORT}`);
-          console.log(`- Database: Connected successfully`);
-          console.log(`- Environment: ${process.env.NODE_ENV || 'development'}`);
-          console.log(`\nApplication is now fully ready to accept connections!\n`);
         }
         
         // Wait for a moment to ensure the server is fully ready
@@ -615,40 +322,15 @@ async function startServer() {
 
       server.on('error', (error: Error & { code?: string }) => {
         if (error.code === 'EADDRINUSE') {
-          serverLogger.warn(`Port ${PORT} is already in use, trying alternative ports...`);
-          
-          // Try each alternative port in the list
-          let currentPortIndex = 0;
-          const tryNextPort = () => {
-            if (currentPortIndex < ALTERNATIVE_PORTS.length) {
-              const newPort = ALTERNATIVE_PORTS[currentPortIndex];
-              serverLogger.info(`Attempting to use alternative port: ${newPort}`);
-              
-              // Update the global PORT variable
-              PORT = newPort;
-              currentPortIndex++;
-              
-              // Try to listen on the new port
-              server.listen(PORT, HOST);
-            } else {
-              // We've tried all ports and none worked
-              serverLogger.error('All ports are in use, cannot start server', { 
-                triedPorts: [DEFAULT_PORT, ...ALTERNATIVE_PORTS].join(', ') 
-              });
-              reject(error);
-            }
-          };
-          
-          // Start trying alternative ports
-          tryNextPort();
+          serverLogger.error('Port already in use', { port: PORT });
         } else {
           serverLogger.error('Server error', { 
             error: error.message,
             code: error.code,
             stack: error.stack 
           });
-          reject(error);
         }
+        reject(error);
       });
     });
   } catch (error) {
@@ -692,8 +374,8 @@ process.on('uncaughtException', (error) => {
 });
 
 // Handle unhandled rejections
-process.on('unhandledRejection', (reason, _promise) => {
-  serverLogger.error('Unhandled _promise rejection', {
+process.on('unhandledRejection', (reason, promise) => {
+  serverLogger.error('Unhandled promise rejection', {
     reason: reason instanceof Error ? reason.message : String(reason),
     stack: reason instanceof Error ? reason.stack : undefined
   });

@@ -111,6 +111,9 @@ const AdminContentManagementPage = React.lazy(() => import('./pages/admin/conten
 const AdminThemesPage = React.lazy(() => import('./pages/admin/themes'));
 const ResetPasswordPage = React.lazy(() => import('./pages/reset-password'));
 
+// Placeholder 404 page for discontinued features
+const EdenHollow404 = React.lazy(() => import('./pages/EdenHollow404'));
+
 // Error pages - lazy loaded
 const Error403Page = React.lazy(() => import('./pages/errors/403'));
 const Error404Page = React.lazy(() => import('./pages/errors/404'));
@@ -345,6 +348,9 @@ const AppContent = () => {
               <ProtectedRoute path="/admin/wordpress-sync" component={AdminWordPressSyncPage} requireAdmin={true} />
               <ProtectedRoute path="/admin/content-management" component={AdminContentManagementPage} requireAdmin={true} />
               <ProtectedRoute path="/admin/themes" component={AdminThemesPage} requireAdmin={true} />
+              
+              {/* Placeholder routes for discontinued features */}
+              <Route path="/eden-hollow" component={EdenHollow404} />
                 
               {/* 404 fallback */}
               <Route>
@@ -387,14 +393,13 @@ function App() {
   // Create a FeedbackButton wrapper component to handle visibility logic
   const ConditionalFeedbackButton = () => {
     const [currentPath] = useLocation();
-    // Check if current page is index, reader, community page, community-story, or game-test
+    // Check if current page is index, reader, community page, or community-story
     const shouldHideButton = 
       currentPath === "/" || 
       currentPath === "/index" || 
       currentPath.startsWith("/reader") || 
       currentPath.startsWith("/community-story") || 
-      currentPath === "/community" ||
-      currentPath === "/game-test";
+      currentPath === "/community";
       
     return !shouldHideButton ? <FeedbackButton /> : null;
   };
