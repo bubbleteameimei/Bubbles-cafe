@@ -469,7 +469,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           </SidebarGroup>
         </motion.div>
 
-      {/* Games & Interactive Experiences */}
+      {/* Games & Interactive Experiences - Placeholder */}
       <SidebarGroup className="-mt-4">
         <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
           GAMES & INTERACTIVE
@@ -478,15 +478,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           <SidebarMenu className="space-y-0">
             <SidebarMenuItem>
               <SidebarMenuButton
-                isActive={location === '/game-test'}
-                onClick={() => handleNavigation('/game-test')}
-                tooltip="Eden's Hollow - Experimental Horror Game"
+                isActive={location === '/eden-hollow'}
+                onClick={() => handleNavigation('/eden-hollow')}
+                tooltip="Eden's Hollow - Coming Soon"
                 className={menuItemClass}
-                aria-current={location === '/game-test' ? 'page' : undefined}
+                aria-current={location === '/eden-hollow' ? 'page' : undefined}
               >
-                {renderActiveIndicator('/game-test')}
+                {renderActiveIndicator('/eden-hollow')}
                 <GamepadIcon className="h-5 w-5" />
-                <span>Eden's Hollow - Experimental</span>
+                <span>Eden's Hollow</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

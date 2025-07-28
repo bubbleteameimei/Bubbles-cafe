@@ -353,130 +353,8 @@ html.light body.body-home::after {
   animation: pulse-slow 3s infinite ease-in-out;
 }
 
-/* Eden's Hollow - Loading Screen System
-   Completely isolated from other CSS to avoid any conflicts */
 
-/* Prevent page scrolling during loading */
-html.disable-scroll {
-  overflow: hidden !important;
-  height: 100% !important;
-}
-
-/* Base container - isolated, highest z-index */
-#eden-loading-screen {
-  /* Fixed positioning to cover viewport */
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  
-  /* Centering content */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  
-  /* Stacking context isolation */
-  z-index: 2147483647; /* Maximum possible z-index */
-  isolation: isolate;
-  
-  /* Pure black background instead of image */
-  background-color: #000000;
-  
-  /* Prevent pointer events below */
-  pointer-events: all;
-}
-
-/* Loading text container */
-.eden-loading-content {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  gap: 0.5rem;
-}
-
-/* Individual loading text letters */
-.eden-loading-content span {
-  text-transform: uppercase;
-  font-size: 26px;
-  font-family: 'Megrim', 'Times New Roman', serif;
-  font-weight: 400;
-  animation: eden-loading-blur 2s linear infinite;
-  line-height: 26px;
-  letter-spacing: 0.2em;
-  color: white;
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-/* Fallback loading text - shown when Megrim font fails to load */
-.eden-loading-fallback {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-family: system-ui, -apple-system, sans-serif; /* System font fallback */
-  font-size: 18px;
-  color: #ffffff;
-  text-transform: uppercase;
-  letter-spacing: 0.3em;
-  opacity: 0; /* Hidden by default */
-  animation: fallback-fade 500ms ease-in forwards;
-  animation-delay: 1000ms; /* Only appear after a delay if main content fails */
-  background: transparent; /* Ensure no box shows */
-  text-align: center;
-  font-weight: 500;
-  z-index: 0; /* Below main content */
-}
-
-/* Animation to fade in the fallback */
-@keyframes fallback-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* Letter animation delays */
-.eden-loading-content span:nth-child(1) { animation-delay: 0.0s; }
-.eden-loading-content span:nth-child(2) { animation-delay: 0.2s; }
-.eden-loading-content span:nth-child(3) { animation-delay: 0.4s; }
-.eden-loading-content span:nth-child(4) { animation-delay: 0.6s; }
-.eden-loading-content span:nth-child(5) { animation-delay: 0.8s; }
-.eden-loading-content span:nth-child(6) { animation-delay: 1.0s; }
-.eden-loading-content span:nth-child(7) { animation-delay: 1.2s; }
-
-/* Loading text blur animation */
-@keyframes eden-loading-blur {
-  0% {
-    filter: blur(0px);
-    opacity: 1;
-  }
-  50% {
-    filter: blur(6px);
-    opacity: 0.5;
-  }
-  100% {
-    filter: blur(0px);
-    opacity: 1;
-  }
-}
-
-/* When loading is active - hide problematic elements */
-body.loading-active {
-  /* Ensure scroll lock */
-  overflow: hidden !important;
-  
-  /* Ensure sidebar is hidden during loading */
-  & .sidebar-navigation,
-  & .sidebar-menu,
-  & [data-state="open"],
-  & [role="dialog"] {
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
-}
+/* Game-related CSS removed - Eden's Hollow discontinued */
 
 /* Mobile specific fixes - prevent horizontal scrolling and black borders */
 @media (max-width: var(--breakpoint-md)) {
@@ -1267,9 +1145,6 @@ input[type="reset"],
 }
 
 /* Body class for active loading state */
-body.loading-active {
-  overflow: hidden;
-}
 
 .menu-button-container:hover span {
   transform-origin: right;
