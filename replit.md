@@ -129,17 +129,18 @@ This is a modern interactive storytelling platform built with React, TypeScript,
 ## Database Setup
 
 ### Database Successfully Initialized (July 28, 2025 - Current Session)
-- ✅ **PostgreSQL Database**: Fresh Replit PostgreSQL database created and connected successfully
+- ✅ **PostgreSQL Database**: Fresh Neon PostgreSQL database created and connected successfully (DATABASE_URL configured)
 - ✅ **Environment Variables**: All database connection variables properly configured (DATABASE_URL, PGPORT, PGUSER, PGPASSWORD, PGDATABASE, PGHOST)
-- ✅ **Database Tables**: All core tables created via SQL (users, posts, comments, sessions, bookmarks, author_stats, site_settings)
-- ✅ **Admin User**: Admin user created (vandalison@gmail.com / admin123)
-- ✅ **Application Running**: Server successfully started and responding on port 3003 with all middleware active
+- ✅ **Database Schema**: Fixed column naming issues - renamed is_admin_post to isAdminPost, likes_count to likesCount, dislikes_count to dislikesCount
+- ✅ **Database Tables**: All core tables verified and operational (users, posts, comments, sessions, bookmarks, author_stats, site_settings)
+- ✅ **Admin User**: Admin user confirmed (vantalison@gmail.com with admin privileges)
+- ✅ **Application Running**: Server successfully started and responding on port 3002 with all middleware active
 - ✅ **WordPress Sync**: Content synchronization fully operational - imported 21 WordPress stories automatically
 - ✅ **API Endpoints**: All API endpoints responding correctly (/api/posts returning 21 authentic stories)
 - ✅ **CORS & Security**: Cross-origin requests handled, rate limiting active with IP whitelisting
 - ✅ **Performance Tracking**: Performance metrics being collected and stored
 - ✅ **Session Management**: Authentication system ready and working with proper session handling
-- ✅ **Content Import**: Imported authentic WordPress content including "BLOOD", "WORD", "HUNGER", "SONG", etc.
+- ✅ **Content Import**: Successfully imported authentic WordPress content including "BLOOD", "WORD", "HUNGER", "SONG", "JOURNAL", "NOSTALGIA", "CAVE", "THERAPIST", "BLEACH", "MACHINE", "BUG", "DRIVE", "MIRROR", "CAR", "DOLL", "COOKBOOK", "SKIN", "TUNNEL", "CHASE", "DESCENT", "RAIN"
 
 ### Automatic Database Initialization
 - **Modern Commands**: Updated to use current Drizzle Kit commands with fallback compatibility
