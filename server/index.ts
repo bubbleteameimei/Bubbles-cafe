@@ -1,6 +1,5 @@
 // Import our configuration first, which loads environment variables
 import path from 'path';
-import fs from 'fs';
 import config from './config';
 
 // Log environment variables being loaded
@@ -12,48 +11,40 @@ console.log('[Server] GMAIL_APP_PASSWORD:', process.env.GMAIL_APP_PASSWORD ? 'Se
 
 import express from "express";
 import { createServer } from "http";
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite, serveStatic } from "./vite";
 import { registerRoutes } from "./routes";
 import { db } from "./db"; // Using the direct Neon database connection
-import { posts } from "@shared/schema";
-import { count } from "drizzle-orm";
-import { seedDatabase } from "./seed";
 import helmet from "helmet";
 import compression from "compression";
 import crypto from "crypto";
 import session from "express-session";
 import { setupAuth } from "./auth";
 import { setupOAuth } from "./oauth";
-import { storage } from "./storage-db";
+import { storage } from "./storage";
 import { createSecureLogger } from "./utils/secure-logger";
 import { globalErrorHandler } from "./utils/error-handler";
 import { requestLogger } from "./utils/debug-logger";
 import { registerModularRoutes } from "./routes/index";
 import { registerUserFeedbackRoutes } from "./routes/user-feedback";
 import { registerRecommendationsRoutes } from "./routes/recommendations";
-import { registerPostRecommendationsRoutes } from "./routes/simple-posts-recommendations";
 // User Data Export routes removed
 import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
 import { setupWordPressSyncSchedule } from "./wordpress-sync"; // Using the declaration file
-import { wordpressScheduler } from "./wordpress-scheduler";
 import { registerAnalyticsRoutes } from "./routes/analytics"; // Analytics endpoints
 import { registerEmailServiceRoutes } from "./routes/email-service"; // Email service routes
 import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark routes
 
 // CSRF protection completely removed as per user request
-import { runMigrations } from "./migrations"; // Import our custom migrations
-import { globalRateLimiter, apiRateLimiter } from "./middlewares/rate-limiter"; // Rate limiters
+import { globalRateLimiter } from "./middlewares/rate-limiter"; // Rate limiters
 import { setupCors } from "./cors-setup";
 // Import performance middleware
 import { 
-  applyPerformanceMiddleware, 
   cacheControlMiddleware, 
   responseTimeMiddleware, 
   queryPerformanceMiddleware,
   wrapDbWithProfiler
 } from "./middleware";
-import { validateSession } from "./middleware/security-validation";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -112,9 +103,9 @@ app.use(etagCache());
 // No additional cookie parser needed for CSRF protection
 
 // Increase body parser limit for file uploads
-app.use((req, res, next) => {
+app.use((_req, _res, next) => {
   // Skip content-type check for multipart requests
-  if (req.headers['content-type']?.includes('multipart/form-data')) {
+  if (_req.headers['content-type']?.includes('multipart/form-data')) {
     return next();
   }
   next();
@@ -135,11 +126,11 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/'
   },
-  store: storage.sessionStore
+  store: storage.sessionStore as any
 }));
 
 // CSRF protection has been completely removed as requested
-app.use((req, res, next) => {
+app.use((_req, _res, next) => {
   // No CSRF token generation or validation
   next();
 });
@@ -281,7 +272,7 @@ async function startServer() {
       // Register direct game API routes that bypass Vite middleware
 
       // Legacy direct API endpoints - keeping for reference
-      app.get('/direct-api/game/scenes', async (req, res) => {
+      app.get('/direct-api/game/scenes', async (_req, res) => {
         try {
           // Set correct Content-Type for JSON response
           res.setHeader('Content-Type', 'application/json');
@@ -338,14 +329,14 @@ async function startServer() {
         } catch (error) {
           console.error('Error fetching game scenes:', error);
           res.setHeader('Content-Type', 'application/json');
-          res.status(500).json({ error: 'Failed to fetch game scenes' });
+          return res.status(500).json({ error: 'Failed to fetch game scenes' });
         }
       });
       
       // Direct API endpoint for a specific game scene by ID
-      app.get('/direct-api/game/scenes/:sceneId', async (req, res) => {
+      app.get('/direct-api/game/scenes/:sceneId', async (_req, res) => {
         try {
-          const { sceneId } = req.params;
+          const { sceneId } = _req.params;
           
           // Set correct Content-Type for JSON response
           res.setHeader('Content-Type', 'application/json');
@@ -402,9 +393,9 @@ async function startServer() {
           // If scene not found, return 404
           return res.status(404).json({ error: 'Scene not found' });
         } catch (error) {
-          console.error(`Error fetching game scene ${req.params.sceneId}:`, error);
+          console.error(`Error fetching game scene ${_req.params.sceneId}:`, error);
           res.setHeader('Content-Type', 'application/json');
-          res.status(500).json({ error: 'Failed to fetch game scene' });
+          return res.status(500).json({ error: 'Failed to fetch game scene' });
         }
       });
       
@@ -448,7 +439,7 @@ async function startServer() {
       // Register direct game API routes that bypass Vite middleware
 
       // Legacy direct API endpoints - keeping for reference
-      app.get('/direct-api/game/scenes', async (req, res) => {
+      app.get('/direct-api/game/scenes', async (_req, res) => {
         try {
           // Set correct Content-Type for JSON response
           res.setHeader('Content-Type', 'application/json');
@@ -505,14 +496,14 @@ async function startServer() {
         } catch (error) {
           console.error('Error fetching game scenes:', error);
           res.setHeader('Content-Type', 'application/json');
-          res.status(500).json({ error: 'Failed to fetch game scenes' });
+          return res.status(500).json({ error: 'Failed to fetch game scenes' });
         }
       });
       
       // Direct API endpoint for a specific game scene by ID
-      app.get('/direct-api/game/scenes/:sceneId', async (req, res) => {
+      app.get('/direct-api/game/scenes/:sceneId', async (_req, res) => {
         try {
-          const { sceneId } = req.params;
+          const { sceneId } = _req.params;
           
           // Set correct Content-Type for JSON response
           res.setHeader('Content-Type', 'application/json');
@@ -569,9 +560,9 @@ async function startServer() {
           // If scene not found, return 404
           return res.status(404).json({ error: 'Scene not found' });
         } catch (error) {
-          console.error(`Error fetching game scene ${req.params.sceneId}:`, error);
+          console.error(`Error fetching game scene ${_req.params.sceneId}:`, error);
           res.setHeader('Content-Type', 'application/json');
-          res.status(500).json({ error: 'Failed to fetch game scene' });
+          return res.status(500).json({ error: 'Failed to fetch game scene' });
         }
       });
       
@@ -701,8 +692,8 @@ process.on('uncaughtException', (error) => {
 });
 
 // Handle unhandled rejections
-process.on('unhandledRejection', (reason, promise) => {
-  serverLogger.error('Unhandled promise rejection', {
+process.on('unhandledRejection', (reason, _promise) => {
+  serverLogger.error('Unhandled _promise rejection', {
     reason: reason instanceof Error ? reason.message : String(reason),
     stack: reason instanceof Error ? reason.stack : undefined
   });
