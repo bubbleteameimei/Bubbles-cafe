@@ -45,7 +45,7 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
-waitForPort = 3000
+waitForPort = 3002
 
 [[workflows.workflow]]
 name = "Security Check"
