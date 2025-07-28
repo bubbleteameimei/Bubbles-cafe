@@ -72,14 +72,14 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
   
   return (
     <div 
-      id="eden-loading-screen"
-      className="eden-loading-overlay"
+      id="app-loading-screen"
+      className="app-loading-overlay"
       aria-label="Loading screen"
       aria-live="polite"
       role="status"
     >
       {/* Main loading text with Megrim font */}
-      <div className="eden-loading-content">
+      <div className="app-loading-content">
         <span>L</span>
         <span>O</span>
         <span>A</span>
