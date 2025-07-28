@@ -1,16 +1,15 @@
-import { useEffect, useState, KeyboardEvent } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
-import { Menu, Search, Bell, Moon, Sun } from "lucide-react";
+import { Menu, Search, Moon, Sun, User } from "lucide-react";
 import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/contexts/notification-context";
 import { useTheme } from "@/components/theme-provider";
-import { useSidebar } from "@/components/ui/sidebar";
-import { Link } from "wouter";
-import { useToast } from "@/hooks/use-toast";
+
+
 
 
 export default function Navigation() {
@@ -19,11 +18,11 @@ export default function Navigation() {
   const { user } = useAuth();
   const { notifications } = useNotifications();
   const { theme, setTheme } = useTheme();
-  const sidebar = useSidebar();
+
   const [scrolled, setScrolled] = useState(false);
   const [deviceType, setDeviceType] = useState<'mobile' | 'tablet' | 'laptop' | 'desktop'>('desktop');
-  const [searchQuery, setSearchQuery] = useState("");
-  const { toast } = useToast();
+
+
   
   // Effect to detect scroll position for conditional styling
   useEffect(() => {
@@ -71,25 +70,9 @@ export default function Navigation() {
     { href: '/about', label: 'About' }
   ];
 
-  // Handle search functionality
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      // Navigate to search results page with search query
-      setLocation(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      toast({
-        title: "Searching...",
-        description: `Finding content matching: "${searchQuery.trim()}"`,
-        duration: 2000
-      });
-    }
-  };
 
-  // Handle search on enter key
-  const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
+
+
 
   // Handle search button click for all devices
   const handleSearchButtonClick = () => {
@@ -204,17 +187,17 @@ export default function Navigation() {
             )}
           </Button>
           
-          {/* User/Auth button - subtle styling to match other buttons */}
+          {/* User/Auth button - icon styling to match other buttons */}
           {!user ? (
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={() => setLocation("/auth")}
-              className="h-8 px-3 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                        transition-all duration-150 active:scale-95 mt-2 text-xs font-medium"
+              className="h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                        transition-all duration-150 active:scale-95 mt-2"
               aria-label="Sign in"
             >
-              Sign In
+              <User className="h-4 w-4 transition-all" />
             </Button>
           ) : (
             <Button
