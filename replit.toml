@@ -1,0 +1,32 @@
+modules = ["nodejs-20", "web", "postgresql-16", "python-3.11"]
+run = "bash -c 'npm install && npm run dev'"
+hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+deploymentTarget = "cloudrun"
+build = ["sh", "-c", "npm install && npm run build"]
+run = ["sh", "-c", "npm start"]
+
+[[ports]]
+localPort = 3002
+externalPort = 80
+
+[[ports]]
+localPort = 3002
+externalPort = 3002
+
+[workflows]
+runButton = "Start Web Feedback App"
+
+[[workflows.workflow]]
+name = "Start Web Feedback App"
+author = 40492995
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash -c 'npm install && npm run dev'"
+waitForPort = 3002
