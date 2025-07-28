@@ -6,6 +6,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fix double scrollbar issue */
+html, body {
+  overflow-x: hidden;
+}
+
+body {
+  overflow-y: auto;
+}
+
 /* Import responsive framework */
 @import './styles/responsive.css';
 

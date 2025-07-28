@@ -5,6 +5,8 @@ interface BloodDrippingTextProps {
   className?: string;
 }
 
+type BloodMode = 'short' | 'long';
+
 class Particle {
   x: number;
   y: number;
@@ -17,18 +19,35 @@ class Particle {
   gravity: number;
   delay: number;
   delayLeft: number;
+  mode: BloodMode;
 
-  constructor(x: number, y: number) {
+  constructor(x: number, y: number, mode: BloodMode = 'short') {
     this.x = x;
     this.y = y;
-    this.vx = (Math.random() - 0.5) * 0.2; // Small horizontal movement
-    this.vy = Math.random() * 0.3 + 0.1; // Start with small downward velocity
-    this.width = Math.random() * 0.6 + 0.2; // Very thin drops (0.2-0.8px)
-    this.height = this.width * 8; // Very elongated
-    this.color = `rgba(139, 0, 0, ${Math.random() * 0.3 + 0.7})`; // Dark blood
-    this.lifetime = Math.random() * 180 + 240; // Longer lifetime
-    this.gravity = 0.12; // Moderate gravity
-    this.delay = Math.random() * 15; // Short delay
+    this.mode = mode;
+    
+    if (mode === 'long') {
+      // Long blood system - former system
+      this.vx = (Math.random() - 0.5) * 0.2;
+      this.vy = 0;
+      this.width = Math.random() * 1 + 0.5;
+      this.height = this.width * 4;
+      this.color = `rgba(139, 0, 0, ${Math.random() * 0.3 + 0.7})`;
+      this.lifetime = Math.random() * 60 + 60;
+      this.gravity = 0.05;
+      this.delay = Math.random() * 30;
+    } else {
+      // Short blood system - current system
+      this.vx = (Math.random() - 0.5) * 0.2;
+      this.vy = Math.random() * 0.3 + 0.1;
+      this.width = Math.random() * 0.6 + 0.2;
+      this.height = this.width * 8;
+      this.color = `rgba(139, 0, 0, ${Math.random() * 0.3 + 0.7})`;
+      this.lifetime = Math.random() * 180 + 240;
+      this.gravity = 0.12;
+      this.delay = Math.random() * 15;
+    }
+    
     this.delayLeft = this.delay;
   }
 
@@ -39,7 +58,6 @@ class Particle {
       this.vy += this.gravity;
       this.x += this.vx;
       this.y += this.vy;
-      // Add slight damping to horizontal movement
       this.vx *= 0.999;
     }
     this.lifetime--;
@@ -58,10 +76,14 @@ class Particle {
 class ParticleSystem {
   particles: Particle[];
   dripPoints: Array<{ x: number; y: number }>;
+  currentMode: BloodMode;
+  modeTimer: number;
 
   constructor() {
     this.particles = [];
     this.dripPoints = [];
+    this.currentMode = 'short';
+    this.modeTimer = 0;
   }
 
   setDripPoints(points: Array<{ x: number; y: number }>) {
@@ -71,8 +93,12 @@ class ParticleSystem {
   addParticle() {
     if (this.dripPoints.length > 0) {
       const point = this.dripPoints[Math.floor(Math.random() * this.dripPoints.length)];
-      this.particles.push(new Particle(point.x, point.y));
+      this.particles.push(new Particle(point.x, point.y, this.currentMode));
     }
+  }
+
+  toggleMode() {
+    this.currentMode = this.currentMode === 'short' ? 'long' : 'short';
   }
 
   update() {
@@ -104,9 +130,9 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
       const rect = textElement.getBoundingClientRect();
       
       canvas.width = rect.width;
-      canvas.height = window.innerHeight; // Full viewport height for bleeding effect
+      canvas.height = window.innerHeight - rect.bottom; // From bottom of text to viewport bottom
       canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${window.innerHeight}px`;
+      canvas.style.height = `${window.innerHeight - rect.bottom}px`;
     };
 
     updateCanvasSize();
@@ -131,18 +157,14 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
     const imageData = textCtx.getImageData(0, 0, textCanvas.width, textCanvas.height);
     const dripPoints: Array<{ x: number; y: number }> = [];
     
-    // Get text position for proper offset
-    const textRect = textElement.getBoundingClientRect();
-    const textTop = textRect.top;
-    
     // Collect all pixels where the text is present - sampling every few pixels for performance
     for (let y = 0; y < textCanvas.height; y += 2) {
       for (let x = 0; x < textCanvas.width; x += 3) {
         const index = (y * textCanvas.width + x) * 4 + 3; // Alpha channel
         if (imageData.data[index] > 0) {
-          // Scale positions to match the actual canvas and use absolute position
+          // Scale positions to match the actual canvas coordinates (relative to canvas origin)
           const scaledX = (x / textCanvas.width) * canvas.width;
-          const scaledY = textTop + (y / textCanvas.height) * textRect.height;
+          const scaledY = (y / textCanvas.height) * (fontSize + 40); // Relative to text height in canvas
           dripPoints.push({ x: scaledX, y: scaledY });
         }
       }
@@ -155,15 +177,25 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
 
     let lastTime = 0;
     let particleTimer = 0;
+    let modeTimer = 0;
 
     const animate = (timeStamp: number) => {
       const deltaTime = timeStamp - lastTime;
       lastTime = timeStamp;
 
+      // Toggle between blood modes every 10 seconds
+      modeTimer += deltaTime;
+      if (modeTimer > 10000) { // 10 seconds
+        particleSystem.toggleMode();
+        modeTimer = 0;
+      }
+
       particleTimer += deltaTime;
-      if (particleTimer > 200) { // Add particles more frequently
-        // Add multiple particles for better bleeding effect
-        for (let i = 0; i < 2; i++) {
+      const frequency = particleSystem.currentMode === 'long' ? 300 : 200;
+      if (particleTimer > frequency) {
+        // Add particles based on mode
+        const particleCount = particleSystem.currentMode === 'long' ? 1 : 2;
+        for (let i = 0; i < particleCount; i++) {
           particleSystem.addParticle();
         }
         particleTimer = 0;
@@ -206,7 +238,7 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
         className="absolute pointer-events-none"
         style={{
           left: 0,
-          top: 0,
+          top: '100%', // Start from bottom of text
           zIndex: 10, // Above the text so blood is visible
         }}
       />
