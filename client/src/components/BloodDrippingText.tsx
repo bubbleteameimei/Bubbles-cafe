@@ -161,8 +161,9 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
         particleTimer = 0;
       }
 
-      // Clear canvas completely - no trails (removing the trail effect from HTML)
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Use subtle trail like HTML code but remove the box
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       particleSystem.update();
       particleSystem.draw(ctx);
