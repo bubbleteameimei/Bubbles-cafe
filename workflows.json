@@ -1,14 +1,11 @@
 {
-  "workflows": [
-    {
-      "name": "Start Dev Server",
+  "version": "1.0",
+  "workflows": {
+    "Start application": {
       "command": "npm run dev",
-      "wait_for_port": 3002
-    },
-    {
-      "name": "dev",
-      "command": "npm run dev",
-      "wait_for_port": 3002
+      "description": "Start the Express server and Vite development environment",
+      "env": {},
+      "restartPolicy": "always"
     }
-  ]
+  }
 }
