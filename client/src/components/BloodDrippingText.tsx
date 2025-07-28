@@ -5,9 +5,7 @@ interface BloodDrippingTextProps {
   className?: string;
 }
 
-type BloodMode = 'thin' | 'thick';
-
-class BloodParticle {
+class Particle {
   x: number;
   y: number;
   vx: number;
@@ -16,139 +14,63 @@ class BloodParticle {
   height: number;
   color: string;
   lifetime: number;
-  maxLifetime: number;
   gravity: number;
   delay: number;
   delayLeft: number;
-  mode: BloodMode;
-  viscosity: number;
-  opacity: number;
 
-  constructor(x: number, y: number, mode: BloodMode = 'thin') {
+  constructor(x: number, y: number) {
     this.x = x;
     this.y = y;
-    this.mode = mode;
-    
-    if (mode === 'thick') {
-      // Thick, gooey blood drops
-      this.vx = (Math.random() - 0.5) * 0.3;
-      this.vy = 0;
-      this.width = Math.random() * 3 + 2; // Much thicker (2-5px)
-      this.height = this.width * 6; // More elongated for gooey effect
-      this.gravity = 0.08; // Slower fall for thick liquid
-      this.viscosity = 0.98; // High viscosity for gooey movement
-      this.delay = Math.random() * 40;
-      this.maxLifetime = Math.random() * 120 + 180;
-    } else {
-      // Thin, flowing blood
-      this.vx = (Math.random() - 0.5) * 0.4;
-      this.vy = 0;
-      this.width = Math.random() * 2 + 1; // Medium thickness (1-3px)
-      this.height = this.width * 8; // Very elongated for flowing effect
-      this.gravity = 0.12; // Faster fall for thin liquid
-      this.viscosity = 0.995; // Lower viscosity for flowing
-      this.delay = Math.random() * 20;
-      this.maxLifetime = Math.random() * 80 + 100;
-    }
-    
-    this.lifetime = this.maxLifetime;
+    this.vx = (Math.random() - 0.5) * 0.2;
+    this.vy = 0;
+    this.width = Math.random() * 1 + 0.5;
+    this.height = this.width * 4;
+    this.color = `rgba(139, 0, 0, ${Math.random() * 0.3 + 0.7})`;
+    this.lifetime = Math.random() * 60 + 60;
+    this.gravity = 0.05;
+    this.delay = Math.random() * 30;
     this.delayLeft = this.delay;
-    this.opacity = Math.random() * 0.4 + 0.6; // 0.6-1.0 opacity
-    this.color = `rgba(139, 0, 0, ${this.opacity})`;
   }
 
   update() {
     if (this.delayLeft > 0) {
       this.delayLeft--;
-      return;
+    } else {
+      this.vy += this.gravity;
+      this.x += this.vx;
+      this.y += this.vy;
     }
-
-    // Physics simulation with viscosity
-    this.vy += this.gravity;
-    this.vx *= this.viscosity; // Apply viscosity to horizontal movement
-    this.vy *= 0.999; // Slight air resistance
-    
-    this.x += this.vx;
-    this.y += this.vy;
-    
-    // Fade out as lifetime decreases
-    const fadeRatio = this.lifetime / this.maxLifetime;
-    this.opacity = (Math.random() * 0.4 + 0.6) * fadeRatio;
-    this.color = `rgba(139, 0, 0, ${this.opacity})`;
-    
     this.lifetime--;
   }
 
   draw(ctx: CanvasRenderingContext2D) {
-    if (this.lifetime > 0 && this.delayLeft <= 0) {
-      // Create gooey liquid effect with gradient
-      const gradient = ctx.createRadialGradient(
-        this.x, this.y, 0,
-        this.x, this.y, this.width
-      );
-      gradient.addColorStop(0, `rgba(139, 0, 0, ${this.opacity})`);
-      gradient.addColorStop(0.7, `rgba(100, 0, 0, ${this.opacity * 0.8})`);
-      gradient.addColorStop(1, `rgba(60, 0, 0, ${this.opacity * 0.4})`);
-      
+    if (this.lifetime > 0) {
       ctx.beginPath();
       ctx.ellipse(this.x, this.y, this.width / 2, this.height / 2, 0, 0, Math.PI * 2);
-      ctx.fillStyle = gradient;
+      ctx.fillStyle = this.color;
       ctx.fill();
-      
-      // Add slight glow effect for realism
-      ctx.shadowColor = 'rgba(139, 0, 0, 0.3)';
-      ctx.shadowBlur = 2;
-      ctx.fill();
-      ctx.shadowBlur = 0;
     }
   }
 }
 
-class BloodSystem {
-  particles: BloodParticle[];
+class ParticleSystem {
+  particles: Particle[];
   dripPoints: Array<{ x: number; y: number }>;
-  currentMode: BloodMode;
-  modeTimer: number;
-  letterPixels: Map<string, Array<{ x: number; y: number }>>;
 
   constructor() {
     this.particles = [];
     this.dripPoints = [];
-    this.currentMode = 'thin';
-    this.modeTimer = 0;
-    this.letterPixels = new Map();
   }
 
   setDripPoints(points: Array<{ x: number; y: number }>) {
     this.dripPoints = points;
   }
 
-  setLetterPixels(letterMap: Map<string, Array<{ x: number; y: number }>>) {
-    this.letterPixels = letterMap;
-  }
-
   addParticle() {
     if (this.dripPoints.length > 0) {
-      // Select from bottom edge points for dripping effect
-      const bottomPoints = this.dripPoints.filter(point => {
-        // Check if this point is near the bottom of any letter
-        for (const [, pixels] of this.letterPixels) {
-          const maxY = Math.max(...pixels.map(p => p.y));
-          if (Math.abs(point.y - maxY) < 5) {
-            return true;
-          }
-        }
-        return false;
-      });
-      
-      const points = bottomPoints.length > 0 ? bottomPoints : this.dripPoints;
-      const point = points[Math.floor(Math.random() * points.length)];
-      this.particles.push(new BloodParticle(point.x, point.y, this.currentMode));
+      const point = this.dripPoints[Math.floor(Math.random() * this.dripPoints.length)];
+      this.particles.push(new Particle(point.x, point.y));
     }
-  }
-
-  toggleMode() {
-    this.currentMode = this.currentMode === 'thin' ? 'thick' : 'thin';
   }
 
   update() {
@@ -165,7 +87,7 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   const animationRef = useRef<number>();
-  const bloodSystemRef = useRef<BloodSystem>();
+  const particleSystemRef = useRef<ParticleSystem>();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -175,104 +97,80 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Get the text element's position and size
+    // Get text position and size precisely
     const updateCanvasSize = () => {
       const rect = textElement.getBoundingClientRect();
-      
-      canvas.width = rect.width;
-      canvas.height = window.innerHeight - rect.bottom; // From bottom of text to viewport bottom
-      canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${window.innerHeight - rect.bottom}px`;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     };
 
     updateCanvasSize();
 
-    // Create a hidden canvas to analyze text pixels
+    // Create text canvas for pixel analysis - exact same as HTML code
     const textCanvas = document.createElement('canvas');
     textCanvas.width = canvas.width;
-    textCanvas.height = 200; // Enough height for the text
+    textCanvas.height = canvas.height;
     const textCtx = textCanvas.getContext('2d');
     
     if (!textCtx) return;
 
-    // Match the font style from the actual text element
+    // Get text position for proper positioning
+    const textRect = textElement.getBoundingClientRect();
+    
+    // Match font exactly from the actual element
     const computedStyle = window.getComputedStyle(textElement);
-    const fontSize = Math.min(100, parseInt(computedStyle.fontSize) || 100); // Scale down for analysis
-    textCtx.font = `${computedStyle.fontWeight} ${fontSize}px ${computedStyle.fontFamily}`;
+    const fontWeight = computedStyle.fontWeight;
+    const fontSize = parseInt(computedStyle.fontSize) || 100;
+    const fontFamily = computedStyle.fontFamily;
+    
+    textCtx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
     textCtx.fillStyle = '#c8102e';
     textCtx.textAlign = 'center';
-    textCtx.fillText(text, textCanvas.width / 2, fontSize + 20);
+    
+    // Position text exactly where it appears on screen
+    textCtx.fillText(text, textRect.left + textRect.width / 2, textRect.top + textRect.height / 2);
 
-    // Find all drip points from within the text shape - collect pixels where text is present
+    // Find drip points from bottom edge - exact HTML code logic
     const imageData = textCtx.getImageData(0, 0, textCanvas.width, textCanvas.height);
     const dripPoints: Array<{ x: number; y: number }> = [];
     
-    // Collect all pixels where the text is present - sampling every few pixels for performance
-    for (let y = 0; y < textCanvas.height; y += 2) {
-      for (let x = 0; x < textCanvas.width; x += 3) {
-        const index = (y * textCanvas.width + x) * 4 + 3; // Alpha channel
-        if (imageData.data[index] > 0) {
-          // Scale positions to match the actual canvas coordinates (relative to canvas origin)
-          const scaledX = (x / textCanvas.width) * canvas.width;
-          const scaledY = (y / textCanvas.height) * (fontSize + 40); // Relative to text height in canvas
-          dripPoints.push({ x: scaledX, y: scaledY });
-        }
-      }
-    }
-
-    // Find bottom edge points specifically for dripping
-    const bottomEdgePoints: Array<{ x: number; y: number }> = [];
     for (let x = 0; x < textCanvas.width; x++) {
       for (let y = textCanvas.height - 1; y >= 0; y--) {
         const index = (y * textCanvas.width + x) * 4 + 3;
         if (imageData.data[index] > 0) {
-          const scaledX = (x / textCanvas.width) * canvas.width;
-          const scaledY = (y / textCanvas.height) * (fontSize + 40);
-          bottomEdgePoints.push({ x: scaledX, y: scaledY });
-          break; // Found bottom-most pixel for this x coordinate
+          dripPoints.push({ x, y });
+          break;
         }
       }
     }
 
-    // Initialize enhanced blood system
-    const bloodSystem = new BloodSystem();
-    bloodSystem.setDripPoints(bottomEdgePoints.length > 0 ? bottomEdgePoints : dripPoints);
-    bloodSystemRef.current = bloodSystem;
+    const particleSystem = new ParticleSystem();
+    particleSystem.setDripPoints(dripPoints);
 
     let lastTime = 0;
     let particleTimer = 0;
-    let modeTimer = 0;
 
     const animate = (timeStamp: number) => {
       const deltaTime = timeStamp - lastTime;
       lastTime = timeStamp;
 
-      // Toggle between blood modes every 8 seconds for variety
-      modeTimer += deltaTime;
-      if (modeTimer > 8000) {
-        bloodSystem.toggleMode();
-        modeTimer = 0;
-      }
-
       particleTimer += deltaTime;
-      // Adjust frequency based on mode for realistic effect
-      const frequency = bloodSystem.currentMode === 'thick' ? 400 : 250;
-      if (particleTimer > frequency) {
-        // Add multiple particles for better bleeding density
-        const particleCount = bloodSystem.currentMode === 'thick' ? 2 : 3;
-        for (let i = 0; i < particleCount; i++) {
-          bloodSystem.addParticle();
-        }
+      if (particleTimer > 300) {
+        particleSystem.addParticle();
         particleTimer = 0;
       }
 
-      // Use subtle trail effect for gooey realism
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.02)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Clear canvas completely - no trails
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Update and draw blood particles
-      bloodSystem.update();
-      bloodSystem.draw(ctx);
+      // Draw the text on canvas to match exactly
+      ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+      ctx.fillStyle = '#c8102e';
+      ctx.textAlign = 'center';
+      ctx.fillText(text, textRect.left + textRect.width / 2, textRect.top + textRect.height / 2);
+
+      particleSystem.update();
+      particleSystem.draw(ctx);
 
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -296,16 +194,17 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
 
   return (
     <div className="relative inline-block">
-      <span ref={textRef} className={className}>
+      <span ref={textRef} className={className} style={{ opacity: 0 }}>
         {text}
       </span>
       <canvas
         ref={canvasRef}
         className="absolute pointer-events-none"
         style={{
+          position: 'fixed',
           left: 0,
-          top: '100%', // Start from bottom of text
-          zIndex: 10, // Above the text so blood is visible
+          top: 0,
+          zIndex: 10,
         }}
       />
     </div>
