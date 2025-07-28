@@ -41,6 +41,129 @@
   -webkit-text-stroke: 0 transparent !important;
 }
 
+/* Blood dripping effect from CAFE text */
+.blood-drops-container {
+  overflow: visible;
+  z-index: 20;
+}
+
+.blood-drop {
+  position: absolute;
+  width: 3px;
+  background: linear-gradient(to bottom, #dc2626, #991b1b, #7f1d1d);
+  border-radius: 0 0 50% 50%;
+  opacity: 0;
+  animation: bloodDrip 4s infinite ease-in;
+}
+
+.blood-drop::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background: radial-gradient(circle, #dc2626, #991b1b);
+  border-radius: 50%;
+  opacity: 0.8;
+}
+
+.blood-drop-1 {
+  left: 15%;
+  height: 60px;
+  animation-delay: 0s;
+}
+
+.blood-drop-2 {
+  left: 35%;
+  height: 45px;
+  animation-delay: 0.8s;
+}
+
+.blood-drop-3 {
+  left: 55%;
+  height: 70px;
+  animation-delay: 1.6s;
+}
+
+.blood-drop-4 {
+  left: 75%;
+  height: 35px;
+  animation-delay: 2.4s;
+}
+
+.blood-drop-5 {
+  left: 85%;
+  height: 55px;
+  animation-delay: 3.2s;
+}
+
+@keyframes bloodDrip {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scaleY(0.3);
+  }
+  10% {
+    opacity: 0.8;
+    transform: translateY(0px) scaleY(0.6);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(20px) scaleY(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(200px) scaleY(1.2);
+  }
+  90% {
+    opacity: 0.6;
+    transform: translateY(250px) scaleY(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(300px) scaleY(0.3);
+  }
+}
+
+/* Enhanced blood effect on hover */
+.blood-drops-container:hover .blood-drop {
+  animation-duration: 2s;
+  opacity: 1;
+}
+
+/* Blood stains that appear on elements below */
+@keyframes bloodStain {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+}
+
+/* Add subtle blood stains to buttons when hovered */
+.group:hover::after {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  background: radial-gradient(circle, rgba(220, 38, 38, 0.3), rgba(153, 27, 27, 0.1));
+  border-radius: 50%;
+  animation: bloodStain 1s ease-out;
+  pointer-events: none;
+  z-index: 10;
+}
+
 /* Global responsive design fixes */
 @layer base {
   /* Completely disable the skeleton loading animation by overriding Tailwind's animate-pulse */
