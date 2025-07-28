@@ -21,14 +21,14 @@ class Particle {
   constructor(x: number, y: number) {
     this.x = x;
     this.y = y;
-    this.vx = (Math.random() - 0.5) * 0.2;
-    this.vy = 0;
-    this.width = Math.random() * 1 + 0.5;
-    this.height = this.width * 4;
-    this.color = `rgba(139, 0, 0, ${Math.random() * 0.3 + 0.7})`;
-    this.lifetime = Math.random() * 60 + 60;
-    this.gravity = 0.05;
-    this.delay = Math.random() * 30;
+    this.vx = (Math.random() - 0.5) * 0.2; // Small horizontal movement
+    this.vy = Math.random() * 0.3 + 0.1; // Start with small downward velocity
+    this.width = Math.random() * 0.6 + 0.2; // Very thin drops (0.2-0.8px)
+    this.height = this.width * 8; // Very elongated
+    this.color = `rgba(139, 0, 0, ${Math.random() * 0.3 + 0.7})`; // Dark blood
+    this.lifetime = Math.random() * 180 + 240; // Longer lifetime
+    this.gravity = 0.12; // Moderate gravity
+    this.delay = Math.random() * 15; // Short delay
     this.delayLeft = this.delay;
   }
 
@@ -39,6 +39,8 @@ class Particle {
       this.vy += this.gravity;
       this.x += this.vx;
       this.y += this.vy;
+      // Add slight damping to horizontal movement
+      this.vx *= 0.999;
     }
     this.lifetime--;
   }
@@ -102,9 +104,9 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
       const rect = textElement.getBoundingClientRect();
       
       canvas.width = rect.width;
-      canvas.height = window.innerHeight - rect.top; // Extend to bottom of viewport
-      canvas.style.left = `0px`;
-      canvas.style.top = `${rect.height}px`; // Start from bottom of text
+      canvas.height = window.innerHeight; // Full viewport height for bleeding effect
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${window.innerHeight}px`;
     };
 
     updateCanvasSize();
@@ -125,18 +127,23 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
     textCtx.textAlign = 'center';
     textCtx.fillText(text, textCanvas.width / 2, fontSize + 20);
 
-    // Find drip points from the bottom edge of the text
+    // Find all drip points from within the text shape - collect pixels where text is present
     const imageData = textCtx.getImageData(0, 0, textCanvas.width, textCanvas.height);
     const dripPoints: Array<{ x: number; y: number }> = [];
     
-    for (let x = 0; x < textCanvas.width; x++) {
-      for (let y = textCanvas.height - 1; y >= 0; y--) {
+    // Get text position for proper offset
+    const textRect = textElement.getBoundingClientRect();
+    const textTop = textRect.top;
+    
+    // Collect all pixels where the text is present - sampling every few pixels for performance
+    for (let y = 0; y < textCanvas.height; y += 2) {
+      for (let x = 0; x < textCanvas.width; x += 3) {
         const index = (y * textCanvas.width + x) * 4 + 3; // Alpha channel
         if (imageData.data[index] > 0) {
-          // Scale the x position to match the actual canvas width
+          // Scale positions to match the actual canvas and use absolute position
           const scaledX = (x / textCanvas.width) * canvas.width;
-          dripPoints.push({ x: scaledX, y: 0 });
-          break;
+          const scaledY = textTop + (y / textCanvas.height) * textRect.height;
+          dripPoints.push({ x: scaledX, y: scaledY });
         }
       }
     }
@@ -154,14 +161,16 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
       lastTime = timeStamp;
 
       particleTimer += deltaTime;
-      if (particleTimer > 300) { // Add particle every 300ms
-        particleSystem.addParticle();
+      if (particleTimer > 200) { // Add particles more frequently
+        // Add multiple particles for better bleeding effect
+        for (let i = 0; i < 2; i++) {
+          particleSystem.addParticle();
+        }
         particleTimer = 0;
       }
 
-      // Clear canvas with slight fade for trail effect
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Clear canvas completely - no trails
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Update and draw particles
       particleSystem.update();
@@ -194,10 +203,11 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
       </span>
       <canvas
         ref={canvasRef}
-        className="absolute pointer-events-none z-10"
+        className="absolute pointer-events-none"
         style={{
           left: 0,
-          top: '100%',
+          top: 0,
+          zIndex: 10, // Above the text so blood is visible
         }}
       />
     </div>
