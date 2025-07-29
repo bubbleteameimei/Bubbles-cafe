@@ -20,13 +20,13 @@ class Particle {
   constructor(x: number, y: number) {
     this.x = x;
     this.y = y;
-    this.vx = (Math.random() - 0.5) * 0.5;
-    this.vy = 0;
-    this.width = Math.random() * 10 + 10;
-    this.height = this.width * 3;
-    this.baseColor = `rgba(${Math.floor(Math.random() * 30) + 120}, 0, 0, 0.9)`;
-    this.lifetime = Math.random() * 150 + 150;
-    this.gravity = 0.2;
+    this.vx = (Math.random() - 0.5) * 0.3;
+    this.vy = Math.random() * 0.1; // Slight initial downward speed for natural start
+    this.width = Math.random() * 3 + 2; // Reduced to 2-5px
+    this.height = this.width * 3; // 6-15px tall
+    this.baseColor = `rgba(139, 0, 0, ${0.7 + Math.random() * 0.2})`; // Consistent opacity
+    this.lifetime = Math.random() * 120 + 120;
+    this.gravity = 0.15;
     this.trail = [];
   }
 
@@ -34,38 +34,38 @@ class Particle {
     this.vy += this.gravity;
     this.x += this.vx;
     this.y += this.vy;
-    this.trail.push({ x: this.x, y: this.y, alpha: 0.9 });
-    if (this.trail.length > 20) this.trail.shift();
+    this.trail.push({ x: this.x, y: this.y, alpha: 0.8 });
+    if (this.trail.length > 15) this.trail.shift(); // Shorter trail for realism
     this.lifetime--;
   }
 
   draw(ctx: CanvasRenderingContext2D) {
     if (this.lifetime > 0) {
-      // Draw trail with gradient
+      // Draw trail with smooth gradient
       for (let i = this.trail.length - 1; i >= 0; i--) {
         const segment = this.trail[i];
         const alpha = segment.alpha * (i / this.trail.length);
         ctx.beginPath();
-        ctx.ellipse(segment.x, segment.y, this.width / 2 * (i / this.trail.length), this.height / 2 * (i / this.trail.length), 0, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${Math.floor(Math.random() * 30) + 120}, 0, 0, ${alpha})`;
+        ctx.ellipse(segment.x, segment.y, this.width / 2 * (i / this.trail.length) * 0.8, this.height / 2 * (i / this.trail.length) * 0.8, 0, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(139, 0, 0, ${alpha})`;
         ctx.fill();
       }
       
-      // Draw main particle with gradient
+      // Draw main particle
       ctx.beginPath();
       ctx.ellipse(this.x, this.y, this.width / 2, this.height / 2, 0, 0, Math.PI * 2);
       const gradient = ctx.createLinearGradient(this.x - this.width / 2, this.y - this.height / 2, this.x + this.width / 2, this.y + this.height / 2);
       gradient.addColorStop(0, this.baseColor);
-      gradient.addColorStop(1, `rgba(${Math.floor(Math.random() * 30) + 120}, 0, 0, 0.5)`);
+      gradient.addColorStop(1, `rgba(139, 0, 0, 0.3)`);
       ctx.fillStyle = gradient;
       ctx.fill();
 
-      // Draw glossy highlight
-      const highlightX = this.x - this.width / 4;
-      const highlightY = this.y - this.height / 4;
+      // Subtle glossy highlight
+      const highlightX = this.x - this.width / 6;
+      const highlightY = this.y - this.height / 6;
       ctx.beginPath();
-      ctx.ellipse(highlightX, highlightY, this.width / 4, this.height / 4, 0, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255, 50, 50, 0.5)';
+      ctx.ellipse(highlightX, highlightY, this.width / 6, this.height / 6, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 50, 50, 0.3)';
       ctx.fill();
     }
   }
@@ -181,10 +181,12 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
       lastTime = timeStamp;
 
       particleTimer += deltaTime;
-      if (particleTimer > 200) { // Faster particle generation for richer effect
-        // Add multiple particles like in the HTML version
-        for (let i = 0; i < 3; i++) {
-          particleSystem.addParticle();
+      if (particleTimer > 100) { // More frequent generation for natural bleed
+        // Add new particles more frequently with probability control
+        for (let i = 0; i < 5; i++) { // Increased to 5 for denser, natural bleed
+          if (Math.random() < 0.7) { // 70% chance per particle
+            particleSystem.addParticle();
+          }
         }
         particleTimer = 0;
       }
