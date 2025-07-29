@@ -218,13 +218,19 @@ async function startServer() {
       app.use(requestLogger);
       
       // Register main routes
+      console.log("DEBUG: About to register main routes");
       registerRoutes(app);
+      console.log("DEBUG: Main routes registered successfully");
       
       // Register user feedback routes
+      console.log("DEBUG: About to register user feedback routes");
       registerUserFeedbackRoutes(app, storage);
+      console.log("DEBUG: User feedback routes registered successfully");
       
       // Register recommendation routes
+      console.log("DEBUG: About to register recommendation routes");
       registerRecommendationsRoutes(app, storage);
+      console.log("DEBUG: Recommendation routes registered successfully");
       
       
       // Register privacy settings routes
