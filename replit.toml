@@ -1,23 +1,28 @@
-modules = ["nodejs-20", "web", "postgresql-16", "python-3.11"]
-run = "bash -c 'npm install && npm run dev'"
+# Define required modules for the project
+modules = ["nodejs-20", "web", "postgresql-16"]
+
+# Command to run the application locally
+run = "npm run dev"
+
+# Hidden files/folders to exclude from the UI
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
+# Nix package channel for dependencies
 [nix]
 channel = "stable-24_05"
 
+# Deployment configuration for Google Cloud Run
 [deployment]
 deploymentTarget = "cloudrun"
 build = ["sh", "-c", "npm install && npm run build"]
 run = ["sh", "-c", "npm start"]
 
-[[ports]]
-localPort = 3002
-externalPort = 80
-
+# Single port mapping for local development
 [[ports]]
 localPort = 3002
 externalPort = 3002
 
+# Workflows for different run scenarios
 [workflows]
 runButton = "Start Web Feedback App"
 
@@ -25,8 +30,25 @@ runButton = "Start Web Feedback App"
 name = "Start Web Feedback App"
 author = 40492995
 mode = "sequential"
-
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "bash -c 'npm install && npm run dev'"
+waitForPort = 3002
+
+[[workflows.workflow]]
+name = "Build & Start App"
+author = 40492995
+mode = "sequential"
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash -c 'npm install && npm run build && npm start'"
+waitForPort = 3002
+
+[[workflows.workflow]]
+name = "Initialize DB and Launch"
+author = 40492995
+mode = "sequential"
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash -c 'npm install && npx tsx scripts/init-db.ts && npm run dev'"
 waitForPort = 3002
