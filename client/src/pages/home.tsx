@@ -122,34 +122,34 @@ export default function Home() {
         <div className="relative min-h-screen overflow-x-hidden flex flex-col home-page">
           {/* We are using the CSS-based background image instead of this div (see index.css body.body-home::before) */}
             
-          {/* Invisible barrier to prevent scrolling under header */}
-          <div className="relative w-full h-2 sm:h-3 md:h-4 lg:h-3" aria-hidden="true"></div>
+          {/* Minimal barrier - moved closer to header */}
+          <div className="relative w-full h-1" aria-hidden="true"></div>
           
-          {/* Content container with proper z-index to appear above background - full width */}
-          <div className="relative z-10 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-8 md:pb-10 lg:pb-12 text-center w-full min-h-screen">
+          {/* Content container moved upward */}
+          <div className="relative z-10 flex flex-col items-center justify-start pt-0 pb-4 text-center w-full min-h-screen">
             <div className="relative">
-              <h1 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-white flex flex-col items-center">
+              <h1 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-1 tracking-wider text-white flex flex-col items-center">
                 <span>BUBBLES</span>
                 <BloodDrippingText 
                   text="CAFE" 
-                  className="mt-1 md:mt-2 text-red-700 relative"
+                  className="mt-0 text-red-700 relative"
                 />
               </h1>
             </div>
           
-            {/* Minimal spacing */}
-            <div className="h-2 sm:h-3 md:h-4 lg:h-5 xl:h-6"></div>
+            {/* Removed excessive spacing */}
+            <div className="h-1"></div>
           
-            <div className="space-y-2 sm:space-y-3 md:space-y-4 mb-1 sm:mb-2 md:mb-3 lg:mb-4 flex-grow flex flex-col justify-between">
+            <div className="space-y-1 mb-2 flex-grow flex flex-col justify-between">
               <div>
-                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white w-full leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium">
+                <p className="text-lg sm:text-xl md:text-2xl text-white w-full leading-normal px-2 font-medium">
                   Every story here is a portal to the unexpected,
                   the unexplained, and <span className="italic text-red-700">the unsettling<span className="text-red-700 font-bold">.</span></span>
                 </p>
               </div>
 
               <div>
-                <div className="flex flex-col gap-3 w-full max-w-md mx-auto px-4">
+                <div className="flex flex-col gap-2 w-full max-w-md mx-auto px-4">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -208,22 +208,22 @@ export default function Home() {
                 </div>
               </div>
               
-              <div className="mt-1 sm:mt-2 md:mt-3 lg:mt-4 mb-1 sm:mb-2 md:mb-3 lg:mb-4">
+              <div className="mt-2 mb-1">
                 <BuyMeCoffeeButton />
               </div>
               
               {posts.length > 0 && (
-                <div className="mt-3 sm:mt-4 md:mt-5 lg:mt-6 text-center space-y-2 sm:space-y-3 md:space-y-4">
-                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
+                <div className="mt-3 text-center space-y-2">
+                  <p className="text-base sm:text-lg font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <div 
                     onClick={() => setLocation('/reader')} 
-                    className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200 w-full p-2 md:p-4 lg:p-6 rounded-lg hover:bg-foreground/5 dark:hover:bg-foreground/10 bg-black/40 backdrop-blur-sm"
+                    className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200 w-full p-3 rounded-lg hover:bg-foreground/5 dark:hover:bg-foreground/10 bg-black/40 backdrop-blur-sm"
                   >
                     <h2 
-                      className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-5 text-white group-hover:text-primary transition-colors px-2"
+                      className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 text-white group-hover:text-primary transition-colors px-2"
                       dangerouslySetInnerHTML={{ __html: posts[0]?.title?.rendered || 'Featured Story' }}
                     />
-                    <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 w-full mb-3 sm:mb-4 md:mb-5 line-clamp-2 px-2 md:px-4 leading-relaxed md:leading-relaxed">
+                    <div className="text-sm sm:text-base md:text-lg text-white/90 w-full mb-2 line-clamp-2 px-2 leading-normal">
                       {posts[0]?.content?.rendered && (
                         <motion.span
                           initial={{ opacity: 0, y: 10 }}
@@ -234,11 +234,11 @@ export default function Home() {
                         </motion.span>
                       )}
                     </div>
-                    <div className="flex items-center justify-center text-sm sm:text-base md:text-lg lg:text-xl text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium">
+                    <div className="flex items-center justify-center text-sm sm:text-base text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium">
                       Read full story 
-                      <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 group-hover:translate-x-1 transition-transform" />
+                      <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </div>
-                    <div className="text-sm sm:text-base md:text-lg font-medium text-white/70 mt-3 md:mt-4">
+                    <div className="text-xs sm:text-sm font-medium text-white/70 mt-2">
                       {posts[0]?.date ? formatDate(posts[0].date) : ''}
                     </div>
                   </div>
