@@ -18,7 +18,6 @@ import { createLogger, requestLogger } from "./utils/debug-logger";
 import { registerUserFeedbackRoutes } from "./routes/user-feedback";
 import { registerRecommendationsRoutes } from "./routes/recommendations";
 
-
 import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
 import { setupWordPressSyncSchedule } from "./wordpress-sync"; // Using the declaration file
@@ -28,6 +27,7 @@ import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark r
 import { setCsrfToken, validateCsrfToken, csrfTokenToLocals, CSRF_TOKEN_NAME } from "./middleware/csrf-protection";
 import { runMigrations } from "./migrations"; // Import our custom migrations
 import { setupCors } from "./cors-setup";
+import { queryPerformanceMiddleware, wrapDbWithProfiler } from "./middleware/query-performance";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -35,16 +35,39 @@ const isDev = process.env.NODE_ENV !== "production";
 const PORT = parseInt(process.env.PORT || "3002", 10);
 const HOST = '0.0.0.0';
 
+// Performance monitoring
+const startupStart = performance.now();
+console.log('🚀 Starting server initialization...');
+
 // Create server instance outside startServer for proper cleanup
 let server: ReturnType<typeof createServer>;
 
-// Configure basic middleware
+// Configure basic middleware with optimizations
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(compression());
+
+// Enable compression for better performance
+app.use(compression({
+  level: 6, // Good balance between compression ratio and speed
+  threshold: 1024, // Only compress responses larger than 1KB
+  filter: (req, res) => {
+    // Don't compress responses with this request header
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    // Use default compression filter
+    return compression.filter(req, res);
+  }
+}));
 
 // Configure CORS for cross-domain requests when deployed on Vercel/Render
 setupCors(app);
+
+// Add query performance monitoring
+app.use(queryPerformanceMiddleware);
+
+// Initialize database profiling for performance monitoring
+wrapDbWithProfiler(db);
 
 // Session already handles cookies for us
 // No additional cookie parser needed for CSRF protection
