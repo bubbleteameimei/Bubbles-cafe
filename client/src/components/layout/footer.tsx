@@ -23,9 +23,9 @@ export default function Footer() {
         marginLeft: 'calc(-50vw + 50%)'
       }}
     >
-      <div className="w-full flex flex-col items-center justify-center py-4 px-4">
+      <div className="w-full flex flex-col items-center justify-center py-2 px-4">
         {/* Copyright text - centered */}
-        <div className="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap mb-2">
+        <div className="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap mb-1">
           © Bubble's Cafe 2025.&nbsp;All rights reserved.
         </div>
         

@@ -17,34 +17,72 @@ class Particle {
   gravity: number;
   delay: number;
   delayLeft: number;
+  trail: Array<{ x: number; y: number; alpha: number }>;
+  startY: number;
 
   constructor(x: number, y: number) {
     this.x = x;
     this.y = y;
-    this.vx = (Math.random() - 0.5) * 0.2;
+    this.startY = y;
+    this.vx = (Math.random() - 0.5) * 0.1; // Reduced horizontal drift
     this.vy = 0;
-    this.width = Math.random() * 2 + 1; // Increased size: 1-3px
-    this.height = this.width * 4;
-    this.color = `rgba(139, 0, 0, ${Math.random() * 0.3 + 0.7})`;
-    this.lifetime = Math.random() * 60 + 60;
-    this.gravity = 0.05;
+    this.width = Math.random() * 1.5 + 0.5; // Smaller size: 0.5-2px
+    this.height = this.width * 3;
+    this.color = `rgba(139, 0, 0, ${Math.random() * 0.2 + 0.8})`;
+    this.lifetime = Math.random() * 80 + 100; // Longer lifetime for limited range
+    this.gravity = 0.03; // Reduced gravity
     this.delay = Math.random() * 30;
     this.delayLeft = this.delay;
+    this.trail = [];
   }
 
   update() {
     if (this.delayLeft > 0) {
       this.delayLeft--;
     } else {
-      this.vy += this.gravity;
-      this.x += this.vx;
-      this.y += this.vy;
+      // Limit drop distance to prevent drops going too far
+      const maxDropDistance = 200; // Maximum pixels to drop
+      if (this.y - this.startY < maxDropDistance) {
+        this.vy += this.gravity;
+        this.x += this.vx;
+        this.y += this.vy;
+        
+        // Add to trail
+        this.trail.push({ x: this.x, y: this.y, alpha: 1.0 });
+        
+        // Limit trail length
+        if (this.trail.length > 8) {
+          this.trail.shift();
+        }
+        
+        // Fade trail
+        this.trail.forEach((point, index) => {
+          point.alpha = (index + 1) / this.trail.length * 0.6;
+        });
+      } else {
+        // Stop the particle if it has traveled too far
+        this.lifetime = 0;
+      }
     }
     this.lifetime--;
   }
 
   draw(ctx: CanvasRenderingContext2D) {
     if (this.lifetime > 0) {
+      // Draw trail first
+      this.trail.forEach((point, index) => {
+        if (index > 0) {
+          const prevPoint = this.trail[index - 1];
+          ctx.beginPath();
+          ctx.moveTo(prevPoint.x, prevPoint.y);
+          ctx.lineTo(point.x, point.y);
+          ctx.strokeStyle = `rgba(139, 0, 0, ${point.alpha * 0.4})`;
+          ctx.lineWidth = this.width * 0.5;
+          ctx.stroke();
+        }
+      });
+      
+      // Draw main droplet
       ctx.beginPath();
       ctx.ellipse(this.x, this.y, this.width / 2, this.height / 2, 0, 0, Math.PI * 2);
       ctx.fillStyle = this.color;
@@ -128,18 +166,29 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
     textCtx.textAlign = 'center';
     
     // Position text exactly where it appears on screen using screen coordinates
-    textCtx.fillText(text, textRect.left + textRect.width / 2, textRect.top + textRect.height / 2);
+    const textX = textRect.left + textRect.width / 2;
+    const textY = textRect.top + textRect.height * 0.75; // Adjust vertical position for better baseline
+    textCtx.fillText(text, textX, textY);
 
     // Find drip points using exact HTML code logic - bottom-to-top scanning
-    const imageData = textCtx.getImageData(0, 0, textCanvas.width, textCanvas.height);
+    // Limit scanning area to just around the text to prevent stray drops
+    const scanStartX = Math.max(0, textRect.left - 10);
+    const scanEndX = Math.min(textCanvas.width, textRect.right + 10);
+    const scanStartY = Math.max(0, textRect.top - 10);
+    const scanEndY = Math.min(textCanvas.height, textRect.bottom + 10);
+    
+    const imageData = textCtx.getImageData(scanStartX, scanStartY, scanEndX - scanStartX, scanEndY - scanStartY);
     const dripPoints: Array<{ x: number; y: number }> = [];
     
-    // Follow HTML code exactly - scan each column from bottom to top
-    for (let x = 0; x < textCanvas.width; x++) {
-      for (let y = textCanvas.height - 1; y >= 0; y--) {
-        const index = (y * textCanvas.width + x) * 4 + 3; // Alpha channel
-        if (imageData.data[index] > 0) {
-          dripPoints.push({ x, y });
+    // Follow HTML code exactly - scan each column from bottom to top within text bounds
+    for (let x = 0; x < scanEndX - scanStartX; x += 3) { // Sample every 3rd pixel for performance
+      for (let y = scanEndY - scanStartY - 1; y >= 0; y--) {
+        const index = (y * (scanEndX - scanStartX) + x) * 4 + 3; // Alpha channel
+        if (imageData.data[index] > 128) { // Higher threshold for better detection
+          dripPoints.push({ 
+            x: scanStartX + x, 
+            y: scanStartY + y 
+          });
           break; // Found the bottom-most pixel for this column - exact HTML logic
         }
       }
@@ -156,7 +205,7 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
       lastTime = timeStamp;
 
       particleTimer += deltaTime;
-      if (particleTimer > 300) {
+      if (particleTimer > 500) { // Slower particle generation
         particleSystem.addParticle();
         particleTimer = 0;
       }
