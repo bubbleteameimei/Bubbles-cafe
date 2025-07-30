@@ -14,15 +14,11 @@ import BloodDrippingText from "@/components/BloodDrippingText";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const [imageLoaded, setImageLoaded] = useState(false);
   
   // Basic setup for homepage without background images
   useEffect(() => {
     // Set body to default background
     document.body.style.backgroundColor = "hsl(var(--background))";
-    
-    // Mark as loaded for consistency
-    setImageLoaded(true);
     
     return () => {
       // Clean up styling
@@ -38,11 +34,6 @@ export default function Home() {
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
-  
-  // Function to navigate to a story detail page
-  const navigateToStory = (slug: string) => {
-    setLocation(`/reader/${slug}`);
-  };
 
   // Format date helper
   const formatDate = (date: string) => {
