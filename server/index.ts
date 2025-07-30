@@ -170,224 +170,91 @@ import setupDatabase from '../scripts/setup-db';
 import pushSchema from '../scripts/db-push';
 import seedFromWordPressAPI from '../scripts/api-seed';
 
+async function setupDatabaseAsync() {
+  try {
+    serverLogger.info('🗄️ Setting up database connection...');
+    
+    // Test database connection
+    const testQuery = await db.select({ count: count() }).from(posts);
+    serverLogger.info('✅ Database connection established', { 
+      postsCount: testQuery[0]?.count || 0 
+    });
+
+    // Only seed if database is empty (prevent repeated seeding)
+    if (!testQuery[0]?.count || testQuery[0].count === 0) {
+      serverLogger.info('📦 Database appears empty, starting background seeding...');
+      // Run seeding in background without blocking
+      seedDatabase().catch(error => {
+        serverLogger.error('❌ Background seeding failed:', error);
+      });
+    }
+    
+  } catch (error) {
+    serverLogger.error('❌ Database setup failed:', error);
+    // Don't crash server, continue with limited functionality
+  }
+}
+
 async function startServer() {
   try {
-    serverLogger.info('Starting server initialization', {
+    const startupStart = performance.now();
+    serverLogger.info('🚀 Starting server initialization', {
       environment: process.env.NODE_ENV,
       host: HOST,
       port: PORT
     });
 
-    // Setup database connection first
-    try {
-      // Ensure DATABASE_URL is properly set
-      serverLogger.info('Setting up database connection...');
-      await setupDatabase();
-      
-      // Check database connection
-      try {
-        // This may fail if tables don't exist yet
-        const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
-        serverLogger.info('Database connected, tables exist', { postsCount });
-        
-        // Run migrations to ensure all tables defined in the schema exist
-        serverLogger.info('Running database migrations to create missing tables...');
-        await runMigrations();
-        serverLogger.info('Database migrations completed');
+    // Setup routes quickly (synchronous)
+    serverLogger.info('📍 Registering routes...');
+    registerRoutes(app);
+    registerUserFeedbackRoutes(app, storage);
+    registerRecommendationsRoutes(app, storage);
+    registerPrivacySettingsRoutes(app, storage);
+    registerWordPressSyncRoutes(app);
+    registerAnalyticsRoutes(app);
+    registerEmailServiceRoutes(app);
+    registerBookmarkRoutes(app);
     
-        if (postsCount === 0) {
-          serverLogger.info('Tables exist but no posts - seeding database from WordPress API...');
-          await seedFromWordPressAPI();
-          serverLogger.info('Database seeding from WordPress API completed');
-        }
-      } catch (tableError) {
-        serverLogger.warn('Database tables check failed, attempting to create schema', { 
-          error: tableError instanceof Error ? tableError.message : 'Unknown error' 
-        });
-        
-        // If tables don't exist, push the schema
-        serverLogger.info('Creating database schema...');
-        await pushSchema();
-        serverLogger.info('Schema created, seeding data from WordPress API...');
-        
-        try {
-          await seedFromWordPressAPI();
-          serverLogger.info('Database seeding from WordPress API completed');
-        } catch (seedError) {
-          serverLogger.error('Error seeding from WordPress API, falling back to XML seeding', {
-            error: seedError instanceof Error ? seedError.message : 'Unknown error'
-          });
-          
-          // Fall back to XML seeding if WordPress API fails
-          await seedDatabase();
-          serverLogger.info('Database seeding from XML completed');
-        }
-      }
-    } catch (dbError) {
-      serverLogger.error('Critical database setup error', { 
-        error: dbError instanceof Error ? dbError.message : 'Unknown error' 
-      });
-      throw dbError;
-    }
-
     // Create server instance
     server = createServer(app);
-
-    // Setup routes based on environment
+    
+    // Setup environment-specific middleware
     if (isDev) {
-      serverLogger.info('Setting up development environment');
-      
-      // Add global request logging in development
       app.use(requestLogger);
-      
-      // Register main routes
-      console.log("DEBUG: About to register main routes");
-      registerRoutes(app);
-      console.log("DEBUG: Main routes registered successfully");
-      
-      // Register user feedback routes
-      console.log("DEBUG: About to register user feedback routes");
-      registerUserFeedbackRoutes(app, storage);
-      console.log("DEBUG: User feedback routes registered successfully");
-      
-      // Register recommendation routes
-      console.log("DEBUG: About to register recommendation routes");
-      registerRecommendationsRoutes(app, storage);
-      console.log("DEBUG: Recommendation routes registered successfully");
-      
-      
-      // Register privacy settings routes
-      registerPrivacySettingsRoutes(app, storage);
-      
-      // Register WordPress sync routes
-      registerWordPressSyncRoutes(app);
-
-      // Register analytics routes
-      registerAnalyticsRoutes(app);
-      
-      // Register email service routes
-      registerEmailServiceRoutes(app);
-      
-      // Register bookmark routes
-      registerBookmarkRoutes(app);
-      
-      // Setup WordPress sync schedule (run every 5 minutes)
-      setupWordPressSyncSchedule(5 * 60 * 1000);
-      
-      // We've moved the post recommendations endpoint to main routes.ts
-      // registerPostRecommendationsRoutes(app);
-      
       await setupVite(app, server);
     } else {
-      serverLogger.info('Setting up production environment');
-      
-      // Register main routes
-      registerRoutes(app);
-      
-      // Register user feedback routes
-      registerUserFeedbackRoutes(app, storage);
-      
-      // Register recommendation routes
-      registerRecommendationsRoutes(app, storage);
-      
-      
-      // Register privacy settings routes
-      registerPrivacySettingsRoutes(app, storage);
-      
-      // Register WordPress sync routes
-      registerWordPressSyncRoutes(app);
-      
-      // Register analytics routes
-      registerAnalyticsRoutes(app);
-      
-      // Register email service routes
-      registerEmailServiceRoutes(app);
-      
-      // Register bookmark routes
-      registerBookmarkRoutes(app);
-      
-      // Setup WordPress sync schedule (run every 5 minutes)
-      setupWordPressSyncSchedule(5 * 60 * 1000);
-      
-      // We've moved the post recommendations endpoint to main routes.ts
-      // registerPostRecommendationsRoutes(app);
-      
       serveStatic(app);
     }
-
-    // Start listening with enhanced error handling and port notification
-    return new Promise<void>((resolve, reject) => {
-      const startTime = Date.now();
-      
-      // Log that we're about to start listening
-      console.log(`Attempting to start server on http://${HOST}:${PORT}...`);
-      
-      server.listen(PORT, HOST, () => {
-        const bootDuration = Date.now() - startTime;
-        console.log(`✅ Server started successfully on http://${HOST}:${PORT} in ${bootDuration}ms`);
-        serverLogger.info('Server started successfully', { 
-          url: `http://${HOST}:${PORT}`,
-          bootTime: `${bootDuration}ms`
-        });
-
-        // Send port readiness signal
-        if (process.send) {
-          process.send({
-            port: PORT,
-            wait_for_port: true,
-            ready: true
-          });
-          console.log('Sent port readiness signal to process');
-          serverLogger.debug('Sent port readiness signal');
-        }
-        
-        // Wait for a moment to ensure the server is fully ready
-        setTimeout(() => {
-          console.log('Server is now fully ready to accept connections');
-        }, 1000);
-
-        resolve();
-      });
-
-      server.on('error', (error: Error & { code?: string }) => {
-        if (error.code === 'EADDRINUSE') {
-          serverLogger.error('Port already in use', { port: PORT });
-        } else {
-          serverLogger.error('Server error', { 
-            error: error.message,
-            code: error.code,
-            stack: error.stack 
-          });
-        }
-        reject(error);
+    
+    // Start listening immediately for faster startup
+    server.listen(PORT, HOST, () => {
+      const startupTime = performance.now() - startupStart;
+      serverLogger.info(`✅ Server started successfully in ${startupTime.toFixed(2)}ms`, {
+        url: `http://${HOST}:${PORT}`,
+        environment: process.env.NODE_ENV
       });
     });
+
+    // Setup database connection asynchronously (non-blocking)
+    setupDatabaseAsync();
+    
   } catch (error) {
-    serverLogger.error('Critical startup error', { 
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
-    });
+    serverLogger.error('❌ Server startup failed:', error);
     process.exit(1);
   }
 }
 
-// Start the server
-startServer().catch(error => {
-  serverLogger.error('Critical startup error', {
-    error: error instanceof Error ? error.message : 'Unknown error',
-    stack: error instanceof Error ? error.stack : undefined
-  });
-  process.exit(1);
-});
-
-// Handle graceful shutdown
+// Graceful shutdown
 process.on('SIGTERM', () => {
-  serverLogger.info('SIGTERM received, initiating graceful shutdown');
+  serverLogger.info('🛑 Received SIGTERM, shutting down gracefully...');
   server?.close(() => {
-    serverLogger.info('Server closed successfully');
+    serverLogger.info('✅ Server closed');
     process.exit(0);
   });
 });
+
+// Start the server
+startServer();
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
