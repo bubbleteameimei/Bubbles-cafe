@@ -11,7 +11,7 @@ export default function Footer() {
   
   return (
     <footer 
-      className="w-screen border-t border-primary/20 bg-background/95 mt-8"
+      className="w-screen border-t border-primary/20 bg-background/95 mt-2"
       style={{
         position: "relative",
         left: 0,

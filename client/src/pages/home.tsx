@@ -201,7 +201,7 @@ export default function Home() {
               </div>
               
               {posts.length > 0 && (
-                <div className="text-center space-y-2 sm:space-y-3 md:space-y-4">
+                <div className="text-center space-y-2 sm:space-y-3 md:space-y-4 mb-4">
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <div 
                     onClick={() => setLocation('/reader')} 
