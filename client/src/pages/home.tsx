@@ -117,7 +117,7 @@ export default function Home() {
           <div className="relative w-full h-2 sm:h-3 md:h-4 lg:h-3" aria-hidden="true"></div>
           
           {/* Content container with proper z-index to appear above background - full width */}
-          <div className="relative z-10 flex flex-col items-center justify-start pt-0 pb-2 sm:pb-3 md:pb-4 text-center w-full">
+          <div className="relative z-10 flex flex-col items-center justify-start pt-0 pb-1 text-center w-full">
             <div className="relative mb-4 sm:mb-6 md:mb-8">
               <h1 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-white flex flex-col items-center">
                 <span>BUBBLES</span>
