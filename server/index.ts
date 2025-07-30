@@ -96,6 +96,7 @@ app.use(validateCsrfToken({
     '/api/wordpress/sync/status',
     '/api/wordpress/posts',
     '/api/reader/bookmarks', // Allow anonymous bookmarks without CSRF protection
+    '/api/errors', // Allow error logging without CSRF protection
     '/admin-cleanup' // Special admin cleanup route that bypasses CSRF protection
   ]
 }));

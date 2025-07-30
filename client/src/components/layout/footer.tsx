@@ -10,20 +10,8 @@ export default function Footer() {
   }, []);
   
   return (
-    <footer 
-      className="w-screen border-t border-primary/20 bg-background/95 mt-2"
-      style={{
-        position: "relative",
-        left: 0,
-        right: 0,
-        margin: 0,
-        padding: 0,
-        zIndex: 10,
-        width: '100vw',
-        marginLeft: 'calc(-50vw + 50%)'
-      }}
-    >
-      <div className="w-full flex flex-col items-center justify-center py-4 px-4">
+    <footer className="w-full border-t border-primary/20 bg-background/95 mt-8">
+      <div className="w-full flex flex-col items-center justify-center py-6 px-4 max-w-6xl mx-auto">
         {/* Copyright text - centered */}
         <div className="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap mb-2">
           © Bubble's Cafe 2025.&nbsp;All rights reserved.

@@ -47,39 +47,7 @@ body {
   -webkit-text-stroke: 0 transparent !important;
 }
 
-/* Canvas-based blood dripping effect replaces CSS-based drops */
-
-/* Blood stains that appear on elements below */
-@keyframes bloodStain {
-  0% {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  50% {
-    opacity: 0.4;
-    transform: scale(1.1);
-  }
-  100% {
-    opacity: 0.2;
-    transform: scale(1);
-  }
-}
-
-/* Add subtle blood stains to buttons when hovered */
-.group:hover::after {
-  content: '';
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 8px;
-  height: 8px;
-  background: radial-gradient(circle, rgba(220, 38, 38, 0.3), rgba(153, 27, 27, 0.1));
-  border-radius: 50%;
-  animation: bloodStain 1s ease-out;
-  pointer-events: none;
-  z-index: 10;
-}
+/* Blood effects completely removed as requested */
 
 /* Global responsive design fixes */
 @layer base {
@@ -107,21 +75,47 @@ body {
     min-width: 100%;
     max-width: 100vw;
     overflow-x: hidden;
-    padding: 0;
-    width: 100%;
     min-height: 100vh;
-    overflow-x: hidden;
-    overflow-y: auto;
     position: relative;
     background-color: hsl(var(--background));
     box-sizing: border-box;
-    transition: opacity 0.2s ease-in-out;
-    /* Improve scroll behavior */
+    /* Improve scroll behavior and performance */
     -webkit-overflow-scrolling: touch;
-    /* Removed scroll-behavior: smooth to prevent unwanted auto-scrolling */
+    scroll-behavior: auto;
+    will-change: scroll-position;
   }
   
-  /* Fix for bottom page scrolling issues */
+  body {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+  
+  /* Webkit scrollbar styling for better appearance */
+  body::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+  
+  body::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+  
+  /* Optimize page performance and mobile experience */
+  .accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+  
+  /* Fix for bottom page scrolling issues and improve mobile experience */
   body {
     overscroll-behavior-y: auto !important;
     touch-action: pan-y !important;

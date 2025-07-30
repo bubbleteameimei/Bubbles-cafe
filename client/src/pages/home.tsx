@@ -9,7 +9,6 @@ import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { getExcerpt } from "@/lib/content-analysis";
 import ApiLoader from "@/components/api-loader";
-import BloodDrippingText from "@/components/BloodDrippingText";
 
 
 export default function Home() {
@@ -121,10 +120,7 @@ export default function Home() {
             <div className="relative mb-4 sm:mb-6 md:mb-8">
               <h1 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-white flex flex-col items-center">
                 <span>BUBBLES</span>
-                <BloodDrippingText 
-                  text="CAFE" 
-                  className="mt-1 md:mt-2 text-red-700 relative"
-                />
+                <span className="mt-1 md:mt-2 text-red-700">CAFE</span>
               </h1>
             </div>
           
