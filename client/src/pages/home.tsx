@@ -117,7 +117,7 @@ export default function Home() {
           <div className="relative w-full h-2 sm:h-3 md:h-4 lg:h-3" aria-hidden="true"></div>
           
           {/* Content container with proper z-index to appear above background - full width */}
-          <div className="relative z-10 flex flex-col items-center justify-start pt-0 pb-1 text-center w-full">
+          <div className="relative z-10 flex flex-col items-center justify-start pt-0 text-center w-full">
             <div className="relative mb-4 sm:mb-6 md:mb-8">
               <h1 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-white flex flex-col items-center">
                 <span>BUBBLES</span>
@@ -201,7 +201,7 @@ export default function Home() {
               </div>
               
               {posts.length > 0 && (
-                <div className="text-center space-y-3 sm:space-y-4 md:space-y-5">
+                <div className="text-center space-y-2 sm:space-y-3 md:space-y-4">
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <div 
                     onClick={() => setLocation('/reader')} 
