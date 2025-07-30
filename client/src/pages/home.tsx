@@ -117,9 +117,9 @@ export default function Home() {
           <div className="relative w-full h-2 sm:h-3 md:h-4 lg:h-3" aria-hidden="true"></div>
           
           {/* Content container with proper z-index to appear above background - full width */}
-          <div className="relative z-10 flex flex-col items-center justify-start pt-0 pb-4 sm:pb-6 md:pb-8 lg:pb-10 text-center w-full">
-            <div className="relative">
-              <h1 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-1 sm:mb-2 md:mb-3 tracking-wider text-white flex flex-col items-center">
+          <div className="relative z-10 flex flex-col items-center justify-start pt-0 pb-2 sm:pb-3 md:pb-4 text-center w-full">
+            <div className="relative mb-4 sm:mb-6 md:mb-8">
+              <h1 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-white flex flex-col items-center">
                 <span>BUBBLES</span>
                 <BloodDrippingText 
                   text="CAFE" 
@@ -128,19 +128,16 @@ export default function Home() {
               </h1>
             </div>
           
-            {/* Compact spacing for mobile */}
-            <div className="h-1 sm:h-2 md:h-3 lg:h-4"></div>
-          
-            <div className="space-y-3 sm:space-y-4 md:space-y-5 w-full max-w-2xl mx-auto px-4">
+            <div className="space-y-4 sm:space-y-5 md:space-y-6 w-full max-w-2xl mx-auto px-4">
               <div>
-                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white w-full leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium">
+                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white w-full leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium mb-2 sm:mb-3 md:mb-4">
                   Every story here is a portal to the unexpected,
                   the unexplained, and <span className="italic text-red-700">the unsettling<span className="text-red-700 font-bold">.</span></span>
                 </p>
               </div>
 
               <div>
-                <div className="flex flex-col gap-3 w-full max-w-md mx-auto">
+                <div className="flex flex-col gap-3 w-full max-w-md mx-auto mb-2 sm:mb-3 md:mb-4">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -199,12 +196,12 @@ export default function Home() {
                 </div>
               </div>
               
-              <div>
+              <div className="mb-2 sm:mb-3 md:mb-4">
                 <BuyMeCoffeeButton />
               </div>
               
               {posts.length > 0 && (
-                <div className="text-center space-y-2 sm:space-y-3 md:space-y-4">
+                <div className="text-center space-y-3 sm:space-y-4 md:space-y-5">
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <div 
                     onClick={() => setLocation('/reader')} 
