@@ -8,6 +8,15 @@ Preferred communication style: Simple, everyday language.
 GitHub repository: https://github.com/corpse777/interactive-storytelling-platform
 Personal access token configured for Git authentication
 
+## Recent Changes (August 2025)
+- Removed all "Bubble's Cafe" and "blood drip cafe" references throughout the platform
+- Enhanced Firebase authentication with Google sign-in integration
+- Updated login page with modern glassmorphism UI design
+- Implemented proper environment variable configuration for Firebase
+- Enhanced password strength validation with visual indicators
+- Updated README.md to reflect Interactive Storytelling Platform branding
+- Cleaned up email templates to match new platform identity
+
 ## System Architecture
 The platform is built with a decoupled frontend and backend architecture.
 

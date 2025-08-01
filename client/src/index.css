@@ -50,29 +50,29 @@ body {
   -webkit-text-stroke: 0 transparent !important;
 }
 
-/* Canvas-based blood dripping effect replaces CSS-based drops */
+/* Interactive visual effects for storytelling elements */
 
-/* Blood stains that appear on elements below */
-@keyframes bloodStain {
+/* Subtle animation for interactive elements */
+@keyframes gentleGlow {
   0% {
     opacity: 0;
-    transform: scale(0.5);
+    transform: scale(0.95);
   }
   50% {
-    opacity: 0.4;
-    transform: scale(1.1);
+    opacity: 0.6;
+    transform: scale(1.02);
   }
   100% {
-    opacity: 0.2;
+    opacity: 0.3;
     transform: scale(1);
   }
 }
 
-/* Add subtle blood stains to buttons when hovered */
+/* Add gentle hover effects to interactive elements */
 .group:hover::after {
   content: '';
   position: absolute;
-  top: -10px;
+  top: -5px;
   left: 50%;
   transform: translateX(-50%);
   width: 8px;

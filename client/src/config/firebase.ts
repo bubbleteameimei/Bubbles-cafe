@@ -1,23 +1,19 @@
 // Firebase Configuration
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from "firebase/auth";
-import { getAnalytics } from "firebase/analytics";
 
-// Your web app's Firebase configuration
+// Your web app's Firebase configuration using environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyAJ-ZRi3GUVHUaM0p5vbbRB8NoqV4b_VvM",
-  authDomain: "bubbles-cafe.firebaseapp.com",
-  projectId: "bubbles-cafe",
-  storageBucket: "bubbles-cafe.firebasestorage.app",
-  messagingSenderId: "870151001940",
-  appId: "1:870151001940:web:f11d39b757e64457a91ac1",
-  measurementId: "G-PSCHGE0V55"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebasestorage.app`,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase (prevent duplicate app initialization)
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const auth = getAuth(app);
-const analytics = getAnalytics(app);
 const googleProvider = new GoogleAuthProvider();
 
 // Configure Google provider
@@ -32,5 +28,5 @@ export const createUserWithEmail = (email: string, password: string) => createUs
 export const signOutUser = () => signOut(auth);
 export const resetPassword = (email: string) => sendPasswordResetEmail(auth, email);
 
-export { auth, analytics };
+export { auth };
 export default app;

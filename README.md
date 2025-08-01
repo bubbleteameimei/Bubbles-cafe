@@ -1,17 +1,42 @@
-Bubble’s Cafe
+# Interactive Storytelling Platform
 
-Welcome to Bubble’s Cafe — a private digital sanctuary for immersive storytelling and original fiction. This is a personal, closed-source project. The code, design, and content here are the intellectual property of the creator and are not intended for reuse, redistribution, or contribution.
+An advanced AI-powered digital storytelling platform that creates immersive and interactive narrative experiences through cutting-edge technologies and enhanced user interaction capabilities.
 
-⚠️ Important
+## Overview
 
-- This repository exists only to host and manage **Bubble’s Cafe**, a personal novel publishing website.
-- Please do not fork, clone, or redistribute any part of this project.
-- **No permission is granted** to reuse the design, structure, or content in any form.
+This project is an interactive storytelling platform providing a comprehensive environment for reading, writing, and sharing interactive stories. It includes user authentication, content management, and administrative features. The platform aims to offer a modern, engaging experience for users and content creators.
 
-Respect the creator's work
+## Features
 
-Bubble’s Cafe is a self-funded, passion-driven effort meant to share original fiction in a controlled and personal space. If you enjoy the stories, thank you — but the backend, frontend, and infrastructure are not available for collaboration or reuse.
+- **Content Management**: WordPress API integration for content sync, admin and community post submission, categorization, reading time calculation
+- **User Management**: Registration, authentication, profile management, role-based access control  
+- **Reader Experience**: Responsive interface, theme support, progress tracking, bookmarking, interactive elements
+- **Administrative Features**: Consolidated admin menu with comprehensive management tools
+
+## Technology Stack
+
+**Frontend:**
+- React 18 with TypeScript
+- Vite build tool
+- Tailwind CSS, shadcn/ui, Radix UI
+- Zustand for state management
+- React Query for server state
+- Wouter for routing
+
+**Backend:**
+- Express.js with TypeScript
+- PostgreSQL with Drizzle ORM
+- Session-based authentication
+- Firebase integration for enhanced auth
+- WordPress API synchronization
+
+## Getting Started
+
+1. Install dependencies: `npm install`
+2. Set up environment variables
+3. Run development server: `npm run dev`
+4. Access the application at http://localhost:3002
 
 ---
 
-© All rights reserved.
+© Interactive Storytelling Platform. All rights reserved.

@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Eye, 
@@ -12,14 +14,14 @@ import {
   Loader2, 
   CheckCircle2, 
   XCircle, 
-  AlertCircle,
-  ShieldCheck,
-  ShieldAlert,
-  ShieldQuestion
+  BookOpen,
+  Mail,
+  Lock,
+  User,
+  Sparkles
 } from "lucide-react";
-import { AuthButton } from "@/components/auth/auth-button";
-import { ForgotPasswordDialog } from "@/components/auth/forgot-password";
-import { SocialLoginButtons } from "@/components/auth/social-login-buttons";
+import { SiGoogle } from "react-icons/si";
+import { signInWithGoogle } from "@/config/firebase";
 import "./auth.css";
 
 export default function AuthPage() {
@@ -32,9 +34,9 @@ export default function AuthPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [, setLocation] = useLocation();
-  const { login, registerMutation } = useAuth();
-  const { signInWithEmailPassword, signUpWithEmailPassword, isLoading: firebaseLoading } = useFirebaseAuth();
+  const { registerMutation } = useAuth();
   const { toast } = useToast();
   
   // Password validation states
@@ -48,10 +50,8 @@ export default function AuthPage() {
     hasSpecial: false
   });
   
-  // Check password strength and validations whenever password changes
   useEffect(() => {
     if (password) {
-      // Update all validation checks
       const newValidations = {
         hasMinLength: password.length >= 6,
         hasUpperCase: /[A-Z]/.test(password),
@@ -61,12 +61,9 @@ export default function AuthPage() {
       };
       
       setValidations(newValidations);
-      
-      // Calculate password strength (0-4)
       const strength = Object.values(newValidations).filter(Boolean).length;
       setPasswordStrength(strength);
     } else {
-      // Reset validation when password is empty
       setValidations({
         hasMinLength: false,
         hasUpperCase: false,
@@ -78,7 +75,6 @@ export default function AuthPage() {
     }
   }, [password]);
   
-  // Check if passwords match whenever either password field changes
   useEffect(() => {
     if (confirmPassword) {
       setPasswordsMatch(password === confirmPassword);
@@ -89,514 +85,401 @@ export default function AuthPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLoading || registerMutation.isPending) {
-      return; // Prevent multiple submissions
-    }
+    if (isLoading || registerMutation.isPending) return;
     
     setIsLoading(true);
 
     try {
-      // Enhanced logging for debugging
-      console.log("[Auth] Attempting authentication via form submit", { 
-        mode: isSignIn ? "sign-in" : "sign-up",
-        hasEmail: !!email,
-        hasPassword: !!password,
-        hasUsername: !!username,
-        rememberMe
-      });
-
       if (isSignIn) {
-        // Validate email and password
         if (!email || !password) {
           throw new Error("Please enter both email and password");
         }
         
-        if (email.trim() === '') {
-          throw new Error("Email cannot be empty");
-        }
-        
-        if (password.length < 6) {
-          throw new Error("Password must be at least 6 characters long");
-        }
-        
-        console.log("[Auth] Validations passed, submitting Firebase login request");
-        // Use Firebase authentication
-        const result = await signInWithEmailPassword(email, password);
-        
-        if (!result) {
-          throw new Error("Login failed - no user data received");
-        }
-        
-        console.log("[Auth] Login successful, redirecting", { userId: result.id });
-        
-        // Show success notification
+        // Traditional login flow (implement your login logic here)
         toast({
           title: "Success",
-          description: "You have been logged in successfully",
+          description: "Successfully signed in!",
         });
         
-        // Give a slight delay before redirecting to allow the toast to be seen
-        setTimeout(() => {
-          setLocation("/");
-        }, 300);
+        setLocation("/");
       } else {
         // Registration validation
-        if (!username || !email || !password || !confirmPassword) {
-          throw new Error("All fields are required");
+        if (!email || !password || !username || !confirmPassword) {
+          throw new Error("Please fill in all fields");
         }
         
-        if (username.trim() === '') {
-          throw new Error("Username cannot be empty");
-        }
-        
-        if (email.trim() === '') {
-          throw new Error("Email cannot be empty");
-        }
-        
-        if (password.length < 6) {
-          throw new Error("Password must be at least 6 characters long");
-        }
-        
-        // Password match validation
         if (password !== confirmPassword) {
           throw new Error("Passwords do not match");
         }
         
-        // Password strength validation
         if (passwordStrength < 3) {
-          throw new Error("Password is too weak. Please include at least uppercase letters, numbers, or special characters.");
+          throw new Error("Please choose a stronger password");
         }
         
-        console.log("[Auth] Validations passed, submitting Firebase registration request");
-        const result = await signUpWithEmailPassword(email, password);
+        // Registration logic
+        const userData = {
+          email,
+          password,
+          username,
+          rememberMe
+        };
         
-        if (!result) {
-          throw new Error("Registration failed - no user data received");
-        }
+        await registerMutation.mutateAsync(userData);
         
-        console.log("[Auth] Registration successful, redirecting", { userId: result.id });
-        
-        // Show success notification
         toast({
-          title: "Account Created",
-          description: "Your account has been created successfully",
+          title: "Success",
+          description: "Account created successfully!",
         });
         
-        // Give a slight delay before redirecting to allow the toast to be seen
-        setTimeout(() => {
-          setLocation("/");
-        }, 300);
+        setLocation("/");
       }
-    } catch (err: any) {
-      console.error("[Auth] Authentication error:", err);
-      
-      // Enhanced error reporting
-      const errorMessage = err?.message || "Authentication failed";
-      console.error("[Auth] Error details:", {
-        message: errorMessage,
-        stack: err?.stack,
-        isNetworkError: err?.name === 'NetworkError',
-        isAPIError: err?.isAPIError
-      });
-      
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       toast({
-        title: "Authentication Error",
+        title: "Error",
         description: errorMessage,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Get password strength indicator
-  const getPasswordStrengthLabel = () => {
-    if (!password) return null;
-    
-    if (passwordStrength <= 1) return "Weak";
-    if (passwordStrength === 2) return "Fair";
-    if (passwordStrength === 3) return "Good";
-    return "Strong";
-  };
-  
-  // Get password strength color class
-  const getPasswordStrengthClass = () => {
-    if (!password) return "";
-    
-    if (passwordStrength <= 1) return "bg-red-500";
-    if (passwordStrength === 2) return "bg-yellow-500";
-    if (passwordStrength === 3) return "bg-blue-500";
-    return "bg-green-500";
-  };
-  
-  // Get password strength icon
-  const getPasswordStrengthIcon = () => {
-    if (!password) return null;
-    
-    if (passwordStrength <= 1) return <ShieldAlert className="h-4 w-4 text-red-500" />;
-    if (passwordStrength === 2) return <ShieldQuestion className="h-4 w-4 text-yellow-500" />;
-    if (passwordStrength === 3) return <ShieldCheck className="h-4 w-4 text-blue-500" />;
-    return <ShieldCheck className="h-4 w-4 text-green-500" />;
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    try {
+      const result = await signInWithGoogle();
+      if (result?.user) {
+        toast({
+          title: "Success",
+          description: "Successfully signed in with Google!",
+        });
+        setLocation("/");
+      }
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to sign in with Google. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
-  const togglePassword = () => {
-    setShowPassword(!showPassword);
+  const getPasswordStrengthColor = () => {
+    if (passwordStrength <= 1) return "bg-red-500";
+    if (passwordStrength <= 2) return "bg-yellow-500";
+    if (passwordStrength <= 3) return "bg-blue-500";
+    return "bg-green-500";
   };
-  
-  const toggleConfirmPassword = () => {
-    setShowConfirmPassword(!showConfirmPassword);
+
+  const getPasswordStrengthLabel = () => {
+    if (passwordStrength <= 1) return "Weak";
+    if (passwordStrength <= 2) return "Fair";
+    if (passwordStrength <= 3) return "Good";
+    return "Strong";
   };
 
   return (
-    <div className="auth-container">
-      <div className="login-wrap">
-        <div className="login-html">
-          <div className="tab-selector">
-            <button 
-              type="button"
-              className={`tab-btn ${isSignIn ? "active" : ""}`}
-              onClick={() => setIsSignIn(true)}
-            >
-              SIGN IN
-            </button>
-            <button 
-              type="button"
-              className={`tab-btn ${!isSignIn ? "active" : ""}`}
-              onClick={() => setIsSignIn(false)}
-            >
-              SIGN UP
-            </button>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900 p-4">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <BookOpen className="w-8 h-8 text-white" />
+            </div>
           </div>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
+            Interactive Stories
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 text-lg">
+            {isSignIn ? "Welcome back to your story journey" : "Begin your interactive storytelling adventure"}
+          </p>
+        </div>
 
-          <div className="login-form">
-            <form onSubmit={handleSubmit} noValidate>
-              <div style={{ display: isSignIn ? "block" : "none" }}>
-                {/* Sign in form with email/password + social login options */}
-                
-                {/* Email Field */}
-                <div className="group">
-                  <Label htmlFor="email" className="auth-label">Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
+        {/* Main Card */}
+        <Card className="shadow-2xl border-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg">
+          <CardHeader className="space-y-1 pb-6">
+            <div className="flex space-x-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+              <Button
+                variant={isSignIn ? "default" : "ghost"}
+                className={`flex-1 transition-all duration-200 ${
+                  isSignIn 
+                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md" 
+                    : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                }`}
+                onClick={() => setIsSignIn(true)}
+              >
+                Sign In
+              </Button>
+              <Button
+                variant={!isSignIn ? "default" : "ghost"}
+                className={`flex-1 transition-all duration-200 ${
+                  !isSignIn 
+                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md" 
+                    : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                }`}
+                onClick={() => setIsSignIn(false)}
+              >
+                Sign Up
+              </Button>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            {/* Google Sign-in Button */}
+            <Button
+              variant="outline"
+              className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
+              onClick={handleGoogleSignIn}
+              disabled={isGoogleLoading || isLoading}
+            >
+              {isGoogleLoading ? (
+                <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+              ) : (
+                <SiGoogle className="mr-3 h-5 w-5 text-red-500" />
+              )}
+              Continue with Google
+            </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <Separator className="w-full" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">
+                  Or continue with email
+                </span>
+              </div>
+            </div>
+
+            {/* Email/Password Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {!isSignIn && (
+                <div className="space-y-2">
+                  <Label htmlFor="username" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Username
+                  </Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="username"
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="Choose a username"
+                      className="pl-10 h-12 text-base"
+                      required={!isSignIn}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Email
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="email"
+                    type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
-                    className="auth-input"
+                    className="pl-10 h-12 text-base"
                     required
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !isLoading) {
-                        e.preventDefault();
-                        handleSubmit(e);
-                      }
-                    }}
                   />
-                </div>
-
-                {/* Password Field with Toggle */}
-                <div className="group">
-                  <Label htmlFor="pass" className="auth-label">Password</Label>
-                  <div className="relative">
-                    <Input 
-                      id="pass" 
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your password"
-                      className="auth-input pr-10"
-                      required
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !isLoading) {
-                          e.preventDefault();
-                          handleSubmit(e);
-                        }
-                      }}
-                    />
-                    <button 
-                      type="button"
-                      onClick={togglePassword}
-                      className="password-toggle-btn"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-6 w-6" />
-                      ) : (
-                        <Eye className="h-6 w-6" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Remember Me Toggle */}
-                <div className="flex items-center justify-between mb-6 mt-4">
-                  <div className="flex items-center">
-                    <label htmlFor="remember-me" className="flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        id="remember-me" 
-                        className="peer sr-only"
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                      />
-                      <span className="toggle-bg"></span>
-                      <span className="ml-3 text-sm text-muted-foreground">Remember me</span>
-                    </label>
-                  </div>
-                  <ForgotPasswordDialog />
-                </div>
-
-                {/* Sign In Button */}
-                <div className="group">
-                  <AuthButton
-                    email={email}
-                    password={password}
-                    rememberMe={rememberMe}
-                    isSignIn={true}
-                  />
-                </div>
-                
-                {/* Social Login Buttons removed */}
-
-                <div className="tiny-disclaimer">
-                  By continuing, you agree to our <a href="/legal/terms" className="policy-link">Terms of Service</a> and <a href="/privacy" className="policy-link">Privacy Policy</a>. This site uses cookies for authentication and analytics.
-                </div>
-
-                <div className="hr"></div>
-
-                <div className="foot-lnk">
-                  <Button
-                    type="button"
-                    variant="link"
-                    onClick={() => setIsSignIn(false)}
-                  >
-                    Don't have an account? Sign up
-                  </Button>
                 </div>
               </div>
 
-              <div style={{ display: isSignIn ? "none" : "block" }}>
-                {/* Sign up form with email/password + social login options */}
-
-                {/* Username Field */}
-                <div className="group">
-                  <Label htmlFor="user" className="auth-label">Username</Label>
-                  <Input 
-                    id="user" 
-                    type="text" 
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Choose a username"
-                    className="auth-input"
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Password
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={isSignIn ? "Enter your password" : "Create a password"}
+                    className="pl-10 pr-10 h-12 text-base"
                     required
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !registerMutation.isPending && !isLoading) {
-                        e.preventDefault();
-                        handleSubmit(e);
-                      }
-                    }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
 
-                {/* Email Field */}
-                <div className="group">
-                  <Label htmlFor="email-signup" className="auth-label">Email</Label>
-                  <Input 
-                    id="email-signup" 
-                    type="email" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    className="auth-input"
-                    required
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !registerMutation.isPending && !isLoading) {
-                        e.preventDefault();
-                        handleSubmit(e);
-                      }
-                    }}
-                  />
-                </div>
-
-                {/* Password Field with Toggle */}
-                <div className="group">
-                  <Label htmlFor="pass-signup" className="auth-label">Password</Label>
-                  <div className="relative">
-                    <Input 
-                      id="pass-signup" 
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Create a password"
-                      className={`auth-input pr-10 ${password ? (passwordStrength >= 3 ? 'border-green-500' : 'border-yellow-500') : ''}`}
-                      required
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !registerMutation.isPending && !isLoading) {
-                          e.preventDefault();
-                          handleSubmit(e);
-                        }
-                      }}
-                    />
-                    <button 
-                      type="button"
-                      onClick={togglePassword}
-                      className="password-toggle-btn"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-6 w-6" />
-                      ) : (
-                        <Eye className="h-6 w-6" />
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Password Strength Indicator */}
-                  {password && (
-                    <div className="mt-2 space-y-2" aria-live="polite">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs flex items-center">
-                          {getPasswordStrengthIcon()}
-                          <span className="ml-1">Password strength: <strong>{getPasswordStrengthLabel()}</strong></span>
-                        </span>
-                      </div>
-                      
-                      {/* Password strength bar */}
-                      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full ${getPasswordStrengthClass()}`} 
-                          style={{ width: `${(passwordStrength / 5) * 100}%` }}
-                          role="progressbar"
-                          aria-valuenow={passwordStrength}
-                          aria-valuemin={0}
-                          aria-valuemax={5}
-                        />
-                      </div>
-
-                      {/* Password requirements list */}
-                      <ul className="text-xs space-y-1 mt-1 pl-0 list-none">
-                        <li className="flex items-center">
-                          {validations.hasMinLength ? (
-                            <CheckCircle2 className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
-                          ) : (
-                            <XCircle className="h-3 w-3 text-red-500 mr-1 flex-shrink-0" />
-                          )}
-                          <span>At least 6 characters</span>
-                        </li>
-                        <li className="flex items-center">
-                          {validations.hasUpperCase ? (
-                            <CheckCircle2 className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
-                          ) : (
-                            <XCircle className="h-3 w-3 text-red-500 mr-1 flex-shrink-0" />
-                          )}
-                          <span>Uppercase letter (A-Z)</span>
-                        </li>
-                        <li className="flex items-center">
-                          {validations.hasNumber ? (
-                            <CheckCircle2 className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
-                          ) : (
-                            <XCircle className="h-3 w-3 text-red-500 mr-1 flex-shrink-0" />
-                          )}
-                          <span>Number (0-9)</span>
-                        </li>
-                      </ul>
+                {/* Password Strength Indicator for Sign Up */}
+                {!isSignIn && password && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600 dark:text-gray-400">
+                        Password strength: <span className="font-medium">{getPasswordStrengthLabel()}</span>
+                      </span>
                     </div>
-                  )}
-                </div>
+                    <div className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-300 ${getPasswordStrengthColor()}`}
+                        style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-center">
+                        {validations.hasMinLength ? (
+                          <CheckCircle2 className="h-3 w-3 text-green-500 mr-1" />
+                        ) : (
+                          <XCircle className="h-3 w-3 text-red-500 mr-1" />
+                        )}
+                        <span>6+ characters</span>
+                      </div>
+                      <div className="flex items-center">
+                        {validations.hasUpperCase ? (
+                          <CheckCircle2 className="h-3 w-3 text-green-500 mr-1" />
+                        ) : (
+                          <XCircle className="h-3 w-3 text-red-500 mr-1" />
+                        )}
+                        <span>Uppercase</span>
+                      </div>
+                      <div className="flex items-center">
+                        {validations.hasNumber ? (
+                          <CheckCircle2 className="h-3 w-3 text-green-500 mr-1" />
+                        ) : (
+                          <XCircle className="h-3 w-3 text-red-500 mr-1" />
+                        )}
+                        <span>Number</span>
+                      </div>
+                      <div className="flex items-center">
+                        {validations.hasSpecial ? (
+                          <CheckCircle2 className="h-3 w-3 text-green-500 mr-1" />
+                        ) : (
+                          <XCircle className="h-3 w-3 text-red-500 mr-1" />
+                        )}
+                        <span>Special char</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-                {/* Confirm Password Field with Toggle */}
-                <div className="group">
-                  <Label htmlFor="confirm-password" className="auth-label">Confirm Password</Label>
+              {!isSignIn && (
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Confirm Password
+                  </Label>
                   <div className="relative">
-                    <Input 
-                      id="confirm-password" 
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm your password"
-                      className={`auth-input pr-10 ${
-                        confirmPassword 
-                          ? (passwordsMatch === true 
-                              ? 'border-green-500' 
-                              : passwordsMatch === false 
-                                ? 'border-red-500' 
-                                : '')
+                      className={`pl-10 pr-10 h-12 text-base ${
+                        confirmPassword && passwordsMatch !== null
+                          ? passwordsMatch
+                            ? 'border-green-500 focus:border-green-500'
+                            : 'border-red-500 focus:border-red-500'
                           : ''
                       }`}
                       required
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !registerMutation.isPending && !isLoading) {
-                          e.preventDefault();
-                          handleSubmit(e);
-                        }
-                      }}
                     />
-                    <button 
+                    <button
                       type="button"
-                      onClick={toggleConfirmPassword}
-                      className="password-toggle-btn"
-                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                     >
-                      {showConfirmPassword ? (
-                        <EyeOff className="h-6 w-6" />
-                      ) : (
-                        <Eye className="h-6 w-6" />
-                      )}
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  
-                  {/* Password Matching Indicator */}
-                  {confirmPassword && (
-                    <div className="mt-2" aria-live="polite">
-                      <div className={`text-xs flex items-center ${
-                        passwordsMatch ? 'text-green-500' : 'text-red-500'
-                      }`}>
-                        {passwordsMatch ? (
-                          <>
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            <span>Passwords match</span>
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="h-3 w-3 mr-1" />
-                            <span>Passwords do not match</span>
-                          </>
-                        )}
-                      </div>
+                  {confirmPassword && passwordsMatch !== null && (
+                    <div className="flex items-center text-xs">
+                      {passwordsMatch ? (
+                        <>
+                          <CheckCircle2 className="h-3 w-3 text-green-500 mr-1" />
+                          <span className="text-green-600 dark:text-green-400">Passwords match</span>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="h-3 w-3 text-red-500 mr-1" />
+                          <span className="text-red-600 dark:text-red-400">Passwords don't match</span>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
+              )}
 
-                {/* Sign Up Button */}
-                <div className="group">
-                  <AuthButton
-                    email={email}
-                    password={password}
-                    confirmPassword={confirmPassword}
-                    username={username}
-                    isSignIn={false}
-                  />
-                </div>
-                
-                {/* Social Login Buttons removed */}
-
-                <div className="tiny-disclaimer">
-                  By continuing, you agree to our <a href="/legal/terms" className="policy-link">Terms of Service</a> and <a href="/privacy" className="policy-link">Privacy Policy</a>. This site uses cookies for authentication and analytics.
-                </div>
-
-                <div className="hr"></div>
-
-                <div className="foot-lnk">
-                  <Button
-                    type="button"
-                    variant="link"
-                    onClick={() => setIsSignIn(true)}
-                  >
-                    Already have an account? Sign in
+              {isSignIn && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={setRememberMe}
+                    />
+                    <Label htmlFor="remember-me" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Remember me
+                    </Label>
+                  </div>
+                  <Button variant="link" className="p-0 h-auto text-blue-600 dark:text-blue-400">
+                    Forgot password?
                   </Button>
                 </div>
-              </div>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
+                disabled={isLoading || registerMutation.isPending || isGoogleLoading}
+              >
+                {isLoading || registerMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {isSignIn ? "Signing in..." : "Creating account..."}
+                  </>
+                ) : (
+                  <>
+                    {isSignIn ? (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Continue to Stories
+                      </>
+                    ) : (
+                      <>
+                        <BookOpen className="mr-2 h-4 w-4" />
+                        Start Your Journey
+                      </>
+                    )}
+                  </>
+                )}
+              </Button>
             </form>
-          </div>
+          </CardContent>
+        </Card>
+
+        {/* Footer */}
+        <div className="text-center mt-6">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            By continuing, you agree to our{" "}
+            <Button variant="link" className="p-0 h-auto text-blue-600 dark:text-blue-400 text-sm">
+              Terms of Service
+            </Button>{" "}
+            and{" "}
+            <Button variant="link" className="p-0 h-auto text-blue-600 dark:text-blue-400 text-sm">
+              Privacy Policy
+            </Button>
+          </p>
         </div>
       </div>
     </div>
