@@ -57,6 +57,10 @@ import {
   performanceMetrics
 } from "@shared/schema";
 
+// Add missing imports
+import session from 'express-session';
+import MemoryStore from 'memorystore';
+
 // Removed: type FeaturedAuthor, type ReadingStreak, type WriterStreak, featuredAuthors, readingStreaks, writerStreaks
 
 import type { CommentMetadata } from "@shared/schema";
@@ -64,6 +68,7 @@ import { db } from "./db";
 import pkg from 'pg';
 const { Pool } = pkg;
 import { createHash } from "crypto";
+import bcrypt from "bcrypt";
 
 // Database operation utility function with retry logic
 async function safeDbOperation<T>(
@@ -136,7 +141,7 @@ process.on('SIGTERM', async () => {
 });
 
 import { eq, desc, asc, and, or, not, like, lt, gt, gte, sql, avg, count, inArray } from "drizzle-orm";
-import session from "express-session";
+// ... existing code ...
 import connectPgSimple from "connect-pg-simple";
 import { createLogger } from "./utils/debug-logger";
 
@@ -930,7 +935,7 @@ export class DatabaseStorage implements IStorage {
         count: count(users.id)
       })
       .from(users)
-      .where(gt(users.lastLogin, lastMonth));
+      .where(gt(users.createdAt, lastMonth));
       
       return {
         totalViews: analyticsData.totalViews,
@@ -965,7 +970,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Hash the password before storing
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(user.password, salt);
+      const hashedPassword = await bcrypt.hash(user.password_hash, salt);
 
       // Extract email from user or metadata and normalize it
       let email = (user.metadata as any)?.email || user.email;
@@ -1765,8 +1770,8 @@ export class DatabaseStorage implements IStorage {
 
       return result.rows.map(comment => ({
         ...comment,
-        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt),
-        editedAt: comment.editedAt ? (comment.editedAt instanceof Date ? comment.editedAt : new Date(comment.editedAt)) : null,
+        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt as string | number),
+        editedAt: comment.editedAt ? (comment.editedAt instanceof Date ? comment.editedAt : new Date(comment.editedAt as string | number)) : null,
         is_approved: comment.approved // Map to both field names for compatibility
       }));
     } catch (error) {
@@ -1790,8 +1795,8 @@ export class DatabaseStorage implements IStorage {
 
       return result.rows.map(comment => ({
         ...comment,
-        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt),
-        editedAt: comment.editedAt ? (comment.editedAt instanceof Date ? comment.editedAt : new Date(comment.editedAt)) : null,
+        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt as string | number),
+        editedAt: comment.editedAt ? (comment.editedAt instanceof Date ? comment.editedAt : new Date(comment.editedAt as string | number)) : null,
         is_approved: comment.approved
       }));
     } catch (error) {
@@ -1814,8 +1819,8 @@ export class DatabaseStorage implements IStorage {
 
       return result.rows.map(comment => ({
         ...comment,
-        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt),
-        editedAt: comment.editedAt ? (comment.editedAt instanceof Date ? comment.editedAt : new Date(comment.editedAt)) : null,
+        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt as string | number),
+        editedAt: comment.editedAt ? (comment.editedAt instanceof Date ? comment.editedAt : new Date(comment.editedAt as string | number)) : null,
         is_approved: comment.approved
       }));
     } catch (error) {
@@ -1925,9 +1930,9 @@ export class DatabaseStorage implements IStorage {
         ...newComment,
         createdAt: newComment.createdAt instanceof Date 
           ? newComment.createdAt 
-          : new Date(newComment.createdAt || Date.now()),
+          : new Date((newComment.createdAt as string | number) || Date.now()),
         editedAt: newComment.editedAt 
-          ? (newComment.editedAt instanceof Date ? newComment.editedAt : new Date(newComment.editedAt))
+          ? (newComment.editedAt instanceof Date ? newComment.editedAt : new Date(newComment.editedAt as string | number))
           : null,
         is_approved: newComment.approved,
         metadata: typeof newComment.metadata === 'string' 
@@ -1953,7 +1958,7 @@ export class DatabaseStorage implements IStorage {
 
       return {
         ...updatedComment,
-        createdAt: updatedComment.createdAt instanceof Date ? updatedComment.createdAt : new Date(updatedComment.createdAt)
+        createdAt: updatedComment.createdAt instanceof Date ? updatedComment.createdAt : new Date(updatedComment.createdAt as string | number)
       };
     } catch (error) {
       console.error("Error updating comment:", error);
@@ -1995,7 +2000,7 @@ export class DatabaseStorage implements IStorage {
 
       return {
         ...comment,
-        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
+        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt as string | number)
       };
     } catch (error) {
       console.error("Error in getComment:", error);
@@ -2410,7 +2415,7 @@ export class DatabaseStorage implements IStorage {
 
       return {
         ...newReply,
-        createdAt: newReply.createdAt instanceof Date ? newReply.createdAt : new Date(newReply.createdAt)
+        createdAt: newReply.createdAt instanceof Date ? newReply.createdAt : new Date(newReply.createdAt as string | number)
       };
     } catch (error) {
       console.error('[Storage] Error creating comment reply:', error);
@@ -2439,7 +2444,8 @@ export class DatabaseStorage implements IStorage {
       .set({
         totalPosts: Number(totalPosts.count),
         totalLikes: Number(totalLikes.count),
-        totalTips: totalTips.sum || "0",        updatedAt: new Date()
+        totalTips: totalTips.sum || "0",
+        updatedAt: new Date()
       })
       .where(eq(authorStats.authorId, authorId))
       .returning();
@@ -2917,7 +2923,7 @@ export class DatabaseStorage implements IStorage {
       
       const userComments = await db.select()
         .from(comments)
-        .where(eq(comments.userId, userId.toString()))
+        .where(eq(comments.userId, userId))
         .orderBy(desc(comments.createdAt));
       
       console.log(`[Storage] Found ${userComments.length} comments for user: ${userId}`);
@@ -3144,7 +3150,7 @@ export class DatabaseStorage implements IStorage {
         ) as returning_visitors
       `);
       
-      return result.rows[0]?.count || 0;
+      return Number(result.rows[0]?.count) || 0;
     } catch (error) {
       console.error('[Storage] Error getting returning user count:', error);
       return 0;
@@ -3566,10 +3572,12 @@ class MemStorage implements IStorage {
   private posts: Post[] = [];
   private comments: Comment[] = [];
   private bookmarks: Bookmark[] = [];
+  private userFeedback: UserFeedback[] = [];
   private nextUserId = 1;
   private nextPostId = 1;
   private nextCommentId = 1;
   private nextBookmarkId = 1;
+  private nextFeedbackId = 1;
 
   // Session store implementation
   sessionStore = new MemoryStore({
@@ -3604,11 +3612,14 @@ class MemStorage implements IStorage {
     return true;
   }
   
-  async createBookmark(userId: number, postId: number): Promise<Bookmark> {
+  async createBookmark(bookmark: InsertBookmark): Promise<Bookmark> {
     const newBookmark: Bookmark = {
       id: this.nextBookmarkId++,
-      userId,
-      postId,
+      userId: bookmark.userId,
+      postId: bookmark.postId,
+      tags: bookmark.tags || null,
+      notes: bookmark.notes || null,
+      lastPosition: bookmark.lastPosition || '',
       createdAt: new Date()
     };
     this.bookmarks.push(newBookmark);
@@ -3619,13 +3630,11 @@ class MemStorage implements IStorage {
     return this.bookmarks.filter(bookmark => bookmark.userId === userId);
   }
   
-  async deleteBookmark(id: number): Promise<boolean> {
-    const index = this.bookmarks.findIndex(bookmark => bookmark.id === id);
+  async deleteBookmark(userId: number, postId: number): Promise<void> {
+    const index = this.bookmarks.findIndex(bookmark => bookmark.userId === userId && bookmark.postId === postId);
     if (index !== -1) {
       this.bookmarks.splice(index, 1);
-      return true;
     }
-    return false;
   }
   
   async getPostBookmarks(postId: number): Promise<number> {
@@ -3636,7 +3645,7 @@ class MemStorage implements IStorage {
     return this.bookmarks.find(bookmark => bookmark.userId === userId && bookmark.postId === postId);
   }
   
-  async createUserFeedback(feedback: UserFeedback): Promise<UserFeedback> {
+  async submitFeedback(feedback: InsertUserFeedback): Promise<UserFeedback> {
     const newFeedback: UserFeedback = {
       ...feedback,
       id: this.nextFeedbackId++,
@@ -3646,8 +3655,8 @@ class MemStorage implements IStorage {
     return newFeedback;
   }
   
-  async getUserFeedback(): Promise<UserFeedback[]> {
-    return this.userFeedback;
+  async getUserFeedback(userId: number): Promise<UserFeedback[]> {
+    return this.userFeedback.filter(feedback => feedback.userId === userId);
   }
   
   // Other required methods with minimal implementations
@@ -3659,7 +3668,7 @@ class MemStorage implements IStorage {
       is_approved: false,
       edited: false,
       editedAt: null,
-      metadata: {}
+      metadata: comment.metadata || {}
     };
     this.comments.push(newComment);
     return newComment;
@@ -3887,7 +3896,7 @@ class MemStorage implements IStorage {
               not(eq(postLikes.userId, userId)) // Exclude the current user
             ))
             .groupBy(postLikes.userId)
-            .having({ count: count() }, gte(count(), 2)) // Users who liked at least 2 posts
+            .having(gte(count(), 2)) // Users who liked at least 2 posts
             .limit(10);
         });
         
@@ -3907,7 +3916,8 @@ class MemStorage implements IStorage {
               .limit(10);
           });
           
-          similarUsersPostIds = new Set(similarUsersPosts.map(item => item.postId));
+          const similarUsersPostIdsSet = new Set(similarUsersPosts.map(item => item.postId));
+          similarUsersPostIdsSet.forEach(id => similarUsersPostIds.add(id));
           console.log(`[Storage] Found ${similarUsersPostIds.size} collaborative filtering recommendations`);
         }
       } catch (error) {
@@ -3922,8 +3932,10 @@ class MemStorage implements IStorage {
         let query = db.select()
           .from(postsTable);
         
+        let candidatePosts: Post[] = [];
+        
         if (allThemes.length > 0 && historyPostIds.size > 0) {
-          query = query.where(
+          const filteredQuery = query.where(
             and(
               // Exclude posts the user has already interacted with
               not(sql`${postsTable.id} IN (${Array.from(historyPostIds).join(',')})`),
@@ -3938,14 +3950,21 @@ class MemStorage implements IStorage {
               )
             )
           );
+          
+          // Get more posts than needed for scoring
+          candidatePosts = await safeDbOperation(async () => {
+            return await filteredQuery
+              .orderBy(desc(postsTable.createdAt))
+              .limit(limit * 3);
+          });
+        } else {
+          // Get more posts than needed for scoring
+          candidatePosts = await safeDbOperation(async () => {
+            return await query
+              .orderBy(desc(postsTable.createdAt))
+              .limit(limit * 3);
+          });
         }
-        
-        // Get more posts than needed for scoring
-        const candidatePosts = await safeDbOperation(async () => {
-          return await query
-            .orderBy(desc(postsTable.createdAt))
-            .limit(limit * 3);
-        });
         
         // Score posts based on multiple factors
         const scoredPosts = candidatePosts.map(post => {
@@ -3985,7 +4004,7 @@ class MemStorage implements IStorage {
           // Recency bias (newer posts get a boost)
           const postDate = post.createdAt instanceof Date 
             ? post.createdAt 
-            : new Date(post.createdAt);
+            : new Date(post.createdAt as string | number);
           
           const daysSincePosted = (Date.now() - postDate.getTime()) / (1000 * 60 * 60 * 24);
           if (daysSincePosted < 7) { // Posts less than a week old

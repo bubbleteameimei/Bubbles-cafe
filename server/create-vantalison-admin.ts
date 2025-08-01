@@ -21,19 +21,21 @@ async function createVantalisonAdmin() {
     
     if (existingUser) {
       console.log("Vantalison admin user already exists, updating password and ensuring admin status...");
-      // Update the password and make sure is_admin is true
-      await storage.pool.query(
-        "UPDATE users SET password_hash = $1, is_admin = true WHERE email = $2",
-        [hashedPassword, adminEmail]
-      );
+      // Update the user with new password and admin status
+      await storage.updateUser(existingUser.id, {
+        password_hash: hashedPassword,
+        isAdmin: true
+      });
       console.log("Vantalison admin password updated successfully");
     } else {
       // Create new admin user
-      await storage.pool.query(
-        `INSERT INTO users (username, email, password_hash, is_admin, created_at)
-         VALUES ($1, $2, $3, $4, NOW())`,
-        ["vantalison", adminEmail, hashedPassword, true]
-      );
+      await storage.createUser({
+        username: "vantalison",
+        email: adminEmail,
+        password_hash: hashedPassword,
+        isAdmin: true,
+        metadata: {}
+      });
       console.log("Vantalison admin user created successfully");
     }
   } catch (error) {

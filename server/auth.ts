@@ -4,7 +4,7 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { storage } from "./storage";
 import bcryptjs from "bcryptjs";
 import * as crypto from "crypto";
-import { User, InsertResetToken } from "@shared/schema";
+import { InsertResetToken } from "@shared/schema";
 import { emailService } from "./utils/email-service";
 import { authRateLimiter, sensitiveOperationsRateLimiter } from "./middlewares/rate-limiter";
 import { createSecureLogger } from "./utils/secure-logger";
