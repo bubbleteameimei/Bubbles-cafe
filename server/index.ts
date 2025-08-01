@@ -3,6 +3,7 @@ import { createServer } from "http";
 import { setupVite, serveStatic } from "./vite";
 import { registerRoutes } from "./routes";
 import { setNeonAsDefault } from "./neon-config"; // Set Neon as default database
+import { setGmailCredentials } from "./config/gmail-config"; // Set Gmail credentials
 import { db } from "./db"; // Using the direct Neon database connection
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
@@ -10,6 +11,9 @@ import { seedDatabase } from "./seed";
 
 // Ensure Neon database is always used
 setNeonAsDefault();
+
+// Ensure Gmail credentials are always configured
+setGmailCredentials();
 
 import helmet from "helmet";
 import compression from "compression";

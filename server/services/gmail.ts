@@ -13,7 +13,7 @@ import logger from '../utils/logger';
  * @returns Boolean indicating if credentials are set
  */
 function hasGmailCredentials(): boolean {
-  return !!(process.env.GMAIL_USER && process.env.GMAIL_PASS);
+  return !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
 }
 
 /**
@@ -31,7 +31,7 @@ export function createGmailTransporter() {
     service: 'gmail',
     auth: {
       user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_PASS
+      pass: process.env.GMAIL_APP_PASSWORD
     }
   });
 }
