@@ -63,6 +63,7 @@ import type { CommentMetadata } from "@shared/schema";
 import { db } from "./db";
 import pkg from 'pg';
 const { Pool } = pkg;
+import { createHash } from "crypto";
 
 // Database operation utility function with retry logic
 async function safeDbOperation<T>(
@@ -1924,7 +1925,7 @@ export class DatabaseStorage implements IStorage {
         ...newComment,
         createdAt: newComment.createdAt instanceof Date 
           ? newComment.createdAt 
-          : new Date(newComment.createdAt),
+          : new Date(newComment.createdAt || Date.now()),
         editedAt: newComment.editedAt 
           ? (newComment.editedAt instanceof Date ? newComment.editedAt : new Date(newComment.editedAt))
           : null,
@@ -2274,7 +2275,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Generate a consistent userId from sessionId for anonymous users
       const userId = data.sessionId ? 
-        parseInt(crypto.createHash('md5').update(data.sessionId).digest('hex').substring(0, 8), 16) : 
+        parseInt(createHash('md5').update(data.sessionId).digest('hex').substring(0, 8), 16) : 
         -1; // Use -1 for anonymous reactions
       
       const isLike = data.isLike;
@@ -2308,7 +2309,7 @@ export class DatabaseStorage implements IStorage {
   async getPersonalizedRecommendations(userId: number): Promise<Post[]> {
     try {
       // Simple implementation - just return recent posts
-      return this.getRecentPosts();
+      return this.getSecretPosts();
     } catch (error) {
       console.error('[Storage] Error getting personalized recommendations:', error);
       return [];

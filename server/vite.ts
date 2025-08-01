@@ -39,7 +39,11 @@ export async function setupVite(app: Express, server: Server) {
         process.exit(1);
       },
     },
-    server: serverOptions,
+    server: {
+      middlewareMode: true,
+      hmr: { server },
+      allowedHosts: ['localhost', '127.0.0.1', /\.replit\.dev$/]
+    },
     appType: "custom",
   });
 
