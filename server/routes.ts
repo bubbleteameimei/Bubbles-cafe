@@ -40,6 +40,7 @@ import moderationRouter from './routes/moderation';
 import { registerUserFeedbackRoutes } from './routes/user-feedback';
 import { registerPrivacySettingsRoutes } from './routes/privacy-settings';
 import { adminRoutes } from './routes/admin';
+import { firebaseAuthRoutes } from './routes/firebase-auth';
 
 import searchRouter from './routes/search';
 import newsletterRouter from './routes/newsletter';
@@ -3123,4 +3124,5 @@ Message ID: ${savedMessage.id}
   
   // Mount the admin router
   app.use('/api/admin', adminRoutes);
+  app.use('/api/auth', firebaseAuthRoutes);
 }  

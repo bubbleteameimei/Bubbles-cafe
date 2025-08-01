@@ -66,3 +66,6 @@ mode = "sequential"
 task = "shell.exec"
 args = "bash -c 'npm install && npx tsx scripts/init-db.ts && npm run dev'"
 waitForPort = 3002
+
+[agent]
+integrations = ["firebase_barebones_javascript==1.0.0"]

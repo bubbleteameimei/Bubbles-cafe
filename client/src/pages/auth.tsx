@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +34,7 @@ export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [, setLocation] = useLocation();
   const { login, registerMutation } = useAuth();
+  const { signInWithEmailPassword, signUpWithEmailPassword, isLoading: firebaseLoading } = useFirebaseAuth();
   const { toast } = useToast();
   
   // Password validation states
@@ -117,9 +119,9 @@ export default function AuthPage() {
           throw new Error("Password must be at least 6 characters long");
         }
         
-        console.log("[Auth] Validations passed, submitting login request");
-        // Use the direct login method
-        const result = await login(email, password, rememberMe);
+        console.log("[Auth] Validations passed, submitting Firebase login request");
+        // Use Firebase authentication
+        const result = await signInWithEmailPassword(email, password);
         
         if (!result) {
           throw new Error("Login failed - no user data received");
@@ -165,12 +167,8 @@ export default function AuthPage() {
           throw new Error("Password is too weak. Please include at least uppercase letters, numbers, or special characters.");
         }
         
-        console.log("[Auth] Validations passed, submitting registration request");
-        const result = await registerMutation.mutateAsync({ 
-          username, 
-          email, 
-          password 
-        });
+        console.log("[Auth] Validations passed, submitting Firebase registration request");
+        const result = await signUpWithEmailPassword(email, password);
         
         if (!result) {
           throw new Error("Registration failed - no user data received");

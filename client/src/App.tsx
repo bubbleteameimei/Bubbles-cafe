@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import Footer from './components/layout/footer';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from './hooks/use-auth';
+import { FirebaseAuthProviderWrapper } from './components/providers/firebase-auth-provider';
 import { CookieConsent } from './components/ui/cookie-consent';
 import { CookieConsentProvider } from './hooks/use-cookie-consent';
 import { GlobalErrorBoundary, setupGlobalErrorHandlers } from './components/error-boundary/global-error-boundary';
@@ -414,7 +415,8 @@ function App() {
     <GlobalErrorBoundary level="critical">
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <CookieConsentProvider>
+          <FirebaseAuthProviderWrapper>
+            <CookieConsentProvider>
             <ThemeProvider>
               <SidebarProvider>
                 <NotificationProvider>
@@ -460,6 +462,7 @@ function App() {
               </SidebarProvider>
             </ThemeProvider>
           </CookieConsentProvider>
+          </FirebaseAuthProviderWrapper>
         </AuthProvider>
       </QueryClientProvider>
     </GlobalErrorBoundary>
