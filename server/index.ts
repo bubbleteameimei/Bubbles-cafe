@@ -2,10 +2,14 @@ import express from "express";
 import { createServer } from "http";
 import { setupVite, serveStatic } from "./vite";
 import { registerRoutes } from "./routes";
+import { setNeonAsDefault } from "./neon-config"; // Set Neon as default database
 import { db } from "./db"; // Using the direct Neon database connection
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
 import { seedDatabase } from "./seed";
+
+// Ensure Neon database is always used
+setNeonAsDefault();
 
 import helmet from "helmet";
 import compression from "compression";

@@ -2,9 +2,12 @@
   "version": "1.0",
   "workflows": {
     "Start application": {
-      "command": "npm run dev",
-      "description": "Start the Express server and Vite development environment",
-      "env": {},
+      "command": "tsx server/index.ts",
+      "description": "Start the Interactive Storytelling Platform with Neon database",
+      "env": {
+        "DATABASE_URL": "postgresql://neondb_owner:npg_P6ghCZR2BASQ@ep-young-bread-aeojmse9-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
+        "NODE_ENV": "development"
+      },
       "restartPolicy": "always"
     }
   }
