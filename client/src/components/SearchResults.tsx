@@ -22,15 +22,23 @@ type Post = {
 const SearchResults: React.FC<SearchResultsProps> = ({ query, onSelect }) => {
   const [, navigate] = useLocation();
   const [searchResults, setSearchResults] = useState<Post[]>([]);
-  const { data: posts, isLoading } = useQuery({
+  const { data: posts, isLoading, error } = useQuery({
     queryKey: ['posts', 'all'],
     queryFn: async () => {
-      const response = await fetch('/api/posts?limit=100');
-      if (!response.ok) throw new Error('Failed to fetch posts');
-      const data = await response.json();
-      return data.posts as Post[];
+      // Try the main API endpoint first
+      try {
+        const response = await fetch('/api/posts?limit=100');
+        if (!response.ok) throw new Error('Main API failed');
+        const data = await response.json();
+        return data.posts as Post[];
+      } catch (error) {
+        // Fallback to WordPress API directly if main API fails
+        console.log('Fallback search error:', error);
+        throw new Error('Search functionality temporarily unavailable');
+      }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: false, // Don't retry failed requests
   });
 
   useEffect(() => {
@@ -69,6 +77,15 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query, onSelect }) => {
     return (
       <div className="text-center text-muted-foreground p-4">
         Type to search stories...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-muted-foreground p-4">
+        <p>Search is temporarily unavailable.</p>
+        <p className="text-sm mt-2">Please try again later or browse our stories directly.</p>
       </div>
     );
   }

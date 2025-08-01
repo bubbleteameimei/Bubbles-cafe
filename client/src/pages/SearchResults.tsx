@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { 
-  Loader2, Search, ArrowLeft, Filter, File, MessageSquare, 
+  Loader2, Search, Filter, File, MessageSquare, 
   User, Flag, BookOpen, X, CheckCircle2, Settings, Scale
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -17,12 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+
 import { Badge } from "@/components/ui/badge";
 
 // Type for search results
@@ -56,12 +51,12 @@ const HighlightedText = ({ text, query }: { text: string; query: string }) => {
 
 export default function SearchResults() {
   const [, setLocation] = useLocation();
-  const [, params] = useRoute("/search");
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['posts', 'comments', 'pages', 'legal', 'settings']);
   const [resultLimit, setResultLimit] = useState<number>(20);
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
-  const { toast } = useToast();
+
 
   // Type icon mapping for visual cues
   const typeIcons = {

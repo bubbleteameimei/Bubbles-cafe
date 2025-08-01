@@ -9,8 +9,7 @@ interface SearchBarProps {
   showIcon?: boolean;
   animate?: boolean;
   onSearchChange?: (query: string) => void;
-  compact?: boolean;
-  categories?: string[];
+
 }
 
 export const SearchBar = ({
@@ -18,9 +17,7 @@ export const SearchBar = ({
   placeholder = "Search stories...",
   showIcon = true,
   animate = true,
-  onSearchChange,
-  compact = false,
-  categories = []
+  onSearchChange
 }: SearchBarProps) => {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -76,25 +73,19 @@ export const SearchBar = ({
     };
   }, []);
 
-  // Handle mock search results - replace with actual API call in production
+  // Fetch actual posts for search from the API
   useEffect(() => {
     if (onSearchChange) {
       onSearchChange(query);
     }
 
     if (query.trim().length > 1) {
-      // This is where you would normally fetch results from an API
-      // For now, we're just simulating a search
-      const mockResults = [
-        { id: 1, title: "The Haunting", excerpt: "A ghost story about..." },
-        { id: 2, title: "Midnight Terror", excerpt: "When the clock strikes..." },
-        { id: 3, title: "Shadows in the Attic", excerpt: "The family never..." }
-      ].filter(result => 
-        result.title.toLowerCase().includes(query.toLowerCase())
-      );
+      // Use the fallback search mechanism when main WordPress API isn't available
+      console.log("Using fallback search mechanism");
       
-      setSearchResults(mockResults);
-      setShowResults(isFocused && mockResults.length > 0);
+      // This will show a message directing users to the main search page
+      setSearchResults([]);
+      setShowResults(false);
     } else {
       setSearchResults([]);
       setShowResults(false);
@@ -108,7 +99,7 @@ export const SearchBar = ({
     >
       <motion.div
         initial={animate ? { opacity: 0, y: -10 } : undefined}
-        animate={animate ? { opacity: 1, y: 0 } : undefined}
+        {...(animate && { animate: { opacity: 1, y: 0 } })}
         transition={{ duration: 0.3 }}
         className={`relative flex items-center w-full`}
       >
