@@ -64,22 +64,7 @@ export function LiquidMenuButton({ onClick, className }: LiquidMenuButtonProps) 
           <span className="w-2.5 h-0.5 bg-primary-foreground rounded-full transition-transform duration-200" />
         </div>
 
-        {/* Blood dripping effects */}
-        <div className="blood-container">
-          {isAnimating && droplets.map(({ id, delay, left }) => (
-            <div key={id} style={{ position: 'absolute', left: `${left}px`, animationDelay: `${delay}ms` }}>
-              <div 
-                className={cn("blood-drip", isAnimating && "animate")}
-              />
-              <div 
-                className={cn("blood-droplet", isAnimating && "animate")}
-              />
-              <div 
-                className={cn("blood-ripple", isAnimating && "animate")}
-              />
-            </div>
-          ))}
-        </div>
+        {/* Removed blood dripping effects per user request */}
       </button>
     </div>
   );

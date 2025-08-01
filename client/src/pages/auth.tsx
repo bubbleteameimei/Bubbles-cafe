@@ -95,7 +95,7 @@ export default function AuthPage() {
           throw new Error("Please enter both email and password");
         }
         
-        // Traditional login flow (implement your login logic here)
+        // Traditional login flow
         toast({
           title: "Success",
           description: "Successfully signed in!",
@@ -158,9 +158,21 @@ export default function AuthPage() {
       }
     } catch (error) {
       console.error('Google sign-in error:', error);
+      // More specific error handling for common Firebase auth errors
+      let errorMessage = "Failed to sign in with Google.";
+      if (error instanceof Error) {
+        if (error.message.includes('popup-closed-by-user')) {
+          errorMessage = "Sign-in was cancelled.";
+        } else if (error.message.includes('network-request-failed')) {
+          errorMessage = "Network error. Please check your connection.";
+        } else if (error.message.includes('invalid-api-key')) {
+          errorMessage = "Configuration error. Please contact support.";
+        }
+      }
+      
       toast({
-        title: "Error",
-        description: "Failed to sign in with Google. Please try again.",
+        title: "Google Sign-in Error",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -183,33 +195,33 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-black p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="w-16 h-16 bg-gradient-to-r from-red-800 via-red-900 to-black rounded-2xl flex items-center justify-center shadow-lg">
               <BookOpen className="w-8 h-8 text-white" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
-            Interactive Stories
+          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight font-serif">
+            BUBBLES CAFE
           </h1>
-          <p className="text-gray-600 dark:text-gray-300 text-lg">
-            {isSignIn ? "Welcome back to your story journey" : "Begin your interactive storytelling adventure"}
+          <p className="text-gray-300 text-lg">
+            {isSignIn ? "Welcome back to the darkness" : "Step into our world of shadows"}
           </p>
         </div>
 
         {/* Main Card */}
-        <Card className="shadow-2xl border-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg">
+        <Card className="shadow-2xl border border-red-900/30 bg-black/90 backdrop-blur-lg">
           <CardHeader className="space-y-1 pb-6">
-            <div className="flex space-x-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <div className="flex space-x-1 p-1 bg-gray-900/50 rounded-lg">
               <Button
                 variant={isSignIn ? "default" : "ghost"}
                 className={`flex-1 transition-all duration-200 ${
                   isSignIn 
-                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md" 
-                    : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                    ? "bg-gradient-to-r from-red-800 to-red-900 text-white shadow-md" 
+                    : "text-gray-400 hover:text-white"
                 }`}
                 onClick={() => setIsSignIn(true)}
               >
@@ -219,8 +231,8 @@ export default function AuthPage() {
                 variant={!isSignIn ? "default" : "ghost"}
                 className={`flex-1 transition-all duration-200 ${
                   !isSignIn 
-                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md" 
-                    : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                    ? "bg-gradient-to-r from-red-800 to-red-900 text-white shadow-md" 
+                    : "text-gray-400 hover:text-white"
                 }`}
                 onClick={() => setIsSignIn(false)}
               >
@@ -233,7 +245,7 @@ export default function AuthPage() {
             {/* Google Sign-in Button */}
             <Button
               variant="outline"
-              className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
+              className="w-full h-12 text-base font-medium border-2 border-red-900/50 bg-black/50 text-white hover:bg-red-900/20 transition-all duration-200"
               onClick={handleGoogleSignIn}
               disabled={isGoogleLoading || isLoading}
             >
@@ -250,7 +262,7 @@ export default function AuthPage() {
                 <Separator className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">
+                <span className="bg-black px-2 text-gray-400">
                   Or continue with email
                 </span>
               </div>
@@ -260,18 +272,18 @@ export default function AuthPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isSignIn && (
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <Label htmlFor="username" className="text-sm font-medium text-gray-300">
                     Username
                   </Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
                     <Input
                       id="username"
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       placeholder="Choose a username"
-                      className="pl-10 h-12 text-base"
+                      className="pl-10 h-12 text-base bg-gray-900/50 border-gray-700 text-white placeholder-gray-500"
                       required={!isSignIn}
                     />
                   </div>
@@ -279,42 +291,42 @@ export default function AuthPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label htmlFor="email" className="text-sm font-medium text-gray-300">
                   Email
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
                   <Input
                     id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
-                    className="pl-10 h-12 text-base"
+                    className="pl-10 h-12 text-base bg-gray-900/50 border-gray-700 text-white placeholder-gray-500"
                     required
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label htmlFor="password" className="text-sm font-medium text-gray-300">
                   Password
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={isSignIn ? "Enter your password" : "Create a password"}
-                    className="pl-10 pr-10 h-12 text-base"
+                    className="pl-10 pr-10 h-12 text-base bg-gray-900/50 border-gray-700 text-white placeholder-gray-500"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -324,17 +336,17 @@ export default function AuthPage() {
                 {!isSignIn && password && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-600 dark:text-gray-400">
+                      <span className="text-xs text-gray-400">
                         Password strength: <span className="font-medium">{getPasswordStrengthLabel()}</span>
                       </span>
                     </div>
-                    <div className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
                       <div
                         className={`h-full transition-all duration-300 ${getPasswordStrengthColor()}`}
                         style={{ width: `${(passwordStrength / 5) * 100}%` }}
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
                       <div className="flex items-center">
                         {validations.hasMinLength ? (
                           <CheckCircle2 className="h-3 w-3 text-green-500 mr-1" />
@@ -374,18 +386,18 @@ export default function AuthPage() {
 
               {!isSignIn && (
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-300">
                     Confirm Password
                   </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
                     <Input
                       id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm your password"
-                      className={`pl-10 pr-10 h-12 text-base ${
+                      className={`pl-10 pr-10 h-12 text-base bg-gray-900/50 border-gray-700 text-white placeholder-gray-500 ${
                         confirmPassword && passwordsMatch !== null
                           ? passwordsMatch
                             ? 'border-green-500 focus:border-green-500'
@@ -397,7 +409,7 @@ export default function AuthPage() {
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                     >
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -407,12 +419,12 @@ export default function AuthPage() {
                       {passwordsMatch ? (
                         <>
                           <CheckCircle2 className="h-3 w-3 text-green-500 mr-1" />
-                          <span className="text-green-600 dark:text-green-400">Passwords match</span>
+                          <span className="text-green-400">Passwords match</span>
                         </>
                       ) : (
                         <>
                           <XCircle className="h-3 w-3 text-red-500 mr-1" />
-                          <span className="text-red-600 dark:text-red-400">Passwords don't match</span>
+                          <span className="text-red-400">Passwords don't match</span>
                         </>
                       )}
                     </div>
@@ -428,11 +440,11 @@ export default function AuthPage() {
                       checked={rememberMe}
                       onCheckedChange={setRememberMe}
                     />
-                    <Label htmlFor="remember-me" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <Label htmlFor="remember-me" className="text-sm font-medium text-gray-300">
                       Remember me
                     </Label>
                   </div>
-                  <Button variant="link" className="p-0 h-auto text-blue-600 dark:text-blue-400">
+                  <Button variant="link" className="p-0 h-auto text-red-400 hover:text-red-300">
                     Forgot password?
                   </Button>
                 </div>
@@ -440,7 +452,7 @@ export default function AuthPage() {
 
               <Button
                 type="submit"
-                className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
+                className="w-full h-12 text-base font-medium bg-gradient-to-r from-red-800 to-red-900 hover:from-red-700 hover:to-red-800 transition-all duration-200"
                 disabled={isLoading || registerMutation.isPending || isGoogleLoading}
               >
                 {isLoading || registerMutation.isPending ? (
@@ -453,12 +465,12 @@ export default function AuthPage() {
                     {isSignIn ? (
                       <>
                         <Sparkles className="mr-2 h-4 w-4" />
-                        Continue to Stories
+                        Enter the Cafe
                       </>
                     ) : (
                       <>
                         <BookOpen className="mr-2 h-4 w-4" />
-                        Start Your Journey
+                        Join Our World
                       </>
                     )}
                   </>
@@ -470,13 +482,13 @@ export default function AuthPage() {
 
         {/* Footer */}
         <div className="text-center mt-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gray-500">
             By continuing, you agree to our{" "}
-            <Button variant="link" className="p-0 h-auto text-blue-600 dark:text-blue-400 text-sm">
+            <Button variant="link" className="p-0 h-auto text-red-400 hover:text-red-300 text-sm">
               Terms of Service
             </Button>{" "}
             and{" "}
-            <Button variant="link" className="p-0 h-auto text-blue-600 dark:text-blue-400 text-sm">
+            <Button variant="link" className="p-0 h-auto text-red-400 hover:text-red-300 text-sm">
               Privacy Policy
             </Button>
           </p>

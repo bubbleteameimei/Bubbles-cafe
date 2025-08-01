@@ -151,21 +151,21 @@ export async function sendNewsletterWelcomeEmail(email: string): Promise<boolean
   
   // SIMPLIFIED TEXT VERSION
   const text = `
-WELCOME TO INTERACTIVE STORYTELLING PLATFORM
+WELCOME TO BUBBLE'S CAFE NEWSLETTER
 
 Hi there,
 
-Welcome to our Interactive Storytelling Platform! We're excited to have you join our community of story enthusiasts and creators.
+We're delighted to welcome you to our corner of the internet where we explore storytelling through a darker lens.
 
-Our platform offers immersive narrative experiences that bring stories to life through cutting-edge technology and interactive elements.
+At Bubble's Cafe, we share stories that might stay with you a while, for better or worse.
 
-WHAT'S IN YOUR INBOX?
-- New Stories: Fresh interactive narratives delivered to you
-- Exclusive Content: Platform updates and special features
-- Community Events: Story discussions and creative workshops
-- Creator Tips: Resources for enhancing your storytelling experience
+WHAT'S BREWING IN YOUR INBOX?
+- Fresh Stories: New tales delivered directly to you
+- Exclusive Content: Special features only for subscribers
+- Community Events: Join readings and discussions
+- Reading Tips: Ideas for creating the perfect reading atmosphere
 
-"The best stories are the ones that transport you to another world." - Platform Team
+"No great mind has ever existed without a touch of madness." - Aristotle
 
 Your first newsletter will arrive soon. Start exploring and discover your next favorite story!
 
