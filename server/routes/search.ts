@@ -3,16 +3,13 @@ import { db } from '../db';
 import { 
   posts, 
   comments, 
-  users,
-  reportedContent
+  users
 } from '@shared/schema';
-import { eq, like, or, ilike, and, desc, asc } from 'drizzle-orm';
 
 // Define types for search use
 type Post = typeof posts.$inferSelect;
 type Comment = typeof comments.$inferSelect;
 type User = typeof users.$inferSelect;
-type ReportedContent = typeof reportedContent.$inferSelect;
 
 const router = Router();
 
@@ -21,7 +18,7 @@ interface SearchOptions {
   includePages: boolean;
   includeComments: boolean;
   includeUsers: boolean;
-  includeReported: boolean;
+
   includeLegal: boolean;
   includeSettings: boolean;
   contentTypes: string[];
@@ -31,6 +28,7 @@ interface SearchOptions {
 
 // Search API endpoint with expanded capabilities
 router.get('/', async (req, res) => {
+  console.log('[Search] Route hit with query:', req.query);
   try {
     // Default to searching all content
     const { 
@@ -66,12 +64,11 @@ router.get('/', async (req, res) => {
     // No admin mode in search
     const isAdmin = false;
     
-    // Configure search options
+    // Configure search options - fix the mismatch between 'posts' and 'pages'
     const searchOptions: SearchOptions = {
-      includePages: contentTypes.includes('pages'),
+      includePages: contentTypes.includes('posts') || contentTypes.includes('pages'), // Accept both posts and pages
       includeComments: contentTypes.includes('comments'),
       includeUsers: contentTypes.includes('users') && isAdmin, // Only admins can search users
-      includeReported: contentTypes.includes('reported') && isAdmin, // Only admins can search reported content
       includeLegal: contentTypes.includes('legal'),
       includeSettings: contentTypes.includes('settings'),
       contentTypes,
@@ -87,7 +84,9 @@ router.get('/', async (req, res) => {
     
     // 1. Search posts (always included)
     if (contentTypes.includes('posts')) {
+      console.log('[Search] Attempting to query posts table...');
       const allPosts = await db.select().from(posts);
+      console.log('[Search] Retrieved', allPosts?.length || 0, 'posts from database');
       
       const postResults = allPosts
         .filter((post: Post) => {
@@ -528,70 +527,7 @@ router.get('/', async (req, res) => {
       }
     }
     
-    // 7. Search reported content if requested (admin only)
-    if (searchOptions.includeReported && searchOptions.isAdmin) {
-      try {
-        const allReported = await db.select().from(reportedContent);
-        
-        const reportedResults = allReported
-          .filter((report: ReportedContent) => {
-            const reason = report.reason?.toLowerCase() || '';
-            // Use status as additional searchable field since we don't have details
-            const status = report.status?.toLowerCase() || '';
-            
-            return searchTerms.some(term => {
-              return reason.includes(term) || status.includes(term);
-            });
-          })
-          .map((report: ReportedContent) => {
-            // Create matches
-            const matches: { text: string; context: string }[] = [];
-            
-            searchTerms.forEach(term => {
-              const reason = report.reason?.toLowerCase() || '';
-              const status = report.status?.toLowerCase() || '';
-              
-              if (reason.includes(term)) {
-                matches.push({
-                  text: term,
-                  context: `Reason: ${report.reason}`
-                });
-              }
-              
-              if (status.includes(term)) {
-                matches.push({
-                  text: term,
-                  context: `Status: ${report.status}`
-                });
-              }
-            });
-            
-            // Pick correct URL based on content type
-            let url = '/admin/reports';
-            if (report.contentType === 'post') {
-              url = `/reader/${report.contentId}`;
-            } else if (report.contentType === 'comment') {
-              // For comments, we need to find the related post - for now use a generic URL
-              url = `/admin/reports/${report.id}`;
-            }
-            
-            return {
-              id: report.id,
-              title: `Reported ${report.contentType} #${report.contentId}`,
-              excerpt: report.reason || 'No reason provided',
-              type: 'report',
-              url,
-              matches,
-              createdAt: report.createdAt,
-              adminOnly: true
-            };
-          });
-          
-        results = [...results, ...reportedResults];
-      } catch (err) {
-        console.error('[Search] Error searching reported content:', err);
-      }
-    }
+    // Note: Reported content search removed - not implemented
     
     // Sort results by relevance (match count) and then date
     results.sort((a, b) => {
@@ -619,8 +555,17 @@ router.get('/', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Search error:', error);
-    return res.status(500).json({ error: 'An error occurred during search', results: [] });
+    console.error('[Search] Error searching content:', error);
+    console.error('[Search] Error stack:', (error as Error).stack);
+    console.error('[Search] Error message:', (error as Error).message);
+    return res.status(500).json({ 
+      error: 'An error occurred during search', 
+      results: [],
+      debug: process.env.NODE_ENV !== 'production' ? {
+        message: (error as Error).message,
+        stack: (error as Error).stack
+      } : undefined
+    });
   }
 });
 

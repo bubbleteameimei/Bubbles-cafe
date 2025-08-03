@@ -27,7 +27,7 @@ export function EnhancedPageTransition({
   return (
     <>
       {currentChildren}
-    </>)
+    </>
   );
 }
 

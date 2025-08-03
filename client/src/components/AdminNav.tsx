@@ -5,7 +5,7 @@ export function AdminNav() {
   const { user } = useAuth();
 
   // Only render admin navigation if user exists and is an admin
-  if (!user?.isAdmin) {
+  if (!user || !(user as any).isAdmin) {
     return null;
   }
 

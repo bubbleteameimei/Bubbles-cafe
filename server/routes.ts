@@ -1,17 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import type { Express } from "express";
-import { createServer, type Server } from "http";
-import { storage, MemStorage } from "./storage";
-import { getDatabaseStatus } from "./db";
+import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import express from 'express';
-import { apiRateLimiter, authRateLimiter } from './middlewares/rate-limiter';
-import { apiCache, clearCache } from './middlewares/api-cache';
-import { browserCache, etagCache } from './middlewares/browser-cache';
-import { applySecurityMiddleware, sanitizeInput, securitySchemas } from './middleware/security-validation';
+import { apiRateLimiter } from './middlewares/rate-limiter';
+import { apiCache } from './middlewares/api-cache';
+import { applySecurityMiddleware } from './middleware/security-validation';
 import * as session from 'express-session';
 
 // Define session types for Express
@@ -27,9 +24,7 @@ import { generateEnhancedResponse, generateResponseAlternatives } from './utils/
 import { sanitizeHtml, stripHtml } from './utils/sanitizer';
 import { sendNewsletterWelcomeEmail } from './utils/send-email';
 import { z } from "zod";
-import { insertPostSchema, insertCommentSchema, insertCommentReplySchema, insertNewsletterSubscriptionSchema, type Post, type PostMetadata, type InsertBookmark, type InsertUserFeedback, posts } from "@shared/schema";
-import { db } from "./db";
-import { sql, eq } from "drizzle-orm";
+import { insertPostSchema, posts } from "@shared/schema";
 import { moderateComment } from "./utils/comment-moderation";
 import { log } from "./vite";
 import { createTransport } from "nodemailer";
@@ -42,7 +37,7 @@ import { registerPrivacySettingsRoutes } from './routes/privacy-settings';
 import { adminRoutes } from './routes/admin';
 import { firebaseAuthRoutes } from './routes/firebase-auth';
 
-import searchRouter from './routes/search';
+// Search router imported directly in server/index.ts to avoid Vite conflicts
 import newsletterRouter from './routes/newsletter';
 import bookmarksRouter from './routes/bookmarks';
 // CSRF protection completely removed as requested
@@ -50,9 +45,8 @@ import { createSecureLogger } from './utils/secure-logger';
 import { requestLogger, errorLogger } from './utils/debug-logger';
 import { validateBody, validateQuery, validateParams, commonSchemas } from './middleware/input-validation';
 import { asyncHandler, createError } from './utils/error-handler';
-import { db } from "./db-connect";
+import { db } from "./db";
 import { eq, sql, desc } from "drizzle-orm";
-import { getPostsRecommendations } from "./test-recommendations";
 
 const routesLogger = createSecureLogger('Routes');
 
@@ -178,6 +172,46 @@ export function registerRoutes(app: Express): Server {
       environment: process.env.NODE_ENV || "development",
       csrfToken: req.session.csrfToken || null
     });
+  });
+
+  // Test search endpoint to isolate issues
+  app.get("/api/test-search", async (req: Request, res: Response) => {
+    try {
+      console.log('[TestSearch] Hit test search endpoint');
+      const query = req.query.q as string;
+      
+      if (!query) {
+        return res.json({ error: 'Query required', results: [] });
+      }
+
+      const allPosts = await db.select().from(posts);
+      console.log('[TestSearch] Found', allPosts.length, 'posts');
+
+      const results = allPosts
+        .filter(post => {
+          const searchTerm = query.toLowerCase();
+          const title = (post.title || '').toLowerCase();
+          const content = (post.content || '').toLowerCase();
+          return title.includes(searchTerm) || content.includes(searchTerm);
+        })
+        .map(post => ({
+          id: post.id,
+          title: post.title,
+          excerpt: (post.content || '').substring(0, 100) + '...',
+          url: `/reader/${post.id}`
+        }));
+
+      console.log('[TestSearch] Returning', results.length, 'results');
+      return res.json({ results, query, total: results.length });
+
+    } catch (error) {
+      console.error('[TestSearch] Error:', error);
+      return res.status(500).json({ 
+        error: 'Search failed', 
+        message: (error as Error).message,
+        results: [] 
+      });
+    }
   });
 
 
@@ -3098,10 +3132,39 @@ Message ID: ${savedMessage.id}
     }
   });
 
-  // Add error logger middleware
+  // Mount the moderation router
+  app.use('/api/moderation', moderationRouter);
+  
+  // Add auth status endpoint before other routes
+  app.get('/api/auth/status', (req: Request, res: Response) => {
+    if (req.isAuthenticated()) {
+      res.json({ 
+        isAuthenticated: true, 
+        user: req.user 
+      });
+    } else {
+      res.json({ isAuthenticated: false });
+    }
+  });
+
+  // Search router is registered early in server/index.ts to avoid Vite middleware conflicts
+  // No longer registering it here to prevent duplicates
+  
+  // Mount the newsletter router  
+  app.use('/api/newsletter', newsletterRouter);
+  
+  // Mount the bookmarks router
+  app.use('/api/bookmarks', bookmarksRouter);
+  app.use('/api/reader/bookmarks', bookmarksRouter);
+  
+  // Mount the admin router
+  app.use('/api/admin', adminRoutes);
+  app.use('/api/auth', firebaseAuthRoutes);
+
+  // Add error logger middleware AFTER all routes
   app.use(errorLogger);
   
-  // Global error handler with enhanced logging
+  // Global error handler with enhanced logging - MUST BE LAST
   app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     // Use the already imported routesLogger
     // Log the error with full details
@@ -3120,33 +3183,4 @@ Message ID: ${savedMessage.id}
       error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   });
-
-  // Mount the moderation router
-  app.use('/api/moderation', moderationRouter);
-  
-  // Add auth status endpoint before other routes
-  app.get('/api/auth/status', (req: Request, res: Response) => {
-    if (req.isAuthenticated()) {
-      res.json({ 
-        isAuthenticated: true, 
-        user: req.user 
-      });
-    } else {
-      res.json({ isAuthenticated: false });
-    }
-  });
-
-  // Mount the search router
-  app.use('/api/search', searchRouter);
-  
-  // Mount the newsletter router  
-  app.use('/api/newsletter', newsletterRouter);
-  
-  // Mount the bookmarks router
-  app.use('/api/bookmarks', bookmarksRouter);
-  app.use('/api/reader/bookmarks', bookmarksRouter);
-  
-  // Mount the admin router
-  app.use('/api/admin', adminRoutes);
-  app.use('/api/auth', firebaseAuthRoutes);
 }  

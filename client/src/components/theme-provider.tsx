@@ -37,7 +37,10 @@ export function ThemeProvider({
   useEffect(() => {
     const root = window.document.documentElement;
 
-    // Apply theme changes smoothly
+    // Add smooth transition for theme changes
+    root.style.setProperty('transition', 'background-color 0.3s ease, color 0.3s ease');
+
+    // Clean up previous theme classes
     root.classList.remove("light", "dark");
 
     if (theme === "system") {
@@ -58,10 +61,23 @@ export function ThemeProvider({
       };
       
       mediaQuery.addEventListener("change", handleSystemThemeChange);
-      return () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
+      return () => {
+        mediaQuery.removeEventListener("change", handleSystemThemeChange);
+        root.style.removeProperty('transition');
+      };
     } else {
       root.classList.add(theme);
     }
+
+    // Remove transition after theme is applied
+    const timeoutId = setTimeout(() => {
+      root.style.removeProperty('transition');
+    }, 300);
+
+    return () => {
+      clearTimeout(timeoutId);
+      root.style.removeProperty('transition');
+    };
   }, [theme]);
 
   // Toggle between light and dark themes

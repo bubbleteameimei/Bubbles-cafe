@@ -108,6 +108,13 @@ app.use(validateCsrfToken({
   ]
 }));
 
+// Register critical API routes BEFORE any middleware that might interfere
+import searchRouter from './routes/search-simple';
+app.use('/api/search', (req, _res, next) => {
+  console.log('[EarlySearch] Route hit before all middleware:', req.method, req.url);
+  next();
+}, searchRouter);
+
 // Setup authentication
 setupAuth(app);
 setupOAuth(app);

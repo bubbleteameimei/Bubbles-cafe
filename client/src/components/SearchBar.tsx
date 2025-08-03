@@ -134,8 +134,8 @@ export const SearchBar = ({
       className={`relative w-full max-w-md ${className}`}
     >
       <motion.div
-        initial={animate ? { opacity: 0, y: -10 } : undefined}
-        {...(animate && { animate: { opacity: 1, y: 0 } })}
+        initial={animate ? { opacity: 0, y: -10 } : false}
+        animate={animate ? { opacity: 1, y: 0 } : false}
         transition={{ duration: 0.3 }}
         className={`relative flex items-center w-full`}
       >
