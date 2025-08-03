@@ -44,7 +44,7 @@ body.loading-active {
 .loader span {
   display: inline-block !important;
   font-size: 32px !important; /* Larger text */
-  font-family: 'Space Mono', monospace !important;
+  font-family: 'Megrim', monospace !important;
   font-weight: 600 !important;
   animation: blur 2s linear infinite !important;
   line-height: 1 !important; /* Better line height control */

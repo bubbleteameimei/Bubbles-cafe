@@ -78,15 +78,15 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
       aria-live="polite"
       role="status"
     >
-      {/* Main loading text */}
+      {/* Main loading text with Megrim font */}
       <div className="loader">
-        <span>L</span>
-        <span>O</span>
-        <span>A</span>
-        <span>D</span>
-        <span>I</span>
-        <span>N</span>
-        <span>G</span>
+        <span style={{ fontFamily: 'Megrim, monospace' }}>L</span>
+        <span style={{ fontFamily: 'Megrim, monospace' }}>O</span>
+        <span style={{ fontFamily: 'Megrim, monospace' }}>A</span>
+        <span style={{ fontFamily: 'Megrim, monospace' }}>D</span>
+        <span style={{ fontFamily: 'Megrim, monospace' }}>I</span>
+        <span style={{ fontFamily: 'Megrim, monospace' }}>N</span>
+        <span style={{ fontFamily: 'Megrim, monospace' }}>G</span>
       </div>
     </div>
   );

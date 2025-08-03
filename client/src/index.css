@@ -68,21 +68,7 @@ body {
   }
 }
 
-/* Add gentle hover effects to interactive elements */
-.group:hover::after {
-  content: '';
-  position: absolute;
-  top: -5px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 8px;
-  height: 8px;
-  background: radial-gradient(circle, rgba(220, 38, 38, 0.3), rgba(153, 27, 27, 0.1));
-  border-radius: 50%;
-  animation: bloodStain 1s ease-out;
-  pointer-events: none;
-  z-index: 10;
-}
+/* Removed red dot hover effect that was causing button issues */
 
 /* Global responsive design fixes */
 @layer base {
