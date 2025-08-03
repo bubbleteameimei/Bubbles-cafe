@@ -135,7 +135,32 @@ export function useAuth() {
   };
 }
 
-// Simple AuthProvider without JSX complications
+// Create AuthContext for provider pattern
+interface AuthContextType {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  loginMutation: ReturnType<typeof useMutation>;
+  registerMutation: ReturnType<typeof useMutation>;
+  logoutMutation: ReturnType<typeof useMutation>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  return children;
+  const auth = useAuth();
+  
+  return (
+    <AuthContext.Provider value={auth}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuthContext() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuthContext must be used within an AuthProvider');
+  }
+  return context;
 }
