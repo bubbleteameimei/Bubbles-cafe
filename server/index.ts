@@ -58,7 +58,7 @@ setupCors(app);
 // No additional cookie parser needed for CSRF protection
 
 // Increase body parser limit for file uploads
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   // Skip content-type check for multipart requests
   if (req.headers['content-type']?.includes('multipart/form-data')) {
     return next();
@@ -382,7 +382,7 @@ process.on('uncaughtException', (error) => {
 });
 
 // Handle unhandled rejections
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason, _promise) => {
   serverLogger.error('Unhandled promise rejection', {
     reason: reason instanceof Error ? reason.message : String(reason),
     stack: reason instanceof Error ? reason.stack : undefined
