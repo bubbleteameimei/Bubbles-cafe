@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -36,6 +36,10 @@ export function useAuth() {
   // Query for current user
   const userQuery = useQuery({
     queryKey: ['/api/auth/me'],
+    queryFn: async () => {
+      const result = await apiRequest('/api/auth/me');
+      return result as AuthResponse;
+    },
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
