@@ -427,7 +427,8 @@ export default function SimpleCommentSection({ postId }: CommentSectionProps) {
         return data;
       } catch (error) {
         console.error(`[Comments] Error fetching comments:`, error);
-        throw error;
+        // Return empty array instead of throwing to prevent cascading errors
+        return [];
       }
     },
     retry: 2,

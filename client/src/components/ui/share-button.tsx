@@ -30,7 +30,7 @@ export function ShareButton({ title, text, url = window.location.href, className
       try {
         await navigator.share({
           title,
-          text,
+          text: text || undefined,
           url,
         });
         toast({

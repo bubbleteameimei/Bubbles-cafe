@@ -1153,21 +1153,23 @@ export function registerRoutes(app: Express): Server {
       
       // Use the numeric post ID from the post record
       const comments = await storage.getComments(post.id);
-      console.log(`[GET /api/posts/:postId/comments] Retrieved ${comments.length} comments for post ID: ${post.id}`);
-      res.json(comments);
+      console.log(`[GET /api/posts/:postId/comments] Retrieved ${comments?.length || 0} comments for post ID: ${post.id}`);
+      res.json(comments || []);
     } catch (error) {
       console.error("Error in getComments:", error);
-      res.status(500).json({ message: "Failed to fetch comments" });
+      // Return empty array instead of error to prevent client crashes
+      res.json([]);
     }
   });
 
   app.get("/api/comments/recent", async (_req: Request, res: Response) => {
     try {
       const comments = await storage.getRecentComments();
-      res.json(comments);
+      res.json(comments || []);
     } catch (error) {
       console.error("Error fetching recent comments:", error);
-      res.status(500).json({ message: "Failed to fetch recent comments" });
+      // Return empty array instead of error to prevent client crashes
+      res.json([]);
     }
   });
 
