@@ -40,7 +40,7 @@ router.get('/', async (req, res) => {
     } = req.query;
 
     if (!q || typeof q !== 'string') {
-      return res.status(400).json({ error: 'Search query is required' });
+      return res.status(400).json({ error: 'Search query is required', results: [] });
     }
 
     // Convert query to lowercase for case-insensitive search

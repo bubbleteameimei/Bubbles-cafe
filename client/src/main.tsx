@@ -49,7 +49,8 @@ initCSRFProtection().then(() => {
   logger.error("Error initializing CSRF protection:", error);
 });
 
-// Register Service Worker for PWA functionality
+// Register Service Worker for PWA functionality - temporarily disabled due to missing sw.js
+/*
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
@@ -61,6 +62,7 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+*/
 
 logger.debug("CSS styles loaded");
 logger.info("Mounting React application...");

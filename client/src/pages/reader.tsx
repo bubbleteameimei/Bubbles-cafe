@@ -512,14 +512,16 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     transition: color 0.3s ease, background-color 0.3s ease;
   }
   .story-content p, .story-content .story-paragraph {
-    line-height: 1.7;
-    margin-bottom: 1.7em;
+    line-height: 1.8;
+    margin-bottom: 2em;
     font-family: ${availableFonts[fontFamily].family};
+    letter-spacing: 0.02em;
   }
   @media (max-width: 768px) {
     .story-content p, .story-content .story-paragraph {
-      margin-bottom: 1.5em;
-      line-height: 1.75;
+      margin-bottom: 1.8em;
+      line-height: 1.85;
+      letter-spacing: 0.01em;
     }
   }`;
   };

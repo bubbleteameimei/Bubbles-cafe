@@ -5,13 +5,17 @@
  */
 
 import { Router } from 'express';
-import logger from '../utils/logger';
+import { createSecureLogger } from '../utils/secure-logger';
+
+const logger = createSecureLogger('Bookmarks');
 import { isAuthenticated } from '../middlewares/auth';
 import { db } from '../db';
 import { and, eq } from 'drizzle-orm';
 import { bookmarks } from '../../shared/schema';
 
 const router = Router();
+
+export default router;
 
 /**
  * GET /api/reader/bookmarks

@@ -155,12 +155,45 @@ export default function SearchResults() {
         params.set('admin', 'true');
       }
       
-      const response = await fetch(`/api/search?${params.toString()}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch search results");
+      try {
+        const response = await fetch(`/api/search?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch search results");
+        }
+        
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        // Fallback to local search if API fails
+        console.log('Search API failed, using fallback search');
+        const postsResponse = await fetch('/api/posts?limit=50');
+        if (!postsResponse.ok) return { results: [] };
+        
+        const postsData = await postsResponse.json();
+        const posts = postsData.posts || [];
+        const query = searchQuery.toLowerCase();
+        
+        const filteredPosts = posts.filter((post: any) => {
+          const title = post.title?.rendered || post.title || '';
+          const content = post.content?.rendered || post.content || '';
+          const excerpt = post.excerpt?.rendered || post.excerpt || '';
+          
+          return title.toLowerCase().includes(query) ||
+                 content.toLowerCase().includes(query) ||
+                 excerpt.toLowerCase().includes(query);
+        });
+        
+        const results = filteredPosts.slice(0, resultLimit).map((post: any) => ({
+          id: post.id,
+          title: post.title?.rendered || post.title || 'Untitled',
+          excerpt: post.excerpt?.rendered || post.excerpt || 'No excerpt available',
+          type: 'post' as const,
+          url: `/reader/${post.slug || post.id}`,
+          matches: [{ text: searchQuery, context: 'Title or content match' }]
+        }));
+        
+        return { results };
       }
-      
-      return response.json();
     },
     enabled: !!searchQuery,
   });

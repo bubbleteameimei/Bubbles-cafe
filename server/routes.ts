@@ -2669,7 +2669,7 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/feedback", async (req: Request, res: Response) => {
     try {
-      feedbackLogger.info('Feedback submission received', { 
+      routesLogger.info('Feedback submission received', { 
         page: req.body.page, 
         type: req.body.type, 
         browser: req.body.browser,
@@ -2680,7 +2680,7 @@ export function registerRoutes(app: Express): Server {
       
       // Basic validation
       if (!type || !content) {
-        feedbackLogger.warn('Validation failed - missing required fields', { 
+        routesLogger.warn('Validation failed - missing required fields', { 
           hasType: !!type, 
           hasContent: !!content 
         });
@@ -2692,7 +2692,7 @@ export function registerRoutes(app: Express): Server {
       const userId = user?.id || null;
       
       if (userId) {
-        feedbackLogger.info('Associating feedback with authenticated user', { userId });
+        routesLogger.info('Associating feedback with authenticated user', { userId });
       }
       
       // Create feedback object
@@ -2713,14 +2713,14 @@ export function registerRoutes(app: Express): Server {
       
       // Enhanced logging and performance tracking
       const startTime = Date.now();
-      feedbackLogger.debug('Submitting feedback to database', { feedbackData: { type, page, category }});
+      routesLogger.debug('Submitting feedback to database', { feedbackData: { type, page, category }});
       
       // Submit feedback
       const feedback = await storage.submitFeedback(feedbackData);
       
       // Log performance metrics
       const duration = Date.now() - startTime;
-      feedbackLogger.info('Feedback submitted successfully', { 
+      routesLogger.info('Feedback submitted successfully', { 
         id: feedback.id,
         duration: `${duration}ms`,
         type: feedback.type
@@ -2728,7 +2728,7 @@ export function registerRoutes(app: Express): Server {
       
       res.status(201).json({ success: true, feedback });
     } catch (error) {
-      feedbackLogger.error('Error submitting feedback', { 
+      routesLogger.error('Error submitting feedback', { 
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       });
@@ -2742,7 +2742,7 @@ export function registerRoutes(app: Express): Server {
       // Check if user is admin
       const user = req.user as any;
       if (!user.isAdmin) {
-        feedbackLogger.warn('Unauthorized access attempt to feedback list', {
+        routesLogger.warn('Unauthorized access attempt to feedback list', {
           userId: user?.id,
           isAdmin: user?.isAdmin
         });
@@ -2753,7 +2753,7 @@ export function registerRoutes(app: Express): Server {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
       const status = req.query.status as string || "all";
       
-      feedbackLogger.info('Fetching feedback list', { limit, status });
+      routesLogger.info('Fetching feedback list', { limit, status });
       
       // Performance tracking
       const startTime = Date.now();
@@ -2763,7 +2763,7 @@ export function registerRoutes(app: Express): Server {
       
       // Log performance metrics
       const duration = Date.now() - startTime;
-      feedbackLogger.info('Feedback list retrieved', { 
+      routesLogger.info('Feedback list retrieved', { 
         count: feedback.length,
         duration: `${duration}ms`,
         status: status,
@@ -2772,7 +2772,7 @@ export function registerRoutes(app: Express): Server {
       
       res.status(200).json({ feedback });
     } catch (error) {
-      feedbackLogger.error('Error fetching feedback list', {
+      routesLogger.error('Error fetching feedback list', {
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       });
@@ -2786,7 +2786,7 @@ export function registerRoutes(app: Express): Server {
       // Check if user is admin
       const user = req.user as any;
       if (!user.isAdmin) {
-        feedbackLogger.warn('Unauthorized access attempt to feedback detail', {
+        routesLogger.warn('Unauthorized access attempt to feedback detail', {
           userId: user?.id,
           isAdmin: user?.isAdmin,
           feedbackId: req.params.id
@@ -2798,17 +2798,17 @@ export function registerRoutes(app: Express): Server {
       const id = parseInt(req.params.id);
       
       if (isNaN(id)) {
-        feedbackLogger.warn('Invalid feedback ID provided', { feedbackId: req.params.id });
+        routesLogger.warn('Invalid feedback ID provided', { feedbackId: req.params.id });
         return res.status(400).json({ error: "Invalid feedback ID" });
       }
       
-      feedbackLogger.info('Fetching specific feedback', { id });
+      routesLogger.info('Fetching specific feedback', { id });
       
       // Get feedback
       const feedback = await storage.getFeedback(id);
       
       if (!feedback) {
-        feedbackLogger.warn('Feedback not found', { id });
+        routesLogger.warn('Feedback not found', { id });
         return res.status(404).json({ error: "Feedback not found" });
       }
       
@@ -2823,7 +2823,7 @@ export function registerRoutes(app: Express): Server {
       // Get response hints for admin
       const responseHints = getResponseHints(feedback);
       
-      feedbackLogger.info('Feedback retrieved successfully with enhanced AI suggestions', { 
+      routesLogger.info('Feedback retrieved successfully with enhanced AI suggestions', { 
         id, 
         type: feedback.type,
         enhancedConfidence: enhancedSuggestion.confidence,
@@ -2839,7 +2839,7 @@ export function registerRoutes(app: Express): Server {
         legacySuggestion: generateResponseSuggestion(feedback) // Include legacy suggestion for backward compatibility
       });
     } catch (error) {
-      feedbackLogger.error('Error fetching specific feedback', {
+      routesLogger.error('Error fetching specific feedback', {
         id: req.params.id,
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
@@ -2854,7 +2854,7 @@ export function registerRoutes(app: Express): Server {
       // Check if user is admin
       const user = req.user as any;
       if (!user.isAdmin) {
-        feedbackLogger.warn('Unauthorized access attempt to feedback suggestions', {
+        routesLogger.warn('Unauthorized access attempt to feedback suggestions', {
           userId: user?.id,
           isAdmin: user?.isAdmin,
           feedbackId: req.params.id
@@ -2866,17 +2866,17 @@ export function registerRoutes(app: Express): Server {
       const id = parseInt(req.params.id);
       
       if (isNaN(id)) {
-        feedbackLogger.warn('Invalid feedback ID provided for suggestions', { feedbackId: req.params.id });
+        routesLogger.warn('Invalid feedback ID provided for suggestions', { feedbackId: req.params.id });
         return res.status(400).json({ error: "Invalid feedback ID" });
       }
       
-      feedbackLogger.info('Refreshing AI suggestions for feedback', { id });
+      routesLogger.info('Refreshing AI suggestions for feedback', { id });
       
       // Get feedback
       const feedback = await storage.getFeedback(id);
       
       if (!feedback) {
-        feedbackLogger.warn('Feedback not found for suggestions', { id });
+        routesLogger.warn('Feedback not found for suggestions', { id });
         return res.status(404).json({ error: "Feedback not found" });
       }
       
@@ -2886,7 +2886,7 @@ export function registerRoutes(app: Express): Server {
       const responseHints = getResponseHints(feedback);
       const legacySuggestion = generateResponseSuggestion(feedback);
       
-      feedbackLogger.info('AI suggestions refreshed successfully', { 
+      routesLogger.info('AI suggestions refreshed successfully', { 
         id, 
         type: feedback.type,
         enhancedConfidence: enhancedSuggestion.confidence,
@@ -2900,7 +2900,7 @@ export function registerRoutes(app: Express): Server {
         legacySuggestion
       });
     } catch (error) {
-      feedbackLogger.error('Error refreshing AI suggestions', {
+      routesLogger.error('Error refreshing AI suggestions', {
         id: req.params.id,
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
@@ -2915,7 +2915,7 @@ export function registerRoutes(app: Express): Server {
       // Check if user is admin
       const user = req.user as any;
       if (!user.isAdmin) {
-        feedbackLogger.warn('Unauthorized attempt to update feedback status', {
+        routesLogger.warn('Unauthorized attempt to update feedback status', {
           userId: user?.id,
           isAdmin: user?.isAdmin,
           feedbackId: req.params.id
@@ -2928,16 +2928,16 @@ export function registerRoutes(app: Express): Server {
       const { status } = req.body;
       
       if (isNaN(id)) {
-        feedbackLogger.warn('Invalid feedback ID for status update', { feedbackId: req.params.id });
+        routesLogger.warn('Invalid feedback ID for status update', { feedbackId: req.params.id });
         return res.status(400).json({ error: "Invalid feedback ID" });
       }
       
       if (!status || !["pending", "reviewed", "resolved", "rejected"].includes(status)) {
-        feedbackLogger.warn('Invalid status value provided', { status, feedbackId: id });
+        routesLogger.warn('Invalid status value provided', { status, feedbackId: id });
         return res.status(400).json({ error: "Invalid status value" });
       }
       
-      feedbackLogger.info('Updating feedback status', { id, status, adminId: user.id });
+      routesLogger.info('Updating feedback status', { id, status, adminId: user.id });
       
       // Performance tracking
       const startTime = Date.now();
@@ -2947,7 +2947,7 @@ export function registerRoutes(app: Express): Server {
       
       // Log performance metrics
       const duration = Date.now() - startTime;
-      feedbackLogger.info('Feedback status updated successfully', { 
+      routesLogger.info('Feedback status updated successfully', { 
         id, 
         status,
         previousStatus: updatedFeedback.status !== status ? updatedFeedback.status : 'same',
@@ -2957,7 +2957,7 @@ export function registerRoutes(app: Express): Server {
       
       res.status(200).json({ success: true, feedback: updatedFeedback });
     } catch (error) {
-      feedbackLogger.error('Error updating feedback status', {
+      routesLogger.error('Error updating feedback status', {
         id: req.params.id,
         status: req.body.status,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -3103,9 +3103,9 @@ Message ID: ${savedMessage.id}
   
   // Global error handler with enhanced logging
   app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    // Use the already imported feedbackLogger
+    // Use the already imported routesLogger
     // Log the error with full details
-    feedbackLogger.error('Unhandled application error', { 
+    routesLogger.error('Unhandled application error', { 
       error: err.message,
       stack: err.stack,
       url: req.url,
@@ -3123,6 +3123,29 @@ Message ID: ${savedMessage.id}
 
   // Mount the moderation router
   app.use('/api/moderation', moderationRouter);
+  
+  // Add auth status endpoint before other routes
+  app.get('/api/auth/status', (req: Request, res: Response) => {
+    if (req.isAuthenticated()) {
+      res.json({ 
+        isAuthenticated: true, 
+        user: req.user 
+      });
+    } else {
+      res.json({ isAuthenticated: false });
+    }
+  });
+
+  // Mount the search router
+  app.use('/api/search', searchRouter);
+  
+  // Mount the newsletter router  
+  app.use('/api/newsletter', newsletterRouter);
+  
+  // Mount the bookmarks router
+  import bookmarksRouter from './routes/bookmarks';
+  app.use('/api/bookmarks', bookmarksRouter);
+  app.use('/api/reader/bookmarks', bookmarksRouter);
   
   // Mount the admin router
   app.use('/api/admin', adminRoutes);

@@ -41,14 +41,14 @@ export function setupAuth(app: Express) {
       const user = await storage.getUser(id);
       if (!user) {
         authLogger.warn('User not found during deserialization', { userId: id });
-        return done(new Error('User not found'));
+        return done(null, false); // Don't pass error, just indicate no user
       }
       // Omit password_hash from user object before passing to client
       const { password_hash, ...safeUser } = user;
       done(null, safeUser);
     } catch (error) {
       authLogger.error('Error during deserialization', { userId: id, error: error instanceof Error ? error.message : 'Unknown error' });
-      done(error);
+      done(null, false); // Don't pass error, just indicate no user
     }
   });
 
