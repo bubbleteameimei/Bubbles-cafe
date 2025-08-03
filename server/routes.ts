@@ -44,6 +44,7 @@ import { firebaseAuthRoutes } from './routes/firebase-auth';
 
 import searchRouter from './routes/search';
 import newsletterRouter from './routes/newsletter';
+import bookmarksRouter from './routes/bookmarks';
 // CSRF protection completely removed as requested
 import { createSecureLogger } from './utils/secure-logger';
 import { requestLogger, errorLogger } from './utils/debug-logger';
@@ -3143,7 +3144,6 @@ Message ID: ${savedMessage.id}
   app.use('/api/newsletter', newsletterRouter);
   
   // Mount the bookmarks router
-  import bookmarksRouter from './routes/bookmarks';
   app.use('/api/bookmarks', bookmarksRouter);
   app.use('/api/reader/bookmarks', bookmarksRouter);
   

@@ -15,8 +15,6 @@ import { bookmarks } from '../../shared/schema';
 
 const router = Router();
 
-export default router;
-
 /**
  * GET /api/reader/bookmarks
  * 
