@@ -27,10 +27,24 @@ export const SearchBar = ({
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const [, navigate] = useLocation();
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (query.trim()) {
-      navigate(`/search?q=${encodeURIComponent(query)}`);
-      setShowResults(false);
+      try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&types=posts`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          setSearchResults(data.results || []);
+          setShowResults(true);
+          if (onSearchChange) {
+            onSearchChange(query);
+          }
+        } else {
+          console.error('Search failed:', data.error);
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+      }
     }
   };
 
@@ -73,24 +87,46 @@ export const SearchBar = ({
     };
   }, []);
 
-  // Fetch actual posts for search from the API
+  // Add proper search results display
+  const renderSearchResults = () => {
+    if (!showResults || searchResults.length === 0) return null;
+
+    return (
+      <div className="absolute top-full left-0 right-0 bg-background border rounded-md shadow-lg z-50 max-h-96 overflow-y-auto">
+        {searchResults.map((result, index) => (
+          <div 
+            key={index}
+            className="p-3 hover:bg-muted cursor-pointer border-b last:border-b-0"
+            onClick={() => {
+              navigate(`/reader/${result.slug || result.id}`);
+              setShowResults(false);
+            }}
+          >
+            <h4 className="font-medium text-sm">{result.title}</h4>
+            {result.excerpt && (
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {result.excerpt}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Real-time search as user types
   useEffect(() => {
     if (onSearchChange) {
       onSearchChange(query);
     }
 
-    if (query.trim().length > 1) {
-      // Use the fallback search mechanism when main WordPress API isn't available
-      console.log("Using fallback search mechanism");
-      
-      // This will show a message directing users to the main search page
-      setSearchResults([]);
-      setShowResults(false);
+    if (query.trim().length > 2) {
+      handleSearch();
     } else {
       setSearchResults([]);
       setShowResults(false);
     }
-  }, [query, isFocused, onSearchChange]);
+  }, [query, onSearchChange]);
 
   return (
     <div 
@@ -149,38 +185,8 @@ export const SearchBar = ({
         </div>
       </motion.div>
 
-      {/* Search Results Dropdown */}
-      {showResults && (
-        <motion.div
-          initial={{ opacity: 0, y: 10, height: 0 }}
-          animate={{ opacity: 1, y: 0, height: "auto" }}
-          exit={{ opacity: 0, y: 10, height: 0 }}
-          transition={{ duration: 0.2 }}
-          className="absolute z-50 mt-1 w-full bg-background input-solid-bg border border-border rounded-md shadow-lg overflow-hidden"
-        >
-          <div className="max-h-[300px] overflow-y-auto p-2">
-            {searchResults.map((result) => (
-              <motion.div
-                key={result.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.2 }}
-                className="p-2 cursor-pointer hover:bg-accent/10 rounded"
-                onClick={() => {
-                  navigate(`/reader/${result.id}`);
-                  setShowResults(false);
-                  setQuery("");
-                }}
-              >
-                <h4 className="font-medium text-foreground">{result.title}</h4>
-                <p className="text-sm text-muted-foreground line-clamp-1">
-                  {result.excerpt}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-      )}
+      {/* Search Results */}
+      {renderSearchResults()}
     </div>
   );
 };

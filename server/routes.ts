@@ -3061,25 +3061,24 @@ Message ID: ${savedMessage.id}
           text: emailBody,
         };
 
-        // Try primary Gmail transport first
+        // Create email transporter
+        const transporter = createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.GMAIL_USER,
+            pass: process.env.GMAIL_PASS
+          }
+        });
+
+        // Try sending email
         try {
-          console.log('Sending email via primary Gmail transport...');
-          await primaryTransporter.sendMail(mailOptions);
+          console.log('Sending email via Gmail transport...');
+          await transporter.sendMail(mailOptions);
           console.log('Email notification sent successfully via Gmail');
           emailSent = true;
-        } catch (primaryError) {
-          console.error('Failed to send via Gmail, trying fallback:', primaryError);
-          
-          // Try fallback transport if Gmail fails
-          try {
-            console.log('Attempting to send via fallback transport...');
-            await fallbackTransporter.sendMail(mailOptions);
-            console.log('Email notification sent successfully via fallback');
-            emailSent = true;
-          } catch (fallbackError) {
-            console.error('Fallback transport also failed:', fallbackError);
-            throw fallbackError; // Re-throw to be caught by outer try/catch
-          }
+        } catch (emailError) {
+          console.error('Failed to send email:', emailError);
+          // Continue without throwing error - message is saved in DB
         }
       } catch (emailError) {
         console.error('All email transports failed:', emailError);

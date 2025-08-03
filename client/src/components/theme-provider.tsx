@@ -37,20 +37,7 @@ export function ThemeProvider({
   useEffect(() => {
     const root = window.document.documentElement;
 
-    // Prevent transition flicker when switching themes
-    const transitionStyle = document.createElement('style');
-    transitionStyle.appendChild(document.createTextNode(`
-      * {
-        -webkit-transition: none !important;
-        -moz-transition: none !important;
-        -o-transition: none !important;
-        -ms-transition: none !important;
-        transition: none !important;
-      }
-    `));
-    document.head.appendChild(transitionStyle);
-    
-    // Apply theme changes
+    // Apply theme changes smoothly
     root.classList.remove("light", "dark");
 
     if (theme === "system") {
@@ -73,17 +60,8 @@ export function ThemeProvider({
       mediaQuery.addEventListener("change", handleSystemThemeChange);
       return () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
     } else {
-      // Apply explicit theme
       root.classList.add(theme);
     }
-    
-    // Restore transitions after theme change is complete
-    // This small delay ensures the theme is fully applied before enabling transitions
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        document.head.removeChild(transitionStyle);
-      });
-    });
   }, [theme]);
 
   // Toggle between light and dark themes

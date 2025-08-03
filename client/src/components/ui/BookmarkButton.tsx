@@ -57,7 +57,8 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
       if (variant !== 'reader' && !user) return null;
       
       try {
-        return await apiRequest<BookmarkData>(`${apiBasePath}/${postId}`);
+        const response = await apiRequest(`${apiBasePath}/${postId}`);
+        return response as BookmarkData;
       } catch (error) {
         // If 404, it means not bookmarked which is normal
         if ((error as any).status === 404) {
@@ -69,10 +70,8 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
       }
     },
     enabled: variant === 'reader' || !!user, // Enable for reader variant regardless of login status
-    // Add retry options to handle temporary connection issues
     retry: 2,
-    retryDelay: 1000,
-    // Don't refetch on window focus to minimize error repetition
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 

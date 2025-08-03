@@ -43,16 +43,16 @@ body.loading-active {
 /* Individual letters in the loader */
 .loader span {
   display: inline-block !important;
-  font-size: 32px !important; /* Larger text */
+  font-size: 28px !important; 
   font-family: 'Megrim', monospace !important;
   font-weight: 600 !important;
-  animation: blur 2s linear infinite !important;
-  line-height: 1 !important; /* Better line height control */
-  transition: all 0.5s !important;
-  letter-spacing: 0.2em !important;
+  animation: blur 1.5s linear infinite !important;
+  line-height: 1 !important;
+  transition: all 0.3s ease !important;
+  letter-spacing: 0.1em !important;
   color: white !important;
-  text-shadow: 0 0 12px rgba(255, 255, 255, 0.8) !important; /* Enhanced glow */
-  will-change: filter, opacity !important; /* Optimize for GPU acceleration */
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.6) !important;
+  will-change: filter, opacity !important;
 }
 
 /* Staggered animation delays for letters */
@@ -66,14 +66,16 @@ body.loading-active {
 
 /* Animation for the blurring effect */
 @keyframes blur {
-  0%, 90%, 100% {
+  0%, 100% {
     filter: blur(0) !important;
     opacity: 1 !important;
+    transform: scale(1) !important;
   }
   
   50% {
-    filter: blur(5px) !important;
-    opacity: 0.6 !important;
+    filter: blur(2px) !important;
+    opacity: 0.7 !important;
+    transform: scale(1.05) !important;
   }
 }
 

@@ -36,7 +36,7 @@ router.get('/', isAuthenticated, async (req, res) => {
       .from(bookmarks)
       .where(eq(bookmarks.userId, userId));
     
-    res.json({
+    return res.json({
       success: true,
       bookmarks: userBookmarks
     });
@@ -46,7 +46,7 @@ router.get('/', isAuthenticated, async (req, res) => {
       stack: error.stack
     });
     
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to fetch bookmarks',
       error: error.message

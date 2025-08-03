@@ -46,10 +46,12 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
         document.documentElement.classList.remove('disable-scroll');
         document.body.classList.remove('loading-active');
         
-        // Execute callback
-        onAnimationComplete();
+        // Execute callback after a short delay to ensure smooth transition
+        setTimeout(() => {
+          onAnimationComplete();
+        }, 100);
       }
-    }, 1500); // Reduced to reasonable duration
+    }, 800); // Reduced to reasonable duration
     
     // Comprehensive cleanup on unmount - ensures complete state reset
     return () => {
