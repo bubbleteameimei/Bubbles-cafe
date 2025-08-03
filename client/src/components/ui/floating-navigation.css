@@ -87,19 +87,7 @@
   overflow: hidden;
 }
 
-.nav-button:before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  background-color: hsl(var(--primary)/15%);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  transition: width 0.5s, height 0.5s;
-  z-index: -1;
-}
+/* Removed red dot pseudo-element */
 
 .nav-button:hover:not(.disabled) {
   background-color: hsl(var(--accent-foreground)/10%);
@@ -108,10 +96,7 @@
   border-color: hsl(var(--accent-foreground)/30%);
 }
 
-.nav-button:hover:not(.disabled):before {
-  width: 150%;
-  height: 150%;
-}
+/* Removed red dot hover effect */
 
 .nav-button:active:not(.disabled) {
   transform: translateY(0);
