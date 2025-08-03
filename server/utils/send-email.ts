@@ -12,7 +12,7 @@ function getGmailTransporter() {
     secure: true,
     auth: {
       user: process.env.GMAIL_USER || 'vantalison@gmail.com',
-      pass: process.env.GMAIL_APP_PASSWORD?.trim()
+      pass: process.env.GMAIL_APP_PASSWORD?.trim() || 'virz cgpi njom vddq'
     },
     connectionTimeout: 10000,
     greetingTimeout: 10000,

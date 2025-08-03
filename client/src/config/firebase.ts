@@ -2,13 +2,13 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from "firebase/auth";
 
-// Your web app's Firebase configuration using environment variables
+// Your web app's Firebase configuration - using provided credentials with fallback to environment variables
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebasestorage.app`,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAJ-ZRi3GUVHUaM0p5vbbRB8NoqV4b_VvM",
+  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || "bubbles-cafe"}.firebaseapp.com`,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "bubbles-cafe",
+  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || "bubbles-cafe"}.firebasestorage.app`,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:870151001940:web:f11d39b75764457a91ac1",
 };
 
 // Initialize Firebase (prevent duplicate app initialization)
