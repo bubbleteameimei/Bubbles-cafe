@@ -32,9 +32,17 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query, onSelect }) => {
         const data = await response.json();
         return data.posts as Post[];
       } catch (error) {
-        // Fallback to WordPress API directly if main API fails
-        console.log('Fallback search error:', error);
-        throw new Error('Search functionality temporarily unavailable');
+        // Fallback to WordPress API directly
+        console.log('Using WordPress API fallback for search');
+        try {
+          const wpResponse = await fetch('https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts?per_page=100');
+          if (!wpResponse.ok) throw new Error('WordPress API failed');
+          const wpData = await wpResponse.json();
+          return wpData as Post[];
+        } catch (wpError) {
+          console.error('WordPress API fallback failed:', wpError);
+          throw new Error('Search functionality temporarily unavailable');
+        }
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes

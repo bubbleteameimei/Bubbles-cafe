@@ -187,7 +187,7 @@ const AppContent = () => {
       hideLoading();
       isTransitioningRef.current = false;
       loadingRef.current = null;
-    }, 2500);
+    }, 1000); // Reduced from 2500ms to 1000ms
     // Cleanup on unmount or route change
     return () => {
       if (loadingRef.current) {

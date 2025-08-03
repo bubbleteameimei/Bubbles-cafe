@@ -108,7 +108,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     }
     
     loadingTimerRef.current = setTimeout(() => {
-      console.log('Loading provider backup timer triggered after 2.5 seconds');
+      console.log('Loading screen force-closed after 2.5 seconds');
       setIsLoading(false);
       
       try {

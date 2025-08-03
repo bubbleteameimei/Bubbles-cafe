@@ -93,7 +93,22 @@ export default function AuthPage() {
           throw new Error("Please enter both email and password");
         }
         
-        // Traditional login flow
+        // Actual login implementation
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ email, password, rememberMe }),
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || 'Login failed');
+        }
+        
         toast({
           title: "Success",
           description: "Successfully signed in!",

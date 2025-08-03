@@ -138,7 +138,7 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
         transition: 'filter 0.05s ease, letter-spacing 0.1s ease', // Smooth transitions for subtle effects
         textShadow: 'none', // No shadow at all to avoid color mixing
         animation: 'none !important', // Force disable any inherited animations
-        WebkitTextFillColor: '#ff0000', // Ensure text is pure red in all browsers
+        WebkitTextFillColor: 'inherit', // Use inherited text color
         WebkitTextStroke: '0 transparent', // No stroke to ensure pure color
       }}
     >

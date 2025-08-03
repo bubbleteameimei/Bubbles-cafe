@@ -100,10 +100,18 @@ interface ReaderPageProps {
 }
 
 export default function ReaderPage({ slug, params, isCommunityContent = false }: ReaderPageProps) {
-  // Log params for debugging
-  console.log('[ReaderPage] Initializing with params:', { routeSlug: params?.slug || slug, params, slug });
   // Extract slug from route params if provided
   const routeSlug = params?.slug || slug;
+  
+  // Prevent multiple initializations by using a ref
+  const hasInitialized = useRef(false);
+  
+  useEffect(() => {
+    if (!hasInitialized.current) {
+      console.log('[ReaderPage] Initializing with params:', { routeSlug, params, slug });
+      hasInitialized.current = true;
+    }
+  }, [routeSlug, params, slug]);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();

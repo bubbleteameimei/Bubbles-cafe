@@ -37,8 +37,8 @@ const AdaptiveSidebar: React.FC<AdaptiveSidebarProps> = ({ className = "" }) => 
   };
 
   const linkVariants = {
-    open: { opacity: 1, x: 0 },
-    closed: { opacity: 0, x: -20 }
+    open: { opacity: 1, x: 0, transition: { duration: 0.4, ease: "easeOut" } },
+    closed: { opacity: 0, x: -20, transition: { duration: 0.3, ease: "easeIn" } }
   };
 
   return (
@@ -46,13 +46,12 @@ const AdaptiveSidebar: React.FC<AdaptiveSidebarProps> = ({ className = "" }) => 
       initial={isOpen ? "open" : "closed"}
       animate={isOpen ? "open" : "closed"}
       variants={sidebarVariants}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      transition={{ duration: 0.5, ease: "easeInOut" }}
       className={`fixed top-0 left-0 h-screen bg-background border-r border-border overflow-hidden z-40 ${className}`}
     >
       <div className="flex items-center justify-between p-4">
         <motion.div
           variants={linkVariants}
-          transition={{ duration: 0.2 }}
           className="font-bold text-xl"
         >
           {isOpen && "Stories"}
