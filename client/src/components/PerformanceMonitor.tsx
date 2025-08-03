@@ -6,7 +6,7 @@
  * or in production to collect metrics for analytics.
  */
 
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,9 +35,9 @@ interface PerformanceMonitorProps {
 }
 
 export function PerformanceMonitor({
-  visible = import.meta.env.DEV,
+  visible = false, // Explicitly disabled by default
   onClose,
-  showControls = import.meta.env.DEV,
+  showControls = false, // Explicitly disabled by default  
   position = 'bottom-right',
   className = '',
 }: PerformanceMonitorProps) {

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=IM+Fell+English:ital,wght@0,400;1,400&family=Megrim&display=swap');
+/* Font loading moved to HTML head for better performance */
 @import "./styles/sidebar-enhanced.css";
 
 /* Mobile responsiveness update - March 2025 */
@@ -72,11 +72,9 @@ body {
 
 /* Global responsive design fixes */
 @layer base {
-  /* Completely disable the skeleton loading animation by overriding Tailwind's animate-pulse */
+  /* Re-enable Tailwind's pulse animation for better UX */
   .animate-pulse {
-    animation: none !important;
-    background-color: hsl(var(--muted)) !important;
-    opacity: 0.3 !important;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
   
   /* Prevent black box flash during page transitions */
@@ -1450,17 +1448,10 @@ button:hover, a:hover {
   animation: staggerFadeIn 0.5s ease-out forwards;
 }
 
-/* Apply different delays to different elements */
-.staggered-parent *:nth-child(1) { animation-delay: 0.1s; }
-.staggered-parent *:nth-child(2) { animation-delay: 0.15s; }
-.staggered-parent *:nth-child(3) { animation-delay: 0.2s; }
-.staggered-parent *:nth-child(4) { animation-delay: 0.25s; }
-.staggered-parent *:nth-child(5) { animation-delay: 0.3s; }
-.staggered-parent *:nth-child(6) { animation-delay: 0.35s; }
-.staggered-parent *:nth-child(7) { animation-delay: 0.4s; }
-.staggered-parent *:nth-child(8) { animation-delay: 0.45s; }
-.staggered-parent *:nth-child(9) { animation-delay: 0.5s; }
-.staggered-parent *:nth-child(10) { animation-delay: 0.55s; }
+/* Simplified staggered animation - only for first 3 elements */
+.staggered-parent > *:nth-child(1) { animation-delay: 0.1s; }
+.staggered-parent > *:nth-child(2) { animation-delay: 0.2s; }
+.staggered-parent > *:nth-child(3) { animation-delay: 0.3s; }
 
 /* Staggered animation keyframes */
 @keyframes staggerFadeIn {
@@ -1476,33 +1467,33 @@ button:hover, a:hover {
 
 /* Night mode styles for reader page have been removed */
 
-/* Password toggle button styles */
+/* Password toggle button styles - removed excessive !important */
 .password-toggle-btn {
-  position: absolute !important;
-  right: 10px !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  background: transparent !important;
-  border: none !important;
-  cursor: pointer !important;
-  color: hsl(0, 0%, 50%) !important;  /* Medium gray for better visibility */
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  z-index: 20 !important;
-  padding: 4px !important;
-  transition: color 0.2s !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: hsl(0, 0%, 50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  padding: 4px;
+  transition: color 0.2s;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .password-toggle-btn:hover {
-  color: hsl(0, 0%, 30%) !important; /* Darker gray on hover */
-  background-color: transparent !important;
+  color: hsl(0, 0%, 30%);
+  background-color: transparent;
 }
 
 .password-toggle-btn:focus {
-  outline: none !important;
-  color: hsl(var(--primary)) !important;
-  box-shadow: none !important;
+  outline: none;
+  color: hsl(var(--primary));
+  box-shadow: none;
 }

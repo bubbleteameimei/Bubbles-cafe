@@ -62,15 +62,13 @@ import { RefreshProvider } from './contexts/refresh-context';
 import HomePage from './pages/home';
 import StoriesPage from './pages/index';
 
-// Lazy-load all other pages to improve initial load time
-const ReaderPage = React.lazy(() => import('./pages/reader'));
-const AboutPage = React.lazy(() => import('./pages/about'));
-const ContactPage = React.lazy(() => import('./pages/contact'));
-const PrivacyPage = React.lazy(() => import('./pages/privacy'));
-const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
+// Core pages loaded immediately
+import ReaderPage from './pages/reader';
+import AboutPage from './pages/about';
+import ContactPage from './pages/contact';
+import AuthPage from './pages/auth';
 
-const AuthPage = React.lazy(() => import('./pages/auth'));
-const AuthSuccessPage = React.lazy(() => import('./pages/auth-success'));
+// Only admin and settings pages lazy-loaded
 const ProfilePage = React.lazy(() => import('./pages/profile'));
 const BookmarksPage = React.lazy(() => import('./pages/bookmarks'));
 const SearchResultsPage = React.lazy(() => import('./pages/SearchResults'));
@@ -199,19 +197,18 @@ const AppContent = () => {
     };
   }, [locationStr]);
   
-  // Track page transitions and always show loading animation between pages
+  // Track page transitions using React refs instead of sessionStorage
+  const previousLocationRef = useRef<string>('');
+  
   useEffect(() => {
-    // Store the current location to detect actual navigation
-    const prevLocation = sessionStorage.getItem('current-location');
-    
     // Only show loading when actually changing pages (not on initial load)
-    if (prevLocation && prevLocation !== location) {
+    if (previousLocationRef.current && previousLocationRef.current !== location) {
       // Show loading animation for page transitions
       showLoading();
     }
     
-    // Update current location in session storage
-    sessionStorage.setItem('current-location', location);
+    // Update previous location reference
+    previousLocationRef.current = location;
     
     // The loading screen will automatically be hidden after the animation completes
   }, [location, showLoading]);
