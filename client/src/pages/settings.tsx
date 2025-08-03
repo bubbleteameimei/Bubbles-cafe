@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { useTheme } from "@/components/theme-provider";
+// import { useTheme } from "@/components/theme-provider";
 import { useFontSize } from "@/hooks/use-font-size";
 import { useFontFamily } from "@/hooks/use-font-family";
 import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
@@ -15,18 +15,15 @@ import {
   User, 
   Palette, 
   Type,
-  Volume2,
   Bell,
   Shield,
-  Database,
   Download
 } from "lucide-react";
 
 export default function SettingsPage() {
   const { user, logoutMutation } = useAuth();
-  const { theme } = useTheme();
-  const { fontSize, setFontSize } = useFontSize();
-  const { fontFamily, setFontFamily } = useFontFamily();
+  const { fontSize } = useFontSize();
+  const { fontFamily } = useFontFamily();
   const { toast } = useToast();
   
   // Settings state
@@ -108,7 +105,7 @@ export default function SettingsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setFontSize(Math.max(12, fontSize - 2))}
+                  onClick={() => useFontSize().decreaseFontSize()}
                 >
                   A-
                 </Button>
@@ -116,7 +113,7 @@ export default function SettingsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setFontSize(Math.min(24, fontSize + 2))}
+                  onClick={() => useFontSize().increaseFontSize()}
                 >
                   A+
                 </Button>
@@ -126,12 +123,12 @@ export default function SettingsPage() {
             <div className="space-y-4">
               <Label className="text-sm font-medium">Font Family</Label>
               <div className="grid grid-cols-2 gap-2">
-                {['inter', 'openSans', 'crimsonText', 'playfair'].map((font) => (
+                {['cormorant', 'merriweather', 'lora', 'roboto'].map((font) => (
                   <Button
                     key={font}
                     variant={fontFamily === font ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setFontFamily(font as any)}
+                    onClick={() => useFontFamily().updateFontFamily(font as any)}
                     className="capitalize"
                   >
                     {font.replace(/([A-Z])/g, ' $1')}

@@ -10,9 +10,7 @@ const __dirname = dirname(__filename);
 
 export default defineConfig({
   plugins: [
-    react({
-      jsxImportSource: '@emotion/react',
-    }),
+    react(),
     splitVendorChunkPlugin(),
     VitePWA({
       strategies: 'injectManifest',
@@ -142,9 +140,8 @@ export default defineConfig({
     terserOptions: {
       compress: {
         drop_console: true,
-                    drop_debugger: true,
-            drop_console: ['log', 'debug', 'info'],
-            pure_funcs: ['console.log', 'console.debug', 'console.info']
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.debug', 'console.info']
       },
       format: {
         comments: false
