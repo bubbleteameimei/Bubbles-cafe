@@ -28,9 +28,8 @@ export const useLoading = () => {
   return useContext(LoadingContext);
 }
 
-// Add comments and centralize magic numbers
-const MIN_LOADING_DURATION = 2500; // Minimum duration for loading screen to show (ms)
-const PREVENT_RAPID_SHOW_DURATION = 1000; // Duration to prevent rapid multiple loading screen triggers (ms)
+// Duration to prevent rapid multiple loading screen triggers (ms)
+const PREVENT_RAPID_SHOW_DURATION = 1000;
 
 /**
  * GlobalLoadingProvider - Completely rewritten to work with the new loading screen
@@ -39,7 +38,6 @@ const PREVENT_RAPID_SHOW_DURATION = 1000; // Duration to prevent rapid multiple 
 export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Core state  
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<string | undefined>(undefined);
   
   // Refs for tracking state between renders
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -86,10 +84,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     // Set prevention flag for longer duration to prevent multiple screens
     preventRapidShowRef.current = true;
     
-    // Update message if provided
-    if (newMessage) {
-      setMessage(newMessage);
-    }
+    // Message handling removed for simplicity
     
     // Set loading state
     setIsLoading(true);
@@ -102,24 +97,11 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
       // Ignore storage errors
     }
     
-    // Safety timer: force close after 2.5 seconds regardless of other state
+    // Clear any existing timer - let loading screen handle its own timing
     if (loadingTimerRef.current) {
       clearTimeout(loadingTimerRef.current);
+      loadingTimerRef.current = null;
     }
-    
-    loadingTimerRef.current = setTimeout(() => {
-      console.log('Loading screen force-closed after 2.5 seconds');
-      setIsLoading(false);
-      
-      try {
-        sessionStorage.removeItem('app_loading');
-      } catch (e) {
-        // Ignore storage errors
-      }
-      
-      // Reset prevention flag after longer delay to prevent rapid multiple screens
-      preventRapidShowRef.current = false;
-    }, MIN_LOADING_DURATION);
   }, [isLoading]);
   
   // Hide loading screen

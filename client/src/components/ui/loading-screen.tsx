@@ -27,7 +27,7 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
       fontDisplay: 'swap',
       log: true,
       onLoad: () => console.log("Megrim font loaded successfully"),
-      onError: (err) => console.error("Failed to load Megrim font:", err)
+      onError: (err: any) => console.error("Failed to load Megrim font:", err)
     });
     
     // Preload other critical assets needed for the loading screen
@@ -38,26 +38,24 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
     // Reset callback fired state
     callbackFired.current = false;
     
-    // Create a hard timeout that will force-close the loading screen
-    // This is crucial to ensure the loading screen never gets stuck
-    const forceCloseTimer = setTimeout(() => {
+    // Single timeout for proper loading completion
+    const loadingTimer = setTimeout(() => {
       if (!callbackFired.current && onAnimationComplete) {
         callbackFired.current = true;
-        console.log("Loading screen force-closed after 2.5 seconds");
         
         // Run cleanup before calling completion callback
         document.documentElement.classList.remove('disable-scroll');
         document.body.classList.remove('loading-active');
         
-        // Execute callback last to allow proper cleanup
+        // Execute callback
         onAnimationComplete();
       }
-    }, 2500); // Increased to 2.5 seconds to give more time for fonts to load
+    }, 1500); // Reduced to reasonable duration
     
     // Comprehensive cleanup on unmount - ensures complete state reset
     return () => {
       // Clear the timeout first
-      clearTimeout(forceCloseTimer);
+      clearTimeout(loadingTimer);
       
       // Remove all classes
       document.documentElement.classList.remove('disable-scroll');

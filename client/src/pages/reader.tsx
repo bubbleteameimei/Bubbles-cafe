@@ -107,11 +107,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const hasInitialized = useRef(false);
   
   useEffect(() => {
-    if (!hasInitialized.current) {
-      console.log('[ReaderPage] Initializing with params:', { routeSlug, params, slug });
+    if (!hasInitialized.current && routeSlug) {
+      console.log('[ReaderPage] Initializing with slug:', routeSlug);
       hasInitialized.current = true;
     }
-  }, [routeSlug, params, slug]);
+  }, [routeSlug]); // Simplified dependencies
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
