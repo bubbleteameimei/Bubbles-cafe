@@ -37,7 +37,7 @@ const PREVENT_RAPID_SHOW_DURATION = 1000; // Duration to prevent rapid multiple 
  * This provider manages the loading state in a simpler, more robust way
  */
 export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Core state
+  // Core state  
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | undefined>(undefined);
   

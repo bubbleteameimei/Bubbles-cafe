@@ -12,7 +12,7 @@ import * as schema from '../shared/schema';
 /**
  * Initialize database connection
  */
-export async function initializeDatabaseConnection(): Promise<{ pool: typeof Pool, db: any }> {
+export async function initializeDatabaseConnection(): Promise<{ pool: any, db: any }> {
   // Use the Neon database configuration directly
   const NEON_DATABASE_URL = "postgresql://neondb_owner:npg_P6ghCZR2BASQ@ep-young-bread-aeojmse9-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
   

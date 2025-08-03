@@ -8,29 +8,25 @@ import TableOfContents from "@/components/reader/TableOfContents";
 import SwipeNavigation from "@/components/reader/SwipeNavigation";
 import "@/styles/reader-fixes.css"; // Import custom reader fixes
 import { 
-  Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronLeft, ChevronRight, BookOpen,
+  Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronRight, BookOpen,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
   Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog,
-  Menu, BookText, Home, Trash, X
+  BookText, Trash, X
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { format } from 'date-fns';
 import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { useFontSize } from "@/hooks/use-font-size";
 import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
 import { detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
-import type { ThemeCategory } from "@/shared/types";
 // Import social icons directly since lazy loading was causing issues
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
-import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
 import ApiLoader from "@/components/api-loader";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-import MistEffect from "@/components/effects/MistEffect";
-import { MistControl } from "@/components/ui/mist-control";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import { useToast } from "@/hooks/use-toast";
 // Import our reader-specific gentle scroll memory hook
@@ -51,8 +47,7 @@ import {
 // Import comment section directly for now to avoid lazy loading issues
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
-// Import the WordPress API functions with error handling
-import { fetchWordPressPosts } from "@/lib/wordpress-api";
+// WordPress API functions removed (unused)
 
 // Native HTML sanitization function (avoiding DOMPurify dependency conflicts)
 const sanitizeHtmlContent = (html: string): string => {
@@ -114,11 +109,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const queryClient = useQueryClient();
   
   // Add authentication hook to check user role for admin actions
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const isAdmin = user?.isAdmin === true;
   
   // Theme is now managed by the useTheme hook
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   
   // Font size and family adjustments
   const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
@@ -132,8 +127,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
   
-  // Will initialize this after data is loaded
-  const [autoSaveSlug, setAutoSaveSlug] = useState<string>("");
+  // Auto-save functionality removed (unused)
+  // const [autoSaveSlug, setAutoSaveSlug] = useState<string>("");
   
   // Fixed constants for better text readability (replacing auto-contrast)
   const DARK_TEXT_COLOR = 'rgba(255, 255, 255, 0.95)';
@@ -144,23 +139,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [contentsDialogOpen, setContentsDialogOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
-  // Detect if this is a refresh using Performance API
-  const isRefreshRef = useRef<boolean>(
-    typeof window !== 'undefined' &&
-    window.performance && 
-    ((window.performance.navigation?.type === 1) || // Old API
-     (performance.getEntriesByType('navigation').some(
-       nav => (nav as PerformanceNavigationTiming).type === 'reload'
-     )))
-  );
-  
-  // Helper function to close dialogs safely
-  const safeCloseDialog = () => {
-    const closeButton = document.querySelector('[aria-label="Close"]');
-    if (closeButton instanceof HTMLElement) {
-      closeButton.click();
-    }
-  };
+  // Refresh detection removed (unused)
+  // Dialog close helper removed (unused)
   
   // Reading progress tracking with scroll-based calculation
   useEffect(() => {
@@ -430,7 +410,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Initialize the reader-specific gentle scroll memory
   // This will only work on the reader page and community-story page
-  const { positionRestored, isRefresh } = useReaderGentleScroll({
+  useReaderGentleScroll({
     enabled: !isLoading && postsData?.posts && postsData.posts.length > 0,
     slug: routeSlug || '',
     showToast: true,
@@ -465,11 +445,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         date: currentPost.date
       } : 'No post found');
       
-      // Now that we have the post data, update our slug for auto-saving
+      // Auto-save slug functionality removed (unused)
       if (currentPost) {
         const newSlug = routeSlug || (currentPost.slug || `post-${currentPost.id}`);
-        console.log('[Reader] Setting auto-save slug:', newSlug);
-        setAutoSaveSlug(newSlug);
+        console.log('[Reader] Auto-save slug would be:', newSlug);
+        // setAutoSaveSlug(newSlug); // Function removed
         
         // Check if we've reloaded but the post has been deleted
         if (routeSlug && currentPost.id && currentIndex === 0) {
@@ -790,156 +770,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   ];
 
-  const unusedStyles = `
-  .story-content {
-    font-family: ${availableFonts[fontFamily].family};
-    width: 100%; /* Full width instead of max-width constraint */
-    margin: 0 auto;
-    color: hsl(var(--foreground));
-    transition: color 0.3s ease, background-color 0.3s ease;
-  }
-  .story-content p, .story-content .story-paragraph {
-    line-height: 1.7;  /* Improved line height for readability */
-    margin-bottom: 1.7em;  /* Restored paragraph spacing to improve readability */
-    text-align: justify;
-    letter-spacing: 0.01em; /* Subtle letter spacing */
-    font-kerning: normal; /* Improves kerning pairs */
-    font-feature-settings: "kern", "liga", "clig", "calt"; /* Typography features */
-    max-width: none; /* Remove width constraint for full-width layout */
-    margin-left: auto;
-    margin-right: auto;
-    font-family: ${availableFonts[fontFamily].family};
-  }
-  .story-content em {
-    font-family: ${availableFonts[fontFamily].family};
-    font-style: italic;
-    font-size: 1em;
-    line-height: 1.7;
-    letter-spacing: 0.01em;
-    font-weight: 500;
-  }
-  /* Add clear paragraph separation as per user request */
-  .story-content p + p {
-    margin-top: 0; /* No additional top margin as we have sufficient bottom margin */
-    text-indent: 0; /* No indent to maintain modern style */
-  }
-  /* Ensure all paragraphs have equal styling */
-  .story-content p:first-of-type {
-    font-size: 1em; /* Same size as other paragraphs */
-  }
-  /* Break words properly for better readability */
-  .story-content p {
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    hyphens: auto;
-  }
-  @media (max-width: 768px) {
-    .story-content p, .story-content .story-paragraph {
-      margin-bottom: 1.5em; /* Slightly reduced on mobile but still maintaining good spacing */
-      line-height: 1.75; /* Slightly increased on mobile for readability */
-      font-family: ${availableFonts[fontFamily].family};
-    }
-  }
-  .story-content img {
-    max-width: 100%;
-    height: auto;
-    margin: 2em auto;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: transform 0.2s ease, box-shadow 0.3s ease;
-  }
-  .story-content img:hover {
-    transform: scale(1.01);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  }
-  .story-content h1, .story-content h2, .story-content h3 {
-    margin-top: 1.8em;
-    margin-bottom: 0.8em;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    line-height: 1.3;
-    position: relative;
-    font-family: ${availableFonts[fontFamily].family};
-  }
-  .story-content h2::before, .story-content h3::before {
-    content: "";
-    position: absolute;
-    left: -1rem;
-    top: 0.5em;
-    height: 0.5em;
-    width: 0.5em;
-    background-color: hsl(var(--primary) / 0.6);
-    border-radius: 50%;
-  }
-  .story-content ul, .story-content ol {
-    margin-bottom: 1.5em;
-    padding-left: 1.8em;
-  }
-  .story-content li {
-    margin-bottom: 0.6em;
-    position: relative;
-  }
-  .story-content blockquote {
-    margin: 2em 0;
-    padding: 1.2em 1.5em 1.2em 2em;
-    border-left: 4px solid hsl(var(--primary) / 0.7);
-    font-style: italic;
-    background-color: hsl(var(--muted) / 0.5);
-    border-radius: 0.375rem;
-    position: relative;
-    font-size: 1.05em;
-    line-height: 1.7;
-  }
-  .story-content blockquote::before {
-    content: """;
-    position: absolute;
-    left: 0.5em;
-    top: 0.1em;
-    font-size: 2.5em;
-    color: hsl(var(--primary) / 0.3);
-    font-family: Georgia, serif;
-    line-height: 1;
-  }
-  .dark .story-content blockquote {
-    background-color: hsl(var(--muted) / 0.2);
-  }
-  .story-content a {
-    color: hsl(var(--primary));
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 2px;
-    transition: color 0.2s ease, text-decoration-thickness 0.2s ease;
-  }
-  .story-content a:hover {
-    color: hsl(var(--primary) / 0.8);
-    text-decoration-thickness: 2px;
-  }
-  /* Add subtle text selection styling */
-  .story-content ::selection {
-    background-color: hsl(var(--primary) / 0.2);
-    color: hsl(var(--foreground));
-  }
-  /* Hide any WordPress specific elements */
-  .story-content .wp-caption,
-  .story-content .wp-caption-text,
-  .story-content .gallery-caption {
-    font-family: var(--font-sans);
-    font-size: 0.85em;
-    text-align: center;
-    color: hsl(var(--muted-foreground));
-    margin-top: -1em;
-    margin-bottom: 2em;
-  }
-  /* Improve hr styling */
-  .story-content hr {
-    margin: 3em auto;
-    height: 2px;
-    background-color: hsl(var(--border));
-    border: none;
-    width: 40%;
-    opacity: 0.6;
-  }
-  `;
+  // Note: CSS styles are applied via generateStoryContentStyles() function
+  // This variable has been removed to eliminate duplicate style definitions
 
   // Navigation functions
   // Function to track rapid navigation and show horror Easter egg

@@ -35,10 +35,7 @@ router.get('/posts/:postId/comments',
     const { page, limit } = req.query as any;
     
     try {
-      const comments = await storage.getComments(Number(postId), {
-        page: Number(page),
-        limit: Number(limit)
-      });
+      const comments = await storage.getComments(Number(postId));
       
       commentsLogger.debug('Comments retrieved successfully', { 
         postId,
