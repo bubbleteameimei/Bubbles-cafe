@@ -4,7 +4,7 @@
  * This component monitors and reports Web Vitals and other performance metrics.
  * It uses client-side measurements and submits them to our analytics API.
  */
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { onCLS, onFID, onFCP, onLCP, onTTFB } from 'web-vitals';
 import { usePerformanceMonitoring } from '@/hooks/use-performance-monitoring';
 

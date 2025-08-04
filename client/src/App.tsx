@@ -15,7 +15,7 @@ import { CookieConsent } from './components/ui/cookie-consent';
 import { CookieConsentProvider } from './hooks/use-cookie-consent';
 import { GlobalErrorBoundary, setupGlobalErrorHandlers } from './components/error-boundary/global-error-boundary';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
+// import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
 import { ProtectedRoute } from './lib/protected-route';
 import ScrollToTopButton from './components/ScrollToTopButton';
@@ -38,8 +38,8 @@ import { WordPressSyncStatus } from './components/wordpress-sync-status';
 import { FeedbackButton } from './components/feedback/FeedbackButton';
 // Import our scroll effects provider for multi-speed scroll and gentle return
 import ScrollEffectsProvider from './components/ScrollEffectsProvider';
-// Import our performance monitoring component
-import PerformanceMonitor from './components/performance-monitor';
+// Import our performance monitoring component (temporarily disabled)
+// import PerformanceMonitor from './components/performance-monitor';
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
 // Removed unused imports: FullscreenButton, SearchBar
@@ -371,7 +371,7 @@ const AppContent = () => {
 // Main App component
 function App() {
   // Setup performance monitoring
-  usePerformanceMonitoring();
+  // usePerformanceMonitoring(); // Temporarily disabled
   const [location] = useLocation();
   
   // Set up global error handlers

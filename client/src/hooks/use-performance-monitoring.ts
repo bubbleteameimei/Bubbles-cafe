@@ -14,8 +14,8 @@ interface PerformanceMetric {
   url: string;
   userAgent: string;
   timestamp: number;
-  sessionId?: string;
-  metadata?: Record<string, any>;
+  sessionId?: string | undefined;
+  metadata?: Record<string, any> | undefined;
 }
 
 /**
@@ -48,8 +48,8 @@ export function usePerformanceMonitoring() {
   const recordMetric = useCallback((
     type: PerformanceMetricType,
     value: number,
-    sessionId?: string,
-    metadata?: Record<string, any>
+    sessionId?: string | undefined,
+    metadata?: Record<string, any> | undefined
   ) => {
     try {
       const metric: PerformanceMetric = {
@@ -68,18 +68,22 @@ export function usePerformanceMonitoring() {
       }
       
       // Store metric in localStorage for later sending
-      const storedMetrics = JSON.parse(localStorage.getItem('performance_metrics') || '[]');
-      storedMetrics.push(metric);
-      
-      // Keep only the last 50 metrics to avoid storage issues
-      if (storedMetrics.length > 50) {
-        storedMetrics.shift();
+      try {
+        const storedMetrics = JSON.parse(localStorage.getItem('performance_metrics') || '[]');
+        storedMetrics.push(metric);
+        
+        // Keep only the last 50 metrics to avoid storage issues
+        if (storedMetrics.length > 50) {
+          storedMetrics.shift();
+        }
+        
+        localStorage.setItem('performance_metrics', JSON.stringify(storedMetrics));
+        
+        // If we have a server endpoint, send metrics to server
+        sendMetricsToServer(storedMetrics);
+      } catch (storageError) {
+        console.warn('[Performance] Failed to store metric in localStorage:', storageError);
       }
-      
-      localStorage.setItem('performance_metrics', JSON.stringify(storedMetrics));
-      
-      // If we have a server endpoint, send metrics to server
-      sendMetricsToServer(storedMetrics);
     } catch (error) {
       console.warn('[Performance] Failed to record metric:', error);
     }

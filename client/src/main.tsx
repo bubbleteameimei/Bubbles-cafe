@@ -46,7 +46,8 @@ logger.debug("Initializing CSRF protection...");
 initCSRFProtection().then(() => {
   logger.debug("CSRF protection initialized successfully");
 }).catch(error => {
-  logger.error("Error initializing CSRF protection:", error);
+  logger.warn("CSRF protection initialization failed, continuing without it:", error);
+  // Don't throw here - the app should work without CSRF initially
 });
 
 // Register Service Worker for PWA functionality - temporarily disabled due to missing sw.js
@@ -67,8 +68,12 @@ if ('serviceWorker' in navigator) {
 logger.debug("CSS styles loaded");
 logger.info("Mounting React application...");
 
-// Add performance markers for debugging
-performance.mark('react-init-start');
+// Add performance markers for debugging (simplified)
+try {
+  performance.mark('react-init-start');
+} catch (e) {
+  console.warn('Performance API not available');
+}
 
 // Initialize React with error handling and performance tracking
 const renderApp = () => {
