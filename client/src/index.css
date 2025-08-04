@@ -72,7 +72,7 @@ body {
 
 /* Global responsive design fixes */
 @layer base {
-  /* Modern color scheme system inspired by Lanry.space */
+  /* Full-color theme system with complete visual overhauls */
   :root {
     color-scheme: light dark;
     
@@ -83,24 +83,24 @@ body {
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 262 83% 58%;
+    --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 84% 4.9%;
     --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 45 93% 47%;
+    --accent: 210 40% 96%;
     --accent-foreground: 222.2 84% 4.9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 262 83% 58%;
+    --ring: 221.2 83.2% 53.3%;
     --radius: 0.75rem;
     
     /* Chart colors */
-    --chart-1: 262 83% 58%;
-    --chart-2: 45 93% 47%;
+    --chart-1: 221.2 83.2% 53.3%;
+    --chart-2: 210 40% 96%;
     --chart-3: 197 71% 52%;
     --chart-4: 142 71% 45%;
     --chart-5: 336 75% 40%;
@@ -108,12 +108,12 @@ body {
     /* Sidebar colors */
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary: 221.2 83.2% 53.3%;
     --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 216 12.2% 83.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 262 83% 58%;
+    --sidebar-ring: 221.2 83.2% 53.3%;
   }
 
   /* Dark theme */
@@ -124,63 +124,191 @@ body {
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 263 70% 50.4%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 45 93% 47%;
-    --accent-foreground: 222.2 84% 4.9%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 263 70% 50.4%;
+    --ring: 224.3 76.3% 94.1%;
     
-    /* Sidebar dark colors */
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 263 70% 50.4%;
-    --sidebar-primary-foreground: 240 5.9% 10%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 263 70% 50.4%;
+    /* Sidebar colors for dark theme */
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217.2 91.2% 59.8%;
+    --sidebar-primary-foreground: 222.2 84% 4.9%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  /* Blue Pastel theme */
+  /* Ocean Blue Theme */
   [data-theme="blue-pastel"] {
-    --background: 204 100% 97%;
-    --foreground: 213 27% 18%;
-    --card: 204 100% 97%;
-    --card-foreground: 213 27% 18%;
-    --popover: 204 100% 97%;
-    --popover-foreground: 213 27% 18%;
-    --primary: 213 94% 68%;
-    --primary-foreground: 204 100% 97%;
-    --secondary: 204 50% 90%;
-    --secondary-foreground: 213 27% 18%;
-    --muted: 204 50% 90%;
-    --muted-foreground: 213 10% 40%;
-    --accent: 54 91% 65%;
-    --accent-foreground: 213 27% 18%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 204 100% 97%;
-    --border: 204 44% 85%;
-    --input: 204 44% 85%;
-    --ring: 213 94% 68%;
+    --background: 199 89% 48%;
+    --foreground: 199 30% 20%;
+    --card: 199 89% 52%;
+    --card-foreground: 199 30% 20%;
+    --popover: 199 89% 52%;
+    --popover-foreground: 199 30% 20%;
+    --primary: 199 100% 35%;
+    --primary-foreground: 199 89% 95%;
+    --secondary: 199 50% 75%;
+    --secondary-foreground: 199 30% 20%;
+    --muted: 199 50% 85%;
+    --muted-foreground: 199 30% 40%;
+    --accent: 45 100% 55%;
+    --accent-foreground: 199 30% 20%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 199 89% 95%;
+    --border: 199 50% 75%;
+    --input: 199 50% 80%;
+    --ring: 199 100% 35%;
     
-    /* Sidebar blue pastel */
-    --sidebar-background: 204 100% 95%;
-    --sidebar-foreground: 213 27% 25%;
-    --sidebar-primary: 213 94% 68%;
-    --sidebar-primary-foreground: 204 100% 95%;
-    --sidebar-accent: 204 50% 88%;
-    --sidebar-accent-foreground: 213 27% 25%;
-    --sidebar-border: 204 44% 82%;
-    --sidebar-ring: 213 94% 68%;
+    /* Chart colors for blue theme */
+    --chart-1: 199 100% 35%;
+    --chart-2: 45 100% 55%;
+    --chart-3: 197 71% 52%;
+    --chart-4: 142 71% 45%;
+    --chart-5: 336 75% 40%;
+    
+    /* Sidebar colors for blue theme */
+    --sidebar-background: 199 50% 85%;
+    --sidebar-foreground: 199 30% 20%;
+    --sidebar-primary: 199 100% 35%;
+    --sidebar-primary-foreground: 199 89% 95%;
+    --sidebar-accent: 199 50% 75%;
+    --sidebar-accent-foreground: 199 30% 20%;
+    --sidebar-border: 199 50% 75%;
+    --sidebar-ring: 199 100% 35%;
   }
+
+  /* Nature Green Theme */
+  [data-theme="green-pastel"] {
+    --background: 142 76% 36%;
+    --foreground: 142 30% 15%;
+    --card: 142 76% 40%;
+    --card-foreground: 142 30% 15%;
+    --popover: 142 76% 40%;
+    --popover-foreground: 142 30% 15%;
+    --primary: 142 100% 25%;
+    --primary-foreground: 142 76% 95%;
+    --secondary: 142 50% 70%;
+    --secondary-foreground: 142 30% 15%;
+    --muted: 142 50% 80%;
+    --muted-foreground: 142 30% 35%;
+    --accent: 330 81% 60%;
+    --accent-foreground: 142 30% 15%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 142 76% 95%;
+    --border: 142 50% 70%;
+    --input: 142 50% 75%;
+    --ring: 142 100% 25%;
+    
+    /* Chart colors for green theme */
+    --chart-1: 142 100% 25%;
+    --chart-2: 330 81% 60%;
+    --chart-3: 197 71% 52%;
+    --chart-4: 45 93% 47%;
+    --chart-5: 262 83% 58%;
+    
+    /* Sidebar colors for green theme */
+    --sidebar-background: 142 50% 80%;
+    --sidebar-foreground: 142 30% 15%;
+    --sidebar-primary: 142 100% 25%;
+    --sidebar-primary-foreground: 142 76% 95%;
+    --sidebar-accent: 142 50% 70%;
+    --sidebar-accent-foreground: 142 30% 15%;
+    --sidebar-border: 142 50% 70%;
+    --sidebar-ring: 142 100% 25%;
+  }
+
+  /* Lavender Purple Theme */
+  [data-theme="purple-pastel"] {
+    --background: 262 83% 58%;
+    --foreground: 262 30% 20%;
+    --card: 262 83% 62%;
+    --card-foreground: 262 30% 20%;
+    --popover: 262 83% 62%;
+    --popover-foreground: 262 30% 20%;
+    --primary: 262 100% 40%;
+    --primary-foreground: 262 83% 95%;
+    --secondary: 262 50% 75%;
+    --secondary-foreground: 262 30% 20%;
+    --muted: 262 50% 85%;
+    --muted-foreground: 262 30% 40%;
+    --accent: 25 100% 60%;
+    --accent-foreground: 262 30% 20%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 262 83% 95%;
+    --border: 262 50% 75%;
+    --input: 262 50% 80%;
+    --ring: 262 100% 40%;
+    
+    /* Chart colors for purple theme */
+    --chart-1: 262 100% 40%;
+    --chart-2: 25 100% 60%;
+    --chart-3: 197 71% 52%;
+    --chart-4: 142 71% 45%;
+    --chart-5: 45 93% 47%;
+    
+    /* Sidebar colors for purple theme */
+    --sidebar-background: 262 50% 85%;
+    --sidebar-foreground: 262 30% 20%;
+    --sidebar-primary: 262 100% 40%;
+    --sidebar-primary-foreground: 262 83% 95%;
+    --sidebar-accent: 262 50% 75%;
+    --sidebar-accent-foreground: 262 30% 20%;
+    --sidebar-border: 262 50% 75%;
+    --sidebar-ring: 262 100% 40%;
+  }
+
+  /* Warm Earth Brown Theme */
+  [data-theme="brown-pastel"] {
+    --background: 25 60% 45%;
+    --foreground: 25 30% 15%;
+    --card: 25 60% 50%;
+    --card-foreground: 25 30% 15%;
+    --popover: 25 60% 50%;
+    --popover-foreground: 25 30% 15%;
+    --primary: 25 100% 30%;
+    --primary-foreground: 25 60% 95%;
+    --secondary: 25 40% 70%;
+    --secondary-foreground: 25 30% 15%;
+    --muted: 25 40% 80%;
+    --muted-foreground: 25 30% 35%;
+    --accent: 15 100% 60%;
+    --accent-foreground: 25 30% 15%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 25 60% 95%;
+    --border: 25 40% 70%;
+    --input: 25 40% 75%;
+    --ring: 25 100% 30%;
+    
+    /* Chart colors for brown theme */
+    --chart-1: 25 100% 30%;
+    --chart-2: 15 100% 60%;
+    --chart-3: 197 71% 52%;
+    --chart-4: 142 71% 45%;
+    --chart-5: 262 83% 58%;
+    
+    /* Sidebar colors for brown theme */
+    --sidebar-background: 25 40% 80%;
+    --sidebar-foreground: 25 30% 15%;
+    --sidebar-primary: 25 100% 30%;
+    --sidebar-primary-foreground: 25 60% 95%;
+    --sidebar-accent: 25 40% 70%;
+    --sidebar-accent-foreground: 25 30% 15%;
+    --sidebar-border: 25 40% 70%;
+    --sidebar-ring: 25 100% 30%;
+  }
+}
 
   /* Green Pastel theme */
   [data-theme="green-pastel"] {

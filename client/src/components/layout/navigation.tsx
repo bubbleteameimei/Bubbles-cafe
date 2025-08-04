@@ -4,10 +4,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
-import { Menu, Search, Moon, Sun, User } from "lucide-react";
+import { Menu, Search, User } from "lucide-react";
 import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/contexts/notification-context";
-import { useTheme } from "@/components/theme-provider";
+import SimpleThemeToggle from "@/components/SimpleThemeToggle";
 
 
 
@@ -17,7 +17,6 @@ export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
   const { notifications } = useNotifications();
-  const { theme, setTheme } = useTheme();
 
   const [scrolled, setScrolled] = useState(false);
   const [deviceType, setDeviceType] = useState<'mobile' | 'tablet' | 'laptop' | 'desktop'>('desktop');
@@ -175,21 +174,8 @@ export default function Navigation() {
                       transition-all duration-150 active:scale-95 mt-2" 
           />
           
-          {/* Theme toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                      transition-all duration-150 active:scale-95 mt-2"
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {theme === 'dark' ? (
-              <Sun className="h-4 w-4 transition-all" />
-            ) : (
-              <Moon className="h-4 w-4 transition-all" />
-            )}
-          </Button>
+          {/* Full Theme Switcher with Dropdown */}
+          <SimpleThemeToggle className="mt-2" />
           
           {/* User/Auth button - icon styling to match other buttons */}
           {!user ? (
@@ -212,10 +198,10 @@ export default function Navigation() {
                         transition-all duration-150 active:scale-95 p-0 overflow-hidden mt-2"
               aria-label="Profile"
             >
-              {user.photoURL ? (
+              {(user as any).photoURL ? (
                 <div className="h-full w-full overflow-hidden rounded-full">
                   <img 
-                    src={user.photoURL} 
+                    src={(user as any).photoURL} 
                     alt={`${user.username || user.email}'s avatar`}
                     className="h-full w-full object-cover" 
                   />
