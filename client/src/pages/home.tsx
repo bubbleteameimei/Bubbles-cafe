@@ -9,6 +9,9 @@ import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { getExcerpt } from "@/lib/content-analysis";
 import ApiLoader from "@/components/api-loader";
+import ColorThemeShowcase from "@/components/ColorThemeShowcase";
+import ModernHero from "@/components/ModernHero";
+import FeatureHighlight from "@/components/FeatureHighlight";
 // Removed BloodDrippingText import - removing blood effects per user request
 
 
@@ -241,6 +244,25 @@ export default function Home() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+          
+          {/* Modern Hero Section */}
+          <div className="relative z-10 w-full">
+            <ModernHero />
+          </div>
+          
+          {/* Beautiful Color Theme Showcase */}
+          <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-background to-muted/30">
+            <div className="max-w-7xl mx-auto">
+              <ColorThemeShowcase className="py-12 lg:py-16" />
+            </div>
+          </div>
+          
+          {/* Feature Highlights */}
+          <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-muted/30 to-background">
+            <div className="max-w-7xl mx-auto">
+              <FeatureHighlight className="py-12 lg:py-16" />
             </div>
           </div>
         </div>

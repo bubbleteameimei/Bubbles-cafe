@@ -61,6 +61,7 @@ import { RefreshProvider } from './contexts/refresh-context';
 // Import essential pages directly
 import HomePage from './pages/home';
 import StoriesPage from './pages/index';
+import ThemesPage from './pages/themes';
 
 // Core pages loaded immediately
 import ReaderPage from './pages/reader';
@@ -266,6 +267,7 @@ const AppContent = () => {
               {/* Public Routes */}
               <Route path="/" component={HomePage} />
               <Route path="/stories" component={StoriesPage} />
+              <Route path="/themes" component={ThemesPage} />
               <Route path="/reader/:slug?">
                 {(params) => <ReaderPage params={params} />}
               </Route>

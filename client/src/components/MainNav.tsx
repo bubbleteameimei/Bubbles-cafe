@@ -1,14 +1,13 @@
 import { Link } from "wouter";
-import { Menu, Search, Bell, User, Moon, Sun, Settings } from "lucide-react";
+import { Menu, Search, Bell, User, Settings } from "lucide-react";
 import { useSidebar } from "./ui/sidebar";
 import { Button } from "./ui/button";
-import { useTheme } from "./theme-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect, useState } from "react";
+import ThemeSwitcher from "./ThemeSwitcher";
 
 export default function MainNav() {
   const sidebar = useSidebar();
-  const { theme, setTheme } = useTheme();
   const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [deviceType, setDeviceType] = useState<'mobile' | 'tablet' | 'laptop' | 'desktop'>('desktop');
@@ -102,21 +101,8 @@ export default function MainNav() {
             <Search className="h-5 w-5" />
           </Button>
           
-          {/* Theme toggle - visible on all screen sizes */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                      transition-all duration-200 ease-in-out"
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {theme === 'dark' ? (
-              <Sun className="h-5 w-5 rotate-0 scale-100 transition-all duration-300 ease-in-out" />
-            ) : (
-              <Moon className="h-5 w-5 rotate-0 scale-100 transition-all duration-300 ease-in-out" />
-            )}
-          </Button>
+          {/* Beautiful theme switcher - visible on all screen sizes */}
+          <ThemeSwitcher className="text-foreground/80 hover:text-foreground" />
           
           {/* Notification icon - hidden on mobile */}
           {deviceType !== 'mobile' && (

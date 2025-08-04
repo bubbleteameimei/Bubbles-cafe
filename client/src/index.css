@@ -72,14 +72,223 @@ body {
 
 /* Global responsive design fixes */
 @layer base {
+  /* Modern color scheme system inspired by Lanry.space */
+  :root {
+    color-scheme: light dark;
+    
+    /* Default Light Theme */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 45 93% 47%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 262 83% 58%;
+    --radius: 0.75rem;
+    
+    /* Chart colors */
+    --chart-1: 262 83% 58%;
+    --chart-2: 45 93% 47%;
+    --chart-3: 197 71% 52%;
+    --chart-4: 142 71% 45%;
+    --chart-5: 336 75% 40%;
+    
+    /* Sidebar colors */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 216 12.2% 83.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 262 83% 58%;
+  }
+
+  /* Dark theme */
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 263 70% 50.4%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 45 93% 47%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 263 70% 50.4%;
+    
+    /* Sidebar dark colors */
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 263 70% 50.4%;
+    --sidebar-primary-foreground: 240 5.9% 10%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 263 70% 50.4%;
+  }
+
+  /* Blue Pastel theme */
+  [data-theme="blue-pastel"] {
+    --background: 204 100% 97%;
+    --foreground: 213 27% 18%;
+    --card: 204 100% 97%;
+    --card-foreground: 213 27% 18%;
+    --popover: 204 100% 97%;
+    --popover-foreground: 213 27% 18%;
+    --primary: 213 94% 68%;
+    --primary-foreground: 204 100% 97%;
+    --secondary: 204 50% 90%;
+    --secondary-foreground: 213 27% 18%;
+    --muted: 204 50% 90%;
+    --muted-foreground: 213 10% 40%;
+    --accent: 54 91% 65%;
+    --accent-foreground: 213 27% 18%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 204 100% 97%;
+    --border: 204 44% 85%;
+    --input: 204 44% 85%;
+    --ring: 213 94% 68%;
+    
+    /* Sidebar blue pastel */
+    --sidebar-background: 204 100% 95%;
+    --sidebar-foreground: 213 27% 25%;
+    --sidebar-primary: 213 94% 68%;
+    --sidebar-primary-foreground: 204 100% 95%;
+    --sidebar-accent: 204 50% 88%;
+    --sidebar-accent-foreground: 213 27% 25%;
+    --sidebar-border: 204 44% 82%;
+    --sidebar-ring: 213 94% 68%;
+  }
+
+  /* Green Pastel theme */
+  [data-theme="green-pastel"] {
+    --background: 120 60% 97%;
+    --foreground: 120 27% 15%;
+    --card: 120 60% 97%;
+    --card-foreground: 120 27% 15%;
+    --popover: 120 60% 97%;
+    --popover-foreground: 120 27% 15%;
+    --primary: 142 71% 45%;
+    --primary-foreground: 120 60% 97%;
+    --secondary: 120 40% 88%;
+    --secondary-foreground: 120 27% 15%;
+    --muted: 120 40% 88%;
+    --muted-foreground: 120 10% 40%;
+    --accent: 351 95% 71%;
+    --accent-foreground: 120 27% 15%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 120 60% 97%;
+    --border: 120 30% 85%;
+    --input: 120 30% 85%;
+    --ring: 142 71% 45%;
+    
+    /* Sidebar green pastel */
+    --sidebar-background: 120 60% 95%;
+    --sidebar-foreground: 120 27% 20%;
+    --sidebar-primary: 142 71% 45%;
+    --sidebar-primary-foreground: 120 60% 95%;
+    --sidebar-accent: 120 40% 85%;
+    --sidebar-accent-foreground: 120 27% 20%;
+    --sidebar-border: 120 30% 82%;
+    --sidebar-ring: 142 71% 45%;
+  }
+
+  /* Purple Pastel theme */
+  [data-theme="purple-pastel"] {
+    --background: 270 100% 98%;
+    --foreground: 270 15% 15%;
+    --card: 270 100% 98%;
+    --card-foreground: 270 15% 15%;
+    --popover: 270 100% 98%;
+    --popover-foreground: 270 15% 15%;
+    --primary: 262 83% 70%;
+    --primary-foreground: 270 100% 98%;
+    --secondary: 270 50% 90%;
+    --secondary-foreground: 270 15% 15%;
+    --muted: 270 50% 90%;
+    --muted-foreground: 270 8% 40%;
+    --accent: 24 95% 53%;
+    --accent-foreground: 270 15% 15%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 270 100% 98%;
+    --border: 270 30% 85%;
+    --input: 270 30% 85%;
+    --ring: 262 83% 70%;
+    
+    /* Sidebar purple pastel */
+    --sidebar-background: 270 100% 96%;
+    --sidebar-foreground: 270 15% 20%;
+    --sidebar-primary: 262 83% 70%;
+    --sidebar-primary-foreground: 270 100% 96%;
+    --sidebar-accent: 270 50% 88%;
+    --sidebar-accent-foreground: 270 15% 20%;
+    --sidebar-border: 270 30% 82%;
+    --sidebar-ring: 262 83% 70%;
+  }
+
+  /* Brown Pastel theme */
+  [data-theme="brown-pastel"] {
+    --background: 39 100% 97%;
+    --foreground: 30 10% 20%;
+    --card: 39 100% 97%;
+    --card-foreground: 30 10% 20%;
+    --popover: 39 100% 97%;
+    --popover-foreground: 30 10% 20%;
+    --primary: 0 0% 64%;
+    --primary-foreground: 39 100% 97%;
+    --secondary: 39 30% 88%;
+    --secondary-foreground: 30 10% 20%;
+    --muted: 39 30% 88%;
+    --muted-foreground: 30 8% 40%;
+    --accent: 24 95% 53%;
+    --accent-foreground: 30 10% 20%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 39 100% 97%;
+    --border: 39 20% 85%;
+    --input: 39 20% 85%;
+    --ring: 0 0% 64%;
+    
+    /* Sidebar brown pastel */
+    --sidebar-background: 39 100% 95%;
+    --sidebar-foreground: 30 10% 25%;
+    --sidebar-primary: 0 0% 64%;
+    --sidebar-primary-foreground: 39 100% 95%;
+    --sidebar-accent: 39 30% 85%;
+    --sidebar-accent-foreground: 30 10% 25%;
+    --sidebar-border: 39 20% 82%;
+    --sidebar-ring: 0 0% 64%;
+  }
+
   /* Re-enable Tailwind's pulse animation for better UX */
   .animate-pulse {
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
   
-  /* Prevent black box flash during page transitions */
+  /* Smooth theme transitions */
   * {
-    transition: background-color 0.1s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
   }
   
   /* Ensure smooth loading transitions */

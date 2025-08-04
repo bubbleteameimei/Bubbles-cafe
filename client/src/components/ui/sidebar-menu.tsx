@@ -10,6 +10,8 @@ import {
   Zap, Star, Compass, Map, Globe, Crown, Gem, Target, TrendingUp, Activity
 } from "lucide-react"
 
+import ThemeSwitcher from "../ThemeSwitcher"
+
 import { cn } from "@/lib/utils"
 import { useLocation } from "wouter"
 import { useAuth } from "@/hooks/use-auth"
@@ -711,6 +713,16 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         <Settings className="h-7 w-7 mr-2" />
                         <span>Quick Settings</span>
                       </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+
+                    <SidebarMenuSubItem>
+                      <div className="flex items-center justify-between w-full px-3 py-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Palette className="h-4 w-4" />
+                          <span>Theme</span>
+                        </div>
+                        <ThemeSwitcher className="text-foreground/80" />
+                      </div>
                     </SidebarMenuSubItem>
                     
                     <SidebarMenuSubItem>
