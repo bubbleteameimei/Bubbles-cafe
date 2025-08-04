@@ -236,10 +236,10 @@ export default function AuthPage() {
             </div>
           </div>
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
-            Interactive Stories
+            Bubble's Cafe
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-lg">
-            {isSignIn ? "Welcome back to your story journey" : "Begin your interactive storytelling adventure"}
+            {isSignIn ? "Welcome back to Bubble's Cafe" : "Join the dark side at Bubble's Cafe"}
           </p>
         </div>
 

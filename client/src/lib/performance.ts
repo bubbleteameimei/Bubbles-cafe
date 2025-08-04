@@ -15,7 +15,12 @@ export const lazyLoad = (
   return React.lazy(() => 
     importFn().catch(err => {
       console.warn('[Performance] Lazy load failed, using fallback:', err);
-      return fallback ? { default: fallback } : Promise.reject(err);
+      if (fallback) {
+        return { default: fallback };
+      } else {
+        console.error('[Performance] Critical lazy load failure:', err);
+        throw err;
+      }
     })
   );
 };

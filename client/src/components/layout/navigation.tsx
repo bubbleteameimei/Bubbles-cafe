@@ -117,7 +117,7 @@ export default function Navigation() {
             <SheetContent side="left" className="p-0 w-[280px] sm:w-[320px] md:w-[350px] lg:w-[400px] max-w-[85vw]">
               {/* Accessibility components for screen readers */}
               <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-              <SheetDescription className="sr-only">Access navigation links and settings for the Interactive Storytelling Platform</SheetDescription>
+              <SheetDescription className="sr-only">Access navigation links and settings for Bubble's Cafe</SheetDescription>
               
               {/* Sidebar navigation for all screen sizes */}
               <div className="border-b border-border/30"></div>
@@ -212,11 +212,11 @@ export default function Navigation() {
                         transition-all duration-150 active:scale-95 p-0 overflow-hidden mt-2"
               aria-label="Profile"
             >
-              {user.avatar ? (
+              {user.photoURL ? (
                 <div className="h-full w-full overflow-hidden rounded-full">
                   <img 
-                    src={user.avatar} 
-                    alt={`${user.username}'s avatar`}
+                    src={user.photoURL} 
+                    alt={`${user.username || user.email}'s avatar`}
                     className="h-full w-full object-cover" 
                   />
                 </div>

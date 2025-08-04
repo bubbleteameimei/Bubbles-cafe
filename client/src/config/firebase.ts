@@ -72,10 +72,22 @@ export const signInWithGoogle = async () => {
     throw error;
   }
 };
-export const signInWithEmail = (email: string, password: string) => signInWithEmailAndPassword(auth, email, password);
-export const createUserWithEmail = (email: string, password: string) => createUserWithEmailAndPassword(auth, email, password);
-export const signOutUser = () => signOut(auth);
-export const resetPassword = (email: string) => sendPasswordResetEmail(auth, email);
+export const signInWithEmail = (email: string, password: string) => {
+  if (!auth) throw new Error('Firebase auth not initialized');
+  return signInWithEmailAndPassword(auth, email, password);
+};
+export const createUserWithEmail = (email: string, password: string) => {
+  if (!auth) throw new Error('Firebase auth not initialized');
+  return createUserWithEmailAndPassword(auth, email, password);
+};
+export const signOutUser = () => {
+  if (!auth) throw new Error('Firebase auth not initialized');
+  return signOut(auth);
+};
+export const resetPassword = (email: string) => {
+  if (!auth) throw new Error('Firebase auth not initialized');
+  return sendPasswordResetEmail(auth, email);
+};
 
 export { auth };
 export default app;

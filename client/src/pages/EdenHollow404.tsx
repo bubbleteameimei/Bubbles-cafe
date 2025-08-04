@@ -43,7 +43,7 @@ const EdenHollow404: React.FC = () => {
         
         {/* Optional decorative element */}
         <div className="mt-12 text-xs text-muted-foreground">
-          Looking for interactive content? Check out our storytelling collection.
+          Looking for dark content? Check out our horror collection at Bubble's Cafe.
         </div>
       </div>
     </div>

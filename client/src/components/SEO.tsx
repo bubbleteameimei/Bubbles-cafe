@@ -48,7 +48,7 @@ export default function SEO({
   author,
   published,
   modified,
-  keywords = ['horror stories', 'fiction', 'creative writing', 'storytelling', 'immersive fiction', 'dark tales'],
+  keywords = ['horror stories', 'fiction', 'creative writing', 'bubbles cafe', 'dark tales', 'blood drip cafe'],
   category,
   tags = [],
   readingTime,

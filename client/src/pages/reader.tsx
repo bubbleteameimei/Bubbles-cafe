@@ -118,7 +118,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   // Add authentication hook to check user role for admin actions
   const { user } = useAuth();
-  const isAdmin = user?.isAdmin === true;
+  const isAdmin = user?.role === 'admin' || user?.isAdmin === true;
   
   // Theme is now managed by the useTheme hook
   const { theme } = useTheme();
@@ -1202,7 +1202,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
         <article
             key={currentPost.id}
-            className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
+            className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none prose-lg leading-relaxed"
           >
             <div className="flex flex-col items-center mb-2 mt-0">
               <div className="relative flex flex-col items-center">
@@ -1229,7 +1229,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   </div>
                 )}
                 <h1
-                  className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
+                  className="text-4xl md:text-5xl font-bold text-center mb-6 tracking-tight leading-tight"
                   dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(currentPost.title?.rendered || currentPost.title || 'Story') }}
                 />
               </div>
