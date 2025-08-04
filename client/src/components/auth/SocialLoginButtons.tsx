@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { signInWithGoogle, signInWithApple } from '@/lib/firebase';
+import { signInWithGoogle } from '@/config/firebase';
 import { SiGoogle, SiApple } from 'react-icons/si';
 import { Loader2 } from 'lucide-react';
 import './SocialLoginButtons.css';
@@ -39,9 +39,9 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
-      const userCredential = await signInWithGoogle();
-      if (userCredential) {
-        const userData = await processFirebaseUser(userCredential, 'google');
+      const result = await signInWithGoogle();
+      if (result && result.user) {
+        const userData = await processFirebaseUser(result.user, 'google');
         onSuccess(userData);
       }
     } catch (error) {
@@ -59,11 +59,8 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
   const handleAppleSignIn = async () => {
     setIsAppleLoading(true);
     try {
-      const userCredential = await signInWithApple();
-      if (userCredential) {
-        const userData = await processFirebaseUser(userCredential, 'apple');
-        onSuccess(userData);
-      }
+      // Apple sign-in temporarily disabled - would need additional configuration
+      throw new Error('Apple sign-in is not yet configured. Please use Google sign-in or email authentication.');
     } catch (error) {
       console.error('Apple sign-in error:', error);
       if (error instanceof Error) {

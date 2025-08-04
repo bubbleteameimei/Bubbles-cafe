@@ -1,6 +1,6 @@
 // Firebase Configuration
-import { initializeApp, getApps } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from "firebase/auth";
+import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, type Auth } from "firebase/auth";
 
 // Your web app's Firebase configuration - using provided credentials with fallback to environment variables
 const firebaseConfig = {
@@ -11,22 +11,39 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:870151001940:web:f11d39b75764457a91ac1",
 };
 
-// Initialize Firebase (prevent duplicate app initialization)
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
+// Initialize Firebase with error handling
 
-// Configure Google provider
-googleProvider.setCustomParameters({
-  prompt: 'select_account'
-});
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let googleProvider: GoogleAuthProvider | null = null;
+
+try {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+  auth = getAuth(app);
+  googleProvider = new GoogleAuthProvider();
+  console.log('Firebase initialized successfully');
+} catch (error) {
+  console.error('Firebase initialization failed:', error);
+  // Continue without Firebase - app will work with email auth only
+}
+
+// Configure Google provider with error handling
+if (googleProvider) {
+  try {
+    googleProvider.setCustomParameters({
+      prompt: 'select_account'
+    });
+  } catch (error) {
+    console.error('Failed to configure Google provider:', error);
+  }
+}
 
 // Authentication functions
 export const signInWithGoogle = async () => {
   try {
     // Check if Firebase is properly initialized
     if (!auth || !googleProvider) {
-      throw new Error('Firebase authentication not properly initialized');
+      throw new Error('Google sign-in is not available. Firebase authentication not properly initialized.');
     }
 
     // Attempt sign in with popup

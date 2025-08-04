@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { auth, getCurrentUser } from '@/lib/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { auth } from '@/config/firebase';
+import { onAuthStateChanged, User, type Auth } from 'firebase/auth';
 
 export interface SocialUser {
   id: string;
@@ -27,39 +27,23 @@ export const useSocialAuth = () => {
       return;
     }
 
-    // Check for existing user on mount
-    const checkCurrentUser = async () => {
-      try {
-        const currentUser = await getCurrentUser();
-        setUser(currentUser);
-      } catch (err) {
-        console.error('Error checking current user:', err);
-        if (err instanceof Error) {
-          setError(err);
-        } else {
-          setError(new Error('Failed to check current user'));
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
+    const authInstance = auth as Auth;
 
     // Set up auth state listener
     const unsubscribe = onAuthStateChanged(
-      auth,
+      authInstance,
       (authUser) => {
         setUser(authUser);
         setLoading(false);
       },
       (err) => {
         console.error('Auth state change error:', err);
-        setError(err);
+        setError(err as Error);
         setLoading(false);
       }
     );
 
-    // Check for user first
-    checkCurrentUser();
+    // The auth state listener will handle setting the initial user
 
     // Cleanup subscription
     return () => unsubscribe();
