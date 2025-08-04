@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
 import { Menu, Search, Moon, Sun, User } from "lucide-react";
 import { NotificationIcon } from "@/components/ui/notification-icon";
@@ -115,6 +115,10 @@ export default function Navigation() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-[280px] sm:w-[320px] md:w-[350px] lg:w-[400px] max-w-[85vw]">
+              {/* Accessibility components for screen readers */}
+              <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+              <SheetDescription className="sr-only">Access navigation links and settings for the Interactive Storytelling Platform</SheetDescription>
+              
               {/* Sidebar navigation for all screen sizes */}
               <div className="border-b border-border/30"></div>
               <SidebarNavigation onNavigate={() => setIsOpen(false)} />
