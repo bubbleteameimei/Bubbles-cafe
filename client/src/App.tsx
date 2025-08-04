@@ -109,6 +109,9 @@ const AdminWordPressSyncPage = React.lazy(() => import('./pages/admin/WordPressS
 const AdminContentManagementPage = React.lazy(() => import('./pages/admin/content-management'));
 const AdminThemesPage = React.lazy(() => import('./pages/admin/themes'));
 const ResetPasswordPage = React.lazy(() => import('./pages/reset-password'));
+const AuthSuccessPage = React.lazy(() => import('./pages/auth-success'));
+const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
+const PrivacyPage = React.lazy(() => import('./pages/privacy'));
 
 // Placeholder 404 page for discontinued features
 const EdenHollow404 = React.lazy(() => import('./pages/EdenHollow404'));
