@@ -874,4 +874,12 @@ export const insertUserPrivacySettingsSchema = createInsertSchema(userPrivacySet
 });
 export type InsertUserPrivacySettings = z.infer<typeof insertUserPrivacySettingsSchema>;
 
+// Add missing table select types
+export type User = typeof users.$inferSelect;
+export type Post = typeof posts.$inferSelect;
+export type Comment = typeof comments.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertPost = z.infer<typeof insertPostSchema>;
+export type InsertComment = z.infer<typeof insertCommentSchema>;
+
 export type UserPrivacySettings = typeof userPrivacySettings.$inferSelect;

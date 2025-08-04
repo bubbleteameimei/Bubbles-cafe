@@ -63,6 +63,7 @@ import type { CommentMetadata } from "@shared/schema";
 import { db } from "./db";
 import pkg from 'pg';
 const { Pool } = pkg;
+import bcrypt from 'bcrypt';
 
 // Database operation utility function with retry logic
 async function safeDbOperation<T>(
@@ -93,7 +94,6 @@ const pool = new Pool({
   min: 1, // Minimum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
   connectionTimeoutMillis: 3000, // Reduced timeout for faster failures
-  acquireTimeoutMillis: 2000, // Add acquire timeout
   maxUses: 3000, // Reduced max uses to prevent memory issues
   allowExitOnIdle: false, // Don't exit when the pool is empty - better for production
   keepAlive: true, // Enable TCP keep-alive
