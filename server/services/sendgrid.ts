@@ -4,7 +4,6 @@
  * Functions for working with SendGrid email service.
  */
 
-import nodemailer from 'nodemailer';
 import logger from '../utils/logger';
 import { EmailMessage, EmailResult } from './email-types';
 

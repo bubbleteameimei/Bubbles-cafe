@@ -2,249 +2,146 @@
  * WordPress Sync API Routes
  * These routes handle WordPress content importing and synchronization
  */
-import { Express, Request, Response, NextFunction } from 'express';
-import { syncWordPressPosts, syncSingleWordPressPost, SyncResult, getSyncStatus } from '../wordpress-sync';
-import { wordpressSync } from '../wordpress-api-sync';
-import { log } from '../vite.js';
+import { Router, Request, Response, NextFunction } from 'express';
+import { syncSingleWordPressPost } from '../wordpress-sync';
 
-// Track sync status
-let syncInProgress = false;
-let lastSyncStatus: any = null;
-let lastSyncTime: string | null = null;
+const router = Router();
 
-// BACKEND IMPROVEMENTS:
-// - Require authentication/authorization for all sensitive endpoints
-// - Add CSRF protection for all POST/PUT/DELETE endpoints
-// - Add rate limiting for sensitive endpoints
-// - Use Zod for input validation
-// - Standardize error handling and logging
-// - Document and version API
-// - Use environment variables for secrets
-// - Use parameterized queries/ORM for DB access
-// - Backup DB regularly
-// - Add unit/integration tests for backend logic
-
-import { z } from 'zod';
-
-// Placeholder middleware for authentication/authorization
+// Middleware functions (simplified for now)
 function requireAuth(req: Request, res: Response, next: NextFunction): void {
-  // Authentication logic here
-  next();
+  next(); // Skip auth for now
 }
 
 function csrfProtection(req: Request, res: Response, next: NextFunction): void {
-  // CSRF protection logic here
-  next();
+  next(); // Skip CSRF for now
 }
 
 function rateLimit(req: Request, res: Response, next: NextFunction): void {
-  // Rate limiting logic here
-  next();
+  next(); // Skip rate limiting for now
 }
 
-// Example Zod schema for POST body validation
-const syncPostSchema = z.object({
-  postId: z.string().regex(/^\d+$/),
-});
+/**
+ * Register WordPress sync routes
+ */
+export function registerWordPressSyncRoutes(app: any) {
+  console.log('Registering WordPress sync routes');
 
-// Example logging utility
-function logEvent(message: string, meta?: any): void {
-  console.log(`[WordPress Sync] ${message}`, meta || '');
-}
-
-// TODO: Implement CSRF protection and rate limiting for all POST endpoints below.
-export function registerWordPressSyncRoutes(app: Express): void {
-  /**
-   * GET /api/wordpress/status
-   * Get the general status of WordPress integration
-   */
-  app.get('/api/wordpress/status', (_req: Request, res: Response) => {
-    // Set proper Content-Type to ensure JSON response
-    res.setHeader('Content-Type', 'application/json');
-    res.json({
-      connected: true,
-      wpApiEndpoint: 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com',
-      lastSyncTime,
-      status: 'operational'
-    });
-  });
-
-  /**
-   * GET /api/wordpress/status-check
-   * Check if WordPress API integration is working properly
-   */
-  app.get('/api/wordpress/status-check', async (_req: Request, res: Response) => {
-    // Set proper Content-Type to ensure JSON response
-    res.setHeader('Content-Type', 'application/json');
-    
+  // Manual sync trigger
+  app.post('/api/wordpress/sync', requireAuth, csrfProtection, rateLimit, async (req: Request, res: Response) => {
     try {
-      // Perform a basic check by attempting to fetch from WordPress API
-      const wpApiUrl = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts?per_page=1';
-      const response = await fetch(wpApiUrl);
+      console.log('[WordPress Sync] Manual sync triggered');
       
-      if (response.ok) {
-        res.json({
-          status: 'connected',
-          message: 'WordPress API is accessible',
-          lastChecked: new Date().toISOString(),
-          apiEndpoint: 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com'
-        });
-      } else {
-        const errorText = await response.text();
-        res.status(503).json({
-          status: 'error',
-          message: `WordPress API returned status: ${response.status}`,
-          lastChecked: new Date().toISOString(),
-          error: errorText.substring(0, 200) // Limit error text
-        });
-      }
-    } catch (error) {
-      res.status(503).json({
-        status: 'error',
-        message: 'Failed to connect to WordPress API',
-        lastChecked: new Date().toISOString(),
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-
-  /**
-   * GET /api/wordpress/sync/status
-   * Get the status of WordPress sync
-   */
-  app.get('/api/wordpress/sync/status', (_req: Request, res: Response) => {
-    // Set proper Content-Type to ensure JSON response
-    res.setHeader('Content-Type', 'application/json');
-    res.json({
-      syncInProgress,
-      lastSyncStatus,
-      lastSyncTime,
-      wpApiEndpoint: 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com'
-    });
-  });
-
-  /**
-   * POST /api/wordpress/sync
-   * Trigger a WordPress sync manually
-   */
-  app.post('/api/wordpress/sync', requireAuth, csrfProtection, rateLimit, async (_req: Request, res: Response): Promise<void> => {
-    // Example: log event
-    logEvent('Manual WordPress sync triggered via API', { user: _req.user });
-    // TODO: Add input validation if accepting body data
-    // Standardize error handling below
-    if (syncInProgress) {
-      return res.status(409).json({
-        success: false,
-        message: 'WordPress sync already in progress',
-        lastSyncTime
-      });
-    }
-
-    syncInProgress = true;
-    
-    try {
-      // Now run the actual sync (the response has already been sent)
-      const result = await wordpressSync.syncAllPosts();
-      
-      lastSyncStatus = result;
-      lastSyncTime = new Date().toISOString();
-      
-      logEvent(`WordPress sync completed: ${result.synced} synced posts, ${result.errors.length} errors`, { synced: result.synced, errors: result.errors.length });
-    } catch (error) {
-      logEvent('Error in WordPress sync', { error });
-      
-      lastSyncStatus = {
-        success: false,
-        error: error instanceof Error ? error.message : String(error)
-      };
-      lastSyncTime = new Date().toISOString();
-    } finally {
-      syncInProgress = false;
-    }
-  });
-
-  /**
-   * POST /api/wordpress/sync/:postId
-   * Trigger a WordPress sync for a single post
-   */
-  app.post('/api/wordpress/sync/:postId', requireAuth, csrfProtection, rateLimit, async (req: Request, res: Response): Promise<void> => {
-    // Validate input
-    const parseResult = syncPostSchema.safeParse({ postId: req.params.postId });
-    if (!parseResult.success) {
-      return res.status(400).json({ error: 'Invalid post ID' });
-    }
-    logEvent('Manual sync triggered for WordPress post ID', { user: req.user, postId: req.params.postId });
-    
-    const postId = parseInt(req.params.postId);
-    
-    if (!postId || isNaN(postId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid post ID'
-      });
-    }
-    
-    try {
-      const result = await syncSingleWordPressPost(postId);
+      // Import and call sync function
+      const { syncWordPressPosts } = await import('../wordpress-sync');
+      const result = await syncWordPressPosts();
       
       res.json({
         success: true,
-        message: `WordPress post ${result.action}`,
-        post: result
+        message: 'WordPress sync completed',
+        data: result
       });
     } catch (error) {
-      logEvent('Error syncing WordPress post', { error });
-      
+      console.error('[WordPress Sync] Error during manual sync:', error);
       res.status(500).json({
         success: false,
-        message: `Error syncing WordPress post: ${error instanceof Error ? error.message : String(error)}`
+        message: 'WordPress sync failed',
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
 
-  /**
-   * GET /api/wordpress/posts
-   * Get a list of posts directly from WordPress
-   * Supports optional 'search' parameter and 'limit' parameter
-   */
+  // Get sync status
+  app.get('/api/wordpress/sync/status', async (req: Request, res: Response) => {
+    try {
+      // Import and call status function
+      const { getSyncStatus } = await import('../wordpress-sync');
+      const status = await getSyncStatus();
+      
+      res.json({
+        success: true,
+        data: status
+      });
+    } catch (error) {
+      console.error('[WordPress Sync] Error getting sync status:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get sync status',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Get WordPress posts
   app.get('/api/wordpress/posts', async (req: Request, res: Response) => {
     try {
-      // With the updated requirements, we want to fetch all posts in one request
-      // We'll use a large limit value to get as many posts as possible
-      const limit = parseInt(req.query.limit as string) || 100;
-      const searchQuery = req.query.search as string || '';
+      const { page = 1, limit = 10 } = req.query;
       
-      const wpApiUrl = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
-      let apiUrl = `${wpApiUrl}/posts?per_page=${limit}&_fields=id,date,title,excerpt,slug,categories,status`;
+      console.log(`[WordPress API] Fetching posts - page ${page}, limit ${limit}`);
       
-      // If search query is provided, add it to the API URL
-      if (searchQuery) {
-        apiUrl += `&search=${encodeURIComponent(searchQuery)}`;
-      }
-      
-      const response = await fetch(apiUrl);
+      // Fetch posts from WordPress API
+      const response = await fetch(`https://bubbleteameimei.wordpress.com/wp-json/wp/v2/posts?page=${page}&per_page=${limit}`);
       
       if (!response.ok) {
-        throw new Error(`WordPress API error: ${response.status} ${response.statusText}`);
+        throw new Error(`WordPress API error: ${response.status}`);
       }
       
       const posts = await response.json();
       
-      // Log a preview of the response data
-      log(`Response preview: ${JSON.stringify(posts.slice(0, 1))}`, 'WordPress');
-      log(`Successfully fetched ${posts.length} posts`, 'WordPress');
-      
       res.json({
         success: true,
-        posts
+        data: posts,
+        pagination: {
+          page: parseInt(page as string),
+          limit: parseInt(limit as string),
+          total: posts.length
+        }
       });
     } catch (error) {
-      log(`Error fetching WordPress posts: ${error instanceof Error ? error.message : String(error)}`, 'wordpress-sync');
-      
+      console.error('[WordPress API] Error fetching posts:', error);
       res.status(500).json({
         success: false,
-        message: `Error fetching WordPress posts: ${error instanceof Error ? error.message : String(error)}`
+        message: 'Failed to fetch WordPress posts',
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
+
+  // Sync specific post by ID
+  app.post('/api/wordpress/sync/:postId', requireAuth, csrfProtection, async (req: Request, res: Response) => {
+    try {
+      const { postId } = req.params;
+      
+      if (!postId || isNaN(parseInt(postId))) {
+        return res.status(400).json({ error: 'Invalid post ID' });
+      }
+
+      console.log(`[WordPress Sync] Syncing specific post: ${postId}`);
+      
+      const result = await syncSingleWordPressPost(parseInt(postId));
+      
+      if (!result) {
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to sync post - post may not exist'
+        });
+      }
+
+      res.json({
+        success: true,
+        message: `Post ${postId} synced successfully`,
+        data: result
+      });
+    } catch (error) {
+      console.error(`[WordPress Sync] Error syncing post ${req.params.postId}:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to sync post',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  console.log('WordPress sync routes registered successfully');
 }
+
+export default router;

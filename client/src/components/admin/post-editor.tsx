@@ -27,7 +27,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { X, Save, Eye, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Post } from "../../pages/admin/content";
 
 // Define the theme categories
 const themeCategories = [

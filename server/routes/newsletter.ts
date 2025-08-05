@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import { storage } from '../storage';
+
 import { insertNewsletterSubscriptionSchema } from '@shared/schema';
 import { z } from 'zod';
 import { sendNewsletterWelcomeEmail } from '../utils/send-email';
+import { storage } from '../storage';
 
 const router = Router();
 

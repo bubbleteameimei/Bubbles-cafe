@@ -1,7 +1,9 @@
-import { Request, Response, Express } from "express";
-import { db } from "../db-connect";
-import { posts } from "@shared/schema";
-import { desc, eq, and, ne, or, sql } from "drizzle-orm";
+import { Router, Request, Response } from 'express';
+import { db } from '../db';
+import { posts, readingProgress, postLikes, bookmarks } from "@shared/schema";
+import { and, eq, ne, or, like, desc, sql, not } from "drizzle-orm";
+
+const router = Router();
 
 /**
  * Register routes specifically for post recommendations

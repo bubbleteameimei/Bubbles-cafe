@@ -1,108 +1,78 @@
 import { Router } from 'express';
 import { storage } from '../storage';
-import { moderateComment } from '../utils/comment-moderation';
-import { z } from 'zod';
 
 const router = Router();
 
-// Get all reported content
+// Get reported content
 router.get('/reported-content', async (req, res) => {
   try {
     const reportedContent = await storage.getReportedContent();
-    res.json(reportedContent);
+    return res.json(reportedContent);
   } catch (error) {
-    console.error('Error fetching reported content:', error);
-    res.status(500).json({ error: 'Failed to fetch reported content' });
+    console.error('[Moderation] Error getting reported content:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Update reported content status
 router.patch('/reported-content/:id', async (req, res) => {
   try {
-    const schema = z.object({
-      status: z.enum(['approved', 'rejected'])
-    });
+    const { id } = req.params;
+    const { status } = req.body;
 
-    const { status } = schema.parse(req.body);
-    const id = parseInt(req.params.id);
-    
-    // Validate that id is a valid number
-    if (isNaN(id) || id <= 0) {
-      return res.status(400).json({ error: 'Invalid ID parameter' });
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required' });
     }
 
-    // Update the content status
-    const updatedContent = await storage.updateReportedContent(id, status);
-    res.json(updatedContent);
+    const updatedContent = await storage.updateReportedContent(parseInt(id), status);
+    
+    if (!updatedContent) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+
+    return res.json(updatedContent);
   } catch (error) {
-    console.error('Error updating reported content:', error);
-    res.status(500).json({ error: 'Failed to update content status' });
+    console.error('[Moderation] Error updating reported content:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Report new content
+// Report content
 router.post('/report', async (req, res) => {
   try {
-    const schema = z.object({
-      contentType: z.string(),
-      contentId: z.number(),
-      reason: z.string(),
-      reporterId: z.number()
-    });
+    const report = req.body;
+    
+    if (!report.content || !report.reason) {
+      return res.status(400).json({ error: 'Content and reason are required' });
+    }
 
-    const report = schema.parse(req.body);
     const newReport = await storage.reportContent(report);
-    res.status(201).json(newReport);
+    return res.status(201).json(newReport);
   } catch (error) {
-    console.error('Error creating content report:', error);
-    res.status(500).json({ error: 'Failed to create content report' });
+    console.error('[Moderation] Error reporting content:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Add reply to a comment
+// Create comment reply
 router.post('/comments/:commentId/replies', async (req, res) => {
   try {
-    const schema = z.object({
-      content: z.string().min(1, "Reply content is required"),
-      author: z.string().min(1, "Author name is required")
-    });
+    const { commentId } = req.params;
+    const replyData = req.body;
 
-    const { content, author } = schema.parse(req.body);
-    const commentId = parseInt(req.params.commentId);
-    
-    // Validate that commentId is a valid number
-    if (isNaN(commentId) || commentId <= 0) {
-      return res.status(400).json({ error: 'Invalid comment ID parameter' });
+    if (!replyData.content) {
+      return res.status(400).json({ error: 'Reply content is required' });
     }
 
     const reply = await storage.createCommentReply({
-      content,
-      commentId,
-      userId: req.user?.id || null,
-      metadata: {
-        author: author || 'Anonymous',
-        isAnonymous: !req.user?.id,
-        moderated: false,
-        originalContent: content,
-        upvotes: 0,
-        downvotes: 0
-      },
-      approved: true
+      ...replyData,
+      parentCommentId: parseInt(commentId)
     });
 
-    res.status(201).json(reply);
+    return res.status(201).json(reply);
   } catch (error) {
-    console.error('Error creating comment reply:', error);
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        message: "Invalid reply data",
-        errors: error.errors.map(err => ({
-          path: err.path.join('.'),
-          message: err.message
-        }))
-      });
-    }
-    res.status(500).json({ error: 'Failed to create reply' });
+    console.error('[Moderation] Error creating reply:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 

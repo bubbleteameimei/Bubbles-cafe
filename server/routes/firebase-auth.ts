@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
-import { storage } from "../storage";
+
 import { createLogger } from "../utils/debug-logger";
+import { storage } from '../storage';
 
 const router = Router();
 const logger = createLogger("firebase-auth");

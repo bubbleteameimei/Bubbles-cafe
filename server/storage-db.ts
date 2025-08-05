@@ -65,7 +65,7 @@ import type {
   InsertBookmark,
   Bookmark
 } from '@shared/schema';
-import { eq, desc, and, or, sql, like, count, sum } from 'drizzle-orm';
+
 import bcrypt from 'bcryptjs';
 
 export interface IStorage {

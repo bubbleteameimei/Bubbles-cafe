@@ -1,5 +1,5 @@
 
-import { Helmet } from 'react-helmet-async';
+import React, { useEffect } from 'react';
 
 interface SEOProps {
   title?: string;

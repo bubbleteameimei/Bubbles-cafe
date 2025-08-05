@@ -1,17 +1,18 @@
 // Gmail Configuration
-// This file ensures your Gmail credentials are permanently configured
+// This file ensures your Gmail credentials are loaded from environment variables
 
-export const GMAIL_CONFIG = {
-  user: "vantalison@gmail.com",
-  appPassword: "virz cgpj njom vddq"
-};
-
-// Function to set Gmail environment variables
+// Function to set Gmail environment variables (they should already be set from .env)
 export function setGmailCredentials() {
-  process.env.GMAIL_USER = GMAIL_CONFIG.user;
-  process.env.GMAIL_APP_PASSWORD = GMAIL_CONFIG.appPassword;
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPassword = process.env.GMAIL_APP_PASSWORD;
   
-  console.log('✅ Gmail credentials configured for:', GMAIL_CONFIG.user);
+  if (!gmailUser || !gmailPassword) {
+    console.warn('⚠️  Gmail credentials not found in environment variables. Please check your .env file.');
+    return false;
+  }
+  
+  console.log('✅ Gmail credentials loaded from environment variables for:', gmailUser);
+  return true;
 }
 
 // Function to verify Gmail credentials are available

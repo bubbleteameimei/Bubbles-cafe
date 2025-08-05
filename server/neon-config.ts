@@ -1,29 +1,35 @@
 // Neon Database Configuration
 // This file ensures your Neon database is always used as the primary database
 
-export const NEON_DATABASE_CONFIG = {
-  url: "postgresql://neondb_owner:npg_P6ghCZR2BASQ@ep-young-bread-aeojmse9-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
-  host: "ep-young-bread-aeojmse9-pooler.c-2.us-east-2.aws.neon.tech",
-  user: "neondb_owner",
-  password: "npg_P6ghCZR2BASQ",
-  database: "neondb",
-  ssl: true
-};
-
-// Function to get the proper database URL
+// Function to get the proper database URL from environment variables
 export function getDatabaseURL(): string {
-  // Always prioritize your Neon database
-  return NEON_DATABASE_CONFIG.url;
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL environment variable is not set. Please check your .env file.');
+  }
+  return databaseUrl;
 }
 
 // Set environment variables to ensure consistency
 export function setNeonAsDefault() {
-  process.env.DATABASE_URL = NEON_DATABASE_CONFIG.url;
-  process.env.PGHOST = NEON_DATABASE_CONFIG.host;
-  process.env.PGUSER = NEON_DATABASE_CONFIG.user;
-  process.env.PGPASSWORD = NEON_DATABASE_CONFIG.password;
-  process.env.PGDATABASE = NEON_DATABASE_CONFIG.database;
-  process.env.PGPORT = "5432";
+  const databaseUrl = process.env.DATABASE_URL;
   
-  console.log('✅ Neon database set as default for all connections');
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL environment variable is not set. Please check your .env file.');
+  }
+  
+  // Parse the database URL to extract components
+  try {
+    const url = new URL(databaseUrl);
+    process.env.PGHOST = url.hostname;
+    process.env.PGUSER = url.username;
+    process.env.PGPASSWORD = url.password;
+    process.env.PGDATABASE = url.pathname.slice(1); // Remove leading slash
+    process.env.PGPORT = url.port || "5432";
+    
+    console.log('✅ Neon database configured from environment variables');
+  } catch (error) {
+    console.error('❌ Invalid DATABASE_URL format:', error);
+    throw new Error('Invalid DATABASE_URL format in environment variables');
+  }
 }

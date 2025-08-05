@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { useLocation } from 'wouter';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { Post, User } from '@shared/schema';
+
 import { extractHorrorExcerpt } from '@/lib/content-analysis';
 import {
   Card,

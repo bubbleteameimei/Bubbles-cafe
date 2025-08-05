@@ -1,189 +1,148 @@
-import { Request, Response, Router } from "express";
-import { createSecureLogger } from '../utils/secure-logger';
-import { validateBody, validateQuery, validateParams, commonSchemas } from '../middleware/input-validation';
-import { asyncHandler, createError } from '../utils/error-handler';
-import { storage } from "../storage";
-import { z } from "zod";
-import { insertPostSchema, updatePostSchema } from "@shared/schema";
-import { apiRateLimiter } from '../middlewares/rate-limiter';
+import { Router, Request, Response } from "express";
 
-const postsLogger = createSecureLogger('PostsRoutes');
+import { insertPostSchema } from "@shared/schema";
+import { createErrorFunction as createError } from "../utils/error-handler";
+import { asyncHandler } from "../utils/error-handler";
+import { storage } from '../storage';
+
 const router = Router();
 
-// Validation schemas for posts
-const postIdSchema = z.object({
-  id: commonSchemas.id
-});
-
-const postQuerySchema = z.object({
-  page: commonSchemas.page,
-  limit: commonSchemas.limit,
-  category: z.string().optional(),
-  search: z.string().max(100).optional()
-});
-
-// GET /api/posts - Get all posts with pagination
-router.get('/', 
-  apiRateLimiter,
-  validateQuery(postQuerySchema),
-  asyncHandler(async (req: Request, res: Response) => {
-    const { page, limit, category, search } = req.query as any;
+// Get all posts with filtering and pagination
+router.get("/", asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { limit, offset, themeCategory, search } = req.query;
     
-    try {
-      // Get posts with pagination and filtering
-      const posts = await storage.getPosts({
-        limit: Number(limit) || 10,
-        offset: (Number(page) - 1) * (Number(limit) || 10),
-        themeCategory: category,
-        search: search,
-        isSecret: false // Only show public posts
-      });
-      
-      postsLogger.debug('Posts retrieved successfully', { 
-        count: posts.length, 
-        page, 
-        limit 
-      });
-      
-      res.json(posts);
-    } catch (error: unknown) {
-      console.error("Error fetching posts:", error);
-      if (error && typeof error === 'object' && 'statusCode' in error) throw error;
-      throw createError(500, "Failed to fetch posts");
+    // Fix: Call getPosts with just limit and offset, handle filtering separately
+    const posts = await storage.getPosts(Number(limit) || 10, Number(offset) || 0);
+    
+    // Apply additional filtering if needed
+    let filteredPosts = posts.filter(post => !post.isSecret); // Only show public posts
+    
+    if (themeCategory) {
+      filteredPosts = filteredPosts.filter(post => 
+        post.themeCategory === themeCategory
+      );
     }
-  })
-);
-
-// GET /api/posts/:id - Get specific post
-router.get('/:id',
-  apiRateLimiter,
-  validateParams(postIdSchema),
-  asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
     
-    try {
-      const post = await storage.getPost(Number(id));
-      
-      if (!post) {
-        throw createError(404, "Post not found");
-      }
-      
-      postsLogger.debug('Post retrieved successfully', { postId: id });
-      res.json(post);
-    } catch (error: unknown) {
-      console.error("Error fetching post:", error);
-      if (error && typeof error === 'object' && 'statusCode' in error) throw error;
+    if (search) {
+      const searchTerm = String(search).toLowerCase();
+      filteredPosts = filteredPosts.filter(post =>
+        post.title.toLowerCase().includes(searchTerm) ||
+        post.content.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    res.json(filteredPosts);
+  } catch (error) {
+    console.error("Error fetching posts:", error);
+    throw createError(500, "Failed to fetch posts");
+  }
+}));
+
+// Get single post by slug
+router.get("/:slug", asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const post = await storage.getPostBySlug(req.params.slug);
+    
+    if (!post) {
       throw createError(404, "Post not found");
     }
-  })
-);
 
-// POST /api/posts - Create new post (authenticated)
-router.post('/',
-  apiRateLimiter,
-  validateBody(insertPostSchema),
-  asyncHandler(async (req: Request, res: Response) => {
-    if (!req.user) {
-      throw createError.unauthorized('Authentication required');
+    // Don't show secret posts to non-authenticated users
+    if (post.isSecret && !req.session?.user?.isAdmin) {
+      throw createError(404, "Post not found");
     }
-    
-    try {
-      const postData = {
-        ...req.body,
-        authorId: req.user.id
-      };
-      
-      const newPost = await storage.createPost(postData);
-      
-      postsLogger.info('Post created successfully', { 
-        postId: newPost.id,
-        authorId: req.user.id 
-      });
-      
-      res.status(201).json(newPost);
-    } catch (error: unknown) {
-      console.error("Error creating post:", error);
-      if (error && typeof error === 'object' && 'statusCode' in error) throw error;
-      throw createError(500, "Failed to create post");
-    }
-  })
-);
 
-// PUT /api/posts/:id - Update post (authenticated, author only)
-router.put('/:id',
-  apiRateLimiter,
-  validateParams(postIdSchema),
-  validateBody(updatePostSchema),
-  asyncHandler(async (req: Request, res: Response) => {
-    if (!req.user) {
-      throw createError.unauthorized('Authentication required');
-    }
-    
-    const { id } = req.params;
-    
-    try {
-      // Check if post exists and user is author
-      const existingPost = await storage.getPost(Number(id));
-      if (!existingPost) {
-        throw createError.notFound('Post not found');
-      }
-      
-      if (existingPost.authorId !== req.user.id && !req.user.isAdmin) {
-        throw createError.forbidden('You can only edit your own posts');
-      }
-      
-      const updatedPost = await storage.updatePost(Number(id), req.body);
-      
-      postsLogger.info('Post updated successfully', { 
-        postId: id,
-        authorId: req.user.id 
-      });
-      
-      res.json(updatedPost);
-    } catch (error) {
-      if (error.statusCode) throw error;
-      postsLogger.error('Error updating post', { postId: id, error });
-      throw createError.internal('Failed to update post');
-    }
-  })
-);
+    res.json(post);
+  } catch (error: any) {
+    if (error.statusCode) throw error;
+    throw createError(404, "Post not found");
+  }
+}));
 
-// DELETE /api/posts/:id - Delete post (authenticated, author only)
-router.delete('/:id',
-  apiRateLimiter,
-  validateParams(postIdSchema),
-  asyncHandler(async (req: Request, res: Response) => {
-    if (!req.user) {
-      throw createError.unauthorized('Authentication required');
+// Create new post
+router.post("/", asyncHandler(async (req: Request, res: Response) => {
+  try {
+    if (!req.session?.user) {
+      throw createError(401, "Authentication required");
     }
-    
-    const { id } = req.params;
-    
-    try {
-      // Check if post exists and user is author
-      const existingPost = await storage.getPost(Number(id));
-      if (!existingPost) {
-        throw createError.notFound('Post not found');
-      }
-      
-      if (existingPost.authorId !== req.user.id && !req.user.isAdmin) {
-        throw createError.forbidden('You can only delete your own posts');
-      }
-      
-      await storage.deletePost(Number(id));
-      
-      postsLogger.info('Post deleted successfully', { 
-        postId: id,
-        authorId: req.user.id 
-      });
-      
-      res.status(204).send();
-    } catch (error) {
-      if (error.statusCode) throw error;
-      postsLogger.error('Error deleting post', { postId: id, error });
-      throw createError.internal('Failed to delete post');
-    }
-  })
-);
 
-export { router as postsRouter };
+    const validatedData = insertPostSchema.parse({
+      ...req.body,
+      authorId: req.session.user.id
+    });
+
+    const post = await storage.createPost(validatedData);
+    res.status(201).json(post);
+  } catch (error: any) {
+    console.error("Error creating post:", error);
+    if (error.statusCode) throw error;
+    throw createError(500, "Failed to create post");
+  }
+}));
+
+// Update post
+router.put("/:id", asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const postId = parseInt(req.params.id);
+    
+    if (!req.session?.user) {
+      throw createError(401, "Authentication required");
+    }
+
+    // Check if post exists and user has permission
+    const existingPost = await storage.getPost(postId);
+    if (!existingPost) {
+      throw createError(404, "Post not found");
+    }
+
+    if (existingPost.authorId !== req.session.user.id && !req.session.user.isAdmin) {
+      throw createError(403, "Permission denied");
+    }
+
+    const updatedPost = await storage.updatePost(postId, req.body);
+    if (!updatedPost) {
+      throw createError(404, "Post not found");
+    }
+
+    res.json(updatedPost);
+  } catch (error: any) {
+    console.error("Error updating post:", error);
+    if (error.statusCode) throw error;
+    throw createError(500, "Failed to update post");
+  }
+}));
+
+// Delete post
+router.delete("/:id", asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const postId = parseInt(req.params.id);
+    
+    if (!req.session?.user) {
+      throw createError(401, "Authentication required");
+    }
+
+    // Check if post exists and user has permission
+    const existingPost = await storage.getPost(postId);
+    if (!existingPost) {
+      throw createError(404, "Post not found");
+    }
+
+    if (existingPost.authorId !== req.session.user.id && !req.session.user.isAdmin) {
+      throw createError(403, "Permission denied");
+    }
+
+    const deleted = await storage.deletePost(postId);
+    if (!deleted) {
+      throw createError(404, "Post not found");
+    }
+
+    res.json({ message: "Post deleted successfully" });
+  } catch (error: any) {
+    console.error("Error deleting post:", error);
+    if (error.statusCode) throw error;
+    throw createError(500, "Failed to delete post");
+  }
+}));
+
+export default router;

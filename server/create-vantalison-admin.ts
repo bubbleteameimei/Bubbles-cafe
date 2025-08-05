@@ -1,4 +1,4 @@
-import { storage } from "./storage";
+
 import bcrypt from "bcryptjs"; // Using bcryptjs to match auth.ts
 
 // Use the same bcrypt library and salt rounds as in auth.ts

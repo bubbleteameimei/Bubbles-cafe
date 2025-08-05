@@ -2,8 +2,9 @@ import { Express, Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import bcrypt from 'bcryptjs';
-import { storage } from './storage';
+
 import { v4 as uuidv4 } from 'uuid';
+import { storage } from './storage';
 
 // Define metadata types
 interface OAuthProvider {

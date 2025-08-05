@@ -1,4 +1,4 @@
-import { Post, insertPostSchema } from '@shared/schema';
+
 import { WordPressPost } from '../services/wordpress';
 
 export function estimateReadingTime(content: string): number {

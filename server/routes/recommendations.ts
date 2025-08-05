@@ -1,8 +1,10 @@
-import { Request, Response, Express } from "express";
-import { db } from "../db-connect";
-import { posts, Post, readingProgress, postLikes, bookmarks } from "@shared/schema";
+import { Router, Request, Response } from 'express';
+import { db } from '../db';
+import { posts, readingProgress, postLikes, bookmarks } from "@shared/schema";
 import { and, eq, ne, or, like, desc, asc, sql, count, not } from "drizzle-orm";
-import { IStorage } from "../storage";
+import { storage } from '../storage';
+
+const router = Router();
 
 /**
  * Get recommendations based on post content, theme categories, and user history

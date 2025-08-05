@@ -1,30 +1,23 @@
 import { Request, Response, NextFunction } from 'express';
-import { createSecureLogger } from './secure-logger';
+import { errorLogger } from './debug-logger';
 
-const errorLogger = createSecureLogger('ErrorHandler');
-
-export interface AppError extends Error {
-  code?: string;
-  statusCode?: number;
-  isOperational?: boolean;
-}
-
-export class CustomError extends Error implements AppError {
-  public readonly code: string;
-  public readonly statusCode: number;
-  public readonly isOperational: boolean;
-
-  constructor(message: string, code: string = 'INTERNAL_ERROR', statusCode: number = 500, isOperational: boolean = true) {
+// Custom error class for better error handling
+export class CustomError extends Error {
+  statusCode: number;
+  code: string;
+  
+  constructor(message: string, code: string, statusCode: number) {
     super(message);
+    this.name = 'CustomError';
     this.code = code;
     this.statusCode = statusCode;
-    this.isOperational = isOperational;
     
-    Error.captureStackTrace(this, this.constructor);
+    // Capture stack trace
+    Error.captureStackTrace(this, CustomError);
   }
 }
 
-// Common error types
+// Error factory functions - now properly callable
 export const createError = {
   badRequest: (message: string) => new CustomError(message, 'BAD_REQUEST', 400),
   unauthorized: (message: string = 'Unauthorized') => new CustomError(message, 'UNAUTHORIZED', 401),
@@ -36,80 +29,98 @@ export const createError = {
   internal: (message: string = 'Internal server error') => new CustomError(message, 'INTERNAL_ERROR', 500)
 };
 
-// Safe error response (doesn't leak sensitive information)
-const createErrorResponse = (error: AppError, isDev: boolean) => {
-  const response: any = {
-    error: true,
-    code: error.code || 'INTERNAL_ERROR',
-    message: error.message || 'Something went wrong'
-  };
-
-  // Only include stack trace in development
-  if (isDev && error.stack) {
-    response.stack = error.stack;
+// Also export a callable function for backwards compatibility
+export function createErrorFunction(statusCode: number, message: string): CustomError {
+  switch (statusCode) {
+    case 400:
+      return createError.badRequest(message);
+    case 401:
+      return createError.unauthorized(message);
+    case 403:
+      return createError.forbidden(message);
+    case 404:
+      return createError.notFound(message);
+    case 409:
+      return createError.conflict(message);
+    case 422:
+      return createError.validationError(message);
+    case 429:
+      return createError.tooManyRequests(message);
+    case 500:
+    default:
+      return createError.internal(message);
   }
-
-  return response;
-};
+}
 
 // Async error handler wrapper
-export const asyncHandler = (fn: Function) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
+export const asyncHandler = (fn: Function) => (req: Request, res: Response, next: NextFunction) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
 };
 
-// Global error handling middleware
-export const globalErrorHandler = (
-  error: Error,
-  req: Request,
-  res: Response,
-  _next: NextFunction
-) => {
+// Global error handler middleware
+export function globalErrorHandler(err: Error | CustomError, req: Request, res: Response, next: NextFunction) {
   const isDev = process.env.NODE_ENV === 'development';
-  const appError = error as AppError;
   
-  // Log error details (sensitive data already filtered by secure logger)
+  // Log the error
   errorLogger.error('Unhandled error', {
-    message: error.message,
-    code: appError.code,
-    statusCode: appError.statusCode,
-    path: req.path,
+    message: err.message,
+    stack: err.stack,
+    url: req.url,
     method: req.method,
-    stack: isDev ? error.stack : undefined
+    ip: req.ip,
+    userAgent: req.get('User-Agent')
   });
 
-  // Default error values
-  const statusCode = appError.statusCode || 500;
-  const response = createErrorResponse(appError, isDev);
-
-  res.status(statusCode).json(response);
-};
-
-// Handle specific database errors
-export const handleDatabaseError = (error: any): AppError => {
-  if (error.code === '23505') { // PostgreSQL unique violation
-    return createError.conflict('Resource already exists');
-  }
-  
-  if (error.code === '23503') { // PostgreSQL foreign key violation
-    return createError.badRequest('Referenced resource not found');
-  }
-  
-  if (error.code === '23502') { // PostgreSQL not null violation
-    return createError.badRequest('Required field is missing');
+  // Handle custom errors
+  if (err instanceof CustomError) {
+    return res.status(err.statusCode).json({
+      error: {
+        message: err.message,
+        code: err.code,
+        statusCode: err.statusCode,
+        ...(isDev && { stack: err.stack })
+      }
+    });
   }
 
-  // Default to internal error
-  return createError.internal('Database operation failed');
-};
-
-// Validation error handler
-export const handleValidationError = (error: any): AppError => {
-  if (error.name === 'ZodError') {
-    const message = error.errors?.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ');
-    return createError.validationError(message || 'Validation failed');
+  // Handle validation errors
+  if (err.name === 'ValidationError') {
+    return res.status(422).json({
+      error: {
+        message: err.message || 'Validation failed',
+        code: 'VALIDATION_ERROR',
+        statusCode: 422,
+        ...(isDev && { stack: err.stack })
+      }
+    });
   }
-  
-  return createError.badRequest('Invalid input data');
-};
+
+  // Handle database errors
+  if (err.message?.includes('duplicate key') || err.message?.includes('unique constraint')) {
+    return res.status(409).json({
+      error: {
+        message: 'Resource already exists',
+        code: 'DUPLICATE_RESOURCE',
+        statusCode: 409
+      }
+    });
+  }
+
+  // Default error response
+  const message = isDev ? err.message : 'Internal server error';
+  const statusCode = 500;
+
+  res.status(statusCode).json({
+    error: {
+      message,
+      code: 'INTERNAL_ERROR',
+      statusCode,
+      ...(isDev && { stack: err.stack })
+    }
+  });
+}
+
+// Validation error helper
+export function createValidationError(message?: string): CustomError {
+  return createError.validationError(message || 'Validation failed');
+}

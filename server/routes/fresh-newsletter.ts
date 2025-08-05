@@ -1,7 +1,8 @@
 import express from 'express';
 import { sendFreshNewsletter } from '../utils/fresh-email';
-import { storage } from '../storage';
+
 import { z } from 'zod';
+import { storage } from '../storage';
 
 const router = express.Router();
 

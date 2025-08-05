@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { format } from 'date-fns';
-import { Post, User } from '@shared/schema';
+
 import { useToast } from '@/hooks/use-toast';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';

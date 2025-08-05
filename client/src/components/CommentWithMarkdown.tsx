@@ -45,12 +45,13 @@ export function CommentWithMarkdown({
               </span>
             </div>
             <div className="comment-content mt-2 text-sm">
-              <ReactMarkdown 
-                remarkPlugins={[remarkGfm]}
-                className="prose prose-sm dark:prose-invert max-w-none"
-              >
-                {content}
-              </ReactMarkdown>
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown 
+                  remarkPlugins={[remarkGfm]}
+                >
+                  {content}
+                </ReactMarkdown>
+              </div>
             </div>
           </div>
         </div>

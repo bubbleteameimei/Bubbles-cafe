@@ -102,6 +102,19 @@ const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
     handleDismiss();
   };
 
+  // Get notifications from context
+  const { notifications, markAsRead } = useNotifications();
+  
+  // Filter for new story notifications that haven't been read
+  const newStoryNotifications = notifications.filter(
+    notif => notif.type === 'new_story' && !notif.read
+  );
+
+  // If no new story notifications, don't render anything
+  if (newStoryNotifications.length === 0) {
+    return null;
+  }
+
   return (
     <AnimatePresence>
       {isVisible && (
