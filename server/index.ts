@@ -23,6 +23,7 @@ import { setNeonAsDefault } from "./neon-config"; // Set Neon as default databas
 import { setGmailCredentials } from "./config/gmail-config"; // Set Gmail credentials
 import { db } from "./db"; // Using the direct Neon database connection
 import { posts } from "@shared/schema";
+import { count } from "drizzle-orm";
 
 import { seedDatabase } from "./seed";
 
@@ -223,11 +224,7 @@ async function startServer() {
       await setupDatabase();
       serverLogger.info('Database setup completed successfully');
       
-      // Temporarily skip database operations for testing
-      serverLogger.info('Database operations skipped for testing');
-      
       // Check database connection
-      /*
       try {
         // This may fail if tables don't exist yet
         const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
@@ -269,7 +266,6 @@ async function startServer() {
           serverLogger.info('Database seeding skipped for testing');
         }
       }
-      */
     } catch (dbError) {
       serverLogger.error('Critical database setup error', { 
         error: dbError instanceof Error ? dbError.message : 'Unknown error' 
