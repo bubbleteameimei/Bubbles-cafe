@@ -7,12 +7,6 @@
 import logger from '../utils/logger';
 import nodemailer from 'nodemailer';
 
-// Gmail SMTP configuration
-interface GmailConfig {
-  user: string;
-  pass: string;
-}
-
 /**
  * Check if Gmail credentials are available
  * @returns boolean indicating if credentials are properly configured
@@ -54,31 +48,21 @@ export function createGmailTransporter() {
 }
 
 /**
- * Check Gmail service status
- * 
- * @returns Promise resolving to boolean indicating if service is available
+ * Test Gmail connection
+ * @returns Promise<boolean> indicating if connection is successful
  */
-export async function checkGmailStatus(): Promise<boolean> {
+export async function testGmailConnection(): Promise<boolean> {
   try {
-    if (!hasGmailCredentials()) {
-      logger.warn('[Email] Gmail credentials not configured');
+    const transporter = createGmailTransporter();
+    
+    if (!transporter) {
       return false;
     }
     
-    const transporter = createGmailTransporter();
     const isVerified = await transporter.verify();
-    
-    logger.info('[Email] Gmail service status check', {
-      status: isVerified ? 'available' : 'unavailable',
-    });
-    
     return isVerified;
-  } catch (error: any) {
-    logger.error('[Email] Failed to verify Gmail service', {
-      error: error.message,
-      stack: error.stack,
-    });
-    
+  } catch (error) {
+    console.error('[Gmail] Connection test failed:', error);
     return false;
   }
 }

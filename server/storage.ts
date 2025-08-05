@@ -1,58 +1,56 @@
 import { db } from "./db";
-import { 
+import { eq, desc, and, or, like, asc } from "drizzle-orm";
+import {
   users, posts, comments, contactMessages, bookmarks, sessions, userFeedback, newsletterSubscriptions,
-  type User, type Post, type Comment, type InsertUser, type InsertPost, type InsertComment,
-  type ContactMessage, type InsertContactMessage, type UserFeedback, type InsertUserFeedback,
-  type Bookmark, type InsertBookmark, type Session, type InsertSession
+  readingProgress, postLikes
 } from "@shared/schema";
-import { eq, desc, and, or, sql, like, asc } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
-  getUser(id: number): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, user: Partial<User>): Promise<User | undefined>;
+  getUser(id: number): Promise<any | undefined>;
+  getUserByEmail(email: string): Promise<any | undefined>;
+  getUserByUsername(username: string): Promise<any | undefined>;
+  createUser(user: any): Promise<any>;
+  updateUser(id: number, user: Partial<any>): Promise<any | undefined>;
   deleteUser(id: number): Promise<boolean>;
-  getAllUsers(): Promise<User[]>;
+  getAllUsers(): Promise<any[]>;
 
   // Post operations
-  getPost(id: number): Promise<Post | undefined>;
-  getPostBySlug(slug: string): Promise<Post | undefined>;
-  getPosts(limit?: number, offset?: number): Promise<Post[]>;
-  getPostsByAuthor(authorId: number): Promise<Post[]>;
-  createPost(post: InsertPost): Promise<Post>;
-  updatePost(id: number, post: Partial<Post>): Promise<Post | undefined>;
+  getPost(id: number): Promise<any | undefined>;
+  getPostBySlug(slug: string): Promise<any | undefined>;
+  getPosts(limit?: number, offset?: number): Promise<any[]>;
+  getPostsByAuthor(authorId: number): Promise<any[]>;
+  createPost(post: any): Promise<any>;
+  updatePost(id: number, post: Partial<any>): Promise<any | undefined>;
   deletePost(id: number): Promise<boolean>;
-  searchPosts(query: string): Promise<Post[]>;
+  searchPosts(query: string): Promise<any[]>;
 
   // Comment operations
-  getComment(id: number): Promise<Comment | undefined>;
-  getCommentsByPost(postId: number): Promise<Comment[]>;
-  createComment(comment: InsertComment): Promise<Comment>;
-  updateComment(id: number, comment: Partial<Comment>): Promise<Comment | undefined>;
+  getComment(id: number): Promise<any | undefined>;
+  getCommentsByPost(postId: number): Promise<any[]>;
+  createComment(comment: any): Promise<any>;
+  updateComment(id: number, comment: Partial<any>): Promise<any | undefined>;
   deleteComment(id: number): Promise<boolean>;
 
   // Bookmark operations
-  createBookmark(bookmark: InsertBookmark): Promise<Bookmark>;
+  createBookmark(bookmark: any): Promise<any>;
   deleteBookmark(userId: number, postId: number): Promise<boolean>;
-  getUserBookmarks(userId: number): Promise<Bookmark[]>;
+  getUserBookmarks(userId: number): Promise<any[]>;
 
   // Session operations
-  createSession(session: InsertSession): Promise<Session>;
-  getSession(token: string): Promise<Session | undefined>;
+  createSession(session: any): Promise<any>;
+  getSession(token: string): Promise<any | undefined>;
   deleteSession(token: string): Promise<boolean>;
 
   // Contact message operations
-  createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
-  getContactMessages(): Promise<ContactMessage[]>;
+  createContactMessage(message: any): Promise<any>;
+  getContactMessages(): Promise<any[]>;
 
   // User feedback operations
-  createUserFeedback(feedback: InsertUserFeedback): Promise<UserFeedback>;
-  getUserFeedback(): Promise<UserFeedback[]>;
-  getAllFeedback(): Promise<UserFeedback[]>;
-  getFeedback(id: number): Promise<UserFeedback | undefined>;
+  createUserFeedback(feedback: any): Promise<any>;
+  getUserFeedback(): Promise<any[]>;
+  getAllFeedback(): Promise<any[]>;
+  getFeedback(id: number): Promise<any | undefined>;
 
   // Newsletter operations
   getNewsletterSubscriptionByEmail(email: string): Promise<any>;
@@ -79,7 +77,7 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async getUser(id: number): Promise<User | undefined> {
+  async getUser(id: number): Promise<any | undefined> {
     try {
       const [user] = await db.select().from(users).where(eq(users.id, id));
       return user || undefined;
@@ -89,7 +87,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getUserByEmail(email: string): Promise<User | undefined> {
+  async getUserByEmail(email: string): Promise<any | undefined> {
     try {
       const [user] = await db.select().from(users).where(eq(users.email, email));
       return user || undefined;
@@ -99,7 +97,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
+  async getUserByUsername(username: string): Promise<any | undefined> {
     try {
       const [user] = await db.select().from(users).where(eq(users.username, username));
       return user || undefined;
@@ -109,12 +107,12 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createUser(user: InsertUser): Promise<User> {
+  async createUser(user: any): Promise<any> {
     const [newUser] = await db.insert(users).values(user).returning();
     return newUser;
   }
 
-  async updateUser(id: number, user: Partial<User>): Promise<User | undefined> {
+  async updateUser(id: number, user: Partial<any>): Promise<any | undefined> {
     try {
       const [updatedUser] = await db
         .update(users)
@@ -138,7 +136,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getAllUsers(): Promise<User[]> {
+  async getAllUsers(): Promise<any[]> {
     try {
       return await db.select().from(users).orderBy(desc(users.createdAt));
     } catch (error) {
@@ -147,7 +145,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getPost(id: number): Promise<Post | undefined> {
+  async getPost(id: number): Promise<any | undefined> {
     try {
       const [post] = await db.select().from(posts).where(eq(posts.id, id));
       return post || undefined;
@@ -157,7 +155,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getPostBySlug(slug: string): Promise<Post | undefined> {
+  async getPostBySlug(slug: string): Promise<any | undefined> {
     try {
       const [post] = await db.select().from(posts).where(eq(posts.slug, slug));
       return post || undefined;
@@ -167,7 +165,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getPosts(limit: number = 20, offset: number = 0): Promise<Post[]> {
+  async getPosts(limit: number = 20, offset: number = 0): Promise<any[]> {
     try {
       return await db
         .select()
@@ -181,7 +179,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getPostsByAuthor(authorId: number): Promise<Post[]> {
+  async getPostsByAuthor(authorId: number): Promise<any[]> {
     try {
       return await db
         .select()
@@ -194,12 +192,12 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createPost(post: InsertPost): Promise<Post> {
+  async createPost(post: any): Promise<any> {
     const [newPost] = await db.insert(posts).values(post).returning();
     return newPost;
   }
 
-  async updatePost(id: number, post: Partial<Post>): Promise<Post | undefined> {
+  async updatePost(id: number, post: Partial<any>): Promise<any | undefined> {
     try {
       const [updatedPost] = await db
         .update(posts)
@@ -223,7 +221,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async searchPosts(query: string): Promise<Post[]> {
+  async searchPosts(query: string): Promise<any[]> {
     try {
       return await db
         .select()
@@ -242,7 +240,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getComment(id: number): Promise<Comment | undefined> {
+  async getComment(id: number): Promise<any | undefined> {
     try {
       const [comment] = await db.select().from(comments).where(eq(comments.id, id));
       return comment || undefined;
@@ -252,7 +250,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getCommentsByPost(postId: number): Promise<Comment[]> {
+  async getCommentsByPost(postId: number): Promise<any[]> {
     try {
       return await db
         .select()
@@ -265,12 +263,12 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createComment(comment: InsertComment): Promise<Comment> {
+  async createComment(comment: any): Promise<any> {
     const [newComment] = await db.insert(comments).values(comment).returning();
     return newComment;
   }
 
-  async updateComment(id: number, comment: Partial<Comment>): Promise<Comment | undefined> {
+  async updateComment(id: number, comment: Partial<any>): Promise<any | undefined> {
     try {
       const [updatedComment] = await db
         .update(comments)
@@ -294,7 +292,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createBookmark(bookmark: InsertBookmark): Promise<Bookmark> {
+  async createBookmark(bookmark: any): Promise<any> {
     const [newBookmark] = await db.insert(bookmarks).values(bookmark).returning();
     return newBookmark;
   }
@@ -311,7 +309,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getUserBookmarks(userId: number): Promise<Bookmark[]> {
+  async getUserBookmarks(userId: number): Promise<any[]> {
     try {
       return await db
         .select()
@@ -324,12 +322,12 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createSession(session: InsertSession): Promise<Session> {
+  async createSession(session: any): Promise<any> {
     const [newSession] = await db.insert(sessions).values(session).returning();
     return newSession;
   }
 
-  async getSession(token: string): Promise<Session | undefined> {
+  async getSession(token: string): Promise<any | undefined> {
     try {
       const [session] = await db.select().from(sessions).where(eq(sessions.token, token));
       return session || undefined;
@@ -349,12 +347,12 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createContactMessage(message: InsertContactMessage): Promise<ContactMessage> {
+  async createContactMessage(message: any): Promise<any> {
     const [newMessage] = await db.insert(contactMessages).values(message).returning();
     return newMessage;
   }
 
-  async getContactMessages(): Promise<ContactMessage[]> {
+  async getContactMessages(): Promise<any[]> {
     try {
       return await db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt));
     } catch (error) {
@@ -363,12 +361,12 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createUserFeedback(feedback: InsertUserFeedback): Promise<UserFeedback> {
+  async createUserFeedback(feedback: any): Promise<any> {
     const [newFeedback] = await db.insert(userFeedback).values(feedback).returning();
     return newFeedback;
   }
 
-  async getUserFeedback(): Promise<UserFeedback[]> {
+  async getUserFeedback(): Promise<any[]> {
     try {
       return await db.select().from(userFeedback).orderBy(desc(userFeedback.createdAt));
     } catch (error) {
@@ -377,11 +375,11 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getAllFeedback(): Promise<UserFeedback[]> {
+  async getAllFeedback(): Promise<any[]> {
     return this.getUserFeedback();
   }
 
-  async getFeedback(id: number): Promise<UserFeedback | undefined> {
+  async getFeedback(id: number): Promise<any | undefined> {
     try {
       const [feedback] = await db.select().from(userFeedback).where(eq(userFeedback.id, id));
       return feedback || undefined;
@@ -415,17 +413,18 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateNewsletterSubscriptionStatus(id: number, status: string): Promise<any> {
+  async updateNewsletterSubscriptionStatus(id: number, newStatus: string): Promise<any> {
     try {
       const [updatedSubscription] = await db
         .update(newsletterSubscriptions)
-        .set({ status })
+        .set({ status: newStatus })
         .where(eq(newsletterSubscriptions.id, id))
         .returning();
-      return updatedSubscription || undefined;
+      
+      return updatedSubscription;
     } catch (error) {
       console.error('Error updating newsletter subscription status:', error);
-      return undefined;
+      throw error;
     }
   }
 

@@ -1,6 +1,6 @@
 import { db } from '../db';
-import { users, type User, type InsertUser } from "@shared/schema";
-import { eq, sql, desc, like, and, or } from "drizzle-orm";
+import { users, type InsertUser } from "@shared/schema";
+import { eq, sql, desc, like, or } from "drizzle-orm";
 
 import { userLogger } from '../utils/debug-logger';
 import { handleDatabaseError } from '../utils/error-handler';

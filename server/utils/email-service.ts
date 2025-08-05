@@ -87,11 +87,12 @@ export class EmailService {
         const result = await this.transporter.sendMail(mailOptions);
         
         // Log success details - messageId may not be available in all nodemailer transporters
-        if (result && typeof result === 'object') {
-          const messageId = result.messageId || 'unknown';
-          
-        } else {
-          
+        if (result && result.messageId) {
+          console.log('[EmailService] Email sent successfully');
+          return {
+            success: true,
+            messageId: result.messageId
+          };
         }
         
         return true;

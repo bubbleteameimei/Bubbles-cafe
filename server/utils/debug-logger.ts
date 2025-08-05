@@ -38,22 +38,14 @@ export const initLogs = async () => {
 const debugLogPath = path.join(logsDir, 'debug.log');
 const errorLogPath = path.join(logsDir, 'error.log');
 
-// Console colors for different log levels
-const colors = {
-  debug: '\x1b[36m', // Cyan
-  info: '\x1b[32m',  // Green
-  warn: '\x1b[33m',  // Yellow
-  error: '\x1b[31m', // Red
-  reset: '\x1b[0m'   // Reset
-};
-
-function formatLogMessage(level: LogLevel, module: string, message: string, details?: Record<string, unknown>): LogMessage {
+// Remove unused colors object and fix type issues
+function createLogMessage(level: LogLevel, module: string, message: string, details?: Record<string, unknown>): LogMessage {
   return {
     timestamp: new Date().toISOString(),
     level,
     module,
     message,
-    details: details ? redactSensitiveInfo(details) : undefined
+    details: details || {}
   };
 }
 
@@ -82,28 +74,20 @@ async function writeToFile(filePath: string, content: string): Promise<void> {
 }
 
 async function log(level: LogLevel, module: string, message: string, details?: Record<string, unknown>): Promise<void> {
-  const logMessage = formatLogMessage(level, module, message, details);
-  const timestamp = logMessage.timestamp;
+  const logMessage = createLogMessage(level, module, message, details);
   const prefix = getConsolePrefix(level);
   
-  // Format for console output
-  const consoleMessage = `${prefix} [${module}] ${message}`;
-  const consoleDetails = details ? ` ${JSON.stringify(redactSensitiveInfo(details), null, 2)}` : '';
-  
-  // Output to console with colors
-  
-  
-  // Format for file output
-  const fileMessage = JSON.stringify(logMessage);
-  
-  // Log everything to debug log in development mode
-  if (process.env.NODE_ENV !== 'production') {
-    await writeToFile(debugLogPath, fileMessage);
+  // Console output
+  console.log(`${prefix} [${module}] ${message}`);
+  if (details) {
+    console.log(JSON.stringify(redactSensitiveInfo(details), null, 2));
   }
-  
-  // Log errors to separate error log
+
+  // File logging
   if (level === 'error') {
-    await writeToFile(errorLogPath, fileMessage);
+    await writeToFile(errorLogPath, logMessage);
+  } else {
+    await writeToFile(debugLogPath, logMessage);
   }
 }
 

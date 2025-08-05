@@ -65,10 +65,12 @@ export const initializeTransaction = async (data: {
       body: JSON.stringify(data),
     });
 
-    const result = await handlePaystackResponse(response);
-    const data_result = result as any;
+    const result = await response.json();
     
-    
+    if (!response.ok) {
+      throw new Error(result.message || 'Failed to initialize transaction');
+    }
+
     return result;
   } catch (error) {
     console.error('[PAYSTACK] Transaction initialization failed:', error);
@@ -93,7 +95,6 @@ export const verifyTransaction = async (reference: string) => {
     });
 
     const result = await handlePaystackResponse(response);
-    const data_result = result as any;
     
     
     return result;
@@ -135,7 +136,6 @@ export const listTransactions = async (params: {
     });
 
     const result = await handlePaystackResponse(response);
-    const data_result = result as any;
     
     
     return result;
@@ -172,7 +172,6 @@ export const createPlan = async (data: {
     });
 
     const result = await handlePaystackResponse(response);
-    const data_result = result as any;
     
     
     return result;
@@ -205,7 +204,6 @@ export const createSubscription = async (data: {
     });
 
     const result = await handlePaystackResponse(response);
-    const data_result = result as any;
     
     
     return result;

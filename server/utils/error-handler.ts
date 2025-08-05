@@ -58,7 +58,7 @@ export const asyncHandler = (fn: Function) => (req: Request, res: Response, next
 };
 
 // Global error handler middleware
-export function globalErrorHandler(err: Error | CustomError, req: Request, res: Response, next: NextFunction) {
+export function globalErrorHandler(err: Error | CustomError, req: Request, res: Response, _next: NextFunction): void {
   const isDev = process.env.NODE_ENV === 'development';
   
   // Log the error
@@ -73,7 +73,7 @@ export function globalErrorHandler(err: Error | CustomError, req: Request, res: 
 
   // Handle custom errors
   if (err instanceof CustomError) {
-    return res.status(err.statusCode).json({
+    res.status(err.statusCode).json({
       error: {
         message: err.message,
         code: err.code,
@@ -81,11 +81,12 @@ export function globalErrorHandler(err: Error | CustomError, req: Request, res: 
         ...(isDev && { stack: err.stack })
       }
     });
+    return;
   }
 
   // Handle validation errors
   if (err.name === 'ValidationError') {
-    return res.status(422).json({
+    res.status(422).json({
       error: {
         message: err.message || 'Validation failed',
         code: 'VALIDATION_ERROR',
@@ -93,17 +94,19 @@ export function globalErrorHandler(err: Error | CustomError, req: Request, res: 
         ...(isDev && { stack: err.stack })
       }
     });
+    return;
   }
 
   // Handle database errors
   if (err.message?.includes('duplicate key') || err.message?.includes('unique constraint')) {
-    return res.status(409).json({
+    res.status(409).json({
       error: {
         message: 'Resource already exists',
         code: 'DUPLICATE_RESOURCE',
         statusCode: 409
       }
     });
+    return;
   }
 
   // Default error response

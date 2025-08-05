@@ -4,10 +4,10 @@
  * API routes for email functionality
  */
 
-import { Router } from 'express';
+import { Request, Response, Router } from 'express';
 import logger from '../utils/logger';
 import { sendEmail } from '../services/email';
-import { checkGmailStatus } from '../services/gmail';
+import { testGmailConnection } from '../services/gmail';
 import { checkSendGridStatus } from '../services/sendgrid';
 import { checkMailerSendStatus } from '../services/mailersend';
 import { isAdmin } from '../middlewares/auth';
@@ -23,7 +23,7 @@ const router = Router();
  */
 router.get('/status', isAdmin, async (req, res) => {
   try {
-    const gmail = await checkGmailStatus();
+    const gmail = await testGmailConnection();
     const sendgrid = await checkSendGridStatus();
     const mailersend = await checkMailerSendStatus();
     

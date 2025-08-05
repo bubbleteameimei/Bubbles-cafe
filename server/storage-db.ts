@@ -2,12 +2,26 @@ import { db } from "./db";
 import { eq, desc, and, or, sql, like } from "drizzle-orm";
 import {
   users, posts, comments, contactMessages, bookmarks, sessions, userFeedback, newsletterSubscriptions,
-  readingProgress, postLikes, userPrivacySettings,
+  readingProgress, resetTokens, secretProgress, authorStats, analytics,
   type User, type Post, type Comment, type InsertUser, type InsertPost, type InsertComment,
   type NewsletterSubscription, type InsertNewsletterSubscription,
-  type ReadingProgress, type InsertReadingProgress, type InsertProgress,
+  type ReadingProgress, type InsertProgress,
   type AuthorStats, type Analytics
 } from "@shared/schema";
+
+// Add missing type definitions
+type Session = typeof sessions.$inferSelect;
+type InsertSession = typeof sessions.$inferInsert;
+type ResetToken = typeof resetTokens.$inferSelect;
+type InsertResetToken = typeof resetTokens.$inferInsert;
+type SecretProgress = typeof secretProgress.$inferSelect;
+type InsertSecretProgress = typeof secretProgress.$inferInsert;
+type Bookmark = typeof bookmarks.$inferSelect;
+type InsertBookmark = typeof bookmarks.$inferInsert;
+type ContactMessage = typeof contactMessages.$inferSelect;
+type InsertContactMessage = typeof contactMessages.$inferInsert;
+type UserFeedback = typeof userFeedback.$inferSelect;
+type InsertUserFeedback = typeof userFeedback.$inferInsert;
 
 import bcrypt from 'bcryptjs';
 
@@ -103,14 +117,18 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
-    const [user] = await db
+  async updateUser(id: number, userData: Partial<InsertUser>): Promise<User> {
+    const [updatedUser] = await db
       .update(users)
-      .set(updates)
+      .set(userData)
       .where(eq(users.id, id))
       .returning();
     
-    return user || undefined;
+    if (!updatedUser) {
+      throw new Error('User not found');
+    }
+    
+    return updatedUser;
   }
 
   async updateUserPassword(id: number, newPasswordHash: string): Promise<void> {
@@ -120,60 +138,64 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id));
   }
 
-  async getPosts(filters?: { 
-    authorId?: number; 
-    isSecret?: boolean; 
-    isAdminPost?: boolean; 
+  async getPosts(options?: {
+    authorId?: number;
+    isSecret?: boolean;
+    isAdminPost?: boolean;
     themeCategory?: string;
     search?: string;
     limit?: number;
     offset?: number;
-  }): Promise<{ posts: Post[]; hasMore: boolean }> {
-    const limit = filters?.limit || 10;
-    const offset = filters?.offset || 0;
-    
-    let query = db.select().from(posts);
-    
+  }): Promise<{ posts: Post[]; total: number }> {
+    const {
+      authorId,
+      isSecret,
+      isAdminPost,
+      themeCategory,
+      search,
+      limit = 50,
+      offset = 0
+    } = options || {};
+
+    let query = db
+      .select()
+      .from(posts)
+      .leftJoin(users, eq(posts.authorId, users.id))
+      .orderBy(desc(posts.createdAt));
+
+    // Apply filters
     const conditions = [];
-    
-    if (filters?.authorId) {
-      conditions.push(eq(posts.authorId, filters.authorId));
-    }
-    
-    if (filters?.isSecret !== undefined) {
-      conditions.push(eq(posts.isSecret, filters.isSecret));
-    }
-    
-    if (filters?.isAdminPost !== undefined) {
-      conditions.push(eq(posts.isAdminPost, filters.isAdminPost));
-    }
-    
-    if (filters?.themeCategory) {
-      conditions.push(eq(posts.themeCategory, filters.themeCategory));
-    }
-    
-    if (filters?.search) {
+    if (authorId !== undefined) conditions.push(eq(posts.authorId, authorId));
+    if (isSecret !== undefined) conditions.push(eq(posts.isSecret, isSecret));
+    if (isAdminPost !== undefined) conditions.push(eq(posts.isAdminPost, isAdminPost));
+    if (themeCategory) conditions.push(eq(posts.themeCategory, themeCategory));
+    if (search) {
       conditions.push(
         or(
-          like(posts.title, `%${filters.search}%`),
-          like(posts.content, `%${filters.search}%`)
+          like(posts.title, `%${search}%`),
+          like(posts.content, `%${search}%`),
+          like(posts.excerpt, `%${search}%`)
         )
       );
     }
-    
+
     if (conditions.length > 0) {
-      query = query.where(and(...conditions)) as typeof query;
+      query = query.where(and(...conditions)) as any;
     }
+
+    const result = await query.limit(limit).offset(offset);
     
-    const results = await query
-      .orderBy(desc(posts.createdAt))
-      .limit(limit + 1) // Get one extra to check if there are more
-      .offset(offset);
-    
-    const hasMore = results.length > limit;
-    const posts_data = hasMore ? results.slice(0, limit) : results;
-    
-    return { posts: posts_data, hasMore };
+    // Get total count
+    let countQuery = db.select({ count: sql<number>`count(*)` }).from(posts);
+    if (conditions.length > 0) {
+      countQuery = countQuery.where(and(...conditions)) as any;
+    }
+    const [{ count }] = await countQuery;
+
+    return {
+      posts: result.map(r => r.posts),
+      total: count
+    };
   }
 
   async getPost(id: number): Promise<Post | undefined> {

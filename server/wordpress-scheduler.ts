@@ -22,8 +22,9 @@ export class WordPressScheduler {
       
 
       try {
-        const result = await wordpressSync.syncAllPosts();
-        
+        console.log('[WordPress Scheduler] Running scheduled sync...');
+        await wordpressSync.syncAllPosts();
+        console.log('[WordPress Scheduler] Scheduled sync completed successfully');
       } catch (error) {
         console.error('[WordPress Scheduler] Sync failed:', error);
       } finally {
@@ -55,8 +56,9 @@ export class WordPressScheduler {
     
 
     try {
-      const result = await wordpressSync.syncAllPosts();
-      
+      console.log('[WordPress Scheduler] Running immediate sync...');
+      await wordpressSync.syncAllPosts();
+      console.log('[WordPress Scheduler] Immediate sync completed successfully');
     } catch (error) {
       console.error('[WordPress Scheduler] Initial sync failed:', error);
     } finally {
