@@ -59,7 +59,7 @@ router.post('/sync', async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: responseData,
       metadata: {
@@ -72,7 +72,7 @@ router.post('/sync', async (req, res) => {
 
   } catch (error) {
     console.error('[SessionSync] Error syncing session:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -124,11 +124,11 @@ router.post('/store', async (req, res) => {
       })
       .where(eq(sessions.sessionId, req.sessionID));
 
-    res.json({ success: true, message: `Data stored for key: ${key}` });
+    return res.json({ success: true, message: `Data stored for key: ${key}` });
 
   } catch (error) {
     console.error('[SessionSync] Error storing session data:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -175,14 +175,14 @@ router.get('/retrieve/:key', async (req, res) => {
         return res.status(404).json({ error: 'Data expired' });
       }
 
-      res.json({ success: true, data: item.value, metadata: item });
+      return res.json({ success: true, data: item.value, metadata: item });
     } else {
-      res.status(404).json({ error: 'Key not found' });
+      return res.status(404).json({ error: 'Key not found' });
     }
 
   } catch (error) {
     console.error('[SessionSync] Error retrieving session data:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -224,14 +224,14 @@ router.delete('/remove/:key', async (req, res) => {
         })
         .where(eq(sessions.sessionId, req.sessionID));
 
-      res.json({ success: true, message: `Data removed for key: ${key}` });
+      return res.json({ success: true, message: `Data removed for key: ${key}` });
     } else {
-      res.status(404).json({ error: 'Key not found' });
+      return res.status(404).json({ error: 'Key not found' });
     }
 
   } catch (error) {
     console.error('[SessionSync] Error removing session data:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -271,7 +271,7 @@ router.get('/health', async (req, res) => {
       }
     });
 
-    res.json({
+    return res.json({
       success: true,
       health: {
         sessionId: currentSession.sessionId,
@@ -295,7 +295,7 @@ router.get('/health', async (req, res) => {
 
   } catch (error) {
     console.error('[SessionSync] Error getting session health:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 

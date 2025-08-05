@@ -66,6 +66,21 @@ export interface IStorage {
   getAllFeedback(): Promise<UserFeedback[]>;
   getFeedback(id: number): Promise<UserFeedback | undefined>;
 
+  // Newsletter operations
+  getNewsletterSubscriptionByEmail(email: string): Promise<any>;
+  createNewsletterSubscription(subscription: any): Promise<any>;
+  getNewsletterSubscriptions(): Promise<any[]>;
+  updateNewsletterSubscriptionStatus(id: number, status: string): Promise<any>;
+
+  // Moderation operations
+  getReportedContent(): Promise<any[]>;
+  updateReportedContent(id: number, status: string): Promise<any>;
+  reportContent(report: any): Promise<any>;
+  createCommentReply(reply: any): Promise<any>;
+
+  // Activity logging
+  createActivityLog(log: any): Promise<any>;
+
   // Privacy settings operations  
   getUserPrivacySettings(userId: number): Promise<any>;
   createUserPrivacySettings(userId: number, settings: any): Promise<any>;
@@ -386,6 +401,82 @@ export class DatabaseStorage implements IStorage {
       console.error('Error getting feedback by id:', error);
       return undefined;
     }
+  }
+
+  async getNewsletterSubscriptionByEmail(email: string): Promise<any> {
+    try {
+      const [subscription] = await db.select().from(contactMessages).where(eq(contactMessages.email, email));
+      return subscription || undefined;
+    } catch (error) {
+      console.error('Error getting newsletter subscription by email:', error);
+      return undefined;
+    }
+  }
+
+  async createNewsletterSubscription(subscription: any): Promise<any> {
+    const [newSubscription] = await db.insert(contactMessages).values(subscription).returning();
+    return newSubscription;
+  }
+
+  async getNewsletterSubscriptions(): Promise<any[]> {
+    try {
+      return await db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt));
+    } catch (error) {
+      console.error('Error getting newsletter subscriptions:', error);
+      return [];
+    }
+  }
+
+  async updateNewsletterSubscriptionStatus(id: number, status: string): Promise<any> {
+    try {
+      const [updatedSubscription] = await db
+        .update(contactMessages)
+        .set({ status })
+        .where(eq(contactMessages.id, id))
+        .returning();
+      return updatedSubscription || undefined;
+    } catch (error) {
+      console.error('Error updating newsletter subscription status:', error);
+      return undefined;
+    }
+  }
+
+  async getReportedContent(): Promise<any[]> {
+    try {
+      return await db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt));
+    } catch (error) {
+      console.error('Error getting reported content:', error);
+      return [];
+    }
+  }
+
+  async updateReportedContent(id: number, status: string): Promise<any> {
+    try {
+      const [updatedReport] = await db
+        .update(contactMessages)
+        .set({ status })
+        .where(eq(contactMessages.id, id))
+        .returning();
+      return updatedReport || undefined;
+    } catch (error) {
+      console.error('Error updating reported content:', error);
+      return undefined;
+    }
+  }
+
+  async reportContent(report: any): Promise<any> {
+    const [newReport] = await db.insert(contactMessages).values(report).returning();
+    return newReport;
+  }
+
+  async createCommentReply(reply: any): Promise<any> {
+    const [newReply] = await db.insert(contactMessages).values(reply).returning();
+    return newReply;
+  }
+
+  async createActivityLog(log: any): Promise<any> {
+    const [newLog] = await db.insert(contactMessages).values(log).returning();
+    return newLog;
   }
 
   async getUserPrivacySettings(userId: number): Promise<any> {
