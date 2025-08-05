@@ -36,22 +36,23 @@ export function NewsletterSubscribe() {
 
   return (
     <div className="w-full max-w-md mx-auto p-4 space-y-4 bg-card rounded-lg shadow-sm">
-      <div className="flex justify-center space-x-4">
-        <Button
-          variant={userRating === true ? "default" : "outline"}
-          onClick={() => onSubmit({ postId, isLike: true })}
-          disabled={rateMutation.isPending}
+      <h3 className="text-lg font-semibold text-center">Subscribe to Newsletter</h3>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <Input
+          type="email"
+          placeholder="Enter your email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <Button 
+          type="submit" 
+          disabled={isLoading}
+          className="w-full"
         >
-          👍 Like
+          {isLoading ? 'Subscribing...' : 'Subscribe'}
         </Button>
-        <Button
-          variant={userRating === false ? "default" : "outline"}
-          onClick={() => onSubmit({ postId, isLike: false })}
-          disabled={rateMutation.isPending}
-        >
-          👎 Dislike
-        </Button>
-      </div>
+      </form>
     </div>
   );
 }
