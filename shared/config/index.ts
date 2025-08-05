@@ -12,6 +12,19 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   RATE_LIMIT_WINDOW_MS: z.number().default(15 * 60 * 1000), // 15 minutes
   RATE_LIMIT_MAX_REQUESTS: z.number().default(100),
+  // Payment service configurations
+  PAYSTACK_SECRET_KEY: z.string().optional(),
+  PAYSTACK_WEBHOOK_SECRET: z.string().optional(),
+  // Email service configurations
+  MAILERSEND_API_TOKEN: z.string().optional(),
+  SENDGRID_API_KEY: z.string().optional(),
+  SENDGRID_FROM: z.string().optional(),
+  MAILERSEND_FROM: z.string().optional(),
+  GMAIL_USER: z.string().optional(),
+  GMAIL_APP_PASSWORD: z.string().optional(),
+  // Frontend configuration
+  FRONTEND_URL: z.string().optional(),
+  CLIENT_URL: z.string().optional(),
 });
 
 // Type inference
@@ -30,6 +43,19 @@ const loadEnvConfig = (): EnvConfig => {
       LOG_LEVEL: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
       RATE_LIMIT_WINDOW_MS: 15 * 60 * 1000,
       RATE_LIMIT_MAX_REQUESTS: process.env.NODE_ENV === 'production' ? 100 : 1000,
+      // Payment service configurations
+      PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY,
+      PAYSTACK_WEBHOOK_SECRET: process.env.PAYSTACK_WEBHOOK_SECRET,
+      // Email service configurations
+      MAILERSEND_API_TOKEN: process.env.MAILERSEND_API_TOKEN,
+      SENDGRID_API_KEY: process.env.SENDGRID_API_KEY,
+      SENDGRID_FROM: process.env.SENDGRID_FROM,
+      MAILERSEND_FROM: process.env.MAILERSEND_FROM,
+      GMAIL_USER: process.env.GMAIL_USER,
+      GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD,
+      // Frontend configuration
+      FRONTEND_URL: process.env.FRONTEND_URL,
+      CLIENT_URL: process.env.CLIENT_URL,
     });
   } catch (error) {
     console.error('Environment validation failed:', error);
@@ -60,4 +86,14 @@ export const {
   LOG_LEVEL,
   RATE_LIMIT_WINDOW_MS,
   RATE_LIMIT_MAX_REQUESTS,
+  PAYSTACK_SECRET_KEY,
+  PAYSTACK_WEBHOOK_SECRET,
+  MAILERSEND_API_TOKEN,
+  SENDGRID_API_KEY,
+  SENDGRID_FROM,
+  MAILERSEND_FROM,
+  GMAIL_USER,
+  GMAIL_APP_PASSWORD,
+  FRONTEND_URL,
+  CLIENT_URL,
 } = config;
