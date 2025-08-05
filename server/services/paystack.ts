@@ -66,7 +66,7 @@ export const initializeTransaction = async (data: {
     });
 
     const result = await handlePaystackResponse(response);
-    const data_result = result as any;
+    // const data_result = result as any;
     
     
     return result;
@@ -93,7 +93,7 @@ export const verifyTransaction = async (reference: string) => {
     });
 
     const result = await handlePaystackResponse(response);
-    const data_result = result as any;
+    // const data_result = result as any;
     
     
     return result;
@@ -135,7 +135,7 @@ export const listTransactions = async (params: {
     });
 
     const result = await handlePaystackResponse(response);
-    const data_result = result as any;
+    // const data_result = result as any;
     
     
     return result;
@@ -172,7 +172,7 @@ export const createPlan = async (data: {
     });
 
     const result = await handlePaystackResponse(response);
-    const data_result = result as any;
+    // const data_result = result as any;
     
     
     return result;
@@ -205,7 +205,7 @@ export const createSubscription = async (data: {
     });
 
     const result = await handlePaystackResponse(response);
-    const data_result = result as any;
+    // const data_result = result as any;
     
     
     return result;

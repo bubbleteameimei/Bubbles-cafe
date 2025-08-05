@@ -38,6 +38,7 @@ router.post("/firebase-sync", async (req, res) => {
         username: userData.displayName || userData.email.split('@')[0],
         email: userData.email,
         password_hash: "", // Firebase handles auth, so no password needed
+        metadata: {}, // Add required metadata field
       };
       
       user = await storage.createUser(newUserData);
@@ -47,10 +48,16 @@ router.post("/firebase-sync", async (req, res) => {
     // Update user data - we'll need to add these methods to storage later
 
     // Set session
-    req.session.userId = user.id;
-    req.session.user = user;
+    req.session.user = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      fullName: user.fullName || undefined,
+      avatar: user.avatar || undefined,
+      isAdmin: user.isAdmin,
+    };
 
-    res.json({ 
+    return res.json({ 
       success: true, 
       user: {
         id: user.id,
@@ -65,7 +72,7 @@ router.post("/firebase-sync", async (req, res) => {
 
   } catch (error: any) {
     logger.error("Firebase sync error", { error: error.message });
-    res.status(500).json({ error: "Failed to sync Firebase user" });
+    return res.status(500).json({ error: "Failed to sync Firebase user" });
   }
 });
 

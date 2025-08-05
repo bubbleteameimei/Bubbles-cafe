@@ -21,7 +21,7 @@ const router = Router();
  * Check the status of the email services
  * Admin-only endpoint
  */
-router.get('/status', isAdmin, async (req, res) => {
+router.get('/status', isAdmin, async (_req, res) => {
   try {
     const gmail = await checkGmailStatus();
     const sendgrid = await checkSendGridStatus();
@@ -77,7 +77,7 @@ router.post('/test', isAdmin, async (req, res) => {
     // Send the email
     const result = await sendEmail(message);
     
-    res.json({
+    return res.json({
       success: true,
       message: 'Test email sent successfully',
       details: result
@@ -88,7 +88,7 @@ router.post('/test', isAdmin, async (req, res) => {
       stack: error.stack
     });
     
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to send test email',
       error: error.message

@@ -1,7 +1,7 @@
 
 import { db } from "./db";
 import { users, posts } from "@shared/schema";
-import bcrypt from "bcrypt";
+// import bcrypt from "bcrypt";
 
 // Sample data for seeding
 const samplePosts = [

@@ -4,7 +4,7 @@ import { feedbackLogger } from '../utils/debug-logger';
 import { UserFeedback } from '../../shared/schema';
 
 // Middleware for checking if user is authenticated (kept for other routes that may need it)
-const isAuthenticated = (req: Request, res: Response, next: NextFunction): void => {
+const _isAuthenticated = (req: Request, res: Response, next: NextFunction): void => {
   if (req.user) {
     next();
   } else {

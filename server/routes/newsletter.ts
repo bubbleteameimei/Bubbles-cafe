@@ -119,9 +119,19 @@ router.post('/unsubscribe', async (req, res) => {
       email: z.string().email('Please enter a valid email address')
     }).parse(req.body);
     
+    // Get subscription by email first
+    const existingSubscription = await storage.getNewsletterSubscriptionByEmail(validatedData.email);
+    
+    if (!existingSubscription) {
+      return res.status(404).json({
+        success: false,
+        message: 'No subscription found for this email address'
+      });
+    }
+    
     // Change subscription status to 'unsubscribed'
     const subscription = await storage.updateNewsletterSubscriptionStatus(
-      validatedData.email,
+      existingSubscription.id,
       'unsubscribed'
     );
     

@@ -5,10 +5,10 @@ import { createErrorFunction as createError } from "../utils/error-handler";
 import { asyncHandler } from "../utils/error-handler";
 import { storage } from '../storage';
 
-const router = Router();
+const postsRouter = Router();
 
 // Get all posts with filtering and pagination
-router.get("/", asyncHandler(async (req: Request, res: Response) => {
+postsRouter.get("/", asyncHandler(async (req: Request, res: Response) => {
   try {
     const { limit, offset, themeCategory, search } = req.query;
     
@@ -40,7 +40,7 @@ router.get("/", asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Get single post by slug
-router.get("/:slug", asyncHandler(async (req: Request, res: Response) => {
+postsRouter.get("/:slug", asyncHandler(async (req: Request, res: Response) => {
   try {
     const post = await storage.getPostBySlug(req.params.slug);
     
@@ -61,7 +61,7 @@ router.get("/:slug", asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Create new post
-router.post("/", asyncHandler(async (req: Request, res: Response) => {
+postsRouter.post("/", asyncHandler(async (req: Request, res: Response) => {
   try {
     if (!req.session?.user) {
       throw createError(401, "Authentication required");
@@ -82,7 +82,7 @@ router.post("/", asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Update post
-router.put("/:id", asyncHandler(async (req: Request, res: Response) => {
+postsRouter.put("/:id", asyncHandler(async (req: Request, res: Response) => {
   try {
     const postId = parseInt(req.params.id);
     
@@ -114,7 +114,7 @@ router.put("/:id", asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Delete post
-router.delete("/:id", asyncHandler(async (req: Request, res: Response) => {
+postsRouter.delete("/:id", asyncHandler(async (req: Request, res: Response) => {
   try {
     const postId = parseInt(req.params.id);
     
@@ -145,4 +145,4 @@ router.delete("/:id", asyncHandler(async (req: Request, res: Response) => {
   }
 }));
 
-export default router;
+export { postsRouter };

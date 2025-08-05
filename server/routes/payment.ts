@@ -151,7 +151,7 @@ router.post('/webhook', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Get payment plans
-router.get('/plans', async (req: Request, res: Response) => {
+router.get('/plans', async (_req: Request, res: Response) => {
   try {
     // Return predefined payment plans
     const plans = [

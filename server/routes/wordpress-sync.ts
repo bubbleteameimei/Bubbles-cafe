@@ -8,15 +8,15 @@ import { syncSingleWordPressPost } from '../wordpress-sync';
 const router = Router();
 
 // Middleware functions (simplified for now)
-function requireAuth(req: Request, res: Response, next: NextFunction): void {
+function requireAuth(_req: Request, _res: Response, next: NextFunction): void {
   next(); // Skip auth for now
 }
 
-function csrfProtection(req: Request, res: Response, next: NextFunction): void {
+function csrfProtection(_req: Request, _res: Response, next: NextFunction): void {
   next(); // Skip CSRF for now
 }
 
-function rateLimit(req: Request, res: Response, next: NextFunction): void {
+function rateLimit(_req: Request, _res: Response, next: NextFunction): void {
   next(); // Skip rate limiting for now
 }
 
@@ -27,7 +27,7 @@ export function registerWordPressSyncRoutes(app: any) {
   
 
   // Manual sync trigger
-  app.post('/api/wordpress/sync', requireAuth, csrfProtection, rateLimit, async (req: Request, res: Response) => {
+  app.post('/api/wordpress/sync', requireAuth, csrfProtection, rateLimit, async (_req: Request, res: Response) => {
     try {
       
       
@@ -35,14 +35,14 @@ export function registerWordPressSyncRoutes(app: any) {
       const { syncWordPressPosts } = await import('../wordpress-sync');
       const result = await syncWordPressPosts();
       
-      res.json({
+      return res.json({
         success: true,
         message: 'WordPress sync completed',
         data: result
       });
     } catch (error) {
       console.error('[WordPress Sync] Error during manual sync:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'WordPress sync failed',
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -51,19 +51,19 @@ export function registerWordPressSyncRoutes(app: any) {
   });
 
   // Get sync status
-  app.get('/api/wordpress/sync/status', async (req: Request, res: Response) => {
+  app.get('/api/wordpress/sync/status', async (_req: Request, res: Response) => {
     try {
       // Import and call status function
       const { getSyncStatus } = await import('../wordpress-sync');
       const status = await getSyncStatus();
       
-      res.json({
+      return res.json({
         success: true,
         data: status
       });
     } catch (error) {
       console.error('[WordPress Sync] Error getting sync status:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Failed to get sync status',
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -87,7 +87,7 @@ export function registerWordPressSyncRoutes(app: any) {
       
       const posts = await response.json();
       
-      res.json({
+      return res.json({
         success: true,
         data: posts,
         pagination: {
@@ -98,7 +98,7 @@ export function registerWordPressSyncRoutes(app: any) {
       });
     } catch (error) {
       console.error('[WordPress API] Error fetching posts:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Failed to fetch WordPress posts',
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -126,14 +126,14 @@ export function registerWordPressSyncRoutes(app: any) {
         });
       }
 
-      res.json({
+      return res.json({
         success: true,
         message: `Post ${postId} synced successfully`,
         data: result
       });
     } catch (error) {
       console.error(`[WordPress Sync] Error syncing post ${req.params.postId}:`, error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Failed to sync post',
         error: error instanceof Error ? error.message : 'Unknown error'

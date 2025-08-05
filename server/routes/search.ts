@@ -99,7 +99,7 @@ router.get('/', async (req, res) => {
           });
         })
         .map((post: Post) => {
-          const title = post.title || '';
+          // const title = post.title || '';
           const content = post.content || '';
           
           // Strip HTML tags to get plain text content
@@ -177,7 +177,7 @@ router.get('/', async (req, res) => {
             });
           })
           .map((post: Post) => {
-            const title = post.title || '';
+            // const title = post.title || '';
             const content = post.content || '';
             
             // Strip HTML tags
