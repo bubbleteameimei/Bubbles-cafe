@@ -179,7 +179,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
 /**
  * Express middleware for error logging
  */
-export function errorLogger(err: Error, req: Request, res: Response, next: NextFunction) {
+export function errorLoggerMiddleware(err: Error, req: Request, res: Response, next: NextFunction) {
   const logger = createLogger('Error');
   
   logger.error('Unhandled error', {
@@ -195,3 +195,12 @@ export function errorLogger(err: Error, req: Request, res: Response, next: NextF
 
 // Export feedback logger for feedback-ai module
 export const feedbackLogger = createLogger('Feedback');
+
+// Export other specialized loggers
+export const logger = createLogger('General');
+export const postLogger = createLogger('Posts');
+export const userLogger = createLogger('Users');
+export const authLogger = createLogger('Auth');
+export const serverLogger = createLogger('Server');
+export const cacheLogger = createLogger('Cache');
+export const errorLogger = createLogger('Error');

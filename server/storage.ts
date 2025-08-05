@@ -63,6 +63,16 @@ export interface IStorage {
   // User feedback operations
   createUserFeedback(feedback: InsertUserFeedback): Promise<UserFeedback>;
   getUserFeedback(): Promise<UserFeedback[]>;
+  getAllFeedback(): Promise<UserFeedback[]>;
+  getFeedback(id: number): Promise<UserFeedback | undefined>;
+
+  // Privacy settings operations  
+  getUserPrivacySettings(userId: number): Promise<any>;
+  createUserPrivacySettings(userId: number, settings: any): Promise<any>;
+  updateUserPrivacySettings(userId: number, settings: any): Promise<any>;
+
+  // Personalized recommendations
+  getPersonalizedRecommendations(userId: number, options?: any): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -360,6 +370,71 @@ export class DatabaseStorage implements IStorage {
       return await db.select().from(userFeedback).orderBy(desc(userFeedback.createdAt));
     } catch (error) {
       console.error('Error getting user feedback:', error);
+      return [];
+    }
+  }
+
+  async getAllFeedback(): Promise<UserFeedback[]> {
+    return this.getUserFeedback();
+  }
+
+  async getFeedback(id: number): Promise<UserFeedback | undefined> {
+    try {
+      const [feedback] = await db.select().from(userFeedback).where(eq(userFeedback.id, id));
+      return feedback || undefined;
+    } catch (error) {
+      console.error('Error getting feedback by id:', error);
+      return undefined;
+    }
+  }
+
+  async getUserPrivacySettings(userId: number): Promise<any> {
+    try {
+      // Return default privacy settings for now
+      return {
+        profileVisibility: 'public',
+        emailNotifications: true,
+        dataCollection: true,
+        analyticsOptOut: false
+      };
+    } catch (error) {
+      console.error('Error getting user privacy settings:', error);
+      return null;
+    }
+  }
+
+  async createUserPrivacySettings(userId: number, settings: any): Promise<any> {
+    try {
+      // For now, just return the settings as created
+      return { userId, ...settings };
+    } catch (error) {
+      console.error('Error creating user privacy settings:', error);
+      return null;
+    }
+  }
+
+  async updateUserPrivacySettings(userId: number, settings: any): Promise<any> {
+    try {
+      // For now, just return the updated settings
+      return { userId, ...settings };
+    } catch (error) {
+      console.error('Error updating user privacy settings:', error);
+      return null;
+    }
+  }
+
+  async getPersonalizedRecommendations(userId: number, options?: any): Promise<any[]> {
+    try {
+      // Return basic recommendations based on recent posts
+      const recentPosts = await this.getPosts(10);
+      return recentPosts.map(post => ({
+        id: post.id,
+        title: post.title,
+        slug: post.slug,
+        reason: 'Popular content'
+      }));
+    } catch (error) {
+      console.error('Error getting personalized recommendations:', error);
       return [];
     }
   }

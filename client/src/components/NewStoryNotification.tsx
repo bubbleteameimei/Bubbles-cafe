@@ -73,6 +73,9 @@ const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
       
       return () => clearTimeout(timer);
     }
+    
+    // Return empty cleanup if no new stories
+    return () => {};
   }, [newStories, addNotification]);
 
   useEffect(() => {
@@ -84,6 +87,9 @@ const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
       
       return () => clearTimeout(timer);
     }
+    
+    // Return empty cleanup if not visible or no duration
+    return () => {};
   }, [isVisible, autoHideDuration]);
 
   const handleDismiss = () => {

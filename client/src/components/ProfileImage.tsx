@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
+// import { cn } from '@/lib/utils'; // Unused import
 
 export default function ProfileImage() {
   const [loadError, setLoadError] = useState(false);
@@ -134,6 +134,9 @@ export default function ProfileImage() {
       carouselElement.addEventListener('scroll', handleScroll);
       return () => carouselElement.removeEventListener('scroll', handleScroll);
     }
+    
+    // Return empty cleanup function if no element
+    return () => {};
   }, [activeIndex, images.length]);
   
   // Handle image error and loading state
