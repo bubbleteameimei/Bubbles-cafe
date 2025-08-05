@@ -118,9 +118,9 @@ export async function sendEmail(message: EmailMessage): Promise<EmailResult> {
       },
       to: formatRecipients(message.to),
       subject: message.subject,
-      text: message.text,
-      html: message.html,
-      attachments: formatAttachments(message.attachments)
+      text: message.text || '',
+      html: message.html || '',
+      attachments: formatAttachments(message.attachments) || []
     };
     
     if (message.replyTo) {

@@ -1,24 +1,47 @@
-import { createSecureLogger } from '../utils/secure-logger';
-import { handleDatabaseError, createError } from '../utils/error-handler';
-import { db } from "../db";
+import { db } from '../db';
 import { posts, users, postLikes, type Post, type InsertPost } from "@shared/schema";
-import { eq, sql, desc, asc, like, and, or, isNull } from "drizzle-orm";
+import { eq, sql, desc, asc, like, and, or } from "drizzle-orm";
+import { postLogger } from '../utils/debug-logger';
+import { handleDatabaseError } from '../utils/error-handler';
 
-const postLogger = createSecureLogger('PostService');
+// Define proper return types for different query contexts
+type PostWithAuthor = {
+  id: number;
+  title: string;
+  content: string;
+  excerpt: string | null;
+  slug: string;
+  authorId: number;
+  isSecret: boolean;
+  isAdminPost: boolean | null;
+  matureContent: boolean;
+  themeCategory: string | null;
+  readingTimeMinutes: number | null;
+  likesCount: number | null;
+  dislikesCount: number | null;
+  metadata: unknown;
+  createdAt: Date;
+  authorName: string | null;
+  authorEmail: string | null;
+};
 
-export interface GetPostsOptions {
+type PostSummaryWithAuthor = Omit<PostWithAuthor, 'content'> & {
+  content?: string;
+};
+
+interface GetPostsOptions {
   page?: number;
   limit?: number;
+  authorId?: number;
+  isSecret?: boolean;
+  includeContent?: boolean;
   category?: string;
   search?: string;
-  authorId?: number;
-  includeSecret?: boolean;
-  sortBy?: 'newest' | 'oldest' | 'popular' | 'trending';
 }
 
 export class PostService {
-  // Get post by ID with author info
-  async getPost(id: number, includeContent: boolean = true): Promise<Post | null> {
+  // Get post by ID with optional content inclusion
+  async getPostById(id: number, includeContent: boolean = true): Promise<PostWithAuthor | PostSummaryWithAuthor | null> {
     try {
       const selectFields = {
         id: posts.id,
@@ -35,10 +58,9 @@ export class PostService {
         dislikesCount: posts.dislikesCount,
         metadata: posts.metadata,
         createdAt: posts.createdAt,
-        // Join author info
         authorName: users.username,
         authorEmail: users.email,
-        ...(includeContent && { content: posts.content })
+        ...(includeContent ? { content: posts.content } : {})
       };
 
       const [post] = await db.select(selectFields)
@@ -47,7 +69,13 @@ export class PostService {
         .where(eq(posts.id, id))
         .limit(1);
 
-      return post || null;
+      if (!post) return null;
+
+      if (includeContent) {
+        return post as PostWithAuthor;
+      } else {
+        return post as PostSummaryWithAuthor;
+      }
     } catch (error) {
       postLogger.error('Error fetching post by ID', { postId: id, error });
       throw handleDatabaseError(error);
@@ -55,7 +83,7 @@ export class PostService {
   }
 
   // Get post by slug
-  async getPostBySlug(slug: string): Promise<Post | null> {
+  async getPostBySlug(slug: string): Promise<PostWithAuthor | null> {
     try {
       const [post] = await db.select({
         id: posts.id,
@@ -73,7 +101,8 @@ export class PostService {
         dislikesCount: posts.dislikesCount,
         metadata: posts.metadata,
         createdAt: posts.createdAt,
-        authorName: users.username
+        authorName: users.username,
+        authorEmail: users.email
       })
         .from(posts)
         .leftJoin(users, eq(posts.authorId, users.id))
@@ -87,33 +116,23 @@ export class PostService {
     }
   }
 
-  // Get posts with advanced filtering and pagination
-  async getPosts(options: GetPostsOptions = {}): Promise<{ posts: Post[]; total: number; hasMore: boolean }> {
-    const {
-      page = 1,
-      limit = 10,
-      category,
-      search,
-      authorId,
-      includeSecret = false,
-      sortBy = 'newest'
-    } = options;
-
-    const safeLimit = Math.min(limit, 50); // Max 50 posts per page
-    const offset = (page - 1) * safeLimit;
-
+  // Get posts with proper typing
+  async getPosts(options: GetPostsOptions = {}): Promise<{ posts: PostSummaryWithAuthor[]; total: number; hasMore: boolean }> {
     try {
-      // Build where conditions
+      const { page = 1, limit = 10, authorId, isSecret, includeContent = false, category, search } = options;
+      const offset = (page - 1) * limit;
+
+      // Build WHERE conditions
       const conditions = [];
-      
-      if (!includeSecret) {
-        conditions.push(eq(posts.isSecret, false));
+      if (authorId !== undefined) {
+        conditions.push(eq(posts.authorId, authorId));
       }
-      
+      if (isSecret !== undefined) {
+        conditions.push(eq(posts.isSecret, isSecret));
+      }
       if (category) {
         conditions.push(eq(posts.themeCategory, category));
       }
-      
       if (search) {
         conditions.push(
           or(
@@ -123,77 +142,51 @@ export class PostService {
           )
         );
       }
-      
-      if (authorId) {
-        conditions.push(eq(posts.authorId, authorId));
+
+      const selectFields = {
+        id: posts.id,
+        title: posts.title,
+        excerpt: posts.excerpt,
+        slug: posts.slug,
+        authorId: posts.authorId,
+        isSecret: posts.isSecret,
+        isAdminPost: posts.isAdminPost,
+        matureContent: posts.matureContent,
+        themeCategory: posts.themeCategory,
+        readingTimeMinutes: posts.readingTimeMinutes,
+        likesCount: posts.likesCount,
+        dislikesCount: posts.dislikesCount,
+        metadata: posts.metadata,
+        createdAt: posts.createdAt,
+        authorName: users.username,
+        ...(includeContent ? { content: posts.content } : {})
+      };
+
+      // Get posts
+      let query = db.select(selectFields)
+        .from(posts)
+        .leftJoin(users, eq(posts.authorId, users.id))
+        .orderBy(desc(posts.createdAt));
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions)) as any;
       }
 
-      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+      const postsData = await query
+        .limit(limit)
+        .offset(offset);
 
-      // Build order clause
-      let orderClause;
-      switch (sortBy) {
-        case 'oldest':
-          orderClause = asc(posts.createdAt);
-          break;
-        case 'popular':
-          orderClause = desc(posts.likesCount);
-          break;
-        case 'trending':
-          // Simple trending algorithm: likes + recent activity
-          orderClause = desc(sql`${posts.likesCount} + EXTRACT(EPOCH FROM (NOW() - ${posts.createdAt})) / 86400`);
-          break;
-        default: // newest
-          orderClause = desc(posts.createdAt);
+      // Get total count
+      let countQuery = db.select({ count: sql<number>`count(*)` }).from(posts);
+      if (conditions.length > 0) {
+        countQuery = countQuery.where(and(...conditions)) as any;
       }
-
-      // Execute queries in parallel
-      const [postsData, totalResult] = await Promise.all([
-        db.select({
-          id: posts.id,
-          title: posts.title,
-          excerpt: posts.excerpt,
-          slug: posts.slug,
-          authorId: posts.authorId,
-          isSecret: posts.isSecret,
-          isAdminPost: posts.isAdminPost,
-          matureContent: posts.matureContent,
-          themeCategory: posts.themeCategory,
-          readingTimeMinutes: posts.readingTimeMinutes,
-          likesCount: posts.likesCount,
-          dislikesCount: posts.dislikesCount,
-          metadata: posts.metadata,
-          createdAt: posts.createdAt,
-          authorName: users.username
-        })
-          .from(posts)
-          .leftJoin(users, eq(posts.authorId, users.id))
-          .where(whereClause)
-          .orderBy(orderClause)
-          .limit(safeLimit)
-          .offset(offset),
-        
-        db.select({ count: sql<number>`count(*)` })
-          .from(posts)
-          .where(whereClause)
-      ]);
-
-      const total = totalResult[0].count;
-      const hasMore = offset + safeLimit < total;
-
-      postLogger.debug('Posts fetched successfully', { 
-        page, 
-        limit: safeLimit, 
-        total, 
-        hasMore,
-        category,
-        search: search ? '[SEARCH]' : undefined
-      });
+      const [{ count }] = await countQuery;
 
       return {
-        posts: postsData,
-        total,
-        hasMore
+        posts: postsData as PostSummaryWithAuthor[],
+        total: count,
+        hasMore: offset + limit < count
       };
     } catch (error) {
       postLogger.error('Error fetching posts', { options, error });
@@ -201,100 +194,84 @@ export class PostService {
     }
   }
 
-  // Create new post
-  async createPost(postData: InsertPost): Promise<Post> {
+  // Create post
+  async createPost(postData: InsertPost): Promise<PostWithAuthor> {
     try {
-      // Generate slug if not provided
-      if (!postData.slug) {
-        postData.slug = this.generateSlug(postData.title);
+      const [newPost] = await db.insert(posts)
+        .values(postData)
+        .returning();
+
+      // Fetch the complete post with author information
+      const completePost = await this.getPostById(newPost.id, true);
+      if (!completePost) {
+        throw new Error('Failed to fetch created post');
       }
 
-      // Ensure slug is unique
-      postData.slug = await this.ensureUniqueSlug(postData.slug);
-
-      // Estimate reading time if not provided
-      if (!postData.readingTimeMinutes && postData.content) {
-        postData.readingTimeMinutes = this.estimateReadingTime(postData.content);
-      }
-
-      const [newPost] = await db.insert(posts).values({
-        ...postData,
-        metadata: postData.metadata || {},
-        likesCount: 0,
-        dislikesCount: 0
-      }).returning();
-
-      postLogger.info('Post created successfully', { postId: newPost.id });
-      return newPost;
+      postLogger.info('Post created successfully', { postId: newPost.id, title: postData.title });
+      return completePost as PostWithAuthor;
     } catch (error) {
-      postLogger.error('Error creating post', { error });
+      postLogger.error('Error creating post', { postData, error });
       throw handleDatabaseError(error);
     }
   }
 
   // Update post
-  async updatePost(id: number, postData: Partial<InsertPost>): Promise<Post> {
+  async updatePost(id: number, postData: Partial<InsertPost>): Promise<PostWithAuthor | null> {
     try {
-      const existingPost = await this.getPost(id, false);
+      // Get existing post to merge metadata properly
+      const existingPost = await this.getPostById(id, true);
       if (!existingPost) {
-        throw createError.notFound('Post not found');
+        return null;
       }
 
-      // Update reading time if content changed
-      if (postData.content && !postData.readingTimeMinutes) {
-        postData.readingTimeMinutes = this.estimateReadingTime(postData.content);
-      }
+      // Merge metadata if provided
+      const updatedData = {
+        ...postData,
+        metadata: postData.metadata ? 
+          { ...(existingPost.metadata as Record<string, unknown> || {}), ...postData.metadata } : 
+          existingPost.metadata
+      };
 
       const [updatedPost] = await db.update(posts)
-        .set({
-          ...postData,
-          metadata: postData.metadata ? { ...existingPost.metadata, ...postData.metadata } : existingPost.metadata
-        })
+        .set(updatedData)
         .where(eq(posts.id, id))
         .returning();
 
+      if (!updatedPost) {
+        return null;
+      }
+
+      // Fetch the complete updated post with author information
+      const completePost = await this.getPostById(id, true);
       postLogger.info('Post updated successfully', { postId: id });
-      return updatedPost;
+      return completePost as PostWithAuthor;
     } catch (error) {
-      postLogger.error('Error updating post', { postId: id, error });
+      postLogger.error('Error updating post', { postId: id, postData, error });
       throw handleDatabaseError(error);
     }
   }
 
   // Delete post
-  async deletePost(id: number): Promise<void> {
+  async deletePost(id: number): Promise<boolean> {
     try {
-      const existingPost = await this.getPost(id, false);
-      if (!existingPost) {
-        throw createError.notFound('Post not found');
+      const [deletedPost] = await db.delete(posts)
+        .where(eq(posts.id, id))
+        .returning({ id: posts.id });
+
+      const success = !!deletedPost;
+      if (success) {
+        postLogger.info('Post deleted successfully', { postId: id });
       }
 
-      await db.delete(posts).where(eq(posts.id, id));
-
-      postLogger.info('Post deleted successfully', { postId: id });
+      return success;
     } catch (error) {
       postLogger.error('Error deleting post', { postId: id, error });
       throw handleDatabaseError(error);
     }
   }
 
-  // Get post count
-  async getPostCount(includeSecret: boolean = false): Promise<number> {
-    try {
-      const whereClause = includeSecret ? undefined : eq(posts.isSecret, false);
-      const [result] = await db.select({ count: sql<number>`count(*)` })
-        .from(posts)
-        .where(whereClause);
-
-      return result.count;
-    } catch (error) {
-      postLogger.error('Error getting post count', { error });
-      throw handleDatabaseError(error);
-    }
-  }
-
   // Get popular posts
-  async getPopularPosts(limit: number = 10): Promise<Post[]> {
+  async getPopularPosts(limit: number = 10): Promise<PostSummaryWithAuthor[]> {
     try {
       const popularPosts = await db.select({
         id: posts.id,
@@ -317,22 +294,27 @@ export class PostService {
         .leftJoin(users, eq(posts.authorId, users.id))
         .where(eq(posts.isSecret, false))
         .orderBy(desc(posts.likesCount))
-        .limit(Math.min(limit, 20));
+        .limit(limit);
 
-      return popularPosts;
+      return popularPosts as PostSummaryWithAuthor[];
     } catch (error) {
-      postLogger.error('Error fetching popular posts', { error });
+      postLogger.error('Error fetching popular posts', { limit, error });
       throw handleDatabaseError(error);
     }
   }
 
   // Get related posts
-  async getRelatedPosts(postId: number, limit: number = 5): Promise<Post[]> {
+  async getRelatedPosts(postId: number, themeCategory: string | null, limit: number = 5): Promise<PostSummaryWithAuthor[]> {
     try {
-      const currentPost = await this.getPost(postId, false);
-      if (!currentPost) return [];
+      const conditions = [
+        eq(posts.isSecret, false),
+        sql`${posts.id} != ${postId}`
+      ];
 
-      // Simple related posts: same category or author
+      if (themeCategory) {
+        conditions.push(eq(posts.themeCategory, themeCategory));
+      }
+
       const relatedPosts = await db.select({
         id: posts.id,
         title: posts.title,
@@ -352,81 +334,41 @@ export class PostService {
       })
         .from(posts)
         .leftJoin(users, eq(posts.authorId, users.id))
-        .where(
-          and(
-            eq(posts.isSecret, false),
-            sql`${posts.id} != ${postId}`,
-            or(
-              eq(posts.themeCategory, currentPost.themeCategory || ''),
-              eq(posts.authorId, currentPost.authorId)
-            )
-          )
-        )
+        .where(and(...conditions))
         .orderBy(desc(posts.createdAt))
-        .limit(Math.min(limit, 10));
+        .limit(limit);
 
-      return relatedPosts;
+      return relatedPosts as PostSummaryWithAuthor[];
     } catch (error) {
-      postLogger.error('Error fetching related posts', { postId, error });
-      return [];
-    }
-  }
-
-  // Update post likes/dislikes
-  async updatePostReaction(postId: number, isLike: boolean, increment: boolean = true): Promise<void> {
-    try {
-      const field = isLike ? 'likesCount' : 'dislikesCount';
-      const operation = increment ? sql`${posts[field]} + 1` : sql`${posts[field]} - 1`;
-
-      await db.update(posts)
-        .set({ [field]: operation })
-        .where(eq(posts.id, postId));
-
-      postLogger.debug('Post reaction updated', { postId, isLike, increment });
-    } catch (error) {
-      postLogger.error('Error updating post reaction', { postId, error });
+      postLogger.error('Error fetching related posts', { postId, themeCategory, error });
       throw handleDatabaseError(error);
     }
   }
 
-  // Helper: Generate slug from title
-  private generateSlug(title: string): string {
-    return title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-') // Replace multiple hyphens
-      .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
-      .substring(0, 100); // Limit length
-  }
-
-  // Helper: Ensure slug is unique
-  private async ensureUniqueSlug(baseSlug: string): Promise<string> {
-    let slug = baseSlug;
-    let counter = 1;
-
-    while (true) {
-      const existing = await db.select({ id: posts.id })
+  // Get post count by author
+  async getPostCountByAuthor(authorId: number): Promise<number> {
+    try {
+      const [{ count }] = await db.select({ count: sql<number>`count(*)` })
         .from(posts)
-        .where(eq(posts.slug, slug))
-        .limit(1);
+        .where(eq(posts.authorId, authorId));
 
-      if (existing.length === 0) {
-        return slug;
-      }
-
-      slug = `${baseSlug}-${counter}`;
-      counter++;
+      return count;
+    } catch (error) {
+      postLogger.error('Error fetching post count by author', { authorId, error });
+      throw handleDatabaseError(error);
     }
   }
 
-  // Helper: Estimate reading time
-  private estimateReadingTime(content: string): number {
-    const wordsPerMinute = 200;
-    const wordCount = content.split(/\s+/).length;
-    return Math.max(1, Math.ceil(wordCount / wordsPerMinute));
+  // Get posts by theme category
+  async getPostsByCategory(category: string, page: number = 1, limit: number = 10): Promise<{ posts: PostSummaryWithAuthor[]; total: number; hasMore: boolean }> {
+    return this.getPosts({ page, limit, category, isSecret: false });
+  }
+
+  // Search posts
+  async searchPosts(query: string, page: number = 1, limit: number = 10): Promise<{ posts: PostSummaryWithAuthor[]; total: number; hasMore: boolean }> {
+    return this.getPosts({ page, limit, search: query, isSecret: false });
   }
 }
 
-// Export singleton instance
+// Export a singleton instance
 export const postService = new PostService();

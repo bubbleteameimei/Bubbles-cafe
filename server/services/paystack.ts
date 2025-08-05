@@ -4,261 +4,302 @@
  * This service handles all Paystack payment integrations for the platform.
  * It's the only monetization method allowed in the system.
  */
+import { config } from '../config';
 import fetch from 'node-fetch';
-import { Request, Response } from 'express';
+import crypto from 'crypto';
+import { logger } from '../utils/debug-logger';
 
-// Check for required environment variables
-if (!process.env.PAYSTACK_SECRET_KEY) {
-  console.warn('[PAYSTACK] Warning: PAYSTACK_SECRET_KEY environment variable is not set!');
+// Use proper types for fetch Response
+type FetchResponse = Awaited<ReturnType<typeof fetch>>;
+
+/**
+ * Configuration for Paystack API
+ */
+const PAYSTACK_BASE_URL = 'https://api.paystack.co';
+const SECRET_KEY = config.PAYSTACK_SECRET_KEY;
+
+if (!SECRET_KEY) {
+  logger.warn('Paystack secret key not configured');
 }
 
-// Base API URL
-const PAYSTACK_API_URL = 'https://api.paystack.co';
-
-// API Headers
-const getHeaders = () => {
-  return {
-    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-    'Content-Type': 'application/json'
-  };
-};
+/**
+ * Common headers for Paystack API requests
+ */
+const getHeaders = () => ({
+  'Authorization': `Bearer ${SECRET_KEY}`,
+  'Content-Type': 'application/json',
+});
 
 /**
  * Error handling middleware for Paystack API calls
  */
-const handlePaystackResponse = async (response: Response) => {
+const handlePaystackResponse = async (response: FetchResponse) => {
   if (!response.ok) {
     const errorData = await response.json();
     console.error('[PAYSTACK] API Error:', errorData);
-    throw new Error(errorData.message || 'Failed to complete Paystack operation');
+    throw new Error((errorData as any).message || 'Failed to complete Paystack operation');
   }
   return response.json();
 };
 
 /**
- * Initialize a transaction
- * @param amount Amount in kobo/cents
- * @param email Customer's email address
- * @param reference Optional reference for the transaction
- * @param callbackUrl URL to redirect to after payment
+ * Initialize a new transaction
  */
-export const initializeTransaction = async (
-  amount: number,
-  email: string,
-  reference?: string,
-  callbackUrl?: string,
-  metadata?: any
-) => {
+export const initializeTransaction = async (data: {
+  email: string;
+  amount: number; // In kobo (smallest currency unit)
+  reference?: string;
+  callback_url?: string;
+  metadata?: Record<string, any>;
+}) => {
   try {
-    console.log(`[PAYSTACK] Initializing transaction for ${email}, amount: ${amount}`);
-    
-    const response = await fetch(`${PAYSTACK_API_URL}/transaction/initialize`, {
+    if (!SECRET_KEY) {
+      throw new Error('Paystack configuration missing');
+    }
+
+    console.log('[PAYSTACK] Initializing transaction for:', data.email, 'Amount:', data.amount);
+
+    const response = await fetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({
-        amount,
-        email,
-        reference,
-        callback_url: callbackUrl,
-        metadata
-      })
+      body: JSON.stringify(data),
     });
+
+    const result = await handlePaystackResponse(response);
+    const data_result = result as any;
+    console.log(`[PAYSTACK] Transaction initialized successfully. Reference: ${data_result.data?.reference}`);
     
-    const data = await handlePaystackResponse(response);
-    console.log(`[PAYSTACK] Transaction initialized successfully. Reference: ${data.data.reference}`);
-    return data;
+    return result;
   } catch (error) {
-    console.error(`[PAYSTACK] Failed to initialize transaction:`, error);
+    console.error('[PAYSTACK] Transaction initialization failed:', error);
     throw error;
   }
 };
 
 /**
  * Verify a transaction
- * @param reference Transaction reference
  */
 export const verifyTransaction = async (reference: string) => {
   try {
-    console.log(`[PAYSTACK] Verifying transaction: ${reference}`);
-    
-    const response = await fetch(`${PAYSTACK_API_URL}/transaction/verify/${reference}`, {
+    if (!SECRET_KEY) {
+      throw new Error('Paystack configuration missing');
+    }
+
+    console.log('[PAYSTACK] Verifying transaction:', reference);
+
+    const response = await fetch(`${PAYSTACK_BASE_URL}/transaction/verify/${reference}`, {
       method: 'GET',
-      headers: getHeaders()
+      headers: getHeaders(),
     });
+
+    const result = await handlePaystackResponse(response);
+    const data_result = result as any;
+    console.log(`[PAYSTACK] Transaction verification status: ${data_result.data?.status}`);
     
-    const data = await handlePaystackResponse(response);
-    console.log(`[PAYSTACK] Transaction verification status: ${data.data.status}`);
-    return data;
+    return result;
   } catch (error) {
-    console.error(`[PAYSTACK] Failed to verify transaction:`, error);
+    console.error('[PAYSTACK] Transaction verification failed:', error);
     throw error;
   }
 };
 
 /**
- * List transactions with optional filters
- * @param filters Optional filters (perPage, page, customer, status, etc.)
+ * List all transactions
  */
-export const listTransactions = async (filters: Record<string, any> = {}) => {
+export const listTransactions = async (params: {
+  perPage?: number;
+  page?: number;
+  customer?: string;
+  status?: string;
+  from?: string;
+  to?: string;
+} = {}) => {
   try {
-    console.log(`[PAYSTACK] Listing transactions with filters: ${JSON.stringify(filters)}`);
-    
-    // Build query string from filters
-    const queryString = Object.entries(filters)
-      .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
-      .join('&');
-    
-    const url = `${PAYSTACK_API_URL}/transaction?${queryString}`;
-    
+    if (!SECRET_KEY) {
+      throw new Error('Paystack configuration missing');
+    }
+
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        queryParams.append(key, String(value));
+      }
+    });
+
+    const url = `${PAYSTACK_BASE_URL}/transaction?${queryParams.toString()}`;
+    console.log('[PAYSTACK] Fetching transactions from:', url);
+
     const response = await fetch(url, {
       method: 'GET',
-      headers: getHeaders()
+      headers: getHeaders(),
     });
+
+    const result = await handlePaystackResponse(response);
+    const data_result = result as any;
+    console.log(`[PAYSTACK] Retrieved ${data_result.data?.length || 0} transactions`);
     
-    const data = await handlePaystackResponse(response);
-    console.log(`[PAYSTACK] Retrieved ${data.data.length} transactions`);
-    return data;
+    return result;
   } catch (error) {
-    console.error(`[PAYSTACK] Failed to list transactions:`, error);
+    console.error('[PAYSTACK] Failed to fetch transactions:', error);
     throw error;
   }
 };
 
 /**
- * Create subscription plan
- * @param name Plan name
- * @param amount Amount in kobo/cents
- * @param interval Billing interval (daily, weekly, monthly, quarterly, biannually, annually)
+ * Create a plan for subscriptions
  */
-export const createPlan = async (
-  name: string,
-  amount: number,
-  interval: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'biannually' | 'annually',
-  description?: string
-) => {
+export const createPlan = async (data: {
+  name: string;
+  interval: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'biannually' | 'annually';
+  amount: number; // In kobo
+  description?: string;
+  currency?: string;
+}) => {
   try {
-    console.log(`[PAYSTACK] Creating plan: ${name}, amount: ${amount}, interval: ${interval}`);
-    
-    const response = await fetch(`${PAYSTACK_API_URL}/plan`, {
+    if (!SECRET_KEY) {
+      throw new Error('Paystack configuration missing');
+    }
+
+    console.log('[PAYSTACK] Creating plan:', data.name);
+
+    const response = await fetch(`${PAYSTACK_BASE_URL}/plan`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({
-        name,
-        amount,
-        interval,
-        description
-      })
+        ...data,
+        currency: data.currency || 'NGN',
+      }),
     });
+
+    const result = await handlePaystackResponse(response);
+    const data_result = result as any;
+    console.log(`[PAYSTACK] Plan created successfully. ID: ${data_result.data?.id}`);
     
-    const data = await handlePaystackResponse(response);
-    console.log(`[PAYSTACK] Plan created successfully. ID: ${data.data.id}`);
-    return data;
+    return result;
   } catch (error) {
-    console.error(`[PAYSTACK] Failed to create plan:`, error);
+    console.error('[PAYSTACK] Plan creation failed:', error);
     throw error;
   }
 };
 
 /**
  * Create a subscription
- * @param customerEmail Customer's email
- * @param planCode Plan code
  */
-export const createSubscription = async (customerEmail: string, planCode: string) => {
+export const createSubscription = async (data: {
+  customer: string;
+  plan: string;
+  authorization?: string;
+  start_date?: string;
+}) => {
   try {
-    console.log(`[PAYSTACK] Creating subscription for ${customerEmail}, plan: ${planCode}`);
-    
-    const response = await fetch(`${PAYSTACK_API_URL}/subscription`, {
+    if (!SECRET_KEY) {
+      throw new Error('Paystack configuration missing');
+    }
+
+    console.log('[PAYSTACK] Creating subscription for customer:', data.customer);
+
+    const response = await fetch(`${PAYSTACK_BASE_URL}/subscription`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({
-        customer: customerEmail,
-        plan: planCode
-      })
+      body: JSON.stringify(data),
     });
+
+    const result = await handlePaystackResponse(response);
+    const data_result = result as any;
+    console.log(`[PAYSTACK] Subscription created successfully. ID: ${data_result.data?.id}`);
     
-    const data = await handlePaystackResponse(response);
-    console.log(`[PAYSTACK] Subscription created successfully. ID: ${data.data.id}`);
-    return data;
+    return result;
   } catch (error) {
-    console.error(`[PAYSTACK] Failed to create subscription:`, error);
+    console.error('[PAYSTACK] Subscription creation failed:', error);
     throw error;
   }
 };
 
 /**
- * Get a subscription by ID or code
- * @param idOrCode Subscription ID or code
+ * Create a customer
  */
-export const getSubscription = async (idOrCode: string) => {
+export const createCustomer = async (data: {
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  metadata?: Record<string, any>;
+}) => {
   try {
-    console.log(`[PAYSTACK] Getting subscription: ${idOrCode}`);
+    if (!SECRET_KEY) {
+      throw new Error('Paystack configuration missing');
+    }
+
+    console.log('[PAYSTACK] Creating customer:', data.email);
+
+    const response = await fetch(`${PAYSTACK_BASE_URL}/customer`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    const result = await handlePaystackResponse(response);
     
-    const response = await fetch(`${PAYSTACK_API_URL}/subscription/${idOrCode}`, {
+    return result;
+  } catch (error) {
+    console.error('[PAYSTACK] Customer creation failed:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch a customer
+ */
+export const fetchCustomer = async (emailOrCode: string) => {
+  try {
+    if (!SECRET_KEY) {
+      throw new Error('Paystack configuration missing');
+    }
+
+    console.log('[PAYSTACK] Fetching customer:', emailOrCode);
+
+    const response = await fetch(`${PAYSTACK_BASE_URL}/customer/${emailOrCode}`, {
       method: 'GET',
-      headers: getHeaders()
-    });
-    
-    const data = await handlePaystackResponse(response);
-    return data;
-  } catch (error) {
-    console.error(`[PAYSTACK] Failed to get subscription:`, error);
-    throw error;
-  }
-};
-
-/**
- * Cancel a subscription
- * @param code Subscription code
- * @param token Email token
- */
-export const cancelSubscription = async (code: string, token: string) => {
-  try {
-    console.log(`[PAYSTACK] Cancelling subscription: ${code}`);
-    
-    const response = await fetch(`${PAYSTACK_API_URL}/subscription/disable`, {
-      method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({
-        code,
-        token
-      })
     });
+
+    const result = await handlePaystackResponse(response);
     
-    const data = await handlePaystackResponse(response);
-    console.log(`[PAYSTACK] Subscription cancelled successfully.`);
-    return data;
+    return result;
   } catch (error) {
-    console.error(`[PAYSTACK] Failed to cancel subscription:`, error);
+    console.error('[PAYSTACK] Failed to fetch customer:', error);
     throw error;
   }
 };
 
 /**
- * Process Paystack webhook
- * @param signature Paystack signature from request header
- * @param body Request body
+ * Process webhook (validate signature and return parsed body)
  */
-export const processWebhook = (signature: string, body: any) => {
+export const processWebhook = (body: any) => {
+  // Note: Signature validation should be implemented here using the webhook secret
+  // For now, just return the parsed body
+  console.log('[PAYSTACK] Processing webhook:', body?.event);
+  return body;
+};
+
+/**
+ * Validate webhook signature
+ */
+export const validateWebhookSignature = (body: string, signature: string): boolean => {
+  if (!config.PAYSTACK_WEBHOOK_SECRET) {
+    console.warn('[PAYSTACK] Webhook secret not configured');
+    return false;
+  }
+
   try {
-    console.log(`[PAYSTACK] Processing webhook event: ${body.event}`);
-    
-    // Todo: Verify webhook signature when implementing in production
-    
-    // Return event data for processing
-    return {
-      event: body.event,
-      data: body.data
-    };
-  } catch (error) {
-    console.error(`[PAYSTACK] Failed to process webhook:`, error);
-    throw error;
-  }
-};
+    const hash = crypto
+      .createHmac('sha512', config.PAYSTACK_WEBHOOK_SECRET)
+      .update(body)
+      .digest('hex');
 
-/**
- * Generate a unique transaction reference
- */
-export const generateReference = () => {
-  return `ps_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return hash === signature;
+  } catch (error) {
+    console.error('[PAYSTACK] Webhook signature validation failed:', error);
+    return false;
+  }
 };
