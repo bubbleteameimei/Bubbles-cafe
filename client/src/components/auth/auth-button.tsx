@@ -63,7 +63,7 @@ export function AuthButton({
           throw new Error("Password must be at least 6 characters long");
         }
         
-        console.log("[Auth-Button] Login validations passed, submitting login request");
+        
         // Use the direct login method with a timeout and pass rememberMe parameter
         const loginPromise = login(email, password, rememberMe);
         
@@ -82,7 +82,7 @@ export function AuthButton({
           throw new Error("Login failed - no user data received");
         }
         
-        console.log("[Auth-Button] Login successful, redirecting", { userId: result.id });
+        
         
         // Show success notification
         toast({
@@ -117,7 +117,7 @@ export function AuthButton({
           throw new Error("Passwords do not match");
         }
         
-        console.log("[Auth-Button] Registration validations passed, submitting registration request");
+        
         
         // Add timeout to prevent long-running requests
         const registerPromise = registerMutation.mutateAsync({ 
@@ -140,7 +140,7 @@ export function AuthButton({
           throw new Error("Registration failed - no user data received");
         }
         
-        console.log("[Auth-Button] Registration successful, redirecting", { userId: result.id });
+        
         
         // Show success notification
         toast({
@@ -154,7 +154,7 @@ export function AuthButton({
         }, 300);
       }
     } catch (err: any) {
-      console.error("[Auth-Button] Authentication error:", err);
+      
       
       // Enhanced error reporting and handling
       let errorMessage = err?.message || "Authentication failed";

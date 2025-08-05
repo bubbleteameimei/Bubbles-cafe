@@ -57,7 +57,7 @@ class SimpleCache {
     }
     
     if (cleaned > 0) {
-      console.log(`[SimpleCache] Cleaned ${cleaned} expired entries`);
+      
     }
   }
 }
@@ -88,12 +88,12 @@ export async function cachedQuery<T>(
   // Check if result is in cache
   const cached = queryCache.get<T>(queryKey);
   if (cached !== undefined) {
-    console.log(`[QueryOptimizer] Cache hit: ${queryKey}`);
+    
     return cached;
   }
   
   // Execute and time the query
-  console.log(`[QueryOptimizer] Cache miss: ${queryKey}`);
+  
   const startTime = Date.now();
   
   try {
@@ -125,7 +125,7 @@ export function invalidateCache(keyPattern: string | RegExp): void {
     const exactKey = keys.find(k => k === keyPattern);
     if (exactKey) {
       queryCache.del(exactKey);
-      console.log(`[QueryOptimizer] Invalidated cache: ${exactKey}`);
+      
     }
     return;
   }
@@ -134,7 +134,7 @@ export function invalidateCache(keyPattern: string | RegExp): void {
   const matchingKeys = keys.filter(k => keyPattern.test(k));
   if (matchingKeys.length > 0) {
     matchingKeys.forEach(k => queryCache.del(k));
-    console.log(`[QueryOptimizer] Invalidated ${matchingKeys.length} cache entries`);
+    
   }
 }
 
@@ -195,14 +195,14 @@ export async function optimizedBulkInsert<T extends Record<string, any>>(
       `);
       
       inserted += batch.length;
-      console.log(`[QueryOptimizer] Batch inserted ${batch.length} records into ${table}`);
+      
     } catch (error) {
       console.error(`[QueryOptimizer] Batch insert failed for ${table}:`, error);
       throw error;
     }
   }
   
-  console.log(`[QueryOptimizer] Completed bulk insert: ${inserted}/${totalRecords} records into ${table}`);
+  
   return inserted;
 }
 
@@ -274,5 +274,5 @@ export function cleanQueryStats(maxEntries: number = 100): void {
     delete queryStats[key];
   });
   
-  console.log(`[QueryOptimizer] Cleaned up query stats (kept ${maxEntries} entries)`);
+  
 }

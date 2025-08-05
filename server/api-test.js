@@ -12,7 +12,7 @@ const { storage } = require('./storage');
 
 // Add a middleware to log all requests
 router.use((req, res, next) => {
-  console.log(`[API Test] ${req.method} ${req.path}`, req.body || '');
+  
   next();
 });
 
@@ -70,7 +70,7 @@ router.patch('/profile/:userId', async (req, res) => {
       }
     };
     
-    console.log('[API Test] Updating user with data:', updateData);
+    
     
     // Update user
     const updatedUser = await storage.updateUser(userId, updateData);

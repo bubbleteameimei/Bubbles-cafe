@@ -273,7 +273,7 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
         text: post.excerpt || createExcerpt(post.content),
         url: `${window.location.origin}/reader/${post.slug}`,
       }).catch(error => {
-        console.error('Error sharing:', error);
+        
       });
     } else {
       copyLink();

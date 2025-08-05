@@ -61,7 +61,7 @@ export function applyPerformanceMiddleware(app: any, dbInstance?: any) {
   // Add dashboard route for monitoring
   app.get('/admin/performance', performanceDashboardHandler);
   
-  console.log('🚀 Performance middleware applied successfully');
+  
 }
 
 /**

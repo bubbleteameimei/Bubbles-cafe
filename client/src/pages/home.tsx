@@ -52,7 +52,7 @@ export default function Home() {
     try {
       return format(new Date(date), 'MMMM d, yyyy');
     } catch (error) {
-      console.error('Error formatting date:', error);
+      
       return '';
     }
   };

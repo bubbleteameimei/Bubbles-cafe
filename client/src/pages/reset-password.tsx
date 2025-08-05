@@ -48,7 +48,7 @@ export default function ResetPasswordPage() {
     }
     
     setToken(tokenParam);
-    console.log("[ResetPassword] Processing reset token:", tokenParam.substring(0, 10) + "...");
+    
     
     // Verify token with the backend
     const verifyToken = async () => {
@@ -75,7 +75,7 @@ export default function ResetPasswordPage() {
           variant: "default",
         });
       } catch (error) {
-        console.error('[ResetPassword] Error verifying token:', error);
+        
         toast({
           title: "Invalid Token",
           description: error instanceof Error ? error.message : "Your password reset link is invalid or has expired",
@@ -160,7 +160,7 @@ export default function ResetPasswordPage() {
         navigate('/auth');
       }, 3000);
     } catch (error) {
-      console.error('Error resetting password:', error);
+      
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to reset your password. Please try again.",

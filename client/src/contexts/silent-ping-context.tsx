@@ -29,7 +29,7 @@ export function SilentPingProvider({ children }: { children: React.ReactNode }) 
       const saved = localStorage.getItem('silentPingEnabled');
       return saved !== null ? JSON.parse(saved) : false;
     } catch (error) {
-      console.error('[SilentPing] Error loading from localStorage:', error);
+      
       return false;
     }
   });
@@ -39,7 +39,7 @@ export function SilentPingProvider({ children }: { children: React.ReactNode }) 
     try {
       localStorage.setItem('silentPingEnabled', JSON.stringify(isEnabled));
     } catch (error) {
-      console.error('[SilentPing] Error saving to localStorage:', error);
+      
     }
   }, [isEnabled]);
 
@@ -78,7 +78,7 @@ export function SilentPingProvider({ children }: { children: React.ReactNode }) 
           
           // If it's been less than 12 hours since the last notification, don't show another
           if (hoursSinceLastPing < 12) {
-            console.log('[SilentPing] Last ping was less than 12 hours ago, skipping');
+            
             return false;
           }
         }
@@ -86,7 +86,7 @@ export function SilentPingProvider({ children }: { children: React.ReactNode }) 
         // If we've decided to show a notification, update the timestamp
         return true;
       } catch (error) {
-        console.error('[SilentPing] Error checking last notification time:', error);
+        
         return true; // Default to allowing notification if there's an error
       }
     };
@@ -145,7 +145,7 @@ export function SilentPingProvider({ children }: { children: React.ReactNode }) 
           localStorage.setItem('lastSilentPingTime', currentTimeMs.toString());
         }
       } catch (error) {
-        console.error('[SilentPing] Error in user action listener:', error);
+        
       }
     };
     

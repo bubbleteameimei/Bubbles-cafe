@@ -54,30 +54,38 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
   
   // Handle animation completion from loading screen
   const handleAnimationComplete = useCallback(() => {
-    // Loading animation has completed, update state
     setIsLoading(false);
+    setShowLoadingScreen(false);
     
-    // Update session storage
-    try {
-      sessionStorage.removeItem('app_loading');
-    } catch (e) {
-      // Ignore storage errors
+    // Re-enable scrolling after animation completes
+    document.body.style.overflow = 'auto';
+    
+    // Remove the loading state from session storage
+    sessionStorage.removeItem('loadingActive');
+  }, []);
+
+  const setLoading = useCallback((loading: boolean, message?: string) => {
+    // Prevent duplicate loading screen triggers
+    if (loading && showLoadingScreen) {
+      return;
     }
     
-    console.log('[LoadingProvider] Animation complete');
-    console.log('[LoadingProvider] Scroll re-enabled after animation');
+    if (loading) {
+      sessionStorage.setItem('loadingActive', 'true');
+    }
     
-    // Allow new loading actions after a longer delay to prevent multiple screens
-    setTimeout(() => {
-      preventRapidShowRef.current = false;
-    }, PREVENT_RAPID_SHOW_DURATION); // Increased from 300ms to 1000ms
-  }, []);
+    if (message) {
+      setLoadingMessage(message);
+    }
+    
+    setIsLoading(loading);
+    setShowLoadingScreen(loading);
+  }, [showLoadingScreen]);
   
   // Show loading screen with smart prevention of multiple triggers
   const showLoading = useCallback((_newMessage?: string) => {
     // Check if we're already loading or recently prevented loading
     if (isLoading || preventRapidShowRef.current) {
-      console.log('[LoadingProvider] Prevented duplicate loading screen trigger');
       return;
     }
     
@@ -92,7 +100,6 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     // Set storage state for persistence
     try {
       sessionStorage.setItem('app_loading', 'true');
-      console.log('[LoadingProvider] Set loading state in session storage');
     } catch (e) {
       // Ignore storage errors
     }
@@ -141,7 +148,6 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
   // Update loading message - simplified without setMessage
   const setLoadingMessage = useCallback((newMessage: string) => {
     // Message handling simplified for now
-    console.log('[LoadingProvider] Loading message:', newMessage);
   }, []);
 
 

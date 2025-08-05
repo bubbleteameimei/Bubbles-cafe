@@ -80,7 +80,7 @@ const SimpleThemeToggle: React.FC<{ className?: string }> = ({ className }) => {
     localStorage.setItem('theme', theme);
     setCurrentTheme(theme);
     
-    console.log(`Theme switched to: ${theme}`);
+    
   };
 
   const currentThemeOption = themeOptions.find(option => option.value === currentTheme) || themeOptions[0];

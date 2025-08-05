@@ -61,7 +61,7 @@ export default function EmailServiceTest() {
       const data = await response.json();
       setStatus(data);
     } catch (error: any) {
-      console.error('Error fetching email status:', error);
+      
       toast({
         title: 'Error',
         description: `Failed to fetch email service status: ${error.message}`,
@@ -117,7 +117,7 @@ export default function EmailServiceTest() {
       // Refresh status after sending
       fetchEmailStatus();
     } catch (error: any) {
-      console.error('Error sending test email:', error);
+      
       toast({
         title: 'Email Sending Failed',
         description: error.message,

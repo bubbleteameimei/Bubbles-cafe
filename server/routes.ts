@@ -178,7 +178,7 @@ export function registerRoutes(app: Express): Server {
   // Test search endpoint to isolate issues
   app.get("/api/test-search", async (req: Request, res: Response) => {
     try {
-      console.log('[TestSearch] Hit test search endpoint');
+      
       const query = req.query.q as string;
       
       if (!query) {
@@ -186,7 +186,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       const allPosts = await db.select().from(posts);
-      console.log('[TestSearch] Found', allPosts.length, 'posts');
+      
 
       const results = allPosts
         .filter(post => {
@@ -202,7 +202,7 @@ export function registerRoutes(app: Express): Server {
           url: `/reader/${post.id}`
         }));
 
-      console.log('[TestSearch] Returning', results.length, 'results');
+      
       return res.json({ results, query, total: results.length });
 
     } catch (error) {
@@ -309,7 +309,7 @@ export function registerRoutes(app: Express): Server {
   
   // Mock data endpoints for temporary use while database is being fixed
   app.get("/api/mock/recent-posts", (_req: Request, res: Response) => {
-    console.log("[DEBUG] Using mock data for recent posts");
+    
     res.json([
       {
         id: 101,
@@ -345,7 +345,7 @@ export function registerRoutes(app: Express): Server {
   });
   
   app.get("/api/mock/recommendations", (_req: Request, res: Response) => {
-    console.log("[DEBUG] Using mock data for recommendations");
+    
     res.json([
       {
         id: 104,
@@ -580,14 +580,14 @@ export function registerRoutes(app: Express): Server {
               // Use the getUser function that is defined in the storage.ts file
               author = await storage.getUser(post.authorId);
             } catch (error) {
-              console.log(`[Community Posts] Author not found for post ${post.id}, using null`);
+              
             }
           }
           
           // Only include posts that are true community posts and not admin posts
           // Double-check in case the database query didn't filter properly
           if (metadata && (metadata as any).isAdminPost === true) {
-            console.log(`[Community Posts] Filtering out admin post: ${post.id}`);
+            
             return null; // This post will be filtered out below
           }
           
@@ -649,7 +649,7 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/posts/community/:slug", async (req, res) => {
     try {
       const { slug } = req.params;
-      console.log(`[GET /api/posts/community/${slug}] Fetching community post by slug`);
+      
       
       // Fetch the post with the given slug
       const post = await storage.getPost(slug);
@@ -664,7 +664,7 @@ export function registerRoutes(app: Express): Server {
       const isCommunityPost = (metadata as any)?.isCommunityPost === true;
       
       if (!isCommunityPost) {
-        console.log(`[GET /api/posts/community/${slug}] Post found but is not a community post`);
+        
         return res.status(404).json({ message: "Community post not found" });
       }
       
@@ -674,7 +674,7 @@ export function registerRoutes(app: Express): Server {
         try {
           author = await storage.getUser(post.authorId);
         } catch (error) {
-          console.log(`[GET /api/posts/community/${slug}] Author not found, using default`);
+          
         }
       }
       
@@ -712,13 +712,13 @@ export function registerRoutes(app: Express): Server {
     try {
       // Check if user is admin
       if (!req.user?.id) {
-        console.log('[GET /api/posts/admin/themes] No user ID in request:', req.user);
+        
         return res.status(401).json({ error: 'Unauthorized' });
       }
       
       // The isAuthenticated middleware already confirms authentication, just check admin status
       if (!req.user.isAdmin) {
-        console.log('[GET /api/posts/admin/themes] User not admin:', req.user.id);
+        
         return res.status(403).json({ error: 'Forbidden' });
       }
       
@@ -762,7 +762,7 @@ export function registerRoutes(app: Express): Server {
         };
       });
       
-      console.log('[GET /api/posts/admin/themes] Retrieved posts for theme management:', transformedPosts.length);
+      
       res.json(transformedPosts);
     } catch (error) {
       console.error('[GET /api/posts/admin/themes] Error fetching admin posts for theme management:', error);
@@ -794,17 +794,17 @@ export function registerRoutes(app: Express): Server {
       
       // Check if user is admin
       if (!req.user?.id) {
-        console.log('[PATCH /api/posts/:id/theme] No user ID in request:', req.user);
+        
         return res.status(401).json({ error: 'Unauthorized' });
       }
       
       // The isAuthenticated middleware already confirms authentication, just check admin status
       if (!req.user.isAdmin) {
-        console.log('[PATCH /api/posts/:id/theme] User not admin:', req.user.id);
+        
         return res.status(403).json({ error: 'Forbidden' });
       }
       
-      console.log(`[PATCH /api/posts/:id/theme] Updating post ${postId} theme to: ${actualThemeCategory}, icon: ${actualIcon || 'default'}`);
+      
       
       // Create update data with the new schema fields
       const updateData: any = { 
@@ -885,7 +885,7 @@ export function registerRoutes(app: Express): Server {
       const isAdminPost = req.query.isAdminPost === 'true' ? true : 
                          req.query.isAdminPost === 'false' ? false : undefined;
 
-      console.log('[GET /api/posts] Request params:', { page, limit, filter, isAdminPost });
+      
 
       if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
         return res.status(400).json({
@@ -906,12 +906,12 @@ export function registerRoutes(app: Express): Server {
         filterOptions.isAdminPost = isAdminPost;
       }
       
-      console.log('[GET /api/posts] Using filter options:', filterOptions);
+      
       
       // Pass the filter options to storage.getPosts with increased limit
       // This ensures all WordPress posts are retrieved
       const result = await storage.getPosts(page, limit, filterOptions);
-      console.log('[GET /api/posts] Retrieved posts count:', result.posts.length);
+      
 
       // Simplified filtering logic to ensure proper visibility
       let filteredPosts = result.posts;
@@ -925,7 +925,7 @@ export function registerRoutes(app: Express): Server {
         });
       }
 
-      console.log('[GET /api/posts] Filtered posts count:', filteredPosts.length);
+      
 
       const etag = crypto
         .createHash('md5')
@@ -975,14 +975,14 @@ export function registerRoutes(app: Express): Server {
         themeCategory: themeCategory // Also set in the main object for column
       });
 
-      console.log('Creating new post:', postData);
+      
       const post = await storage.createPost(postData);
 
       if (!post) {
         throw new Error("Failed to create post");
       }
 
-      console.log('Post created successfully:', post);
+      
       res.status(201).json(post);
     } catch (error) {
       console.error("Error creating post:", error);
@@ -1015,22 +1015,22 @@ export function registerRoutes(app: Express): Server {
     try {
       const postId = parseInt(req.params.id);
       if (isNaN(postId)) {
-        console.log('[Delete Post] Invalid post ID:', req.params.id);
+        
         return res.status(400).json({ message: "Invalid post ID" });
       }
 
-      console.log(`[Delete Post] Attempting to delete post with ID: ${postId}`);
+      
 
       // First check if post exists
       const post = await storage.getPostById(postId);
       if (!post) {
-        console.log(`[Delete Post] Post ${postId} not found`);
+        
         return res.status(404).json({ message: "Post not found" });
       }
 
       // Delete the post
       const result = await storage.deletePost(postId);
-      console.log(`[Delete Post] Post ${postId} deleted successfully:`, result);
+      
       res.json({ message: "Post deleted successfully", postId });
     } catch (error) {
       console.error("[Delete Post] Error:", error);
@@ -1056,18 +1056,18 @@ export function registerRoutes(app: Express): Server {
   adminCleanupRouter.delete("/wordpress-post-272", async (_req: Request, res: Response) => {
     try {
       const postId = 272; // Hardcoded ID for the WordPress placeholder post
-      console.log(`[Delete WordPress Post] Attempting to delete WordPress placeholder post with ID: ${postId}`);
+      
 
       // First check if post exists
       const post = await storage.getPostById(postId);
       if (!post) {
-        console.log(`[Delete WordPress Post] Post ${postId} not found`);
+        
         return res.status(404).json({ message: "WordPress placeholder post not found" });
       }
 
       // Delete the post
       const result = await storage.deletePost(postId);
-      console.log(`[Delete WordPress Post] WordPress placeholder post with ID ${postId} deleted successfully:`, result);
+      
       res.json({ 
         message: "WordPress placeholder post deleted successfully", 
         postId,
@@ -1117,20 +1117,20 @@ export function registerRoutes(app: Express): Server {
       if (/^\d+$/.test(slugOrId)) {
         // It's a numeric ID
         const id = parseInt(slugOrId, 10);
-        console.log(`[GET /api/posts/:slugOrId] Looking up post by ID: ${id}`);
+        
         post = await storage.getPostById(id);
       } else {
         // It's a slug
-        console.log(`[GET /api/posts/:slugOrId] Looking up post by slug: ${slugOrId}`);
+        
         post = await storage.getPost(slugOrId);
       }
       
       if (!post) {
-        console.log(`[GET /api/posts/:slugOrId] Post not found: ${slugOrId}`);
+        
         return res.status(404).json({ message: "Post not found" });
       }
 
-      console.log(`[GET /api/posts/:slugOrId] Found post: ${post.title} (ID: ${post.id})`);
+      
 
       // Set ETag for caching
       const etag = crypto
@@ -1172,15 +1172,15 @@ export function registerRoutes(app: Express): Server {
       }
       
       if (!post) {
-        console.log(`[GET /api/posts/:postId/comments] Post not found: ${postId}`);
+        
         return res.status(404).json({ message: "Post not found" });
       }
       
-      console.log(`[GET /api/posts/:postId/comments] Found post: ${post.title} (ID: ${post.id})`);
+      
       
       // Use the numeric post ID from the post record
       const comments = await storage.getComments(post.id);
-      console.log(`[GET /api/posts/:postId/comments] Retrieved ${comments?.length || 0} comments for post ID: ${post.id}`);
+      
       res.json(comments || []);
     } catch (error) {
       console.error("Error in getComments:", error);
@@ -1221,15 +1221,15 @@ export function registerRoutes(app: Express): Server {
     try {
       const commentId = parseInt(req.params.id);
       if (isNaN(commentId)) {
-        console.log('[Delete Comment] Invalid comment ID:', req.params.id);
+        
         return res.status(400).json({ message: "Invalid comment ID" });
       }
 
-      console.log(`[Delete Comment] Attempting to delete comment with ID: ${commentId}`);
+      
 
       // Delete the comment
       const result = await storage.deleteComment(commentId);
-      console.log(`[Delete Comment] Comment ${commentId} deleted successfully:`, result);
+      
       res.json({ message: "Comment deleted successfully", commentId });
     } catch (error) {
       console.error("[Delete Comment] Error:", error);
@@ -1249,7 +1249,7 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/comments/pending", isAuthenticated, async (_req: Request, res: Response) => {
     try {
       const comments = await storage.getPendingComments();
-      console.log('Fetched pending comments:', comments);
+      
       res.json(comments);
     } catch (error) {
       console.error("Error fetching pending comments:", error);
@@ -1270,14 +1270,14 @@ export function registerRoutes(app: Express): Server {
         // Verify the post exists
         const post = await storage.getPostById(postId);
         if (!post) {
-          console.log(`[POST /api/posts/:postId/comments] Post not found with ID: ${postId}`);
+          
           return res.status(404).json({ message: "Post not found" });
         }
       } else {
         // It's a slug, we need to find the corresponding post ID
         const post = await storage.getPost(postIdParam);
         if (!post) {
-          console.log(`[POST /api/posts/:postId/comments] Post not found with slug: ${postIdParam}`);
+          
           return res.status(404).json({ message: "Post not found" });
         }
         postId = post.id;
@@ -1347,7 +1347,7 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ error: "Invalid post ID", likesCount: 0, dislikesCount: 0 });
       }
       
-      console.log(`[Reaction] Processing for post ${postId}, isLike: ${isLike}`);
+      
       
       // Get the current post to update its metadata as well
       const post = await storage.getPostById(postId);
@@ -1391,7 +1391,7 @@ export function registerRoutes(app: Express): Server {
         dislikesCount: Number(counts.dislikesCount || 0)
       };
       
-      console.log(`[Reaction] Response for post ${postId}:`, response);
+      
       res.json(response);
       
     } catch (error) {
@@ -1434,7 +1434,7 @@ export function registerRoutes(app: Express): Server {
         try {
           const post = await storage.getPostById(postId);
           if (!post) {
-            console.log(`[POST /api/posts/:postId/reaction] Post not found with ID: ${postId}`);
+            
             return res.status(404).json({ 
               message: "Post not found",
               likesCount: 0,
@@ -1454,7 +1454,7 @@ export function registerRoutes(app: Express): Server {
         try {
           const post = await storage.getPost(postIdParam);
           if (!post) {
-            console.log(`[POST /api/posts/:postId/reaction] Post not found with slug: ${postIdParam}`);
+            
             return res.status(404).json({ 
               message: "Post not found",
               likesCount: 0,
@@ -1474,7 +1474,7 @@ export function registerRoutes(app: Express): Server {
       
       const { isLike } = req.body;
 
-      console.log(`[POST /api/posts/${postId}/reaction] Received reaction:`, { isLike, userId: req.user?.id });
+      
 
       // For logged-in users, use their ID
       if (req.user?.id) {
@@ -1483,14 +1483,14 @@ export function registerRoutes(app: Express): Server {
 
         if (existingLike) {
           if (existingLike.isLike === isLike) {
-            console.log(`[Reaction] Removing ${isLike ? 'like' : 'dislike'} for post ${postId}`);
+            
             await storage.removePostLike(postId, userId);
           } else {
-            console.log(`[Reaction] Changing from ${existingLike.isLike ? 'like' : 'dislike'} to ${isLike ? 'like' : 'dislike'} for post ${postId}`);
+            
             await storage.updatePostLike(postId, userId, isLike);
           }
         } else {
-          console.log(`[Reaction] Creating new ${isLike ? 'like' : 'dislike'} for post ${postId}`);
+          
           await storage.createPostLike(postId, userId, isLike);
         }
       } else {
@@ -1505,11 +1505,11 @@ export function registerRoutes(app: Express): Server {
         if (sessionLikes[postKey] === isLike) {
           // Remove like if same button clicked
           delete sessionLikes[postKey];
-          console.log(`[Reaction] Anonymous user removed ${isLike ? 'like' : 'dislike'} for post ${postId}`);
+          
         } else {
           // Set or update like
           sessionLikes[postKey] = isLike;
-          console.log(`[Reaction] Anonymous user ${isLike ? 'liked' : 'disliked'} post ${postId}`);
+          
         }
       }
 
@@ -1525,7 +1525,7 @@ export function registerRoutes(app: Express): Server {
         // This ensures index and reader pages show identical counts
         // The like/dislike data is still tracked in the session for UI state
         
-        console.log(`[Reaction] Updated counts for post ${postId}:`, counts);
+        
         res.json({
           ...counts,
           message: req.user?.id
@@ -1580,7 +1580,7 @@ export function registerRoutes(app: Express): Server {
         try {
           const post = await storage.getPostById(postId);
           if (!post) {
-            console.log(`[GET /api/posts/:postId/reactions] Post not found with ID: ${postId}`);
+            
             return res.status(404).json({ 
               message: "Post not found",
               likesCount: 0,
@@ -1600,7 +1600,7 @@ export function registerRoutes(app: Express): Server {
         try {
           const post = await storage.getPost(postIdParam);
           if (!post) {
-            console.log(`[GET /api/posts/:postId/reactions] Post not found with slug: ${postIdParam}`);
+            
             return res.status(404).json({ 
               message: "Post not found",
               likesCount: 0,
@@ -1618,7 +1618,7 @@ export function registerRoutes(app: Express): Server {
         }
       }
       
-      console.log(`[GET /api/posts/${postId}/reactions] Fetching reaction counts`);
+      
 
       try {
         const dbCounts = await storage.getPostLikeCounts(postId);
@@ -1631,7 +1631,7 @@ export function registerRoutes(app: Express): Server {
         // This ensures index and reader pages show identical counts
         // The like/dislike data is still tracked in the session for UI state
         
-        console.log(`[Reaction] Current counts for post ${postId}:`, counts);
+        
         res.json(counts);
       } catch (error) {
         console.error(`[Reaction] Error fetching like counts for post ${postId}:`, error);
@@ -2171,7 +2171,7 @@ export function registerRoutes(app: Express): Server {
   // Reading time analytics endpoint for enhanced visualizations
   // Direct recommendations endpoint in main routes file for reliability
   app.get("/api/recommendations/direct", async (req: Request, res: Response) => {
-    console.log("Direct recommendations endpoint called");
+    
     try {
       const limit = Number(req.query.limit) || 3;
       
@@ -2186,7 +2186,7 @@ export function registerRoutes(app: Express): Server {
         
         // Handle the result properly
         const resultArray = Array.isArray(result) ? result : (result as any).rows || [];
-        console.log(`Direct recommendations found ${resultArray.length} posts`);
+        
         return res.json(resultArray);
       } catch (error) {
         console.error("Direct recommendations database error:", error);
@@ -2204,7 +2204,7 @@ export function registerRoutes(app: Express): Server {
           .orderBy(desc(posts.createdAt))
           .limit(limit);
           
-          console.log(`Fallback found ${simplePosts.length} posts`);
+          
           return res.json(simplePosts);
         } catch (fallbackError) {
           console.error("Fallback recommendations error:", fallbackError);
@@ -2224,8 +2224,8 @@ export function registerRoutes(app: Express): Server {
   // Recent posts endpoint with enhanced caching
   app.get("/api/posts/recent", apiCache(10 * 60 * 1000), async (req, res) => {
     try {
-      console.log("Recent posts endpoint called:", req.url);
-      console.log("Request query params:", req.query);
+      
+      
       
       const limit = Number(req.query.limit) || 10;
       
@@ -2236,7 +2236,7 @@ export function registerRoutes(app: Express): Server {
       } catch (error) {
         console.error("Error fetching recent posts from database:", error);
         // Only fall back to sample data if database access fails
-        console.log("Database error - using fallback post data");
+        
         return res.json([
           {
             id: 101,
@@ -2283,7 +2283,7 @@ export function registerRoutes(app: Express): Server {
         .orderBy(desc(posts.createdAt))
         .limit(limit);
         
-        console.log(`Found ${recentPosts.length} recent posts`);
+        
         
         // Return simplified metadata for display
         const result = recentPosts.map((post: any) => ({
@@ -2297,7 +2297,7 @@ export function registerRoutes(app: Express): Server {
         return res.json(result);
       } catch (dbError) {
         console.error("Database error fetching recent posts:", dbError);
-        console.log("Falling back to mock data due to database error");
+        
         
         // If database fails, return sample posts
         return res.json([
@@ -2344,17 +2344,17 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Posts recommendations endpoint for related stories
-  console.log("DEBUG - Registering endpoint /api/posts/recommendations");
+  
   // Add a debug version of the recommendations endpoint
   app.get("/api/posts/recommendations", async (req: Request, res: Response) => {
-    console.log("DEBUG - Routes.ts: Posts recommendations endpoint called:", req.url);
-    console.log("DEBUG - Routes.ts: Request query params:", req.query);
+    
+    
     
     // Parse request parameters
     const postId = req.query.postId ? Number(req.query.postId) : null;
     const limit = Number(req.query.limit) || 3;
     
-    console.log(`DEBUG - Routes.ts: Fetching recommendations for postId: ${postId}, limit: ${limit}`);
+    
     
     try {
       // Attempt to get recommendations from database
@@ -2363,7 +2363,7 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error fetching recommendations from database:", error);
       // Only fall back to sample data if database access fails
-      console.log("Database error - using fallback recommendation data");
+      
       return res.json([
         {
           id: 104,
@@ -2407,21 +2407,21 @@ export function registerRoutes(app: Express): Server {
           });
           
           if (!result) {
-            console.log(`DEBUG - Routes.ts: Post with id ${postId} not found`);
+            
             return res.status(404).json({ message: "Post not found" });
           }
           
-          console.log(`DEBUG - Routes.ts: Post with id ${postId} found:`, result.title);
+          
         } catch (dbError) {
           console.error("Database error verifying post:", dbError);
-          console.log("Continuing with recommendations anyway");
+          
           // Continue execution even if post verification fails
         }
       }
       
       try {
         // If no postId provided or it's invalid, return recent posts
-        console.log('DEBUG - Routes.ts: Returning recent posts');
+        
         const recentPosts = await db.select({
           id: posts.id,
           title: posts.title,
@@ -2432,7 +2432,7 @@ export function registerRoutes(app: Express): Server {
         .orderBy(desc(posts.createdAt))
         .limit(limit);
         
-        console.log(`DEBUG - Routes.ts: Found ${recentPosts.length} recent posts`);
+        
         
         // Return simplified metadata for display
         const result = recentPosts.map((post: any) => ({
@@ -2446,7 +2446,7 @@ export function registerRoutes(app: Express): Server {
         return res.json(result);
       } catch (dbError) {
         console.error("Database error fetching recommendations:", dbError);
-        console.log("Falling back to mock data due to database error");
+        
         
         // If database fails, return mock recommendations
         return res.json([
@@ -2998,7 +2998,7 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/contact", async (req: Request, res: Response) => {
     try {
       const { name, email, message, subject = 'Contact Form Message', metadata = {} } = req.body;
-      console.log('Received contact form submission from:', name);
+      
 
       // Input validation
       if (!name || !email || !message) {
@@ -3015,7 +3015,7 @@ export function registerRoutes(app: Express): Server {
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        console.log('Invalid email format:', email);
+        
         return res.status(400).json({
           message: "Invalid email format",
           details: { email: "Please enter a valid email address" }
@@ -3040,7 +3040,7 @@ export function registerRoutes(app: Express): Server {
         timestamp: new Date().toISOString()
       };
 
-      console.log('Saving message to database...');
+      
       // Save to database first
       const savedMessage = await storage.createContactMessage({
         name,
@@ -3049,12 +3049,12 @@ export function registerRoutes(app: Express): Server {
         subject,
         metadata: enhancedMetadata
       });
-      console.log('Message saved successfully with ID:', savedMessage.id);
+      
 
       // Attempt to send email notification
       let emailSent = false;
       try {
-        console.log('Attempting to send email notification...');
+        
         
         // Format email differently based on whether to show email
         const displayEmail = hideEmail ? '[Email Hidden by User]' : email;
@@ -3098,9 +3098,9 @@ Message ID: ${savedMessage.id}
 
         // Try sending email
         try {
-          console.log('Sending email via Gmail transport...');
+          
           await transporter.sendMail(mailOptions);
-          console.log('Email notification sent successfully via Gmail');
+          
           emailSent = true;
         } catch (emailError) {
           console.error('Failed to send email:', emailError);

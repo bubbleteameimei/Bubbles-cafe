@@ -23,7 +23,7 @@ export class WordPressAPISync {
   private readonly batchSize = 20;
 
   async syncAllPosts(): Promise<{ success: boolean; synced: number; errors: any[] }> {
-    console.log('[WordPress Sync] Starting comprehensive sync...');
+    
     
     let synced = 0;
     let page = 1;
@@ -33,7 +33,7 @@ export class WordPressAPISync {
     // Get or create admin user for WordPress posts
     let adminUser = await db.select().from(users).where(eq(users.email, 'admin@storytelling.com')).limit(1);
     if (adminUser.length === 0) {
-      console.log('[WordPress Sync] Admin user not found, creating...');
+      
       const [newAdmin] = await db.insert(users).values({
         username: 'admin',
         email: 'admin@storytelling.com',
@@ -51,7 +51,7 @@ export class WordPressAPISync {
 
     while (hasMore) {
       try {
-        console.log(`[WordPress Sync] Fetching page ${page}...`);
+        
         
         const response = await fetch(
           `${this.baseUrl}/posts?page=${page}&per_page=${this.batchSize}&status=publish&_fields=id,date,slug,title,content,excerpt,author,categories,tags,featured_media,status,type,modified`
@@ -73,7 +73,7 @@ export class WordPressAPISync {
           try {
             await this.syncSinglePost(wpPost, adminUserId);
             synced++;
-            console.log(`[WordPress Sync] Synced post: ${wpPost.title.rendered}`);
+            
           } catch (error) {
             console.error(`[WordPress Sync] Error syncing post ${wpPost.id}:`, error);
             errors.push({ postId: wpPost.id, error: (error as Error).message });
@@ -95,7 +95,7 @@ export class WordPressAPISync {
       }
     }
 
-    console.log(`[WordPress Sync] Completed. Synced ${synced} posts with ${errors.length} errors.`);
+    
     
     return {
       success: errors.length === 0,

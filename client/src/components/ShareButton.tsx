@@ -39,9 +39,9 @@ export const ShareButton = ({ className }: ShareButtonProps) => {
       if (navigator.share) {
         try {
           await navigator.share(shareData);
-          console.log("Content shared successfully via Web Share API");
+          
         } catch (error) {
-          console.error("Web Share API failed:", error);
+          
           
           // Don't show error for user cancellations
           if ((error as Error).name !== "AbortError") {
@@ -55,11 +55,11 @@ export const ShareButton = ({ className }: ShareButtonProps) => {
         }
       } else {
         // If Web Share API not available, open the dialog
-        console.log("Web Share API not available, using fallback dialog");
+        
         setIsModalOpen(true);
       }
     } catch (err) {
-      console.error("Error in share handler:", err);
+      
       // Always ensure the dialog opens if any unexpected error occurs
       setIsModalOpen(true);
     }
@@ -73,7 +73,7 @@ export const ShareButton = ({ className }: ShareButtonProps) => {
       });
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Failed to copy link:", error);
+      
       // Fallback for browsers that don't support clipboard API
       const textArea = document.createElement("textarea");
       textArea.value = window.location.href;
@@ -93,7 +93,7 @@ export const ShareButton = ({ className }: ShareButtonProps) => {
           throw new Error("Copy command failed");
         }
       } catch (err) {
-        console.error("Fallback copy failed:", err);
+        
         toast({
           description: "Could not copy link. Please try selecting and copying manually.",
           variant: "destructive"

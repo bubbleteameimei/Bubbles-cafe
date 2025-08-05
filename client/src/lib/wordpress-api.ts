@@ -83,7 +83,7 @@ const cacheUtils = {
         timestamp: Date.now()
       };
       localStorage.setItem(key, JSON.stringify(cacheItem));
-      console.log(`[WordPress] Cache saved: ${key}`);
+      
     } catch (error) {
       console.warn(`[WordPress] Failed to save cache: ${error}`);
     }
@@ -99,12 +99,12 @@ const cacheUtils = {
       
       // Check if cache is still valid
       if (now - cacheItem.timestamp > CACHE_DURATION_MS) {
-        console.log(`[WordPress] Cache expired: ${key}`);
+        
         localStorage.removeItem(key);
         return null;
       }
       
-      console.log(`[WordPress] Cache hit: ${key}`);
+      
       return cacheItem.data;
     } catch (error) {
       console.warn(`[WordPress] Failed to retrieve cache: ${error}`);
@@ -120,7 +120,7 @@ const cacheUtils = {
         details: error
       }));
     } catch (e) {
-      console.error(`[WordPress] Failed to save error details: ${e}`);
+      
     }
   },
   
@@ -141,8 +141,8 @@ function safeJsonParse(text: string): any {
   try {
     return JSON.parse(text);
   } catch (error) {
-    console.error(`[WordPress] JSON parse error: ${error}`);
-    console.log(`[WordPress] Problematic JSON content: ${text.substring(0, 100)}...`);
+    
+    
     throw new Error('Invalid JSON response');
   }
 }
@@ -151,7 +151,7 @@ function safeJsonParse(text: string): any {
  * Fetch posts from WordPress API with enhanced reliability
  */
 export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
-  console.log(`[WordPress] Fetching posts with options:`, options);
+  
   
   const {
     page = 1,
@@ -171,7 +171,7 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
     const cachedResult = cacheUtils.getFromCache(cacheKey);
     
     if (cachedResult) {
-      console.log(`[WordPress] Using cached data for page ${page}`);
+      
       return cachedResult;
     }
   }
@@ -183,7 +183,7 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
                             lastErrorObj.message.includes('fatal');
                             
   if (isFatalErrorRecent) {
-    console.log(`[WordPress] Skipping API call due to recent fatal error: ${lastErrorObj.message}`);
+    
     return await fallbackToServerAPI(options);
   }
   
@@ -194,7 +194,7 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
   while (retryCount <= maxRetries) {
     try {
       if (retryCount > 0) {
-        console.log(`[WordPress] Retry attempt ${retryCount}/${maxRetries}`);
+        
       }
       
       // Build query parameters
@@ -227,7 +227,7 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
       
       // Construct the API URL
       const apiUrl = `${WORDPRESS_API_BASE}/posts?${params.toString()}`;
-      console.log(`[WordPress] Request URL: ${apiUrl}`);
+      
       
       // Set up timeout handling with optimized duration
       const controller = new AbortController();
@@ -252,14 +252,14 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
         
         // Check for HTTP errors
         if (!response.ok) {
-          console.error(`[WordPress] HTTP Error: ${response.status} ${response.statusText}`);
+          
           throw new Error(`API returned status ${response.status}`);
         }
         
         // Ensure we got JSON
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
-          console.error(`[WordPress] Wrong content type: ${contentType}`);
+          
           throw new Error(`API returned non-JSON content type: ${contentType}`);
         }
         
@@ -267,18 +267,18 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
         const responseText = await response.text();
         
         // Log the first part of the response for debugging
-        console.log(`[WordPress] Response preview: ${responseText.substring(0, 100)}...`);
+        
         
         // Parse JSON with error handling
         const postsData = safeJsonParse(responseText);
         
         // Verify array structure
         if (!Array.isArray(postsData)) {
-          console.error(`[WordPress] Invalid response format (not an array):`, typeof postsData);
+          
           throw new Error('API returned non-array response');
         }
         
-        console.log(`[WordPress] Successfully fetched ${postsData.length} posts`);
+        
         
         // Process and validate each post
         const validatedPosts = postsData.map(post => {
@@ -336,7 +336,7 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
         
         // Handle timeout errors specifically with better user feedback
         if (fetchError.name === 'AbortError') {
-          console.error(`[WordPress] Request timed out after 10 seconds`);
+          
           // Store the timeout status for UI reporting
           localStorage.setItem('wp_sync_status', JSON.stringify({
             status: 'error',
@@ -352,7 +352,7 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
       }
     } catch (error: any) {
       currentError = error;
-      console.error(`[WordPress] Error attempt ${retryCount}:`, error);
+      
       
       // Save error details for future reference
       cacheUtils.saveError(error);
@@ -363,14 +363,14 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
       // If we have retries left, wait before trying again (exponential backoff)
       if (retryCount <= maxRetries) {
         const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 8000);
-        console.log(`[WordPress] Waiting ${delay}ms before retry`);
+        
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
   
   // If we've exhausted retries, try the server API as fallback
-  console.log(`[WordPress] Exhausted ${maxRetries} retries, using fallback`);
+  
   
   // Store the retries exhausted status for UI reporting
   localStorage.setItem('wp_sync_status', JSON.stringify({
@@ -389,7 +389,7 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
  * Now enhanced with local sync fallback support
  */
 async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
-  console.log(`[WordPress] Attempting fallback to server API`);
+  
   
   try {
     // First check for locally synced posts from auto-sync if available
@@ -398,7 +398,7 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
       const localSyncedPosts = checkLocalSyncedPosts();
       
       if (localSyncedPosts && localSyncedPosts.posts.length > 0) {
-        console.log(`[WordPress] Using ${localSyncedPosts.posts.length} locally synced posts as fallback`);
+        
         
         // If we need to filter or paginate the sync posts, do it here
         const { page = 1, perPage = 10 } = options;
@@ -427,7 +427,7 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
       fallbackUrl = `${SERVER_FALLBACK_API}/${options.slug}`;
     }
     
-    console.log(`[WordPress] Fallback URL: ${fallbackUrl}`);
+    
     
     // Fetch from server API
     const response = await fetch(fallbackUrl);
@@ -475,13 +475,13 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
       };
     }
     
-    console.log(`[WordPress] Fallback successful, retrieved ${formattedResult.posts.length} posts`);
+    
     return formattedResult;
   } catch (fallbackError) {
     // Log both the original and fallback errors
-    console.error('[WordPress] Both primary and fallback fetches failed:');
-    console.error('- Original error:', error);
-    console.error('- Fallback error:', fallbackError);
+    
+    
+    
     
     // Store the complete failure status for UI reporting
     localStorage.setItem('wp_sync_status', JSON.stringify({
@@ -513,7 +513,7 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
  * Now enhanced with local sync lookup capabilities
  */
 export async function fetchWordPressPostBySlug(slug: string) {
-  console.log(`[WordPress] Fetching post with slug: ${slug}`);
+  
   
   try {
     // First try to find the post in local synced posts for immediate display
@@ -523,7 +523,7 @@ export async function fetchWordPressPostBySlug(slug: string) {
       const localPost = localSyncedPosts.posts.find((post: WordPressPost) => post.slug === slug);
       
       if (localPost) {
-        console.log(`[WordPress] Found post "${slug}" in local sync storage`);
+        
         
         // We found it locally, but still attempt to refresh from API in background
         // This ensures we always try to get the latest version when possible
@@ -548,11 +548,11 @@ export async function fetchWordPressPostBySlug(slug: string) {
     });
     
     if (!result.posts || result.posts.length === 0) {
-      console.error(`[WordPress] Post not found: ${slug}`);
+      
       throw new Error(`Post not found with slug: ${slug}`);
     }
     
-    console.log(`[WordPress] Successfully retrieved post: ${slug}`);
+    
     return result.posts[0];
   } catch (error) {
     // Handle and format the error
@@ -648,7 +648,7 @@ export function getReadingTime(content: string): number {
  * - Handles network conditions gracefully
  */
 export async function checkWordPressApiStatus(): Promise<boolean> {
-  console.log('[WordPress] Checking API status');
+  
   
   // First check if we have a cached status that's recent (last 5 minutes)
   const cachedStatus = localStorage.getItem('wp_api_status');
@@ -659,7 +659,7 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
       const statusData = JSON.parse(cachedStatus);
       // If we have recent data (last 5 minutes), use it
       if (now - statusData.timestamp < 5 * 60 * 1000) {
-        console.log(`[WordPress] Using cached API status: ${statusData.available ? 'Available' : 'Unavailable'}`);
+        
         return statusData.available;
       }
     } catch (e) {
@@ -709,7 +709,7 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
             timestamp: now
           }));
           
-          console.log(`[WordPress] API status check: Available (via ${endpoint})`);
+          
           return true;
         }
       } catch (endpointError) {
@@ -790,7 +790,7 @@ export function checkLocalSyncedPosts() {
     // No timeout - posts will persist indefinitely
     // Just log how old they are for debugging purposes
     
-    console.log(`[WordPress] Found ${parsedData.posts.length} locally synced posts from ${Math.round(ageHours * 10) / 10}h ago`);
+    
     return {
       posts: parsedData.posts,
       totalPages: 1,
@@ -798,7 +798,7 @@ export function checkLocalSyncedPosts() {
       fromLocalSync: true
     };
   } catch (error) {
-    console.error('[WordPress] Error checking local synced posts:', error);
+    
     return null;
   }
 }
@@ -808,7 +808,7 @@ export function checkLocalSyncedPosts() {
  * Enhanced with better error handling, initialization, and local sync fallback
  */
 export function preloadWordPressPosts(): Promise<void> {
-  console.log('[WordPress] Starting background preload of posts');
+  
   
   // Return a promise that resolves when the preload is complete
   return new Promise((resolve, reject) => {
@@ -816,7 +816,7 @@ export function preloadWordPressPosts(): Promise<void> {
     const localSyncedPosts = checkLocalSyncedPosts();
     
     if (localSyncedPosts) {
-      console.log(`[WordPress] Using ${localSyncedPosts.posts.length} locally synced posts for quick initial load`);
+      
       resolve();
       
       // Still try to refresh from the API in the background
@@ -843,7 +843,7 @@ export function preloadWordPressPosts(): Promise<void> {
   // Helper function to refresh posts based on API availability
   function refreshInBackground(isAvailable: boolean) {
     if (!isAvailable) {
-      console.log('[WordPress] API unavailable, using fallback directly');
+      
       // Directly use server API to avoid unnecessary retries
       return fallbackToServerAPI({ perPage: 5 });
     }
@@ -855,7 +855,7 @@ export function preloadWordPressPosts(): Promise<void> {
       maxRetries: 0, // No retries for background refresh
       includeContent: false // Skip content for faster loading
     }).then(result => {
-      console.log(`[WordPress] Preloaded ${result.posts?.length || 0} posts successfully`);
+      
       return result;
     });
   }

@@ -30,7 +30,7 @@ export function usePreloading() {
     } catch (err) {
       setError(err as Error);
       setIsLoading(false);
-      console.error('[usePreloading] Error preloading route assets:', err);
+      
     }
   }, []);
   
@@ -57,7 +57,7 @@ export function usePreloading() {
     } catch (err) {
       setError(err as Error);
       setIsLoading(false);
-      console.error('[usePreloading] Error preloading assets:', err);
+      
     }
   }, []);
   
@@ -74,7 +74,7 @@ export function usePreloading() {
     } catch (err) {
       setError(err as Error);
       setIsLoading(false);
-      console.error('[usePreloading] Error preloading image:', err);
+      
     }
   }, []);
   
@@ -91,7 +91,7 @@ export function usePreloading() {
     } catch (err) {
       setError(err as Error);
       setIsLoading(false);
-      console.error('[usePreloading] Error preloading font:', err);
+      
     }
   }, []);
   
@@ -109,7 +109,7 @@ export function usePreloading() {
     } catch (err) {
       setError(err as Error);
       setIsLoading(false);
-      console.error('[usePreloading] Error preloading API data:', err);
+      
       throw err;
     }
   }, []);

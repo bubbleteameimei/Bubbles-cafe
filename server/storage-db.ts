@@ -1,34 +1,19 @@
 import { db } from "./db";
+import { eq, desc, and, or, sql, like, asc } from "drizzle-orm";
 import { 
   users, 
   posts, 
   comments, 
   sessions,
   resetTokens,
-  postLikes,
   bookmarks,
   analytics,
-  authorStats,
-  writingChallenges,
-  challengeEntries,
-  reportedContent,
-  authorTips,
-  activityLogs,
-  userProgress,
-  siteAnalytics,
-  userFeedback,
-  userPrivacySettings,
   contactMessages,
   newsletterSubscriptions,
   readingProgress,
   secretProgress,
-  commentReactions,
-  commentVotes,
-  contentProtection,
-  webhooks,
-  adminNotifications,
-  siteSettings,
-  performanceMetrics
+  authorStats,
+  userFeedback
 } from '@shared/schema';
 import type { 
   User, 
@@ -41,29 +26,16 @@ import type {
   InsertSession,
   ResetToken,
   InsertResetToken,
-  PostLike,
   ReadingProgress,
-  InsertProgress,
+  InsertReadingProgress,
   SecretProgress,
   InsertSecretProgress,
   ContactMessage,
   InsertContactMessage,
-  NewsletterSubscription,
-  InsertNewsletterSubscription,
-  AuthorStats,
-  WritingChallenge,
-  InsertWritingChallenge,
-  ChallengeEntry,
-  InsertChallengeEntry,
-  ReportedContent,
-  InsertReportedContent,
-  AuthorTip,
-  InsertAuthorTip,
-  Analytics,
   UserFeedback,
   InsertUserFeedback,
-  InsertBookmark,
-  Bookmark
+  Bookmark,
+  InsertBookmark
 } from '@shared/schema';
 
 import bcrypt from 'bcryptjs';

@@ -101,7 +101,7 @@ export default function ContentPage() {
       setIsDeleteDialogOpen(false);
       refetch();
     } catch (error) {
-      console.error("Failed to delete post:", error);
+      
       toast({
         title: "Error",
         description: "Failed to delete the post. Please try again.",
@@ -312,10 +312,9 @@ export default function ContentPage() {
           
           {selectedPost && (
             <PostEditor 
-              // @ts-ignore - post is defined in PostEditorProps
-              post={selectedPost} 
-              onClose={() => setIsEditDialogOpen(false)}
-              onSaveSuccess={handleSaveSuccess}
+              post={selectedPost}
+              onSave={handleSaveSuccess}
+              onCancel={() => setIsEditDialogOpen(false)}
             />
           )}
         </DialogContent>

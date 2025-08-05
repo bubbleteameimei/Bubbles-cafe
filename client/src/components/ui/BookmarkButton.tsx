@@ -65,7 +65,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
           return null;
         }
         // Log any other errors but don't throw to prevent breaking the UI
-        console.error('Error checking bookmark status:', error);
+        
         return null;
       }
     },
@@ -107,7 +107,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
       setTagsInput('');
     },
     onError: (error) => {
-      console.error('Bookmark creation error:', error);
+      
       const errorMessage = error instanceof Error 
         ? error.message 
         : 'Failed to add bookmark. Please try again.';
@@ -141,7 +141,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
       });
     },
     onError: (error) => {
-      console.error('Bookmark deletion error:', error);
+      
       const errorMessage = error instanceof Error 
         ? error.message 
         : 'Failed to remove bookmark. Please try again.';
@@ -487,7 +487,7 @@ export function useBookmarkPosition(postId: number) {
         });
       } catch (error) {
         // Log the error but don't throw it to prevent UI issues
-        console.error('Error updating bookmark position:', error);
+        
         // Return null instead of throwing to avoid breaking the reader experience
         return null;
       }
@@ -497,7 +497,7 @@ export function useBookmarkPosition(postId: number) {
     },
     onError: (error) => {
       // Silent error handling - just log to console without user-facing error
-      console.error('Error updating bookmark position:', error);
+      
     },
     // Add retry options
     retry: 1,
@@ -509,7 +509,7 @@ export function useBookmarkPosition(postId: number) {
       try {
         updatePositionMutation.mutate(position);
       } catch (error) {
-        console.error('Failed to update bookmark position:', error);
+        
       }
     }
   };

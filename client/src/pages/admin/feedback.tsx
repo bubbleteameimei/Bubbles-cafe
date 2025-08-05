@@ -494,7 +494,7 @@ export default function AdminFeedback() {
 
         // Log response time
         const responseTime = performance.now() - startTime;
-        console.log(`[Admin:Feedback] Status update response time: ${responseTime.toFixed(2)}ms`);
+        
         
         if (!response.ok) {
           const errorData = await response.json();
@@ -544,7 +544,7 @@ export default function AdminFeedback() {
 
   // Debug and performance tracking for list fetch
   const logFeedbackFetch = (status: string, details: any) => {
-    console.log(`[Admin:Feedback] Fetching feedback list ${status}`, details);
+    
   };
 
   // Fetch feedback data with enhanced debugging
@@ -558,7 +558,7 @@ export default function AdminFeedback() {
         const response = await fetch('/api/feedback');
         
         const responseTime = performance.now() - startTime;
-        console.log(`[Admin:Feedback] List fetch response time: ${responseTime.toFixed(2)}ms`);
+        
         
         if (!response.ok) {
           const errorData = await response.json();
@@ -636,7 +636,7 @@ export default function AdminFeedback() {
   
   // Handle page changes
   const handlePageChange = (newPage: number) => {
-    console.log('[Admin:Feedback] Page changed', { from: page, to: newPage });
+    
     setPage(newPage);
     // Scroll to top of the list
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -664,7 +664,7 @@ export default function AdminFeedback() {
             ref={(el) => {
               if (el) {
                 // Log loading animation for debugging
-                console.log('[Admin:Feedback] Loading indicator rendered');
+                
               }
             }}
           ></div>
@@ -691,7 +691,7 @@ export default function AdminFeedback() {
           <Button 
             variant="outline" 
             onClick={() => {
-              console.log('[Admin:Feedback] Manual retry attempt');
+              
               window.location.reload();
             }}
           >

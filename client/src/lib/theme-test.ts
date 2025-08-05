@@ -42,9 +42,9 @@ const testCases = [
 // Run tests
 testCases.forEach(test => {
   const detectedTheme = detectThemes(test.content)[0];
-  console.log(`Story: ${test.title}`);
-  console.log(`Expected: ${test.expectedTheme}`);
-  console.log(`Detected: ${detectedTheme}`);
-  console.log(`Match: ${detectedTheme === test.expectedTheme ? 'YES' : 'NO'}`);
-  console.log('---');
+  
+  
+  
+  
+  
 });

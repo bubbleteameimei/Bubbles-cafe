@@ -20,15 +20,15 @@ const testContents = {
 };
 
 // Test theme detection
-console.log('Testing theme detection...');
+
 Object.entries(testContents).forEach(([type, content]) => {
   const themes = detectThemes(content);
-  console.log(`${type} content themes:`, themes);
+  
 });
 
 // Test intensity calculation
-console.log('\nTesting intensity calculation...');
+
 Object.entries(testContents).forEach(([type, content]) => {
   const intensity = calculateIntensity(content);
-  console.log(`${type} content intensity:`, intensity);
+  
 });

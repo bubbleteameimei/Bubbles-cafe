@@ -5,7 +5,7 @@ import * as nodemailer from 'nodemailer';
  * This bypasses any caching issues by using a completely different file
  */
 export async function sendFreshNewsletter(email: string): Promise<boolean> {
-  console.log('[FreshEmail] Sending completely fresh email to:', email);
+  
   
   // Create a fresh transporter every time
   const fromEmail = process.env.GMAIL_USER || 'vantalison@gmail.com';
@@ -128,7 +128,7 @@ ID: ${randomId}
       }
     });
     
-    console.log('[FreshEmail] Successfully sent fresh email to:', email);
+    
     return true;
   } catch (error) {
     console.error('[FreshEmail] Error sending fresh email:', error);

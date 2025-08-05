@@ -110,7 +110,7 @@ export default function SearchResultsPage() {
         duration: 3000
       });
     } catch (error) {
-      console.error('Search error:', error);
+      
       toast({
         title: "Search Error",
         description: "Failed to complete your search. Please try again.",

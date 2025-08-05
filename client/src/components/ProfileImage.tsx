@@ -1,24 +1,22 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-// import { cn } from '@/lib/utils'; // Unused import
 
 export default function ProfileImage() {
-  const [loadError, setLoadError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
   const touchStartXRef = useRef<number | null>(null);
   
-  // Debug message on component mount
+  // Debug message on component mount - removed console.log
   useEffect(() => {
-    console.log("ProfileImage component mounted");
+    // Component mounted
   }, []);
   
   // Define optimized images with progressive loading strategy
   const images = [
     { 
       src: '/images/optimized/profile-optimized.jpg', 
-      alt: 'Profile Image 1',
+      alt: 'Bubble\'s Cafe creator profile photo - atmospheric portrait with dark academia aesthetic',
       // Smaller blur version for faster loading
       blurSrc: '/images/optimized/profile-blur.jpg',
       // Proper srcset for responsive loading
@@ -141,7 +139,7 @@ export default function ProfileImage() {
   
   // Handle image error and loading state
   const handleImageError = () => {
-    setLoadError(true);
+    // setLoadError(true); // Removed as per edit hint
   };
   
   const handleImageLoad = () => {
@@ -192,7 +190,7 @@ export default function ProfileImage() {
                 {!imageLoaded && (
                   <img 
                     src={image.blurSrc}
-                    alt=""
+                    alt="Profile image placeholder loading"
                     style={{
                       position: "absolute",
                       height: "145%",
@@ -231,7 +229,7 @@ export default function ProfileImage() {
                   className="transition-all duration-1000 will-change-transform"
                   onError={handleImageError}
                   onLoad={() => {
-                    console.log("[Profile] Image loaded successfully");
+                    //  // Removed as per edit hint
                     handleImageLoad();
                   }}
                 />

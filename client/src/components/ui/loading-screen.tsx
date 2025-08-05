@@ -67,7 +67,7 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
         window.scrollTo(0, scrollY.current);
       }
       
-      console.log("[LoadingScreen] Cleanup complete, scroll restored");
+      
     };
   }, [onAnimationComplete, preloadAssets, preloadFont]);
   

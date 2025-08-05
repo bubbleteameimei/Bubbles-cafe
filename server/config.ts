@@ -43,7 +43,7 @@ function loadEnvFile() {
             }
           }
         }
-        console.log(`[Config] Environment variables loaded from ${envFile}`);
+        
         return true;
       }
     } catch (error) {
@@ -117,7 +117,7 @@ export const config = {
 // Validate config
 try {
   envSchema.parse(config);
-  console.log('[Config] Environment configuration validated successfully');
+  
 } catch (error) {
   console.error('[Config] Environment validation failed:', error);
   throw new Error('Invalid environment configuration');

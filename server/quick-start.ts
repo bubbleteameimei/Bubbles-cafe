@@ -31,7 +31,7 @@ try {
   
   // Start server
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Quick server running on http://0.0.0.0:${PORT}`);
+    
   });
 } catch (error) {
   console.error('❌ Server failed to start:', error);
@@ -39,6 +39,6 @@ try {
 }
 
 process.on('SIGTERM', () => {
-  console.log('Shutting down...');
+  
   server.close();
 });

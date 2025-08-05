@@ -50,7 +50,7 @@ export function ResponsePreview({
         toast.success('AI suggestions refreshed');
       }
     } catch (error) {
-      console.error('Failed to refresh suggestions:', error);
+      
       toast.error('Failed to refresh suggestions');
     } finally {
       setIsRefreshing(false);

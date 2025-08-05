@@ -24,9 +24,9 @@ export function useTriggerSilentPing() {
   return () => {
     if (isEnabled) {
       triggerSilentPing();
-      console.log('[SilentPing] Manually triggered');
+      
     } else {
-      console.log('[SilentPing] Feature is disabled');
+      
     }
   };
 }

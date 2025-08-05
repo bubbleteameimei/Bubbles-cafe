@@ -47,7 +47,7 @@ const FullscreenButton: React.FC<FullscreenButtonProps> = ({
               onEnterFullscreen?.();
             })
             .catch(err => {
-              console.error(`Error attempting to enable fullscreen: ${err.message}`);
+              
             });
         } else if (element) {
           // Try vendor-specific methods
@@ -73,7 +73,7 @@ const FullscreenButton: React.FC<FullscreenButtonProps> = ({
               onExitFullscreen?.();
             })
             .catch(err => {
-              console.error(`Error attempting to exit fullscreen: ${err.message}`);
+              
             });
         } else {
           // Try vendor-specific methods

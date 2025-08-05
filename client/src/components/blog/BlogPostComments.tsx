@@ -50,7 +50,7 @@ const BlogPostComments: React.FC<BlogPostCommentsProps> = ({ postId }) => {
       });
     },
     onError: (error) => {
-      console.error('Error submitting comment:', error);
+      
       toast({
         title: 'Error',
         description: 'Failed to submit your comment. Please try again.',
@@ -82,7 +82,7 @@ const BlogPostComments: React.FC<BlogPostCommentsProps> = ({ postId }) => {
       // so we don't necessarily need to refetch here
     },
     onError: (error) => {
-      console.error('Error voting on comment:', error);
+      
       toast({
         title: 'Error',
         description: 'Failed to register your vote. Please try again.',

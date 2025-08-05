@@ -107,7 +107,7 @@ const TrendingStories: React.FC<TrendingStoriesProps> = ({
   };
   
   if (error) {
-    console.error('Error fetching trending stories:', error);
+    
     return null;
   }
   

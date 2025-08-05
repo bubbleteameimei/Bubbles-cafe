@@ -91,7 +91,7 @@ async function log(level: LogLevel, module: string, message: string, details?: R
   const consoleDetails = details ? ` ${JSON.stringify(redactSensitiveInfo(details), null, 2)}` : '';
   
   // Output to console with colors
-  console.log(`${timestamp} ${consoleMessage}${consoleDetails}`);
+  
   
   // Format for file output
   const fileMessage = JSON.stringify(logMessage);

@@ -51,7 +51,7 @@ export function useReadingProgress({
           setCompletedReading(parsed.completed || false);
         }
       } catch (error) {
-        console.error('Error loading reading progress:', error);
+        
       }
     }
   }, [persistProgress, progressKey]);
@@ -100,7 +100,7 @@ export function useReadingProgress({
             timestamp: new Date().toISOString()
           }));
         } catch (error) {
-          console.error('Error saving reading progress:', error);
+          
         }
       }
     }
@@ -141,7 +141,7 @@ export function useReadingProgress({
       try {
         localStorage.removeItem(`reading_progress_${progressKey}`);
       } catch (error) {
-        console.error('Error removing reading progress:', error);
+        
       }
     }
   }, [persistProgress, progressKey]);

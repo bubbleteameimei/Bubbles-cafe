@@ -156,7 +156,7 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
         onClose();
       }
     } catch (error) {
-      console.error('Error saving post:', error);
+      
       toast({
         title: "Error",
         description: "Failed to save your post. Please try again.",

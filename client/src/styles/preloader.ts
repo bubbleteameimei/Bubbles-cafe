@@ -15,7 +15,7 @@ let initialLoadingOverlay: HTMLDivElement | null = null;
  * Mark styles as loaded and remove loading overlay
  */
 function markStylesLoaded() {
-  console.log('[Preloader] Styles loaded, removing loading overlay');
+  
   stylesLoaded = true;
   
   // Find and fade out the loading overlay
@@ -43,7 +43,7 @@ function markStylesLoaded() {
  * Setup style preloader and monitors
  */
 export function setupStylePreloader() {
-  console.log('[Preloader] Setting up style preloader');
+  
   
   // Night mode functionality has been removed
   
@@ -66,7 +66,7 @@ export function setupStylePreloader() {
       return styleSheet && !styleSheet.disabled;
     });
     
-    console.log(`[Preloader] Stylesheets loaded: ${loadedStylesheets.length}/${stylesheets.length}`);
+    
     
     if (loadedStylesheets.length === stylesheets.length) {
       markStylesLoaded();
@@ -92,7 +92,7 @@ export function setupStylePreloader() {
     });
     
     stylesheet.addEventListener('error', () => {
-      console.error(`[Preloader] Failed to load stylesheet: ${stylesheet.getAttribute('href')}`);
+      
       // Continue anyway to prevent hanging
       checkStylesheetsLoaded();
     });
@@ -125,7 +125,7 @@ export function addInitialLoadingIndicator() {
     return;
   }
   
-  console.log('[Preloader] Adding initial loading indicator');
+  
   
   // Create loading overlay
   initialLoadingOverlay = document.createElement('div');

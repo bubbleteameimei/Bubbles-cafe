@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         if (data.isAuthenticated) {
           // Ensure we have the latest user data with all fields
-          console.log('[Auth] User authenticated:', data.user);
+          
           setUser(data.user);
         } else {
           setUser(null);
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
       }
     } catch (error) {
-      console.error('[Auth] Auth check error:', error);
+      
       setUser(null);
     } finally {
       setIsAuthReady(true);
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     
     try {
-      console.log('[Auth] Attempting login with credentials:', { email, rememberMe });
+      
       
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -89,16 +89,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       
       if (!response.ok) {
-        console.error('[Auth] Login failed with status:', response.status);
+        
         throw new Error(data.message || 'Login failed');
       }
       
-      console.log('[Auth] Login successful:', data);
+      
       setUser(data);
       return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      console.error('[Auth] Login error:', errorMessage);
+      
       setError(errorMessage);
       throw err;
     } finally {
@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     
     try {
-      console.log('[Auth] Attempting registration:', { email: data.email, username: data.username });
+      
       
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -125,16 +125,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const responseData = await response.json();
       
       if (!response.ok) {
-        console.error('[Auth] Registration failed with status:', response.status);
+        
         throw new Error(responseData.message || 'Registration failed');
       }
       
-      console.log('[Auth] Registration successful:', responseData);
+      
       setUser(responseData);
       return responseData;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      console.error('[Auth] Registration error:', errorMessage);
+      
       setError(errorMessage);
       throw err;
     } finally {
@@ -159,7 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
-      console.error('Logout error:', errorMessage);
+      
     } finally {
       setIsLoading(false);
     }

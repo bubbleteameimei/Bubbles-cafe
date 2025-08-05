@@ -54,12 +54,12 @@ export function CookieCategoryExample() {
   const handleButtonClick = () => {
     // Run marketing-related code only if marketing cookies are allowed
     runIfAllowed('marketing', () => {
-      console.log("Marketing tracking code executed");
+      
       // Actual implementation would send data to marketing tools
     });
 
     // Always run this code regardless of cookie consent
-    console.log("Button clicked - basic functionality");
+    
   };
 
   return (

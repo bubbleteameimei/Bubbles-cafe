@@ -21,9 +21,9 @@ try {
   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
   auth = getAuth(app);
   googleProvider = new GoogleAuthProvider();
-  console.log('Firebase initialized successfully');
+  
 } catch (error) {
-  console.error('Firebase initialization failed:', error);
+  
   // Continue without Firebase - app will work with email auth only
 }
 
@@ -34,7 +34,7 @@ if (googleProvider) {
       prompt: 'select_account'
     });
   } catch (error) {
-    console.error('Failed to configure Google provider:', error);
+    
   }
 }
 
@@ -53,10 +53,10 @@ export const signInWithGoogle = async () => {
       throw new Error('No user data returned from Google sign-in');
     }
 
-    console.log('Google sign-in successful:', result.user.email);
+    
     return result;
   } catch (error: any) {
-    console.error('Google sign-in error details:', error);
+    
     
     // Re-throw with more specific error information
     if (error.code === 'auth/popup-blocked') {

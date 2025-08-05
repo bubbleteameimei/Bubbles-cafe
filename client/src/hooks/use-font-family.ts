@@ -53,14 +53,14 @@ export function useFontFamily() {
         ? saved as FontFamilyKey 
         : DEFAULT_FONT_FAMILY;
     } catch (error) {
-      console.error('[FontFamily] Error reading from localStorage:', error);
+      
       return DEFAULT_FONT_FAMILY;
     }
   });
 
   // Apply the font family when the component mounts and whenever it changes
   useEffect(() => {
-    console.log('[FontFamily] Setting font family:', fontFamily);
+    
     
     // Make sure the fonts are loaded from Google Fonts if needed
     const fontUrls = {
@@ -137,17 +137,17 @@ export function useFontFamily() {
 
   const updateFontFamily = useCallback((newFamily: FontFamilyKey) => {
     if (!(newFamily in FONT_FAMILIES)) {
-      console.error('[FontFamily] Invalid font family:', newFamily);
+      
       return;
     }
     
-    console.log('[FontFamily] Updating font family to:', newFamily);
+    
     
     // Save to localStorage before updating state
     try {
       localStorage.setItem('reader-font-family', newFamily);
     } catch (error) {
-      console.error('[FontFamily] Error saving to localStorage:', error);
+      
     }
     
     // Update state (will trigger the useEffect)

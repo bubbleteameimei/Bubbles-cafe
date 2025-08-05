@@ -38,7 +38,7 @@ router.post('/subscribe', async (req, res) => {
         emailStatus.sent = emailSent;
         
         if (emailSent) {
-          console.log(`[Newsletter] Welcome email sent to ${subscription.email}`);
+          
         } else {
           console.warn(`[Newsletter] Failed to send welcome email to ${subscription.email}`);
           emailStatus.error = 'Email configuration issue';

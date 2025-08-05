@@ -86,7 +86,7 @@ export default function CommentReactionButtons({
   
   const handleReport = () => {
     // This could open a modal or navigate to a report form
-    console.log("Report comment", comment.id);
+    
     alert("Thank you for flagging this comment. Our moderators will review it.");
   };
   

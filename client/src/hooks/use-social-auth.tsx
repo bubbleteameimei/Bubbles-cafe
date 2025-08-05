@@ -21,7 +21,7 @@ export const useSocialAuth = () => {
   useEffect(() => {
     // Set up auth state listener if auth is initialized
     if (!auth) {
-      console.error('Firebase auth not initialized');
+      
       setError(new Error('Firebase auth not initialized'));
       setLoading(false);
       return;
@@ -37,7 +37,7 @@ export const useSocialAuth = () => {
         setLoading(false);
       },
       (err) => {
-        console.error('Auth state change error:', err);
+        
         setError(err as Error);
         setLoading(false);
       }

@@ -61,7 +61,7 @@ anonymousBookmarkRouter.get('/', async (req: Request, res: Response) => {
       req.session.anonymousBookmarks = {};
     }
     
-    console.log('[Anonymous Bookmarks] Session bookmarks:', req.session.anonymousBookmarks);
+    
     
     // If there are no bookmarks, return an empty array immediately
     if (Object.keys(req.session.anonymousBookmarks).length === 0) {

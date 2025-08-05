@@ -165,7 +165,7 @@ export default function SearchResults() {
         return data;
       } catch (error) {
         // Fallback to local search if API fails
-        console.log('Search API failed, using fallback search');
+        
         const postsResponse = await fetch('/api/posts?limit=50');
         if (!postsResponse.ok) return { results: [] };
         
@@ -270,7 +270,7 @@ export default function SearchResults() {
       return { results };
       
     } catch (error) {
-      console.error("Fallback search error:", error);
+      
       return { results: [] };
     }
   };
@@ -281,7 +281,7 @@ export default function SearchResults() {
   // Use fallback search if API fails
   useEffect(() => {
     if (isError && searchQuery) {
-      console.log("Using fallback search mechanism");
+      
       fallbackSearch().then(results => {
         setFallbackResults(results);
       });

@@ -27,7 +27,7 @@ export function setNeonAsDefault() {
     process.env.PGDATABASE = url.pathname.slice(1); // Remove leading slash
     process.env.PGPORT = url.port || "5432";
     
-    console.log('✅ Neon database configured from environment variables');
+    
   } catch (error) {
     console.error('❌ Invalid DATABASE_URL format:', error);
     throw new Error('Invalid DATABASE_URL format in environment variables');

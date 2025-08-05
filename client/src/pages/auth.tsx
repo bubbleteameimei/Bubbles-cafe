@@ -174,7 +174,7 @@ export default function AuthPage() {
         throw new Error("Google sign-in did not return user data");
       }
     } catch (error: any) {
-      console.error('Google sign-in error:', error);
+      
       
       let errorMessage = "Failed to sign in with Google. Please try again.";
       

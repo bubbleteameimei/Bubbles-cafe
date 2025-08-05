@@ -119,7 +119,7 @@ export function FeedbackDetails({
         onSendResponse(feedback.id, response);
       }
     } catch (error) {
-      console.error('Error sending response:', error);
+      
       toast.error('Failed to send response');
     } finally {
       setIsSending(false);

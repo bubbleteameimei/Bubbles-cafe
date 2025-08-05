@@ -24,12 +24,12 @@ function rateLimit(req: Request, res: Response, next: NextFunction): void {
  * Register WordPress sync routes
  */
 export function registerWordPressSyncRoutes(app: any) {
-  console.log('Registering WordPress sync routes');
+  
 
   // Manual sync trigger
   app.post('/api/wordpress/sync', requireAuth, csrfProtection, rateLimit, async (req: Request, res: Response) => {
     try {
-      console.log('[WordPress Sync] Manual sync triggered');
+      
       
       // Import and call sync function
       const { syncWordPressPosts } = await import('../wordpress-sync');
@@ -76,7 +76,7 @@ export function registerWordPressSyncRoutes(app: any) {
     try {
       const { page = 1, limit = 10 } = req.query;
       
-      console.log(`[WordPress API] Fetching posts - page ${page}, limit ${limit}`);
+      
       
       // Fetch posts from WordPress API
       const response = await fetch(`https://bubbleteameimei.wordpress.com/wp-json/wp/v2/posts?page=${page}&per_page=${limit}`);
@@ -115,7 +115,7 @@ export function registerWordPressSyncRoutes(app: any) {
         return res.status(400).json({ error: 'Invalid post ID' });
       }
 
-      console.log(`[WordPress Sync] Syncing specific post: ${postId}`);
+      
       
       const result = await syncSingleWordPressPost(parseInt(postId));
       
@@ -141,7 +141,7 @@ export function registerWordPressSyncRoutes(app: any) {
     }
   });
 
-  console.log('WordPress sync routes registered successfully');
+  
 }
 
 export default router;

@@ -2,9 +2,9 @@ import { createTransport } from 'nodemailer';
 
 // Create a function to get the transporter with the latest environment variables
 function getGmailTransporter() {
-  console.log('[EmailService] Creating Gmail transporter with credentials:');
-  console.log('[EmailService] User:', process.env.GMAIL_USER ? process.env.GMAIL_USER : 'Not set');
-  console.log('[EmailService] Password:', process.env.GMAIL_APP_PASSWORD ? 'Set' : 'Not set');
+  
+  
+  
   
   return createTransport({
     host: 'smtp.gmail.com',
@@ -61,7 +61,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       html: params.html,
     });
     
-    console.log(`[EmailService] Email sent successfully to ${params.to}`);
+    
     return true;
   } catch (error) {
     console.error('[EmailService] Error sending email:', error);
@@ -199,7 +199,7 @@ ID: ${randomId}
       }
     });
     
-    console.log('[EmailService] Email sent successfully to', email);
+    
     return true;
   } catch (error) {
     console.error('[EmailService] Error sending newsletter email:', error);

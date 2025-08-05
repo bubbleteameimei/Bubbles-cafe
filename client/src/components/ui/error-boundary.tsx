@@ -21,7 +21,7 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    console.log('ErrorBoundary caught error:', error);
+    
     return { hasError: true, error, errorTime: Date.now() };
   }
 
@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
     this.mounted = true;
     const handleRouteChange = () => {
       if (this.mounted && this.state.hasError) {
-        console.log('Route changed, resetting error state');
+        
         this.setState({ 
           hasError: false, 
           error: undefined, 
@@ -77,8 +77,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Uncaught error:', error);
-    console.error('Component stack:', errorInfo.componentStack);
+    
+    
 
     if (this.mounted) {
       this.setState({
@@ -106,7 +106,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     // Route/lazy loading specific errors
     if (error.message.includes('Lazy') || error.message.includes('loading')) {
-      console.log('Route loading error:', error);
+      
       return "There was an error loading this page component. Please refresh and try again.";
     }
     if (error.message.includes('chunk') || error.message.includes('failed to load')) {

@@ -12,7 +12,7 @@ try {
   neonConfig.webSocketConstructor = ws;
   
   // Set additional options (only if they exist in this version)
-  console.log('Configured Neon with WebSocket support');
+  
 
   // Suppress WebSocket errors that could crash the server
   // This prevents the "Cannot set property message of #<ErrorEvent> which has only a getter" error
@@ -29,17 +29,27 @@ try {
   
   // Attempt to add safety options if available (wrapped in try/catch to avoid errors)
   try {
-    // @ts-ignore - These may not exist in all versions of the Neon SDK
-    neonConfig.useSecureWebSocket = true;
-    // @ts-ignore - Add additional configuration for better resilience
-    neonConfig.patchWebSocketForReconnect = true; 
-  } catch (configErr) {
-    console.log('Note: Some config options not available in this Neon version');
+    // Configure connection pooling for better performance
+    if (typeof neonConfig.poolQueryViaFetch !== 'undefined') {
+      neonConfig.poolQueryViaFetch = true;
+    }
+    
+    // Use secure WebSocket connections
+    if (typeof neonConfig.useSecureWebSocket !== 'undefined') {
+      neonConfig.useSecureWebSocket = true;
+    }
+    
+    // Add additional configuration for better resilience
+    if (typeof neonConfig.fetchConnectionCache !== 'undefined') {
+      neonConfig.fetchConnectionCache = true;
+    }
+  } catch (configError) {
+    console.warn('[DB Config] Some Neon configuration options may not be available in this version:', configError);
   }
 } catch (error) {
   console.error('Error configuring Neon WebSocket:', error);
   // Fallback to default HTTP mode if WebSocket fails
-  console.log('Falling back to HTTP mode for Neon connections');
+  
 }
 
 const execPromise = promisify(exec);
@@ -59,7 +69,7 @@ export let db: any = {};
  * Function to attempt to recover DATABASE_URL from various sources
  */
 async function recoverDatabaseUrl(): Promise<boolean> {
-  console.log('🔍 DATABASE_URL not found in environment, attempting to recover...');
+  
   
   let databaseUrl = null;
   
@@ -67,16 +77,16 @@ async function recoverDatabaseUrl(): Promise<boolean> {
   try {
     const envPath = path.join(process.cwd(), '.env');
     if (fs.existsSync(envPath)) {
-      console.log('📄 Found .env file, checking for DATABASE_URL...');
+      
       const envContent = fs.readFileSync(envPath, 'utf8');
       const dbUrlMatch = envContent.match(/DATABASE_URL=["']?(.*?)["']?$/m);
       
       if (dbUrlMatch && dbUrlMatch[1]) {
         databaseUrl = dbUrlMatch[1];
-        console.log('✅ Found DATABASE_URL in .env file');
+        
       }
     } else {
-      console.log('📄 No .env file found');
+      
     }
   } catch (err) {
     console.error('❌ Error reading .env file:', err);
@@ -85,24 +95,24 @@ async function recoverDatabaseUrl(): Promise<boolean> {
   // If still no DATABASE_URL, check if we can get it from the environment
   if (!databaseUrl) {
     try {
-      console.log('🔍 Checking Replit environment for DATABASE_URL...');
+      
       const { stdout } = await execPromise('env | grep DATABASE_URL');
       if (stdout.trim()) {
         const dbUrl = stdout.trim().split('=')[1];
         if (dbUrl) {
           databaseUrl = dbUrl;
-          console.log('✅ Found DATABASE_URL in Replit environment');
+          
         }
       }
     } catch (err) {
-      console.log('❌ DATABASE_URL not found in Replit environment');
+      
     }
   }
   
   // If we found a DATABASE_URL, set it in process.env
   if (databaseUrl) {
     process.env.DATABASE_URL = databaseUrl;
-    console.log('✅ Successfully set DATABASE_URL in environment');
+    
     
     // Try to save to .env file for future use
     try {
@@ -123,7 +133,7 @@ async function recoverDatabaseUrl(): Promise<boolean> {
       }
       
       fs.writeFileSync(envPath, envContent);
-      console.log('📝 Updated .env file with DATABASE_URL');
+      
     } catch (err) {
       console.warn('⚠️ Could not update .env file:', err);
     }
@@ -143,10 +153,10 @@ async function testConnection(retries = 3, delay = 2000): Promise<boolean> {
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      console.log(`Testing database connection (attempt ${attempt}/${retries})...`);
+      
       client = await pool.connect();
       await client.query('SELECT 1'); // Verify we can execute queries
-      console.log('Database connection test successful');
+      
       return true;
     } catch (err: unknown) {
       lastError = err;
@@ -156,7 +166,7 @@ async function testConnection(retries = 3, delay = 2000): Promise<boolean> {
       });
       
       if (attempt < retries) {
-        console.log(`Retrying in ${delay/1000} seconds...`);
+        
         await new Promise(resolve => setTimeout(resolve, delay));
         // Increase delay for next attempt
         delay = delay * 1.5;
@@ -221,11 +231,11 @@ async function testConnection(retries = 3, delay = 2000): Promise<boolean> {
     });
     
     pool.on('connect', () => {
-      console.log('New client connected to database');
+      
     });
     
     pool.on('remove', () => {
-      console.log('Client connection removed from pool');
+      
     });
     
     // Initialize Drizzle with schema
@@ -234,7 +244,7 @@ async function testConnection(retries = 3, delay = 2000): Promise<boolean> {
     // Test the connection
     try {
       await testConnection();
-      console.log('Database initialization complete');
+      
     } catch (err) {
       console.error('Failed to initialize database:', err);
       // Log the DATABASE_URL format (without credentials)

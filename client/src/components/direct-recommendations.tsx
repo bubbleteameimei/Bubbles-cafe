@@ -49,18 +49,18 @@ export function DirectRecommendations({
   const { data: recommendations, isLoading, error } = useQuery<Recommendation[]>({
     queryKey: ['/api/recommendations/direct', limit],
     queryFn: async () => {
-      console.log('Fetching recommendations from API...');
+      
       try {
         const response = await fetch(`/api/recommendations/direct?limit=${limit}`);
         if (!response.ok) {
-          console.error('API response not OK:', response.status);
+          
           throw new Error(`Network response was not ok: ${response.status}`);
         }
         const data = await response.json();
-        console.log('Recommendations fetched successfully:', data);
+        
         return data.slice(0, limit); // Ensure we don't exceed the requested limit
       } catch (err) {
-        console.error('Error fetching recommendations:', err);
+        
         throw err;
       }
     },

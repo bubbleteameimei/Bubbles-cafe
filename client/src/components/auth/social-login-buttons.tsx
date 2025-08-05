@@ -31,7 +31,7 @@ export function SocialLoginButtons({ onSuccess, isSignIn = true }: SocialLoginBu
         onSuccess?.();
       }
     } catch (error: any) {
-      console.error('Google sign-in error:', error);
+      
       toast({
         title: "Authentication Error",
         description: error.message || "Failed to sign in with Google",

@@ -39,14 +39,14 @@ export function AuthGuard({
       // Auth is required
       if (!isAuthenticated) {
         // User is not authenticated but should be, redirect
-        console.log('[AuthGuard] User not authenticated, redirecting to:', redirectTo);
+        
         setLocation(redirectTo);
         return;
       }
       
       if (adminOnly && (!user || !user.isAdmin)) {
         // Admin access required but user is not admin
-        console.log('[AuthGuard] Admin access required but user is not admin, redirecting to:', '/');
+        
         setLocation('/');
         return;
       }
@@ -54,7 +54,7 @@ export function AuthGuard({
       // Auth is not required (e.g., login page that shouldn't be accessed when logged in)
       if (isAuthenticated) {
         // User is authenticated but shouldn't be for this route
-        console.log('[AuthGuard] User already authenticated, redirecting to:', '/');
+        
         setLocation('/');
         return;
       }

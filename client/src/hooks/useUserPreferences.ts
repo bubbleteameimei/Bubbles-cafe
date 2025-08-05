@@ -15,7 +15,7 @@ const useUserPreferences = <T>(key: string, initialValue: T): [T, React.Dispatch
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
       // If there's an error in parsing, return the initialValue
-      console.error("Error reading from localStorage:", error);
+      
       return initialValue;
     }
   });
@@ -25,7 +25,7 @@ const useUserPreferences = <T>(key: string, initialValue: T): [T, React.Dispatch
     try {
       localStorage.setItem(key, JSON.stringify(state));
     } catch (error) {
-      console.error("Error writing to localStorage:", error);
+      
     }
   }, [key, state]);
 

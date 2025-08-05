@@ -15,7 +15,7 @@ const logger = {
    * @param meta Optional metadata to include in the log
    */
   info: (message: string, meta?: any) => {
-    console.log(`[INFO] ${message}`, meta ? meta : '');
+    
   },
   
   /**

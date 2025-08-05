@@ -20,13 +20,13 @@ async function createVantalisonAdmin() {
     const existingUser = await storage.getUserByEmail(adminEmail);
     
     if (existingUser) {
-      console.log("Vantalison admin user already exists, updating password and ensuring admin status...");
+      
       // Update the password and make sure is_admin is true
       await storage.pool.query(
         "UPDATE users SET password_hash = $1, is_admin = true WHERE email = $2",
         [hashedPassword, adminEmail]
       );
-      console.log("Vantalison admin password updated successfully");
+      
     } else {
       // Create new admin user
       await storage.pool.query(
@@ -34,7 +34,7 @@ async function createVantalisonAdmin() {
          VALUES ($1, $2, $3, $4, NOW())`,
         ["vantalison", adminEmail, hashedPassword, true]
       );
-      console.log("Vantalison admin user created successfully");
+      
     }
   } catch (error) {
     console.error("Error creating/updating vantalison admin:", error);

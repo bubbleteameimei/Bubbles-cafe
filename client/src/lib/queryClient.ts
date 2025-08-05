@@ -112,7 +112,7 @@ export async function apiRequest<T = unknown>(
     const fullUrl = url.startsWith('http') ? url : getApiPath(url);
     
     if (import.meta.env.DEV) {
-      console.log(`API Request to ${fullUrl}`, requestOptions.method);
+      
     }
     
     // Handle network errors explicitly
@@ -126,7 +126,7 @@ export async function apiRequest<T = unknown>(
       clearTimeout(timeoutId);
     } catch (networkError) {
       clearTimeout(timeoutId);
-      console.error(`Network error for request to ${fullUrl}:`, networkError);
+      
       throw new APIError(
         'Network error: Cannot connect to server. Please check your internet connection.',
         undefined,
@@ -145,7 +145,7 @@ export async function apiRequest<T = unknown>(
       try {
         responseData = await res.json();
       } catch (jsonError) {
-        console.error('Error parsing JSON response:', jsonError);
+        
         throw new APIError(
           'Failed to parse JSON response', 
           res.status, 
@@ -164,7 +164,7 @@ export async function apiRequest<T = unknown>(
           responseData = textResponse as unknown as T;
         }
       } catch (textError) {
-        console.error('Error reading response text:', textError);
+        
         throw new APIError(
           'Failed to read response', 
           res.status, 
@@ -185,7 +185,7 @@ export async function apiRequest<T = unknown>(
     const requestUrl = url.startsWith('http') ? url : getApiPath(url);
     
     // Convert unexpected errors to APIErrors
-    console.error(`API Request failed (${requestUrl} ${options.method || 'GET'}):`, error);
+    
     throw new APIError(
       error instanceof Error ? error.message : 'Unknown error occurred',
       undefined,
@@ -222,7 +222,7 @@ export const queryClient = new QueryClient({
       onError: (error) => {
         if (error instanceof APIError && error.isAuthError) {
           // Redirect to login for auth errors
-          console.error('Authentication required. Redirecting to login page.');
+          
           // Don't use window.location.href to avoid hard reloads
           // Let the component handle this with proper error UI
         }

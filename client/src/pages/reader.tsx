@@ -88,7 +88,7 @@ const sanitizeHtmlContent = (html: string): string => {
     
     return temp.innerHTML;
   } catch (error) {
-    console.error('[Reader] Error sanitizing HTML:', error);
+    
     return html; // Return original if sanitization fails
   }
 };
@@ -108,7 +108,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   useEffect(() => {
     if (!hasInitialized.current && routeSlug) {
-      console.log('[ReaderPage] Initializing with slug:', routeSlug);
+      
       hasInitialized.current = true;
     }
   }, [routeSlug]); // Simplified dependencies
@@ -161,7 +161,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       const scrollPercent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
       const progress = Math.min(100, Math.max(0, scrollPercent));
       setReadingProgress(progress);
-      console.log('[Reader] Progress updated:', { scrollTop, docHeight, progress });
+      
     };
 
     // Throttle scroll events for better performance
@@ -202,10 +202,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Delete Post Mutation for admin actions
   const deleteMutation = useMutation({
     mutationFn: async (postId: number) => {
-      console.log(`[Reader] Attempting to delete post with ID: ${postId}`);
+      
       
       const csrfToken = document.cookie.replace(/(?:(?:^|.*;\s*)XSRF-TOKEN\s*\=\s*([^;]*).*$)|^.*$/, "$1");
-      console.log('[Reader] Using CSRF token for deletion');
+      
       
       const response = await fetch(`/api/posts/${postId}`, {
         method: 'DELETE',
@@ -220,7 +220,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       const data = await response.json();
       
       if (!response.ok) {
-        console.error(`[Reader] Delete failed with status: ${response.status}`, data);
+        
         if (response.status === 401) {
           throw new Error('Please log in to delete this story');
         } else {
@@ -232,7 +232,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     },
     onSuccess: () => {
       // Invalidate all related queries to ensure cache is properly cleared
-      console.log('[Reader] Invalidating all related query caches');
+      
       
       // Invalidate community posts list
       queryClient.invalidateQueries({ queryKey: ['/api/posts/community'] });
@@ -242,7 +242,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
       // Invalidate specific post endpoints
       if (currentPost?.id) {
-        console.log(`[Reader] Invalidating specific post cache for ID: ${currentPost.id}`);
+        
         queryClient.invalidateQueries({ 
           queryKey: ['/api/posts', currentPost.id.toString()]
         });
@@ -250,7 +250,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
       // Also invalidate the specific post query based on the slug
       if (routeSlug) {
-        console.log('[Reader] Invalidating specific post cache for slug:', routeSlug);
+        
         queryClient.invalidateQueries({ 
           queryKey: ["wordpress", "posts", "reader", routeSlug] 
         });
@@ -269,7 +269,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       });
       
       // Force navigation back to the community page after deletion
-      console.log('[Reader] Navigating back to community page');
+      
       // Immediate navigation to prevent page from trying to load deleted content
       setLocation('/community');
     },
@@ -283,11 +283,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   });
 
-  console.log('[Reader] Component mounted with slug:', routeSlug); // Debug log
+   // Debug log
   
   // Clear any cached data to ensure fresh fetch after sample story removal
   useEffect(() => {
-    console.log('[Reader] Clearing query cache to ensure fresh data');
+    
     queryClient.invalidateQueries({ queryKey: ["posts"] });
     queryClient.removeQueries({ queryKey: ["posts"] });
   }, [queryClient]);
@@ -296,22 +296,22 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [currentIndex, setCurrentIndex] = useState(() => {
     try {
       const savedIndex = sessionStorage.getItem('selectedStoryIndex');
-      console.log('[Reader] Retrieved saved index:', savedIndex);
+      
 
       if (!savedIndex) {
-        console.log('[Reader] No saved index found, defaulting to 0');
+        
         return 0;
       }
 
       const parsedIndex = parseInt(savedIndex, 10);
       if (isNaN(parsedIndex) || parsedIndex < 0) {
-        console.log('[Reader] Invalid saved index, defaulting to 0');
+        
         return 0;
       }
 
       return parsedIndex;
     } catch (error) {
-      console.error('[Reader] Error reading from sessionStorage:', error);
+      
       return 0;
     }
   });
@@ -319,7 +319,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const { data: postsData, isLoading, error } = useQuery({
     queryKey: ["posts", "reader", routeSlug, isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
-      console.log('[Reader] Fetching posts...', { routeSlug, isCommunityContent });
+      
       try {
         if (routeSlug) {
           // If slug is provided, fetch specific post
@@ -345,7 +345,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           return { posts: [normalizedPost], totalPages: 1, total: 1 };
         } else {
           // Fetch all posts from internal API (your WordPress stories are already synced here)
-          console.log('[Reader] Fetching posts...', { isCommunityContent });
+          
           
           // Always use the core posts endpoint for maximum reliability with cache busting
           const response = await fetch(`/api/posts?limit=100&_t=${Date.now()}`);
@@ -379,9 +379,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           return { posts: normalizedPosts, totalPages: 1, total: normalizedPosts.length };
         }
       } catch (error) {
-        console.error('[Reader] Error fetching posts:', error);
+        
         // Add fallback error handling here
-        console.error('[Reader] Error or no posts available:', { error, currentIndex });
+        
         
         // Try to fetch any posts to show something
         try {
@@ -405,7 +405,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             }
           }
         } catch (fallbackError) {
-          console.error('[Reader] Fallback also failed:', fallbackError);
+          
         }
         
         throw error;
@@ -437,11 +437,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
       // Ensure currentIndex is within bounds
       if (currentIndex >= postsData.posts.length) {
-        console.log('[Reader] Current index out of bounds, resetting to 0');
+        
         setCurrentIndex(0);
         sessionStorage.setItem('selectedStoryIndex', '0');
       } else {
-        console.log('[Reader] Current index is valid:', currentIndex);
+        
         sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
       }
 
@@ -456,7 +456,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       // Auto-save slug functionality removed (unused)
       if (currentPost) {
         const newSlug = routeSlug || (currentPost.slug || `post-${currentPost.id}`);
-        console.log('[Reader] Auto-save slug would be:', newSlug);
+        
         // setAutoSaveSlug(newSlug); // Function removed
         
         // Check if we've reloaded but the post has been deleted
@@ -466,7 +466,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           fetch(`/api/posts/${currentPost.id}`)
             .then(response => {
               if (response.status === 404) {
-                console.log('[Reader] Post may have been deleted, redirecting to community page');
+                
                 // Post might have been deleted, redirect to community page
                 // No delay to prevent showing deleted content
                 setLocation('/community');
@@ -477,7 +477,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               }
             })
             .catch(err => {
-              console.error('[Reader] Error checking post existence:', err);
+              
             });
         }
       }
@@ -532,7 +532,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     
     const applyStyles = () => {
       try {
-        console.log('[Reader] Injecting content styles with font family:', fontFamily);
+        
         
         // Remove any existing style tag first
         const existingTag = document.getElementById('reader-dynamic-styles');
@@ -550,7 +550,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         
         document.head.appendChild(styleTag);
       } catch (error) {
-        console.error('[Reader] Error injecting styles:', error);
+        
         // Add fallback inline styles to the content container if style injection fails
         const contentContainer = document.querySelector('.story-content');
         if (contentContainer) {
@@ -588,7 +588,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       fetch(`/api/posts/${post.id}`)
         .then(response => {
           if (response.status === 404) {
-            console.log('[Reader] Post no longer exists in the database, redirecting');
+            
             toast({
               title: 'Story Unavailable',
               description: 'This story is no longer available.'
@@ -598,7 +598,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           }
         })
         .catch(error => {
-          console.error('[Reader] Error verifying post existence:', error);
+          
         });
     }
   }, [routeSlug, isLoading, postsData, setLocation, toast]);
@@ -637,7 +637,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           {error instanceof Error ? error.message : "Please try again later"}
         </p>
         <Button variant="outline" onClick={() => {
-          console.log('[Reader] Retrying page load');
+          
           window.location.reload();
         }}>
           Retry
@@ -714,7 +714,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       formattedDate = 'Publication date unavailable';
     }
   } catch (error) {
-    console.error('[Reader] Error formatting date:', error);
+    
     formattedDate = 'Publication date unavailable';
   }
   
@@ -731,16 +731,16 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   const handleSocialShare = (platform: string, url: string) => {
     try {
-      console.log(`[Reader] Opening ${platform} profile`);
+      
       window.open(url, '_blank');
     } catch (error) {
-      console.error(`[Reader] Error opening ${platform}:`, error);
+      
     }
   };
 
   const shareStory = async () => {
     const displayTitle = currentPost.title?.rendered || currentPost.title || 'Story';
-    console.log('[Reader] Attempting native share:', displayTitle);
+    
     const shareText = isCommunityContent 
       ? "Check out this community story on Bubble's Café!" 
       : "Check out this story on Bubble's Café!";
@@ -753,12 +753,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     try {
       if (navigator.share) {
         await navigator.share(shareData);
-        console.log('[Reader] Story shared successfully');
+        
       } else {
-        console.log('[Reader] Native share not supported');
+        
       }
     } catch (error) {
-      console.error('[Reader] Error sharing story:', error);
+      
     }
   };
 
@@ -795,7 +795,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
       // After 3 rapid skips, show the horror Easter egg
       if (skipCountRef.current >= 3 && !showHorrorMessage) {
-        console.log('[Reader] Horror Easter egg triggered after rapid navigation');
+        
         
         // Highly threatening message for maximum creepiness with subtle psychological impact
         const message = "I SEE YOU SKIPPING!!!";

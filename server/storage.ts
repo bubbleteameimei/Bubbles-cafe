@@ -1,8 +1,9 @@
 import { db } from "./db";
 import { 
-  users, posts, comments, newsletters, contactMessages, 
+  users, posts, comments, contactMessages, bookmarks, sessions, userFeedback, newsletterSubscriptions,
   type User, type Post, type Comment, type InsertUser, type InsertPost, type InsertComment,
-  type ContactMessage, type InsertContactMessage, type UserFeedback, type InsertUserFeedback
+  type ContactMessage, type InsertContactMessage, type UserFeedback, type InsertUserFeedback,
+  type Bookmark, type InsertBookmark, type Session, type InsertSession
 } from "@shared/schema";
 import { eq, desc, and, or, sql, like, asc } from "drizzle-orm";
 
@@ -392,7 +393,7 @@ export class DatabaseStorage implements IStorage {
 
   async getNewsletterSubscriptionByEmail(email: string): Promise<any> {
     try {
-      const [subscription] = await db.select().from(contactMessages).where(eq(contactMessages.email, email));
+      const [subscription] = await db.select().from(newsletterSubscriptions).where(eq(newsletterSubscriptions.email, email));
       return subscription || undefined;
     } catch (error) {
       console.error('Error getting newsletter subscription by email:', error);
@@ -401,13 +402,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createNewsletterSubscription(subscription: any): Promise<any> {
-    const [newSubscription] = await db.insert(contactMessages).values(subscription).returning();
+    const [newSubscription] = await db.insert(newsletterSubscriptions).values(subscription).returning();
     return newSubscription;
   }
 
   async getNewsletterSubscriptions(): Promise<any[]> {
     try {
-      return await db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt));
+      return await db.select().from(newsletterSubscriptions).orderBy(desc(newsletterSubscriptions.createdAt));
     } catch (error) {
       console.error('Error getting newsletter subscriptions:', error);
       return [];
@@ -417,9 +418,9 @@ export class DatabaseStorage implements IStorage {
   async updateNewsletterSubscriptionStatus(id: number, status: string): Promise<any> {
     try {
       const [updatedSubscription] = await db
-        .update(contactMessages)
+        .update(newsletterSubscriptions)
         .set({ status })
-        .where(eq(contactMessages.id, id))
+        .where(eq(newsletterSubscriptions.id, id))
         .returning();
       return updatedSubscription || undefined;
     } catch (error) {

@@ -45,7 +45,7 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
         onSuccess(userData);
       }
     } catch (error) {
-      console.error('Google sign-in error:', error);
+      
       if (error instanceof Error) {
         onError(error);
       } else {
@@ -62,7 +62,7 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
       // Apple sign-in temporarily disabled - would need additional configuration
       throw new Error('Apple sign-in is not yet configured. Please use Google sign-in or email authentication.');
     } catch (error) {
-      console.error('Apple sign-in error:', error);
+      
       if (error instanceof Error) {
         onError(error);
       } else {

@@ -51,7 +51,7 @@ const generateBaseStats = (postId: number) => {
   const likesBase = Math.floor(seededRandom(seed) * (150 - 80 + 1)) + 80;
   const dislikesBase = Math.floor(seededRandom(seed + 999) * (20 - 8 + 1)) + 8;
   
-  console.log(`Generated base stats for post ${postId}: likes=${likesBase}, dislikes=${dislikesBase}`);
+  
   return { likes: likesBase, dislikes: dislikesBase };
 };
 
@@ -85,7 +85,7 @@ const getOrCreateStats = (postId: number): Stats => {
     }
     return newStats;
   } catch (error) {
-    console.error(`[LikeDislike] Error managing stats for post ${postId}:`, error);
+    
     const fallbackBase = generateBaseStats(postId);
     return {
       likes: fallbackBase.likes,
@@ -160,7 +160,7 @@ export function LikeDislike({
   // Load existing stats or create new ones consistently
   useEffect(() => {
     const currentStats = getOrCreateStats(postId);
-    console.log(`Loading stats for post ${postId}:`, currentStats);
+    
     setStats(currentStats);
     
     // Determine user state from current stats vs base stats
@@ -200,9 +200,9 @@ export function LikeDislike({
         detail: { postId, stats: newStats }
       }));
       
-      console.log('Stats updated:', newStats);
+      
     } catch (error) {
-      console.error(`[LikeDislike] Error updating stats for post ${postId}:`, error);
+      
       showInlineToast("Error updating reaction - please try again later", 'error');
     }
   };
@@ -232,7 +232,7 @@ export function LikeDislike({
       }
       onLike?.(newLiked);
     } catch (error) {
-      console.error(`[LikeDislike] Error handling like for post ${postId}:`, error);
+      
       showInlineToast("Error updating like - please try again", 'error');
     }
   };
@@ -262,7 +262,7 @@ export function LikeDislike({
       }
       onDislike?.(newDisliked);
     } catch (error) {
-      console.error(`[LikeDislike] Error handling dislike for post ${postId}:`, error);
+      
       showInlineToast("Error updating dislike - please try again", 'error');
     }
   };

@@ -41,7 +41,7 @@ export function usePrivacySettings() {
     queryKey: ['/api/user/privacy-settings'],
     queryFn: async () => {
       try {
-        console.log('Fetching privacy settings...');
+        
         const response = await apiRequest<PrivacySettings>('/api/user/privacy-settings', {
           method: 'GET',
           credentials: 'include' // Ensure cookies are sent with the request
@@ -51,7 +51,7 @@ export function usePrivacySettings() {
           throw new Error(`Error fetching privacy settings: No response received`);
         }
         
-        console.log('Successfully fetched privacy settings', response);
+        
         
         // Merge backend data with frontend-only fields
         const extendedSettings: PrivacySettings = {
@@ -61,7 +61,7 @@ export function usePrivacySettings() {
         
         return extendedSettings;
       } catch (error) {
-        console.error('Failed to fetch privacy settings', error);
+        
         return defaultSettings;
       }
     },
@@ -75,7 +75,7 @@ export function usePrivacySettings() {
       // Validate settings before sending to API
       const validatedSettings = validatePrivacySettings(newSettings);
       
-      console.log('Updating privacy settings:', validatedSettings);
+      
       
       // Filter out frontend-only fields before sending to backend
       const backendFields = ['profileVisible', 'shareReadingHistory', 'anonymousCommenting', 

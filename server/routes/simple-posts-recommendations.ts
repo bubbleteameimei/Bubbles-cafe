@@ -7,7 +7,7 @@ import { Request, Response } from "express";
  * Simple post recommendations implementation focusing on reliability
  */
 export function registerPostRecommendationsRoutes(app: any) {
-  console.log("Registering simple post recommendations routes");
+  
   
   /**
    * GET /api/posts/recommendations
@@ -15,18 +15,18 @@ export function registerPostRecommendationsRoutes(app: any) {
    */
   app.get("/api/posts/recommendations", async (req: Request, res: Response) => {
     try {
-      console.log("Simple post recommendations endpoint called:", req.url);
-      console.log("Request query params:", req.query);
+      
+      
       
       // Parse request parameters
       const postId = req.query.postId ? Number(req.query.postId) : null;
       const limit = Number(req.query.limit) || 3;
       
-      console.log(`Fetching recommendations for postId: ${postId}, limit: ${limit}`);
+      
       
       // If no postId provided or it's invalid, return recent posts
       if (!postId) {
-        console.log('No postId provided, returning recent posts');
+        
         const recentPosts = await db.select({
           id: posts.id,
           title: posts.title,
@@ -37,13 +37,13 @@ export function registerPostRecommendationsRoutes(app: any) {
         .orderBy(desc(posts.createdAt))
         .limit(limit);
         
-        console.log(`Found ${recentPosts.length} recent posts`);
+        
         const enhanced = enhancePostsWithMetadata(recentPosts);
         return res.status(200).json(enhanced);
       }
       
       // Log the query for troubleshooting
-      console.log(`Building query to fetch posts where id != ${postId}`);
+      
       
       // Get some posts excluding the requested one
       const recommendedPosts = await db.select({

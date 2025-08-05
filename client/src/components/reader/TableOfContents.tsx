@@ -39,10 +39,10 @@ export default function TableOfContents({ currentPostId, onClose }: TableOfConte
           }));
           setPosts(normalizedPosts);
         } else {
-          console.error('Failed to fetch posts');
+          
         }
       } catch (error) {
-        console.error('Error fetching posts:', error);
+        
       } finally {
         setLoading(false);
       }

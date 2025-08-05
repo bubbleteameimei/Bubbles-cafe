@@ -29,9 +29,9 @@ interface SEOProps {
 }
 
 const DEFAULT_SITE_CONFIG = {
-  siteName: 'Bubbles Cafe',
-  defaultTitle: 'Bubbles Cafe - Immersive Horror Storytelling Platform',
-  defaultDescription: 'Discover spine-chilling horror stories, immersive fiction, and creative writing. Join our community of storytellers and readers.',
+  siteName: 'Bubble\'s Cafe',
+  defaultTitle: 'Bubble\'s Cafe - Where Dark Tales Come to Life',
+  defaultDescription: 'Step into the shadows at Bubble\'s Cafe, where every story whispers secrets and every tale leaves you breathless. Discover spine-chilling horror stories, atmospheric gothic fiction, and immersive dark narratives that will haunt your dreams. Join our community of storytellers who dare to explore the darkness within.',
   defaultImage: '/images/og-default.jpg',
   siteUrl: typeof window !== 'undefined' ? window.location.origin : '',
   locale: 'en_US',

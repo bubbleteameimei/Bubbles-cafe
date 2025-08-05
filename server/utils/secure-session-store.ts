@@ -1,83 +1,36 @@
 import { Store } from 'express-session';
+import { SessionData as ExpressSessionData } from 'express-session';
 import { db } from '../db';
 import { sessions } from '@shared/schema';
-import { eq, and, lt } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 
-interface SessionData {
-  [key: string]: any;
-}
-
-interface SessionRecord {
+// Define our session record type
+export interface SessionRecord {
   sessionId: string;
-  sessionData: SessionData;
-  userId?: number;
-  ipAddress?: string;
-  userAgent?: string;
+  sessionData: ExpressSessionData;
+  userId: number;
+  ipAddress: string | null;
+  userAgent: string | null;
   expiresAt: Date;
   lastAccessedAt: Date;
   isActive: boolean;
-  csrfToken?: string;
+  csrfToken: string | null;
 }
 
 export class SecureNeonSessionStore extends Store {
-  private encryptionKey: Buffer;
-  
+  private encryptionKey: string;
+
   constructor() {
     super();
-    
-    // Generate encryption key from environment variable or create one
-    const keyString = process.env.SESSION_SECRET || 'default-session-secret-key';
-    this.encryptionKey = crypto.scryptSync(keyString, 'salt', 32);
-    
-    // Clean up expired sessions every hour
-    setInterval(() => {
-      this.cleanupExpiredSessions();
-    }, 60 * 60 * 1000);
-  }
-
-  /**
-   * Encrypt session data before storing in database
-   */
-  private encrypt(text: string): string {
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipher('aes-256-gcm', this.encryptionKey);
-    cipher.setAAD(Buffer.from('session-data'));
-    
-    let encrypted = cipher.update(text, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    
-    const authTag = cipher.getAuthTag();
-    return iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted;
-  }
-
-  /**
-   * Decrypt session data when retrieving from database
-   */
-  private decrypt(encryptedText: string): string {
-    const parts = encryptedText.split(':');
-    if (parts.length !== 3) {
-      throw new Error('Invalid encrypted session data format');
-    }
-    
-    const [ivHex, authTagHex, encrypted] = parts;
-    const iv = Buffer.from(ivHex, 'hex');
-    const authTag = Buffer.from(authTagHex, 'hex');
-    
-    const decipher = crypto.createDecipher('aes-256-gcm', this.encryptionKey);
-    decipher.setAAD(Buffer.from('session-data'));
-    decipher.setAuthTag(authTag);
-    
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    
-    return decrypted;
+    // Use environment variable or generate a key
+    this.encryptionKey = process.env.SESSION_ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
   }
 
   /**
    * Get session from database
    */
-  async get(sessionId: string, callback: (err?: any, session?: SessionData | null) => void): Promise<void> {
+  async get(sessionId: string, callback: (err?: any, session?: ExpressSessionData | null) => void): Promise<void> {
     try {
       const result = await db
         .select()
@@ -89,43 +42,26 @@ export class SecureNeonSessionStore extends Store {
         .limit(1);
 
       if (result.length === 0) {
-        return callback(null, null);
+        callback(null, null);
+        return;
       }
 
       const sessionRecord = result[0];
       
-      // Check if session has expired
-      if (new Date() > sessionRecord.expiresAt) {
+      // Check if session is expired
+      if (sessionRecord.expiresAt && new Date() > sessionRecord.expiresAt) {
+        // Clean up expired session
         await this.destroy(sessionId, () => {});
-        return callback(null, null);
+        callback(null, null);
+        return;
       }
 
-      // Update last accessed time
-      await db
-        .update(sessions)
-        .set({ 
-          lastAccessedAt: new Date(),
-          updatedAt: new Date()
-        })
-        .where(eq(sessions.sessionId, sessionId));
+      // Parse session data
+      const sessionData = typeof sessionRecord.sessionData === 'string' 
+        ? JSON.parse(sessionRecord.sessionData) 
+        : sessionRecord.sessionData;
 
-      // Decrypt and return session data
-      let sessionData: SessionData = {};
-      if (sessionRecord.sessionData && typeof sessionRecord.sessionData === 'object') {
-        sessionData = sessionRecord.sessionData as SessionData;
-      }
-
-      // Add metadata to session
-      sessionData.__meta = {
-        userId: sessionRecord.userId,
-        ipAddress: sessionRecord.ipAddress,
-        userAgent: sessionRecord.userAgent,
-        csrfToken: sessionRecord.csrfToken,
-        createdAt: sessionRecord.createdAt,
-        lastAccessedAt: sessionRecord.lastAccessedAt
-      };
-
-      callback(null, sessionData);
+      callback(null, sessionData as ExpressSessionData);
     } catch (error) {
       console.error('[SecureSessionStore] Error getting session:', error);
       callback(error);
@@ -135,7 +71,7 @@ export class SecureNeonSessionStore extends Store {
   /**
    * Set/update session in database
    */
-  async set(sessionId: string, sessionData: SessionData, callback?: (err?: any) => void): Promise<void> {
+  async set(sessionId: string, sessionData: ExpressSessionData, callback?: (err?: any) => void): Promise<void> {
     try {
       const expiresAt = new Date();
       expiresAt.setTime(expiresAt.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
@@ -217,7 +153,7 @@ export class SecureNeonSessionStore extends Store {
   /**
    * Touch session to update expiration
    */
-  async touch(sessionId: string, sessionData: SessionData, callback?: (err?: any) => void): Promise<void> {
+  async touch(sessionId: string, sessionData: ExpressSessionData, callback?: (err?: any) => void): Promise<void> {
     try {
       const expiresAt = new Date();
       expiresAt.setTime(expiresAt.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
@@ -241,7 +177,7 @@ export class SecureNeonSessionStore extends Store {
   /**
    * Get all sessions (for admin purposes)
    */
-  async all(callback: (err?: any, sessions?: SessionData[] | null) => void): Promise<void> {
+  async all(callback: (err?: any, sessions?: ExpressSessionData[] | null) => void): Promise<void> {
     try {
       const result = await db
         .select()
@@ -313,9 +249,9 @@ export class SecureNeonSessionStore extends Store {
           isActive: false,
           updatedAt: now
         })
-        .where(lt(sessions.expiresAt, now));
+        .where(sql`${sessions.expiresAt} < ${now}`);
       
-      console.log('[SecureSessionStore] Cleaned up expired sessions');
+      
     } catch (error) {
       console.error('[SecureSessionStore] Error cleaning up expired sessions:', error);
     }
@@ -336,7 +272,7 @@ export class SecureNeonSessionStore extends Store {
 
       return result.map(record => ({
         sessionId: record.sessionId,
-        sessionData: (record.sessionData as SessionData) || {},
+        sessionData: (record.sessionData as ExpressSessionData) || {},
         userId: record.userId,
         ipAddress: record.ipAddress,
         userAgent: record.userAgent,
@@ -364,7 +300,7 @@ export class SecureNeonSessionStore extends Store {
         })
         .where(eq(sessions.userId, userId));
       
-      console.log(`[SecureSessionStore] Invalidated all sessions for user ${userId}`);
+      
     } catch (error) {
       console.error('[SecureSessionStore] Error invalidating user sessions:', error);
     }

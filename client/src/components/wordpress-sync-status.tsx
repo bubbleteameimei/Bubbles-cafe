@@ -85,7 +85,7 @@ export function WordPressSyncStatus() {
               history = history.slice(0, 10);
             }
           } catch (e) {
-            console.error('[WordPress] Error parsing sync history:', e);
+            
             history = [];
           }
         }
@@ -101,7 +101,7 @@ export function WordPressSyncStatus() {
           setSyncHistory(history);
         }
       } catch (error) {
-        console.error('[WordPress] Error checking sync status:', error);
+        
       }
     };
     
@@ -123,7 +123,7 @@ export function WordPressSyncStatus() {
       // Note: We don't need to manually update the status here since
       // forceSyncNow will update localStorage, which our effect will detect
     } catch (error) {
-      console.error('[WordPress] Manual sync retry failed:', error);
+      
     } finally {
       setIsRetrying(false);
     }

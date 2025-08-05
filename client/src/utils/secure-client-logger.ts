@@ -44,7 +44,7 @@ const filterSensitiveData = (data: any): any => {
 export const logger = {
   debug: (message: string, data?: any) => {
     if (isDebugMode) {
-      console.log(`[DEBUG] ${message}`, data ? filterSensitiveData(data) : '');
+      
     }
   },
   info: (message: string, data?: any) => {
@@ -56,7 +56,7 @@ export const logger = {
     console.warn(`[WARN] ${message}`, data ? filterSensitiveData(data) : '');
   },
   error: (message: string, data?: any) => {
-    console.error(`[ERROR] ${message}`, data ? filterSensitiveData(data) : '');
+    
   }
 };
 

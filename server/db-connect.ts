@@ -45,7 +45,7 @@ export async function waitForPoolInitialization(timeoutMs = 10000): Promise<bool
 // Self-executing async function to initialize the database connection
 initializationPromise = (async () => {
   try {
-    console.log('Initializing database connection for server...');
+    
     
     // Initialize the database connection using the shared module
     const connection = await initializeDatabaseConnection();
@@ -63,14 +63,14 @@ initializationPromise = (async () => {
     });
     
     pool.on('connect', () => {
-      console.log('New client connected to database');
+      
     });
     
     pool.on('remove', () => {
-      console.log('Client connection removed from pool');
+      
     });
     
-    console.log('Database connection initialized successfully');
+    
     isInitialized = true;
   } catch (err) {
     console.error('Critical error during database initialization:', err);
@@ -78,7 +78,7 @@ initializationPromise = (async () => {
     
     // Attempt to recover and reconnect periodically
     setTimeout(() => {
-      console.log('Attempting to reconnect to database...');
+      
       // The module will be reloaded on next import
     }, 30000); // Try again in 30 seconds
   }

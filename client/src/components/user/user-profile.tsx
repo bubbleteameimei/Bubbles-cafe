@@ -69,11 +69,11 @@ export function UserProfile() {
   // Mutation to update profile
   const updateProfileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      console.log('[Profile] Updating profile with data:', data);
+      
       const { email, ...otherData } = data;
       
       // Send a regular JSON update
-      console.log('[Profile] Using JSON update for profile data');
+      
       const updateData = {
         username: otherData.username,
         metadata: {
@@ -91,7 +91,7 @@ export function UserProfile() {
         extendedMetadata.fullName = otherData.fullName;
       }
       
-      console.log('[Profile] Sending update data:', updateData);
+      
       
       return apiRequest<UserProfileResponse>('/api/auth/profile', {
         method: 'PATCH',
@@ -100,7 +100,7 @@ export function UserProfile() {
       });
     },
     onSuccess: (data) => {
-      console.log('[Profile] Profile updated successfully:', data);
+      
       toast({
         title: 'Profile Updated',
         description: 'Your profile has been updated successfully.',
@@ -116,7 +116,7 @@ export function UserProfile() {
       }, 500);
     },
     onError: (error) => {
-      console.error('[Profile] Failed to update profile:', error);
+      
       toast({
         title: 'Update Failed',
         description: 'Failed to update your profile. Please try again.',

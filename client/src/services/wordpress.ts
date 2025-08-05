@@ -108,9 +108,9 @@ function savePostsToLocalStorage(posts: WordPressPost[]): void {
     localStorage.setItem(WP_POSTS_CACHE_KEY, JSON.stringify(mergedPosts));
     localStorage.setItem(WP_LAST_UPDATED_KEY, new Date().toISOString());
     
-    console.log(`[WordPress Service] Cached ${mergedPosts.length} posts to local storage`);
+    
   } catch (error) {
-    console.error('[WordPress Service] Error saving posts to local storage:', error);
+    
   }
 }
 
@@ -131,15 +131,15 @@ function getPostsFromLocalStorage(): WordPressPost[] {
       const currentTime = new Date().getTime();
       
       if (currentTime - lastUpdatedTime > CACHE_EXPIRY_TIME) {
-        console.log('[WordPress Service] Cache expired, should fetch fresh data');
+        
       } else {
-        console.log(`[WordPress Service] Using valid cache of ${cachedPosts.length} posts`);
+        
       }
     }
     
     return cachedPosts;
   } catch (error) {
-    console.error('[WordPress Service] Error retrieving posts from local storage:', error);
+    
     return [];
   }
 }
@@ -160,7 +160,7 @@ function getPaginatedPostsFromCache(page: number, perPage: number): WordPressPos
  */
 export async function fetchAllWordPressPosts(): Promise<WordPressPost[]> {
   try {
-    console.log('[WordPress Service] Fetching all available posts');
+    
     
     // Start with page 1 and a large per_page value
     let currentPage = 1;
@@ -170,7 +170,7 @@ export async function fetchAllWordPressPosts(): Promise<WordPressPost[]> {
     
     // Fetch posts until we've retrieved all available pages
     while (hasMorePages && currentPage <= 10) { // Cap at 10 pages (1000 posts) for safety
-      console.log(`[WordPress Service] Fetching page ${currentPage} of posts`);
+      
       const pagePosts = await fetchWordPressPosts(currentPage, perPage);
       
       if (pagePosts.length > 0) {
@@ -186,17 +186,17 @@ export async function fetchAllWordPressPosts(): Promise<WordPressPost[]> {
       }
     }
     
-    console.log(`[WordPress Service] Successfully fetched all ${allPosts.length} posts`);
+    
     return allPosts;
   } catch (error) {
-    console.error('[WordPress Service] Error fetching all posts:', error);
+    
     return getPostsFromLocalStorage();
   }
 }
 
 export async function fetchWordPressPosts(page = 1, perPage = 100): Promise<WordPressPost[]> {
   try {
-    console.log(`[WordPress Service] Fetching posts for page ${page} with ${perPage} per page`);
+    
     
     // Create simpler URL parameters for basic fetch
     const params = new URLSearchParams({
@@ -208,7 +208,7 @@ export async function fetchWordPressPosts(page = 1, perPage = 100): Promise<Word
 
     // Create complete URL
     const url = `${WORDPRESS_API_URL}?${params}`;
-    console.log(`[WordPress Service] Request URL: ${url}`);
+    
     
     // Set fetch options including timeout
     const options = {
@@ -228,42 +228,42 @@ export async function fetchWordPressPosts(page = 1, perPage = 100): Promise<Word
     
     try {
       // Fetch with more detailed logging and timeout handling
-      console.log(`[WordPress Service] Sending request to WordPress API...`);
+      
       const response = await fetch(url, {
         ...options,
         signal: controller.signal
       });
       clearTimeout(timeoutId); // Clear timeout if request completes
-      console.log(`[WordPress Service] Received response: ${response.status} ${response.statusText}`);
+      
       
       // Return early if the content type is not JSON
       const contentType = response.headers.get('content-type');
       if (contentType && !contentType.includes('application/json')) {
-        console.error(`[WordPress Service] Invalid content type: ${contentType}`);
+        
         throw new Error(`API returned non-JSON content type: ${contentType}`);
       }
 
       // Handle non-OK responses
       if (!response.ok) {
-        console.error(`[WordPress Service] API Error: ${response.status} ${response.statusText}`);
+        
         
         // Log response headers for debugging
         const headers: Record<string, string> = {};
         response.headers.forEach((value: string, key: string) => {
           headers[key] = value;
         });
-        console.log(`[WordPress Service] Response headers:`, headers);
+        
         
         throw new Error(`API returned error status: ${response.status}`);
       }
 
       // Parse response
       const posts = await response.json() as WordPressPost[];
-      console.log(`[WordPress Service] Received ${Array.isArray(posts) ? posts.length : 'non-array'} response`);
+      
 
       // Validate response format
       if (!Array.isArray(posts)) {
-        console.error('[WordPress Service] Invalid response format (not an array):', typeof posts);
+        
         throw new Error('API returned non-array response');
       }
 
@@ -274,26 +274,26 @@ export async function fetchWordPressPosts(page = 1, perPage = 100): Promise<Word
       return posts;
     } catch (fetchError) {
       clearTimeout(timeoutId); // Clear timeout if fetch fails
-      console.error('[WordPress Service] Fetch operation failed:', fetchError);
+      
       
       // Return cached data if available
       const cachedPosts = getPaginatedPostsFromCache(page, perPage);
       if (cachedPosts.length > 0) {
-        console.log(`[WordPress Service] Returning ${cachedPosts.length} cached posts as fallback`);
+        
         return cachedPosts;
       }
       
       // Return empty array if no cache is available
-      console.log('[WordPress Service] No cached posts available, returning empty array');
+      
       return [];
     }
   } catch (error) {
-    console.error('[WordPress Service] Fetch error:', error);
+    
     
     // Return cached data in case of network errors
     const cachedPosts = getPaginatedPostsFromCache(page, perPage);
     if (cachedPosts.length > 0) {
-      console.log(`[WordPress Service] Returning ${cachedPosts.length} cached posts after fetch error`);
+      
       return cachedPosts;
     }
     
@@ -326,7 +326,7 @@ function saveParsedPostToLocalStorage(post: Partial<Post>): void {
     // Save to localStorage
     localStorage.setItem(CONVERTED_POSTS_CACHE_KEY, JSON.stringify(mergedPosts));
   } catch (error) {
-    console.error('[WordPress Service] Error saving converted post to local storage:', error);
+    
   }
 }
 
@@ -339,7 +339,7 @@ function getConvertedPostsFromLocalStorage(): Partial<Post>[] {
     if (!data) return [];
     return JSON.parse(data) as Partial<Post>[];
   } catch (error) {
-    console.error('[WordPress Service] Error retrieving converted posts from local storage:', error);
+    
     return [];
   }
 }
@@ -352,7 +352,7 @@ export function getConvertedPostBySlug(slug: string): Partial<Post> | undefined 
     const posts = getConvertedPostsFromLocalStorage();
     return posts.find(post => post.slug === slug);
   } catch (error) {
-    console.error('[WordPress Service] Error retrieving post by slug from local storage:', error);
+    
     return undefined;
   }
 }
@@ -360,7 +360,7 @@ export function getConvertedPostBySlug(slug: string): Partial<Post> | undefined 
 export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
   try {
     if (!wpPost.title?.rendered || !wpPost.content?.rendered || !wpPost.slug) {
-      console.error(`[WordPress Service] Invalid post data: Missing required fields for post ${wpPost.id}`);
+      
       const fallbackPost = {
         id: wpPost.id || Math.floor(Math.random() * 10000),
         title: wpPost.title?.rendered?.trim() || 'Untitled Story',
@@ -391,7 +391,7 @@ export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
     
     return convertedPost;
   } catch (error) {
-    console.error('[WordPress Service] Error converting post:', error);
+    
     return {
       id: Math.floor(Math.random() * 10000),
       title: 'Error Loading Story',
