@@ -30,11 +30,13 @@ router.get('/',
     const { page, limit, category, search } = req.query as any;
     
     try {
+      // Get posts with pagination and filtering
       const posts = await storage.getPosts({
-        page: Number(page),
-        limit: Number(limit),
-        category,
-        search
+        limit: Number(limit) || 10,
+        offset: (Number(page) - 1) * (Number(limit) || 10),
+        themeCategory: category,
+        search: search,
+        isSecret: false // Only show public posts
       });
       
       postsLogger.debug('Posts retrieved successfully', { 
@@ -44,9 +46,10 @@ router.get('/',
       });
       
       res.json(posts);
-    } catch (error) {
-      postsLogger.error('Error retrieving posts', { error });
-      throw createError.internal('Failed to retrieve posts');
+    } catch (error: unknown) {
+      console.error("Error fetching posts:", error);
+      if (error && typeof error === 'object' && 'statusCode' in error) throw error;
+      throw createError(500, "Failed to fetch posts");
     }
   })
 );
@@ -62,15 +65,15 @@ router.get('/:id',
       const post = await storage.getPost(Number(id));
       
       if (!post) {
-        throw createError.notFound('Post not found');
+        throw createError(404, "Post not found");
       }
       
       postsLogger.debug('Post retrieved successfully', { postId: id });
       res.json(post);
-    } catch (error) {
-      if (error.statusCode) throw error;
-      postsLogger.error('Error retrieving post', { postId: id, error });
-      throw createError.internal('Failed to retrieve post');
+    } catch (error: unknown) {
+      console.error("Error fetching post:", error);
+      if (error && typeof error === 'object' && 'statusCode' in error) throw error;
+      throw createError(404, "Post not found");
     }
   })
 );
@@ -98,9 +101,10 @@ router.post('/',
       });
       
       res.status(201).json(newPost);
-    } catch (error) {
-      postsLogger.error('Error creating post', { authorId: req.user.id, error });
-      throw createError.internal('Failed to create post');
+    } catch (error: unknown) {
+      console.error("Error creating post:", error);
+      if (error && typeof error === 'object' && 'statusCode' in error) throw error;
+      throw createError(500, "Failed to create post");
     }
   })
 );

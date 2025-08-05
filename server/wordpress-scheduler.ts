@@ -39,7 +39,7 @@ export class WordPressScheduler {
 
   stop(): void {
     if (this.syncJob) {
-      this.syncJob.destroy();
+      this.syncJob.stop();
       this.syncJob = null;
       console.log('[WordPress Scheduler] Stopped');
     }

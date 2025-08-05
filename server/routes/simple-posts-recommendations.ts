@@ -1,12 +1,12 @@
-import { Request, Response, Express } from "express";
-import { db } from "../db-connect";
 import { posts } from "@shared/schema";
-import { desc, eq, and, ne, or, sql } from "drizzle-orm";
+import { db } from "../db";
+import { desc, ne } from "drizzle-orm";
+import { Request, Response } from "express";
 
 /**
  * Simple post recommendations implementation focusing on reliability
  */
-export function registerPostRecommendationsRoutes(app: Express) {
+export function registerPostRecommendationsRoutes(app: any) {
   console.log("Registering simple post recommendations routes");
   
   /**
@@ -58,7 +58,7 @@ export function registerPostRecommendationsRoutes(app: Express) {
       .limit(limit);
       
       console.log(`Found ${recommendedPosts.length} posts to recommend:`, 
-        recommendedPosts.map(p => p.id));
+        recommendedPosts.map((p: any) => p.id));
       
       // Add metadata for frontend display
       const enhancedPosts = enhancePostsWithMetadata(recommendedPosts);

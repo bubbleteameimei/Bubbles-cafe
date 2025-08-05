@@ -2,7 +2,7 @@
  * WordPress Sync API Routes
  * These routes handle WordPress content importing and synchronization
  */
-import { Express, Request, Response } from 'express';
+import { Express, Request, Response, NextFunction } from 'express';
 import { syncWordPressPosts, syncSingleWordPressPost, SyncResult, getSyncStatus } from '../wordpress-sync';
 import { wordpressSync } from '../wordpress-api-sync';
 import { log } from '../vite.js';
@@ -27,25 +27,18 @@ let lastSyncTime: string | null = null;
 import { z } from 'zod';
 
 // Placeholder middleware for authentication/authorization
-function requireAuth(req, res, next) {
-  // Implement authentication/authorization logic here
-  // e.g., check req.user or session
-  // If not authenticated, return res.status(401).json({ error: 'Unauthorized' });
-  // Example: if (!req.user || !req.user.isAdmin) return res.status(403).json({ error: 'Forbidden' });
+function requireAuth(req: Request, res: Response, next: NextFunction): void {
+  // Authentication logic here
   next();
 }
 
-// Placeholder middleware for CSRF protection
-function csrfProtection(req, res, next) {
-  // Implement CSRF token validation here
-  // If invalid, return res.status(403).json({ error: 'Invalid CSRF token' });
+function csrfProtection(req: Request, res: Response, next: NextFunction): void {
+  // CSRF protection logic here
   next();
 }
 
-// Placeholder middleware for rate limiting
-function rateLimit(req, res, next) {
-  // Implement rate limiting logic here (e.g., express-rate-limit)
-  // If rate limit exceeded, return res.status(429).json({ error: 'Too many requests' });
+function rateLimit(req: Request, res: Response, next: NextFunction): void {
+  // Rate limiting logic here
   next();
 }
 
@@ -55,9 +48,8 @@ const syncPostSchema = z.object({
 });
 
 // Example logging utility
-function logEvent(message, meta) {
-  // Replace with a real logger (e.g., Winston, Pino, Sentry)
-  console.log(`[LOG] ${message}`, meta || '');
+function logEvent(message: string, meta?: any): void {
+  console.log(`[WordPress Sync] ${message}`, meta || '');
 }
 
 // TODO: Implement CSRF protection and rate limiting for all POST endpoints below.
@@ -135,7 +127,7 @@ export function registerWordPressSyncRoutes(app: Express): void {
    * POST /api/wordpress/sync
    * Trigger a WordPress sync manually
    */
-  app.post('/api/wordpress/sync', requireAuth, csrfProtection, rateLimit, async (_req: Request, res: Response) => {
+  app.post('/api/wordpress/sync', requireAuth, csrfProtection, rateLimit, async (_req: Request, res: Response): Promise<void> => {
     // Example: log event
     logEvent('Manual WordPress sync triggered via API', { user: _req.user });
     // TODO: Add input validation if accepting body data
@@ -175,7 +167,7 @@ export function registerWordPressSyncRoutes(app: Express): void {
    * POST /api/wordpress/sync/:postId
    * Trigger a WordPress sync for a single post
    */
-  app.post('/api/wordpress/sync/:postId', requireAuth, csrfProtection, rateLimit, async (req: Request, res: Response) => {
+  app.post('/api/wordpress/sync/:postId', requireAuth, csrfProtection, rateLimit, async (req: Request, res: Response): Promise<void> => {
     // Validate input
     const parseResult = syncPostSchema.safeParse({ postId: req.params.postId });
     if (!parseResult.success) {

@@ -80,7 +80,7 @@ router.post('/user/:id/update-metadata', async (req, res) => {
 });
 
 // Test endpoint to examine direct database connection
-router.get('/db-info', async (req, res) => {
+router.get('/db-info', async (_req, res) => {
   try {
     // Get all users to test database connection
     const allUsers = await db.select().from(users);
@@ -118,6 +118,18 @@ router.post('/user/:id/update', validateCsrfToken(), async (req, res) => {
 
     console.log('Updating user with data:', updateData);
     const updatedUser = await storage.updateUser(userId, updateData);
+
+    if (updatedUser) {
+      console.log('✅ User updated successfully:', {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        username: updatedUser.username,
+        isAdmin: updatedUser.isAdmin,
+        isVerified: updatedUser.isVerified
+      });
+    } else {
+      console.log('❌ Failed to update user');
+    }
 
     return res.json({
       success: true,
@@ -158,6 +170,18 @@ router.post('/user/:id/update-no-csrf', async (req, res) => {
 
     console.log('Updating user with data (no CSRF):', updateData);
     const updatedUser = await storage.updateUser(userId, updateData);
+
+    if (updatedUser) {
+      console.log('✅ User updated successfully:', {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        username: updatedUser.username,
+        isAdmin: updatedUser.isAdmin,
+        isVerified: updatedUser.isVerified
+      });
+    } else {
+      console.log('❌ Failed to update user');
+    }
 
     return res.json({
       success: true,
@@ -218,6 +242,18 @@ router.post('/profile-update-test', async (req, res) => {
       console.log('Updating with merged metadata:', mergedUpdate);
       const updatedUser = await storage.updateUser(userId, mergedUpdate);
       
+      if (updatedUser) {
+        console.log('✅ User updated successfully:', {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          username: updatedUser.username,
+          isAdmin: updatedUser.isAdmin,
+          isVerified: updatedUser.isVerified
+        });
+      } else {
+        console.log('❌ Failed to update user');
+      }
+
       return res.json({
         success: true,
         message: 'User profile updated with merged metadata',
@@ -233,6 +269,18 @@ router.post('/profile-update-test', async (req, res) => {
       console.log('Updating user without metadata changes:', updateData);
       const updatedUser = await storage.updateUser(userId, updateData);
       
+      if (updatedUser) {
+        console.log('✅ User updated successfully:', {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          username: updatedUser.username,
+          isAdmin: updatedUser.isAdmin,
+          isVerified: updatedUser.isVerified
+        });
+      } else {
+        console.log('❌ Failed to update user');
+      }
+
       return res.json({
         success: true,
         message: 'User profile updated without metadata changes',

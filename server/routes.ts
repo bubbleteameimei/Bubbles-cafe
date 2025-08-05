@@ -42,7 +42,7 @@ import newsletterRouter from './routes/newsletter';
 import bookmarksRouter from './routes/bookmarks';
 // CSRF protection completely removed as requested
 import { createSecureLogger } from './utils/secure-logger';
-import { requestLogger, errorLogger } from './utils/debug-logger';
+import { requestLogger, errorLoggerMiddleware } from './utils/debug-logger';
 import { validateBody, validateQuery, validateParams, commonSchemas } from './middleware/input-validation';
 import { asyncHandler, createError } from './utils/error-handler';
 import { db } from "./db";
@@ -3162,7 +3162,7 @@ Message ID: ${savedMessage.id}
   app.use('/api/auth', firebaseAuthRoutes);
 
   // Add error logger middleware AFTER all routes
-  app.use(errorLogger);
+  app.use(errorLoggerMiddleware);
   
   // Global error handler with enhanced logging - MUST BE LAST
   app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

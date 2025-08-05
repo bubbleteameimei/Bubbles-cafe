@@ -161,16 +161,28 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const hashedPassword = await bcrypt.hash(insertUser.password, 10);
+  async createUser(insertUser: InsertUser & { password?: string }): Promise<User> {
+    // Handle both password (from registration) and password_hash (already hashed)
+    let passwordHash: string;
+    if ('password' in insertUser && insertUser.password) {
+      passwordHash = await bcrypt.hash(insertUser.password, 10);
+    } else if (insertUser.password_hash) {
+      passwordHash = insertUser.password_hash;
+    } else {
+      throw new Error('Password or password_hash is required');
+    }
     
     const [user] = await db
       .insert(users)
       .values({
         username: insertUser.username,
         email: insertUser.email,
-        password_hash: hashedPassword,
+        password_hash: passwordHash,
         isAdmin: insertUser.isAdmin || false,
+        firebaseUid: insertUser.firebaseUid,
+        avatar: insertUser.avatar,
+        fullName: insertUser.fullName,
+        isVerified: insertUser.isVerified || false,
         metadata: insertUser.metadata || {}
       })
       .returning();
@@ -237,18 +249,18 @@ export class DatabaseStorage implements IStorage {
     }
     
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      query = query.where(and(...conditions)) as typeof query;
     }
     
     const results = await query
       .orderBy(desc(posts.createdAt))
-      .limit(limit + 1)
+      .limit(limit + 1) // Get one extra to check if there are more
       .offset(offset);
     
     const hasMore = results.length > limit;
-    const posts_result = hasMore ? results.slice(0, -1) : results;
+    const posts_data = hasMore ? results.slice(0, limit) : results;
     
-    return { posts: posts_result, hasMore };
+    return { posts: posts_data, hasMore };
   }
 
   async getPost(id: number): Promise<Post | undefined> {
@@ -303,7 +315,8 @@ export class DatabaseStorage implements IStorage {
       .insert(comments)
       .values({
         ...insertComment,
-        is_approved: insertComment.approved !== undefined ? insertComment.approved : false
+        // Remove reference to non-existent approved field
+        // is_approved field is handled by the schema defaults
       })
       .returning();
     
