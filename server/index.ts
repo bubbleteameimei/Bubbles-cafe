@@ -280,12 +280,7 @@ async function startServer() {
     serverLogger.info('HTTP server instance created');
     console.log('✅ HTTP server instance created');
 
-    // Add a simple test route
-    app.get('/test', (req, res) => {
-      res.json({ message: 'Server is working!' });
-    });
-    serverLogger.info('Test route added');
-    console.log('✅ Test route added');
+
 
     // Setup routes based on environment
     if (isDev) {
@@ -330,6 +325,13 @@ async function startServer() {
       
       // We've moved the post recommendations endpoint to main routes.ts
       // registerPostRecommendationsRoutes(app);
+      
+      // Add a simple test route after all middleware
+      app.get('/test', (req, res) => {
+        res.json({ message: 'Server is working!' });
+      });
+      serverLogger.info('Test route added');
+      console.log('✅ Test route added');
       
       await setupVite(app, server);
     } else {
