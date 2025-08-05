@@ -1,34 +1,81 @@
-import { createSecureLogger } from '../utils/secure-logger';
-import { handleDatabaseError, createError } from '../utils/error-handler';
-import { db } from "../db";
+import { db } from '../db';
 import { users, type User, type InsertUser } from "@shared/schema";
-import { eq, sql, and } from "drizzle-orm";
-import * as bcrypt from 'bcryptjs';
+import { eq, sql, desc, like, and, or } from "drizzle-orm";
+import { userLogger } from '../utils/debug-logger';
+import { handleDatabaseError } from '../utils/error-handler';
 
-const userLogger = createSecureLogger('UserService');
+// Define proper return types for different query contexts
+type UserProfile = {
+  id: number;
+  username: string;
+  email: string;
+  isAdmin: boolean;
+  metadata: unknown;
+  createdAt: Date;
+  firebaseUid: string | null;
+  avatar: string | null;
+  fullName: string | null;
+  isVerified: boolean;
+  password_hash: string | null;
+};
+
+type UserPublicProfile = Omit<UserProfile, 'password_hash' | 'email'> & {
+  email?: string;
+  password_hash?: string;
+};
+
+type UserAuthData = {
+  id: number;
+  username: string;
+  email: string;
+  password_hash: string | null;
+  isAdmin: boolean;
+  metadata: unknown;
+  createdAt: Date;
+  firebaseUid: string | null;
+  avatar: string | null;
+  fullName: string | null;
+  isVerified: boolean;
+};
 
 export class UserService {
   // Get user by ID
-  async getUser(id: number): Promise<User | null> {
+  async getUserById(id: number, includePrivateInfo: boolean = false): Promise<UserProfile | UserPublicProfile | null> {
     try {
-      const [user] = await db.select({
+      const selectFields = {
         id: users.id,
         username: users.username,
         email: users.email,
         isAdmin: users.isAdmin,
         metadata: users.metadata,
-        createdAt: users.createdAt
-      }).from(users).where(eq(users.id, id)).limit(1);
+        createdAt: users.createdAt,
+        firebaseUid: users.firebaseUid,
+        avatar: users.avatar,
+        fullName: users.fullName,
+        isVerified: users.isVerified,
+        ...(includePrivateInfo ? { password_hash: users.password_hash } : {})
+      };
 
-      return user || null;
+      const [user] = await db.select(selectFields)
+        .from(users)
+        .where(eq(users.id, id))
+        .limit(1);
+
+      if (!user) return null;
+
+      if (includePrivateInfo) {
+        return user as UserProfile;
+      } else {
+        return user as UserPublicProfile;
+      }
     } catch (error) {
       userLogger.error('Error fetching user by ID', { userId: id, error });
       throw handleDatabaseError(error);
     }
   }
 
-  // Get user by email
-  async getUserByEmail(email: string): Promise<User | null> {
+  // Get user by email for authentication
+  async getUserByEmail(email: string): Promise<UserAuthData | null> {
     try {
       const [user] = await db.select({
         id: users.id,
@@ -37,72 +84,111 @@ export class UserService {
         password_hash: users.password_hash,
         isAdmin: users.isAdmin,
         metadata: users.metadata,
-        createdAt: users.createdAt
-      }).from(users).where(eq(sql`LOWER(${users.email})`, email.toLowerCase())).limit(1);
+        createdAt: users.createdAt,
+        firebaseUid: users.firebaseUid,
+        avatar: users.avatar,
+        fullName: users.fullName,
+        isVerified: users.isVerified
+      })
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
 
       return user || null;
     } catch (error) {
-      userLogger.error('Error fetching user by email', { error });
+      userLogger.error('Error fetching user by email', { email, error });
       throw handleDatabaseError(error);
     }
   }
 
-  // Get user with password hash (for authentication)
-  async getUserWithPassword(id: number): Promise<User | null> {
+  // Get user by username
+  async getUserByUsername(username: string): Promise<UserPublicProfile | null> {
     try {
-      const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
-      return user || null;
-    } catch (error) {
-      userLogger.error('Error fetching user with password', { userId: id, error });
-      throw handleDatabaseError(error);
-    }
-  }
-
-  // Create new user
-  async createUser(userData: InsertUser): Promise<User> {
-    try {
-      // Check if user already exists
-      const existingUser = await this.getUserByEmail(userData.email);
-      if (existingUser) {
-        throw createError.conflict('User with this email already exists');
-      }
-
-      const [newUser] = await db.insert(users).values({
-        ...userData,
-        email: userData.email.toLowerCase(),
-        metadata: userData.metadata || {}
-      }).returning({
+      const [user] = await db.select({
         id: users.id,
         username: users.username,
-        email: users.email,
         isAdmin: users.isAdmin,
         metadata: users.metadata,
-        createdAt: users.createdAt
-      });
+        createdAt: users.createdAt,
+        firebaseUid: users.firebaseUid,
+        avatar: users.avatar,
+        fullName: users.fullName,
+        isVerified: users.isVerified
+      })
+        .from(users)
+        .where(eq(users.username, username))
+        .limit(1);
 
-      userLogger.info('User created successfully', { userId: newUser.id });
-      return newUser;
+      return user as UserPublicProfile || null;
     } catch (error) {
-      userLogger.error('Error creating user', { email: userData.email, error });
+      userLogger.error('Error fetching user by username', { username, error });
+      throw handleDatabaseError(error);
+    }
+  }
+
+  // Create user
+  async createUser(userData: InsertUser & { password?: string }): Promise<UserProfile> {
+    try {
+      // Handle password hashing if password is provided
+      let insertData = { ...userData };
+      if (userData.password) {
+        const bcrypt = await import('bcryptjs');
+        const hashedPassword = await bcrypt.hash(userData.password, 10);
+        insertData = {
+          ...userData,
+          password_hash: hashedPassword
+        };
+        delete insertData.password;
+      }
+
+      const [newUser] = await db.insert(users)
+        .values({
+          ...insertData,
+          metadata: insertData.metadata || {},
+          isAdmin: insertData.isAdmin || false,
+          isVerified: insertData.isVerified || false
+        })
+        .returning({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          isAdmin: users.isAdmin,
+          metadata: users.metadata,
+          createdAt: users.createdAt,
+          firebaseUid: users.firebaseUid,
+          avatar: users.avatar,
+          fullName: users.fullName,
+          isVerified: users.isVerified,
+          password_hash: users.password_hash
+        });
+
+      userLogger.info('User created successfully', { userId: newUser.id, username: newUser.username });
+      return newUser as UserProfile;
+    } catch (error) {
+      userLogger.error('Error creating user', { userData: { ...userData, password: '[REDACTED]' }, error });
       throw handleDatabaseError(error);
     }
   }
 
   // Update user
-  async updateUser(id: number, userData: Partial<InsertUser>): Promise<User> {
+  async updateUser(id: number, userData: Partial<InsertUser>): Promise<UserProfile | null> {
     try {
-      const existingUser = await this.getUser(id);
+      // Get existing user to merge metadata properly
+      const existingUser = await this.getUserById(id, true);
       if (!existingUser) {
-        throw createError.notFound('User not found');
+        return null;
       }
 
-      const updateData = { ...userData };
-      if (updateData.email) {
-        updateData.email = updateData.email.toLowerCase();
-      }
+      // Merge metadata if provided
+      const updatedData = {
+        ...userData,
+        metadata: userData.metadata ? 
+          { ...(existingUser.metadata as Record<string, unknown> || {}), ...userData.metadata } : 
+          existingUser.metadata
+      };
 
       const [updatedUser] = await db.update(users)
-        .set(updateData)
+        .set(updatedData)
         .where(eq(users.id, id))
         .returning({
           id: users.id,
@@ -110,69 +196,47 @@ export class UserService {
           email: users.email,
           isAdmin: users.isAdmin,
           metadata: users.metadata,
-          createdAt: users.createdAt
+          createdAt: users.createdAt,
+          firebaseUid: users.firebaseUid,
+          avatar: users.avatar,
+          fullName: users.fullName,
+          isVerified: users.isVerified,
+          password_hash: users.password_hash
         });
 
-      userLogger.info('User updated successfully', { userId: id });
-      return updatedUser;
-    } catch (error) {
-      userLogger.error('Error updating user', { userId: id, error });
-      throw handleDatabaseError(error);
-    }
-  }
-
-  // Update user password
-  async updateUserPassword(id: number, hashedPassword: string): Promise<void> {
-    try {
-      await db.update(users)
-        .set({ password_hash: hashedPassword })
-        .where(eq(users.id, id));
-
-      userLogger.info('User password updated successfully', { userId: id });
-    } catch (error) {
-      userLogger.error('Error updating user password', { userId: id, error });
-      throw handleDatabaseError(error);
-    }
-  }
-
-  // Delete user (soft delete by updating metadata)
-  async deleteUser(id: number): Promise<void> {
-    try {
-      const existingUser = await this.getUser(id);
-      if (!existingUser) {
-        throw createError.notFound('User not found');
+      if (!updatedUser) {
+        return null;
       }
 
-      await db.update(users)
-        .set({ 
-          metadata: { 
-            ...existingUser.metadata, 
-            deleted: true, 
-            deletedAt: new Date().toISOString() 
-          } 
-        })
-        .where(eq(users.id, id));
+      userLogger.info('User updated successfully', { userId: id });
+      return updatedUser as UserProfile;
+    } catch (error) {
+      userLogger.error('Error updating user', { userId: id, userData, error });
+      throw handleDatabaseError(error);
+    }
+  }
 
-      userLogger.info('User soft deleted successfully', { userId: id });
+  // Delete user
+  async deleteUser(id: number): Promise<boolean> {
+    try {
+      const [deletedUser] = await db.delete(users)
+        .where(eq(users.id, id))
+        .returning({ id: users.id });
+
+      const success = !!deletedUser;
+      if (success) {
+        userLogger.info('User deleted successfully', { userId: id });
+      }
+
+      return success;
     } catch (error) {
       userLogger.error('Error deleting user', { userId: id, error });
       throw handleDatabaseError(error);
     }
   }
 
-  // Get user count
-  async getUserCount(): Promise<number> {
-    try {
-      const [result] = await db.select({ count: sql<number>`count(*)` }).from(users);
-      return result.count;
-    } catch (error) {
-      userLogger.error('Error getting user count', { error });
-      throw handleDatabaseError(error);
-    }
-  }
-
   // Get admin users
-  async getAdminUsers(): Promise<User[]> {
+  async getAdminUsers(): Promise<UserProfile[]> {
     try {
       const adminUsers = await db.select({
         id: users.id,
@@ -180,76 +244,72 @@ export class UserService {
         email: users.email,
         isAdmin: users.isAdmin,
         metadata: users.metadata,
-        createdAt: users.createdAt
-      }).from(users).where(eq(users.isAdmin, true));
+        createdAt: users.createdAt,
+        firebaseUid: users.firebaseUid,
+        avatar: users.avatar,
+        fullName: users.fullName,
+        isVerified: users.isVerified,
+        password_hash: users.password_hash
+      })
+        .from(users)
+        .where(eq(users.isAdmin, true))
+        .orderBy(desc(users.createdAt));
 
-      return adminUsers;
+      return adminUsers as UserProfile[];
     } catch (error) {
       userLogger.error('Error fetching admin users', { error });
       throw handleDatabaseError(error);
     }
   }
 
-  // Check if user is admin by email
-  async isUserAdmin(email: string): Promise<boolean> {
-    try {
-      const [user] = await db.select({ isAdmin: users.isAdmin })
-        .from(users)
-        .where(and(
-          eq(sql`LOWER(${users.email})`, email.toLowerCase()),
-          eq(users.isAdmin, true)
-        ))
-        .limit(1);
-
-      return !!user?.isAdmin;
-    } catch (error) {
-      userLogger.error('Error checking admin status', { error });
-      return false;
-    }
-  }
-
   // Get users with pagination
-  async getUsers(options: { page?: number; limit?: number } = {}): Promise<{ users: User[]; total: number }> {
-    const page = options.page || 1;
-    const limit = Math.min(options.limit || 10, 100); // Max 100 users per page
-    const offset = (page - 1) * limit;
-
+  async getUsers(options: { page?: number; limit?: number } = {}): Promise<{ users: UserProfile[]; total: number }> {
     try {
-      const [usersData, totalResult] = await Promise.all([
-        db.select({
-          id: users.id,
-          username: users.username,
-          email: users.email,
-          isAdmin: users.isAdmin,
-          metadata: users.metadata,
-          createdAt: users.createdAt
-        }).from(users)
-          .limit(limit)
-          .offset(offset)
-          .orderBy(users.createdAt),
-        
-        db.select({ count: sql<number>`count(*)` }).from(users)
-      ]);
+      const { page = 1, limit = 10 } = options;
+      const offset = (page - 1) * limit;
+
+      // Get users
+      const usersData = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        isAdmin: users.isAdmin,
+        metadata: users.metadata,
+        createdAt: users.createdAt,
+        firebaseUid: users.firebaseUid,
+        avatar: users.avatar,
+        fullName: users.fullName,
+        isVerified: users.isVerified,
+        password_hash: users.password_hash
+      })
+        .from(users)
+        .orderBy(desc(users.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      // Get total count
+      const [{ count }] = await db.select({ count: sql<number>`count(*)` })
+        .from(users);
 
       return {
-        users: usersData,
-        total: totalResult[0].count
+        users: usersData as UserProfile[],
+        total: count
       };
     } catch (error) {
-      userLogger.error('Error fetching users with pagination', { page, limit, error });
+      userLogger.error('Error fetching users', { options, error });
       throw handleDatabaseError(error);
     }
   }
 
   // Update user metadata
-  async updateUserMetadata(id: number, metadata: Record<string, any>): Promise<User> {
+  async updateUserMetadata(id: number, metadata: Record<string, unknown>): Promise<UserProfile | null> {
     try {
-      const existingUser = await this.getUser(id);
+      const existingUser = await this.getUserById(id, true);
       if (!existingUser) {
-        throw createError.notFound('User not found');
+        return null;
       }
 
-      const mergedMetadata = { ...existingUser.metadata, ...metadata };
+      const mergedMetadata = { ...(existingUser.metadata as Record<string, unknown> || {}), ...metadata };
 
       const [updatedUser] = await db.update(users)
         .set({ metadata: mergedMetadata })
@@ -260,17 +320,109 @@ export class UserService {
           email: users.email,
           isAdmin: users.isAdmin,
           metadata: users.metadata,
-          createdAt: users.createdAt
+          createdAt: users.createdAt,
+          firebaseUid: users.firebaseUid,
+          avatar: users.avatar,
+          fullName: users.fullName,
+          isVerified: users.isVerified,
+          password_hash: users.password_hash
         });
 
+      if (!updatedUser) {
+        return null;
+      }
+
       userLogger.info('User metadata updated successfully', { userId: id });
-      return updatedUser;
+      return updatedUser as UserProfile;
     } catch (error) {
-      userLogger.error('Error updating user metadata', { userId: id, error });
+      userLogger.error('Error updating user metadata', { userId: id, metadata, error });
+      throw handleDatabaseError(error);
+    }
+  }
+
+  // Get user count
+  async getUserCount(): Promise<number> {
+    try {
+      const [{ count }] = await db.select({ count: sql<number>`count(*)` })
+        .from(users);
+
+      return count;
+    } catch (error) {
+      userLogger.error('Error fetching user count', { error });
+      throw handleDatabaseError(error);
+    }
+  }
+
+  // Search users
+  async searchUsers(query: string, page: number = 1, limit: number = 10): Promise<{ users: UserPublicProfile[]; total: number }> {
+    try {
+      const offset = (page - 1) * limit;
+
+      const searchCondition = or(
+        like(users.username, `%${query}%`),
+        like(users.fullName, `%${query}%`)
+      );
+
+      // Get users
+      const usersData = await db.select({
+        id: users.id,
+        username: users.username,
+        isAdmin: users.isAdmin,
+        metadata: users.metadata,
+        createdAt: users.createdAt,
+        firebaseUid: users.firebaseUid,
+        avatar: users.avatar,
+        fullName: users.fullName,
+        isVerified: users.isVerified
+      })
+        .from(users)
+        .where(searchCondition)
+        .orderBy(desc(users.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      // Get total count
+      const [{ count }] = await db.select({ count: sql<number>`count(*)` })
+        .from(users)
+        .where(searchCondition);
+
+      return {
+        users: usersData as UserPublicProfile[],
+        total: count
+      };
+    } catch (error) {
+      userLogger.error('Error searching users', { query, error });
+      throw handleDatabaseError(error);
+    }
+  }
+
+  // Get user by Firebase UID
+  async getUserByFirebaseUid(firebaseUid: string): Promise<UserProfile | null> {
+    try {
+      const [user] = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        isAdmin: users.isAdmin,
+        metadata: users.metadata,
+        createdAt: users.createdAt,
+        firebaseUid: users.firebaseUid,
+        avatar: users.avatar,
+        fullName: users.fullName,
+        isVerified: users.isVerified,
+        password_hash: users.password_hash
+      })
+        .from(users)
+        .where(eq(users.firebaseUid, firebaseUid))
+        .limit(1);
+
+      return user as UserProfile || null;
+    } catch (error) {
+      userLogger.error('Error fetching user by Firebase UID', { firebaseUid, error });
       throw handleDatabaseError(error);
     }
   }
 }
 
-// Export singleton instance
+// Export a singleton instance
 export const userService = new UserService();
