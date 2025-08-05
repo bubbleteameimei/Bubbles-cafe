@@ -18,7 +18,7 @@ export default function ProfileImage() {
   const images = [
     { 
       src: '/images/optimized/profile-optimized.jpg', 
-      alt: 'Profile Image 1',
+      alt: 'Bubble\'s Cafe creator profile photo - atmospheric portrait with dark academia aesthetic',
       // Smaller blur version for faster loading
       blurSrc: '/images/optimized/profile-blur.jpg',
       // Proper srcset for responsive loading
@@ -192,7 +192,7 @@ export default function ProfileImage() {
                 {!imageLoaded && (
                   <img 
                     src={image.blurSrc}
-                    alt=""
+                    alt="Profile image placeholder loading"
                     style={{
                       position: "absolute",
                       height: "145%",
