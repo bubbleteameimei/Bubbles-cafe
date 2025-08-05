@@ -341,7 +341,7 @@ export default function SimpleCommentSection({ postId }: CommentSectionProps) {
   
   // Load previously saved draft from localStorage
   useEffect(() => {
-    const savedDraft = localStorage.getItem(`comment_draft_${postId}`);
+    const savedDraft = typeof window !== 'undefined' ? localStorage.getItem(`comment_draft_${postId}`) : null;
     if (savedDraft && savedDraft.trim() !== "") {
       setContent(savedDraft);
       toast({
@@ -354,7 +354,9 @@ export default function SimpleCommentSection({ postId }: CommentSectionProps) {
     // Set up interval to save draft while typing
     const saveDraftInterval = setInterval(() => {
       if (content.trim() !== "") {
-        localStorage.setItem(`comment_draft_${postId}`, content);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(`comment_draft_${postId}`, content);
+        }
       }
     }, 3000); // Save every 3 seconds if there's content
     
@@ -399,7 +401,7 @@ export default function SimpleCommentSection({ postId }: CommentSectionProps) {
   
   // Load previously flagged comments from localStorage
   useEffect(() => {
-    const storedFlaggedComments = localStorage.getItem('flaggedComments_' + postId);
+    const storedFlaggedComments = typeof window !== 'undefined' ? localStorage.getItem('flaggedComments_' + postId) : null;
     if (storedFlaggedComments) {
       try {
         const parsedComments = JSON.parse(storedFlaggedComments);
@@ -550,7 +552,9 @@ export default function SimpleCommentSection({ postId }: CommentSectionProps) {
       setFlaggedComments(prev => [...prev, commentToFlag]);
       
       // Save flagged comments to localStorage to persist between sessions
-      localStorage.setItem('flaggedComments_' + postId, JSON.stringify([...flaggedComments, commentToFlag]));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('flaggedComments_' + postId, JSON.stringify([...flaggedComments, commentToFlag]));
+      }
       
       toast({
         title: "Comment reported",

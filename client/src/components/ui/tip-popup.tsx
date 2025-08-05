@@ -19,13 +19,15 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
 
   useEffect(() => {
     if (autoShow) {
-      const lastShown = localStorage.getItem('lastTipPopupShown');
+      const lastShown = typeof window !== 'undefined' ? localStorage.getItem('lastTipPopupShown') : null;
       const showAgain = !lastShown || Date.now() - parseInt(lastShown) > 60 * 60 * 1000; // 1 hour (changed from 24 hours)
 
       if (showAgain) {
         const timer = setTimeout(() => {
           setIsOpen(true);
-          localStorage.setItem('lastTipPopupShown', Date.now().toString());
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('lastTipPopupShown', Date.now().toString());
+          }
         }, 30000); // 30 seconds
 
         return () => clearTimeout(timer);

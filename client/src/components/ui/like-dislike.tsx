@@ -58,7 +58,7 @@ const generateBaseStats = (postId: number) => {
 const getOrCreateStats = (postId: number): Stats => {
   try {
     const storageKey = getStorageKey(postId);
-    const existingStats = localStorage.getItem(storageKey);
+    const existingStats = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
 
     if (existingStats) {
       const parsed = JSON.parse(existingStats);
@@ -80,7 +80,9 @@ const getOrCreateStats = (postId: number): Stats => {
       userInteracted: false
     };
 
-    localStorage.setItem(storageKey, JSON.stringify(newStats));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(storageKey, JSON.stringify(newStats));
+    }
     return newStats;
   } catch (error) {
     console.error(`[LikeDislike] Error managing stats for post ${postId}:`, error);
@@ -133,8 +135,10 @@ export function LikeDislike({
 
     const handleStatsReset = () => {
       // Clear all post stats and regenerate
-      const keys = Object.keys(localStorage).filter(key => key.startsWith('post-stats-'));
-      keys.forEach(key => localStorage.removeItem(key));
+      if (typeof window !== 'undefined') {
+        const keys = Object.keys(localStorage).filter(key => key.startsWith('post-stats-'));
+        keys.forEach(key => localStorage.removeItem(key));
+      }
       
       // Regenerate stats for this component
       const freshStats = getOrCreateStats(postId);
@@ -185,7 +189,9 @@ export function LikeDislike({
 
   const updateStats = (newStats: Stats) => {
     try {
-      localStorage.setItem(getStorageKey(postId), JSON.stringify(newStats));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(getStorageKey(postId), JSON.stringify(newStats));
+      }
       setStats(newStats);
       onUpdate?.(newStats.likes, newStats.dislikes);
       
