@@ -118,6 +118,7 @@ app.use(validateCsrfToken({
   ignorePaths: [
     '/health', 
     '/api/health',
+    '/test', // Allow test route without CSRF protection
     '/api/auth/status', 
     '/api/auth/login',
     '/api/auth/register',
