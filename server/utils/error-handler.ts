@@ -61,10 +61,10 @@ export const asyncHandler = (fn: Function) => {
 
 // Global error handling middleware
 export const globalErrorHandler = (
-  error: Error | AppError,
+  error: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   const isDev = process.env.NODE_ENV === 'development';
   const appError = error as AppError;

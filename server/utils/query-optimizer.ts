@@ -192,7 +192,7 @@ export async function optimizedBulkInsert<T extends Record<string, any>>(
       await db.execute(sql`
         INSERT INTO ${sql.identifier(table)} (${columns.map(c => sql.identifier(c))})
         VALUES ${sql.raw(placeholders)}
-      `, values);
+      `);
       
       inserted += batch.length;
       console.log(`[QueryOptimizer] Batch inserted ${batch.length} records into ${table}`);

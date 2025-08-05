@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,22 +43,22 @@ export function PersonalizedRecommendations({
 }: PersonalizedRecommendationsProps) {
   const { toast } = useToast();
   
-  // Build the URL with query parameters
-  const buildQueryUrl = () => {
-    const url = new URL('/api/recommendations/personalized', window.location.origin);
+  // Remove unused buildQueryUrl function
+  // const buildQueryUrl = () => {
+  //   const url = new URL('/api/recommendations/personalized', window.location.origin);
     
-    // Add the limit parameter
-    url.searchParams.append('limit', limit.toString());
+  //   // Add the limit parameter
+  //   url.searchParams.append('limit', limit.toString());
     
-    // Add theme preferences if they exist
-    if (preferredThemes.length > 0) {
-      preferredThemes.forEach(theme => {
-        url.searchParams.append('themes', theme);
-      });
-    }
+  //   // Add theme preferences if they exist
+  //   if (preferredThemes.length > 0) {
+  //     preferredThemes.forEach(theme => {
+  //       url.searchParams.append('themes', theme);
+  //     });
+  //   }
     
-    return url.toString();
-  };
+  //   return url.toString();
+  // };
 
   // Fetch personalized recommendations using React Query
   const { data, isLoading, isError, error } = useQuery<PersonalizedRecommendationsResponse>({

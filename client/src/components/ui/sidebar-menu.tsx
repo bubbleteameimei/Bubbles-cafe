@@ -2,10 +2,10 @@
 import * as React from "react"
 import {
   Home, Book, Users, Settings, HelpCircle, FileText, ChevronDown,
-  Bug, Scroll, Shield, ShieldAlert, Monitor, ScrollText, Bell, Lock, Building,
-  Mail, MessageSquare, Database, Palette, Moon, Sun, Type,
-  User, Link2 as Link, CircleUserRound as UserCircle, LogIn, Bookmark as BookmarkIcon,
-  LineChart, BarChart, AlertTriangle, Ban, ServerCrash, MoveLeft, Clock, WifiOff,
+  Bug, Scroll, Shield, Monitor, Bell, Lock, Building,
+  Mail, MessageSquare, Palette, Type,
+  User, Link2 as Link, CircleUserRound as UserCircle, Bookmark as BookmarkIcon,
+  LineChart, MoveLeft, Clock, WifiOff,
   Search, Sparkles, GanttChart, GamepadIcon, Rss, Grid, Eye, Coffee, Heart,
   Zap, Star, Compass, Map, Globe, Crown, Gem, Target, TrendingUp, Activity
 } from "lucide-react"

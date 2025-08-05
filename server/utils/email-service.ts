@@ -8,8 +8,6 @@ interface EmailOptions {
   html?: string;
 }
 
-type MailPriority = 'high' | 'normal' | 'low';
-
 /**
  * Email service optimized for Gmail that provides methods to send
  * account-related emails with improved reliability

@@ -156,7 +156,7 @@ export function generateResponseSuggestion(feedback: UserFeedback): ResponseSugg
     const confidenceFactors = {
       contentLength: Math.min(feedback.content.length / 1000, 0.4), // Longer content up to a point
       hasMetadata: feedback.metadata && Object.keys(feedback.metadata).length > 0 ? 0.1 : 0,
-      hasRating: feedback.rating !== null && feedback.rating > 0 ? 0.1 : 0,
+      hasRating: 0, // Rating field was removed from schema
       categoryMatchScore: category === feedback.type ? 0.2 : 0
     };
     
@@ -222,14 +222,14 @@ function generateTags(feedback: UserFeedback, category: FeedbackCategory): strin
     tags.push(`os:${feedback.operatingSystem.toLowerCase().split(' ')[0]}`);
   }
   
-  // Add rating-based tag
-  if (feedback.rating !== null && feedback.rating > 0) {
-    if (feedback.rating >= 4) {
-      tags.push('high-rating');
-    } else if (feedback.rating <= 2) {
-      tags.push('low-rating');
-    }
-  }
+  // Remove rating-based tag
+  // if (feedback.rating !== null && feedback.rating > 0) {
+  //   if (feedback.rating >= 4) {
+  //     tags.push('high-rating');
+  //   } else if (feedback.rating <= 2) {
+  //     tags.push('low-rating');
+  //   }
+  // }
   
   // Add priority tag for certain keywords
   const urgentKeywords = ['urgent', 'critical', 'immediately', 'serious', 'emergency'];

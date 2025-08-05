@@ -74,7 +74,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
   }, []);
   
   // Show loading screen with smart prevention of multiple triggers
-  const showLoading = useCallback((newMessage?: string) => {
+  const showLoading = useCallback((_newMessage?: string) => {
     // Check if we're already loading or recently prevented loading
     if (isLoading || preventRapidShowRef.current) {
       console.log('[LoadingProvider] Prevented duplicate loading screen trigger');
@@ -143,6 +143,8 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     // Message handling simplified for now
     console.log('[LoadingProvider] Loading message:', newMessage);
   }, []);
+
+
   
   return (
     <LoadingContext.Provider 

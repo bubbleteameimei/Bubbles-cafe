@@ -18,14 +18,6 @@ interface WordPressPost {
   modified: string;
 }
 
-interface WordPressAuthor {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-  avatar_urls: Record<string, string>;
-}
-
 export class WordPressAPISync {
   private readonly baseUrl = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
   private readonly batchSize = 20;
@@ -84,7 +76,7 @@ export class WordPressAPISync {
             console.log(`[WordPress Sync] Synced post: ${wpPost.title.rendered}`);
           } catch (error) {
             console.error(`[WordPress Sync] Error syncing post ${wpPost.id}:`, error);
-            errors.push({ postId: wpPost.id, error: error.message });
+            errors.push({ postId: wpPost.id, error: (error as Error).message });
           }
         }
 
@@ -98,7 +90,7 @@ export class WordPressAPISync {
 
       } catch (error) {
         console.error(`[WordPress Sync] Error fetching page ${page}:`, error);
-        errors.push({ page, error: error.message });
+        errors.push({ page, error: (error as Error).message });
         hasMore = false;
       }
     }
@@ -284,7 +276,7 @@ export class WordPressAPISync {
     } catch (error) {
       return {
         status: 'error',
-        error: error.message
+        error: (error as Error).message
       };
     }
   }

@@ -1,10 +1,10 @@
-import { Express, Request, Response } from "express";
-import passport from "passport";
-import { Strategy as LocalStrategy } from "passport-local";
+import bcrypt from 'bcryptjs';
+import { type Request, type Response, type NextFunction } from 'express';
+import passport from 'passport';
+import { Strategy as LocalStrategy } from 'passport-local';
+import { db } from './db';
+import { InsertResetToken } from "@shared/schema";
 import { storage } from "./storage";
-import bcryptjs from "bcryptjs";
-import * as crypto from "crypto";
-import { User, InsertResetToken } from "@shared/schema";
 import { emailService } from "./utils/email-service";
 import { authRateLimiter, sensitiveOperationsRateLimiter } from "./middlewares/rate-limiter";
 import { createSecureLogger } from "./utils/secure-logger";
@@ -26,7 +26,7 @@ declare global {
 
 const SALT_ROUNDS = 10;
 
-export function setupAuth(app: Express) {
+export function setupAuth(app: any) {
   app.use(passport.initialize());
   app.use(passport.session());
 
@@ -77,7 +77,7 @@ export function setupAuth(app: Express) {
       // Compare plain password with stored hash using a try-catch to handle any bcrypt errors
       let isValid = false;
       try {
-        isValid = await bcryptjs.compare(password, user.password_hash);
+        isValid = await bcrypt.compare(password, user.password_hash);
       } catch (compareError) {
         authLogger.error('Error comparing passwords', { 
           email: normalizedEmail, 
@@ -271,7 +271,7 @@ export function setupAuth(app: Express) {
           user = await storage.createUser({
             username: username || email.split('@')[0],
             email, // Include as top-level property for backward compatibility
-            password: randomPassword, // pass the unhashed password, storage handles hashing
+            password_hash: '', // This will be set by the createUser function
             isAdmin: false,
             metadata: {
               email, // Also store in metadata for our new approach
@@ -420,7 +420,7 @@ export function setupAuth(app: Express) {
       const testUser = await storage.createUser({
         username,
         email,
-        password: "password123",
+        password_hash: '', // This will be set by the createUser function
         isAdmin: false,
         metadata: {
           displayName: "Test Metadata User",
@@ -553,7 +553,7 @@ export function setupAuth(app: Express) {
       }
       
       // Update user's password
-      const hashedPassword = await bcryptjs.hash(password, SALT_ROUNDS);
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
       
       await storage.updateUser(user.id, {
         password_hash: hashedPassword
@@ -574,3 +574,27 @@ export function setupAuth(app: Express) {
     }
   });
 }
+
+// Fix function return type
+export const authenticateUser = (req: Request, res: Response, next: NextFunction): void => {
+  // Function body
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ error: 'Authentication required' });
+};
+
+// Fix return types for other functions
+export const requireAuth = (req: Request, res: Response, next: NextFunction): void => {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ error: 'Authentication required' });
+};
+
+export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
+  if (req.isAuthenticated() && req.user?.isAdmin) {
+    return next();
+  }
+  res.status(403).json({ error: 'Admin access required' });
+};

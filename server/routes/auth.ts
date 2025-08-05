@@ -56,8 +56,8 @@ router.post('/register',
         user: safeUser,
         message: 'Registration successful'
       });
-    } catch (error) {
-      if (error.statusCode) throw error;
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'statusCode' in error) throw error;
       authLogger.error('Registration error', { email, error });
       throw createError.internal('Registration failed');
     }

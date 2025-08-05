@@ -4,11 +4,12 @@ import { feedbackLogger } from '../utils/debug-logger';
 import { UserFeedback } from '../../shared/schema';
 
 // Middleware for checking if user is authenticated (kept for other routes that may need it)
-const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.session?.user) {
-    return res.status(401).json({ error: 'Not authenticated' });
+const isAuthenticated = (req: Request, res: Response, next: NextFunction): void => {
+  if (req.user) {
+    next();
+  } else {
+    res.status(401).json({ error: 'Authentication required' });
   }
-  next();
 };
 
 // Helper to check authentication without blocking - using passport's isAuthenticated
