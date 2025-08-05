@@ -108,7 +108,7 @@ export function LikeDislike({
   className,
   variant = 'index'
 }: LikeDislikeProps) {
-  const { toast } = useToast();
+  // Removed unused toast hook
   const [liked, setLiked] = useState(userLikeStatus === 'like');
   const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
   const [stats, setStats] = useState<Stats>(() => getOrCreateStats(postId));

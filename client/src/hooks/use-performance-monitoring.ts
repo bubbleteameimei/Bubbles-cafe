@@ -81,8 +81,22 @@ export function usePerformanceMonitoring() {
     };
   }, []);
 
+  const recordMetric = (name: string, value: number) => {
+    console.debug(`Performance metric: ${name} = ${value}ms`);
+  };
+
+  const recordNavigationTiming = () => {
+    if (typeof window !== 'undefined' && window.performance) {
+      const navigation = window.performance.timing;
+      const loadTime = navigation.loadEventEnd - navigation.navigationStart;
+      recordMetric('page-load-time', loadTime);
+    }
+  };
+
   return {
     metrics,
-    isSupported: 'performance' in window
+    isSupported: 'performance' in window,
+    recordMetric,
+    recordNavigationTiming
   };
 }

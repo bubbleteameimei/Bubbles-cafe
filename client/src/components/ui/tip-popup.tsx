@@ -17,6 +17,11 @@ interface TipPopupProps {
 export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
   const [isOpen, setIsOpen] = useState(false);
 
+  const handleTip = () => {
+    window.open('https://paystack.com/pay/z7fmj9rge1', '_blank');
+    setIsOpen(false);
+  };
+
   useEffect(() => {
     if (autoShow) {
       const lastShown = typeof window !== 'undefined' ? localStorage.getItem('lastTipPopupShown') : null;
@@ -33,12 +38,8 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
         return () => clearTimeout(timer);
       }
     }
+    return undefined;
   }, [autoShow]);
-
-  const handleTip = () => {
-    window.open('https://paystack.com/pay/z7fmj9rge1', '_blank');
-    setIsOpen(false);
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
