@@ -119,6 +119,13 @@ router.post('/user/:id/update', validateCsrfToken(), async (req, res) => {
     console.log('Updating user with data:', updateData);
     const updatedUser = await storage.updateUser(userId, updateData);
 
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
     return res.json({
       success: true,
       message: 'User updated successfully through storage',
@@ -158,6 +165,13 @@ router.post('/user/:id/update-no-csrf', async (req, res) => {
 
     console.log('Updating user with data (no CSRF):', updateData);
     const updatedUser = await storage.updateUser(userId, updateData);
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
 
     return res.json({
       success: true,

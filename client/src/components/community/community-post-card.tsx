@@ -71,9 +71,10 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
   
   // Get theme category for badge
   const getThemeBadge = () => {
-    if (!post.metadata?.themeCategory) return null;
+    const metadata = post.metadata as { themeCategory?: string; [key: string]: any };
+    if (!metadata?.themeCategory) return null;
     
-    const category = post.metadata.themeCategory;
+    const category = metadata.themeCategory;
     let colorClass = 'bg-gray-100 text-gray-800 border-gray-300';
     let displayName = category.replace('_', ' ');
     
@@ -130,9 +131,10 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
   };
   
   // Check for trigger warnings
+  const metadata = post.metadata as { triggerWarnings?: string[]; [key: string]: any };
   const hasTriggerWarnings = 
-    post.metadata?.triggerWarnings && 
-    post.metadata.triggerWarnings.length > 0;
+    metadata?.triggerWarnings && 
+    metadata.triggerWarnings.length > 0;
   
   // Like Post Mutation
   const likeMutation = useMutation({

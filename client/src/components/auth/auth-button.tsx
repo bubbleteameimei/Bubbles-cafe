@@ -25,7 +25,7 @@ export function AuthButton({
   className = ''
 }: AuthButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const { login, registerMutation } = useAuth();
+  const { loginMutation, registerMutation } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -65,7 +65,7 @@ export function AuthButton({
         
         console.log("[Auth-Button] Login validations passed, submitting login request");
         // Use the direct login method with a timeout and pass rememberMe parameter
-        const loginPromise = login(email, password, rememberMe);
+        const loginPromise = loginMutation.mutateAsync({ email, password });
         
         // Add timeout to prevent long-running requests
         const timeoutPromise = new Promise((_, reject) => {

@@ -19,11 +19,7 @@ export function PerformanceMonitor({
   userId, 
   isEnabled = true 
 }: PerformanceMonitorProps) {
-  const monitoringHook = usePerformanceMonitoring();
-  const { 
-    recordMetric, 
-    recordNavigationTiming,
-  } = monitoringHook;
+  const { metrics: hookMetrics, isSupported: hookIsSupported } = usePerformanceMonitoring();
   
   const isLoadEventSent = useRef(false);
   

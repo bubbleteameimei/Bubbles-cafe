@@ -24,12 +24,12 @@ export function AuthGuard({
   adminOnly = false,
   redirectTo = '/auth'
 }: AuthGuardProps) {
-  const { user, isLoading, isAuthenticated, isAuthReady } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const [isAuthorized, setIsAuthorized] = useState(false);
   
   useEffect(() => {
-    if (!isAuthReady) {
+    if (isLoading) {
       // Still loading auth status, don't redirect yet
       return;
     }
@@ -44,7 +44,7 @@ export function AuthGuard({
         return;
       }
       
-      if (adminOnly && (!user || !user.isAdmin)) {
+      if (adminOnly && (!user || user.role !== 'admin')) {
         // Admin access required but user is not admin
         console.log('[AuthGuard] Admin access required but user is not admin, redirecting to:', '/');
         setLocation('/');

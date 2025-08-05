@@ -58,7 +58,7 @@ export function PerformanceMonitor({
   const [isVisible, setIsVisible] = useState(visible);
   const [isExpanded, setIsExpanded] = useState(false);
   const updateInterval = useRef<number | null>(null);
-  const { recordMetric, recordNavigationTiming } = usePerformanceMonitoring();
+  const { metrics: performanceMetrics, isSupported } = usePerformanceMonitoring();
   
   // Position styles
   const positionStyles = {

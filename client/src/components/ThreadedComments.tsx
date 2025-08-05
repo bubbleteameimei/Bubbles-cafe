@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { CommentWithMarkdown } from './CommentWithMarkdown';

@@ -134,6 +134,8 @@ export default function ProfileImage() {
       carouselElement.addEventListener('scroll', handleScroll);
       return () => carouselElement.removeEventListener('scroll', handleScroll);
     }
+    
+    return undefined;
   }, [activeIndex, images.length]);
   
   // Handle image error and loading state

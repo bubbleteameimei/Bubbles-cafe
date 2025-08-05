@@ -1,5 +1,4 @@
 import { Express, Request, Response, NextFunction } from "express";
-import { config } from "../shared/config";
 
 /**
  * Sets up CORS for cross-domain deployment

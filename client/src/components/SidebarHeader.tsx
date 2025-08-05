@@ -1,5 +1,4 @@
-import React from 'react';
-import SearchBar from './SearchBar';
+import { SearchBar } from './ui/SearchBar';
 import { NotificationIcon } from './ui/notification-icon';
 import { useNotifications } from './NotificationProvider';
 import { ThemeToggleButton } from './ui/theme-toggle-button';
