@@ -275,8 +275,8 @@ export default function IndexView() {
       const dayOfYear = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
       const rotationIndex = dayOfYear % 5; // 0-4 based on day of year
       
-      
-       font-weight: bold', {
+      // Debug featured post selection
+      console.log('Featured post selection:', {
         id: sortedByEngagement[rotationIndex].id,
         title: sortedByEngagement[rotationIndex].title,
         likes: sortedByEngagement[rotationIndex].likesCount,
@@ -285,7 +285,6 @@ export default function IndexView() {
                'pageViews' in (sortedByEngagement[rotationIndex].metadata as Record<string, unknown>) ? 
                (sortedByEngagement[rotationIndex].metadata as Record<string, unknown>).pageViews : 0
       });
-      
       
       return sortedByEngagement[rotationIndex];
     }

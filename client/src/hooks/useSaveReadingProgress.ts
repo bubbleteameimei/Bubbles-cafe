@@ -110,9 +110,11 @@ const useSaveReadingProgress = ({
               percentCompleted: scrollPercent,
               lastPosition: scrollTop
             })
-          }).catch(err => 
+          }).catch(err => {
+            console.error('Failed to save reading progress:', err);
+          });
         } catch (error) {
-          
+          console.error('Error saving reading progress:', error);
         }
       }
     }
