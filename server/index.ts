@@ -186,10 +186,13 @@ async function startServer() {
         await runMigrations();
         serverLogger.info('Database migrations completed');
     
-        if (postsCount === 0) {
+        // Skip WordPress sync if environment variable is set
+        if (postsCount === 0 && !process.env.SKIP_WORDPRESS_SYNC) {
           serverLogger.info('Tables exist but no posts - seeding database from WordPress API...');
           await seedFromWordPressAPI();
           serverLogger.info('Database seeding from WordPress API completed');
+        } else if (process.env.SKIP_WORDPRESS_SYNC) {
+          serverLogger.info('Skipping WordPress sync due to SKIP_WORDPRESS_SYNC environment variable');
         }
       } catch (tableError) {
         serverLogger.warn('Database tables check failed, attempting to create schema', { 
