@@ -30,7 +30,7 @@ export default function Sidebar() {
     try {
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (error) {
-      console.error(`Failed to open ${platform} link:`, error);
+      
       toast({
         title: "Error",
         description: `Unable to open ${platform}. Please try again.`,
@@ -51,7 +51,7 @@ export default function Sidebar() {
           hasMore: !!data.hasMore
         };
       } catch (error) {
-        console.error('Error fetching posts:', error);
+        
         return { posts: [], hasMore: false };
       }
     },
@@ -67,7 +67,7 @@ export default function Sidebar() {
         const data = await response.json();
         return Array.isArray(data) ? data : [];
       } catch (error) {
-        console.error('Error fetching comments:', error);
+        
         return [];
       }
     }

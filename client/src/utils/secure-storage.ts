@@ -78,7 +78,7 @@ class SecureStorageManager {
       }
       return decrypted;
     } catch (error) {
-      console.error('[SecureStorage] Decryption failed:', error);
+      
       return '';
     }
   }
@@ -115,7 +115,7 @@ class SecureStorageManager {
         serializedValue = this.encrypt(serializedValue);
       }
     } catch (error) {
-      console.error('[SecureStorage] Serialization failed:', error);
+      
       return false;
     }
 
@@ -184,7 +184,7 @@ class SecureStorageManager {
 
         item = JSON.parse(parsedValue);
       } catch (error) {
-        console.error('[SecureStorage] Failed to parse stored value:', error);
+        
         return null;
       }
     }
@@ -325,7 +325,7 @@ class SecureStorageManager {
         return true;
       }
     } catch (error) {
-      console.error('[SecureStorage] Server sync failed:', error);
+      
     }
 
     return false;

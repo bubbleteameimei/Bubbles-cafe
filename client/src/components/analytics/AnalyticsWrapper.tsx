@@ -22,7 +22,7 @@ export function AnalyticsWrapper({
     // Only track this event if analytics cookies are allowed
     runIfAllowed('analytics', () => {
       // In a real implementation, this would call your analytics service
-      console.log(`Analytics event tracked: ${eventName}`, eventData);
+      
       
       // Example of sending to a hypothetical analytics service:
       // analyticsService.trackEvent(eventName, eventData);
@@ -37,7 +37,7 @@ export function AnalyticsWrapper({
         if (window.performance && 'getEntriesByType' in window.performance) {
           const performanceEntries = window.performance.getEntriesByType('navigation');
           
-          console.log('Performance data tracked:', performanceEntries);
+          
           // Send performance data to your performance monitoring service
         }
       };

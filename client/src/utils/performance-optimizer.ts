@@ -64,7 +64,7 @@ export function useComponentRenderTracker(
       if (!measuredComponents.has(componentName)) {
         measuredComponents.add(componentName);
         if (import.meta.env.DEV) {
-          console.log(`[Performance] Component mounted: ${componentName}`);
+          
         }
       }
       
@@ -77,7 +77,7 @@ export function useComponentRenderTracker(
           recordMetric('Custom', duration, `ComponentLifetime-${componentName}`);
           
           if (import.meta.env.DEV) {
-            console.log(`[Performance] Component unmounted: ${componentName}, total lifetime: ${Math.round(duration)}ms`);
+            
           }
         }
       };
@@ -102,7 +102,7 @@ export function useComponentRenderTracker(
       recordMetric('Custom', duration, `ComponentRender-${componentName}`);
       
       if (import.meta.env.DEV && duration > 8) {
-        console.log(`[Performance] Component render #${renderCount.current}: ${componentName}, duration: ${Math.round(duration)}ms`);
+        
       }
     }
     
@@ -120,7 +120,7 @@ export function useComponentRenderTracker(
     recordMetric('Custom', duration, `ComponentUnmount-${componentName}`);
     
     if (import.meta.env.DEV) {
-      console.log(`[Performance] Component manual unmount: ${componentName}, duration: ${Math.round(duration)}ms`);
+      
     }
   }, [trackUnmounts, componentName, recordMetric]);
   
@@ -158,7 +158,7 @@ export function useResourceLoadTracker(
     recordMetric('Custom', duration, `ResourceLoad-${resourceType}-${success ? 'success' : 'error'}`);
     
     if (import.meta.env.DEV) {
-      console.log(`[Performance] Resource ${resourceType} load ${success ? 'succeeded' : 'failed'}: ${resourceId}, duration: ${Math.round(duration)}ms`);
+      
     }
     
     // Clear tracking for this resource
@@ -196,7 +196,7 @@ export function useInteractionTracker() {
     if (import.meta.env.DEV && duration > 100) {
       console.warn(`[Performance] Slow interaction: ${interactionId}, duration: ${Math.round(duration)}ms`);
     } else if (import.meta.env.DEV) {
-      console.log(`[Performance] Interaction completed: ${interactionId}, duration: ${Math.round(duration)}ms`);
+      
     }
     
     // Clear tracking for this interaction

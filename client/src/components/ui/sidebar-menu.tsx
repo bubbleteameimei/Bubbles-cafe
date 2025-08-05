@@ -210,7 +210,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       }, 50);
       
     } catch (error) {
-      console.error("Navigation error:", error);
+      
       // Reset navigation state
       setIsNavigating(false);
       // Fallback to direct location navigation as last resort

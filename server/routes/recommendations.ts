@@ -10,14 +10,14 @@ const router = Router();
  * Get recommendations based on post content, theme categories, and user history
  */
 export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
-  console.log("Registering recommendations routes");
+  
   
   /**
    * GET /api/recommendations/health
    * Simple health check endpoint for recommendations subsystem
    */
   app.get("/api/recommendations/health", (req: Request, res: Response) => {
-    console.log("Recommendations health check called");
+    
     return res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
@@ -225,7 +225,7 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
    * This endpoint uses the new storage method with advanced user preference tracking
    */
   app.get("/api/recommendations/personalized", async (req: Request, res: Response) => {
-    console.log("Enhanced personalized recommendations endpoint called");
+    
     try {
       // Check if user is authenticated
       const userId = req.session?.user?.id;
@@ -240,8 +240,8 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
         (Array.isArray(req.query.themes) ? req.query.themes : [req.query.themes]) : 
         [];
         
-      console.log(`Getting personalized recommendations for user ${userId} with limit ${limit}`);
-      console.log(`User preferences: ${preferredThemes.join(', ') || 'None specified'}`);
+      
+      
       
       // Use the new storage method with enhanced personalization
       const recommendedPosts = await storage.getPersonalizedRecommendations(
@@ -250,7 +250,7 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
         limit
       );
       
-      console.log(`Found ${recommendedPosts.length} personalized recommendations`);
+      
       
       // Add helpful metadata to the response
       const response = {
@@ -278,10 +278,10 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
    * This endpoint is designed for easier frontend consumption without complex logic
    */
   app.get("/api/recommendations/direct", async (req: Request, res: Response) => {
-    console.log("Direct recommendations endpoint called");
+    
     try {
       const limit = Number(req.query.limit) || 4;
-      console.log(`Getting ${limit} stories for direct recommendations`);
+      
       
       // Simple query to get recent posts
       const recommendedPosts = await db.select({
@@ -295,14 +295,14 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
       .orderBy(desc(posts.createdAt))
       .limit(limit);
       
-      console.log(`Direct recommendations found ${recommendedPosts.length} posts`);
+      
       return res.json(recommendedPosts);
     } catch (error) {
       console.error("Error getting direct recommendations:", error);
       
       // Fallback to simpler query if the first one fails
       try {
-        console.log("Attempting fallback query for direct recommendations");
+        
         const fallbackPosts = await db.select({
           id: posts.id,
           title: posts.title,
@@ -314,7 +314,7 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
         .orderBy(desc(posts.createdAt))
         .limit(Number(req.query.limit) || 4);
         
-        console.log(`Fallback successful: retrieved ${fallbackPosts.length} posts`);
+        
         return res.json(fallbackPosts);
       } catch (fallbackError) {
         console.error("Fallback query failed:", fallbackError);

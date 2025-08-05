@@ -67,7 +67,7 @@ const CommentPlugin: React.FC<CommentPluginProps> = ({
       setComments([...comments, newComment]);
       setCommentText('');
     } catch (error) {
-      console.error('Failed to submit comment:', error);
+      
     } finally {
       setIsSubmitting(false);
     }
@@ -110,7 +110,7 @@ const CommentPlugin: React.FC<CommentPluginProps> = ({
       try {
         await onVoteComment(commentId, isUpvote);
       } catch (error) {
-        console.error('Failed to register vote:', error);
+        
         // Revert to previous state on error
         setComments(comments);
       }

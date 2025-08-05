@@ -9,7 +9,7 @@ async function createNewAdminUser() {
     const adminPassword = "powerPUFF7";
     const hashedPassword = await bcrypt.hash(adminPassword, SALT_ROUNDS);
     
-    console.log("Creating admin user with email: admin@bubblescafe.com");
+    
     
     // Check if this admin already exists
     const checkResult = await pool.query(
@@ -18,13 +18,13 @@ async function createNewAdminUser() {
     );
     
     if (checkResult.rows.length > 0) {
-      console.log("Admin user already exists, updating password...");
+      
       // Update the password
       await pool.query(
         "UPDATE users SET password_hash = $1 WHERE email = $2",
         [hashedPassword, "admin@bubblescafe.com"]
       );
-      console.log("Admin password updated successfully");
+      
       return { id: checkResult.rows[0].id, updated: true };
     }
     
@@ -36,7 +36,7 @@ async function createNewAdminUser() {
       ["admin", "admin@bubblescafe.com", hashedPassword, true]
     );
     
-    console.log("New admin user created successfully:", result.rows[0]);
+    
     return { id: result.rows[0].id, created: true };
     
   } catch (error) {
@@ -49,7 +49,7 @@ async function createNewAdminUser() {
 (async () => {
   try {
     const result = await createNewAdminUser();
-    console.log("Operation completed:", result);
+    
     process.exit(0);
   } catch (error) {
     console.error("Failed to create admin user:", error);

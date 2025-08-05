@@ -37,7 +37,7 @@ let lastCheckedApiStatus = {
  * Initialize the WordPress sync service
  */
 export function initWordPressSync() {
-  console.log(`[WordPress Sync] Initializing auto-sync service (every ${SYNC_INTERVAL_MINUTES} minutes)`);
+  
   
   // Perform an initial sync
   syncWordPressPosts();
@@ -58,7 +58,7 @@ export async function syncWordPressPosts() {
   const startTime = performance.now();
   const now = Date.now();
   
-  console.log(`[WordPress Sync] Starting sync at ${new Date(now).toISOString()}`);
+  
   
   // Check API availability prior to sync
   let apiAvailable = false;
@@ -92,7 +92,7 @@ export async function syncWordPressPosts() {
       
       // If last sync was very recent (less than half the interval), skip
       if (timeSinceLastSync < (SYNC_INTERVAL_MS / 2)) {
-        console.log(`[WordPress Sync] Skipping sync - last sync was ${Math.floor(timeSinceLastSync / 1000)}s ago`);
+        
         
         // Clear the "syncing" status since we're skipping
         const skippedStatus = {
@@ -176,7 +176,7 @@ export async function syncWordPressPosts() {
       localStorage.setItem(SYNC_STATUS_KEY, JSON.stringify(successStatus));
       updateSyncHistory(successStatus);
       
-      console.log(`[WordPress Sync] Successfully synced ${result.posts.length} posts`);
+      
     } else {
       console.warn('[WordPress Sync] No posts retrieved during sync');
       
@@ -206,7 +206,7 @@ export async function syncWordPressPosts() {
       updateSyncHistory(emptyStatus);
     }
   } catch (error) {
-    console.error('[WordPress Sync] Sync failed:', error);
+    
     
     // Calculate time taken even for failures
     const endTime = performance.now();
@@ -267,7 +267,7 @@ export function getLocalWordPressPosts() {
     const parsedData = JSON.parse(data);
     return parsedData.posts;
   } catch (error) {
-    console.error('[WordPress Sync] Error retrieving local posts:', error);
+    
     return null;
   }
 }
@@ -354,7 +354,7 @@ function updateSyncHistory(entry: SyncStatusEntry) {
       try {
         history = JSON.parse(historyData);
       } catch (e) {
-        console.error('[WordPress] Error parsing sync history:', e);
+        
         history = [];
       }
     }
@@ -373,7 +373,7 @@ function updateSyncHistory(entry: SyncStatusEntry) {
     // Save updated history
     localStorage.setItem(SYNC_HISTORY_KEY, JSON.stringify(newHistory));
   } catch (error) {
-    console.error('[WordPress] Error updating sync history:', error);
+    
   }
 }
 
@@ -382,7 +382,7 @@ function updateSyncHistory(entry: SyncStatusEntry) {
  * @returns A promise that resolves when the sync is complete
  */
 export async function forceSyncNow() {
-  console.log('[WordPress Sync] Forcing immediate sync');
+  
   
   const startTime = performance.now();
   const now = Date.now();

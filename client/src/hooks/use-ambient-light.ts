@@ -41,7 +41,7 @@ const useAmbientLight = () => {
           if (navigator.permissions) {
             const result = await navigator.permissions.query({ name: 'ambient-light-sensor' as any });
             if (result.state === 'denied') {
-              console.log('[AmbientLight] Permission to use light sensor denied');
+              
               useFallbackMethod();
               return;
             }
@@ -68,17 +68,17 @@ const useAmbientLight = () => {
           });
           
           sensor.addEventListener('error', (error: Error) => {
-            console.error('[AmbientLight] Sensor error:', error);
+            
             useFallbackMethod();
           });
           
           sensor.start();
         } else {
-          console.log('[AmbientLight] Ambient Light Sensor API not available');
+          
           useFallbackMethod();
         }
       } catch (error) {
-        console.error('[AmbientLight] Error initializing sensor:', error);
+        
         useFallbackMethod();
       }
     };

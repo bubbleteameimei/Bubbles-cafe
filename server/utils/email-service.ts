@@ -42,7 +42,7 @@ export class EmailService {
     // Verify connection configuration
     if (user && pass) {
       this.isReady = true;
-      console.log('[EmailService] Gmail service initialized with credentials');
+      
     } else {
       console.warn('[EmailService] Warning: Gmail credentials missing or incomplete');
     }
@@ -78,20 +78,20 @@ export class EmailService {
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
         if (attempt > 0) {
-          console.log(`[EmailService] Retry attempt ${attempt}/${MAX_RETRIES}`);
+          
           // Exponential backoff between retries
           await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
         }
         
-        console.log(`[EmailService] Sending email to: ${to}, subject: ${subject}`);
+        
         const result = await this.transporter.sendMail(mailOptions);
         
         // Log success details - messageId may not be available in all nodemailer transporters
         if (result && typeof result === 'object') {
           const messageId = result.messageId || 'unknown';
-          console.log(`[EmailService] Email sent successfully: ${messageId}`);
+          
         } else {
-          console.log(`[EmailService] Email sent successfully`);
+          
         }
         
         return true;

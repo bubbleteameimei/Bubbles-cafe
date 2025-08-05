@@ -55,9 +55,9 @@ class ErrorLogger {
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
       console.group(`🚨 Error [${errorId}]`);
-      console.error('Error:', error);
-      console.error('Error Info:', errorInfo);
-      console.error('Context:', context);
+      
+      
+      
       console.groupEnd();
     }
 
@@ -312,7 +312,7 @@ export function setupGlobalErrorHandlers() {
 
   // Handle unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled promise rejection:', event.reason);
+    
     
     const error = event.reason instanceof Error 
       ? event.reason 
@@ -326,7 +326,7 @@ export function setupGlobalErrorHandlers() {
 
   // Handle uncaught errors
   window.addEventListener('error', (event) => {
-    console.error('Uncaught error:', event.error);
+    
     
     const error = event.error instanceof Error 
       ? event.error 
@@ -339,7 +339,7 @@ export function setupGlobalErrorHandlers() {
   window.addEventListener('error', (event) => {
     if (event.target !== window) {
       const target = event.target as Element;
-      console.error('Resource loading error:', target.tagName, target);
+      
       
       const error = new Error(`Failed to load resource: ${target.tagName}`);
       asyncErrorHandler.handleAsyncError(error, 'resource');

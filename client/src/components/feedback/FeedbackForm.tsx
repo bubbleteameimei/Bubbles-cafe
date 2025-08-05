@@ -96,7 +96,7 @@ export function FeedbackForm() {
       setSubmitted(true);
       
     } catch (error) {
-      console.error('Error submitting feedback:', error);
+      
       
       toast({
         title: "Submission Failed",

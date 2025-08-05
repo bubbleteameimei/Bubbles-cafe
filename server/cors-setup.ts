@@ -42,7 +42,7 @@ export function setupCors(app: Express) {
     else if (origin && process.env.NODE_ENV !== 'production') {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
-      console.log(`[CORS] Allowed unlisted origin in development: ${origin}`);
+      
     }
     // In production, only allow specified origins
     else if (origin && process.env.NODE_ENV === 'production') {
@@ -69,5 +69,5 @@ export function setupCors(app: Express) {
     next();
   });
 
-  console.log("CORS middleware configured for cross-domain deployment");
+  
 }

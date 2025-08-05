@@ -25,7 +25,7 @@ const loadEnvConfig = (): EnvConfig => {
       CACHE_DURATION: import.meta.env.VITE_CACHE_DURATION ? parseInt(import.meta.env.VITE_CACHE_DURATION) : 0,
     });
   } catch (error) {
-    console.error('Frontend environment validation failed:', error);
+    
     throw new Error('Invalid frontend environment configuration');
   }
 };

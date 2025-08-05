@@ -38,7 +38,7 @@ export function ShareButton({ title, text, url = window.location.href, className
         });
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
-          console.error("Error sharing:", error);
+          
           toast({
             variant: "destructive",
             description: "Failed to share story. Please try again.",
@@ -59,7 +59,7 @@ export function ShareButton({ title, text, url = window.location.href, className
       });
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error("Error copying:", error);
+      
       toast({
         variant: "destructive",
         description: "Failed to copy link. Please try again.",

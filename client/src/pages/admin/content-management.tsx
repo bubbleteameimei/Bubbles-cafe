@@ -66,7 +66,7 @@ export default function ContentManagementPage() {
         });
       }, 5000);
     } catch (error) {
-      console.error("Error triggering sync:", error);
+      
       setSyncInProgress(false);
       toast({
         title: "Error",

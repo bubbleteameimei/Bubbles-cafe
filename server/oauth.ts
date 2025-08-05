@@ -191,7 +191,7 @@ export function setupOAuth(app: Express) {
       
       if (frontendUrl && frontendUrl !== '*') {
         // In split deployment, redirect to the frontend URL
-        console.log('[Auth] Redirecting to frontend URL after logout:', frontendUrl);
+        
         res.redirect(frontendUrl);
       } else {
         // In development or same-domain setup, redirect to the root
@@ -204,7 +204,7 @@ export function setupOAuth(app: Express) {
   app.get('/api/auth/status', (req: Request, res: Response) => {
     if (req.isAuthenticated()) {
       const user = req.user as any;
-      console.log('[Auth] Authenticated user info request:', user.id);
+      
       
       // Return user data without sensitive information
       const metadata = user.metadata || {};
@@ -223,7 +223,7 @@ export function setupOAuth(app: Express) {
         }
       });
     } else {
-      console.log('[Auth] Unauthenticated user info request');
+      
       return res.json({ isAuthenticated: false });
     }
   });
@@ -262,7 +262,7 @@ export function setupOAuth(app: Express) {
       const user = req.user as any;
       const { username, metadata } = req.body;
       
-      console.log('[Profile] Received update request with data:', { username, metadata });
+      
       
       // Validate input
       if (username && (username.length < 3 || username.length > 30)) {
@@ -286,7 +286,7 @@ export function setupOAuth(app: Express) {
       // Handle metadata update with improved logging
       if (metadata) {
         const currentMetadata = user.metadata || {};
-        console.log('[Profile] Current metadata:', currentMetadata);
+        
         
         // For debugging - log the properties we'll update
         console.log('[Profile] Updating with:', {
@@ -314,7 +314,7 @@ export function setupOAuth(app: Express) {
           bio: metadata.bio !== undefined ? metadata.bio : currentMetadata.bio
         };
         
-        console.log('[Profile] New merged metadata:', updateData.metadata);
+        
       }
       
       // Only update if there are changes
@@ -323,9 +323,9 @@ export function setupOAuth(app: Express) {
       }
       
       // Save updates
-      console.log('[Profile] Sending update data to storage:', updateData);
+      
       const updatedUser = await storage.updateUser(user.id, updateData);
-      console.log('[Profile] Storage returned updated user:', updatedUser);
+      
       
       // Update session with the latest user data
       if (req.session && req.session.user) {
@@ -380,7 +380,7 @@ export function setupOAuth(app: Express) {
           if (err) {
             console.error('[Profile] Error saving session:', err);
           } else {
-            console.log('[Profile] Session saved successfully');
+            
           }
         });
       }

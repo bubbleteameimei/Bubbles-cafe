@@ -117,7 +117,7 @@ router.post('/user/:id/update', validateCsrfToken(), async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    console.log('Updating user with data:', updateData);
+    
     const updatedUser = await storage.updateUser(userId, updateData);
 
     if (updatedUser) {
@@ -129,7 +129,7 @@ router.post('/user/:id/update', validateCsrfToken(), async (req, res) => {
         isVerified: updatedUser.isVerified
       });
     } else {
-      console.log('❌ Failed to update user');
+      
     }
 
     return res.json({
@@ -169,7 +169,7 @@ router.post('/user/:id/update-no-csrf', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    console.log('Updating user with data (no CSRF):', updateData);
+    
     const updatedUser = await storage.updateUser(userId, updateData);
 
     if (updatedUser) {
@@ -181,7 +181,7 @@ router.post('/user/:id/update-no-csrf', async (req, res) => {
         isVerified: updatedUser.isVerified
       });
     } else {
-      console.log('❌ Failed to update user');
+      
     }
 
     return res.json({
@@ -240,7 +240,7 @@ router.post('/profile-update-test', async (req, res) => {
         metadata: newMetadata
       };
       
-      console.log('Updating with merged metadata:', mergedUpdate);
+      
       const updatedUser = await storage.updateUser(userId, mergedUpdate);
       
       if (updatedUser) {
@@ -252,7 +252,7 @@ router.post('/profile-update-test', async (req, res) => {
           isVerified: updatedUser.isVerified
         });
       } else {
-        console.log('❌ Failed to update user');
+        
       }
 
       return res.json({
@@ -267,7 +267,7 @@ router.post('/profile-update-test', async (req, res) => {
       });
     } else {
       // If no metadata in update, just update other fields
-      console.log('Updating user without metadata changes:', updateData);
+      
       const updatedUser = await storage.updateUser(userId, updateData);
       
       if (updatedUser) {
@@ -279,7 +279,7 @@ router.post('/profile-update-test', async (req, res) => {
           isVerified: updatedUser.isVerified
         });
       } else {
-        console.log('❌ Failed to update user');
+        
       }
 
       return res.json({

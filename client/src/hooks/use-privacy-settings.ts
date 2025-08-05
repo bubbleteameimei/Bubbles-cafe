@@ -49,7 +49,7 @@ export function usePrivacySettings() {
       
       // If not authenticated, stop loading and use defaults
       if (!isAuthenticated || !user) {
-        console.log('User not authenticated, using default privacy settings');
+        
         setSettings(getDefaultPrivacySettings());
         setIsLoading(false);
         return;
@@ -59,7 +59,7 @@ export function usePrivacySettings() {
       setError(null);
 
       try {
-        console.log('Fetching privacy settings...');
+        
         const response = await fetch('/api/user/privacy-settings', {
           credentials: 'include',
           headers: {
@@ -70,7 +70,7 @@ export function usePrivacySettings() {
         if (!response.ok) {
           // Handle authentication errors specially
           if (response.status === 401) {
-            console.log('Authentication required for privacy settings');
+            
             toast({
               title: 'Authentication required',
               description: 'Please log in to access your privacy settings',
@@ -86,7 +86,7 @@ export function usePrivacySettings() {
           // For development, use demo settings when API fails
           const isDev = process.env.NODE_ENV === 'development' || import.meta.env.DEV;
           if (isDev) {
-            console.log('Using demo privacy settings for development');
+            
             // Demo settings for development
             setSettings(validatePrivacySettings({
               profileVisible: true,
@@ -116,7 +116,7 @@ export function usePrivacySettings() {
           activityTracking: data.activityTracking ?? false
         }));
       } catch (err) {
-        console.error('Failed to fetch privacy settings', err);
+        
         setError('Failed to load privacy settings');
         // Use default settings if we can't load from API
         setSettings(getDefaultPrivacySettings());
@@ -146,7 +146,7 @@ export function usePrivacySettings() {
     setIsUpdating(true);
     
     try {
-      console.log('Updating privacy settings:', { [key]: value });
+      
       
       // Optimistically update the UI
       setSettings(prev => ({
@@ -202,7 +202,7 @@ export function usePrivacySettings() {
         description: 'Your privacy settings have been updated successfully',
       });
     } catch (err) {
-      console.error('Failed to update privacy setting', err);
+      
       setError('Failed to update privacy settings');
       toast({
         title: 'Update failed',
@@ -264,7 +264,7 @@ export function usePrivacySettings() {
         description: 'Your privacy settings have been updated successfully',
       });
     } catch (err) {
-      console.error('Failed to update privacy settings', err);
+      
       setError('Failed to update privacy settings');
       toast({
         title: 'Update failed',

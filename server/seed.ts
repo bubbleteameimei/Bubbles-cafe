@@ -33,28 +33,28 @@ const sampleUsers = [
 
 export async function seedDatabase() {
   try {
-    console.log("🌱 Starting database seeding...");
+    
 
     // Check if we already have data
     const existingUsers = await db.select().from(users).limit(1);
     if (existingUsers.length > 0) {
-      console.log("📊 Database already has data, skipping seed");
+      
       return;
     }
 
     // Seed users first
-    console.log("👥 Seeding users...");
+    
     for (const user of sampleUsers) {
       await db.insert(users).values(user);
     }
 
     // Seed posts
-    console.log("📝 Seeding posts...");
+    
     for (const post of samplePosts) {
       await db.insert(posts).values(post);
     }
 
-    console.log("✅ Database seeding completed successfully!");
+    
   } catch (error) {
     console.error("❌ Error seeding database:", error);
     throw error;

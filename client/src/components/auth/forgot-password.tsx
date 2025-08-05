@@ -65,7 +65,7 @@ export function ForgotPasswordDialog() {
         throw new Error(data.message || 'Something went wrong');
       }
       
-      console.log("[ForgotPassword] Password reset requested for:", email);
+      
       
       // Set email sent state regardless of outcome (for security)
       setEmailSent(true);
@@ -73,7 +73,7 @@ export function ForgotPasswordDialog() {
       // Check if email was actually sent 
       if (data.emailSent === false) {
         // Email service failed, but we still have token for testing in dev mode
-        console.log("[ForgotPassword] Email service failed but continuing with token-based flow");
+        
         toast({
           title: "Email Delivery Issue",
           description: "There was an issue delivering the email, but we'll provide you a direct link",
@@ -89,7 +89,7 @@ export function ForgotPasswordDialog() {
       
       // In development, show token and direct link
       if (data.token) {
-        console.log("[ForgotPassword] Reset token for testing:", data.token);
+        
         
         // Navigate to reset password page with token
         const resetUrl = `/reset-password?token=${data.token}`;
@@ -124,7 +124,7 @@ export function ForgotPasswordDialog() {
       }, 3000);
       
     } catch (error) {
-      console.error("[ForgotPassword] Error requesting password reset:", error);
+      
       
       toast({
         title: "Error",

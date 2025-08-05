@@ -11,7 +11,7 @@ export function setGmailCredentials() {
     return false;
   }
   
-  console.log('✅ Gmail credentials loaded from environment variables for:', gmailUser);
+  
   return true;
 }
 

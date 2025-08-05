@@ -101,7 +101,7 @@ const useReaderGentleScroll = ({
         lastSavedPosition.current = scrollY;
       }
     } catch (error) {
-      console.error('[ReaderGentleScroll] Error saving position:', error);
+      
     }
   };
   
@@ -134,7 +134,7 @@ const useReaderGentleScroll = ({
         }
       });
     } catch (error) {
-      console.error('[ReaderGentleScroll] Error cleaning up old positions:', error);
+      
     }
   };
   
@@ -170,11 +170,11 @@ const useReaderGentleScroll = ({
           if (now - position.timestamp <= maxAgeMs) {
             // Don't restore if it's a very small scroll position
             if (position.scrollY < 100 && (!position.percentRead || position.percentRead < 5)) {
-              console.log('[ReaderGentleScroll] Position too small, not restoring');
+              
               return;
             }
             
-            console.log('[ReaderGentleScroll] Initiating position restore to:', position.scrollY);
+            
             
             // Prepare for staged scrolling - use single-stage scrolling for better reliability
             const initialDelay = 300; // Short initial delay
@@ -187,7 +187,7 @@ const useReaderGentleScroll = ({
                 behavior: 'auto' // Use auto for reliable positioning
               });
               
-              console.log('[ReaderGentleScroll] Position restored to:', position.scrollY);
+              
               
               if (showToast) {
                 // Show toast notification
@@ -202,18 +202,18 @@ const useReaderGentleScroll = ({
               setRestored(true);
             }, initialDelay);
           } else {
-            console.log('[ReaderGentleScroll] Position too old, not restoring');
+            
           }
         } else {
-          console.log('[ReaderGentleScroll] No saved position found for slug:', slug);
+          
         }
       } catch (error) {
-        console.error('[ReaderGentleScroll] Error restoring position:', error);
+        
       }
     };
 
     // Initial restore with a slight delay to allow the page to properly load
-    console.log('[ReaderGentleScroll] Setting up position restore for slug:', slug);
+    
     const restoreTimeout = setTimeout(restorePosition, 200); // Increased timeout
     
     return () => {

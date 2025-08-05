@@ -119,7 +119,7 @@ router.post('/webhook', asyncHandler(async (req: Request, res: Response) => {
     // Handle different webhook events
     switch (event.event) {
       case 'charge.success':
-        console.log('[Payment] Successful charge webhook received');
+        
         // Log the successful payment
         if (event.data?.metadata?.userId) {
           await storage.createActivityLog({
@@ -135,11 +135,11 @@ router.post('/webhook', asyncHandler(async (req: Request, res: Response) => {
         break;
       
       case 'charge.failed':
-        console.log('[Payment] Failed charge webhook received');
+        
         break;
       
       default:
-        console.log(`[Payment] Unhandled webhook event: ${event.event}`);
+        
     }
 
     res.json({ status: 'success' });

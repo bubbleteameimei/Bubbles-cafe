@@ -29,7 +29,7 @@ function Posts() {
         }
       } catch (error) {
         setApiStatus('unavailable');
-        console.error("Error checking WordPress API status:", error);
+        
       }
     };
     

@@ -104,7 +104,7 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
     
     // Skip if the bypass flag is set by another middleware
     if ((req as any)._csrfBypassApproved === true) {
-      console.log(`CSRF validation skipped for ${req.method} ${req.path} (bypass flag set)`);
+      
       return next();
     }
 
@@ -116,8 +116,8 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
 
     // Debug output only in development to avoid log flooding
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`CSRF checking path: ${req.method} ${req.path} (API relative: ${relPath})`);
-      console.log(`Ignore paths:`, ignorePaths);
+      
+      
     }
     
     // Fix: Check multiple path formats to handle various middleware configurations
@@ -143,7 +143,7 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
         req.path.includes('/newsletter/unsubscribe')
       )
     ) {
-      console.log(`CSRF validation skipped for ${req.method} ${req.path} (matches ignore path)`);
+      
       return next();
     }
 

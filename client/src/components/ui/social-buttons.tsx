@@ -25,7 +25,7 @@ export function SocialButtons({ links = {}, className = "" }: SocialButtonsProps
     try {
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (error) {
-      console.error(`Failed to open ${platform} link:`, error);
+      
       toast({
         title: "Error",
         description: `Unable to open ${platform}. Please try again.`,

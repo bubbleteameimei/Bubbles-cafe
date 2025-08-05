@@ -25,4 +25,4 @@ content = content.replace(
 // Write the file back
 fs.writeFileSync(filePath, content);
 
-console.log('Sanitizer import fixed in routes.ts');
+

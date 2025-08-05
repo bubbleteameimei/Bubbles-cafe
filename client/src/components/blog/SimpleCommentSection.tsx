@@ -176,7 +176,7 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('Reply error response:', errorData);
+        
         throw new Error('Failed to post reply: ' + errorData);
       }
 
@@ -409,7 +409,7 @@ export default function SimpleCommentSection({ postId }: CommentSectionProps) {
           setFlaggedComments(parsedComments);
         }
       } catch (e) {
-        console.error('Error parsing flagged comments from localStorage', e);
+        
       }
     }
   }, [postId]);
@@ -419,16 +419,16 @@ export default function SimpleCommentSection({ postId }: CommentSectionProps) {
     queryKey: [`/api/posts/${postId}/comments`],
     queryFn: async () => {
       try {
-        console.log(`[Comments] Fetching comments for post ${postId}`);
+        
         const response = await fetch(`/api/posts/${postId}/comments`);
         if (!response.ok) {
           throw new Error(`Failed to fetch comments: ${response.status}`);
         }
         const data = await response.json();
-        console.log(`[Comments] Fetched ${data.length} comments`);
+        
         return data;
       } catch (error) {
-        console.error(`[Comments] Error fetching comments:`, error);
+        
         // Return empty array instead of throwing to prevent cascading errors
         return [];
       }
@@ -449,7 +449,7 @@ export default function SimpleCommentSection({ postId }: CommentSectionProps) {
       // Check if the content needs moderation
       const { isFlagged, isUnderReview } = checkModeration(content);
       
-      console.log(`[Comments] Creating comment for post ${postId}`);
+      
       const response = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
         headers: { 
@@ -467,7 +467,7 @@ export default function SimpleCommentSection({ postId }: CommentSectionProps) {
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('Comment error response:', errorData);
+        
         throw new Error('Failed to post comment: ' + errorData);
       }
 
@@ -477,7 +477,7 @@ export default function SimpleCommentSection({ postId }: CommentSectionProps) {
       };
     },
     onSuccess: (result) => {
-      console.log('Comment posted successfully:', result.data);
+      
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
       
       // Clear localStorage draft
@@ -501,7 +501,7 @@ export default function SimpleCommentSection({ postId }: CommentSectionProps) {
       }
     },
     onError: (error: Error) => {
-      console.error('Comment mutation error:', error);
+      
       toast({
         title: "Error",
         description: error.message || "Failed to post comment. Please try again.",

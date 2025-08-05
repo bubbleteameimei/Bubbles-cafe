@@ -52,7 +52,7 @@ export function preload(url: string, options: PreloadOptions = {}): Promise<void
   // Skip if already preloaded
   if (preloadedResources.has(url)) {
     if (options.log || import.meta.env.DEV) {
-      console.log(`[Preloader] Resource already preloaded: ${url}`);
+      
     }
     return Promise.resolve();
   }
@@ -69,7 +69,7 @@ export function preload(url: string, options: PreloadOptions = {}): Promise<void
   } = options;
   
   if (log) {
-    console.log(`[Preloader] Preloading ${as}: ${url}`);
+    
   }
   
   return new Promise<void>((resolve, reject) => {
@@ -81,12 +81,12 @@ export function preload(url: string, options: PreloadOptions = {}): Promise<void
       fetch(url, { cache })
         .then(response => {
           if (!response.ok) throw new Error(`Failed to preload: ${url}`);
-          if (log) console.log(`[Preloader] Successfully preloaded: ${url}`);
+          if (log) 
           if (onLoad) onLoad();
           resolve();
         })
         .catch(error => {
-          if (log) console.error(`[Preloader] Error preloading: ${url}`, error);
+          if (log) 
           if (onError) onError(error);
           reject(error);
         });
@@ -115,14 +115,14 @@ export function preload(url: string, options: PreloadOptions = {}): Promise<void
     
     // Handle load event
     link.onload = () => {
-      if (log) console.log(`[Preloader] Successfully preloaded: ${url}`);
+      if (log) 
       if (onLoad) onLoad();
       resolve();
     };
     
     // Handle error event
     link.onerror = (error) => {
-      if (log) console.error(`[Preloader] Error preloading: ${url}`, error);
+      if (log) 
       if (onError) onError(error as unknown as Error);
       reject(new Error(`Failed to preload: ${url}`));
     };
@@ -207,13 +207,13 @@ export function preloadFont(url: string, options: PreloadOptions = {}): Promise<
       link.href = fontUrl;
       
       link.onload = () => {
-        console.log(`[Preloader] Successfully loaded Google Font: ${fontName}`);
+        
         if (options.onLoad) options.onLoad();
         resolve();
       };
       
       link.onerror = (error) => {
-        console.error(`[Preloader] Error loading Google Font: ${fontName}`, error);
+        
         if (options.onError) options.onError(error as unknown as Error);
         reject(new Error(`Failed to load font: ${fontName}`));
       };
@@ -239,7 +239,7 @@ export function preloadFont(url: string, options: PreloadOptions = {}): Promise<
  * @param assets Optional additional assets to preload
  */
 export async function preloadRoute(route: string, assets: string[] = []): Promise<void> {
-  console.log(`[Preloader] Preloading assets for route: ${route}`);
+  
   
   // Common assets for all routes (background images removed)
   const commonAssets = [
@@ -295,9 +295,9 @@ export async function preloadRoute(route: string, assets: string[] = []): Promis
     const remainingAssets = allAssets.slice(2);
     preloadAll(remainingAssets, { priority: 'low' });
     
-    console.log(`[Preloader] Successfully triggered preload for ${allAssets.length} assets`);
+    
   } catch (error) {
-    console.error('[Preloader] Error preloading assets:', error);
+    
   }
 }
 
@@ -310,7 +310,7 @@ export async function preloadRoute(route: string, assets: string[] = []): Promis
  */
 export async function preloadApiData<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   try {
-    console.log(`[Preloader] Preloading API data: ${endpoint}`);
+    
     const response = await fetch(endpoint, {
       ...options,
       headers: {
@@ -325,7 +325,7 @@ export async function preloadApiData<T>(endpoint: string, options: RequestInit =
     
     return await response.json();
   } catch (error) {
-    console.error(`[Preloader] Failed to preload API data from ${endpoint}:`, error);
+    
     throw error;
   }
 }
@@ -336,7 +336,7 @@ export async function preloadApiData<T>(endpoint: string, options: RequestInit =
  */
 export function clearPreloadedResources(): void {
   preloadedResources.clear();
-  console.log('[Preloader] Cleared preloaded resources cache');
+  
 }
 
 /**

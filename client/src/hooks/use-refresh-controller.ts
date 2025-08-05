@@ -48,7 +48,7 @@ export function useRefreshController(options: RefreshControllerOptions = {}) {
       setLastRefreshed(new Date());
       return true;
     } catch (error) {
-      console.error('Error during refresh:', error);
+      
       return false;
     } finally {
       setIsRefreshing(false);

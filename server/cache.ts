@@ -81,11 +81,11 @@ export function cached(ttl?: number) {
       
       const cached = queryCache.get(cacheKey);
       if (cached) {
-        console.log(`[Cache] HIT: ${cacheKey}`);
+        
         return cached;
       }
 
-      console.log(`[Cache] MISS: ${cacheKey}`);
+      
       const result = await originalMethod.apply(this, args);
       queryCache.set(cacheKey, result, ttl);
       return result;
@@ -97,7 +97,7 @@ export function cached(ttl?: number) {
 
 // Cache warming utilities
 export async function warmCache() {
-  console.log('[Cache] Starting cache warming process...');
+  
   
   // Warm up critical queries that are frequently accessed
   const criticalQueries = [
@@ -108,10 +108,10 @@ export async function warmCache() {
 
   for (const query of criticalQueries) {
     if (!queryCache.has(query)) {
-      console.log(`[Cache] Warming: ${query}`);
+      
       // These would be actual database calls in practice
     }
   }
   
-  console.log('[Cache] Cache warming complete');
+  
 }

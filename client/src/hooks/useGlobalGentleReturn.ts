@@ -103,7 +103,7 @@ const useGlobalGentleReturn = ({
         lastSavedPosition.current = scrollY;
       }
     } catch (error) {
-      console.error('[GentleReturn] Error saving position:', error);
+      
     }
   };
   
@@ -136,7 +136,7 @@ const useGlobalGentleReturn = ({
         }
       });
     } catch (error) {
-      console.error('[GentleReturn] Error cleaning up old positions:', error);
+      
     }
   };
   
@@ -205,7 +205,7 @@ const useGlobalGentleReturn = ({
           }
         }
       } catch (error) {
-        console.error('[GentleReturn] Error restoring position:', error);
+        
       }
     };
 

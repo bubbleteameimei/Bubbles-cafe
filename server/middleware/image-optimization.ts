@@ -127,7 +127,7 @@ export function imageOptimizationMiddleware(req: Request, res: Response, next: N
     // If not, we would normally optimize the image here
     // But since we don't have Sharp installed, we'll add a placeholder for now
     // In a real implementation, we would resize, format convert, and compress the image
-    console.log(`[Image Optimizer] Would optimize ${filePath} with params:`, params);
+    
     
     // For now, just send the original
     res.sendFile(filePath);

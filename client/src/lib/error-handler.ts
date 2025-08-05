@@ -208,7 +208,7 @@ export function handleWordPressError(error: unknown): ApplicationError {
   formattedError.message = errorMessage;
   
   // Log WordPress errors for debugging
-  console.error('WordPress API Error:', formattedError);
+  
   
   return formattedError;
 }
@@ -304,11 +304,11 @@ export function logError(error: ApplicationError): void {
       console.warn(`[${category.toUpperCase()}]`, message, logData);
       break;
     case ErrorSeverity.CRITICAL:
-      console.error(`[${category.toUpperCase()} - CRITICAL]`, message, logData);
+      
       break;
     case ErrorSeverity.ERROR:
     default:
-      console.error(`[${category.toUpperCase()}]`, message, logData);
+      
   }
 }
 

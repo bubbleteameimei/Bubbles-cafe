@@ -40,10 +40,10 @@ export const SearchBar = ({
             onSearchChange(query);
           }
         } else {
-          console.error('Search failed:', data.error);
+          
         }
       } catch (error) {
-        console.error('Search error:', error);
+        
       }
     }
   };

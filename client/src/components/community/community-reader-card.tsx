@@ -344,7 +344,7 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
     flagMutation.mutate(flagReason);
     
     // Log reporting activity for moderation purposes (no personal info)
-    console.log(`Report submitted for post ID: ${post.id}, Title: "${post.title.substring(0, 20)}..."`);
+    
   };
   
   // Copy post link to clipboard
@@ -378,7 +378,7 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
         text: post.excerpt || createExcerpt(post.content),
         url: `${window.location.origin}/community-story/${post.slug}`,
       }).catch(error => {
-        console.error('Error sharing:', error);
+        
       });
     } else {
       copyLink();

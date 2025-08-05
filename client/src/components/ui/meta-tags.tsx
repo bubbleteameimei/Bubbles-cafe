@@ -34,7 +34,7 @@ export function MetaTags({ post, title, description, image, url }: MetaTagsProps
       updateMetaTag("twitter:description", pageDescription);
       updateMetaTag("twitter:image", new URL(pageImage, window.location.origin).href);
     } catch (error) {
-      console.error("Error updating meta tags:", error);
+      
     }
   }, [pageTitle, pageDescription, pageImage, pageUrl]);
 

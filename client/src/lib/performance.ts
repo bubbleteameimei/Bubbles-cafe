@@ -18,7 +18,7 @@ export const lazyLoad = (
       if (fallback) {
         return { default: fallback };
       } else {
-        console.error('[Performance] Critical lazy load failure:', err);
+        
         throw err;
       }
     })
@@ -36,13 +36,13 @@ export class AssetPreloader {
       // Background images removed - only profile images remain
     ];
 
-    console.log('[Performance] Preloading critical assets...');
+    
     
     // Preload images in parallel for faster loading
     const preloadPromises = criticalAssets.map(asset => this.preloadImage(asset));
     await Promise.allSettled(preloadPromises);
     
-    console.log('[Performance] Critical assets preloaded');
+    
   }
 
   private preloadImage(src: string): Promise<void> {
@@ -54,7 +54,7 @@ export class AssetPreloader {
       const img = new Image();
       img.onload = () => {
         this.preloadedAssets.add(src);
-        console.log(`[Performance] Preloaded: ${src}`);
+        
         resolve();
       };
       img.onerror = () => {
@@ -151,13 +151,13 @@ export class MemoryOptimizer {
 
   static clearCache() {
     this.cache.clear();
-    console.log('[Performance] Memory cache cleared');
+    
   }
 }
 
 // Initialize performance optimizations
 export function initializePerformanceOptimizations() {
-  console.log('[Performance] Initializing performance optimizations...');
+  
   
   // Preload critical assets
   const preloader = new AssetPreloader();
@@ -172,7 +172,7 @@ export function initializePerformanceOptimizations() {
     setupLazyLoading();
   }
   
-  console.log('[Performance] Performance optimizations initialized');
+  
 }
 
 function setupLazyLoading() {

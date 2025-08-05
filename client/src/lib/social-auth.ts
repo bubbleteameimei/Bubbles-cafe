@@ -24,7 +24,7 @@ export const signInWithGoogle = async () => {
     if (!auth) throw new Error('Firebase auth is not initialized');
     const result = await signInWithPopup(auth as Auth, googleProvider);
     const user = result.user;
-    console.log("Google Sign-In Success:", user);
+    
 
     // Get the auth token
     const credential = GoogleAuthProvider.credentialFromResult(result);
@@ -40,7 +40,7 @@ export const signInWithGoogle = async () => {
       token
     };
   } catch (error: any) {
-    console.error("Google Sign-In Error:", error);
+    
 
     // Provide more helpful error messages
     if (error.code === 'auth/popup-blocked') {
@@ -75,7 +75,7 @@ export const signInWithApple = async () => {
     if (!auth) throw new Error('Firebase auth is not initialized');
     const result = await signInWithPopup(auth as Auth, appleProvider);
     const user = result.user;
-    console.log("Apple Sign-In Success:", user);
+    
 
     // Get the auth token to send to our backend
     const credential = OAuthProvider.credentialFromResult(result);
@@ -91,7 +91,7 @@ export const signInWithApple = async () => {
       token
     };
   } catch (error: any) {
-    console.error("Apple Sign-In Error:", error);
+    
 
     // Provide more helpful error messages
     if (error.code === 'auth/popup-blocked') {
@@ -118,10 +118,10 @@ export const signOutSocialUser = async (): Promise<boolean> => {
   
   try {
     await (auth as Auth).signOut();
-    console.log("User signed out successfully");
+    
     return true;
   } catch (error) {
-    console.error("Error signing out:", error);
+    
     throw error;
   }
 };

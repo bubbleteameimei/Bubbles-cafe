@@ -19,7 +19,7 @@ const EmailSubscriptionSchema = z.object({
  */
 router.post('/subscribe', async (req, res) => {
   try {
-    console.log('[Fresh-Newsletter] Received subscription request:', req.body);
+    
     
     // Validate request body
     const validationResult = EmailSubscriptionSchema.safeParse(req.body);
@@ -36,7 +36,7 @@ router.post('/subscribe', async (req, res) => {
     // Check if already subscribed
     const existingSubscription = await storage.getNewsletterSubscriptionByEmail(email);
     if (existingSubscription && existingSubscription.status === 'active') {
-      console.log('[Fresh-Newsletter] Email already subscribed:', email);
+      
       
       // Send a fresh welcome email anyway
       const emailSent = await sendFreshNewsletter(email);
@@ -57,19 +57,19 @@ router.post('/subscribe', async (req, res) => {
     if (existingSubscription) {
       // Use existing subscription
       subscription = existingSubscription;
-      console.log('[Fresh-Newsletter] Using existing subscription for:', email);
+      
     } else {
       // Create new
       subscription = await storage.createNewsletterSubscription({
         email,
         metadata: { status: 'active' }
       });
-      console.log('[Fresh-Newsletter] Created new subscription for:', email);
+      
     }
     
     // Send welcome email
     const emailSent = await sendFreshNewsletter(email);
-    console.log('[Fresh-Newsletter] Welcome email sent status:', emailSent);
+    
     
     return res.status(200).json({
       success: true,

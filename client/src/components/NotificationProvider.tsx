@@ -74,7 +74,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
           setNotifications(fetchedNotifications);
         }
       } catch (error) {
-        console.error('Failed to load notifications:', error);
+        
       }
     };
     
@@ -86,7 +86,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     try {
       localStorage.setItem('notifications', JSON.stringify(notifications));
     } catch (error) {
-      console.error('Failed to save notifications:', error);
+      
     }
   }, [notifications]);
   

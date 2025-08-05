@@ -141,7 +141,7 @@ app.use(validateCsrfToken({
 // Register critical API routes BEFORE any middleware that might interfere
 import searchRouter from './routes/search-simple';
 app.use('/api/search', (req, _res, next) => {
-  console.log('[EarlySearch] Route hit before all middleware:', req.method, req.url);
+  
   next();
 }, searchRouter);
 
@@ -345,11 +345,11 @@ async function startServer() {
       const startTime = Date.now();
       
       // Log that we're about to start listening
-      console.log(`Attempting to start server on http://${HOST}:${PORT}...`);
+      
       
       server.listen(PORT, HOST, () => {
         const bootDuration = Date.now() - startTime;
-        console.log(`✅ Server started successfully on http://${HOST}:${PORT} in ${bootDuration}ms`);
+        
         serverLogger.info('Server started successfully', { 
           url: `http://${HOST}:${PORT}`,
           bootTime: `${bootDuration}ms`
@@ -362,13 +362,13 @@ async function startServer() {
             wait_for_port: true,
             ready: true
           });
-          console.log('Sent port readiness signal to process');
+          
           serverLogger.debug('Sent port readiness signal');
         }
         
         // Wait for a moment to ensure the server is fully ready
         setTimeout(() => {
-          console.log('Server is now fully ready to accept connections');
+          
         }, 1000);
 
         resolve();

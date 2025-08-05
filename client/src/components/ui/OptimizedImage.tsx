@@ -126,7 +126,7 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
       if (fallbackSrc && fallbackSrc !== src) {
         console.warn(`[OptimizedImage] Failed to load image: ${src}, using fallback`);
       } else {
-        console.error(`[OptimizedImage] Failed to load image: ${src}`);
+        
       }
       
       onError?.();

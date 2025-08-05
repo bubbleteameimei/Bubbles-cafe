@@ -32,7 +32,7 @@ export function NotificationSystem() {
         setNotifications(parsed);
         setUnreadCount(parsed.filter((n: Notification) => !n.read).length);
       } catch (error) {
-        console.error('Error loading notifications:', error);
+        
       }
     }
   }, []);

@@ -52,10 +52,10 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
         const userData = await response.json();
         setUser(userData.user);
       } else {
-        console.error('Failed to sync user with backend');
+        
       }
     } catch (error) {
-      console.error('Backend sync error:', error);
+      
     }
   };
 

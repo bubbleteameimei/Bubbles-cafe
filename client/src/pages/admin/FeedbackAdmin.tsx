@@ -101,7 +101,7 @@ const FeedbackAdmin = () => {
       }
     },
     onError: (error) => {
-      console.error('Error updating feedback status:', error);
+      
       toast.error('Failed to update feedback status');
     }
   });
@@ -125,7 +125,7 @@ const FeedbackAdmin = () => {
       }
     },
     onError: (error) => {
-      console.error('Error sending response:', error);
+      
       toast.error('Failed to send response');
     }
   });

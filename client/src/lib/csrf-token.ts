@@ -30,7 +30,7 @@ export function getCsrfToken(): string | null {
     if (match && match[2]) {
       // Store token in memory and return it
       csrfToken = decodeURIComponent(match[2]);
-      console.log(`[CSRF] Retrieved token from cookies: ${csrfToken.substring(0, 10)}...`);
+      
       return csrfToken;
     }
     
@@ -45,7 +45,7 @@ export function getCsrfToken(): string | null {
         if (cookieName === CSRF_COOKIE_NAME) {
           // Store token in memory and return it
           csrfToken = cookieValue ? decodeURIComponent(cookieValue) : null;
-          console.log(`[CSRF] Retrieved token via fallback: ${csrfToken?.substring(0, 10)}...`);
+          
           return csrfToken;
         }
       }
@@ -54,7 +54,7 @@ export function getCsrfToken(): string | null {
     console.warn('[CSRF] No token found in cookies');
     return null;
   } catch (error) {
-    console.error('[CSRF] Error retrieving CSRF token:', error);
+    
     return null;
   }
 }
@@ -81,7 +81,7 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
     });
     
     if (!response.ok) {
-      console.error('Failed to fetch CSRF token, server responded with:', response.status);
+      
       return null;
     }
     
@@ -97,7 +97,7 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
     // If the server didn't include the token in the response, try to get it from cookies
     return getCsrfToken();
   } catch (error) {
-    console.error('Error fetching CSRF token:', error);
+    
     return null;
   }
 }
@@ -118,12 +118,12 @@ export function applyCSRFToken(options: RequestInit = {}): RequestInit {
       const match = document.cookie.match(/(^|;\s*)XSRF-TOKEN\s*=\s*([^;]+)/);
       if (match && match[2]) {
         token = decodeURIComponent(match[2]);
-        console.log(`[CSRF] Retrieved token directly: ${token.substring(0, 10)}...`);
+        
         // Update the cached token
         csrfToken = token;
       }
     } catch (e) {
-      console.error('[CSRF] Error in final token extraction attempt:', e);
+      
     }
   }
   
@@ -144,7 +144,7 @@ export function applyCSRFToken(options: RequestInit = {}): RequestInit {
   headers.set(CSRF_HEADER_NAME, token);
   
   // Log the token we're using (first 10 chars for security)
-  console.log(`[CSRF] Applied token to request: ${token.substring(0, 10)}...`);
+  
   
   return {
     ...options,
@@ -181,5 +181,5 @@ export function createCSRFRequest(method: string, body?: any): RequestInit {
  * Initialize CSRF protection for the application (simplified)
  */
 export async function initCSRFProtection(): Promise<void> {
-  console.log('CSRF protection initialized successfully');
+  
 }

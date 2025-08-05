@@ -5,7 +5,7 @@
 const PORT = 3000;
 
 if (process.send) {
-  console.log(`⏱️ Signaling port ${PORT} readiness to Replit...`);
+  
   process.send({
     port: PORT,
     wait_for_port: true,
@@ -13,4 +13,3 @@ if (process.send) {
   });
 }
 
-console.log('✅ Port readiness signal sent!');

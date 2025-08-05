@@ -55,13 +55,13 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
       const url = filterTag
         ? `/api/bookmarks?tag=${encodeURIComponent(filterTag)}`
         : '/api/bookmarks';
-      console.log(`[BookmarkList] Fetching authenticated bookmarks with URL: ${url}`);
+      
       try {
         const result = await apiRequest<BookmarkWithPost[]>(url);
-        console.log(`[BookmarkList] Successfully fetched ${result.length} authenticated bookmarks`);
+        
         return result;
       } catch (err) {
-        console.error('[BookmarkList] Error fetching authenticated bookmarks:', err);
+        
         throw err;
       }
     },
@@ -82,14 +82,14 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
       const url = filterTag
         ? `/api/reader/bookmarks?tag=${encodeURIComponent(filterTag)}`
         : '/api/reader/bookmarks';
-      console.log(`[BookmarkList] Fetching anonymous bookmarks with URL: ${url}`);
+      
       try {
         // Force refetch by adding timestamp to avoid client-side caching issues
         const result = await apiRequest<BookmarkWithPost[]>(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
-        console.log(`[BookmarkList] Successfully fetched ${result.length} anonymous bookmarks`, result);
+        
         return result;
       } catch (err) {
-        console.error('[BookmarkList] Error fetching anonymous bookmarks:', err);
+        
         return []; // Return empty array on error to prevent breaking UI
       }
     },
@@ -108,13 +108,13 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   } = useQuery({
     queryKey: ['/api/posts'],
     queryFn: async () => {
-      console.log('[BookmarkList] Fetching recommended stories');
+      
       try {
         const result = await apiRequest<Post[]>('/api/posts?limit=5');
-        console.log(`[BookmarkList] Successfully fetched ${result.length} recommended stories`);
+        
         return result;
       } catch (err) {
-        console.error('[BookmarkList] Error fetching recommended stories:', err);
+        
         throw err;
       }
     },
@@ -167,7 +167,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
       });
     },
     onError: (error) => {
-      console.error('Error removing authenticated bookmark:', error);
+      
       const errorMessage = error instanceof Error 
         ? error.message 
         : 'Failed to remove bookmark. Please try again.';
@@ -200,7 +200,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
       });
     },
     onError: (error) => {
-      console.error('Error removing anonymous bookmark:', error);
+      
       const errorMessage = error instanceof Error 
         ? error.message 
         : 'Failed to remove bookmark. Please try again.';
@@ -230,7 +230,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
       
       deleteMutation.mutate(postId);
     } catch (error) {
-      console.error('Error in handleRemoveBookmark:', error);
+      
       toast({
         title: 'Error',
         description: 'An unexpected error occurred. Please try again.',

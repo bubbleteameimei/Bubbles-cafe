@@ -33,7 +33,7 @@ export const apiCache = (duration: number = DEFAULT_EXPIRY) => {
     // Check if we have a valid cached response
     const cachedItem = cache[key];
     if (cachedItem && cachedItem.expiry > Date.now()) {
-      console.log(`[Cache] Hit for ${key}`);
+      
       return res.json(cachedItem.data);
     }
 
@@ -45,7 +45,7 @@ export const apiCache = (duration: number = DEFAULT_EXPIRY) => {
         data: body,
         expiry: Date.now() + duration
       };
-      console.log(`[Cache] Stored ${key}`);
+      
       
       // Restore the original json method and call it
       res.json = originalJson;
@@ -62,7 +62,7 @@ export const apiCache = (duration: number = DEFAULT_EXPIRY) => {
 export const clearCacheItem = (key: string) => {
   if (cache[key]) {
     delete cache[key];
-    console.log(`[Cache] Cleared ${key}`);
+    
     return true;
   }
   return false;
@@ -80,12 +80,12 @@ export const clearCache = (prefix?: string) => {
         delete cache[key];
       }
     });
-    console.log(`[Cache] Cleared items with prefix: ${prefix}`);
+    
   } else {
     // Clear all cache
     Object.keys(cache).forEach(key => {
       delete cache[key];
     });
-    console.log('[Cache] Cleared all items');
+    
   }
 };

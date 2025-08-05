@@ -57,7 +57,7 @@ export const initializeTransaction = async (data: {
       throw new Error('Paystack configuration missing');
     }
 
-    console.log('[PAYSTACK] Initializing transaction for:', data.email, 'Amount:', data.amount);
+    
 
     const response = await fetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
       method: 'POST',
@@ -67,7 +67,7 @@ export const initializeTransaction = async (data: {
 
     const result = await handlePaystackResponse(response);
     const data_result = result as any;
-    console.log(`[PAYSTACK] Transaction initialized successfully. Reference: ${data_result.data?.reference}`);
+    
     
     return result;
   } catch (error) {
@@ -85,7 +85,7 @@ export const verifyTransaction = async (reference: string) => {
       throw new Error('Paystack configuration missing');
     }
 
-    console.log('[PAYSTACK] Verifying transaction:', reference);
+    
 
     const response = await fetch(`${PAYSTACK_BASE_URL}/transaction/verify/${reference}`, {
       method: 'GET',
@@ -94,7 +94,7 @@ export const verifyTransaction = async (reference: string) => {
 
     const result = await handlePaystackResponse(response);
     const data_result = result as any;
-    console.log(`[PAYSTACK] Transaction verification status: ${data_result.data?.status}`);
+    
     
     return result;
   } catch (error) {
@@ -127,7 +127,7 @@ export const listTransactions = async (params: {
     });
 
     const url = `${PAYSTACK_BASE_URL}/transaction?${queryParams.toString()}`;
-    console.log('[PAYSTACK] Fetching transactions from:', url);
+    
 
     const response = await fetch(url, {
       method: 'GET',
@@ -136,7 +136,7 @@ export const listTransactions = async (params: {
 
     const result = await handlePaystackResponse(response);
     const data_result = result as any;
-    console.log(`[PAYSTACK] Retrieved ${data_result.data?.length || 0} transactions`);
+    
     
     return result;
   } catch (error) {
@@ -160,7 +160,7 @@ export const createPlan = async (data: {
       throw new Error('Paystack configuration missing');
     }
 
-    console.log('[PAYSTACK] Creating plan:', data.name);
+    
 
     const response = await fetch(`${PAYSTACK_BASE_URL}/plan`, {
       method: 'POST',
@@ -173,7 +173,7 @@ export const createPlan = async (data: {
 
     const result = await handlePaystackResponse(response);
     const data_result = result as any;
-    console.log(`[PAYSTACK] Plan created successfully. ID: ${data_result.data?.id}`);
+    
     
     return result;
   } catch (error) {
@@ -196,7 +196,7 @@ export const createSubscription = async (data: {
       throw new Error('Paystack configuration missing');
     }
 
-    console.log('[PAYSTACK] Creating subscription for customer:', data.customer);
+    
 
     const response = await fetch(`${PAYSTACK_BASE_URL}/subscription`, {
       method: 'POST',
@@ -206,7 +206,7 @@ export const createSubscription = async (data: {
 
     const result = await handlePaystackResponse(response);
     const data_result = result as any;
-    console.log(`[PAYSTACK] Subscription created successfully. ID: ${data_result.data?.id}`);
+    
     
     return result;
   } catch (error) {
@@ -230,7 +230,7 @@ export const createCustomer = async (data: {
       throw new Error('Paystack configuration missing');
     }
 
-    console.log('[PAYSTACK] Creating customer:', data.email);
+    
 
     const response = await fetch(`${PAYSTACK_BASE_URL}/customer`, {
       method: 'POST',
@@ -256,7 +256,7 @@ export const fetchCustomer = async (emailOrCode: string) => {
       throw new Error('Paystack configuration missing');
     }
 
-    console.log('[PAYSTACK] Fetching customer:', emailOrCode);
+    
 
     const response = await fetch(`${PAYSTACK_BASE_URL}/customer/${emailOrCode}`, {
       method: 'GET',
@@ -287,7 +287,7 @@ export const generateReference = (): string => {
 export const processWebhook = (body: any) => {
   // Note: Signature validation should be implemented here using the webhook secret
   // For now, just return the parsed body
-  console.log('[PAYSTACK] Processing webhook:', body?.event);
+  
   return body;
 };
 

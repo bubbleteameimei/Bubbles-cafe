@@ -44,17 +44,17 @@ export default function IndexView() {
       sessionStorage.removeItem('selectedStoryIndex');
       // Set the new index
       sessionStorage.setItem('selectedStoryIndex', index.toString());
-      console.log('[Index] Story index set successfully');
+      
       setLocation('/reader');
     } catch (error) {
-      console.error('[Index] Error setting story index:', error);
+      
       // Attempt recovery by clearing storage and using a default
       try {
         sessionStorage.clear();
         sessionStorage.setItem('selectedStoryIndex', '0');
         setLocation('/reader');
       } catch (retryError) {
-        console.error('[Index] Recovery attempt failed:', retryError);
+        
       }
     }
   };
@@ -63,14 +63,14 @@ export default function IndexView() {
   const allPostsQuery = useQuery({
     queryKey: ["wordpress", "all-posts"],
     queryFn: async () => {
-      console.log('[Index] Fetching all WordPress posts');
+      
       try {
         const wpPosts = await fetchAllWordPressPosts();
-        console.log(`[Index] Received ${wpPosts.length} total posts`);
+        
         const posts = wpPosts.map((post: WordPressPost) => convertWordPressPost(post)) as Post[];
         return posts;
       } catch (error) {
-        console.error('[Index] Error fetching all posts:', error);
+        
         return [];
       }
     },
@@ -92,14 +92,14 @@ export default function IndexView() {
     queryKey: ["wordpress", "posts"],
     queryFn: async ({ pageParam = 1 }) => {
       const page = typeof pageParam === 'number' ? pageParam : 1;
-      console.log('[Index] Fetching posts page:', page);
+      
       // Modified to fetch more posts per page
       const wpResponse = await fetchWordPressPosts({ 
         page, 
         perPage: 100 // Increased to get more posts at once
       });
       const wpPosts = wpResponse.posts || [];
-      console.log('[Index] Received posts:', wpPosts.length);
+      
       // Use proper type for the post parameter
       const posts = wpPosts.map((post: WordPressPost) => convertWordPressPost(post)) as Post[];
       return {
@@ -145,11 +145,11 @@ export default function IndexView() {
   const featuredStory = useMemo(() => {
     if (!currentPosts || currentPosts.length === 0) return null;
     
-    console.log('\n\n========== FEATURED STORY SELECTION ==========');
-    console.log(`%c[Index] Selecting featured story from ${currentPosts.length} posts`, 'color: green; font-weight: bold');
+    
+    
     
     // Debug all posts - check if metrics are actually available
-    console.log('%c[Index] Posts metrics debug:', 'color: blue; font-weight: bold');
+    
     currentPosts.forEach(post => {
       // Check for direct metrics in post object
       const hasLikes = typeof post.likesCount === 'number';
@@ -244,7 +244,7 @@ export default function IndexView() {
       
       // Comparison for debugging
       if (a.id === 1 || a.id === 3) {
-        console.log(`\n%cCOMPARISON: "${a.title}" vs other stories`, 'color: red; font-weight: bold');
+        
         console.log(`Score for "${a.title}" (ID: ${a.id}): ${aScore.toFixed(2)}`, {
           likes: aLikes,
           views: aViews,
@@ -258,14 +258,14 @@ export default function IndexView() {
     });
     
     // Always log the top 5 posts for debugging
-    console.log('\n%c[Index] Top 5 posts by score:', 'color: blue; font-weight: bold');
+    
     sortedByEngagement.slice(0, 5).forEach((post, index) => {
       const likes = typeof post.likesCount === 'number' ? post.likesCount : 0;
       const views = post.metadata && typeof post.metadata === 'object' && 
         'pageViews' in (post.metadata as Record<string, unknown>) ?
         Number((post.metadata as Record<string, unknown>).pageViews || 0) : 0;
         
-      console.log(`#${index + 1}: "${post.title}" (ID: ${post.id}) - ${likes} likes, ${views} views`);
+      
     });
     
     // Check if we have at least 5 posts
@@ -275,8 +275,8 @@ export default function IndexView() {
       const dayOfYear = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
       const rotationIndex = dayOfYear % 5; // 0-4 based on day of year
       
-      console.log(`\n%c[Index] Using rotation index ${rotationIndex} based on day of year ${dayOfYear}`, 'color: purple');
-      console.log('%c[Index] Featured story selected:', 'color: green; font-weight: bold', {
+      
+       font-weight: bold', {
         id: sortedByEngagement[rotationIndex].id,
         title: sortedByEngagement[rotationIndex].title,
         likes: sortedByEngagement[rotationIndex].likesCount,
@@ -285,7 +285,7 @@ export default function IndexView() {
                'pageViews' in (sortedByEngagement[rotationIndex].metadata as Record<string, unknown>) ? 
                (sortedByEngagement[rotationIndex].metadata as Record<string, unknown>).pageViews : 0
       });
-      console.log('=============================================\n\n');
+      
       
       return sortedByEngagement[rotationIndex];
     }
@@ -295,7 +295,7 @@ export default function IndexView() {
       id: sortedByEngagement[0].id,
       title: sortedByEngagement[0].title
     });
-    console.log('=============================================\n\n');
+    
     
     return sortedByEngagement[0];
   }, [currentPosts]);
@@ -398,10 +398,10 @@ export default function IndexView() {
                       
                       {/* Feature story excerpt with debug logging */}
                       {(() => {
-                        console.log(`[Featured Excerpt Debug] Processing featured post: ${featuredStory.title} (ID: ${featuredStory.id})`);
-                        console.log(`[Featured Excerpt Debug] Content length: ${featuredStory.content.length} characters`);
+                        
+                        
                         const featuredExcerpt = extractHorrorExcerpt(featuredStory.content, 300);
-                        console.log(`[Featured Excerpt Debug] Generated horror excerpt: "${featuredExcerpt.substring(0, 50)}..."`);
+                        
                         return (
                           <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-3 sm:mb-4 md:mb-5 line-clamp-3 sm:line-clamp-4 font-serif">
                             {featuredExcerpt}
@@ -501,10 +501,10 @@ export default function IndexView() {
             {currentPosts.map((post: Post, index: number) => {
               // Extract all data processing outside the render function
               // Add extra debug logging
-              console.log(`[Excerpt Debug] Processing post: ${post.title} (ID: ${post.id})`);
-              console.log(`[Excerpt Debug] Content length: ${post.content.length} characters`);
+              
+              
               const excerpt = extractHorrorExcerpt(post.content);
-              console.log(`[Excerpt Debug] Generated horror excerpt: "${excerpt.substring(0, 50)}..."`);
+              
               
               const globalIndex = index; // Since we're not paginating, index is the global index
               const metadata = post.metadata || {};

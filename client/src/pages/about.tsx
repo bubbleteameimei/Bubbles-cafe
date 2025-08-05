@@ -7,7 +7,7 @@ import ProfileImage from "../components/ProfileImage";
 export default function AboutPage() {
   // Add debug logging
   useEffect(() => {
-    console.log("About page mounted");
+    
   }, []);
   
   return (

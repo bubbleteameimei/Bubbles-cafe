@@ -11,7 +11,7 @@ const router = Router();
 // Test route to create and then delete a post - bypasses authentication
 router.post('/create-delete-test', async (req: Request, res: Response) => {
   try {
-    console.log('[Test] Creating a test post for deletion test');
+    
     
     // Create a test post
     const testPost = await storage.createPost({
@@ -25,12 +25,12 @@ router.post('/create-delete-test', async (req: Request, res: Response) => {
       matureContent: false
     });
     
-    console.log(`[Test] Created test post with ID: ${testPost.id}`);
+    
     
     // Now delete the post
     try {
       const result = await storage.deletePost(testPost.id);
-      console.log(`[Test] Successfully deleted post: ${result.id}`);
+      
       
       return res.status(200).json({
         success: true,

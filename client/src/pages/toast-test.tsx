@@ -117,7 +117,7 @@ export default function ToastTest() {
     } catch (error) {
       // Error - show error toast with the same ID to replace loading toast
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error submitting feedback:', error);
+      
       
       toast.error('Failed to submit feedback', {
         id: toastId, // Use the same ID to replace the loading toast

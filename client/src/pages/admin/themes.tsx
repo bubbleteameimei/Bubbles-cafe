@@ -165,7 +165,7 @@ export default function ThemesPage() {
       setEditingId(null);
     },
     onError: (error) => {
-      console.error('Error updating theme:', error);
+      
       toast({
         title: 'Update failed',
         description: 'Failed to update the post theme. Please try again.',
@@ -205,14 +205,14 @@ export default function ThemesPage() {
   // Handler for saving the theme change
   const handleSave = (id: number) => {
     if (selectedTheme) {
-      console.log('[Admin Themes] Saving theme:', { selectedTheme, selectedIcon });
+      
       
       // Determine which icon to save based on whether custom option is selected
       const iconToUse = selectedIcon === "custom" ? 
         (customIconInput ? customIconInput : "ghost") : // Use ghost as default if custom is selected but empty
         selectedIcon;
       
-      console.log('[Admin Themes] Final icon to save:', iconToUse);
+      
       
       updateThemeMutation.mutate({ 
         id, 

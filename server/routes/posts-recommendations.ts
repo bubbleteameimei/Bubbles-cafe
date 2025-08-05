@@ -9,23 +9,23 @@ const router = Router();
  * Register routes specifically for post recommendations
  */
 export function registerPostRecommendationsRoutes(app: Express) {
-  console.log("Registering post recommendations routes");
+  
   
   /**
    * GET /api/posts/recommendations
    * Get story recommendations based on a given post ID and theme categories
    */
   app.get("/api/posts/recommendations", async (req: Request, res: Response) => {
-    console.log("Post recommendations endpoint called:", req.url);
+    
     try {
       const postId = req.query.postId ? Number(req.query.postId) : null;
       const limit = Number(req.query.limit) || 3;
       
-      console.log(`Fetching recommendations for postId: ${postId}, limit: ${limit}`);
+      
       
       // If no postId provided, just return recent posts
       if (!postId) {
-        console.log('No postId provided, returning recent posts');
+        
         const recentPosts = await fetchRecentPosts(limit);
         const enhancedPosts = enhancePostsWithMetadata(recentPosts);
         return res.json(enhancedPosts);
@@ -36,17 +36,17 @@ export function registerPostRecommendationsRoutes(app: Express) {
         .from(posts)
         .limit(20);
       
-      console.log("Available post IDs:", allPosts.map(p => p.id).join(", "));
+      
       
       // If we have a postId, try to find related posts
       // First, get the source post to extract metadata
-      console.log(`Looking for post with ID ${postId} using findFirst`);
+      
       let sourcePost = await db.query.posts.findFirst({
         where: eq(posts.id, postId)
       });
       
       if (!sourcePost) {
-        console.log(`Source post with ID ${postId} not found using findFirst, trying select`);
+        
         // Try alternative method to find the post
         const sourcePosts = await db.select()
           .from(posts)
@@ -55,14 +55,14 @@ export function registerPostRecommendationsRoutes(app: Express) {
           
         if (sourcePosts && sourcePosts.length > 0) {
           sourcePost = sourcePosts[0];
-          console.log(`Found source post using select: ${sourcePost.title}`);
+          
         } else {
-          console.log(`Source post with ID ${postId} not found using any method`);
+          
           return res.status(404).json({ message: "Post not found" });
         }
       }
       
-      console.log(`Found source post: ${sourcePost.title}`);
+      
       
       // Extract theme category if available
       let themeCategory = null;
@@ -73,7 +73,7 @@ export function registerPostRecommendationsRoutes(app: Express) {
           const parsedMetadata = JSON.parse(metadata);
           themeCategory = parsedMetadata?.themeCategory || null;
         } catch (e) {
-          console.log('Error parsing metadata string:', e);
+          
         }
       } else if (metadata && typeof metadata === 'object') {
         // Using any here to avoid TypeScript errors with dynamic properties
@@ -84,7 +84,7 @@ export function registerPostRecommendationsRoutes(app: Express) {
       // Try to find posts with the same theme category if available
       let recommendedPosts = [];
       if (themeCategory) {
-        console.log(`Finding posts with theme: ${themeCategory}`);
+        
         
         recommendedPosts = await db.select({
           id: posts.id,
@@ -107,7 +107,7 @@ export function registerPostRecommendationsRoutes(app: Express) {
         .limit(limit);
       } else {
         // Fallback to keyword matching
-        console.log('No theme category found, using keyword matching');
+        
         
         // Extract keywords from title for matching
         const titleKeywords = sourcePost.title
@@ -117,7 +117,7 @@ export function registerPostRecommendationsRoutes(app: Express) {
           .slice(0, 3);
           
         if (titleKeywords.length > 0) {
-          console.log(`Using keywords: ${titleKeywords.join(', ')}`);
+          
           
           const conditions = titleKeywords.map((keyword: string) => 
             sql`${posts.title} ILIKE ${`%${keyword}%`} OR ${posts.excerpt} ILIKE ${`%${keyword}%`}`
@@ -147,7 +147,7 @@ export function registerPostRecommendationsRoutes(app: Express) {
       
       // If we didn't find enough posts, supplement with recent ones
       if (recommendedPosts.length < limit) {
-        console.log(`Only found ${recommendedPosts.length} related posts, supplementing with recent posts`);
+        
         
         if (recommendedPosts.length === 0) {
           // If no related posts found, just get recent posts
@@ -187,7 +187,7 @@ export function registerPostRecommendationsRoutes(app: Express) {
         }
       }
       
-      console.log(`Found ${recommendedPosts.length} recommended posts`);
+      
       
       // Add estimated reading time and other metadata
       const enhancedPosts = enhancePostsWithMetadata(recommendedPosts);

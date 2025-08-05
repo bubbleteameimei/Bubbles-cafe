@@ -131,7 +131,7 @@ export default function ContactForm() {
 
       form.reset();
     } catch (error: any) {
-      console.error("Contact form submission error:", error);
+      
       setSubmissionStatus('error');
       setStatusMessage(error.message || "There was a problem sending your message. Please try again.");
       

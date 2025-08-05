@@ -28,7 +28,7 @@ interface SearchOptions {
 
 // Search API endpoint with expanded capabilities
 router.get('/', async (req, res) => {
-  console.log('[Search] Route hit with query:', req.query);
+  
   try {
     // Default to searching all content
     const { 
@@ -76,17 +76,17 @@ router.get('/', async (req, res) => {
       isAdmin
     };
 
-    console.log(`[Search] Searching for: "${searchQuery}" with terms:`, searchTerms);
-    console.log(`[Search] Options:`, searchOptions);
+    
+    
 
     // Initialize results array 
     let results: any[] = [];
     
     // 1. Search posts (always included)
     if (contentTypes.includes('posts')) {
-      console.log('[Search] Attempting to query posts table...');
+      
       const allPosts = await db.select().from(posts);
-      console.log('[Search] Retrieved', allPosts?.length || 0, 'posts from database');
+      
       
       const postResults = allPosts
         .filter((post: Post) => {
@@ -544,7 +544,7 @@ router.get('/', async (req, res) => {
     // Limit results
     results = results.slice(0, searchOptions.limit);
 
-    console.log(`[Search] Found ${results.length} results for "${searchQuery}"`);
+    
     return res.json({ 
       results,
       meta: {

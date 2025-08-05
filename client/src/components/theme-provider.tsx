@@ -106,7 +106,7 @@ export function ThemeProvider({
     setTheme: (theme: Theme) => {
       localStorage.setItem(storageKey, theme);
       setTheme(theme);
-      console.log(`Theme switched to: ${theme}`);
+      
     },
     toggleTheme,
   };

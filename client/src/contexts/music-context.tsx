@@ -119,7 +119,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       savedState.volume = clampedVolume;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(savedState));
     } catch (error) {
-      console.error('[Music] Error saving volume:', error);
+      
     }
   }, [primaryAudio, secondaryAudio]);
 
@@ -137,11 +137,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
             setVolumeState(parsed.volume);
           }
           
-          console.log('[Music] Loaded saved playback positions', savedPositions.current);
+          
         }
       }
     } catch (error) {
-      console.error('[Music] Error loading saved state:', error);
+      
     }
   }, []);
 
@@ -225,7 +225,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       }
 
     } catch (error) {
-      console.error('[Music] Error playing track:', error);
+      
     } finally {
       setIsLoading(false);
     }
@@ -293,7 +293,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (error) {
-      console.error('[Music] Error persisting state:', error);
+      
     }
   }, [volume]);
 

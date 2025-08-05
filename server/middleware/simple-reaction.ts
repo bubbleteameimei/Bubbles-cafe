@@ -21,7 +21,7 @@ export async function handleReaction(req: Request, res: Response) {
     }
     
     const postId = Number(postIdParam);
-    console.log(`[Reaction] Processing for post ${postId}, isLike: ${isLike}`);
+    
     
     // Verify post exists
     const existingPost = await db.select({ id: posts.id })
@@ -44,14 +44,14 @@ export async function handleReaction(req: Request, res: Response) {
           likesCount: sql`COALESCE("likesCount", 0) + 1` 
         })
         .where(eq(posts.id, postId));
-      console.log(`[Reaction] Incremented likes for post ${postId}`);
+      
     } else if (isLike === false) {
       await db.update(posts)
         .set({ 
           dislikesCount: sql`COALESCE("dislikesCount", 0) + 1` 
         })
         .where(eq(posts.id, postId));
-      console.log(`[Reaction] Incremented dislikes for post ${postId}`);
+      
     }
     
     // Get updated counts
@@ -69,7 +69,7 @@ export async function handleReaction(req: Request, res: Response) {
       message: isLike === true ? 'Post liked!' : isLike === false ? 'Post disliked!' : 'Reaction removed'
     };
     
-    console.log(`[Reaction] Response for post ${postId}:`, response);
+    
     res.json(response);
     
   } catch (error) {

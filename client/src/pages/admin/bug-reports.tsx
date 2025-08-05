@@ -496,7 +496,7 @@ export default function BugReportsPage() {
   
   // Status update handler (would make API call in production)
   const handleStatusChange = (id: number, newStatus: string) => {
-    console.log(`Changing bug report #${id} status to ${newStatus}`);
+    
     
     // Simulate successful update
     toast({

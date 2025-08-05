@@ -424,7 +424,7 @@ export function getExcerpt(htmlContent: string, maxLength: number = 250): string
   try {
     if (!htmlContent) return '';
     
-    console.log('[Excerpt] Generating excerpt for content of length:', htmlContent.length);
+    
     
     // Force direct implementation to ensure it works immediately
     // Split content into paragraphs
@@ -459,12 +459,12 @@ export function getExcerpt(htmlContent: string, maxLength: number = 250): string
     // Sort by score and get the highest scoring paragraph
     scoredParagraphs.sort((a, b) => b.score - a.score);
     
-    console.log('[Excerpt] Found paragraphs:', paragraphs.length);
-    console.log('[Excerpt] Top paragraph score:', scoredParagraphs[0]?.score || 0);
+    
+    
 
     // If no horror content found, use the most interesting paragraph (not just the first)
     if (!scoredParagraphs[0] || scoredParagraphs[0].score === 0) {
-      console.log('[Excerpt] No horror content found, searching for interesting paragraph');
+      
       
       // Choose a paragraph that's not too short and looks interesting
       // Prefer paragraphs with quotations or interesting punctuation
@@ -491,7 +491,7 @@ export function getExcerpt(htmlContent: string, maxLength: number = 250): string
         ? interestingParagraphs[0].text
         : paragraphs.length > 1 ? paragraphs[1] : paragraphs[0];
       
-      console.log('[Excerpt] Selected text (first 40 chars):', selectedText.substring(0, 40) + '...');
+      
         
       // Truncate if needed
       if (selectedText.length <= maxLength) {
@@ -509,7 +509,7 @@ export function getExcerpt(htmlContent: string, maxLength: number = 250): string
 
     // Return the most horror-intensive paragraph
     const excerpt = scoredParagraphs[0].text;
-    console.log('[Excerpt] Selected horror paragraph (first 40 chars):', excerpt.substring(0, 40) + '...');
+    
     
     // Truncate if needed with proper ending
     if (excerpt.length <= maxLength) {
@@ -539,7 +539,7 @@ export function getExcerpt(htmlContent: string, maxLength: number = 250): string
       ? truncated.substring(0, lastSpace) + '...'
       : truncated + '...';
   } catch (error) {
-    console.error('[Excerpt] Error generating excerpt:', error);
+    
     handleError(error, {
       category: ErrorCategory.VALIDATION,
       showToast: false
@@ -577,7 +577,7 @@ export function getExcerpt(htmlContent: string, maxLength: number = 250): string
  */
 export function extractHorrorExcerpt(content: string, maxLength: number = 250): string {
   try {
-    console.log(`[Horror Excerpt] Starting extraction for content of length: ${content.length}`);
+    
     
     // Step 1: Clean the full content to prepare for splitting
     const cleanedContent = content
@@ -700,7 +700,7 @@ export function extractHorrorExcerpt(content: string, maxLength: number = 250): 
       return plainText.substring(0, maxLength);
     }
     
-    console.log(`[Horror Excerpt] Found ${allParagraphs.length} paragraphs to analyze`);
+    
 
     // Step 3: Score paragraphs for horror content
     // Enhanced horror keywords with more modern horror themes
@@ -778,7 +778,7 @@ export function extractHorrorExcerpt(content: string, maxLength: number = 250): 
     
     // For debugging: log top 3 paragraphs and their scores
     for (let i = 0; i < Math.min(3, scoredParagraphs.length); i++) {
-      console.log(`[Horror Excerpt] Paragraph #${i+1} (Score: ${scoredParagraphs[i].score}): "${scoredParagraphs[i].text.substring(0, 50)}..."`);
+      
     }
 
     // If no horror content found in top paragraph, use the most interesting paragraph
@@ -814,7 +814,7 @@ export function extractHorrorExcerpt(content: string, maxLength: number = 250): 
       // If we found an interesting paragraph, use it
       if (interestingParagraphs.length > 0 && interestingParagraphs[0].score > 0) {
         const selectedText = interestingParagraphs[0].text;
-        console.log(`[Horror Excerpt] Using interesting paragraph with score ${interestingParagraphs[0].score}`);
+        
         
         // Truncate if needed
         if (selectedText.length <= maxLength) {
@@ -842,7 +842,7 @@ export function extractHorrorExcerpt(content: string, maxLength: number = 250): 
     }
     
     const excerpt = scoredParagraphs[0].text;
-    console.log(`[Horror Excerpt] Found best paragraph with score ${scoredParagraphs[0].score}. Excerpt: "${excerpt.substring(0, 30)}..."`);
+    
     
     // Truncate if needed with proper ending
     if (excerpt.length <= maxLength) {
@@ -872,7 +872,7 @@ export function extractHorrorExcerpt(content: string, maxLength: number = 250): 
       ? truncated.substring(0, lastSpace) + '...'
       : truncated + '...';
   } catch (error) {
-    console.error('[Horror Excerpt] Error extracting horror excerpt:', error);
+    
     // In case of any error, return the first part of the content as a fallback
     return content
       .replace(/<\/?[^>]+(>|$)/g, '') // Remove HTML tags
@@ -1058,7 +1058,7 @@ export function calculateIntensity(content: string): number {
     if (totalScore >= 3) return 2;
     return 1;
   } catch (error) {
-    console.error('Error calculating intensity:', error);
+    
     return 1; // Default to lowest intensity on error
   }
 }

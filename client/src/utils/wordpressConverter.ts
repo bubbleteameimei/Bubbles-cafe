@@ -60,7 +60,7 @@ export function validateWordPressPost(post: Partial<Post>): boolean {
     insertPostSchema.parse(post);
     return true;
   } catch (error) {
-    console.error('Post validation failed:', error);
+    
     return false;
   }
 }

@@ -110,9 +110,9 @@ const useSaveReadingProgress = ({
               percentCompleted: scrollPercent,
               lastPosition: scrollTop
             })
-          }).catch(err => console.error("Error saving reading progress:", err));
+          }).catch(err => 
         } catch (error) {
-          console.error("Error saving reading progress:", error);
+          
         }
       }
     }
@@ -195,7 +195,7 @@ const useSaveReadingProgress = ({
           }, isRefresh ? 200 : 500); // Shorter initial delay for refresh
         }
       } catch (error) {
-        console.error("Error parsing saved reading progress:", error);
+        
         setFirstLoad(false);
       }
     } else {

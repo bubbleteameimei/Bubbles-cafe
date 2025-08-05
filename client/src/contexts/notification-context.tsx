@@ -54,7 +54,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }));
       }
     } catch (error) {
-      console.error('[Notifications] Error loading from localStorage:', error);
+      
     }
     return [];
   });
@@ -86,7 +86,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     try {
       localStorage.setItem('notifications', JSON.stringify(notifications));
     } catch (error) {
-      console.error('[Notifications] Error saving to localStorage:', error);
+      
     }
   }, [notifications]);
 
@@ -100,7 +100,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       
       // If user has been ignoring notifications for the threshold period
       if (timeSinceLastOpen > IGNORED_THRESHOLD) {
-        console.log('[Notifications] User has been ignoring notifications for too long, adding cursed notification');
+        
         
         // Add a special cursed notification (only if we haven't added one already)
         if (!notifications.some(n => n.type === 'cursed')) {
@@ -154,7 +154,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         
         lastChecked = new Date();
       } catch (error) {
-        console.error('[Notifications] Error checking for new stories:', error);
+        
       }
     };
     
@@ -225,7 +225,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         oscillator.start();
         setTimeout(() => oscillator.stop(), 500);
       } catch (e) {
-        console.log('Browser does not support Web Audio API');
+        
       }
       
       toast({

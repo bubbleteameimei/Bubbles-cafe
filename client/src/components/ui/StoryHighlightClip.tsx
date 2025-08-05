@@ -103,7 +103,7 @@ export const StoryHighlightClip = memo(function StoryHighlightClip({
       
       // Dynamically import html2canvas
       const html2canvasModule = await import('html2canvas').catch(err => {
-        console.error("Failed to load html2canvas:", err);
+        
         throw new Error("Failed to load image capture library");
       });
       
@@ -129,7 +129,7 @@ export const StoryHighlightClip = memo(function StoryHighlightClip({
         description: "Highlight image created successfully!",
       });
     } catch (error) {
-      console.error("Failed to capture highlight:", error);
+      
       toast({
         description: error instanceof Error 
           ? `Error: ${error.message}` 
@@ -154,7 +154,7 @@ export const StoryHighlightClip = memo(function StoryHighlightClip({
         await navigator.share(shareData);
         setIsOpen(false);
       } catch (error) {
-        console.error("Sharing failed:", error);
+        
         if ((error as Error).name !== "AbortError") {
           toast({
             description: "Failed to share. Please try another option.",

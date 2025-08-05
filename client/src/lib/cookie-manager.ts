@@ -79,7 +79,7 @@ export function getCookiePreferences(): CookiePreferences {
     try {
       localStorage.removeItem(COOKIE_CONSENT_KEY);
     } catch (removeError) {
-      console.error('Failed to remove corrupted cookie preferences', removeError);
+      
     }
     
     return defaultPreferences;
@@ -124,7 +124,7 @@ export function acceptAllCookies(): void {
     const expiryDate = new Date(Date.now() + COOKIE_ACCEPT_EXPIRY).toISOString();
     localStorage.setItem(COOKIE_DECISION_EXPIRY_KEY, expiryDate);
     
-    console.log(`Cookie consent accepted - will expire on ${new Date(expiryDate).toLocaleDateString()}`);
+    
   } catch (error) {
     console.warn('Failed to accept all cookies:', error);
   }
@@ -146,7 +146,7 @@ export function acceptEssentialCookiesOnly(): void {
     const expiryDate = new Date(Date.now() + COOKIE_REJECT_EXPIRY).toISOString();
     localStorage.setItem(COOKIE_DECISION_EXPIRY_KEY, expiryDate);
     
-    console.log(`Cookie consent rejected - will expire on ${new Date(expiryDate).toLocaleDateString()}`);
+    
   } catch (error) {
     console.warn('Failed to accept essential cookies:', error);
   }
@@ -188,7 +188,7 @@ export function updateCookiePreferences(preferences: Partial<Omit<CookiePreferen
     const expiryDate = new Date(Date.now() + expiryPeriod).toISOString();
     localStorage.setItem(COOKIE_DECISION_EXPIRY_KEY, expiryDate);
     
-    console.log(`Cookie preferences updated - will expire on ${new Date(expiryDate).toLocaleDateString()}`);
+    
   } catch (error) {
     console.warn('Failed to update cookie preferences:', error);
   }
@@ -284,7 +284,7 @@ export function hasConsentChoice(): boolean {
     
     // Check if the consent has expired
     if (hasConsentExpired()) {
-      console.log('Cookie consent has expired, clearing preferences');
+      
       localStorage.removeItem(COOKIE_CONSENT_KEY);
       localStorage.removeItem(COOKIE_DECISION_EXPIRY_KEY);
       return false;
@@ -336,7 +336,7 @@ export function setCookie(
   try {
     // Only set the cookie if the category is allowed
     if (!isCategoryAllowed(category)) {
-      console.log(`Cookie '${name}' not set because ${category} cookies are not allowed`);
+      
       return;
     }
 

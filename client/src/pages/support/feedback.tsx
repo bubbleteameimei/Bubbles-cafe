@@ -32,7 +32,7 @@ export default function Feedback() {
   const onSubmit = async (data: FeedbackForm) => {
     try {
       // Here you would typically send the feedback to your backend
-      console.log("Feedback submitted:", data);
+      
       
       toast({
         title: "Feedback Submitted",

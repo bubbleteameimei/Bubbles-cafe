@@ -11,14 +11,14 @@ export function useFontSize() {
       const saved = localStorage.getItem('reader-font-size');
       return saved ? parseInt(saved, 10) : DEFAULT_FONT_SIZE;
     } catch (error) {
-      console.error('[FontSize] Error reading from localStorage:', error);
+      
       return DEFAULT_FONT_SIZE;
     }
   });
 
   // Apply the font size when the component mounts and whenever it changes
   useEffect(() => {
-    console.log('[FontSize] Setting font size:', fontSize);
+    
     
     // Update CSS custom property for global access
     document.documentElement.style.setProperty('--base-font-size', `${fontSize}px`);
@@ -63,13 +63,13 @@ export function useFontSize() {
 
   const updateFontSize = useCallback((newSize: number) => {
     const clampedSize = Math.min(Math.max(newSize, MIN_FONT_SIZE), MAX_FONT_SIZE);
-    console.log('[FontSize] Updating font size to:', clampedSize);
+    
     
     // Save to localStorage before updating state
     try {
       localStorage.setItem('reader-font-size', clampedSize.toString());
     } catch (error) {
-      console.error('[FontSize] Error saving to localStorage:', error);
+      
     }
     
     // Update state (will trigger the useEffect)

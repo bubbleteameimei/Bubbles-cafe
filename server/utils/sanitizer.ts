@@ -40,7 +40,7 @@ export function sanitizeHtml(input: string): string {
   // Log for debugging if in development
   if (process.env.NODE_ENV === 'development') {
     if (sanitized !== input) {
-      console.log('[Sanitizer] Content was sanitized, potential XSS blocked');
+      
     }
   }
   
