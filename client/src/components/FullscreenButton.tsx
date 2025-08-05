@@ -46,8 +46,8 @@ const FullscreenButton: React.FC<FullscreenButtonProps> = ({
               setIsFullscreen(true);
               onEnterFullscreen?.();
             })
-            .catch(err => {
-              
+            .catch(() => {
+              // Ignore fullscreen errors
             });
         } else if (element) {
           // Try vendor-specific methods
@@ -72,8 +72,8 @@ const FullscreenButton: React.FC<FullscreenButtonProps> = ({
               setIsFullscreen(false);
               onExitFullscreen?.();
             })
-            .catch(err => {
-              
+            .catch(() => {
+              // Ignore fullscreen errors
             });
         } else {
           // Try vendor-specific methods
@@ -89,8 +89,8 @@ const FullscreenButton: React.FC<FullscreenButtonProps> = ({
           }
         }
       }
-    } catch (error) {
-      console.warn("Fullscreen toggle failed:", error);
+    } catch {
+      // Ignore fullscreen errors
     }
   };
 

@@ -1,84 +1,58 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { useMutation } from "@tanstack/react-query";
+import { useState } from 'react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { toast } from 'sonner';
 
-interface StoryRating {
-  postId: number;
-  isLike: boolean;
-}
+export function NewsletterSubscribe() {
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-interface StoryRatingProps {
-  postId: number;
-}
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-export function StoryRating({ postId }: StoryRatingProps) {
-  const { toast } = useToast();
-  const [userRating, setUserRating] = useState<boolean | null>(null);
-
-  const form = useForm<StoryRating>({
-    defaultValues: {
-      postId,
-      isLike: false // Provide explicit default value
-    }
-  });
-
-  const rateMutation = useMutation({
-    mutationFn: async (data: StoryRating) => {
-      const response = await fetch('/api/stories/rate', {
+    try {
+      const response = await fetch('/api/newsletter/subscribe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify({ email }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to rate story');
+      if (response.ok) {
+        toast.success('Successfully subscribed to newsletter!');
+        setEmail('');
+      } else {
+        const data = await response.json();
+        toast.error(data.message || 'Failed to subscribe');
       }
-
-      return response.json();
-    },
-    onSuccess: (_, variables) => {
-      setUserRating(variables.isLike);
-      toast({
-        title: "Rating submitted!",
-        description: `You ${variables.isLike ? 'liked' : 'disliked'} this story.`,
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to submit rating. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  function onSubmit(data: StoryRating) {
-    rateMutation.mutate(data);
-  }
+    } catch {
+      toast.error('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-md mx-auto p-4 space-y-4 bg-card rounded-lg shadow-sm">
-      <div className="flex justify-center space-x-4">
-        <Button
-          variant={userRating === true ? "default" : "outline"}
-          onClick={() => onSubmit({ postId, isLike: true })}
-          disabled={rateMutation.isPending}
+      <h3 className="text-lg font-semibold text-center">Subscribe to Newsletter</h3>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <Input
+          type="email"
+          placeholder="Enter your email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <Button 
+          type="submit" 
+          disabled={isLoading}
+          className="w-full"
         >
-          👍 Like
+          {isLoading ? 'Subscribing...' : 'Subscribe'}
         </Button>
-        <Button
-          variant={userRating === false ? "default" : "outline"}
-          onClick={() => onSubmit({ postId, isLike: false })}
-          disabled={rateMutation.isPending}
-        >
-          👎 Dislike
-        </Button>
-      </div>
+      </form>
     </div>
   );
 }

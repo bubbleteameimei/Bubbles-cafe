@@ -1,5 +1,6 @@
 import { db } from '../db';
 import { posts, users, postLikes, type Post, type InsertPost } from "@shared/schema";
+import { eq, desc, and, or, sql, like } from "drizzle-orm";
 
 import { postLogger } from '../utils/debug-logger';
 import { handleDatabaseError } from '../utils/error-handler';

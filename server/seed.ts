@@ -1,7 +1,7 @@
 
 import { db } from "./db";
-import { posts, users } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { users, posts } from "@shared/schema";
+import bcrypt from "bcrypt";
 
 // Sample data for seeding
 const samplePosts = [

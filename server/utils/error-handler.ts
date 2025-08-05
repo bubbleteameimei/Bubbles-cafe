@@ -124,3 +124,27 @@ export function globalErrorHandler(err: Error | CustomError, req: Request, res: 
 export function createValidationError(message?: string): CustomError {
   return createError.validationError(message || 'Validation failed');
 }
+
+// Database error handler - handles common database errors
+export function handleDatabaseError(error: any): CustomError {
+  // Handle specific database errors
+  if (error?.code === '23505' || error?.message?.includes('duplicate key')) {
+    return createError.conflict('Resource already exists');
+  }
+  
+  if (error?.code === '23503' || error?.message?.includes('foreign key')) {
+    return createError.badRequest('Referenced resource does not exist');
+  }
+  
+  if (error?.code === '23502' || error?.message?.includes('null value')) {
+    return createError.badRequest('Required field is missing');
+  }
+  
+  if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+    return createError.internal('Database schema error');
+  }
+  
+  // Default database error
+  console.error('Database error:', error);
+  return createError.internal('Database operation failed');
+}

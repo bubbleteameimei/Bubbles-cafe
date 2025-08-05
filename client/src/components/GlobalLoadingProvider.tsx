@@ -1,17 +1,15 @@
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useRef, useCallback, ReactNode } from 'react';
 import { LoadingScreen } from './ui/loading-screen';
 
-// Define loading context type
-type LoadingContextType = {
+interface LoadingContextType {
   isLoading: boolean;
   showLoading: (message?: string) => void;
   hideLoading: () => void;
   withLoading: <T,>(promise: Promise<T>, message?: string) => Promise<T>;
   setLoadingMessage: (message: string) => void;
   suppressSkeletons: boolean;
-};
+}
 
-// Create context with default values
 const LoadingContext = createContext<LoadingContextType>({
   isLoading: false,
   showLoading: () => {},
@@ -21,137 +19,54 @@ const LoadingContext = createContext<LoadingContextType>({
   suppressSkeletons: false
 });
 
-/**
- * Custom hook to access loading context
- */
-export const useLoading = () => {
+export function useLoading() {
   return useContext(LoadingContext);
 }
 
-// Duration to prevent rapid multiple loading screen triggers (ms)
-const PREVENT_RAPID_SHOW_DURATION = 1000;
-
-/**
- * GlobalLoadingProvider - Completely rewritten to work with the new loading screen
- * This provider manages the loading state in a simpler, more robust way
- */
-export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Core state  
+export default function GlobalLoadingProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('Loading...');
   
-  // Refs for tracking state between renders
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const preventRapidShowRef = useRef(false);
   
-  // Clean up timers on unmount
-  useEffect(() => {
-    return () => {
-      if (loadingTimerRef.current) {
-        clearTimeout(loadingTimerRef.current);
-      }
-    };
-  }, []);
-  
-  // Handle animation completion from loading screen
-  const handleAnimationComplete = useCallback(() => {
-    setIsLoading(false);
-    setShowLoadingScreen(false);
-    
-    // Re-enable scrolling after animation completes
-    document.body.style.overflow = 'auto';
-    
-    // Remove the loading state from session storage
-    sessionStorage.removeItem('loadingActive');
-  }, []);
+  const PREVENT_RAPID_HIDE_DURATION = 300;
 
-  const setLoading = useCallback((loading: boolean, message?: string) => {
-    // Prevent duplicate loading screen triggers
-    if (loading && showLoadingScreen) {
-      return;
-    }
-    
-    if (loading) {
-      sessionStorage.setItem('loadingActive', 'true');
-    }
-    
+  const showLoading = useCallback((message?: string) => {
     if (message) {
       setLoadingMessage(message);
     }
-    
-    setIsLoading(loading);
-    setShowLoadingScreen(loading);
-  }, [showLoadingScreen]);
-  
-  // Show loading screen with smart prevention of multiple triggers
-  const showLoading = useCallback((_newMessage?: string) => {
-    // Check if we're already loading or recently prevented loading
-    if (isLoading || preventRapidShowRef.current) {
-      return;
-    }
-    
-    // Set prevention flag for longer duration to prevent multiple screens
-    preventRapidShowRef.current = true;
-    
-    // Message handling removed for simplicity
-    
-    // Set loading state
     setIsLoading(true);
-    
-    // Set storage state for persistence
-    try {
-      sessionStorage.setItem('app_loading', 'true');
-    } catch (e) {
-      // Ignore storage errors
-    }
-    
-    // Clear any existing timer - let loading screen handle its own timing
-    if (loadingTimerRef.current) {
-      clearTimeout(loadingTimerRef.current);
-      loadingTimerRef.current = null;
-    }
-  }, [isLoading]);
-  
-  // Hide loading screen
+    setShowLoadingScreen(true);
+  }, []);
+
   const hideLoading = useCallback(() => {
-    // Let the loading screen component handle itself
-    // It has its own cleanup logic and will call handleAnimationComplete
-    
-    // Just clean up the timer
+    setIsLoading(false);
     if (loadingTimerRef.current) {
       clearTimeout(loadingTimerRef.current);
-      loadingTimerRef.current = null;
     }
-    
-    // Clear storage
+    loadingTimerRef.current = setTimeout(() => {
+      setShowLoadingScreen(false);
+    }, PREVENT_RAPID_HIDE_DURATION);
+  }, []);
+
+  const withLoading = useCallback(async <T,>(promise: Promise<T>, message?: string): Promise<T> => {
+    showLoading(message);
     try {
-      sessionStorage.removeItem('app_loading');
-    } catch (e) {
-      // Ignore storage errors
+      const result = await promise;
+      hideLoading();
+      return result;
+    } catch (error) {
+      hideLoading();
+      throw error;
     }
-  }, []);
-  
-  // Utility to wrap promises with loading state
-  const withLoading = useCallback(<T,>(promise: Promise<T>, loadingMessage?: string): Promise<T> => {
-    showLoading(loadingMessage);
-    
-    return promise
-      .then(result => {
-        hideLoading();
-        return result;
-      })
-      .catch(error => {
-        hideLoading();
-        throw error;
-      });
   }, [showLoading, hideLoading]);
-  
-  // Update loading message - simplified without setMessage
-  const setLoadingMessage = useCallback((newMessage: string) => {
-    // Message handling simplified for now
+
+  const handleAnimationComplete = useCallback(() => {
+    setShowLoadingScreen(false);
   }, []);
 
-
-  
   return (
     <LoadingContext.Provider 
       value={{ 
@@ -160,13 +75,11 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
         hideLoading, 
         withLoading,
         setLoadingMessage,
-        suppressSkeletons: isLoading // Suppress skeleton loaders when global loading is active
+        suppressSkeletons: isLoading
       }}
     >
       {children}
-      {isLoading && <LoadingScreen onAnimationComplete={handleAnimationComplete} />}
+      {showLoadingScreen && <LoadingScreen onAnimationComplete={handleAnimationComplete} />}
     </LoadingContext.Provider>
   );
-};
-
-export default GlobalLoadingProvider;
+}

@@ -1,12 +1,26 @@
 import { Store } from 'express-session';
-import { SessionData as ExpressSessionData } from 'express-session';
 import { db } from '../db';
 import { sessions } from '@shared/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, lt } from 'drizzle-orm';
 import crypto from 'crypto';
 
-// Define our session record type
-export interface SessionRecord {
+// Define proper session data types
+interface SessionMetadata {
+  ipAddress?: string;
+  userAgent?: string;
+  csrfToken?: string;
+  [key: string]: any;
+}
+
+interface ExpressSessionData {
+  cookie: any;
+  likes?: any;
+  userReactions?: any;
+  __meta?: SessionMetadata;
+  [key: string]: any;
+}
+
+interface SessionRecord {
   sessionId: string;
   sessionData: ExpressSessionData;
   userId: number;
@@ -19,49 +33,27 @@ export interface SessionRecord {
 }
 
 export class SecureNeonSessionStore extends Store {
-  private encryptionKey: string;
-
   constructor() {
     super();
-    // Use environment variable or generate a key
-    this.encryptionKey = process.env.SESSION_ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
   }
 
   /**
    * Get session from database
    */
-  async get(sessionId: string, callback: (err?: any, session?: ExpressSessionData | null) => void): Promise<void> {
+  async get(sessionId: string, callback: (err: any, session?: ExpressSessionData | null) => void): Promise<void> {
     try {
-      const result = await db
+      const [session] = await db
         .select()
         .from(sessions)
-        .where(and(
-          eq(sessions.sessionId, sessionId),
-          eq(sessions.isActive, true)
-        ))
+        .where(eq(sessions.sessionId, sessionId))
         .limit(1);
 
-      if (result.length === 0) {
-        callback(null, null);
-        return;
+      if (!session || session.expiresAt < new Date()) {
+        return callback(null, null);
       }
 
-      const sessionRecord = result[0];
-      
-      // Check if session is expired
-      if (sessionRecord.expiresAt && new Date() > sessionRecord.expiresAt) {
-        // Clean up expired session
-        await this.destroy(sessionId, () => {});
-        callback(null, null);
-        return;
-      }
-
-      // Parse session data
-      const sessionData = typeof sessionRecord.sessionData === 'string' 
-        ? JSON.parse(sessionRecord.sessionData) 
-        : sessionRecord.sessionData;
-
-      callback(null, sessionData as ExpressSessionData);
+      // Return the session data
+      callback(null, session.sessionData as ExpressSessionData);
     } catch (error) {
       console.error('[SecureSessionStore] Error getting session:', error);
       callback(error);
@@ -249,7 +241,7 @@ export class SecureNeonSessionStore extends Store {
           isActive: false,
           updatedAt: now
         })
-        .where(sql`${sessions.expiresAt} < ${now}`);
+        .where(lt(sessions.expiresAt, now));
       
       
     } catch (error) {
@@ -265,10 +257,7 @@ export class SecureNeonSessionStore extends Store {
       const result = await db
         .select()
         .from(sessions)
-        .where(and(
-          eq(sessions.userId, userId),
-          eq(sessions.isActive, true)
-        ));
+        .where(eq(sessions.userId, userId));
 
       return result.map(record => ({
         sessionId: record.sessionId,
