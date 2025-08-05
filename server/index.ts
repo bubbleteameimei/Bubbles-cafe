@@ -6,6 +6,7 @@ declare module 'express-session' {
   interface SessionData {
     likes: { [postId: string]: boolean };
     userReactions: { [postId: string]: 'like' | 'dislike' | null };
+    csrfToken?: string;
     user?: {
       id: number;
       email: string;
