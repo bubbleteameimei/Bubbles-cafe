@@ -225,15 +225,32 @@ export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
-// Sessions
+// Enhanced Sessions table for secure server-side storage
 export const sessions = pgTable("sessions", {
   id: serial("id").primaryKey(),
-  token: text("token").notNull().unique(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  sessionId: text("session_id").notNull().unique(), // Express session ID
+  token: text("token").notNull().unique(), // Additional security token
+  userId: integer("user_id").references(() => users.id),
+  // Session data stored securely in the database
+  sessionData: jsonb("session_data").default({}),
+  // Security tracking
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  // Session management
   expiresAt: timestamp("expires_at").notNull(),
   lastAccessedAt: timestamp("last_accessed_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull()
-});
+  // Security flags
+  isActive: boolean("is_active").default(true).notNull(),
+  csrfToken: text("csrf_token"),
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+}, (table) => ({
+  sessionIdIdx: index("session_id_idx").on(table.sessionId),
+  userIdIdx: index("session_user_id_idx").on(table.userId),
+  expiresAtIdx: index("session_expires_at_idx").on(table.expiresAt),
+  ipAddressIdx: index("session_ip_address_idx").on(table.ipAddress)
+}));
 
 // Password Reset Tokens
 export const resetTokens = pgTable("reset_tokens", {

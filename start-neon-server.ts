@@ -1,15 +1,25 @@
 #!/usr/bin/env tsx
-import { setNeonAsDefault } from './server/neon-config';
+import { spawn } from 'child_process';
+import dotenv from 'dotenv';
 
-// Set Neon database as default before any other imports
-setNeonAsDefault();
+// Load environment variables from .env file
+dotenv.config();
 
-// Force the DATABASE_URL to your Neon database
-process.env.DATABASE_URL = "postgresql://neondb_owner:npg_P6ghCZR2BASQ@ep-young-bread-aeojmse9-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+// Verify DATABASE_URL is loaded from environment
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL not found in environment variables. Please check your .env file.');
+  process.exit(1);
+}
 
-console.log('🚀 Starting Interactive Storytelling Platform with Neon Database');
-console.log('📍 Database URL:', process.env.DATABASE_URL.substring(0, 50) + '...');
-console.log('🌐 Server will be available at: http://0.0.0.0:3002');
+console.log('📍 Database URL loaded from environment variables');
+console.log('🚀 Starting server with Neon database...');
 
-// Now import and start the server
-import('./server/index.js');
+// Start the server
+const server = spawn('tsx', ['server/index.ts'], {
+  stdio: 'inherit',
+  env: process.env
+});
+
+server.on('close', (code) => {
+  console.log(`Server process exited with code ${code}`);
+});

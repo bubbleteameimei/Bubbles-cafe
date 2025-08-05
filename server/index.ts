@@ -19,6 +19,7 @@ import helmet from "helmet";
 import compression from "compression";
 
 import session from "express-session";
+import { SecureNeonSessionStore } from "./utils/secure-session-store";
 import { setupAuth } from "./auth";
 import { setupOAuth } from "./oauth";
 import { storage } from "./storage";
@@ -36,6 +37,7 @@ import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark r
 import { setCsrfToken, validateCsrfToken, csrfTokenToLocals, CSRF_TOKEN_NAME } from "./middleware/csrf-protection";
 import { runMigrations } from "./migrations"; // Import our custom migrations
 import { setupCors } from "./cors-setup";
+import sessionSyncRouter from "./routes/session-sync"; // Import session sync routes
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -66,18 +68,48 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Configure session
+// Configure secure session with Neon database store
+const sessionStore = new SecureNeonSessionStore();
+
 app.use(session({
+  store: sessionStore,
   secret: process.env.SESSION_SECRET || 'horror-stories-session-secret',
   resave: false,
   saveUninitialized: false,
+  rolling: true, // Reset expiration on activity
   cookie: {
     secure: process.env.NODE_ENV === 'production', // Only secure in production
     httpOnly: true,
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Required for cross-domain cookies
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  },
+  // Enhanced session security
+  genid: () => {
+    const crypto = require('crypto');
+    return crypto.randomBytes(32).toString('hex');
   }
 }));
+
+// Middleware to track session metadata
+app.use((req, res, next) => {
+  if (req.session && req.sessionID) {
+    // Add metadata to session for security tracking
+    if (!req.session.__meta) {
+      req.session.__meta = {};
+    }
+    
+    req.session.__meta.ipAddress = req.ip || req.connection.remoteAddress;
+    req.session.__meta.userAgent = req.get('User-Agent');
+    req.session.__meta.lastActivity = new Date().toISOString();
+    
+    // Store CSRF token in session metadata
+    if (!req.session.__meta.csrfToken) {
+      const crypto = require('crypto');
+      req.session.__meta.csrfToken = crypto.randomBytes(32).toString('hex');
+    }
+  }
+  next();
+});
 
 // Setup CSRF protection
 app.use(setCsrfToken(!isDev)); // Secure cookies in production
@@ -259,6 +291,9 @@ async function startServer() {
       // Register bookmark routes
       registerBookmarkRoutes(app);
       
+      // Register session sync routes
+      app.use('/api/session-sync', sessionSyncRouter);
+      
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);
       
@@ -293,6 +328,9 @@ async function startServer() {
       
       // Register bookmark routes
       registerBookmarkRoutes(app);
+      
+      // Register session sync routes
+      app.use('/api/session-sync', sessionSyncRouter);
       
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);
