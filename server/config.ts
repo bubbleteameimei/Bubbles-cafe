@@ -4,8 +4,8 @@
  * This module loads environment variables from .env file and validates them
  * before they're used in the application.
  */
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import { z } from 'zod';
 
 // Load environment variables from .env file

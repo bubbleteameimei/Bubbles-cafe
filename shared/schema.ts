@@ -511,6 +511,7 @@ export type InsertCommentVote = z.infer<typeof insertCommentVoteSchema>;
 
 export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
 export type InsertProgress = z.infer<typeof insertProgressSchema>;
+export type InsertReadingProgress = InsertProgress; // Alias for backward compatibility
 export type ReadingProgress = typeof readingProgress.$inferSelect;
 
 export const insertSecretProgressSchema = createInsertSchema(secretProgress).omit({ id: true, discoveryDate: true });
@@ -895,6 +896,12 @@ export type InsertUserPrivacySettings = z.infer<typeof insertUserPrivacySettings
 export type User = typeof users.$inferSelect;
 export type Post = typeof posts.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
+export type Session = typeof sessions.$inferSelect;
+export type ResetToken = typeof resetTokens.$inferSelect;
+export type SecretProgress = typeof secretProgress.$inferSelect;
+export type Bookmark = typeof bookmarks.$inferSelect;
+export type ContactMessage = typeof contactMessages.$inferSelect;
+export type UserFeedback = typeof userFeedback.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertPost = z.infer<typeof insertPostSchema>;
 export type InsertComment = z.infer<typeof insertCommentSchema>;

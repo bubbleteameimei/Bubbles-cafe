@@ -1,9 +1,10 @@
 import { db } from "./db";
 import { 
-  users, posts, comments, contactMessages, bookmarks, sessions, userFeedback, newsletterSubscriptions,
+  users, posts, comments, contactMessages, bookmarks, sessions, userFeedback, newsletterSubscriptions, resetTokens,
   type User, type Post, type Comment, type InsertUser, type InsertPost, type InsertComment,
   type ContactMessage, type InsertContactMessage, type UserFeedback, type InsertUserFeedback,
-  type Bookmark, type InsertBookmark, type Session, type InsertSession
+  type Bookmark, type InsertBookmark, type Session, type InsertSession,
+  type ResetToken, type InsertResetToken
 } from "@shared/schema";
 import { eq, desc, and, or, sql, like, asc } from "drizzle-orm";
 
@@ -43,6 +44,11 @@ export interface IStorage {
   createSession(session: InsertSession): Promise<Session>;
   getSession(token: string): Promise<Session | undefined>;
   deleteSession(token: string): Promise<boolean>;
+
+  // Reset token operations
+  createResetToken(tokenData: InsertResetToken): Promise<ResetToken>;
+  getResetTokenByToken(token: string): Promise<ResetToken | undefined>;
+  markResetTokenAsUsed(token: string): Promise<void>;
 
   // Contact message operations
   createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
@@ -515,6 +521,37 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting personalized recommendations:', error);
       return [];
+    }
+  }
+
+  async createResetToken(tokenData: InsertResetToken): Promise<ResetToken> {
+    const [newToken] = await db.insert(resetTokens).values(tokenData).returning();
+    return newToken;
+  }
+
+  async getResetTokenByToken(token: string): Promise<ResetToken | undefined> {
+    try {
+      const [resetToken] = await db.select().from(resetTokens).where(
+        and(
+          eq(resetTokens.token, token),
+          eq(resetTokens.used, false)
+        )
+      );
+      return resetToken || undefined;
+    } catch (error) {
+      console.error('Error getting reset token by token:', error);
+      return undefined;
+    }
+  }
+
+  async markResetTokenAsUsed(token: string): Promise<void> {
+    try {
+      await db.update(resetTokens)
+        .set({ used: true })
+        .where(eq(resetTokens.token, token));
+    } catch (error) {
+      console.error('Error marking reset token as used:', error);
+      throw error;
     }
   }
 }
