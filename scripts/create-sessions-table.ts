@@ -37,36 +37,38 @@ async function createSessionsTable() {
       const sessionsExist = sessionsExistResult.rows[0]?.exists;
 
       if (sessionsExist) {
-        console.log('ℹ️ Sessions table already exists');
-      } else {
-        console.log('🏗️ Creating sessions table...');
-
-        // Create sessions table
-        await client.query(`
-          CREATE TABLE IF NOT EXISTS "sessions" (
-            "id" SERIAL PRIMARY KEY,
-            "session_id" TEXT NOT NULL UNIQUE,
-            "token" TEXT NOT NULL UNIQUE,
-            "user_id" INTEGER REFERENCES "users"("id"),
-            "session_data" JSONB DEFAULT '{}',
-            "ip_address" TEXT,
-            "user_agent" TEXT,
-            "expires_at" TIMESTAMP NOT NULL,
-            "last_accessed_at" TIMESTAMP NOT NULL DEFAULT NOW(),
-            "is_active" BOOLEAN NOT NULL DEFAULT true,
-            "csrf_token" TEXT,
-            "created_at" TIMESTAMP NOT NULL DEFAULT NOW(),
-            "updated_at" TIMESTAMP NOT NULL DEFAULT NOW()
-          );
-          
-          CREATE INDEX IF NOT EXISTS "session_id_idx" ON "sessions" ("session_id");
-          CREATE INDEX IF NOT EXISTS "session_user_id_idx" ON "sessions" ("user_id");
-          CREATE INDEX IF NOT EXISTS "session_expires_at_idx" ON "sessions" ("expires_at");
-          CREATE INDEX IF NOT EXISTS "session_ip_address_idx" ON "sessions" ("ip_address");
-        `);
-
-        console.log('✅ Sessions table created successfully');
+        console.log('🗑️ Dropping existing sessions table...');
+        await client.query(`DROP TABLE IF EXISTS "sessions" CASCADE;`);
+        console.log('✅ Dropped existing sessions table');
       }
+      
+      console.log('🏗️ Creating sessions table...');
+
+      // Create sessions table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "sessions" (
+          "id" SERIAL PRIMARY KEY,
+          "session_id" TEXT NOT NULL UNIQUE,
+          "token" TEXT NOT NULL UNIQUE,
+          "user_id" INTEGER REFERENCES "users"("id"),
+          "session_data" JSONB DEFAULT '{}',
+          "ip_address" TEXT,
+          "user_agent" TEXT,
+          "expires_at" TIMESTAMP NOT NULL,
+          "last_accessed_at" TIMESTAMP NOT NULL DEFAULT NOW(),
+          "is_active" BOOLEAN NOT NULL DEFAULT true,
+          "csrf_token" TEXT,
+          "created_at" TIMESTAMP NOT NULL DEFAULT NOW(),
+          "updated_at" TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        
+        CREATE INDEX IF NOT EXISTS "session_id_idx" ON "sessions" ("session_id");
+        CREATE INDEX IF NOT EXISTS "session_user_id_idx" ON "sessions" ("user_id");
+        CREATE INDEX IF NOT EXISTS "session_expires_at_idx" ON "sessions" ("expires_at");
+        CREATE INDEX IF NOT EXISTS "session_ip_address_idx" ON "sessions" ("ip_address");
+      `);
+
+      console.log('✅ Sessions table created successfully');
     } finally {
       client.release();
     }

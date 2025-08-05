@@ -117,6 +117,10 @@ import csrfTestRoutes from './routes/csrf-test';
 import { storage } from './storage';
 
 export function registerRoutes(app: Express): Server {
+  // Add a simple test route
+  app.get('/test', (req, res) => {
+    res.json({ message: 'Server is working!' });
+  });
   // Register API test routes
   app.use('/api/test', apiTestRoutes);
   // Register test delete routes - remove in production

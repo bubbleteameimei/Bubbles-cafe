@@ -327,12 +327,7 @@ async function startServer() {
       // We've moved the post recommendations endpoint to main routes.ts
       // registerPostRecommendationsRoutes(app);
       
-      // Add a simple test route after all middleware
-      app.get('/test', (req, res) => {
-        res.json({ message: 'Server is working!' });
-      });
-      serverLogger.info('Test route added');
-      console.log('✅ Test route added');
+
       
       await setupVite(app, server);
     } else {
