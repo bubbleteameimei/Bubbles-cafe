@@ -138,9 +138,10 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
       });
   }, [showLoading, hideLoading]);
   
-  // Update loading message
+  // Update loading message - simplified without setMessage
   const setLoadingMessage = useCallback((newMessage: string) => {
-    setMessage(newMessage);
+    // Message handling simplified for now
+    console.log('[LoadingProvider] Loading message:', newMessage);
   }, []);
   
   return (
