@@ -76,8 +76,7 @@ app.use(session({
     httpOnly: true,
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Required for cross-domain cookies
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  },
-  store: storage.sessionStore
+  }
 }));
 
 // Setup CSRF protection
