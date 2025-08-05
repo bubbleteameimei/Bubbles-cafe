@@ -6,7 +6,7 @@ import { setNeonAsDefault } from "./neon-config"; // Set Neon as default databas
 import { setGmailCredentials } from "./config/gmail-config"; // Set Gmail credentials
 import { db } from "./db"; // Using the direct Neon database connection
 import { posts } from "@shared/schema";
-import { count } from "drizzle-orm";
+
 import { seedDatabase } from "./seed";
 
 // Ensure Neon database is always used
@@ -22,11 +22,10 @@ import session from "express-session";
 import { SecureNeonSessionStore } from "./utils/secure-session-store";
 import { setupAuth } from "./auth";
 import { setupOAuth } from "./oauth";
-import { storage } from "./storage";
+
 import { createLogger, requestLogger } from "./utils/debug-logger";
 import { registerUserFeedbackRoutes } from "./routes/user-feedback";
 import { registerRecommendationsRoutes } from "./routes/recommendations";
-
 
 import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";

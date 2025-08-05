@@ -4,10 +4,11 @@ import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import { db } from './db';
 import { InsertResetToken } from "@shared/schema";
-import { storage } from "./storage";
+
 import { emailService } from "./utils/email-service";
 import { authRateLimiter, sensitiveOperationsRateLimiter } from "./middlewares/rate-limiter";
 import { createSecureLogger } from "./utils/secure-logger";
+import { storage } from './storage';
 
 const authLogger = createSecureLogger('Auth');
 

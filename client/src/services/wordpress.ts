@@ -1,4 +1,3 @@
-import { Post } from '@shared/schema';
 
 export interface WordPressPost {
   id: number;

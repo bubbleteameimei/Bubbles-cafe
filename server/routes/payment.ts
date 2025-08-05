@@ -4,281 +4,182 @@
  * This file contains all payment-related routes for the platform.
  * Paystack is the only supported payment gateway.
  */
-import { Express, Request, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import * as paystackService from '../services/paystack';
 import { storage } from '../storage';
+import { createErrorFunction as createError } from '../utils/error-handler';
+import { asyncHandler } from '../utils/error-handler';
 
-/**
- * Register payment routes
- */
-export const registerPaymentRoutes = (app: Express) => {
-  console.log('Registering payment routes (Paystack)');
+const router = Router();
 
-  /**
-   * Initialize a transaction
-   * POST /api/payments/initialize
-   */
-  app.post('/api/payments/initialize', async (req: Request, res: Response) => {
-    try {
-      // Check if user is authenticated
-      if (!req.session?.user) {
-        return res.status(401).json({ 
-          status: false, 
-          message: 'User not authenticated'
-        });
-      }
+// Initialize payment
+router.post('/initialize', asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { amount, email, reference, callbackUrl, metadata } = req.body;
 
-      const { amount, callbackUrl, reference, metadata } = req.body;
-      
-      // Validate required fields
-      if (!amount) {
-        return res.status(400).json({ 
-          status: false, 
-          message: 'Amount is required'
-        });
-      }
-      
-      // Get user email from session
-      const userEmail = req.session.user.email;
-      
-      if (!userEmail) {
-        return res.status(400).json({ 
-          status: false, 
-          message: 'User email is required'
-        });
-      }
-      
-      // Generate reference if not provided
-      const txReference = reference || paystackService.generateReference();
-      
-      // Enhanced metadata with user info
-      const enhancedMetadata = {
-        ...metadata,
-        userId: req.session.user.id,
-        username: req.session.user.username
-      };
-      
-      // Initialize transaction
-      const response = await paystackService.initializeTransaction(
-        amount,
-        userEmail,
-        txReference,
-        callbackUrl,
-        enhancedMetadata
-      );
-      
-      // Log transaction in activity logs
+    if (!amount || !email) {
+      throw createError(400, 'Amount and email are required');
+    }
+
+    // Generate reference if not provided
+    const txReference = reference || paystackService.generateReference();
+
+    // Enhanced metadata for tracking
+    const enhancedMetadata = {
+      ...metadata,
+      userId: req.session?.user?.id,
+      userAgent: req.get('User-Agent'),
+      ipAddress: req.ip,
+      timestamp: new Date().toISOString()
+    };
+
+    // Initialize transaction with Paystack
+    const response = await paystackService.initializeTransaction({
+      email,
+      amount: parseInt(amount) * 100, // Convert to kobo
+      reference: txReference,
+      callback_url: callbackUrl,
+      metadata: enhancedMetadata
+    });
+
+    // Log activity
+    if (req.session?.user) {
       await storage.createActivityLog({
         userId: req.session.user.id,
-        action: 'payment_initiated',
+        action: 'payment_initialized',
         details: {
-          amount,
-          reference: txReference
-        },
-        createdAt: new Date()
-      });
-      
-      return res.status(200).json(response);
-    } catch (error) {
-      console.error('Error initializing payment:', error);
-      return res.status(500).json({ 
-        status: false, 
-        message: 'Failed to initialize payment',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-
-  /**
-   * Verify a transaction
-   * GET /api/payments/verify/:reference
-   */
-  app.get('/api/payments/verify/:reference', async (req: Request, res: Response) => {
-    try {
-      const { reference } = req.params;
-      
-      if (!reference) {
-        return res.status(400).json({ 
-          status: false, 
-          message: 'Transaction reference is required'
-        });
-      }
-      
-      const response = await paystackService.verifyTransaction(reference);
-      
-      // If payment is successful, update user records
-      if (response.data.status === 'success' && req.session?.user) {
-        // Log transaction in activity logs
-        await storage.createActivityLog({
-          userId: req.session.user.id,
-          action: 'payment_successful',
-          details: {
-            amount: response.data.amount,
-            reference: reference,
-            paymentDate: new Date().toISOString()
-          },
-          createdAt: new Date()
-        });
-        
-        // You can add more logic here to update user's subscription status, etc.
-      }
-      
-      return res.status(200).json(response);
-    } catch (error) {
-      console.error('Error verifying payment:', error);
-      return res.status(500).json({ 
-        status: false, 
-        message: 'Failed to verify payment',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-
-  /**
-   * Handle Paystack webhook
-   * POST /api/payments/webhook
-   */
-  app.post('/api/payments/webhook', async (req: Request, res: Response) => {
-    try {
-      // Get signature from headers
-      const signature = req.headers['x-paystack-signature'] as string;
-      
-      if (!signature) {
-        return res.status(400).json({ 
-          status: false, 
-          message: 'Invalid webhook signature'
-        });
-      }
-      
-      // Process webhook
-      const event = paystackService.processWebhook(signature, req.body);
-      
-      // Handle different event types
-      switch (event.event) {
-        case 'charge.success':
-          // Handle successful charge
-          console.log(`Webhook: Charge success for ${event.data.reference}`);
-          
-          // Update user subscription if applicable
-          if (event.data.metadata?.userId) {
-            const userId = parseInt(event.data.metadata.userId);
-            
-            await storage.createActivityLog({
-              userId,
-              action: 'payment_webhook_received',
-              details: {
-                amount: event.data.amount,
-                reference: event.data.reference,
-                status: 'success'
-              },
-              createdAt: new Date()
-            });
-            
-            // Add more logic to update user subscription, etc.
-          }
-          break;
-          
-        case 'subscription.create':
-          // Handle subscription creation
-          console.log(`Webhook: Subscription created ${event.data.subscription_code}`);
-          break;
-          
-        case 'subscription.disable':
-          // Handle subscription cancellation
-          console.log(`Webhook: Subscription disabled ${event.data.subscription_code}`);
-          break;
-          
-        default:
-          console.log(`Webhook: Unhandled event type ${event.event}`);
-      }
-      
-      // Return 200 to acknowledge receipt of the webhook
-      return res.status(200).json({ status: true, message: 'Webhook received' });
-    } catch (error) {
-      console.error('Error processing webhook:', error);
-      return res.status(500).json({ 
-        status: false, 
-        message: 'Failed to process webhook',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-
-  /**
-   * Get payment plans
-   * GET /api/payments/plans
-   */
-  app.get('/api/payments/plans', async (req: Request, res: Response) => {
-    try {
-      // This is a placeholder - in a real implementation, you would fetch plans from Paystack
-      // or from your database where you've stored your plan information
-      
-      // Example plans
-      const plans = [
-        {
-          id: 'monthly_standard',
-          name: 'Monthly Standard',
-          amount: 1000, // Amount in lowest currency unit (e.g., cents or kobo)
-          interval: 'monthly',
-          description: 'Standard monthly subscription with premium content access.'
-        },
-        {
-          id: 'yearly_premium',
-          name: 'Yearly Premium',
-          amount: 10000, // Amount in lowest currency unit
-          interval: 'annually',
-          description: 'Premium yearly subscription with all features and exclusive content.'
-        }
-      ];
-      
-      return res.status(200).json({ 
-        status: true,
-        data: plans
-      });
-    } catch (error) {
-      console.error('Error fetching payment plans:', error);
-      return res.status(500).json({ 
-        status: false, 
-        message: 'Failed to fetch payment plans',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-
-  /**
-   * Get user subscription status
-   * GET /api/payments/subscription/status
-   */
-  app.get('/api/payments/subscription/status', async (req: Request, res: Response) => {
-    try {
-      // Check if user is authenticated
-      if (!req.session?.user) {
-        return res.status(401).json({ 
-          status: false, 
-          message: 'User not authenticated'
-        });
-      }
-      
-      // Get user subscription from database (to be implemented)
-      // For now, we'll return a placeholder response
-      
-      return res.status(200).json({ 
-        status: true,
-        data: {
-          hasActiveSubscription: false,
-          subscription: null,
-          nextBillingDate: null
+          reference: txReference,
+          amount: amount,
+          email: email
         }
       });
-    } catch (error) {
-      console.error('Error fetching subscription status:', error);
-      return res.status(500).json({ 
-        status: false, 
-        message: 'Failed to fetch subscription status',
-        error: error instanceof Error ? error.message : String(error)
+    }
+
+    res.json(response);
+  } catch (error: any) {
+    console.error('[Payment] Error initializing payment:', error);
+    if (error.statusCode) throw error;
+    throw createError(500, 'Failed to initialize payment');
+  }
+}));
+
+// Verify payment
+router.get('/verify/:reference', asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { reference } = req.params;
+
+    if (!reference) {
+      throw createError(400, 'Payment reference is required');
+    }
+
+    const response = await paystackService.verifyTransaction(reference);
+
+    // Log successful verification
+    if (response && (response as any).data?.status === 'success' && req.session?.user) {
+      await storage.createActivityLog({
+        userId: req.session.user.id,
+        action: 'payment_verified',
+        details: {
+          reference: reference,
+          amount: (response as any).data?.amount,
+          status: (response as any).data?.status
+        }
       });
     }
-  });
-  
-  console.log('Payment routes registered successfully');
-};
+
+    res.json(response);
+  } catch (error: any) {
+    console.error('[Payment] Error verifying payment:', error);
+    if (error.statusCode) throw error;
+    throw createError(500, 'Failed to verify payment');
+  }
+}));
+
+// Handle webhook
+router.post('/webhook', asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const signature = req.headers['x-paystack-signature'] as string;
+
+    if (!signature) {
+      throw createError(400, 'Missing webhook signature');
+    }
+
+    // Validate webhook signature
+    const isValid = paystackService.validateWebhookSignature(
+      JSON.stringify(req.body), 
+      signature
+    );
+
+    if (!isValid) {
+      throw createError(401, 'Invalid webhook signature');
+    }
+
+    const event = paystackService.processWebhook(req.body);
+
+    // Handle different webhook events
+    switch (event.event) {
+      case 'charge.success':
+        console.log('[Payment] Successful charge webhook received');
+        // Log the successful payment
+        if (event.data?.metadata?.userId) {
+          await storage.createActivityLog({
+            userId: event.data.metadata.userId,
+            action: 'payment_completed',
+            details: {
+              reference: event.data.reference,
+              amount: event.data.amount,
+              status: event.data.status
+            }
+          });
+        }
+        break;
+      
+      case 'charge.failed':
+        console.log('[Payment] Failed charge webhook received');
+        break;
+      
+      default:
+        console.log(`[Payment] Unhandled webhook event: ${event.event}`);
+    }
+
+    res.json({ status: 'success' });
+  } catch (error: any) {
+    console.error('[Payment] Error processing webhook:', error);
+    if (error.statusCode) throw error;
+    throw createError(500, 'Failed to process webhook');
+  }
+}));
+
+// Get payment plans
+router.get('/plans', async (req: Request, res: Response) => {
+  try {
+    // Return predefined payment plans
+    const plans = [
+      {
+        id: 'basic',
+        name: 'Basic Support',
+        amount: 500, // 5 NGN
+        description: 'Support the platform with a small contribution'
+      },
+      {
+        id: 'premium',
+        name: 'Premium Support',
+        amount: 1000, // 10 NGN
+        description: 'Premium support for the platform'
+      },
+      {
+        id: 'sponsor',
+        name: 'Sponsor',
+        amount: 2000, // 20 NGN
+        description: 'Become a sponsor of the platform'
+      }
+    ];
+
+    res.json({ data: plans });
+  } catch (error: any) {
+    console.error('[Payment] Error fetching plans:', error);
+    throw createError(500, 'Failed to fetch payment plans');
+  }
+});
+
+export default router;

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import type { Express } from "express";
-import { storage } from "./storage";
+
 import { setupAuth } from "./auth";
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -25,7 +25,7 @@ import { sanitizeHtml, stripHtml } from './utils/sanitizer';
 import { sendNewsletterWelcomeEmail } from './utils/send-email';
 import { z } from "zod";
 import { insertPostSchema, posts } from "@shared/schema";
-import { moderateComment } from "./utils/comment-moderation";
+
 import { log } from "./vite";
 import { createTransport } from "nodemailer";
 import * as bcrypt from 'bcryptjs';
@@ -120,6 +120,7 @@ import { registerRecommendationsRoutes } from "./routes/recommendations";
 import apiTestRoutes from './api-test';
 import testDeleteRoutes from './routes/test-delete';
 import csrfTestRoutes from './routes/csrf-test';
+import { storage } from './storage';
 
 export function registerRoutes(app: Express): Server {
   // Register API test routes
@@ -213,7 +214,6 @@ export function registerRoutes(app: Express): Server {
       });
     }
   });
-
 
   
   // Add a special CSRF-free endpoint for direct API access
@@ -858,10 +858,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-
-
-
-
   // Regular post routes
   // New route to approve a community post
   app.patch("/api/posts/:id/approve", isAuthenticated, async (req, res) => {
@@ -1003,7 +999,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-
   // Protected admin routes for posts
   app.patch("/api/posts/:id", isAuthenticated, async (req, res) => {
     try {
@@ -1113,8 +1108,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-
-
   app.get("/api/posts/:slugOrId", cacheControl(300), apiCache(10 * 60 * 1000), async (req, res) => {
     try {
       const slugOrId = req.params.slugOrId;
@@ -1162,7 +1155,6 @@ export function registerRoutes(app: Express): Server {
   // Contact form submission handled below around line 1392
 
   // Get contact messages (admin only)
-
 
   // Comment routes
   app.get("/api/posts/:postId/comments", async (req: Request, res: Response) => {

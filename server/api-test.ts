@@ -1,9 +1,10 @@
 import express from 'express';
-import { storage } from './storage';
+
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { validateCsrfToken } from './middleware/csrf-protection';
+import { storage } from './storage';
 
 const router = express.Router();
 

@@ -273,6 +273,15 @@ export const fetchCustomer = async (emailOrCode: string) => {
 };
 
 /**
+ * Generate a unique reference for transactions
+ */
+export const generateReference = (): string => {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 8);
+  return `TXN_${timestamp}_${random}`.toUpperCase();
+};
+
+/**
  * Process webhook (validate signature and return parsed body)
  */
 export const processWebhook = (body: any) => {

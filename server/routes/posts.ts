@@ -1,8 +1,9 @@
 import { Router, Request, Response } from "express";
-import { storage } from "../storage";
+
 import { insertPostSchema } from "@shared/schema";
 import { createErrorFunction as createError } from "../utils/error-handler";
 import { asyncHandler } from "../utils/error-handler";
+import { storage } from '../storage';
 
 const router = Router();
 

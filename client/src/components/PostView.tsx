@@ -1,5 +1,5 @@
 import React from 'react';
-import { Post } from '@shared/schema';
+
 import { Card } from "@/components/ui/card";
 import { getReadingTime } from "@/lib/content-analysis";
 import { Clock } from "lucide-react";

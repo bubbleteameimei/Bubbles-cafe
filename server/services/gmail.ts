@@ -4,7 +4,6 @@
  * Functions for working with Gmail email service.
  */
 
-import nodemailer from 'nodemailer';
 import logger from '../utils/logger';
 
 /**

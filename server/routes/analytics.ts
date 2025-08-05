@@ -6,8 +6,9 @@
  */
 
 import { Request, Response, Router } from 'express';
-import { storage } from '../storage';
+
 import { createLogger } from '../utils/debug-logger';
+import { storage } from '../storage';
 
 // Create a logger for analytics
 const analyticsLogger = createLogger('Analytics');

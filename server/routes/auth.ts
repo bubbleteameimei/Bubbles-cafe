@@ -7,7 +7,7 @@ import { userRegistrationSchema, userLoginSchema } from "@shared/schema";
 import { authRateLimiter, sensitiveOperationsRateLimiter } from '../middlewares/rate-limiter';
 import passport from "passport";
 import * as bcrypt from 'bcryptjs';
-import { storage } from "../storage";
+import { storage } from '../storage';
 
 const authLogger = createSecureLogger('AuthRoutes');
 const router = Router();

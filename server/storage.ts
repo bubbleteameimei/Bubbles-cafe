@@ -1,23 +1,10 @@
-import { 
-  type Post, type InsertPost,
-  type Comment, type InsertComment,
-  type User, type InsertUser,
-  type ContactMessage, type InsertContactMessage,
-  type Session, type InsertSession,
-  type Bookmark, type InsertBookmark,
-  type UserFeedback, type InsertUserFeedback,
-  // Tables
-  posts as postsTable,
-  comments,
-  users,
-  contactMessages,
-  sessions,
-  bookmarks,
-  userFeedback
-} from "@shared/schema";
-
 import { db } from "./db";
-import { eq, desc, asc, and, or, like } from "drizzle-orm";
+import { 
+  users, posts, comments, newsletters, contactMessages, 
+  type User, type Post, type Comment, type InsertUser, type InsertPost, type InsertComment,
+  type ContactMessage, type InsertContactMessage, type UserFeedback, type InsertUserFeedback
+} from "@shared/schema";
+import { eq, desc, and, or, sql, like, asc } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -161,7 +148,7 @@ export class DatabaseStorage implements IStorage {
 
   async getPost(id: number): Promise<Post | undefined> {
     try {
-      const [post] = await db.select().from(postsTable).where(eq(postsTable.id, id));
+      const [post] = await db.select().from(posts).where(eq(posts.id, id));
       return post || undefined;
     } catch (error) {
       console.error('Error getting post:', error);
@@ -171,7 +158,7 @@ export class DatabaseStorage implements IStorage {
 
   async getPostBySlug(slug: string): Promise<Post | undefined> {
     try {
-      const [post] = await db.select().from(postsTable).where(eq(postsTable.slug, slug));
+      const [post] = await db.select().from(posts).where(eq(posts.slug, slug));
       return post || undefined;
     } catch (error) {
       console.error('Error getting post by slug:', error);
@@ -183,8 +170,8 @@ export class DatabaseStorage implements IStorage {
     try {
       return await db
         .select()
-        .from(postsTable)
-        .orderBy(desc(postsTable.createdAt))
+        .from(posts)
+        .orderBy(desc(posts.createdAt))
         .limit(limit)
         .offset(offset);
     } catch (error) {
@@ -197,9 +184,9 @@ export class DatabaseStorage implements IStorage {
     try {
       return await db
         .select()
-        .from(postsTable)
-        .where(eq(postsTable.authorId, authorId))
-        .orderBy(desc(postsTable.createdAt));
+        .from(posts)
+        .where(eq(posts.authorId, authorId))
+        .orderBy(desc(posts.createdAt));
     } catch (error) {
       console.error('Error getting posts by author:', error);
       return [];
@@ -207,16 +194,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPost(post: InsertPost): Promise<Post> {
-    const [newPost] = await db.insert(postsTable).values(post).returning();
+    const [newPost] = await db.insert(posts).values(post).returning();
     return newPost;
   }
 
   async updatePost(id: number, post: Partial<Post>): Promise<Post | undefined> {
     try {
       const [updatedPost] = await db
-        .update(postsTable)
+        .update(posts)
         .set(post)
-        .where(eq(postsTable.id, id))
+        .where(eq(posts.id, id))
         .returning();
       return updatedPost || undefined;
     } catch (error) {
@@ -227,7 +214,7 @@ export class DatabaseStorage implements IStorage {
 
   async deletePost(id: number): Promise<boolean> {
     try {
-      const result = await db.delete(postsTable).where(eq(postsTable.id, id));
+      const result = await db.delete(posts).where(eq(posts.id, id));
       return result.rowCount !== null && result.rowCount > 0;
     } catch (error) {
       console.error('Error deleting post:', error);
@@ -239,15 +226,15 @@ export class DatabaseStorage implements IStorage {
     try {
       return await db
         .select()
-        .from(postsTable)
+        .from(posts)
         .where(
           or(
-            like(postsTable.title, `%${query}%`),
-            like(postsTable.content, `%${query}%`),
-            like(postsTable.excerpt, `%${query}%`)
+            like(posts.title, `%${query}%`),
+            like(posts.content, `%${query}%`),
+            like(posts.excerpt, `%${query}%`)
           )
         )
-        .orderBy(desc(postsTable.createdAt));
+        .orderBy(desc(posts.createdAt));
     } catch (error) {
       console.error('Error searching posts:', error);
       return [];

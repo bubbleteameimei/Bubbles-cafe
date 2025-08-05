@@ -2,11 +2,11 @@ import { Request, Response, Router } from "express";
 import { createSecureLogger } from '../utils/secure-logger';
 import { validateBody, validateQuery, validateParams, commonSchemas } from '../middleware/input-validation';
 import { asyncHandler, createError } from '../utils/error-handler';
-import { storage } from "../storage";
+
 import { z } from "zod";
 import { insertCommentSchema, insertCommentReplySchema } from "@shared/schema";
 import { apiRateLimiter } from '../middlewares/rate-limiter';
-import { moderateComment } from "../utils/comment-moderation";
+import { storage } from '../storage';
 
 const commentsLogger = createSecureLogger('CommentsRoutes');
 const router = Router();
