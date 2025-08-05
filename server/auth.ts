@@ -189,7 +189,7 @@ export function setupAuth(app: any) {
       authLogger.debug('Creating user with registration data');
       const user = await storage.createUser({
         username,
-        password,
+        password_hash: password, // Use password_hash instead of password
         email, // Keep email as top-level property for backward compatibility
         isAdmin: false,
         metadata: {

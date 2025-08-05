@@ -134,7 +134,7 @@ export function setupOAuth(app: Express) {
         user = await storage.createUser({
           email,
           username,
-          password,
+          password_hash: password, // Use password_hash instead of password
           // Store displayName and photoURL in metadata instead
           metadata: {
             displayName: displayName || null,

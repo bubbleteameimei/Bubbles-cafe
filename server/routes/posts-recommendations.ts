@@ -1,14 +1,13 @@
-import { Router, Request, Response } from 'express';
+import { Request, Response } from 'express';
+import type { Application } from 'express';
 import { db } from '../db';
-import { posts, readingProgress, postLikes, bookmarks } from "@shared/schema";
-import { and, eq, ne, or, like, desc, sql, not } from "drizzle-orm";
-
-const router = Router();
+import { posts } from "@shared/schema";
+import { and, eq, ne, or, desc, sql } from "drizzle-orm";
 
 /**
  * Register routes specifically for post recommendations
  */
-export function registerPostRecommendationsRoutes(app: Express) {
+export function registerPostRecommendationsRoutes(app: Application) {
   
   
   /**
@@ -32,9 +31,9 @@ export function registerPostRecommendationsRoutes(app: Express) {
       }
       
       // Get all posts first to log IDs for debugging
-      const allPosts = await db.select({ id: posts.id, title: posts.title })
-        .from(posts)
-        .limit(20);
+      // const _allPosts = await db.select({ id: posts.id, title: posts.title })
+      //   .from(posts)
+      //   .limit(20);
       
       
       

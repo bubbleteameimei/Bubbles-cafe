@@ -5,7 +5,7 @@ import {
   type ContactMessage, type InsertContactMessage, type UserFeedback, type InsertUserFeedback,
   type Bookmark, type InsertBookmark, type Session, type InsertSession,
   type ResetToken, type InsertResetToken
-} from "@shared/schema";
+} from "../shared/schema";
 import { eq, desc, and, or, sql, like, asc } from "drizzle-orm";
 
 export interface IStorage {

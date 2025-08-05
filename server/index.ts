@@ -1,11 +1,30 @@
 import express from "express";
 import { createServer } from "http";
+import crypto from "crypto";
+// Session type declarations
+declare module 'express-session' {
+  interface SessionData {
+    likes: { [postId: string]: boolean };
+    userReactions: { [postId: string]: 'like' | 'dislike' | null };
+    csrfToken?: string;
+    user?: {
+      id: number;
+      email: string;
+      username: string;
+      fullName?: string;
+      avatar?: string;
+      isAdmin: boolean;
+      isVerified?: boolean;
+    };
+  }
+}
 import { setupVite, serveStatic } from "./vite";
 import { registerRoutes } from "./routes";
 import { setNeonAsDefault } from "./neon-config"; // Set Neon as default database
 import { setGmailCredentials } from "./config/gmail-config"; // Set Gmail credentials
 import { db } from "./db"; // Using the direct Neon database connection
 import { posts } from "@shared/schema";
+import { count } from "drizzle-orm";
 
 import { seedDatabase } from "./seed";
 
@@ -84,7 +103,6 @@ app.use(session({
   },
   // Enhanced session security
   genid: () => {
-    const crypto = require('crypto');
     return crypto.randomBytes(32).toString('hex');
   }
 }));
@@ -103,7 +121,6 @@ app.use((req, res, next) => {
     
     // Store CSRF token in session metadata
     if (!req.session.__meta.csrfToken) {
-      const crypto = require('crypto');
       req.session.__meta.csrfToken = crypto.randomBytes(32).toString('hex');
     }
   }
@@ -119,6 +136,7 @@ app.use(validateCsrfToken({
   ignorePaths: [
     '/health', 
     '/api/health',
+    '/test', // Allow test route without CSRF protection
     '/api/auth/status', 
     '/api/auth/login',
     '/api/auth/register',
@@ -153,7 +171,7 @@ setupOAuth(app);
 app.get('/health', (req, res) => {
   // Ensure a CSRF token is set
   if (!req.session.csrfToken) {
-    const token = require('crypto').randomBytes(32).toString('hex');
+    const token = crypto.randomBytes(32).toString('hex');
     req.session.csrfToken = token;
     
     // Set the token as a cookie for client-side access
@@ -205,6 +223,7 @@ async function startServer() {
       // Ensure DATABASE_URL is properly set
       serverLogger.info('Setting up database connection...');
       await setupDatabase();
+      serverLogger.info('Database setup completed successfully');
       
       // Check database connection
       try {
@@ -220,8 +239,8 @@ async function startServer() {
         // Skip WordPress sync if environment variable is set
         if (postsCount === 0 && !process.env.SKIP_WORDPRESS_SYNC) {
           serverLogger.info('Tables exist but no posts - seeding database from WordPress API...');
-          await seedFromWordPressAPI();
-          serverLogger.info('Database seeding from WordPress API completed');
+          // await seedFromWordPressAPI();
+          serverLogger.info('WordPress sync skipped for testing');
         } else if (process.env.SKIP_WORDPRESS_SYNC) {
           serverLogger.info('Skipping WordPress sync due to SKIP_WORDPRESS_SYNC environment variable');
         }
@@ -236,16 +255,16 @@ async function startServer() {
         serverLogger.info('Schema created, seeding data from WordPress API...');
         
         try {
-          await seedFromWordPressAPI();
-          serverLogger.info('Database seeding from WordPress API completed');
+          // await seedFromWordPressAPI();
+          serverLogger.info('WordPress sync skipped for testing');
         } catch (seedError) {
           serverLogger.error('Error seeding from WordPress API, falling back to XML seeding', {
             error: seedError instanceof Error ? seedError.message : 'Unknown error'
           });
           
           // Fall back to XML seeding if WordPress API fails
-          await seedDatabase();
-          serverLogger.info('Database seeding from XML completed');
+          // await seedDatabase();
+          serverLogger.info('Database seeding skipped for testing');
         }
       }
     } catch (dbError) {
@@ -255,8 +274,15 @@ async function startServer() {
       throw dbError;
     }
 
+    serverLogger.info('Database setup completed, proceeding to server creation');
+
     // Create server instance
+    serverLogger.info('Creating HTTP server instance');
     server = createServer(app);
+    serverLogger.info('HTTP server instance created');
+    console.log('✅ HTTP server instance created');
+
+
 
     // Setup routes based on environment
     if (isDev) {
@@ -266,38 +292,43 @@ async function startServer() {
       app.use(requestLogger);
       
       // Register main routes
+      serverLogger.info('Registering main routes');
       registerRoutes(app);
+      serverLogger.info('Main routes registration completed');
       
       // Register user feedback routes
-      registerUserFeedbackRoutes(app, storage);
+      // registerUserFeedbackRoutes(app, storage);
       
       // Register recommendation routes
-      registerRecommendationsRoutes(app, storage);
+      // registerRecommendationsRoutes(app, storage);
       
       
       // Register privacy settings routes
-      registerPrivacySettingsRoutes(app, storage);
+      // registerPrivacySettingsRoutes(app, storage);
       
       // Register WordPress sync routes
-      registerWordPressSyncRoutes(app);
+      // registerWordPressSyncRoutes(app);
 
       // Register analytics routes
-      registerAnalyticsRoutes(app);
+      // registerAnalyticsRoutes(app);
       
       // Register email service routes
-      registerEmailServiceRoutes(app);
+      // registerEmailServiceRoutes(app);
       
       // Register bookmark routes
-      registerBookmarkRoutes(app);
+      // registerBookmarkRoutes(app);
       
       // Register session sync routes
-      app.use('/api/session-sync', sessionSyncRouter);
+      // app.use('/api/session-sync', sessionSyncRouter);
       
       // Setup WordPress sync schedule (run every 5 minutes)
-      setupWordPressSyncSchedule(5 * 60 * 1000);
+      // setupWordPressSyncSchedule(5 * 60 * 1000);
+      console.log('✅ Route registration completed');
       
       // We've moved the post recommendations endpoint to main routes.ts
       // registerPostRecommendationsRoutes(app);
+      
+
       
       await setupVite(app, server);
     } else {
@@ -345,15 +376,17 @@ async function startServer() {
       const startTime = Date.now();
       
       // Log that we're about to start listening
+      serverLogger.info('About to start listening on port', { port: PORT, host: HOST });
+      console.log('🚀 About to start listening on port', PORT);
       
-      
-      server.listen(PORT, HOST, () => {
-        const bootDuration = Date.now() - startTime;
-        
-        serverLogger.info('Server started successfully', { 
-          url: `http://${HOST}:${PORT}`,
-          bootTime: `${bootDuration}ms`
-        });
+              server.listen(PORT, HOST, () => {
+          const bootDuration = Date.now() - startTime;
+          
+          serverLogger.info('Server started successfully', { 
+            url: `http://${HOST}:${PORT}`,
+            bootTime: `${bootDuration}ms`
+          });
+          console.log('🎉 Server started successfully on', `http://${HOST}:${PORT}`);
 
         // Send port readiness signal
         if (process.send) {
@@ -368,7 +401,7 @@ async function startServer() {
         
         // Wait for a moment to ensure the server is fully ready
         setTimeout(() => {
-          
+          serverLogger.info('Server is fully ready and listening');
         }, 1000);
 
         resolve();
@@ -396,8 +429,11 @@ async function startServer() {
   }
 }
 
-// Start the server
-startServer().catch(error => {
+// Start the server and keep it running
+startServer().then(() => {
+  serverLogger.info('Server startup completed successfully');
+  // Keep the process alive
+}).catch(error => {
   serverLogger.error('Critical startup error', {
     error: error instanceof Error ? error.message : 'Unknown error',
     stack: error instanceof Error ? error.stack : undefined
@@ -433,6 +469,7 @@ process.on('unhandledRejection', (reason, _promise) => {
     reason: reason instanceof Error ? reason.message : String(reason),
     stack: reason instanceof Error ? reason.stack : undefined
   });
+  console.error('Unhandled promise rejection:', reason);
 });
 
 export default app;

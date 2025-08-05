@@ -96,14 +96,16 @@ async function setupDatabase() {
   }
 }
 
-// Run the setup
-setupDatabase().then(success => {
-  if (success) {
-    console.log('✅ Database is ready to use');
-  } else {
-    console.error('❌ Database setup failed');
-    process.exit(1);
-  }
-});
+// Only run the setup if this file is executed directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  setupDatabase().then(success => {
+    if (success) {
+      console.log('✅ Database is ready to use');
+    } else {
+      console.error('❌ Database setup failed');
+      process.exit(1);
+    }
+  });
+}
 
 export default setupDatabase;

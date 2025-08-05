@@ -12,19 +12,13 @@ import { applySecurityMiddleware } from './middleware/security-validation';
 import * as session from 'express-session';
 
 // Define session types for Express
-declare module 'express-session' {
-  interface SessionData {
-    likes: { [postId: string]: boolean };
-    userReactions: { [postId: string]: 'like' | 'dislike' | null };
-    // Session types for bookmarks defined in shared/types/session.d.ts
-  }
-}
+
 import { generateResponseSuggestion, getResponseHints } from './utils/feedback-ai';
 import { generateEnhancedResponse, generateResponseAlternatives } from './utils/enhanced-feedback-ai';
 import { sanitizeHtml, stripHtml } from './utils/sanitizer';
 import { sendNewsletterWelcomeEmail } from './utils/send-email';
 import { z } from "zod";
-import { insertPostSchema, posts } from "@shared/schema";
+import { insertPostSchema, posts } from "../shared/schema";
 
 import { log } from "./vite";
 import { createTransport } from "nodemailer";
@@ -123,6 +117,10 @@ import csrfTestRoutes from './routes/csrf-test';
 import { storage } from './storage';
 
 export function registerRoutes(app: Express): Server {
+  // Add a simple test route
+  app.get('/test', (req, res) => {
+    res.json({ message: 'Server is working!' });
+  });
   // Register API test routes
   app.use('/api/test', apiTestRoutes);
   // Register test delete routes - remove in production

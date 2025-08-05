@@ -9,7 +9,7 @@ import { storage } from '../storage';
 const router = Router();
 
 // Test route to create and then delete a post - bypasses authentication
-router.post('/create-delete-test', async (req: Request, res: Response) => {
+router.post('/create-delete-test', async (_req: Request, res: Response) => {
   try {
     
     

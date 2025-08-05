@@ -4,7 +4,7 @@ import { storage } from '../storage';
 const router = Router();
 
 // Get reported content
-router.get('/reported-content', async (req, res) => {
+router.get('/reported-content', async (_req, res) => {
   try {
     const reportedContent = await storage.getReportedContent();
     return res.json(reportedContent);

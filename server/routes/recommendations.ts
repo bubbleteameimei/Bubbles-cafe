@@ -1,10 +1,8 @@
-import { Router, Request, Response } from 'express';
+import { Request, Response } from 'express';
 import type { Application } from 'express';
 import { posts, readingProgress, postLikes, bookmarks } from "@shared/schema";
-import { and, eq, ne, or, like, desc, asc, sql, count, not } from "drizzle-orm";
-import { storage } from '../storage';
-
-const router = Router();
+import { and, eq, or, like, desc, sql, not } from "drizzle-orm";
+import { db } from '../db';
 
 /**
  * Get recommendations based on post content, theme categories, and user history
@@ -16,7 +14,7 @@ export function registerRecommendationsRoutes(app: Application, storageInstance:
    * GET /api/recommendations/health
    * Simple health check endpoint for recommendations subsystem
    */
-  app.get("/api/recommendations/health", (req: Request, res: Response) => {
+  app.get("/api/recommendations/health", (_req: Request, res: Response) => {
     
     return res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
@@ -154,7 +152,7 @@ export function registerRecommendationsRoutes(app: Application, storageInstance:
       });
       
       // Combine user preferences with derived themes
-      const allThemes = [...Array.from(userThemes), ...preferredThemes];
+      const allThemes = [...preferredThemes];
       
       // Get recommendations based on themes
       const contentBasedRecommendations = await safeDbOperation(async () => {
@@ -336,7 +334,7 @@ export function registerRecommendationsRoutes(app: Application, storageInstance:
  * Extract important keywords from a text string
  * This is a simple implementation that filters out common words
  */
-function extractKeywords(text: string): string[] {
+function _extractKeywords(text: string): string[] {
   // Simplistic keyword extraction - just split text and filter out common words
   const commonWords = new Set([
     "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for", "with",

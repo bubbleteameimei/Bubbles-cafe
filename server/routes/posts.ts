@@ -1,22 +1,25 @@
 import { Router, Request, Response } from "express";
 
-import { insertPostSchema } from "@shared/schema";
+import { insertPostSchema } from "../../shared/schema";
 import { createErrorFunction as createError } from "../utils/error-handler";
 import { asyncHandler } from "../utils/error-handler";
-import { storage } from '../storage';
+import { storage } from '../storage-db';
 
-const router = Router();
+const postsRouter = Router();
 
 // Get all posts with filtering and pagination
-router.get("/", asyncHandler(async (req: Request, res: Response) => {
+postsRouter.get("/", asyncHandler(async (req: Request, res: Response) => {
   try {
     const { limit, offset, themeCategory, search } = req.query;
     
-    // Fix: Call getPosts with just limit and offset, handle filtering separately
-    const posts = await storage.getPosts(Number(limit) || 10, Number(offset) || 0);
+    // Fix: Call getPosts with proper filters object
+    const posts = await storage.getPosts({
+      limit: Number(limit) || 10,
+      offset: Number(offset) || 0
+    });
     
     // Apply additional filtering if needed
-    let filteredPosts = posts.filter(post => !post.isSecret); // Only show public posts
+    let filteredPosts = posts.posts.filter(post => !post.isSecret); // Only show public posts
     
     if (themeCategory) {
       filteredPosts = filteredPosts.filter(post => 
@@ -40,7 +43,7 @@ router.get("/", asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Get single post by slug
-router.get("/:slug", asyncHandler(async (req: Request, res: Response) => {
+postsRouter.get("/:slug", asyncHandler(async (req: Request, res: Response) => {
   try {
     const post = await storage.getPostBySlug(req.params.slug);
     
@@ -49,7 +52,7 @@ router.get("/:slug", asyncHandler(async (req: Request, res: Response) => {
     }
 
     // Don't show secret posts to non-authenticated users
-    if (post.isSecret && !req.session?.user?.isAdmin) {
+    if (post.isSecret && !(req.session as any)?.user?.isAdmin) {
       throw createError(404, "Post not found");
     }
 
@@ -61,15 +64,15 @@ router.get("/:slug", asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Create new post
-router.post("/", asyncHandler(async (req: Request, res: Response) => {
+postsRouter.post("/", asyncHandler(async (req: Request, res: Response) => {
   try {
-    if (!req.session?.user) {
+    if (!(req.session as any)?.user) {
       throw createError(401, "Authentication required");
     }
 
     const validatedData = insertPostSchema.parse({
       ...req.body,
-      authorId: req.session.user.id
+      authorId: (req.session as any).user.id
     });
 
     const post = await storage.createPost(validatedData);
@@ -82,11 +85,11 @@ router.post("/", asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Update post
-router.put("/:id", asyncHandler(async (req: Request, res: Response) => {
+postsRouter.put("/:id", asyncHandler(async (req: Request, res: Response) => {
   try {
     const postId = parseInt(req.params.id);
     
-    if (!req.session?.user) {
+    if (!(req.session as any)?.user) {
       throw createError(401, "Authentication required");
     }
 
@@ -96,7 +99,7 @@ router.put("/:id", asyncHandler(async (req: Request, res: Response) => {
       throw createError(404, "Post not found");
     }
 
-    if (existingPost.authorId !== req.session.user.id && !req.session.user.isAdmin) {
+    if (existingPost.authorId !== (req.session as any).user.id && !(req.session as any).user.isAdmin) {
       throw createError(403, "Permission denied");
     }
 
@@ -114,11 +117,11 @@ router.put("/:id", asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Delete post
-router.delete("/:id", asyncHandler(async (req: Request, res: Response) => {
+postsRouter.delete("/:id", asyncHandler(async (req: Request, res: Response) => {
   try {
     const postId = parseInt(req.params.id);
     
-    if (!req.session?.user) {
+    if (!(req.session as any)?.user) {
       throw createError(401, "Authentication required");
     }
 
@@ -128,7 +131,7 @@ router.delete("/:id", asyncHandler(async (req: Request, res: Response) => {
       throw createError(404, "Post not found");
     }
 
-    if (existingPost.authorId !== req.session.user.id && !req.session.user.isAdmin) {
+    if (existingPost.authorId !== (req.session as any).user.id && !(req.session as any).user.isAdmin) {
       throw createError(403, "Permission denied");
     }
 
@@ -145,4 +148,4 @@ router.delete("/:id", asyncHandler(async (req: Request, res: Response) => {
   }
 }));
 
-export default router;
+export { postsRouter };

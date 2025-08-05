@@ -58,7 +58,7 @@ export const asyncHandler = (fn: Function) => (req: Request, res: Response, next
 };
 
 // Global error handler middleware
-export function globalErrorHandler(err: Error | CustomError, req: Request, res: Response, next: NextFunction) {
+export function globalErrorHandler(err: Error | CustomError, req: Request, res: Response, _next: NextFunction) {
   const isDev = process.env.NODE_ENV === 'development';
   
   // Log the error
@@ -110,7 +110,7 @@ export function globalErrorHandler(err: Error | CustomError, req: Request, res: 
   const message = isDev ? err.message : 'Internal server error';
   const statusCode = 500;
 
-  res.status(statusCode).json({
+  return res.status(statusCode).json({
     error: {
       message,
       code: 'INTERNAL_ERROR',
