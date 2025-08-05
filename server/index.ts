@@ -1,6 +1,22 @@
 import express from "express";
 import { createServer } from "http";
 import crypto from "crypto";
+// Session type declarations
+declare module 'express-session' {
+  interface SessionData {
+    likes: { [postId: string]: boolean };
+    userReactions: { [postId: string]: 'like' | 'dislike' | null };
+    user?: {
+      id: number;
+      email: string;
+      username: string;
+      fullName?: string;
+      avatar?: string;
+      isAdmin: boolean;
+      isVerified?: boolean;
+    };
+  }
+}
 import { setupVite, serveStatic } from "./vite";
 import { registerRoutes } from "./routes";
 import { setNeonAsDefault } from "./neon-config"; // Set Neon as default database
@@ -280,8 +296,8 @@ async function startServer() {
       
       // Register main routes
       serverLogger.info('Registering main routes');
-      // registerRoutes(app);
-      serverLogger.info('Main routes registration skipped for testing');
+      registerRoutes(app);
+      serverLogger.info('Main routes registration completed');
       
       // Register user feedback routes
       // registerUserFeedbackRoutes(app, storage);

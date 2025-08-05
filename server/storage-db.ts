@@ -10,7 +10,7 @@ import {
   type ResetToken, type InsertResetToken, type SecretProgress, type InsertSecretProgress,
   type Bookmark, type InsertBookmark, type ContactMessage, type InsertContactMessage,
   type UserFeedback, type InsertUserFeedback
-} from "@shared/schema";
+} from "../shared/schema";
 
 import * as bcrypt from 'bcryptjs';
 
