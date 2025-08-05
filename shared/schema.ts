@@ -899,4 +899,34 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertPost = z.infer<typeof insertPostSchema>;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 
+// Add missing newsletter subscription types
+export type NewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
+export type InsertNewsletterSubscription = typeof newsletterSubscriptions.$inferInsert;
+
+// Add missing reading progress types
+export type ReadingProgress = typeof readingProgress.$inferSelect;
+export type InsertReadingProgress = typeof readingProgress.$inferInsert;
+export type InsertProgress = InsertReadingProgress; // Alias for compatibility
+
+// Add missing analytics and stats types
+export interface AuthorStats {
+  authorId: number;
+  totalPosts: number;
+  totalViews: number;
+  totalLikes: number;
+  avgReadingTime: number;
+  lastPostDate: Date | null;
+}
+
+export interface Analytics {
+  id: number;
+  postId: number;
+  views: number;
+  uniqueViews: number;
+  avgReadingTime: number;
+  bounceRate: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export type UserPrivacySettings = typeof userPrivacySettings.$inferSelect;

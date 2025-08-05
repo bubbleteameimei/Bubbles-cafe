@@ -1,120 +1,61 @@
 import { db } from "./db";
-import { eq, desc, and, or, sql, like, asc } from "drizzle-orm";
-import { 
-  users, 
-  posts, 
-  comments, 
-  sessions,
-  resetTokens,
-  bookmarks,
-  analytics,
-  contactMessages,
-  newsletterSubscriptions,
-  readingProgress,
-  secretProgress,
-  authorStats,
-  userFeedback
-} from '@shared/schema';
-import type { 
-  User, 
-  InsertUser, 
-  Post, 
-  InsertPost, 
-  Comment, 
-  InsertComment,
-  Session,
-  InsertSession,
-  ResetToken,
-  InsertResetToken,
-  ReadingProgress,
-  InsertReadingProgress,
-  SecretProgress,
-  InsertSecretProgress,
-  ContactMessage,
-  InsertContactMessage,
-  UserFeedback,
-  InsertUserFeedback,
-  Bookmark,
-  InsertBookmark
-} from '@shared/schema';
+import { eq, desc, and, or, sql, like } from "drizzle-orm";
+import {
+  users, posts, comments, contactMessages, bookmarks, sessions, userFeedback, newsletterSubscriptions,
+  readingProgress, postLikes, userPrivacySettings,
+  type User, type Post, type Comment, type InsertUser, type InsertPost, type InsertComment,
+  type NewsletterSubscription, type InsertNewsletterSubscription,
+  type ReadingProgress, type InsertReadingProgress, type InsertProgress,
+  type AuthorStats, type Analytics
+} from "@shared/schema";
 
 import bcrypt from 'bcryptjs';
 
+// Storage interface definition with all required methods
 export interface IStorage {
   // User management
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserById(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
-  updateUserPassword(id: number, newPasswordHash: string): Promise<void>;
-
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(userData: InsertUser): Promise<User>;
+  updateUser(id: number, userData: Partial<InsertUser>): Promise<User>;
+  deleteUser(id: number): Promise<boolean>;
+  
   // Post management
-  getPosts(filters?: { 
-    authorId?: number; 
-    isSecret?: boolean; 
-    isAdminPost?: boolean; 
-    themeCategory?: string;
-    search?: string;
-    limit?: number;
-    offset?: number;
-  }): Promise<{ posts: Post[]; hasMore: boolean }>;
-  getPost(id: number): Promise<Post | undefined>;
+  getPostById(id: number): Promise<Post | undefined>;
   getPostBySlug(slug: string): Promise<Post | undefined>;
-  createPost(post: InsertPost): Promise<Post>;
-  updatePost(id: number, updates: Partial<Post>): Promise<Post | undefined>;
+  getPosts(options?: any): Promise<{ posts: Post[]; total: number }>;
+  createPost(postData: InsertPost): Promise<Post>;
+  updatePost(id: number, postData: Partial<InsertPost>): Promise<Post>;
   deletePost(id: number): Promise<boolean>;
-
-  // Comments
-  getComments(postId: number): Promise<Comment[]>;
-  getComment(id: number): Promise<Comment | undefined>;
-  createComment(comment: InsertComment): Promise<Comment>;
-  updateComment(id: number, updates: Partial<Comment>): Promise<Comment | undefined>;
+  
+  // Comment management
+  getCommentsByPostId(postId: number): Promise<Comment[]>;
+  createComment(commentData: InsertComment): Promise<Comment>;
+  updateComment(id: number, commentData: Partial<InsertComment>): Promise<Comment>;
   deleteComment(id: number): Promise<boolean>;
-
-  // Sessions
-  createSession(session: InsertSession): Promise<Session>;
-  getSession(token: string): Promise<Session | undefined>;
-  deleteSession(token: string): Promise<boolean>;
-  cleanupExpiredSessions(): Promise<void>;
-
-  // Password reset
-  createResetToken(token: InsertResetToken): Promise<ResetToken>;
-  getResetToken(token: string): Promise<ResetToken | undefined>;
-  useResetToken(token: string): Promise<boolean>;
-
-  // Bookmarks
-  createBookmark(bookmark: InsertBookmark): Promise<Bookmark>;
-  getUserBookmarks(userId: number): Promise<Bookmark[]>;
-  deleteBookmark(userId: number, postId: number): Promise<void>;
-
-  // Contact messages
-  createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
-  getContactMessages(): Promise<ContactMessage[]>;
-
-  // Newsletter
+  
+  // Newsletter management
   subscribeNewsletter(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription>;
-  unsubscribeNewsletter(email: string): Promise<boolean>;
-
+  getNewsletterSubscriptionByEmail(email: string): Promise<NewsletterSubscription | undefined>;
+  getNewsletterSubscriptions(): Promise<NewsletterSubscription[]>;
+  updateNewsletterSubscriptionStatus(id: number, status: string): Promise<NewsletterSubscription>;
+  
   // Reading progress
   updateReadingProgress(progress: InsertProgress): Promise<ReadingProgress>;
   getReadingProgress(userId: number, postId: number): Promise<ReadingProgress | undefined>;
-
-  // Secret progress
-  recordSecretDiscovery(discovery: InsertSecretProgress): Promise<SecretProgress>;
-  getSecretProgress(userId: number): Promise<SecretProgress[]>;
-
-  // Author stats
+  
+  // Analytics and stats
   getAuthorStats(authorId: number): Promise<AuthorStats | undefined>;
   updateAuthorStats(authorId: number, stats: Partial<AuthorStats>): Promise<void>;
-
-  // Analytics
+  getSiteAnalytics(): Promise<any>;
   recordAnalytics(postId: number, data: Partial<Analytics>): Promise<void>;
   getPostAnalytics(postId: number): Promise<Analytics | undefined>;
-
-  // User feedback
-  createUserFeedback(feedback: InsertUserFeedback): Promise<UserFeedback>;
-  getUserFeedback(): Promise<UserFeedback[]>;
+  
+  // Other methods
+  getContactMessages(): Promise<any[]>;
+  getUserPrivacySettings(userId: number): Promise<any>;
+  getPersonalizedRecommendations(userId: number, options?: any): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {

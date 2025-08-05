@@ -6,6 +6,12 @@
 
 import logger from '../utils/logger';
 import { EmailMessage, EmailResult } from './email-types';
+import nodemailer from 'nodemailer';
+
+// SendGrid SMTP configuration
+interface SendGridConfig {
+  apiKey: string;
+}
 
 /**
  * Check if SendGrid credentials are available

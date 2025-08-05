@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { db } from '../db';
+import type { Application } from 'express';
 import { posts, readingProgress, postLikes, bookmarks } from "@shared/schema";
 import { and, eq, ne, or, like, desc, asc, sql, count, not } from "drizzle-orm";
 import { storage } from '../storage';
@@ -9,7 +9,7 @@ const router = Router();
 /**
  * Get recommendations based on post content, theme categories, and user history
  */
-export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
+export function registerRecommendationsRoutes(app: Application, storageInstance: any) {
   
   
   /**
@@ -244,7 +244,7 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
       
       
       // Use the new storage method with enhanced personalization
-      const recommendedPosts = await storage.getPersonalizedRecommendations(
+      const recommendedPosts = await storageInstance.getPersonalizedRecommendations(
         userId, 
         preferredThemes as string[], 
         limit

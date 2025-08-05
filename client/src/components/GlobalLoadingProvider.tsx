@@ -1,57 +1,54 @@
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
-import { LoadingScreen } from './ui/loading-screen';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import LoadingScreen from './loading-screen';
 
-// Define loading context type
-type LoadingContextType = {
+interface LoadingContextType {
   isLoading: boolean;
-  showLoading: (message?: string) => void;
-  hideLoading: () => void;
-  withLoading: <T,>(promise: Promise<T>, message?: string) => Promise<T>;
+  setLoading: (loading: boolean) => void;
+  loadingMessage: string;
   setLoadingMessage: (message: string) => void;
-  suppressSkeletons: boolean;
-};
-
-// Create context with default values
-const LoadingContext = createContext<LoadingContextType>({
-  isLoading: false,
-  showLoading: () => {},
-  hideLoading: () => {},
-  withLoading: <T,>(promise: Promise<T>): Promise<T> => promise,
-  setLoadingMessage: () => {},
-  suppressSkeletons: false
-});
-
-/**
- * Custom hook to access loading context
- */
-export const useLoading = () => {
-  return useContext(LoadingContext);
 }
 
-// Duration to prevent rapid multiple loading screen triggers (ms)
-const PREVENT_RAPID_SHOW_DURATION = 1000;
+const LoadingContext = createContext<LoadingContextType | undefined>(undefined);
 
-/**
- * GlobalLoadingProvider - Completely rewritten to work with the new loading screen
- * This provider manages the loading state in a simpler, more robust way
- */
-export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Core state  
+export function useLoading() {
+  const context = useContext(LoadingContext);
+  if (!context) {
+    throw new Error('useLoading must be used within a LoadingProvider');
+  }
+  return context;
+}
+
+interface LoadingProviderProps {
+  children: React.ReactNode;
+}
+
+export default function GlobalLoadingProvider({ children }: LoadingProviderProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('Loading...');
   
-  // Refs for tracking state between renders
-  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const preventRapidShowRef = useRef(false);
+  // Prevent rapid show/hide cycles
+  const PREVENT_RAPID_HIDE_DURATION = 300; // minimum time to show loading screen
   
-  // Clean up timers on unmount
-  useEffect(() => {
-    return () => {
-      if (loadingTimerRef.current) {
-        clearTimeout(loadingTimerRef.current);
-      }
-    };
-  }, []);
-  
+  const setLoading = useCallback((loading: boolean, message?: string) => {
+    if (message) {
+      setLoadingMessage(message);
+    }
+    
+    if (loading) {
+      setIsLoading(true);
+      setShowLoadingScreen(true);
+    } else {
+      setIsLoading(false);
+      // Delay hiding to prevent flicker
+      setTimeout(() => {
+        if (!isLoading) {
+          setShowLoadingScreen(false);
+        }
+      }, PREVENT_RAPID_HIDE_DURATION);
+    }
+  }, [isLoading]);
+
   // Handle animation completion from loading screen
   const handleAnimationComplete = useCallback(() => {
     setIsLoading(false);
@@ -64,24 +61,6 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     sessionStorage.removeItem('loadingActive');
   }, []);
 
-  const setLoading = useCallback((loading: boolean, message?: string) => {
-    // Prevent duplicate loading screen triggers
-    if (loading && showLoadingScreen) {
-      return;
-    }
-    
-    if (loading) {
-      sessionStorage.setItem('loadingActive', 'true');
-    }
-    
-    if (message) {
-      setLoadingMessage(message);
-    }
-    
-    setIsLoading(loading);
-    setShowLoadingScreen(loading);
-  }, [showLoadingScreen]);
-  
   // Show loading screen with smart prevention of multiple triggers
   const showLoading = useCallback((_newMessage?: string) => {
     // Check if we're already loading or recently prevented loading
@@ -156,17 +135,13 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     <LoadingContext.Provider 
       value={{ 
         isLoading, 
-        showLoading, 
-        hideLoading, 
-        withLoading,
+        setLoading, 
+        loadingMessage, 
         setLoadingMessage,
-        suppressSkeletons: isLoading // Suppress skeleton loaders when global loading is active
       }}
     >
       {children}
-      {isLoading && <LoadingScreen onAnimationComplete={handleAnimationComplete} />}
+      {showLoadingScreen && <LoadingScreen onAnimationComplete={handleAnimationComplete} />}
     </LoadingContext.Provider>
   );
 };
-
-export default GlobalLoadingProvider;

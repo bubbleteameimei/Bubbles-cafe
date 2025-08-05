@@ -5,32 +5,50 @@
  */
 
 import logger from '../utils/logger';
+import nodemailer from 'nodemailer';
 
-/**
- * Check if Gmail credentials are available
- * 
- * @returns Boolean indicating if credentials are set
- */
-function hasGmailCredentials(): boolean {
-  return !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
+// Gmail SMTP configuration
+interface GmailConfig {
+  user: string;
+  pass: string;
 }
 
 /**
- * Create Gmail transporter
- * 
- * @returns Nodemailer transporter configured for Gmail
+ * Check if Gmail credentials are available
+ * @returns boolean indicating if credentials are properly configured
+ */
+export function hasGmailCredentials(): boolean {
+  const user = process.env.GMAIL_USER || process.env.EMAIL_USER;
+  const pass = process.env.GMAIL_PASS || process.env.EMAIL_PASS;
+  
+  if (!user || !pass) {
+    console.warn('[EmailService] Gmail credentials not configured. Email functionality will be limited.');
+    return false;
+  }
+  
+  return true;
+}
+
+/**
+ * Create Gmail transporter with proper error handling
+ * @returns nodemailer transporter or null if credentials missing
  */
 export function createGmailTransporter() {
   if (!hasGmailCredentials()) {
-    logger.warn('[Email] Gmail credentials not configured');
-    throw new Error('Gmail credentials not configured');
+    return null;
   }
-  
+
+  const user = process.env.GMAIL_USER || process.env.EMAIL_USER;
+  const pass = process.env.GMAIL_PASS || process.env.EMAIL_PASS;
+
   return nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD
+      user: user!,
+      pass: pass!,
+    },
+    tls: {
+      rejectUnauthorized: false
     }
   });
 }
