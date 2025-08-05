@@ -3,8 +3,8 @@
  * Provides consistent logging, error tracking, and debugging capabilities
  */
 
-import fs from 'fs/promises';
-import path from 'path';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import type { Request, Response, NextFunction } from 'express';
 
 // Define proper types instead of using 'any'

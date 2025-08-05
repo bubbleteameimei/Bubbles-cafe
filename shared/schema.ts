@@ -511,6 +511,7 @@ export type InsertCommentVote = z.infer<typeof insertCommentVoteSchema>;
 
 export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
 export type InsertProgress = z.infer<typeof insertProgressSchema>;
+export type InsertReadingProgress = InsertProgress; // Alias for backward compatibility
 export type ReadingProgress = typeof readingProgress.$inferSelect;
 
 export const insertSecretProgressSchema = createInsertSchema(secretProgress).omit({ id: true, discoveryDate: true });

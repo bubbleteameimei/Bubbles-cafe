@@ -2,14 +2,17 @@ import { db } from "./db";
 import { eq, desc, and, or, sql, like } from "drizzle-orm";
 import {
   users, posts, comments, contactMessages, bookmarks, sessions, userFeedback, newsletterSubscriptions,
-  readingProgress, postLikes, userPrivacySettings,
+  readingProgress, postLikes, userPrivacySettings, resetTokens, secretProgress, analytics, authorStats,
   type User, type Post, type Comment, type InsertUser, type InsertPost, type InsertComment,
   type NewsletterSubscription, type InsertNewsletterSubscription,
   type ReadingProgress, type InsertReadingProgress, type InsertProgress,
-  type AuthorStats, type Analytics
+  type AuthorStats, type Analytics, type Session, type InsertSession,
+  type ResetToken, type InsertResetToken, type SecretProgress, type InsertSecretProgress,
+  type Bookmark, type InsertBookmark, type ContactMessage, type InsertContactMessage,
+  type UserFeedback, type InsertUserFeedback
 } from "@shared/schema";
 
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 
 // Storage interface definition with all required methods
 export interface IStorage {
@@ -62,6 +65,11 @@ export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
+  }
+
+  // Alias for interface compatibility
+  async getUserById(id: number): Promise<User | undefined> {
+    return this.getUser(id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
@@ -120,6 +128,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id));
   }
 
+  async deleteUser(id: number): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
   async getPosts(filters?: { 
     authorId?: number; 
     isSecret?: boolean; 
@@ -128,11 +141,12 @@ export class DatabaseStorage implements IStorage {
     search?: string;
     limit?: number;
     offset?: number;
-  }): Promise<{ posts: Post[]; hasMore: boolean }> {
+  }): Promise<{ posts: Post[]; total: number }> {
     const limit = filters?.limit || 10;
     const offset = filters?.offset || 0;
     
     let query = db.select().from(posts);
+    let countQuery = db.select({ count: sql<number>`count(*)` }).from(posts);
     
     const conditions = [];
     
@@ -163,22 +177,30 @@ export class DatabaseStorage implements IStorage {
     
     if (conditions.length > 0) {
       query = query.where(and(...conditions)) as typeof query;
+      countQuery = countQuery.where(and(...conditions)) as typeof countQuery;
     }
     
-    const results = await query
-      .orderBy(desc(posts.createdAt))
-      .limit(limit + 1) // Get one extra to check if there are more
-      .offset(offset);
+    const [results, countResult] = await Promise.all([
+      query
+        .orderBy(desc(posts.createdAt))
+        .limit(limit)
+        .offset(offset),
+      countQuery
+    ]);
     
-    const hasMore = results.length > limit;
-    const posts_data = hasMore ? results.slice(0, limit) : results;
+    const total = countResult[0]?.count || 0;
     
-    return { posts: posts_data, hasMore };
+    return { posts: results, total };
   }
 
   async getPost(id: number): Promise<Post | undefined> {
     const [post] = await db.select().from(posts).where(eq(posts.id, id));
     return post || undefined;
+  }
+
+  // Alias for interface compatibility
+  async getPostById(id: number): Promise<Post | undefined> {
+    return this.getPost(id);
   }
 
   async getPostBySlug(slug: string): Promise<Post | undefined> {
@@ -216,6 +238,11 @@ export class DatabaseStorage implements IStorage {
       .from(comments)
       .where(eq(comments.postId, postId))
       .orderBy(desc(comments.createdAt));
+  }
+
+  // Alias for interface compatibility
+  async getCommentsByPostId(postId: number): Promise<Comment[]> {
+    return this.getComments(postId);
   }
 
   async getComment(id: number): Promise<Comment | undefined> {
@@ -369,6 +396,32 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
+  async getNewsletterSubscriptionByEmail(email: string): Promise<NewsletterSubscription | undefined> {
+    const [subscription] = await db
+      .select()
+      .from(newsletterSubscriptions)
+      .where(eq(newsletterSubscriptions.email, email));
+    
+    return subscription || undefined;
+  }
+
+  async getNewsletterSubscriptions(): Promise<NewsletterSubscription[]> {
+    return await db
+      .select()
+      .from(newsletterSubscriptions)
+      .orderBy(desc(newsletterSubscriptions.subscribedAt));
+  }
+
+  async updateNewsletterSubscriptionStatus(id: number, status: string): Promise<NewsletterSubscription> {
+    const [subscription] = await db
+      .update(newsletterSubscriptions)
+      .set({ status })
+      .where(eq(newsletterSubscriptions.id, id))
+      .returning();
+    
+    return subscription;
+  }
+
   async updateReadingProgress(insertProgress: InsertProgress): Promise<ReadingProgress> {
     // Use upsert (INSERT ... ON CONFLICT)
     const [progress] = await db
@@ -464,6 +517,19 @@ export class DatabaseStorage implements IStorage {
     return analytics_result || undefined;
   }
 
+  async getSiteAnalytics(): Promise<any> {
+    // Return aggregated site analytics
+    const totalPosts = await db.select({ count: sql<number>`count(*)` }).from(posts);
+    const totalUsers = await db.select({ count: sql<number>`count(*)` }).from(users);
+    const totalComments = await db.select({ count: sql<number>`count(*)` }).from(comments);
+    
+    return {
+      totalPosts: totalPosts[0]?.count || 0,
+      totalUsers: totalUsers[0]?.count || 0,
+      totalComments: totalComments[0]?.count || 0
+    };
+  }
+
   async createUserFeedback(insertFeedback: InsertUserFeedback): Promise<UserFeedback> {
     const [feedback] = await db
       .insert(userFeedback)
@@ -478,6 +544,32 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(userFeedback)
       .orderBy(desc(userFeedback.createdAt));
+  }
+
+  async getUserPrivacySettings(userId: number): Promise<any> {
+    const [settings] = await db
+      .select()
+      .from(userPrivacySettings)
+      .where(eq(userPrivacySettings.userId, userId));
+    
+    return settings || null;
+  }
+
+  async getPersonalizedRecommendations(userId: number, options?: any): Promise<any[]> {
+    // Simple implementation - return recent posts by other users
+    const limit = options?.limit || 10;
+    
+    const recommendations = await db
+      .select()
+      .from(posts)
+      .where(and(
+        eq(posts.isSecret, false),
+        sql`${posts.authorId} != ${userId}`
+      ))
+      .orderBy(desc(posts.createdAt))
+      .limit(limit);
+    
+    return recommendations;
   }
 }
 
