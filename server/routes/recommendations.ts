@@ -110,14 +110,18 @@ export function registerRecommendationsRoutes(app: Application, storageInstance:
         
         // Apply theme filter if preferences exist
         if (preferredThemes.length > 0) {
-          query = query.where(
-            preferredThemes.map(theme => 
-              or(
-                like(posts.themeCategory, `%${theme}%`),
-                sql`${posts.metadata}->>'themeCategory' LIKE ${`%${theme}%`}`
-              )
-            ).reduce((acc, condition) => or(acc, condition))
+          const themeConditions = preferredThemes.map(theme => 
+            or(
+              like(posts.themeCategory, `%${theme}%`),
+              sql`${posts.metadata}->>'themeCategory' LIKE ${`%${theme}%`}`
+            )
           );
+          
+          const combinedCondition = themeConditions.reduce((acc, condition) => 
+            acc ? or(acc, condition) : condition
+          );
+          
+          query = query.where(combinedCondition) as any;
         }
         
         const trendingPosts = await safeDbOperation(async () => {
@@ -135,16 +139,17 @@ export function registerRecommendationsRoutes(app: Application, storageInstance:
         });
       });
       
-      // Extract themes from historical posts
-      const userThemes = new Set<string>();
-      historicalPosts.forEach((post: {themeCategory?: string, metadata?: any}) => {
+      // Analyze historical data for better recommendations
+      const categoryFrequency: { [key: string]: number } = {};
+      historicalPosts.forEach((post: any) => {
         if (post.themeCategory) {
-          userThemes.add(post.themeCategory);
+          const category = post.themeCategory;
+          categoryFrequency[category] = (categoryFrequency[category] || 0) + 1;
         }
-        // Also check metadata for themeCategory
-        const metadata = post.metadata as any;
-        if (metadata?.themeCategory) {
-          userThemes.add(metadata.themeCategory);
+        
+        if (post.metadata && typeof post.metadata === 'object' && post.metadata.themeCategory) {
+          const metaCategory = post.metadata.themeCategory;
+          categoryFrequency[metaCategory] = (categoryFrequency[metaCategory] || 0) + 1;
         }
       });
       
