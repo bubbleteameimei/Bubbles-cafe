@@ -18,7 +18,7 @@ export function StoryRating({ postId }: StoryRatingProps) {
   const { toast } = useToast();
   const [userRating, setUserRating] = useState<boolean | null>(null);
 
-  const form = useForm<StoryRating>({
+  const _form = useForm<StoryRating>({ // Prefixed with underscore to indicate intentionally unused
     defaultValues: {
       postId,
       isLike: false // Provide explicit default value
@@ -48,7 +48,7 @@ export function StoryRating({ postId }: StoryRatingProps) {
         description: `You ${variables.isLike ? 'liked' : 'disliked'} this story.`,
       });
     },
-    onError: (error) => {
+    onError: (_error) => { // Prefixed with underscore to indicate intentionally unused
       toast({
         title: "Error",
         description: "Failed to submit rating. Please try again.",

@@ -46,7 +46,7 @@ interface NewStoryNotificationProps {
 
 const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
   newStories = 1,
-  lastChecked,
+  lastChecked: _lastChecked, // Prefixed with underscore to indicate intentionally unused
   onDismiss,
   className = '',
   autoHideDuration = 10000, // 10 seconds

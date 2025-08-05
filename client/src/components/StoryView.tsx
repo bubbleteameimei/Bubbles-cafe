@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+// import { useEffect } from "react"; // Unused import
 import { useQuery } from "@tanstack/react-query";
 import { Post } from "@shared/schema";
 import { Card } from "@/components/ui/card";
@@ -13,7 +13,7 @@ interface StoryViewProps {
 }
 
 export function StoryView({ slug }: StoryViewProps) {
-  const { user } = useAuth();
+  const { user: _user } = useAuth(); // Prefixed with underscore to indicate intentionally unused
   const { data: story, isLoading, error } = useQuery<Post>({
     queryKey: [`/api/posts/${slug}`],
   });

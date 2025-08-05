@@ -1,4 +1,4 @@
-import React, { useEffect, ReactNode } from 'react';
+import { useEffect, ReactNode } from 'react'; // Removed unused React import
 import { useCookieCategory } from '@/hooks/use-cookie-category';
 
 interface AnalyticsWrapperProps {

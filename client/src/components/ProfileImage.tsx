@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+// import { ChevronLeft, ChevronRight } from 'lucide-react'; // Unused imports
 // import { cn } from '@/lib/utils'; // Unused import
 
 export default function ProfileImage() {

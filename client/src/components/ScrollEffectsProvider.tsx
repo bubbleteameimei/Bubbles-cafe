@@ -39,14 +39,14 @@ interface ScrollEffectsProviderProps {
  */
 export const ScrollEffectsProvider: React.FC<ScrollEffectsProviderProps> = ({ children }) => {
   // States for context values
-  const [isPositionRestored, setIsPositionRestored] = useState(false);
-  const [wasRefresh, setWasRefresh] = useState(false);
+  const [_isPositionRestored, _setIsPositionRestored] = useState(false); // Prefixed with underscore to indicate intentionally unused
+  const [_wasRefresh, _setWasRefresh] = useState(false); // Prefixed with underscore to indicate intentionally unused
   
   // Get current path to check if this is a reader page
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
   
   // Check if this is a reader page (we'll handle scroll separately there)
-  const isReaderPath = READER_PATHS.some(path => currentPath.startsWith(path));
+  const _isReaderPath = READER_PATHS.some(path => currentPath.startsWith(path)); // Prefixed with underscore to indicate intentionally unused
   
   // Initialize adaptive scroll with standard browser behavior
   const { scrollType, isScrolling } = useAdaptiveScroll({
@@ -69,8 +69,8 @@ export const ScrollEffectsProvider: React.FC<ScrollEffectsProviderProps> = ({ ch
   // This is now a no-op since gentle return is disabled
   useEffect(() => {
     if (gentleReturn) {
-      setIsPositionRestored(false); // Always false since memory is disabled
-      setWasRefresh(false);
+      _setIsPositionRestored(false); // Always false since memory is disabled
+      _setWasRefresh(false);
     }
   }, [gentleReturn]);
   

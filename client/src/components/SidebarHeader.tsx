@@ -1,4 +1,4 @@
-import React from 'react';
+// React import not needed for this component
 import SearchBar from './SearchBar';
 import { NotificationIcon } from './ui/notification-icon';
 import { useNotifications } from './NotificationProvider';
