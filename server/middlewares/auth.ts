@@ -5,25 +5,10 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import { User } from '@shared/schema';
 import logger from '../utils/logger';
 
-// Interface for user object with admin flag
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  isAdmin?: boolean;
-  [key: string]: any;
-}
-
-// Add user to request object
-declare global {
-  namespace Express {
-    interface Request {
-      user?: User;
-    }
-  }
-}
+// User type is declared in server/types/session.d.ts
 
 /**
  * Check if user is authenticated

@@ -1,7 +1,17 @@
+import { User } from '@shared/schema';
+
+// Session type declarations for express-session
 declare module 'express-session' {
   interface SessionData {
     likes: { [postId: string]: boolean };
     userReactions: { [postId: string]: 'like' | 'dislike' | null };
+    anonymousBookmarks?: Record<string, {
+      notes?: string;
+      tags?: string[];
+      lastPosition?: string;
+      createdAt?: string;
+    }>;
+    csrfToken?: string;
     user?: {
       id: number;
       email: string;
@@ -11,6 +21,12 @@ declare module 'express-session' {
       isAdmin: boolean;
       isVerified?: boolean;
     };
-    // Session types for bookmarks defined in shared/types/session.d.ts
+  }
+}
+
+// Express Request type declaration
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: User;
   }
 }
