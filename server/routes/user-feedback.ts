@@ -41,7 +41,7 @@ export function registerUserFeedbackRoutes(app: express.Express) {
    * GET /api/user/feedback/:id
    * Retrieves a specific feedback submission
    */
-  app.get('/api/user/feedback/:id', (req: Request, res: Response) => {
+  app.get('/api/user/feedback/:id', (_req: Request, res: Response) => {
     try {
       // For now, return empty object - implement actual feedback retrieval later
       const feedback = null;

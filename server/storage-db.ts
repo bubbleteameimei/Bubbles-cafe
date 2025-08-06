@@ -2,27 +2,20 @@ import { db } from "./db";
 import { eq, desc, and, or, sql, like } from "drizzle-orm";
 import {
   users, posts, comments, bookmarks, sessions, contactMessages, userFeedback,
-  newsletterSubscriptions, reportedContent, commentReplies, writingChallenges,
-  challengeEntries, contentProtection, authorTips, webhooks, analytics, siteSettings,
-  adminNotifications, userProgress, siteAnalytics, performanceMetrics, userPrivacySettings,
-  readingProgress, resetTokens, secretProgress, authorStats,
+  newsletterSubscriptions, readingProgress, resetTokens, secretProgress, authorStats, analytics, userPrivacySettings, siteSettings,
   type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment,
   type Bookmark, type InsertBookmark, type Session, type InsertSession,
   type ContactMessage, type InsertContactMessage, type UserFeedback, type InsertUserFeedback,
-  type NewsletterSubscription, type InsertNewsletterSubscription, type ReportedContent,
-  type InsertReportedContent, type CommentReply, type InsertCommentReply,
-  type WritingChallenge, type InsertWritingChallenge, type ChallengeEntry, type InsertChallengeEntry,
-  type ContentProtection, type InsertContentProtection, type AuthorTip, type InsertAuthorTip,
-  type Webhook, type InsertWebhook, type Analytics, type InsertAnalytics,
-  type SiteSetting, type InsertSiteSetting, type AdminNotification, type InsertAdminNotification,
-  type UserProgress, type InsertUserProgress, type SiteAnalytics, type InsertSiteAnalytics,
-  type PerformanceMetric, type InsertPerformanceMetric, type UserPrivacySettings,
-  type InsertUserPrivacySettings, type ReadingProgress, type InsertProgress,
+  type NewsletterSubscription, type InsertNewsletterSubscription,
+  type ReadingProgress, type InsertProgress,
   type ResetToken, type InsertResetToken, type SecretProgress, type InsertSecretProgress,
-  type AuthorStats, type InsertAuthorStats
+  type AuthorStats, type Analytics
 } from "@shared/schema";
 
 import * as bcrypt from 'bcryptjs';
+
+// Export the db instance for use in other files
+export { db };
 
 // Storage interface definition with all required methods
 export interface IStorage {
@@ -31,7 +24,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(userData: InsertUser): Promise<User>;
-  updateUser(id: number, userData: Partial<InsertUser>): Promise<User>;
+  updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined>;
   deleteUser(id: number): Promise<boolean>;
   
   // Post management
@@ -39,13 +32,13 @@ export interface IStorage {
   getPostBySlug(slug: string): Promise<Post | undefined>;
   getPosts(options?: any): Promise<{ posts: Post[]; total: number }>;
   createPost(postData: InsertPost): Promise<Post>;
-  updatePost(id: number, postData: Partial<InsertPost>): Promise<Post>;
+  updatePost(id: number, postData: Partial<InsertPost>): Promise<Post | undefined>;
   deletePost(id: number): Promise<boolean>;
   
   // Comment management
   getCommentsByPostId(postId: number): Promise<Comment[]>;
   createComment(commentData: InsertComment): Promise<Comment>;
-  updateComment(id: number, commentData: Partial<InsertComment>): Promise<Comment>;
+  updateComment(id: number, commentData: Partial<InsertComment>): Promise<Comment | undefined>;
   deleteComment(id: number): Promise<boolean>;
   
   // Newsletter management
@@ -64,6 +57,39 @@ export interface IStorage {
   getSiteAnalytics(): Promise<any>;
   recordAnalytics(postId: number, data: Partial<Analytics>): Promise<void>;
   getPostAnalytics(postId: number): Promise<Analytics | undefined>;
+  
+  // Performance metrics
+  storePerformanceMetric(metric: any): Promise<void>;
+  getAnalyticsSummary(): Promise<any>;
+  
+  // Admin methods
+  getAdminStats(): Promise<any>;
+  getAdminInfo(): Promise<any>;
+  getSiteSettingByKey(key: string): Promise<any>;
+  setSiteSetting(key: string, value: string, category?: string, description?: string): Promise<void>;
+  getAllSiteSettings(): Promise<any[]>;
+  getPostCount(): Promise<number>;
+  getRecentActivity(limit: number): Promise<any[]>;
+  logActivity(activity: any): Promise<void>;
+  getUnreadAdminNotifications(): Promise<any[]>;
+  markNotificationAsRead(id: number): Promise<void>;
+  getRecentActivityLogs(limit: number): Promise<any[]>;
+  
+  // Analytics methods
+  getDeviceDistribution(): Promise<any>;
+  getPerformanceMetricsByType(type: string): Promise<any[]>;
+  getUniqueUserCount(): Promise<number>;
+  getActiveUserCount(): Promise<number>;
+  getReturningUserCount(): Promise<number>;
+  
+  // Content methods
+  getRecentPosts(): Promise<any[]>;
+  getRecommendedPosts(postId: number, limit: number): Promise<any[]>;
+  
+  // Feedback methods
+  submitFeedback(feedback: any): Promise<any>;
+  updateFeedbackStatus(id: number, status: string): Promise<any>;
+  getAllFeedback(limit?: number, status?: string): Promise<any[]>;
   
   // Other methods
   getContactMessages(): Promise<any[]>;
@@ -580,6 +606,227 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
     
     return recommendations;
+  }
+
+  async storePerformanceMetric(metric: any): Promise<void> {
+    // Simple implementation - just log the metric for now
+    console.log('Performance metric:', metric);
+    // TODO: Implement actual storage in performance_metrics table
+  }
+
+  async getAnalyticsSummary(): Promise<any> {
+    return new Promise((resolve) => {
+      db.select({ count: sql<number>`count(*)` }).from(users)
+        .then(totalUsersResult => {
+          db.select({ count: sql<number>`count(*)` }).from(posts)
+            .then(totalPostsResult => {
+              db.select({ count: sql<number>`count(*)` }).from(comments)
+                .then(totalCommentsResult => {
+                  resolve({
+                    totalUsers: totalUsersResult[0]?.count || 0,
+                    totalPosts: totalPostsResult[0]?.count || 0,
+                    totalComments: totalCommentsResult[0]?.count || 0,
+                    timestamp: new Date().toISOString()
+                  });
+                })
+                .catch(error => {
+                  console.error('Error getting total comments:', error);
+                  resolve({
+                    totalUsers: totalUsersResult[0]?.count || 0,
+                    totalPosts: totalPostsResult[0]?.count || 0,
+                    totalComments: 0,
+                    timestamp: new Date().toISOString()
+                  });
+                });
+            })
+            .catch(error => {
+              console.error('Error getting total posts:', error);
+              resolve({
+                totalUsers: totalUsersResult[0]?.count || 0,
+                totalPosts: 0,
+                totalComments: 0,
+                timestamp: new Date().toISOString()
+              });
+            });
+        })
+        .catch(error => {
+          console.error('Error getting total users:', error);
+          resolve({
+            totalUsers: 0,
+            totalPosts: 0,
+            totalComments: 0,
+            timestamp: new Date().toISOString()
+          });
+        });
+    });
+  }
+
+  async getAdminStats(): Promise<any> {
+    // Placeholder for admin stats logic
+    return { totalUsers: 0, totalPosts: 0, totalComments: 0 };
+  }
+
+  async getAdminInfo(): Promise<any> {
+    // Placeholder for admin info logic
+    return { siteName: 'My Blog', description: 'A simple blog application' };
+  }
+
+  async getSiteSettingByKey(key: string): Promise<any> {
+    const [setting] = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.key, key));
+    
+    return setting || null;
+  }
+
+  async setSiteSetting(key: string, value: string, category?: string, description?: string): Promise<void> {
+    await db
+      .insert(siteSettings)
+      .values({ 
+        key, 
+        value, 
+        category: category || 'general',
+        description: description || null
+      })
+      .onConflictDoUpdate({
+        target: [siteSettings.key],
+        set: { 
+          value, 
+          category: category || 'general',
+          description: description || null
+        }
+      });
+  }
+
+  async getAllSiteSettings(): Promise<any[]> {
+    return await db
+      .select()
+      .from(siteSettings);
+  }
+
+  async getPostCount(): Promise<number> {
+    const [count] = await db.select({ count: sql<number>`count(*)` }).from(posts);
+    return count?.count || 0;
+  }
+
+  async getRecentActivity(limit: number): Promise<any[]> {
+    return await db
+      .select()
+      .from(userFeedback)
+      .orderBy(desc(userFeedback.createdAt))
+      .limit(limit);
+  }
+
+  async logActivity(activity: any): Promise<void> {
+    await db
+      .insert(userFeedback)
+      .values({
+        type: activity.type || 'activity',
+        content: activity.content || JSON.stringify(activity),
+        status: 'pending',
+        category: activity.category || 'system',
+        metadata: activity.metadata || {}
+      });
+  }
+
+  async getUnreadAdminNotifications(): Promise<any[]> {
+    return await db
+      .select()
+      .from(userFeedback)
+      .where(and(
+        eq(userFeedback.category, 'admin'),
+        eq(userFeedback.status, 'pending')
+      ))
+      .orderBy(desc(userFeedback.createdAt));
+  }
+
+  async markNotificationAsRead(id: number): Promise<void> {
+    await db
+      .update(userFeedback)
+      .set({ status: 'reviewed' })
+      .where(eq(userFeedback.id, id));
+  }
+
+  async getRecentActivityLogs(limit: number): Promise<any[]> {
+    return await db
+      .select()
+      .from(userFeedback)
+      .orderBy(desc(userFeedback.createdAt))
+      .limit(limit);
+  }
+
+  async getDeviceDistribution(): Promise<any> {
+    // Placeholder for device distribution logic
+    return [];
+  }
+
+  async getPerformanceMetricsByType(type: string): Promise<any[]> {
+    // Placeholder for performance metrics by type logic
+    return [];
+  }
+
+  async getUniqueUserCount(): Promise<number> {
+    const [count] = await db.select({ count: sql<number>`count(DISTINCT "user_id")` }).from(userFeedback);
+    return count?.count || 0;
+  }
+
+  async getActiveUserCount(): Promise<number> {
+    // Placeholder for active user count logic
+    return 0;
+  }
+
+  async getReturningUserCount(): Promise<number> {
+    // Placeholder for returning user count logic
+    return 0;
+  }
+
+  async getRecentPosts(): Promise<any[]> {
+    return await db
+      .select()
+      .from(posts)
+      .orderBy(desc(posts.createdAt))
+      .limit(10);
+  }
+
+  async getRecommendedPosts(postId: number, limit: number): Promise<any[]> {
+    // Placeholder for recommended posts logic
+    return [];
+  }
+
+  async submitFeedback(feedback: any): Promise<any> {
+    const [f] = await db
+      .insert(userFeedback)
+      .values(feedback)
+      .returning();
+    
+    return f;
+  }
+
+  async updateFeedbackStatus(id: number, status: string): Promise<any> {
+    const [f] = await db
+      .update(userFeedback)
+      .set({ status })
+      .where(eq(userFeedback.id, id))
+      .returning();
+    
+    return f;
+  }
+
+  async getAllFeedback(limit?: number, status?: string): Promise<any[]> {
+    let query = db.select().from(userFeedback);
+    
+    if (status) {
+      query = query.where(eq(userFeedback.status, status));
+    }
+    
+    query = query.orderBy(desc(userFeedback.createdAt));
+    
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    return await query;
   }
 }
 

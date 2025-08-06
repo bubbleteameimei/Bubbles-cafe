@@ -63,7 +63,7 @@ export async function getPostsRecommendations(req: Request, res: Response) {
     
     
     // Return simplified metadata for display
-    const result = recommendedPosts.map(post => ({
+    const result = recommendedPosts.map((post: any) => ({
       ...post,
       readingTime: 5, // Default time
       authorName: 'Anonymous',

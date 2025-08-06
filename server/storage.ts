@@ -211,23 +211,22 @@ export class DatabaseStorage implements IStorage {
   async getPosts(page: number = 1, limit: number = 20, filterOptions: any = {}): Promise<{ posts: Post[]; hasMore: boolean }> {
     try {
       const offset = (page - 1) * limit;
-      
-      let baseQuery = db
+
+      let query = db
         .select()
         .from(posts)
         .orderBy(desc(posts.createdAt))
         .limit(limit + 1)
         .offset(offset);
-      
-      let finalQuery = baseQuery;
+
       if (filterOptions.isAdminPost !== undefined) {
-        finalQuery = baseQuery.where(eq(posts.isAdminPost, filterOptions.isAdminPost));
+        query = query.where(eq(posts.isAdminPost, filterOptions.isAdminPost));
       }
-      
-      const result = await finalQuery;
+
+      const result = await query;
       const hasMore = result.length > limit;
       const postsResult = hasMore ? result.slice(0, limit) : result;
-      
+
       return {
         posts: postsResult,
         hasMore
@@ -354,7 +353,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async voteOnComment(commentId: number, vote: string, _userId?: number): Promise<{ success: boolean; message: string }> {
+  async voteOnComment(_commentId: number, vote: string, _userId?: number): Promise<{ success: boolean; message: string }> {
     try {
       // Basic vote validation
       if (!['upvote', 'downvote', 'neutral'].includes(vote)) {
@@ -517,9 +516,12 @@ export class DatabaseStorage implements IStorage {
 
   async updateReportedContent(id: number, status: string): Promise<any> {
     try {
+      // Since contactMessages doesn't have a status field, we'll update the metadata instead
       const [updatedReport] = await db
         .update(contactMessages)
-        .set({ status })
+        .set({ 
+          metadata: sql`jsonb_set(metadata, '{status}', ${status})`
+        })
         .where(eq(contactMessages.id, id))
         .returning();
       return updatedReport || undefined;

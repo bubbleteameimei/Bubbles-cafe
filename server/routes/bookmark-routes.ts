@@ -218,7 +218,7 @@ export function registerBookmarkRoutes(app: Application): void {
   app.use('/api/bookmarks', bookmarkRoutes);
   
   // Create a special middleware that disables secondary CSRF checks for these routes
-  const bypassSecondaryCSRF = (req: Request, _res: Response, next: NextFunction) => {
+  const bypassSecondaryCSRF = (_req: Request, _res: Response, next: NextFunction) => {
     // Bypass CSRF for this specific route
     next();
   };

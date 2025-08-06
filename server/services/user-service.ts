@@ -1,9 +1,10 @@
 import { db } from "../storage-db";
+import { eq, desc, sql, like, or } from "drizzle-orm";
 import { users } from "@shared/schema";
-import { eq, sql, desc, like } from "drizzle-orm";
-
-import { userLogger } from '../utils/debug-logger';
+import { createLogger } from "../utils/debug-logger";
 import { handleDatabaseError } from '../utils/error-handler';
+
+const userLogger = createLogger('UserService');
 
 // Define proper return types for different query contexts
 type UserProfile = {
@@ -144,6 +145,8 @@ export class UserService {
 
       const [newUser] = await db.insert(users)
         .values({
+          username: insertData.username,
+          email: insertData.email,
           ...insertData,
           metadata: insertData.metadata || {},
           isAdmin: insertData.isAdmin || false,

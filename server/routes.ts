@@ -2401,18 +2401,14 @@ export function registerRoutes(app: Express): Server {
       if (postId) {
         try {
           const result = await db.query.posts.findFirst({
-            where: eq(posts.id, postId)
+            where: eq(posts.id, postId as number)
           });
           
           if (!result) {
-            
             return res.status(404).json({ message: "Post not found" });
           }
-          
-          
         } catch (dbError) {
           console.error("Database error verifying post:", dbError);
-          
           // Continue execution even if post verification fails
         }
       }
