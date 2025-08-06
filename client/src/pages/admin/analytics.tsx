@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { format, parseISO } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ActivityTimeline, ActivityLog } from "@/components/admin/activity-timeline";
+import { User } from '../../../shared/schema';
 
 interface SiteAnalytics {
   totalViews: number;
@@ -34,10 +35,11 @@ interface Notification {
 
 export default function AdminAnalyticsPage() {
   const { user } = useAuth();
+  const typedUser = user as User | null;
   const queryClient = useQueryClient();
 
   // Redirect if not admin
-  if (!user?.isAdmin) {
+  if (!typedUser?.isAdmin) {
     return <Redirect to="/" />;
   }
 
