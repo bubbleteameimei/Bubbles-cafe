@@ -1,22 +1,4 @@
-/**
- * User-related type definitions
- */
-
-/**
- * User interface representing the application user
- */
-export interface User {
-  id: number;
-  username: string;
-  email: string;
-  displayName?: string;
-  bio?: string;
-  avatarUrl?: string;
-  isAdmin: boolean;
-  createdAt: string;
-  lastLogin?: string;
-  metadata?: UserMetadata;
-}
+export { User } from '../../../shared/schema';
 
 /**
  * User metadata interface for additional user-related information
