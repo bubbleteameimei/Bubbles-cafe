@@ -1,23 +1,7 @@
 import express from "express";
 import { createServer } from "http";
 import crypto from "crypto";
-// Session type declarations
-declare module 'express-session' {
-  interface SessionData {
-    likes: { [postId: string]: boolean };
-    userReactions: { [postId: string]: 'like' | 'dislike' | null };
-    csrfToken?: string;
-    user?: {
-      id: number;
-      email: string;
-      username: string;
-      fullName?: string;
-      avatar?: string;
-      isAdmin: boolean;
-      isVerified?: boolean;
-    };
-  }
-}
+// Session types are declared in server/types/session.d.ts
 import { setupVite, serveStatic } from "./vite";
 import { registerRoutes } from "./routes";
 import { setNeonAsDefault } from "./neon-config"; // Set Neon as default database

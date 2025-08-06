@@ -1177,7 +1177,7 @@ export function registerRoutes(app: Express): Server {
       
       
       // Use the numeric post ID from the post record
-      const comments = await storage.getComments(post.id);
+              const comments = await storage.getCommentsByPost(post.id);
       
       res.json(comments || []);
     } catch (error) {

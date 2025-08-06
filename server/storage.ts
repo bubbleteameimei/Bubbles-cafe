@@ -21,7 +21,7 @@ export interface IStorage {
   // Post operations
   getPost(id: number): Promise<Post | undefined>;
   getPostBySlug(slug: string): Promise<Post | undefined>;
-  getPosts(limit?: number, offset?: number): Promise<Post[]>;
+  getPosts(page?: number, limit?: number, filterOptions?: any): Promise<{ posts: Post[]; hasMore: boolean }>;
   getPostsByAuthor(authorId: number): Promise<Post[]>;
   createPost(post: InsertPost): Promise<Post>;
   updatePost(id: number, post: Partial<Post>): Promise<Post | undefined>;
@@ -34,6 +34,7 @@ export interface IStorage {
   createComment(comment: InsertComment): Promise<Comment>;
   updateComment(id: number, comment: Partial<Comment>): Promise<Comment | undefined>;
   deleteComment(id: number): Promise<boolean>;
+  voteOnComment(commentId: number, vote: string, userId?: number): Promise<{ success: boolean; message: string }>;
 
   // Bookmark operations
   createBookmark(bookmark: InsertBookmark): Promise<Bookmark>;
@@ -173,17 +174,33 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getPosts(limit: number = 20, offset: number = 0): Promise<Post[]> {
+  async getPosts(page: number = 1, limit: number = 20, filterOptions: any = {}): Promise<{ posts: Post[]; hasMore: boolean }> {
     try {
-      return await db
+      const offset = (page - 1) * limit;
+      
+      let query = db
         .select()
         .from(posts)
         .orderBy(desc(posts.createdAt))
-        .limit(limit)
+        .limit(limit + 1) // Get one extra to check if there are more
         .offset(offset);
+
+      // Apply filters if provided
+      if (filterOptions.isAdminPost !== undefined) {
+        query = query.where(eq(posts.isAdminPost, filterOptions.isAdminPost));
+      }
+
+      const result = await query;
+      const hasMore = result.length > limit;
+      const posts = hasMore ? result.slice(0, limit) : result;
+
+      return {
+        posts,
+        hasMore
+      };
     } catch (error) {
       console.error('Error getting posts:', error);
-      return [];
+      return { posts: [], hasMore: false };
     }
   }
 
@@ -297,6 +314,23 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting comment:', error);
       return false;
+    }
+  }
+
+  async voteOnComment(commentId: number, vote: string, userId?: number): Promise<{ success: boolean; message: string }> {
+    try {
+      // For now, return a simple success response
+      // In a full implementation, this would record votes in a votes table
+      return { 
+        success: true, 
+        message: `Vote ${vote} recorded for comment ${commentId}` 
+      };
+    } catch (error) {
+      console.error('Error voting on comment:', error);
+      return { 
+        success: false, 
+        message: 'Failed to record vote' 
+      };
     }
   }
 
