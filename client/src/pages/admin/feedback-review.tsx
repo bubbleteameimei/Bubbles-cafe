@@ -19,9 +19,10 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { FeedbackDetails, FeedbackItem } from '@/components/feedback/FeedbackDetails';
+import { FeedbackDetails } from '@/components/feedback/FeedbackDetails';
 import { FeedbackAnalytics } from '@/components/feedback/FeedbackAnalytics';
 import { FeedbackCategoryFilter, FeedbackCategory, FeedbackStatus } from '@/components/feedback/FeedbackCategoryFilter';
+import { FeedbackWithMetadata } from '@/types/feedback';
 import { toast } from 'sonner';
 
 export default function FeedbackReviewPage() {
@@ -91,8 +92,8 @@ export default function FeedbackReviewPage() {
   });
 
   // Handle status change
-  const handleStatusChange = (id: number, status: FeedbackStatus) => {
-    updateStatusMutation.mutate({ id, status });
+  const handleStatusChange = (id: number, status: string) => {
+    updateStatusMutation.mutate({ id, status: status as FeedbackStatus });
   };
 
   // Handle adding note
@@ -143,7 +144,7 @@ export default function FeedbackReviewPage() {
   })();
 
   // Sample data for development - this would normally come from the API
-  const sampleFeedbackData: FeedbackItem[] = [
+  const sampleFeedbackData: FeedbackWithMetadata[] = [
     {
       id: 1,
       content: "I found a bug in the comments section. When I try to edit my comment, it doesn't save properly.",
@@ -152,9 +153,13 @@ export default function FeedbackReviewPage() {
       page: "/stories/the-haunting",
       category: "User Interface",
       status: "pending",
-      createdAt: "2025-03-14T10:30:00Z",
+      createdAt: new Date("2025-03-14T10:30:00Z"),
       metadata: {
-        browser: "Chrome 121.0.6167.85",
+        browser: {
+          name: "Chrome",
+          version: "121.0.6167.85",
+          userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+        },
         operatingSystem: "Windows 11",
         screenResolution: "1920x1080",
         userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
@@ -170,9 +175,13 @@ export default function FeedbackReviewPage() {
       page: "/settings/display",
       category: "User Experience",
       status: "reviewed",
-      createdAt: "2025-03-13T15:45:00Z",
+      createdAt: new Date("2025-03-13T15:45:00Z"),
       metadata: {
-        browser: "Firefox 123.0",
+        browser: {
+          name: "Firefox",
+          version: "123.0",
+          userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15"
+        },
         operatingSystem: "macOS 13.4",
         screenResolution: "2560x1600",
         userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
@@ -188,9 +197,13 @@ export default function FeedbackReviewPage() {
       page: "/reader/the-shadow-in-the-corner",
       category: "Feature Request",
       status: "resolved",
-      createdAt: "2025-03-12T09:15:00Z",
+      createdAt: new Date("2025-03-12T09:15:00Z"),
       metadata: {
-        browser: "Safari 17.2",
+        browser: {
+          name: "Safari",
+          version: "17.2",
+          userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1"
+        },
         operatingSystem: "iOS 17.3",
         screenResolution: "1170x2532",
         userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1",
@@ -207,9 +220,13 @@ export default function FeedbackReviewPage() {
       page: "/reader/whispers-in-the-dark",
       category: "Advertisements",
       status: "rejected",
-      createdAt: "2025-03-11T22:05:00Z",
+      createdAt: new Date("2025-03-11T22:05:00Z"),
       metadata: {
-        browser: "Edge 121.0.2277.83",
+        browser: {
+          name: "Edge",
+          version: "121.0.2277.83",
+          userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.2277.83"
+        },
         operatingSystem: "Windows 10",
         screenResolution: "1366x768",
         userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.2277.83",
@@ -226,9 +243,13 @@ export default function FeedbackReviewPage() {
       page: "/reader/the-empty-house",
       category: "Accessibility",
       status: "resolved",
-      createdAt: "2025-03-10T14:20:00Z",
+      createdAt: new Date("2025-03-10T14:20:00Z"),
       metadata: {
-        browser: "Chrome 121.0.6167.85",
+        browser: {
+          name: "Chrome",
+          version: "121.0.6167.85",
+          userAgent: "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.85 Mobile Safari/537.36"
+        },
         operatingSystem: "Android 14",
         screenResolution: "1080x2400",
         userAgent: "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.85 Mobile Safari/537.36",
@@ -376,12 +397,12 @@ export default function FeedbackReviewPage() {
         <TabsContent value="bugs" className="space-y-4">
           {view === 'analytics' ? (
             <FeedbackAnalytics 
-              feedbackItems={displayedFeedback.filter((item: FeedbackItem) => item.type === 'bug')} 
+              feedbackItems={displayedFeedback.filter((item: FeedbackWithMetadata) => item.type === 'bug')} 
             />
           ) : (
             filteredAndSortedFeedback
-              .filter((item: FeedbackItem) => item.type === 'bug')
-              .map((item: FeedbackItem) => (
+              .filter((item: FeedbackWithMetadata) => item.type === 'bug')
+              .map((item: FeedbackWithMetadata) => (
                 <FeedbackDetails 
                   key={item.id}
                   feedback={item}
@@ -395,12 +416,12 @@ export default function FeedbackReviewPage() {
         <TabsContent value="suggestions" className="space-y-4">
           {view === 'analytics' ? (
             <FeedbackAnalytics 
-              feedbackItems={displayedFeedback.filter((item: FeedbackItem) => item.type === 'suggestion')} 
+              feedbackItems={displayedFeedback.filter((item: FeedbackWithMetadata) => item.type === 'suggestion')} 
             />
           ) : (
             filteredAndSortedFeedback
-              .filter((item: FeedbackItem) => item.type === 'suggestion')
-              .map((item: FeedbackItem) => (
+              .filter((item: FeedbackWithMetadata) => item.type === 'suggestion')
+              .map((item: FeedbackWithMetadata) => (
                 <FeedbackDetails 
                   key={item.id}
                   feedback={item}
@@ -414,12 +435,12 @@ export default function FeedbackReviewPage() {
         <TabsContent value="praise" className="space-y-4">
           {view === 'analytics' ? (
             <FeedbackAnalytics 
-              feedbackItems={displayedFeedback.filter((item: FeedbackItem) => item.type === 'praise')} 
+              feedbackItems={displayedFeedback.filter((item: FeedbackWithMetadata) => item.type === 'praise')} 
             />
           ) : (
             filteredAndSortedFeedback
-              .filter((item: FeedbackItem) => item.type === 'praise')
-              .map((item: FeedbackItem) => (
+              .filter((item: FeedbackWithMetadata) => item.type === 'praise')
+              .map((item: FeedbackWithMetadata) => (
                 <FeedbackDetails 
                   key={item.id}
                   feedback={item}

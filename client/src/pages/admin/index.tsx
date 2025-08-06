@@ -11,13 +11,15 @@ import {
   Tag,
   Palette
 } from "lucide-react";
+import { User } from '../../../../shared/schema';
 
 export default function AdminPage() {
   const { user } = useAuth();
+  const typedUser = user as User | null;
   const [, navigate] = useLocation();
 
   // Redirect if not admin
-  if (!user?.isAdmin) {
+  if (!typedUser?.isAdmin) {
     return <Redirect to="/" />;
   }
 

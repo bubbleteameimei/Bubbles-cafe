@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Globe, Database, Activity } from "lucide-react";
-import { User } from "../../../shared/schema";
+import { User } from '../../../../shared/schema';
 
 export default function WordPressSyncPage() {
   const { user } = useAuth();

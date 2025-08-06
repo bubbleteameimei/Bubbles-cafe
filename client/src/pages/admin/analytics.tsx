@@ -221,13 +221,7 @@ export default function AdminAnalyticsPage() {
                 <p className="text-sm text-muted-foreground text-center py-4">No activity logs found</p>
               ) : (
                 <ActivityTimeline 
-                  activities={activityLogs.map(log => ({
-                    id: log.id,
-                    timestamp: log.timestamp,
-                    action: log.action,
-                    performedBy: log.performedBy,
-                    details: log.details
-                  }))}
+                  activities={activityLogs}
                   className="pb-4"
                 />
               )}
