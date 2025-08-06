@@ -4,7 +4,7 @@
  * Admin page for testing email functionality.
  */
 
-import React from 'react';
+
 import { Helmet } from 'react-helmet';
 import EmailServiceTest from '@/components/admin/EmailServiceTest';
 import AdminLayout from '@/components/layout/admin-layout';

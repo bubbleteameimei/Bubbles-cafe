@@ -1,55 +1,19 @@
 "use client"
 
-import React, { memo, useCallback } from "react"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { useToast } from "@/hooks/use-toast"
-import { useSilentPingToggle } from "@/utils/trigger-silent-ping"
-import { Button } from "@/components/ui/button"
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-} from "@/components/ui/form"
-import { Switch } from "@/components/ui/switch"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { memo, useState, useEffect } from "react";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Bell, BellOff, Clock, Mail, MessageSquare, Shield, Zap } from "lucide-react";
 
-// Schema defined outside component to prevent recreation on render
-const NotificationFormSchema = z.object({
-  story_updates: z.boolean().default(true),
-  community_activity: z.boolean().default(true),
-  security_alerts: z.boolean(),
-  reading_reminders: z.boolean().default(false),
-  recommendations: z.boolean().default(true),
-  preferred_time: z.string().optional(),
-  timezone: z.string().optional(),
-})
-
-// Pre-defined default values to prevent recreation
-const defaultFormValues = {
-  security_alerts: true,
-  story_updates: true,
-  community_activity: true,
-  reading_reminders: false,
-  recommendations: true,
-  preferred_time: "evening",
-  timezone: "pst"
-}
-
-// Memoized toggle switch component to reduce re-renders
-const ToggleSwitch = memo(({ checked, onChange, disabled = false }: { 
+// Memoized toggle switch component for performance
+const ToggleSwitch = memo(({ 
+  checked, 
+  onChange, 
+  disabled = false 
+}: { 
   checked: boolean; 
   onChange: (checked: boolean) => void;
   disabled?: boolean;

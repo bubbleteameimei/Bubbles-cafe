@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback, useMemo } from 'react';
+
 
 // Define types for music context
 export type PlaybackContext = 'general' | 'story-reading' | 'gallery' | 'admin' | 'settings' | 'reader' | 'game' | 'homepage';

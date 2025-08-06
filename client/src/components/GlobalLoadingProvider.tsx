@@ -1,85 +1,40 @@
-import React, { createContext, useContext, useState, useRef, useCallback, ReactNode } from 'react';
-import { LoadingScreen } from './ui/loading-screen';
+import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { Loader2 } from "lucide-react";
 
-interface LoadingContextType {
+interface GlobalLoadingContextType {
   isLoading: boolean;
   showLoading: (message?: string) => void;
   hideLoading: () => void;
-  withLoading: <T,>(promise: Promise<T>, message?: string) => Promise<T>;
-  setLoadingMessage: (message: string) => void;
-  suppressSkeletons: boolean;
+  loadingMessage: string;
 }
 
-const LoadingContext = createContext<LoadingContextType>({
-  isLoading: false,
-  showLoading: () => {},
-  hideLoading: () => {},
-  withLoading: <T,>(promise: Promise<T>): Promise<T> => promise,
-  setLoadingMessage: () => {},
-  suppressSkeletons: false
-});
+const GlobalLoadingContext = createContext<GlobalLoadingContextType | undefined>(undefined);
 
-export function useLoading() {
-  return useContext(LoadingContext);
-}
-
-export default function GlobalLoadingProvider({ children }: { children: ReactNode }) {
+export function GlobalLoadingProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
-  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState('Loading...');
-  
-  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const preventRapidShowRef = useRef(false);
-  
-  const PREVENT_RAPID_HIDE_DURATION = 300;
+  const [loadingMessage, setLoadingMessage] = useState("");
 
-  const showLoading = useCallback((message?: string) => {
-    if (message) {
-      setLoadingMessage(message);
-    }
+  const showLoading = useCallback((message = "Loading...") => {
     setIsLoading(true);
-    setShowLoadingScreen(true);
+    setLoadingMessage(message);
   }, []);
 
   const hideLoading = useCallback(() => {
     setIsLoading(false);
-    if (loadingTimerRef.current) {
-      clearTimeout(loadingTimerRef.current);
-    }
-    loadingTimerRef.current = setTimeout(() => {
-      setShowLoadingScreen(false);
-    }, PREVENT_RAPID_HIDE_DURATION);
-  }, []);
-
-  const withLoading = useCallback(async <T,>(promise: Promise<T>, message?: string): Promise<T> => {
-    showLoading(message);
-    try {
-      const result = await promise;
-      hideLoading();
-      return result;
-    } catch (error) {
-      hideLoading();
-      throw error;
-    }
-  }, [showLoading, hideLoading]);
-
-  const handleAnimationComplete = useCallback(() => {
-    setShowLoadingScreen(false);
+    setLoadingMessage("");
   }, []);
 
   return (
-    <LoadingContext.Provider 
-      value={{ 
-        isLoading, 
-        showLoading, 
-        hideLoading, 
-        withLoading,
-        setLoadingMessage,
-        suppressSkeletons: isLoading
-      }}
-    >
+    <GlobalLoadingContext.Provider value={{ isLoading, showLoading, hideLoading, loadingMessage }}>
       {children}
-      {showLoadingScreen && <LoadingScreen onAnimationComplete={handleAnimationComplete} />}
-    </LoadingContext.Provider>
+      {isLoading && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-card border border-border rounded-lg p-6 shadow-lg flex items-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span className="text-sm font-medium">{loadingMessage}</span>
+          </div>
+        </div>
+      )}
+    </GlobalLoadingContext.Provider>
   );
 }

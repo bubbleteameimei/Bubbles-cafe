@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Link } from 'wouter';
 import { ChevronLeft } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

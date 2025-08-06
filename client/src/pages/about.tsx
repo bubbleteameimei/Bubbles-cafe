@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+
 import { motion } from "framer-motion";
 import { SocialButtons } from "@/components/ui/social-buttons";
 // Add direct relative import for troubleshooting

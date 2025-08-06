@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+
 import SimplifiedErrorPage from '@/components/errors/SimplifiedErrorPage';
 
 /**

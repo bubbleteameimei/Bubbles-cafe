@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { AnalyticsWrapper } from './AnalyticsWrapper';
 import { useCookieCategory } from '@/hooks/use-cookie-category';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+
 import { useAuth } from '@/hooks/use-auth';
 import { useCookieConsent } from '@/hooks/use-cookie-consent';
 import { CookieCategory } from '@/lib/cookie-manager';

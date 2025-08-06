@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+
 import { CreepyTextGlitch } from './CreepyTextGlitch';
 
 interface Props {

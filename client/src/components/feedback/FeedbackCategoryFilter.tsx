@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react';
+
 import { Check, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 

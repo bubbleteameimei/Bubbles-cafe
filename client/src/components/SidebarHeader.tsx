@@ -1,4 +1,4 @@
-import React from 'react';
+
 import SearchBar from './SearchBar';
 import { NotificationIcon } from './ui/notification-icon';
 import { useNotifications } from '../contexts/notification-context';

@@ -1,6 +1,6 @@
 
 // React import removed as it's not needed in modern React
-import ReactMarkdown from 'react-markdown';
+
 import remarkGfm from 'remark-gfm';
 import { Card, CardContent, CardFooter } from './ui/card';
 import { Button } from './ui/button';

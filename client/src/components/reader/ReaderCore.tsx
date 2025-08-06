@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { usePerformanceMonitor } from "@/hooks/use-performance-monitor";

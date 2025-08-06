@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Redirect, useLocation } from "wouter";
