@@ -3,7 +3,7 @@ import { type Request, type Response, type NextFunction } from 'express';
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import * as crypto from 'crypto';
-import { db } from './db';
+// import { db } from './db'; // Unused import
 import { InsertResetToken } from "@shared/schema";
 
 import { emailService } from "./utils/email-service";
@@ -112,7 +112,7 @@ export function setupAuth(app: any) {
   }));
 
   // Add login endpoint with enhanced logging, remember me feature, and rate limiting
-  app.post("/api/auth/login", authRateLimiter, (req, res, next) => {
+  app.post("/api/auth/login", authRateLimiter, (req: Request, res: Response, next: NextFunction) => {
     authLogger.debug('Login request received', { 
       email: req.body.email,
       hasPassword: !!req.body.password,
@@ -138,7 +138,7 @@ export function setupAuth(app: any) {
         authLogger.debug('Remember me enabled, setting long session expiration');
       }
       
-      req.login(user, loginOptions, (err) => {
+      req.login(user, loginOptions, (err: any) => {
         if (err) {
           authLogger.error('Session creation error', { err: err instanceof Error ? err.message : 'Unknown error' });
           return next(err);
@@ -150,7 +150,7 @@ export function setupAuth(app: any) {
   });
 
   // Add other routes...
-  app.post("/api/auth/register", authRateLimiter, async (req, res) => {
+  app.post("/api/auth/register", authRateLimiter, async (req: Request, res: Response) => {
     try {
       authLogger.debug('Registration attempt', { email: req.body.email, username: req.body.username });
       let { email, password, username } = req.body;
@@ -203,44 +203,46 @@ export function setupAuth(app: any) {
       const { password_hash, ...safeUser } = user;
 
       // Log user in after registration
-      req.login(safeUser, (err) => {
+      req.login(safeUser, (err: any) => {
         if (err) {
           authLogger.error('Error logging in after registration', { err: err instanceof Error ? err.message : 'Unknown error' });
-          return res.status(500).json({ message: "Error logging in after registration" });
+          res.status(500).json({ message: "Error logging in after registration" });
+          return;
         }
         authLogger.info('Registration successful', { id: user.id, email });
-        return res.status(201).json(safeUser);
+        res.status(201).json(safeUser);
       });
+      return;
     } catch (error) {
       authLogger.error('Registration error', { error: error instanceof Error ? error.message : 'Unknown error' });
-      res.status(500).json({ message: "Error creating user" });
+      return res.status(500).json({ message: "Error creating user" });
     }
   });
 
-  app.post("/api/auth/logout", (req, res) => {
+  app.post("/api/auth/logout", (req: Request, res: Response) => {
     const userId = req.user?.id;
     authLogger.debug('Logout request received', { userId });
-    req.logout((err) => {
+    req.logout((err: any) => {
       if (err) {
         authLogger.error('Logout error', { err: err instanceof Error ? err.message : 'Unknown error' });
         return res.status(500).json({ message: "Error logging out" });
       }
       authLogger.info('Logout successful', { userId });
-      res.json({ message: "Logged out successfully" });
+      return res.json({ message: "Logged out successfully" });
     });
   });
 
-  app.get("/api/auth/user", (req, res) => {
+  app.get("/api/auth/user", (req: Request, res: Response) => {
     if (!req.isAuthenticated()) {
       authLogger.debug('Unauthenticated user info request');
       return res.status(401).json({ message: "Not authenticated" });
     }
     authLogger.debug('User info request', { id: req.user?.id });
-    res.json(req.user);
+    return res.json(req.user);
   });
   
   // Add social login endpoint with rate limiting
-  app.post("/api/auth/social-login", authRateLimiter, async (req, res) => {
+  app.post("/api/auth/social-login", authRateLimiter, async (req: Request, res: Response) => {
     try {
       authLogger.debug('Social login request received', { 
         provider: req.body.provider,
@@ -248,7 +250,7 @@ export function setupAuth(app: any) {
         socialId: req.body.socialId
       });
       
-      let { socialId, email, username, provider, photoURL, token } = req.body;
+      let { socialId, email, username, provider, photoURL } = req.body;
       
       if (!socialId || !email) {
         authLogger.warn('Missing social login fields', { socialId: !!socialId, email: !!email });
@@ -264,7 +266,7 @@ export function setupAuth(app: any) {
       
       if (!user) {
         // Create a new user if they don't exist
-        const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+        // const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8); // Unused variable
         
         authLogger.debug('Creating new user for social login', { email, provider });
         
@@ -320,18 +322,20 @@ export function setupAuth(app: any) {
       const { password_hash, ...safeUser } = user;
       
       // Log the user in using the session
-      req.login(safeUser, (err) => {
+      req.login(safeUser, (err: any) => {
         if (err) {
           authLogger.error('Session creation error during social login', { err: err instanceof Error ? err.message : 'Unknown error' });
-          return res.status(500).json({ message: "Error logging in with social account" });
+          res.status(500).json({ message: "Error logging in with social account" });
+          return;
         }
         
         authLogger.info('Social login successful', { id: user.id, provider });
-        return res.json(safeUser);
+        res.json(safeUser);
       });
+      return;
     } catch (error) {
       authLogger.error('Social login error', { error: error instanceof Error ? error.message : 'Unknown error' });
-      res.status(500).json({ message: "Error processing social login" });
+      return res.status(500).json({ message: "Error processing social login" });
     }
   });
 
@@ -411,7 +415,7 @@ export function setupAuth(app: any) {
   });
   
   // Test metadata endpoint - temporary for verification
-  app.get("/api/auth/test-metadata", async (req: Request, res: Response) => {
+  app.get("/api/auth/test-metadata", async (_req: Request, res: Response) => {
     try {
       // Create a unique username and email for this test
       const timestamp = Date.now();
@@ -446,7 +450,7 @@ export function setupAuth(app: any) {
       const metadata = retrievedUser.metadata || {};
       
       // Return verification results
-      res.json({
+      return res.json({
         success: true,
         message: "Metadata test successful",
         testUser,
@@ -460,7 +464,7 @@ export function setupAuth(app: any) {
       });
     } catch (error) {
       authLogger.error('Metadata test error', { error: error instanceof Error ? error.message : 'Unknown error' });
-      res.status(500).json({ 
+      return res.status(500).json({ 
         success: false,
         message: "Error testing metadata",
         error: String(error)

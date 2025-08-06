@@ -1,5 +1,5 @@
 import { Express, Request, Response, NextFunction } from "express";
-import { config } from "../shared/config";
+// import { config } from "../shared/config"; // Unused import
 
 /**
  * Sets up CORS for cross-domain deployment
@@ -42,7 +42,6 @@ export function setupCors(app: Express) {
     else if (origin && process.env.NODE_ENV !== 'production') {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
-      
     }
     // In production, only allow specified origins
     else if (origin && process.env.NODE_ENV === 'production') {
@@ -63,7 +62,8 @@ export function setupCors(app: Express) {
     
     // Handle preflight requests
     if (req.method === "OPTIONS") {
-      return res.status(200).end();
+      res.status(200).end();
+      return;
     }
     
     next();

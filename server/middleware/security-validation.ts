@@ -117,7 +117,7 @@ export async function validateSession(req: Request, res: Response, next: NextFun
       sessionId: req.sessionID,
       ip: req.ip,
       userAgent: req.get('User-Agent'),
-      storedFingerprint: req.session.fingerprint,
+      storedFingerprint: (req.session as any).fingerprint,
       currentFingerprint
     });
     
@@ -129,7 +129,7 @@ export async function validateSession(req: Request, res: Response, next: NextFun
   }
 
   // Set fingerprint for new sessions
-  if (!req.session.fingerprint) {
+  if (!(req.session as any).fingerprint) {
     (req.session as any).fingerprint = currentFingerprint;
   }
 
@@ -165,7 +165,7 @@ async function generateFingerprint(req: Request): Promise<string> {
 
 // Input sanitization middleware
 export function sanitizeInput(schema: z.ZodSchema) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     try {
       // Validate and sanitize request body
       if (req.body && Object.keys(req.body).length > 0) {
@@ -191,10 +191,11 @@ export function sanitizeInput(schema: z.ZodSchema) {
         error: error instanceof Error ? error.message : 'Unknown validation error'
       });
       
-      return res.status(400).json({
+      res.status(400).json({
         error: 'Invalid input data',
         details: error instanceof z.ZodError ? error.errors : undefined
       });
+      return;
     }
   };
 }
@@ -251,7 +252,7 @@ function sanitizeParams(params: any): any {
 }
 
 // SQL injection prevention
-export function preventSQLInjection(req: Request, res: Response, next: NextFunction) {
+export function preventSQLInjection(req: Request, res: Response, next: NextFunction): void {
   const sqlPatterns = [
     /(\bUNION\b.*\bSELECT\b)/i,
     /(\bSELECT\b.*\bFROM\b.*\bWHERE\b)/i,
@@ -299,7 +300,8 @@ export function preventSQLInjection(req: Request, res: Response, next: NextFunct
         data: JSON.stringify(input.data)
       });
       
-      return res.status(400).json({ error: 'Invalid request format' });
+      res.status(400).json({ error: 'Invalid request format' });
+      return;
     }
   }
 
@@ -307,7 +309,7 @@ export function preventSQLInjection(req: Request, res: Response, next: NextFunct
 }
 
 // XSS prevention
-export function preventXSS(req: Request, res: Response, next: NextFunction) {
+export function preventXSS(req: Request, _res: Response, next: NextFunction) {
   const xssPatterns = [
     /<script[^>]*>.*?<\/script>/gi,
     /<iframe[^>]*>.*?<\/iframe>/gi,
@@ -394,7 +396,7 @@ export const apiRateLimit = rateLimit({
 
 // Request size limiting
 export function limitRequestSize(maxSize: number = 10 * 1024 * 1024) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     const contentLength = parseInt(req.get('Content-Length') || '0', 10);
     
     if (contentLength > maxSize) {
@@ -405,7 +407,8 @@ export function limitRequestSize(maxSize: number = 10 * 1024 * 1024) {
         path: req.path
       });
       
-      return res.status(413).json({ error: 'Request too large' });
+      res.status(413).json({ error: 'Request too large' });
+      return;
     }
     
     next();

@@ -29,7 +29,7 @@ export {
 };
 
 // Other imports
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { Session } from 'express-session';
 
 // Define type for session with admin
@@ -67,11 +67,12 @@ export function applyPerformanceMiddleware(app: any, dbInstance?: any) {
 /**
  * Performance dashboard for monitoring application performance
  */
-function performanceDashboardHandler(req: Request, res: Response) {
+function performanceDashboardHandler(req: Request, res: Response): void {
   // Check for admin access
   const session = req.session as AdminSession;
   if (!session?.isAdmin) {
-    return res.status(403).json({ error: 'Admin access required' });
+    res.status(403).json({ error: 'Admin access required' });
+    return;
   }
   
   // Generate performance reports

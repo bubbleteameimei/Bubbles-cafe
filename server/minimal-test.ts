@@ -6,11 +6,11 @@ const PORT = 3002;
 const HOST = '0.0.0.0';
 
 // Add a simple test route
-app.get('/test', (req, res) => {
+app.get('/test', (_req, res) => {
   res.json({ message: 'Minimal server is working!' });
 });
 
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.json({ message: 'Server is running!' });
 });
 

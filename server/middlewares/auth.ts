@@ -5,7 +5,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { User } from '@shared/schema';
+// import { User } from '@shared/schema'; // Unused import
 import logger from '../utils/logger';
 
 // User type is declared in server/types/session.d.ts

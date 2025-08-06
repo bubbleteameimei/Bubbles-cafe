@@ -10,7 +10,7 @@ import { db } from "./db"; // Using the direct Neon database connection
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
 
-import { seedDatabase } from "./seed";
+// import { seedDatabase } from "./seed"; // Unused import
 
 // Ensure Neon database is always used
 setNeonAsDefault();
@@ -23,12 +23,25 @@ import compression from "compression";
 
 import session from "express-session";
 import { SecureNeonSessionStore } from "./utils/secure-session-store";
+
+// Extend session interface to include __meta property
+declare module 'express-session' {
+  interface SessionData {
+    __meta?: {
+      ipAddress?: string;
+      userAgent?: string;
+      lastActivity?: string;
+      csrfToken?: string;
+    };
+  }
+}
 import { setupAuth } from "./auth";
 import { setupOAuth } from "./oauth";
 
 import { createLogger, requestLogger } from "./utils/debug-logger";
 import { registerUserFeedbackRoutes } from "./routes/user-feedback";
 import { registerRecommendationsRoutes } from "./routes/recommendations";
+import { storage } from "./storage";
 
 import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
@@ -74,7 +87,7 @@ app.use((req, _res, next) => {
 const sessionStore = new SecureNeonSessionStore();
 
 app.use(session({
-  store: sessionStore,
+  store: sessionStore as any,
   secret: process.env.SESSION_SECRET || 'horror-stories-session-secret',
   resave: false,
   saveUninitialized: false,
@@ -92,15 +105,15 @@ app.use(session({
 }));
 
 // Middleware to track session metadata
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   if (req.session && req.sessionID) {
     // Add metadata to session for security tracking
     if (!req.session.__meta) {
       req.session.__meta = {};
     }
     
-    req.session.__meta.ipAddress = req.ip || req.connection.remoteAddress;
-    req.session.__meta.userAgent = req.get('User-Agent');
+    req.session.__meta.ipAddress = req.ip || req.connection.remoteAddress || '';
+    req.session.__meta.userAgent = req.get('User-Agent') || '';
     req.session.__meta.lastActivity = new Date().toISOString();
     
     // Store CSRF token in session metadata
@@ -142,7 +155,7 @@ app.use(validateCsrfToken({
 
 // Register critical API routes BEFORE any middleware that might interfere
 import searchRouter from './routes/search-simple';
-app.use('/api/search', (req, _res, next) => {
+app.use('/api/search', (_req, _res, next) => {
   
   next();
 }, searchRouter);
@@ -192,7 +205,7 @@ const serverLogger = createLogger('Server');
 // Import our database setup utilities
 import setupDatabase from '../scripts/setup-db';
 import pushSchema from '../scripts/db-push';
-import seedFromWordPressAPI from '../scripts/api-seed';
+// import seedFromWordPressAPI from '../scripts/api-seed'; // Unused import
 
 async function startServer() {
   try {
@@ -322,7 +335,7 @@ async function startServer() {
       registerRoutes(app);
       
       // Register user feedback routes
-      registerUserFeedbackRoutes(app, storage);
+      registerUserFeedbackRoutes(app);
       
       // Register recommendation routes
       registerRecommendationsRoutes(app, storage);

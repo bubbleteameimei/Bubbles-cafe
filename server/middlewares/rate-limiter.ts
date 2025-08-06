@@ -11,7 +11,7 @@
  */
 
 import rateLimit from 'express-rate-limit';
-import { Request, Response, NextFunction } from 'express';
+import { Request } from 'express';
 import logger from '../utils/logger';
 import { isWhitelisted } from './ip-whitelist';
 
@@ -59,7 +59,7 @@ export const globalRateLimiter = rateLimit({
     status: 'error',
     message: 'Too many requests from this IP, please try again after 15 minutes'
   },
-  handler: (req, res, next, options) => {
+  handler: (req, res, _next, options) => {
     logger.warn(`Rate limit exceeded for IP: ${req.ip}`);
     res.status(429).json(options.message);
   },
@@ -76,7 +76,7 @@ export const authRateLimiter = rateLimit({
     status: 'error',
     message: 'Too many login attempts from this IP, please try again after an hour'
   },
-  handler: (req, res, next, options) => {
+  handler: (req, res, _next, options) => {
     logger.warn(`Authentication rate limit exceeded for IP: ${req.ip}`);
     res.status(429).json(options.message);
   },
@@ -94,7 +94,7 @@ export const sensitiveOperationsRateLimiter = rateLimit({
     status: 'error',
     message: 'Too many sensitive operations from this IP, please try again after an hour'
   },
-  handler: (req, res, next, options) => {
+  handler: (req, res, _next, options) => {
     logger.warn(`Sensitive operations rate limit exceeded for IP: ${req.ip}`);
     res.status(429).json(options.message);
   },
@@ -111,7 +111,7 @@ export const apiRateLimiter = rateLimit({
     status: 'error',
     message: 'Too many API requests from this IP, please try again after 15 minutes'
   },
-  handler: (req, res, next, options) => {
+  handler: (req, res, _next, options) => {
     logger.warn(`API rate limit exceeded for IP: ${req.ip}`);
     res.status(429).json(options.message);
   },

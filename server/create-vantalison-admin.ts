@@ -1,5 +1,6 @@
 
 import bcrypt from "bcryptjs"; // Using bcryptjs to match auth.ts
+import { storage } from "./storage";
 
 // Use the same bcrypt library and salt rounds as in auth.ts
 const SALT_ROUNDS = 10;
@@ -22,18 +23,23 @@ async function createVantalisonAdmin() {
     if (existingUser) {
       
       // Update the password and make sure is_admin is true
-      await storage.pool.query(
-        "UPDATE users SET password_hash = $1, is_admin = true WHERE email = $2",
-        [hashedPassword, adminEmail]
-      );
+      await storage.updateUser(existingUser.id, {
+        password_hash: hashedPassword,
+        isAdmin: true
+      });
       
     } else {
       // Create new admin user
-      await storage.pool.query(
-        `INSERT INTO users (username, email, password_hash, is_admin, created_at)
-         VALUES ($1, $2, $3, $4, NOW())`,
-        ["vantalison", adminEmail, hashedPassword, true]
-      );
+      await storage.createUser({
+        username: "vantalison",
+        email: adminEmail,
+        password_hash: hashedPassword,
+        isAdmin: true,
+        metadata: {
+          createdBy: "vantalison-admin-script",
+          createdAt: new Date().toISOString()
+        }
+      });
       
     }
   } catch (error) {
