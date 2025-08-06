@@ -21,7 +21,7 @@ export interface IStorage {
   // Post operations
   getPost(id: number): Promise<Post | undefined>;
   getPostBySlug(slug: string): Promise<Post | undefined>;
-  getPosts(limit?: number, offset?: number): Promise<Post[]>;
+  getPosts(page?: number, limit?: number, filterOptions?: any): Promise<{ posts: Post[]; hasMore: boolean }>;
   getPostsByAuthor(authorId: number): Promise<Post[]>;
   createPost(post: InsertPost): Promise<Post>;
   updatePost(id: number, post: Partial<Post>): Promise<Post | undefined>;
@@ -174,17 +174,33 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getPosts(limit: number = 20, offset: number = 0): Promise<Post[]> {
+  async getPosts(page: number = 1, limit: number = 20, filterOptions: any = {}): Promise<{ posts: Post[]; hasMore: boolean }> {
     try {
-      return await db
+      const offset = (page - 1) * limit;
+      
+      let query = db
         .select()
         .from(posts)
         .orderBy(desc(posts.createdAt))
-        .limit(limit)
+        .limit(limit + 1) // Get one extra to check if there are more
         .offset(offset);
+
+      // Apply filters if provided
+      if (filterOptions.isAdminPost !== undefined) {
+        query = query.where(eq(posts.isAdminPost, filterOptions.isAdminPost));
+      }
+
+      const result = await query;
+      const hasMore = result.length > limit;
+      const posts = hasMore ? result.slice(0, limit) : result;
+
+      return {
+        posts,
+        hasMore
+      };
     } catch (error) {
       console.error('Error getting posts:', error);
-      return [];
+      return { posts: [], hasMore: false };
     }
   }
 
