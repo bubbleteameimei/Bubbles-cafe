@@ -1,5 +1,17 @@
 
+import type { Post } from '@shared/schema';
+import { insertPostSchema } from '@shared/schema';
 import { WordPressPost } from '../services/wordpress';
+
+// Extend WordPressPost interface to include missing properties
+interface ExtendedWordPressPost extends WordPressPost {
+  modified?: string;
+  status?: string;
+  type?: string;
+  author?: number;
+  featured_media?: number;
+  categories?: number[];
+}
 
 export function estimateReadingTime(content: string): number {
   const wordsPerMinute = 200;
@@ -27,7 +39,7 @@ export function extractExcerpt(content: string, maxLength = 200): string {
   return truncated.substring(0, lastSpace) + '...';
 }
 
-export function convertToPost(wpPost: WordPressPost): Partial<Post> {
+export function convertToPost(wpPost: ExtendedWordPressPost): Partial<Post> {
   const sanitizedContent = sanitizeHtmlContent(wpPost.content.rendered);
   const excerpt = extractExcerpt(wpPost.excerpt.rendered || sanitizedContent);
 

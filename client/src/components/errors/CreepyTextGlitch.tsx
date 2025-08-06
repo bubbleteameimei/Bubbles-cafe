@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface CreepyTextGlitchProps {
   text: string;

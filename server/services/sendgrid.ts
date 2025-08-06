@@ -5,6 +5,7 @@
  */
 
 import sgMail from '@sendgrid/mail';
+import nodemailer from 'nodemailer';
 
 // SendGrid configuration
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
@@ -62,5 +63,26 @@ export async function sendEmail(message: {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
     };
+  }
+}
+
+export async function checkSendGridStatus(): Promise<boolean> {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.sendgrid.net',
+      port: 587,
+      secure: false,
+      auth: {
+        user: 'apikey',
+        pass: process.env.SENDGRID_API_KEY
+      }
+    });
+    
+    // Test the connection
+    await transporter.verify();
+    return true;
+  } catch (error) {
+    console.error('SendGrid service check failed:', error);
+    return false;
   }
 }

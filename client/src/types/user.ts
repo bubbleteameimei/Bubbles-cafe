@@ -1,4 +1,4 @@
-export { User } from '../../../shared/schema';
+import type { User } from '../../../shared/schema';
 
 /**
  * User metadata interface for additional user-related information

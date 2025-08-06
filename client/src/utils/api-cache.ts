@@ -107,7 +107,6 @@ class APICache {
 
   // Get cache stats
   getStats() {
-    const now = Date.now();
     let expiredCount = 0;
     let staleCount = 0;
 

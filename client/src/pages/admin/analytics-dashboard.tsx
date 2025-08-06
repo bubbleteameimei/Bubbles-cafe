@@ -1,56 +1,54 @@
 "use client"
 
-import React, { useState } from 'react'
-import { DeviceAnalytics } from '@/components/analytics/device-analytics'
-import { ReadingAnalytics } from '@/components/analytics/reading-analytics'
-import { useQuery } from '@tanstack/react-query'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getReadingTimeAnalytics, getEngagementMetrics } from '@/api/analytics'
-import { ReadingTimeAnalytics } from '@/types/analytics'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { 
-  BarChart3, 
+  BarChartIcon, 
   LayoutDashboard, 
-  LineChart, 
   RefreshCcw, 
   Settings, 
-  BarChartIcon 
-} from 'lucide-react'
-import { format } from 'date-fns'
+  TrendingUp, 
+  Users, 
+  Clock, 
+  Eye,
+  MousePointer,
+  Smartphone,
+  Monitor,
+  Tablet
+} from "lucide-react";
+import { getReadingTimeAnalytics, getEngagementMetrics } from "@/lib/analytics";
+import { format } from "date-fns";
+import { DeviceAnalytics } from "./device-analytics";
+import { ReadingAnalytics } from "./reading-analytics";
+
+interface ReadingTimeAnalytics {
+  totalReadTime: number;
+  averageReadTime: number;
+  totalPosts: number;
+  uniqueVisitors: number;
+  avgReadTime: number;
+  bounceRate: number;
+}
+
+interface EngagementMetrics {
+  totalReadingTime: number;
+  averageSessionDuration: number;
+  totalUsers: number;
+  activeUsers: number;
+  interactions: number;
+  pageViews: number;
+  returning: number;
+}
 
 export default function AnalyticsDashboard() {
-  const [refreshKey, setRefreshKey] = useState(0)
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState("overview");
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Define interfaces for our analytics data
-  interface SiteAnalytics {
-    totalViews: number;
-    uniqueVisitors: number;
-    avgReadTime: number;
-    bounceRate: number;
-  }
-  
-  interface EngagementMetrics {
-    totalReadingTime: number;
-    averageSessionDuration: number;
-    totalUsers: number;
-    activeUsers: number;
-    interactions: number;
-    pageViews: number;
-    returning: number;
-  }
-  
-  // Use the analytics functions imported at the top of the file
-  
   // Query for site analytics summary data - using explicit query function with correct type
   const { data: analyticsData, isLoading: isLoadingSite, error: siteError, refetch: refetchSite } = useQuery<ReadingTimeAnalytics>({
     queryKey: ['/api/analytics/reading-time', refreshKey],
@@ -131,39 +129,39 @@ export default function AnalyticsDashboard() {
           </TabsTrigger>
           <TabsTrigger value="devices">
             <BarChartIcon className="h-4 w-4 mr-2" />
-            Device Statistics
+            Devices
           </TabsTrigger>
           <TabsTrigger value="reading">
-            <LineChart className="h-4 w-4 mr-2" />
-            Reading Metrics
+            <Clock className="h-4 w-4 mr-2" />
+            Reading
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
+        <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total Page Views</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Visitors</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {analyticsData?.uniqueVisitors.toLocaleString() || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Unique visitors this period
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Page Views</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
                   {engagementData?.pageViews.toLocaleString() || 0}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  From all site users
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Unique Visitors</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {engagementData?.totalUsers.toLocaleString() || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Past 30 days
+                  Total page views
                 </p>
               </CardContent>
             </Card>
@@ -176,13 +174,13 @@ export default function AnalyticsDashboard() {
                   {engagementData?.activeUsers.toLocaleString() || 0}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Past 7 days
+                  Currently active users
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total Interactions</CardTitle>
+                <CardTitle className="text-sm font-medium">Interactions</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">

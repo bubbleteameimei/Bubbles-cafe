@@ -7,6 +7,7 @@ import { registerRoutes } from "./routes";
 import { setNeonAsDefault } from "./neon-config"; // Set Neon as default database
 import { setGmailCredentials } from "./config/gmail-config"; // Set Gmail credentials
 import { db } from "./db"; // Using the direct Neon database connection
+import { pool, waitForPoolInitialization } from "./db-connect"; // Import pool and wait function
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
 
@@ -215,60 +216,47 @@ async function startServer() {
       port: PORT
     });
 
-    // Setup database connection first
+    // Setup database connection with timeout
     try {
-      // Ensure DATABASE_URL is properly set
       serverLogger.info('Setting up database connection...');
-      await setupDatabase();
-      serverLogger.info('Database setup completed successfully');
       
-      // Check database connection
-      try {
-        // This may fail if tables don't exist yet
-        const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
-        serverLogger.info('Database connected, tables exist', { postsCount });
+      // Set a timeout for database setup
+      const dbSetupPromise = (async () => {
+        await setupDatabase();
+        serverLogger.info('Database setup completed successfully');
         
-        // Run migrations to ensure all tables defined in the schema exist
-        serverLogger.info('Running database migrations to create missing tables...');
-        await runMigrations();
-        serverLogger.info('Database migrations completed');
-    
-        // Skip WordPress sync if environment variable is set
-        if (postsCount === 0 && !process.env.SKIP_WORDPRESS_SYNC) {
-          serverLogger.info('Tables exist but no posts - seeding database from WordPress API...');
-          // await seedFromWordPressAPI();
-          serverLogger.info('WordPress sync skipped for testing');
-        } else if (process.env.SKIP_WORDPRESS_SYNC) {
-          serverLogger.info('Skipping WordPress sync due to SKIP_WORDPRESS_SYNC environment variable');
+        // Wait for database pool to be initialized with timeout
+        serverLogger.info('Waiting for database pool initialization...');
+        const poolReady = await waitForPoolInitialization(10000); // Reduced timeout to 10 seconds
+        if (!poolReady) {
+          throw new Error('Database pool initialization timed out');
         }
-      } catch (tableError) {
-        serverLogger.warn('Database tables check failed, attempting to create schema', { 
-          error: tableError instanceof Error ? tableError.message : 'Unknown error' 
-        });
+        serverLogger.info('Database pool is ready');
         
-        // If tables don't exist, push the schema
-        serverLogger.info('Creating database schema...');
-        await pushSchema();
-        serverLogger.info('Schema created, seeding data from WordPress API...');
-        
+        // Quick database test
         try {
-          // await seedFromWordPressAPI();
-          serverLogger.info('WordPress sync skipped for testing');
-        } catch (seedError) {
-          serverLogger.error('Error seeding from WordPress API, falling back to XML seeding', {
-            error: seedError instanceof Error ? seedError.message : 'Unknown error'
+          const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
+          serverLogger.info('Database connected, tables exist', { postsCount });
+        } catch (tableError) {
+          serverLogger.warn('Database tables check failed, but continuing', { 
+            error: tableError instanceof Error ? tableError.message : 'Unknown error' 
           });
-          
-          // Fall back to XML seeding if WordPress API fails
-          // await seedDatabase();
-          serverLogger.info('Database seeding skipped for testing');
         }
-      }
+      })();
+      
+      // Wait for database setup with timeout
+      await Promise.race([
+        dbSetupPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database setup timeout')), 15000)
+        )
+      ]);
+      
     } catch (dbError) {
-      serverLogger.error('Critical database setup error', { 
+      serverLogger.error('Database setup failed, but continuing without database', { 
         error: dbError instanceof Error ? dbError.message : 'Unknown error' 
       });
-      throw dbError;
+      console.log('⚠️ Database setup failed, but continuing without database');
     }
 
     serverLogger.info('Database setup completed, proceeding to server creation');
@@ -277,8 +265,6 @@ async function startServer() {
     serverLogger.info('Creating HTTP server instance');
     server = createServer(app);
     serverLogger.info('HTTP server instance created');
-    console.log('✅ HTTP server instance created');
-
 
 
     // Setup routes based on environment
@@ -374,17 +360,15 @@ async function startServer() {
       
       // Log that we're about to start listening
       serverLogger.info('About to start listening on port', { port: PORT, host: HOST });
-      console.log('🚀 About to start listening on port', PORT);
       
-              server.listen(PORT, HOST, () => {
-          const bootDuration = Date.now() - startTime;
+      server.listen(PORT, HOST, () => {
+        const bootDuration = Date.now() - startTime;
           
           serverLogger.info('Server started successfully', { 
             url: `http://${HOST}:${PORT}`,
             bootTime: `${bootDuration}ms`
           });
-          console.log('🎉 Server started successfully on', `http://${HOST}:${PORT}`);
-
+          
         // Send port readiness signal
         if (process.send) {
           process.send({

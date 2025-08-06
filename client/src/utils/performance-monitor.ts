@@ -1,4 +1,9 @@
-// Performance monitoring utility for Core Web Vitals and optimization insights
+// Add gtag type definition
+declare global {
+  interface Window {
+    gtag?: (command: string, targetId: string, config?: any) => void;
+  }
+}
 
 interface PerformanceMetric {
   name: string;
@@ -32,7 +37,7 @@ const WEB_VITALS_THRESHOLDS: WebVitalsThresholds = {
 // Rating based on thresholds
 function getRating(name: string, value: number): 'good' | 'needs-improvement' | 'poor' {
   const thresholds = WEB_VITALS_THRESHOLDS[name as keyof WebVitalsThresholds];
-  if (!thresholds) return 'good';
+  if (!thresholds) return 'needs-improvement';
   
   if (value <= thresholds.good) return 'good';
   if (value <= thresholds.poor) return 'needs-improvement';
@@ -121,7 +126,7 @@ class PerformanceMonitor {
     }
   }
 
-  private recordMetric(name: string, value: number, delta: number = 0) {
+  public recordMetric(name: string, value: number, delta: number = 0) {
     const metric: PerformanceMetric = {
       name,
       value,
@@ -233,6 +238,7 @@ class PerformanceMonitor {
   public getPerformanceScore(): number {
     const coreVitals = this.getCoreWebVitals();
     const scores = Object.values(coreVitals).map(metric => {
+      if (!metric) return 50;
       switch (metric.rating) {
         case 'good': return 100;
         case 'needs-improvement': return 50;
@@ -281,14 +287,16 @@ class PerformanceMonitor {
     const coreVitals = this.getCoreWebVitals();
     
     // Send to your analytics service
-    if (typeof gtag !== 'undefined') {
+    if (typeof window !== 'undefined' && window.gtag) {
       for (const [name, metric] of Object.entries(coreVitals)) {
-        gtag('event', name, {
-          value: Math.round(metric.value),
-          metric_id: metric.id,
-          metric_rating: metric.rating,
-          custom_parameter: true
-        });
+        if (metric) {
+          window.gtag('event', name, {
+            value: Math.round(metric.value),
+            metric_id: metric.id,
+            metric_rating: metric.rating,
+            custom_parameter: true
+          });
+        }
       }
     }
 

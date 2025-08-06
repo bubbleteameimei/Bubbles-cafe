@@ -46,7 +46,6 @@ interface NewStoryNotificationProps {
 
 const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
   newStories = 1,
-  lastChecked,
   onDismiss,
   className = '',
   autoHideDuration = 10000, // 10 seconds
@@ -103,7 +102,7 @@ const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
   };
 
   // Get notifications from context
-  const { notifications, markAsRead } = useNotifications();
+  const { notifications } = useNotifications();
   
   // Filter for new story notifications that haven't been read
   const newStoryNotifications = notifications.filter(

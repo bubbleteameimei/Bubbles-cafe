@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import type { Post } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -89,9 +90,9 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
       slug: post?.slug || "",
       excerpt: post?.excerpt || "",
       content: post?.content || "",
-      status: post?.status || "draft",
-      categories: post?.categories || [],
-      featuredImage: post?.featuredImage || "",
+      status: (post?.metadata as any)?.status || "draft",
+      categories: (post?.metadata as any)?.categories || [],
+      featuredImage: (post?.metadata as any)?.featuredImage || "",
       allowComments: true,
       isFeatured: false
     }

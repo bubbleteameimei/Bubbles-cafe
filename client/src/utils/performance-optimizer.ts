@@ -74,7 +74,7 @@ export function useComponentRenderTracker(
           const duration = unmountTime - mountTime;
           
           // Record time from mount to unmount
-          recordMetric('Custom', duration, `ComponentLifetime-${componentName}`);
+          recordMetric('Custom', duration);
           
           if (import.meta.env.DEV) {
             
@@ -99,7 +99,7 @@ export function useComponentRenderTracker(
     
     // Only track non-initial renders to separate mount from updates
     if (renderCount.current > 1) {
-      recordMetric('Custom', duration, `ComponentRender-${componentName}`);
+      recordMetric('Custom', duration);
       
       if (import.meta.env.DEV && duration > 8) {
         
@@ -117,7 +117,7 @@ export function useComponentRenderTracker(
     const unmountTime = performance.now();
     const duration = unmountTime - startTime.current;
     
-    recordMetric('Custom', duration, `ComponentUnmount-${componentName}`);
+    recordMetric('Custom', duration);
     
     if (import.meta.env.DEV) {
       
@@ -155,7 +155,7 @@ export function useResourceLoadTracker(
     const endTime = performance.now();
     const duration = endTime - startTime;
     
-    recordMetric('Custom', duration, `ResourceLoad-${resourceType}-${success ? 'success' : 'error'}`);
+    recordMetric('Custom', duration);
     
     if (import.meta.env.DEV) {
       
@@ -191,7 +191,7 @@ export function useInteractionTracker() {
     const endTime = performance.now();
     const duration = endTime - startTime;
     
-    recordMetric('Custom', duration, `Interaction-${interactionId}`);
+    recordMetric('Custom', duration);
     
     if (import.meta.env.DEV && duration > 100) {
       console.warn(`[Performance] Slow interaction: ${interactionId}, duration: ${Math.round(duration)}ms`);

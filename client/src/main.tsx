@@ -10,7 +10,6 @@ import App from "./App";
 import "./index.css";
 // Import the preloader script
 import { setupStylePreloader, addInitialLoadingIndicator } from "./styles/preloader";
-import { optimizeImagesForConnection } from "./utils/image-optimization";
 // All scroll to top functionality has been completely removed from the application
 // We're now using only the standard loading-screen.tsx component directly
 // Import CSRF protection
@@ -34,9 +33,6 @@ linkElements.forEach(link => {
 
 // Add initial loading indicator to prevent FOUC
 addInitialLoadingIndicator();
-
-// Optimize images based on connection speed
-optimizeImagesForConnection();
 
 // Initialize style preloader
 setupStylePreloader();

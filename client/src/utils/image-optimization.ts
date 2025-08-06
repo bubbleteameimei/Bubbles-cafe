@@ -2,23 +2,27 @@
  * Utility functions for image optimization
  */
 
-/**
- * Check connection speed and optimize images accordingly
- */
-export function optimizeImagesForConnection() {
-  if (navigator.connection && 'effectiveType' in navigator.connection) {
-    const connection = navigator.connection as any;
-    const isSlowConnection = ['slow-2g', '2g'].includes(connection.effectiveType);
+// Add type definitions for navigator.connection
+interface NetworkInformation {
+  effectiveType: 'slow-2g' | '2g' | '3g' | '4g';
+  downlink: number;
+  rtt: number;
+  saveData: boolean;
+}
 
-    if (isSlowConnection) {
-      document.querySelectorAll("img").forEach(img => {
-        const lowRes = img.getAttribute('data-lowres');
-        if (lowRes) {
-          img.src = lowRes;
-        }
-      });
-    }
+interface NavigatorWithConnection extends Navigator {
+  connection?: NetworkInformation;
+}
+
+export function getConnectionType(): 'slow' | 'fast' | 'unknown' {
+  const nav = navigator as NavigatorWithConnection;
+  
+  if (nav.connection && 'effectiveType' in nav.connection) {
+    const connection = nav.connection as NetworkInformation;
+    return connection.effectiveType === '4g' ? 'fast' : 'slow';
   }
+  
+  return 'unknown';
 }
 
 /**
