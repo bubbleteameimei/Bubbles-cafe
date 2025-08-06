@@ -1,14 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-interface User {
-  id: number;
-  email: string;
-  username: string;
-  isAdmin: boolean;
-  fullName?: string;
-  bio?: string;
-  avatar?: string;
-}
+import { User } from '@/types/user';
 
 interface RegisterData {
   username: string;
