@@ -215,60 +215,65 @@ async function startServer() {
       port: PORT
     });
 
-    // Setup database connection first
-    try {
-      // Ensure DATABASE_URL is properly set
-      serverLogger.info('Setting up database connection...');
-      await setupDatabase();
-      serverLogger.info('Database setup completed successfully');
-      
-      // Check database connection
+    // TEMPORARY: Skip database setup for testing
+    if (process.env.SKIP_DB_SETUP === 'true') {
+      serverLogger.info('Skipping database setup for testing');
+    } else {
+      // Setup database connection first
       try {
-        // This may fail if tables don't exist yet
-        const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
-        serverLogger.info('Database connected, tables exist', { postsCount });
+        // Ensure DATABASE_URL is properly set
+        serverLogger.info('Setting up database connection...');
+        await setupDatabase();
+        serverLogger.info('Database setup completed successfully');
         
-        // Run migrations to ensure all tables defined in the schema exist
-        serverLogger.info('Running database migrations to create missing tables...');
-        await runMigrations();
-        serverLogger.info('Database migrations completed');
-    
-        // Skip WordPress sync if environment variable is set
-        if (postsCount === 0 && !process.env.SKIP_WORDPRESS_SYNC) {
-          serverLogger.info('Tables exist but no posts - seeding database from WordPress API...');
-          // await seedFromWordPressAPI();
-          serverLogger.info('WordPress sync skipped for testing');
-        } else if (process.env.SKIP_WORDPRESS_SYNC) {
-          serverLogger.info('Skipping WordPress sync due to SKIP_WORDPRESS_SYNC environment variable');
-        }
-      } catch (tableError) {
-        serverLogger.warn('Database tables check failed, attempting to create schema', { 
-          error: tableError instanceof Error ? tableError.message : 'Unknown error' 
-        });
-        
-        // If tables don't exist, push the schema
-        serverLogger.info('Creating database schema...');
-        await pushSchema();
-        serverLogger.info('Schema created, seeding data from WordPress API...');
-        
+        // Check database connection
         try {
-          // await seedFromWordPressAPI();
-          serverLogger.info('WordPress sync skipped for testing');
-        } catch (seedError) {
-          serverLogger.error('Error seeding from WordPress API, falling back to XML seeding', {
-            error: seedError instanceof Error ? seedError.message : 'Unknown error'
+          // This may fail if tables don't exist yet
+          const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
+          serverLogger.info('Database connected, tables exist', { postsCount });
+          
+          // Run migrations to ensure all tables defined in the schema exist
+          serverLogger.info('Running database migrations to create missing tables...');
+          await runMigrations();
+          serverLogger.info('Database migrations completed');
+      
+          // Skip WordPress sync if environment variable is set
+          if (postsCount === 0 && !process.env.SKIP_WORDPRESS_SYNC) {
+            serverLogger.info('Tables exist but no posts - seeding database from WordPress API...');
+            // await seedFromWordPressAPI();
+            serverLogger.info('WordPress sync skipped for testing');
+          } else if (process.env.SKIP_WORDPRESS_SYNC) {
+            serverLogger.info('Skipping WordPress sync due to SKIP_WORDPRESS_SYNC environment variable');
+          }
+        } catch (tableError) {
+          serverLogger.warn('Database tables check failed, attempting to create schema', { 
+            error: tableError instanceof Error ? tableError.message : 'Unknown error' 
           });
           
-          // Fall back to XML seeding if WordPress API fails
-          // await seedDatabase();
-          serverLogger.info('Database seeding skipped for testing');
+          // If tables don't exist, push the schema
+          serverLogger.info('Creating database schema...');
+          await pushSchema();
+          serverLogger.info('Schema created, seeding data from WordPress API...');
+          
+          try {
+            // await seedFromWordPressAPI();
+            serverLogger.info('WordPress sync skipped for testing');
+          } catch (seedError) {
+            serverLogger.error('Error seeding from WordPress API, falling back to XML seeding', {
+              error: seedError instanceof Error ? seedError.message : 'Unknown error'
+            });
+            
+            // Fall back to XML seeding if WordPress API fails
+            // await seedDatabase();
+            serverLogger.info('Database seeding skipped for testing');
+          }
         }
+      } catch (dbError) {
+        serverLogger.error('Critical database setup error', { 
+          error: dbError instanceof Error ? dbError.message : 'Unknown error' 
+        });
+        throw dbError;
       }
-    } catch (dbError) {
-      serverLogger.error('Critical database setup error', { 
-        error: dbError instanceof Error ? dbError.message : 'Unknown error' 
-      });
-      throw dbError;
     }
 
     serverLogger.info('Database setup completed, proceeding to server creation');

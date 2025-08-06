@@ -334,7 +334,7 @@ function saveParsedPostToLocalStorage(post: Partial<Post>): void {
 /**
  * Get all converted posts from localStorage
  */
-function getConvertedPostsFromLocalStorage(): Partial<Post>[] {
+export function getConvertedPostsFromLocalStorage(): Partial<Post>[] {
   try {
     const data = localStorage.getItem(CONVERTED_POSTS_CACHE_KEY);
     if (!data) return [];
