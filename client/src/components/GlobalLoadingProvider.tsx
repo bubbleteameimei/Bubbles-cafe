@@ -10,6 +10,14 @@ interface GlobalLoadingContextType {
 
 const GlobalLoadingContext = createContext<GlobalLoadingContextType | undefined>(undefined);
 
+export function useLoading() {
+  const context = useContext(GlobalLoadingContext);
+  if (context === undefined) {
+    throw new Error('useLoading must be used within a GlobalLoadingProvider');
+  }
+  return context;
+}
+
 export function GlobalLoadingProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");

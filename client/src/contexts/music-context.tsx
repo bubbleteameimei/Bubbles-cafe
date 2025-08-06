@@ -1,4 +1,4 @@
-
+import React, { createContext, ReactNode, useState, useRef, useEffect, useContext, useCallback } from 'react';
 
 // Define types for music context
 export type PlaybackContext = 'general' | 'story-reading' | 'gallery' | 'admin' | 'settings' | 'reader' | 'game' | 'homepage';
@@ -334,7 +334,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   }, [currentTrack, activeAudio, primaryAudio, secondaryAudio, persistState]);
 
   // Memoized context value to prevent unnecessary re-renders
-  const contextValue = useMemo(() => ({
+  const contextValue = useCallback(() => ({
     isPlaying,
     volume,
     currentTrack,

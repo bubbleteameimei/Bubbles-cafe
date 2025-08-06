@@ -1,5 +1,6 @@
 
 
+import { useState, useEffect } from 'react';
 import { Minus, Plus, Type, BookOpen } from 'lucide-react';
 import { useFontSize } from '@/hooks/use-font-size';
 import { useToast } from '@/hooks/use-toast';

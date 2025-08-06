@@ -1,4 +1,4 @@
-
+import { useState, useRef, useEffect } from 'react';
 
 interface SimpleGlitchTextProps {
   text: string;

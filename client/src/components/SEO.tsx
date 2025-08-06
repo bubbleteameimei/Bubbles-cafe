@@ -1,5 +1,4 @@
-
-
+import { useEffect } from 'react';
 
 interface SEOProps {
   title?: string;
