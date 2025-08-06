@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { THEME_CATEGORIES } from "@shared/theme-categories";
+import { User } from '../../../../shared/schema';
 
 // Import subcomponents for each tab
 import { default as WordPressSyncPage } from "./WordPressSyncPage";
@@ -18,8 +19,10 @@ import PostEditor from "@/components/admin/post-editor";
 
 export default function ContentManagementPage() {
   const { user, isLoading: authLoading } = useAuth();
+  const typedUser = user as User | null;
+  const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [location, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<string>("content");
   const [isCreatingNew, setIsCreatingNew] = useState<boolean>(false);
   const [syncInProgress, setSyncInProgress] = useState<boolean>(false);
@@ -96,7 +99,7 @@ export default function ContentManagementPage() {
   }
 
   // Redirect if not admin
-  if (!user?.isAdmin) {
+  if (!typedUser?.isAdmin) {
     return <Redirect to="/" />;
   }
 
