@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { usePerformanceMonitor } from "@/hooks/use-performance-monitor";
 import { cachedFetch } from "@/utils/api-cache";
 import logger from "@/utils/secure-client-logger";
+import { Post } from "../../../../shared/schema";
 
 interface ReaderCoreProps {
   slug: string;
@@ -17,23 +18,22 @@ export function ReaderCore({ slug, onPostLoad, onError }: ReaderCoreProps) {
   const [readingProgress, setReadingProgress] = useState(0);
 
   // Optimized post fetching with caching
-  const { data: post, isLoading, error } = useQuery({
+  const { data: post, isLoading, error } = useQuery<Post>({
     queryKey: ['post', slug],
-    queryFn: async () => {
+    queryFn: async (): Promise<Post> => {
       mark('fetch-start');
       try {
         const data = await cachedFetch(`/api/posts/by-slug/${slug}`, {
           ttl: 10 * 60 * 1000 // 10 minutes cache
         });
         measure('fetch-duration', 'fetch-start');
-        return data;
+        return data as Post;
       } catch (err) {
         logger.error('Failed to fetch post', { slug, error: err });
         throw err;
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 30 * 60 * 1000, // 30 minutes
     enabled: !!slug
   });
 

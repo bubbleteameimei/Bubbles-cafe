@@ -2,15 +2,9 @@ import { ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { User } from '../../../shared/schema';
 
 // Define types
-export interface User {
-  id: number;
-  username: string;
-  email: string;
-  role?: 'admin' | 'user';
-}
-
 export interface LoginData {
   email: string;
   password: string;
@@ -38,7 +32,7 @@ export function useAuth() {
     queryKey: ['/api/auth/me'],
     queryFn: async () => {
       const result = await apiRequest('/api/auth/me');
-      return result as AuthResponse;
+      return result as User;
     },
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -130,8 +124,8 @@ export function useAuth() {
   });
 
   return {
-    user: (userQuery.data as AuthResponse)?.user || null,
-    isAuthenticated: !!((userQuery.data as AuthResponse)?.user),
+    user: userQuery.data || null,
+    isAuthenticated: !!userQuery.data,
     isLoading: userQuery.isLoading,
     loginMutation,
     registerMutation,

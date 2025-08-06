@@ -78,6 +78,7 @@ import {
   BarChart,
   AlertCircle
 } from 'lucide-react';
+import { Post, User } from '../../../../shared/schema';
 
 // Extended Post type with admin-specific properties
 interface ExtendedPost extends Post {
@@ -353,12 +354,13 @@ export default function ManagePostsPage() {
   
   const handleEditPost = (post: ExtendedPost) => {
     setSelectedPost(post);
+    const metadata = post.metadata as any;
     setEditedPostData({
       title: post.title,
       status: post.published ? 'published' : 'draft',
       featured: post.featured || false,
-      themeCategory: post.metadata?.themeCategory || '',
-      triggerWarnings: post.metadata?.triggerWarnings?.join(', ') || '',
+      themeCategory: metadata?.themeCategory || '',
+      triggerWarnings: metadata?.triggerWarnings?.join(', ') || '',
     });
     setIsEditDialogOpen(true);
   };
@@ -384,19 +386,19 @@ export default function ManagePostsPage() {
     updatePostMutation.mutate({ id: selectedPost.id, data });
   };
   
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked && postsData?.posts) {
+  const handleSelectAll = (checked: boolean) => {
+    if (checked && postsData?.posts) {
       setSelectedPosts(postsData.posts.map(post => post.id));
     } else {
       setSelectedPosts([]);
     }
   };
   
-  const handleSelectPost = (postId: number) => {
-    if (selectedPosts.includes(postId)) {
-      setSelectedPosts(selectedPosts.filter(id => id !== postId));
-    } else {
+  const handleSelectPost = (checked: boolean, postId: number) => {
+    if (checked) {
       setSelectedPosts([...selectedPosts, postId]);
+    } else {
+      setSelectedPosts(selectedPosts.filter(id => id !== postId));
     }
   };
   
@@ -462,9 +464,10 @@ export default function ManagePostsPage() {
   
   // Get theme category badge
   const getThemeBadge = (post: ExtendedPost) => {
-    if (!post.metadata?.themeCategory) return null;
+    const metadata = post.metadata as any;
+    if (!metadata?.themeCategory) return null;
     
-    const category = post.metadata.themeCategory;
+    const category = metadata.themeCategory;
     let colorClass = 'bg-gray-100 text-gray-800 border-gray-300';
     
     switch (category) {
@@ -739,7 +742,7 @@ export default function ManagePostsPage() {
                           <TableCell>
                             <Checkbox 
                               checked={selectedPosts.includes(post.id)}
-                              onCheckedChange={() => handleSelectPost(post.id)}
+                              onCheckedChange={(checked) => handleSelectPost(checked, post.id)}
                               aria-label={`Select post ${post.title}`}
                             />
                           </TableCell>
@@ -788,56 +791,17 @@ export default function ManagePostsPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuGroup>
-                                    <DropdownMenuItem onClick={() => navigate(`/reader/${post.slug}`)}>
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      View
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleEditPost(post)}>
-                                      <Pencil className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => navigate(`/admin/analytics?postId=${post.id}`)}>
-                                      <BarChart className="h-4 w-4 mr-2" />
-                                      Analytics
-                                    </DropdownMenuItem>
-                                  </DropdownMenuGroup>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuGroup>
-                                    <DropdownMenuItem onClick={() => handleTogglePublish(post)}>
-                                      {post.published ? (
-                                        <>
-                                          <Ban className="h-4 w-4 mr-2" />
-                                          Unpublish
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Check className="h-4 w-4 mr-2" />
-                                          Publish
-                                        </>
-                                      )}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleToggleFeature(post)}>
-                                      {post.featured ? (
-                                        <>
-                                          <Ban className="h-4 w-4 mr-2" />
-                                          Unfeature
-                                        </>
-                                      ) : (
-                                        <>
-                                          <CheckCircle2 className="h-4 w-4 mr-2" />
-                                          Feature
-                                        </>
-                                      )}
-                                    </DropdownMenuItem>
-                                  </DropdownMenuGroup>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeletePost(post)}
-                                    className="text-destructive focus:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
+                                  <DropdownMenuItem onClick={() => navigate(`/reader/${post.slug}`)}>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEditPost(post)}>
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => navigate(`/admin/analytics?postId=${post.id}`)}>
+                                    <BarChart className="h-4 w-4 mr-2" />
+                                    Analytics
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -899,7 +863,7 @@ export default function ManagePostsPage() {
                           <TableCell>
                             <Checkbox 
                               checked={selectedPosts.includes(post.id)}
-                              onCheckedChange={() => handleSelectPost(post.id)}
+                              onCheckedChange={(checked) => handleSelectPost(checked, post.id)}
                               aria-label={`Select post ${post.title}`}
                             />
                           </TableCell>
@@ -1013,7 +977,7 @@ export default function ManagePostsPage() {
                           <TableCell>
                             <Checkbox 
                               checked={selectedPosts.includes(post.id)}
-                              onCheckedChange={() => handleSelectPost(post.id)}
+                              onCheckedChange={(checked) => handleSelectPost(checked, post.id)}
                               aria-label={`Select post ${post.title}`}
                             />
                           </TableCell>
@@ -1108,7 +1072,7 @@ export default function ManagePostsPage() {
                           <TableCell>
                             <Checkbox 
                               checked={selectedPosts.includes(post.id)}
-                              onCheckedChange={() => handleSelectPost(post.id)}
+                              onCheckedChange={(checked) => handleSelectPost(checked, post.id)}
                               aria-label={`Select post ${post.title}`}
                             />
                           </TableCell>

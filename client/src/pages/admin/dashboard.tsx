@@ -1,3 +1,4 @@
+import React from 'react';
 import { useAuth } from "@/hooks/use-auth";
 import { ActivityTimeline } from "@/components/admin/activity-timeline";
 import { useQuery } from "@tanstack/react-query";
@@ -56,6 +57,7 @@ import {
 } from "@/components/ui/chart";
 import { Progress } from "@/components/ui/progress";
 import { useState } from "react";
+import { User as UserType } from '../../../../shared/schema';
 
 // Mock data for the chart
 const activityData = [
@@ -70,10 +72,11 @@ const activityData = [
 
 export default function AdminDashboard() {
   const { user } = useAuth();
+  const typedUser = user as UserType | null;
   const [dateRange, setDateRange] = useState("week");
   
   // Redirect if not admin
-  if (!user?.isAdmin) {
+  if (!typedUser?.isAdmin) {
     return <Redirect to="/" />;
   }
 
@@ -298,7 +301,7 @@ export default function AdminDashboard() {
               <CardContent>
                 <ScrollArea className="h-[200px]">
                   <div className="space-y-4">
-                    {data?.adminUsers?.map((admin: any) => (
+                    {data?.adminUsers?.map((admin: UserType) => (
                       <div key={admin.id} className="flex items-center space-x-3">
                         <div className="flex-shrink-0 h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                           <User className="h-5 w-5 text-muted-foreground" />

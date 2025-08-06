@@ -111,14 +111,14 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
-    const [user] = await db
+  async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
+    const [updatedUser] = await db
       .update(users)
-      .set(updates)
+      .set(userData)
       .where(eq(users.id, id))
       .returning();
     
-    return user || undefined;
+    return updatedUser || undefined;
   }
 
   async updateUserPassword(id: number, newPasswordHash: string): Promise<void> {
@@ -217,14 +217,14 @@ export class DatabaseStorage implements IStorage {
     return post;
   }
 
-  async updatePost(id: number, updates: Partial<Post>): Promise<Post | undefined> {
-    const [post] = await db
+  async updatePost(id: number, postData: Partial<InsertPost>): Promise<Post | undefined> {
+    const [updatedPost] = await db
       .update(posts)
-      .set(updates)
+      .set(postData)
       .where(eq(posts.id, id))
       .returning();
     
-    return post || undefined;
+    return updatedPost || undefined;
   }
 
   async deletePost(id: number): Promise<boolean> {
@@ -263,14 +263,14 @@ export class DatabaseStorage implements IStorage {
     return comment;
   }
 
-  async updateComment(id: number, updates: Partial<Comment>): Promise<Comment | undefined> {
-    const [comment] = await db
+  async updateComment(id: number, commentData: Partial<InsertComment>): Promise<Comment | undefined> {
+    const [updatedComment] = await db
       .update(comments)
-      .set(updates)
+      .set(commentData)
       .where(eq(comments.id, id))
       .returning();
     
-    return comment || undefined;
+    return updatedComment || undefined;
   }
 
   async deleteComment(id: number): Promise<boolean> {

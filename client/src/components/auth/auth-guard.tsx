@@ -24,16 +24,11 @@ export function AuthGuard({
   adminOnly = false,
   redirectTo = '/auth'
 }: AuthGuardProps) {
-  const { user, isLoading, isAuthenticated, isAuthReady } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const [isAuthorized, setIsAuthorized] = useState(false);
   
   useEffect(() => {
-    if (!isAuthReady) {
-      // Still loading auth status, don't redirect yet
-      return;
-    }
-
     // Now we have auth status, check if user is authorized
     if (requiredAuth) {
       // Auth is required
@@ -62,10 +57,10 @@ export function AuthGuard({
     
     // User is authorized to view this content
     setIsAuthorized(true);
-  }, [isAuthenticated, isAuthReady, requiredAuth, adminOnly, redirectTo, user, setLocation]);
+  }, [isAuthenticated, requiredAuth, adminOnly, redirectTo, user, setLocation]);
 
   // Show loading indicator while checking auth status
-  if (!isAuthReady || isLoading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

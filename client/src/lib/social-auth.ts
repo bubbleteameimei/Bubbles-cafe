@@ -5,7 +5,7 @@ import {
   AuthError,
   Auth
 } from 'firebase/auth';
-import { auth } from './firebase';
+import { auth } from '../config/firebase';
 
 // Create providers
 const googleProvider = new GoogleAuthProvider();
@@ -34,8 +34,8 @@ export const signInWithGoogle = async () => {
     return {
       id: user.uid,
       email: user.email,
-      name: user.displayName,
-      photoURL: user.photoURL,
+      fullName: user.displayName,
+      avatar: user.photoURL,
       provider: "google",
       token
     };
@@ -85,8 +85,8 @@ export const signInWithApple = async () => {
     return {
       id: user.uid,
       email: user.email,
-      name: user.displayName,
-      photoURL: user.photoURL,
+      fullName: user.displayName,
+      avatar: user.photoURL,
       provider: "apple",
       token
     };

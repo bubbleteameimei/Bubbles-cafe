@@ -2,14 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { auth, signInWithGoogle, signInWithEmail, createUserWithEmail, signOutUser, resetPassword } from '@/config/firebase';
 import { useToast } from '@/hooks/use-toast';
-
-interface User {
-  id: string;
-  email: string;
-  displayName: string;
-  photoURL?: string;
-  isAdmin: boolean;
-}
+import { User } from '@/types/user';
 
 interface FirebaseAuthContextType {
   user: User | null;
@@ -43,8 +36,8 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({
           uid: fbUser.uid,
           email: fbUser.email,
-          displayName: fbUser.displayName,
-          photoURL: fbUser.photoURL,
+          fullName: fbUser.displayName,
+          avatar: fbUser.photoURL,
         }),
       });
 

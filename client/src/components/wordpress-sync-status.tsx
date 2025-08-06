@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { forceSyncNow } from '../lib/wordpress-sync';
 import { useAuth } from '../hooks/use-auth';
+import { User } from '../../../shared/schema';
 import { 
   Collapsible,
   CollapsibleContent,
@@ -63,6 +64,9 @@ export function WordPressSyncStatus() {
   const [syncHistory, setSyncHistory] = useState<SyncStatusEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const { user } = useAuth();
+  
+  // Explicitly type the user as the shared schema User type
+  const typedUser = user as User | null;
   
   useEffect(() => {
     // Function to check and update sync status from localStorage
@@ -140,7 +144,7 @@ export function WordPressSyncStatus() {
   };
   
   // Only admin users can see this component
-  if (!user?.isAdmin) {
+  if (!typedUser?.isAdmin) {
     return null;
   }
   

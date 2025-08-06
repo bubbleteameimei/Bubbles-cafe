@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { User } from '../../../../shared/schema';
 
 interface ProfileFormData {
   username?: string;
@@ -25,22 +26,25 @@ interface UserProfileResponse {
   email: string;
   avatar?: string | null;
   fullName?: string | null;
-  bio?: string | null;
+  metadata?: Record<string, any>;
   isAdmin: boolean;
-  createdAt: string;
+  createdAt: Date;
 }
 
 export function UserProfile() {
-  const { user, isAuthenticated, checkAuth } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  // Explicitly type the user as the shared schema User type
+  const typedUser = user as User | null;
+  
   const [formData, setFormData] = useState<ProfileFormData>({
-    username: user?.username || '',
-    email: user?.email || '',
-    fullName: user?.fullName || '',
-    bio: user?.bio || '',
-    avatar: user?.avatar || '',
+    username: typedUser?.username || '',
+    email: typedUser?.email || '',
+    fullName: typedUser?.fullName || '',
+    bio: (typedUser?.metadata as any)?.bio || '',
+    avatar: typedUser?.avatar || '',
   });
 
   // Query for user profile data
@@ -60,7 +64,7 @@ export function UserProfile() {
         username: profileData.username || '',
         email: profileData.email || '',
         fullName: profileData.fullName || '',
-        bio: profileData.bio || '',
+        bio: profileData.metadata?.bio || '',
         avatar: profileData.avatar || '',
       });
     }
@@ -76,22 +80,12 @@ export function UserProfile() {
       
       const updateData = {
         username: otherData.username,
+        fullName: otherData.fullName,
         metadata: {
-          displayName: otherData.fullName, // Server expects displayName for fullName
           bio: otherData.bio,
           // Note: photoURL/avatar handling removed since we're not allowing image uploads
         }
       };
-      
-      // Also include the fields with both naming conventions to ensure compatibility
-      // Use type assertion to add properties to metadata
-      const extendedMetadata = updateData.metadata as Record<string, any>;
-      
-      if (otherData.fullName) {
-        extendedMetadata.fullName = otherData.fullName;
-      }
-      
-      
       
       return apiRequest<UserProfileResponse>('/api/auth/profile', {
         method: 'PATCH',
@@ -112,7 +106,7 @@ export function UserProfile() {
       
       // Force a full auth refresh after a delay to ensure the server has processed the update
       setTimeout(() => {
-        checkAuth();
+        // checkAuth(); // This line was removed as per the new_code, as checkAuth is no longer imported.
       }, 500);
     },
     onError: (error) => {

@@ -313,8 +313,8 @@ export default function ContentPage() {
           {selectedPost && (
             <PostEditor 
               post={selectedPost}
-              onSave={handleSaveSuccess}
-              onCancel={() => setIsEditDialogOpen(false)}
+              onSaveSuccess={handleSaveSuccess}
+              onClose={() => setIsEditDialogOpen(false)}
             />
           )}
         </DialogContent>

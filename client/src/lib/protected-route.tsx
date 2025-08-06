@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route, RouteComponentProps } from "wouter";
+import { User } from "../../../shared/schema";
 
 export interface ProtectedRouteProps {
   path: string;
@@ -20,6 +21,9 @@ export function ProtectedRoute({
   const { user, isLoading } = useAuth();
   // Use either adminOnly or requireAdmin flags
   const requireAdminAccess = adminOnly || requireAdmin;
+  
+  // Explicitly type the user as the shared schema User type
+  const typedUser = user as User | null;
 
   // If children are provided, use that instead of the component
   if (children) {
@@ -35,7 +39,7 @@ export function ProtectedRoute({
             return <Redirect to="/auth" />;
           }
 
-          if (requireAdminAccess && !user.isAdmin) {
+          if (requireAdminAccess && !typedUser?.isAdmin) {
             return <Redirect to="/" />;
           }
 
@@ -57,7 +61,7 @@ export function ProtectedRoute({
           return <Redirect to="/auth" />;
         }
 
-        if (requireAdminAccess && !user.isAdmin) {
+        if (requireAdminAccess && !typedUser?.isAdmin) {
           return <Redirect to="/" />;
         }
 

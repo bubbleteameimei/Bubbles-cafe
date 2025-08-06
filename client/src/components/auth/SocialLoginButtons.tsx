@@ -9,8 +9,8 @@ import { User } from 'firebase/auth';
 interface SocialUser {
   id: string;
   email: string | null;
-  name: string | null;
-  photoURL: string | null;
+  fullName: string | null;
+  avatar: string | null;
   provider: string;
   token?: string;
 }
@@ -29,8 +29,8 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
     return {
       id: user.uid,
       email: user.email,
-      name: user.displayName,
-      photoURL: user.photoURL,
+      fullName: user.displayName,
+      avatar: user.photoURL,
       provider,
       token
     };
