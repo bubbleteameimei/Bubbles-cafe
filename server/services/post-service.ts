@@ -1,6 +1,6 @@
-import { db } from '../db';
-import { posts, users, postLikes, type Post, type InsertPost } from "@shared/schema";
-import { eq, desc, and, or, sql, like } from "drizzle-orm";
+import { db } from "../storage-db";
+import { posts, users } from "@shared/schema";
+import { eq, sql, desc, like } from "drizzle-orm";
 
 import { postLogger } from '../utils/debug-logger';
 import { handleDatabaseError } from '../utils/error-handler';
@@ -136,11 +136,9 @@ export class PostService {
       }
       if (search) {
         conditions.push(
-          or(
-            like(posts.title, `%${search}%`),
-            like(posts.content, `%${search}%`),
-            like(posts.excerpt, `%${search}%`)
-          )
+          like(posts.title, `%${search}%`),
+          like(posts.content, `%${search}%`),
+          like(posts.excerpt, `%${search}%`)
         );
       }
 
@@ -170,7 +168,7 @@ export class PostService {
         .orderBy(desc(posts.createdAt));
 
       if (conditions.length > 0) {
-        query = query.where(and(...conditions)) as any;
+        query = query.where(sql`(${sql.join(conditions, sql` OR `)})`) as any;
       }
 
       const postsData = await query
@@ -180,7 +178,7 @@ export class PostService {
       // Get total count
       let countQuery = db.select({ count: sql<number>`count(*)` }).from(posts);
       if (conditions.length > 0) {
-        countQuery = countQuery.where(and(...conditions)) as any;
+        countQuery = countQuery.where(sql`(${sql.join(conditions, sql` OR `)})`) as any;
       }
       const [{ count }] = await countQuery;
 
@@ -196,7 +194,7 @@ export class PostService {
   }
 
   // Create post
-  async createPost(postData: InsertPost): Promise<PostWithAuthor> {
+  async createPost(postData: any): Promise<PostWithAuthor> {
     try {
       const [newPost] = await db.insert(posts)
         .values(postData)
@@ -217,7 +215,7 @@ export class PostService {
   }
 
   // Update post
-  async updatePost(id: number, postData: Partial<InsertPost>): Promise<PostWithAuthor | null> {
+  async updatePost(id: number, postData: Partial<any>): Promise<PostWithAuthor | null> {
     try {
       // Get existing post to merge metadata properly
       const existingPost = await this.getPostById(id, true);
@@ -335,7 +333,7 @@ export class PostService {
       })
         .from(posts)
         .leftJoin(users, eq(posts.authorId, users.id))
-        .where(and(...conditions))
+        .where(sql`(${sql.join(conditions, sql` AND `)})`)
         .orderBy(desc(posts.createdAt))
         .limit(limit);
 

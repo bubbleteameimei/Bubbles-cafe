@@ -4,121 +4,63 @@
  * Functions for working with SendGrid email service.
  */
 
-import logger from '../utils/logger';
-import { EmailMessage, EmailResult } from './email-types';
-import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 
-// SendGrid SMTP configuration
-interface SendGridConfig {
-  apiKey: string;
+// SendGrid configuration
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+
+// Check if SendGrid is configured
+export function hasSendGridConfig(): boolean {
+  return !!SENDGRID_API_KEY;
 }
 
-/**
- * Check if SendGrid credentials are available
- * 
- * @returns Boolean indicating if API key is set
- */
-function hasSendGridApiKey(): boolean {
-  return !!process.env.SENDGRID_API_KEY;
+// Initialize SendGrid
+if (SENDGRID_API_KEY) {
+  sgMail.setApiKey(SENDGRID_API_KEY);
 }
 
-/**
- * Create SendGrid transporter
- * 
- * @returns Nodemailer transporter configured for SendGrid
- */
-export function createSendGridTransporter() {
-  if (!hasSendGridApiKey()) {
-    logger.warn('[Email] SendGrid API key not configured');
-    throw new Error('SendGrid API key not configured');
-  }
-  
-  return nodemailer.createTransport({
-    host: 'smtp.sendgrid.net',
-    port: 587,
-    secure: false,
-    auth: {
-      user: 'apikey', // This is literally the string 'apikey', not an environment variable
-      pass: process.env.SENDGRID_API_KEY
-    }
-  });
-}
-
-/**
- * Check SendGrid service status
- * 
- * @returns Promise resolving to boolean indicating if service is available
- */
-export async function checkSendGridStatus(): Promise<boolean> {
+// Send email via SendGrid
+export async function sendEmail(message: {
+  to: string;
+  from?: string;
+  subject: string;
+  text?: string;
+  html?: string;
+}): Promise<{
+  success: boolean;
+  messageId?: string;
+  error?: string;
+}> {
   try {
-    if (!hasSendGridApiKey()) {
-      logger.warn('[Email] SendGrid API key not configured');
-      return false;
-    }
-    
-    const transporter = createSendGridTransporter();
-    const isVerified = await transporter.verify();
-    
-    logger.info('[Email] SendGrid service status check', {
-      status: isVerified ? 'available' : 'unavailable',
-    });
-    
-    return isVerified;
-  } catch (error: any) {
-    logger.error('[Email] Failed to verify SendGrid service', {
-      error: error.message,
-      stack: error.stack,
-    });
-    
-    return false;
-  }
-}
-
-/**
- * Send an email using SendGrid
- * 
- * @param message Email message to send
- * @returns Promise resolving to the result of the email send operation
- */
-export async function sendEmail(message: EmailMessage): Promise<EmailResult> {
-  try {
-    if (!hasSendGridApiKey()) {
+    if (!SENDGRID_API_KEY) {
       throw new Error('SendGrid API key not configured');
     }
-    
-    const transporter = createSendGridTransporter();
-    const result = await transporter.sendMail({
+
+    const msg: any = {
+      to: message.to,
       from: message.from || process.env.SENDGRID_FROM || 'noreply@bubblescafe.com',
-      to: message.to,
-      subject: message.subject,
-      text: message.text,
-      html: message.html,
-      replyTo: message.replyTo,
-      attachments: message.attachments
-    });
-    
-    logger.info('[Email] Successfully sent email via SendGrid', {
-      to: message.to,
-      subject: message.subject,
-      messageId: result.messageId
-    });
+      subject: message.subject
+    };
+
+    if (message.text) {
+      msg.text = message.text;
+    }
+
+    if (message.html) {
+      msg.html = message.html;
+    }
+
+    const response = await sgMail.send(msg);
     
     return {
       success: true,
-      service: 'sendgrid',
-      messageId: result.messageId,
-      details: result
+      messageId: response[0]?.headers['x-message-id'] || 'unknown'
     };
-  } catch (error: any) {
-    logger.error('[Email] Failed to send email via SendGrid', {
-      error: error.message,
-      stack: error.stack
-    });
-    
+  } catch (error) {
+    console.error('SendGrid email sending failed:', error);
     return {
       success: false,
-      service: 'sendgrid',
-      error: error
+      error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 }

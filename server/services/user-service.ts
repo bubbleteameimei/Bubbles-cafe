@@ -1,6 +1,6 @@
-import { db } from '../db';
-import { users, type User, type InsertUser } from "@shared/schema";
-import { eq, sql, desc, like, and, or } from "drizzle-orm";
+import { db } from "../storage-db";
+import { users } from "@shared/schema";
+import { eq, sql, desc, like } from "drizzle-orm";
 
 import { userLogger } from '../utils/debug-logger';
 import { handleDatabaseError } from '../utils/error-handler';
@@ -128,7 +128,7 @@ export class UserService {
   }
 
   // Create user
-  async createUser(userData: InsertUser & { password?: string }): Promise<UserProfile> {
+  async createUser(userData: { password?: string } & { [key: string]: any }): Promise<UserProfile> {
     try {
       // Handle password hashing if password is provided
       let insertData = { ...userData };
@@ -172,7 +172,7 @@ export class UserService {
   }
 
   // Update user
-  async updateUser(id: number, userData: Partial<InsertUser>): Promise<UserProfile | null> {
+  async updateUser(id: number, userData: Partial<{ [key: string]: any }>): Promise<UserProfile | null> {
     try {
       // Get existing user to merge metadata properly
       const existingUser = await this.getUserById(id, true);

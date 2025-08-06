@@ -68,38 +68,43 @@ router.post('/register',
 router.post('/login',
   authRateLimiter,
   validateBody(userLoginSchema),
-  asyncHandler(async (req: Request, res: Response, next) => {
-    passport.authenticate('local', (err: any, user: any, info: any) => {
+  asyncHandler(async (req: Request, res: Response, _next: any) => {
+    passport.authenticate('local', (err: any, user: any, _info: any) => {
       if (err) {
         authLogger.error('Login authentication error', { error: err });
-        return next(createError.internal('Authentication failed'));
+        return _next(createError.internal('Authentication failed'));
       }
       
       if (!user) {
         authLogger.warn('Login failed - invalid credentials');
-        return next(createError.unauthorized('Invalid email or password'));
+        return _next(createError.unauthorized('Invalid email or password'));
       }
       
       req.logIn(user, (err) => {
         if (err) {
           authLogger.error('Login session error', { error: err });
-          return next(createError.internal('Login failed'));
+          return _next(createError.internal('Login failed'));
         }
         
         // Set session expiration based on rememberMe
         if (req.body.rememberMe) {
           req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-          authLogger.debug('Extended session set for remember me');
         }
         
         authLogger.info('User logged in successfully', { userId: user.id });
-        res.json({
+        
+        return res.json({
           success: true,
-          user,
+          user: {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            isAdmin: user.isAdmin
+          },
           message: 'Login successful'
         });
       });
-    })(req, res, next);
+    })(req, res, _next);
   })
 );
 
@@ -139,7 +144,7 @@ router.get('/me',
     }
     
     authLogger.debug('User info request', { userId: req.user.id });
-    res.json({ user: req.user });
+    return res.json({ user: req.user });
   })
 );
 
@@ -163,14 +168,14 @@ router.post('/forgot-password',
       }
       
       // Generate reset token
-      const resetToken = await storage.createPasswordResetToken(user.id);
+      await storage.createPasswordResetToken(user.id);
       
       // Send reset email (implement email service)
       // await emailService.sendPasswordResetEmail(email, resetToken);
       
       authLogger.info('Password reset token created', { userId: user.id });
       
-      res.json({
+      return res.json({
         success: true,
         message: 'If an account with that email exists, a password reset link has been sent.'
       });
@@ -206,11 +211,11 @@ router.post('/reset-password',
       
       authLogger.info('Password reset successful', { userId: resetToken.userId });
       
-      res.json({
+      return res.json({
         success: true,
         message: 'Password reset successful'
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error.statusCode) throw error;
       authLogger.error('Password reset error', { error });
       throw createError.internal('Password reset failed');
@@ -254,11 +259,11 @@ router.post('/change-password',
       
       authLogger.info('Password changed successfully', { userId });
       
-      res.json({
+      return res.json({
         success: true,
         message: 'Password changed successfully'
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error.statusCode) throw error;
       authLogger.error('Password change error', { userId, error });
       throw createError.internal('Password change failed');

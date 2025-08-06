@@ -89,7 +89,7 @@ router.get('/:postId', isAuthenticated, async (req, res) => {
       )
       .limit(1);
     
-    res.json({
+    return res.json({
       success: true,
       bookmarked: bookmark.length > 0,
       bookmark: bookmark[0] || null
@@ -101,7 +101,7 @@ router.get('/:postId', isAuthenticated, async (req, res) => {
       postId: req.params.postId
     });
     
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to check bookmark status',
       error: error.message
@@ -164,7 +164,7 @@ router.post('/:postId', isAuthenticated, async (req, res) => {
       })
       .returning();
     
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Post bookmarked successfully',
       bookmark: newBookmark[0]
@@ -176,7 +176,7 @@ router.post('/:postId', isAuthenticated, async (req, res) => {
       postId: req.params.postId
     });
     
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to bookmark post',
       error: error.message
@@ -187,7 +187,7 @@ router.post('/:postId', isAuthenticated, async (req, res) => {
 /**
  * DELETE /api/reader/bookmarks/:postId
  * 
- * Remove a bookmark
+ * Remove bookmark from a post
  */
 router.delete('/:postId', isAuthenticated, async (req, res) => {
   try {
@@ -208,7 +208,8 @@ router.delete('/:postId', isAuthenticated, async (req, res) => {
       });
     }
     
-    const deletedBookmarks = await db
+    // Delete bookmark
+    const deletedBookmark = await db
       .delete(bookmarks)
       .where(
         and(
@@ -218,26 +219,25 @@ router.delete('/:postId', isAuthenticated, async (req, res) => {
       )
       .returning();
     
-    if (deletedBookmarks.length === 0) {
+    if (deletedBookmark.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Bookmark not found'
       });
     }
     
-    res.json({
+    return res.json({
       success: true,
-      message: 'Bookmark removed successfully',
-      bookmark: deletedBookmarks[0]
+      message: 'Bookmark removed successfully'
     });
   } catch (error: any) {
-    logger.error('[Bookmarks] Error removing bookmark', {
+    logger.error('[Bookmarks] Error deleting bookmark', {
       error: error.message,
       stack: error.stack,
       postId: req.params.postId
     });
     
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to remove bookmark',
       error: error.message

@@ -1,16 +1,26 @@
 import { db } from "./db";
 import { eq, desc, and, or, sql, like } from "drizzle-orm";
 import {
-  users, posts, comments, contactMessages, bookmarks, sessions, userFeedback, newsletterSubscriptions,
-  readingProgress, postLikes, userPrivacySettings, resetTokens, secretProgress, analytics, authorStats,
-  type User, type Post, type Comment, type InsertUser, type InsertPost, type InsertComment,
-  type NewsletterSubscription, type InsertNewsletterSubscription,
-  type ReadingProgress, type InsertReadingProgress, type InsertProgress,
-  type AuthorStats, type Analytics, type Session, type InsertSession,
+  users, posts, comments, bookmarks, sessions, contactMessages, userFeedback,
+  newsletterSubscriptions, reportedContent, commentReplies, writingChallenges,
+  challengeEntries, contentProtection, authorTips, webhooks, analytics, siteSettings,
+  adminNotifications, userProgress, siteAnalytics, performanceMetrics, userPrivacySettings,
+  readingProgress, resetTokens, secretProgress, authorStats,
+  type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment,
+  type Bookmark, type InsertBookmark, type Session, type InsertSession,
+  type ContactMessage, type InsertContactMessage, type UserFeedback, type InsertUserFeedback,
+  type NewsletterSubscription, type InsertNewsletterSubscription, type ReportedContent,
+  type InsertReportedContent, type CommentReply, type InsertCommentReply,
+  type WritingChallenge, type InsertWritingChallenge, type ChallengeEntry, type InsertChallengeEntry,
+  type ContentProtection, type InsertContentProtection, type AuthorTip, type InsertAuthorTip,
+  type Webhook, type InsertWebhook, type Analytics, type InsertAnalytics,
+  type SiteSetting, type InsertSiteSetting, type AdminNotification, type InsertAdminNotification,
+  type UserProgress, type InsertUserProgress, type SiteAnalytics, type InsertSiteAnalytics,
+  type PerformanceMetric, type InsertPerformanceMetric, type UserPrivacySettings,
+  type InsertUserPrivacySettings, type ReadingProgress, type InsertProgress,
   type ResetToken, type InsertResetToken, type SecretProgress, type InsertSecretProgress,
-  type Bookmark, type InsertBookmark, type ContactMessage, type InsertContactMessage,
-  type UserFeedback, type InsertUserFeedback
-} from "../shared/schema";
+  type AuthorStats, type InsertAuthorStats
+} from "@shared/schema";
 
 import * as bcrypt from 'bcryptjs';
 
@@ -409,7 +419,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(newsletterSubscriptions)
-      .orderBy(desc(newsletterSubscriptions.subscribedAt));
+      .orderBy(desc(newsletterSubscriptions.createdAt));
   }
 
   async updateNewsletterSubscriptionStatus(id: number, status: string): Promise<NewsletterSubscription> {

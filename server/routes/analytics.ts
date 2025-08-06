@@ -571,7 +571,7 @@ router.get('/reading-time-test', async (req: Request, res: Response) => {
  * Engagement metrics adapter endpoint (unauthenticated) for the dashboard
  * This transforms the reading time data to match the format expected by analytics-dashboard
  */
-router.get('/engagement-test', async (req: Request, res: Response) => {
+router.get('/engagement-test', async (_req: Request, res: Response) => {
   try {
     // Get analytics summary as base data
     const analyticsSummary = await storage.getAnalyticsSummary();
@@ -587,17 +587,17 @@ router.get('/engagement-test', async (req: Request, res: Response) => {
       returning: Math.round((analyticsSummary.totalViews || 1000) * 0.4)
     };
     
-    res.json(engagementMetrics);
+    return res.json(engagementMetrics);
   } catch (error) {
     analyticsLogger.error('Error creating engagement metrics:', error);
-    res.status(500).json({ message: "Failed to create engagement metrics" });
+    return res.status(500).json({ message: "Failed to create engagement metrics" });
   }
 });
 
 /**
  * Site analytics test endpoint (unauthenticated) for the dashboard
  */
-router.get('/site-test', async (req: Request, res: Response) => {
+router.get('/site-test', async (_req: Request, res: Response) => {
   try {
     // Get analytics summary as base data
     const analyticsSummary = await storage.getAnalyticsSummary();
@@ -610,21 +610,18 @@ router.get('/site-test', async (req: Request, res: Response) => {
       bounceRate: 38.5 // Average bounce rate in percentage
     };
     
-    res.json(siteAnalytics);
+    return res.json(siteAnalytics);
   } catch (error) {
     analyticsLogger.error('Error creating site analytics:', error);
-    res.status(500).json({ message: "Failed to create site analytics" });
+    return res.status(500).json({ message: "Failed to create site analytics" });
   }
 });
 
 /**
  * Device distribution test endpoint (unauthenticated) for the dashboard
  */
-router.get('/device-distribution-test', async (req: Request, res: Response) => {
+router.get('/device-distribution-test', async (_req: Request, res: Response) => {
   try {
-    // Get analytics summary as base data
-    const analyticsSummary = await storage.getAnalyticsSummary();
-    
     // Use realistic device distribution percentages (based on 2024 web averages)
     const deviceDistribution = {
       desktop: 53, // 53% desktop users
@@ -632,10 +629,10 @@ router.get('/device-distribution-test', async (req: Request, res: Response) => {
       tablet: 5    // 5% tablet users
     };
     
-    res.json(deviceDistribution);
+    return res.json(deviceDistribution);
   } catch (error) {
     analyticsLogger.error('Error creating device distribution:', error);
-    res.status(500).json({ message: "Failed to create device distribution" });
+    return res.status(500).json({ message: "Failed to create device distribution" });
   }
 });
 

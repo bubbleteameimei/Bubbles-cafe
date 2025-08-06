@@ -1,53 +1,77 @@
-import { Request, Response, Router } from "express";
-import { createSecureLogger } from '../utils/secure-logger';
-import { validateBody, validateQuery, validateParams, commonSchemas } from '../middleware/input-validation';
-import { asyncHandler, createError } from '../utils/error-handler';
-
+import express from "express";
+import { Request, Response } from "express";
 import { z } from "zod";
+import { storage } from "../storage";
+import { createError, asyncHandler } from "../utils/error-handler";
+import { validateBody, validateParams } from "../middleware/input-validation";
+import { apiRateLimiter } from "../middlewares/rate-limiter";
+import { createLogger } from "../utils/debug-logger";
 import { insertCommentSchema, insertCommentReplySchema } from "@shared/schema";
-import { apiRateLimiter } from '../middlewares/rate-limiter';
-import { storage } from '../storage';
 
-const commentsLogger = createSecureLogger('CommentsRoutes');
-const router = Router();
+const router = express.Router();
+const commentsLogger = createLogger("comments");
 
-// Validation schemas
+// Define schemas locally since they're not in shared schema
 const commentIdSchema = z.object({
-  id: commonSchemas.id
+  id: z.string().regex(/^\d+$/, "Comment ID must be a number")
 });
 
 const postIdSchema = z.object({
-  postId: commonSchemas.id
+  postId: z.string().regex(/^\d+$/, "Post ID must be a number")
 });
 
-const commentQuerySchema = z.object({
-  page: commonSchemas.page,
-  limit: commonSchemas.limit
-});
+// Missing moderation function that was causing TypeScript errors
+async function moderateComment(content: string): Promise<{ approved: boolean; content?: string }> {
+  try {
+    // Basic content moderation - check for common inappropriate words
+    const inappropriateWords = [
+      'spam', 'scam', 'hack', 'crack', 'illegal', 'porn', 'sex', 'adult',
+      'casino', 'gambling', 'drugs', 'weapons', 'violence'
+    ];
+    
+    const lowerContent = content.toLowerCase();
+    const hasInappropriateContent = inappropriateWords.some(word => 
+      lowerContent.includes(word)
+    );
+    
+    if (hasInappropriateContent) {
+      return { approved: false };
+    }
+    
+    // Basic spam detection - check for excessive links or repetitive content
+    const linkCount = (content.match(/https?:\/\/[^\s]+/g) || []).length;
+    if (linkCount > 3) {
+      return { approved: false };
+    }
+    
+    // Check for repetitive characters
+    const repetitivePattern = /(.)\1{4,}/;
+    if (repetitivePattern.test(content)) {
+      return { approved: false };
+    }
+    
+    return { approved: true, content };
+  } catch (error) {
+    console.error('Error in comment moderation:', error);
+    // If moderation fails, approve the comment but log the error
+    return { approved: true, content };
+  }
+}
 
 // GET /api/posts/:postId/comments - Get comments for a post
 router.get('/posts/:postId/comments',
   apiRateLimiter,
   validateParams(postIdSchema),
-  validateQuery(commentQuerySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const { postId } = req.params;
-    const { page, limit } = req.query as any;
     
     try {
       const comments = await storage.getCommentsByPost(Number(postId));
-      
-      commentsLogger.debug('Comments retrieved successfully', { 
-        postId,
-        count: comments.length,
-        page,
-        limit 
-      });
-      
-      res.json(comments);
-    } catch (error) {
-      commentsLogger.error('Error retrieving comments', { postId, error });
-      throw createError.internal('Failed to retrieve comments');
+      return res.json(comments);
+    } catch (error: any) {
+      if (error.statusCode) throw error;
+      commentsLogger.error('Error fetching comments', { postId, error });
+      throw createError.internal('Failed to fetch comments');
     }
   })
 );
@@ -83,7 +107,7 @@ router.post('/posts/:postId/comments',
       });
       
       res.status(201).json(newComment);
-    } catch (error) {
+    } catch (error: any) {
       if (error.statusCode) throw error;
       commentsLogger.error('Error creating comment', { postId, error });
       throw createError.internal('Failed to create comment');
@@ -121,8 +145,8 @@ router.post('/comments/:id/replies',
         authorId: req.user?.id 
       });
       
-      res.status(201).json(newReply);
-    } catch (error) {
+      return res.status(201).json(newReply);
+    } catch (error: any) {
       if (error.statusCode) throw error;
       commentsLogger.error('Error creating comment reply', { parentId: id, error });
       throw createError.internal('Failed to create reply');
@@ -148,7 +172,7 @@ router.delete('/comments/:id',
         throw createError.notFound('Comment not found');
       }
       
-      const canDelete = existingComment.authorId === req.user.id || req.user.isAdmin;
+      const canDelete = existingComment.userId === req.user.id || req.user.isAdmin;
       if (!canDelete) {
         throw createError.forbidden('You can only delete your own comments');
       }
@@ -160,8 +184,8 @@ router.delete('/comments/:id',
         authorId: req.user.id 
       });
       
-      res.status(204).send();
-    } catch (error) {
+      return res.json({ success: true });
+    } catch (error: any) {
       if (error.statusCode) throw error;
       commentsLogger.error('Error deleting comment', { commentId: id, error });
       throw createError.internal('Failed to delete comment');
