@@ -22,22 +22,21 @@ const DefaultLoadingFallback = () => (
 );
 
 // Default error fallback
-const DefaultErrorFallback: ComponentType<LazyComponentProps> = ({ error, retry }) => (
+const DefaultErrorFallback: ComponentType<LazyComponentProps> = ({ retry }) => (
   <div className="flex flex-col items-center justify-center p-4 text-center">
-    <div className="text-destructive mb-2">
-      <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
+    <div className="mb-4 text-red-500">
+      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
       </svg>
-      Component failed to load
     </div>
-    {retry && (
-      <button 
-        onClick={retry}
-        className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-      >
-        Try Again
-      </button>
-    )}
+    <h3 className="text-lg font-semibold mb-2">Failed to load component</h3>
+    <p className="text-gray-600 mb-4">Something went wrong while loading this component.</p>
+    <button
+      onClick={retry}
+      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+    >
+      Try Again
+    </button>
   </div>
 );
 
@@ -118,14 +117,26 @@ export function createLazyComponent<T extends ComponentType<any>>(
       setRetryKey(prev => prev + 1);
     }, []);
 
+    React.useEffect(() => {
+      if (retryKey > 0) {
+        setError(null);
+      }
+    }, [retryKey]);
+
     if (error) {
       return <ErrorFallback error={error} retry={handleRetry} />;
     }
 
     return (
       <Suspense fallback={fallback}>
-        <ErrorBoundary onError={setError}>
-          <LazyComponent key={retryKey} {...props} ref={ref} />
+        <ErrorBoundary
+          fallback={errorFallback}
+          onError={(error) => {
+            console.error('Lazy component error:', error);
+            setRetryKey(prev => prev + 1);
+          }}
+        >
+          <LazyComponent key={retryKey} {...props} />
         </ErrorBoundary>
       </Suspense>
     );
@@ -142,7 +153,7 @@ class ErrorBoundary extends React.Component<
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: Error) {
+  static getDerivedStateFromError(_error: Error) {
     return { hasError: true };
   }
 
@@ -208,7 +219,7 @@ export function createIntersectionLazyComponent<T extends ComponentType<any>>(
     }
 
     const LazyComponent = createLazyComponent(importFn, lazyOptions);
-    return <LazyComponent {...props} ref={ref} />;
+    return <LazyComponent {...props} />;
   });
 }
 

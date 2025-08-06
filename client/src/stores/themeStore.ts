@@ -1,22 +1,18 @@
-// This is a placeholder file until Zustand is properly installed
-// Using React's useState as a temporary solution
+import { create } from 'zustand';
 
-type Theme = 'light' | 'dark' | 'system';
-
-interface ThemeState {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-  toggleTheme: () => void;
+interface ThemeStore {
+  theme: 'light' | 'dark' | 'system';
+  setTheme: (theme: 'light' | 'dark' | 'system') => void;
 }
 
 // Default state that will be replaced with proper Zustand store
-let state: Theme = 'system';
+let state: ThemeStore['theme'] = 'system';
 
 // Mock Zustand store
 export const useThemeStore = () => {
   return {
     theme: state,
-    setTheme: (theme: Theme) => { state = theme; },
+    setTheme: (theme: ThemeStore['theme']) => { state = theme; },
     toggleTheme: () => { 
       state = state === 'light' 
         ? 'dark' 

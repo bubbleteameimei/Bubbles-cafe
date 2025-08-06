@@ -44,3 +44,22 @@ export async function verifyGmailConfig(): Promise<boolean> {
 
 // Export the transporter for use in other modules
 export const gmailTransporter = createGmailTransporter();
+
+export async function checkGmailStatus(): Promise<boolean> {
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD
+      }
+    });
+    
+    // Test the connection
+    await transporter.verify();
+    return true;
+  } catch (error) {
+    console.error('Gmail service check failed:', error);
+    return false;
+  }
+}

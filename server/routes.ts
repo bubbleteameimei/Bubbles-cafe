@@ -13,7 +13,12 @@ import * as session from 'express-session';
 
 import { sanitizeHtml, stripHtml } from './utils/sanitizer';
 import { z } from "zod";
-import { insertPostSchema, posts, type InsertUserFeedback, type PostMetadata } from "../shared/schema";
+import { insertPostSchema, posts, type InsertUserFeedback, type PostMetadata, insertCommentReplySchema } from "../shared/schema";
+
+// Add missing imports for AI feedback functions
+import { generateResponseSuggestion, getResponseHints } from './utils/feedback-ai';
+import { generateEnhancedResponse, generateResponseAlternatives } from './utils/enhanced-feedback-ai';
+import { createTransport } from 'nodemailer';
 
 import moderationRouter from './routes/moderation';
 import { adminRoutes } from './routes/admin';
@@ -1362,253 +1367,65 @@ export function registerRoutes(app: Express): void {
   // Backup reaction endpoint for likes/dislikes
   app.post("/api/posts/:postId/react", async (req, res) => {
     try {
-      const postIdParam = req.params.postId;
-      let postId: number;
-      
-      // Verify the parameter is valid
-      if (!postIdParam) {
-        console.warn(`[POST /api/posts/:postId/reaction] Missing post ID parameter`);
-        return res.status(400).json({ 
-          message: "Missing post ID parameter",
-          likesCount: 0,
-          dislikesCount: 0 
-        });
-      }
-      
-      // Check if isLike is properly provided
-      if (req.body.isLike !== true && req.body.isLike !== false && req.body.isLike !== null) {
-        console.warn(`[POST /api/posts/:postId/reaction] Invalid isLike value:`, req.body.isLike);
-        return res.status(400).json({ 
-          message: "isLike must be true, false, or null",
-          likesCount: 0,
-          dislikesCount: 0 
-        });
-      }
-      
-      // Check if postId is numeric or a slug
-      if (/^\d+$/.test(postIdParam)) {
-        postId = parseInt(postIdParam);
-        
-        // Verify the post exists
-        try {
-          const post = await storage.getPostById(postId);
-          if (!post) {
-            
-            return res.status(404).json({ 
-              message: "Post not found",
-              likesCount: 0,
-              dislikesCount: 0 
-            });
-          }
-        } catch (err) {
-          console.error(`[POST /api/posts/:postId/reaction] Error finding post with ID ${postId}:`, err);
-          return res.status(404).json({ 
-            message: "Post not found or database error",
-            likesCount: 0,
-            dislikesCount: 0 
-          });
-        }
-      } else {
-        // It's a slug, we need to find the corresponding post ID
-        try {
-          const post = await storage.getPostBySlug(postIdParam);
-          if (!post) {
-            
-            return res.status(404).json({ 
-              message: "Post not found",
-              likesCount: 0,
-              dislikesCount: 0 
-            });
-          }
-          postId = post.id;
-        } catch (err) {
-          console.error(`[POST /api/posts/:postId/reaction] Error finding post with slug ${postIdParam}:`, err);
-          return res.status(404).json({ 
-            message: "Post not found or database error",
-            likesCount: 0,
-            dislikesCount: 0 
-          });
-        }
-      }
-      
+      const postId = parseInt(req.params.postId);
       const { isLike } = req.body;
-
       
-
-      // For logged-in users, use their ID
-      if (req.user?.id) {
-        const userId = req.user.id;
-        const existingLike = await storage.getPostLike(postId, userId);
-
-        if (existingLike) {
-          if (existingLike.isLike === isLike) {
-            
-            await storage.removePostLike(postId, userId);
-          } else {
-            
-            await storage.updatePostLike(postId, userId, isLike);
-          }
-        } else {
-          
-          await storage.createPostLike(postId, userId, isLike);
-        }
-      } else {
-        // For anonymous users, store likes in session
-        if (!req.session.likes) {
-          req.session.likes = {};
-        }
-
-        const sessionLikes = req.session.likes;
-        const postKey = postId.toString();
-
-        if (sessionLikes[postKey] === isLike) {
-          // Remove like if same button clicked
-          delete sessionLikes[postKey];
-          
-        } else {
-          // Set or update like
-          sessionLikes[postKey] = isLike;
-          
-        }
+      if (isNaN(postId)) {
+        return res.status(400).json({ error: "Invalid post ID" });
       }
-
-      // Get updated counts (combine database and session likes) with error handling
-      try {
-        const dbCounts = await storage.getPostLikeCounts(postId);
-        const counts = {
-          likesCount: dbCounts.likesCount || 0,
-          dislikesCount: dbCounts.dislikesCount || 0
-        };
-
-        // For consistency, we no longer add session likes to the count
-        // This ensures index and reader pages show identical counts
-        // The like/dislike data is still tracked in the session for UI state
-        
-        
-        res.json({
-          ...counts,
-          message: req.user?.id
-            ? `Successfully ${isLike !== null ? (isLike ? 'liked' : 'disliked') : 'removed reaction from'} the post`
-            : 'Reaction recorded anonymously'
-        });
-      } catch (error) {
-        console.error(`[Reaction] Error getting counts for post ${postId}:`, error);
-        // Return a graceful response even if counts fail
-        res.json({
-          likesCount: 0,
-          dislikesCount: 0,
-          message: req.user?.id
-            ? `Reaction processed but counts unavailable`
-            : 'Anonymous reaction processed',
-          error: "Failed to retrieve updated counts"
-        });
+      
+      // Update post likes/dislikes count
+      if (isLike === true) {
+        await db.update(posts).set({
+          likesCount: sql`${posts.likesCount} + 1`
+        }).where(eq(posts.id, postId));
+      } else if (isLike === false) {
+        await db.update(posts).set({
+          dislikesCount: sql`${posts.dislikesCount} + 1`
+        }).where(eq(posts.id, postId));
       }
-    } catch (error) {
-      console.error("[Reaction] Error handling post reaction:", error);
-      res.status(500).json({
-        message: error instanceof Error
-          ? error.message
-          : "Failed to update reaction status",
-        likesCount: 0,
-        dislikesCount: 0
+      
+      // Get updated counts
+      const [updatedPost] = await db.select({
+        likesCount: posts.likesCount,
+        dislikesCount: posts.dislikesCount
+      }).from(posts).where(eq(posts.id, postId));
+      
+      return res.json({
+        message: isLike === true ? 'Post liked!' : isLike === false ? 'Post disliked!' : 'Reaction removed',
+        counts: updatedPost
       });
+    } catch (error) {
+      console.error('Error handling post reaction:', error);
+      return res.status(500).json({ error: "Failed to update reaction" });
     }
   });
 
   // Add a CSRF-free read-only endpoint for getting reaction counts
   app.get("/api/no-csrf/reactions/:postId", async (req, res) => {
     try {
-      const postIdParam = req.params.postId;
-      let postId: number;
+      const postId = parseInt(req.params.postId);
       
-      // Verify the parameter is valid
-      if (!postIdParam) {
-        console.warn(`[GET /api/posts/:postId/reactions] Missing post ID parameter`);
-        return res.status(400).json({ 
-          message: "Missing post ID parameter",
-          likesCount: 0,
-          dislikesCount: 0 
-        });
+      if (isNaN(postId)) {
+        return res.status(400).json({ error: "Invalid post ID" });
       }
       
-      // Check if postId is numeric or a slug
-      if (/^\d+$/.test(postIdParam)) {
-        postId = parseInt(postIdParam);
-        
-        // Verify the post exists
-        try {
-          const post = await storage.getPostById(postId);
-          if (!post) {
-            
-            return res.status(404).json({ 
-              message: "Post not found",
-              likesCount: 0,
-              dislikesCount: 0 
-            });
-          }
-        } catch (err) {
-          console.error(`[GET /api/posts/:postId/reactions] Error finding post with ID ${postId}:`, err);
-          return res.status(404).json({ 
-            message: "Post not found or database error",
-            likesCount: 0,
-            dislikesCount: 0 
-          });
-        }
-      } else {
-        // It's a slug, we need to find the corresponding post ID
-        try {
-          const post = await storage.getPostBySlug(postIdParam);
-          if (!post) {
-            
-            return res.status(404).json({ 
-              message: "Post not found",
-              likesCount: 0,
-              dislikesCount: 0 
-            });
-          }
-          postId = post.id;
-        } catch (err) {
-          console.error(`[GET /api/posts/:postId/reactions] Error finding post with slug ${postIdParam}:`, err);
-          return res.status(404).json({ 
-            message: "Post not found or database error",
-            likesCount: 0,
-            dislikesCount: 0 
-          });
-        }
+      const [post] = await db.select({
+        likesCount: posts.likesCount,
+        dislikesCount: posts.dislikesCount
+      }).from(posts).where(eq(posts.id, postId));
+      
+      if (!post) {
+        return res.status(404).json({ error: "Post not found" });
       }
       
-      
-
-      try {
-        const dbCounts = await storage.getPostLikeCounts(postId);
-        const counts = {
-          likesCount: dbCounts.likesCount || 0,
-          dislikesCount: dbCounts.dislikesCount || 0
-        };
-
-        // For consistency, we no longer add session likes to the count
-        // This ensures index and reader pages show identical counts
-        // The like/dislike data is still tracked in the session for UI state
-        
-        
-        res.json(counts);
-      } catch (error) {
-        console.error(`[Reaction] Error fetching like counts for post ${postId}:`, error);
-        // Return zeros instead of error to improve UX
-        res.json({
-          likesCount: 0,
-          dislikesCount: 0,
-          message: "Error retrieving counts"
-        });
-      }
-    } catch (error) {
-      console.error("[Reaction] Error in main reaction handler:", error);
-      // Return zeros instead of error to improve UX
-      res.status(500).json({
-        message: error instanceof Error ? error.message : "Failed to fetch reaction counts",
-        likesCount: 0,
-        dislikesCount: 0
+      return res.json({
+        likesCount: post.likesCount || 0,
+        dislikesCount: post.dislikesCount || 0
       });
+    } catch (error) {
+      console.error('Error fetching post reactions:', error);
+      return res.status(500).json({ error: "Failed to fetch reactions" });
     }
   });
 
@@ -1616,41 +1433,48 @@ export function registerRoutes(app: Express): void {
     try {
       const commentId = parseInt(req.params.commentId);
       const { isUpvote } = req.body;
-
-      // Generate a user ID from IP if not logged in
-      let userId = req.user?.id;
+      
+      if (isNaN(commentId)) {
+        return res.status(400).json({ error: "Invalid comment ID" });
+      }
+      
+      if (typeof isUpvote !== 'boolean') {
+        return res.status(400).json({ error: "isUpvote must be a boolean" });
+      }
+      
+      const userId = req.user?.id;
       if (!userId) {
-        const ip = req.ip || '127.0.0.1';
-        // Create a simple hash of the IP address instead of using bcrypt
-        const ipHash = Buffer.from(ip).toString('base64');
-        userId = parseInt(ipHash.replace(/\D/g, '').slice(0, 9), 10);
+        return res.status(401).json({ error: "Authentication required" });
       }
-
-      // Convert userId to string for storage functions
+      
       const userIdStr = userId.toString();
-
+      
       // Check if user has already voted
-      const existingVote = await storage.getCommentVote(commentId, userIdStr);
-
+      const existingVote = await storage.getCommentVote(commentId, parseInt(userIdStr));
+      
       if (existingVote) {
+        // Remove existing vote
+        await storage.removeCommentVote(commentId, parseInt(userIdStr));
+        
+        // If same vote type, just remove it (toggle off)
         if (existingVote.isUpvote === isUpvote) {
-          // Remove vote if clicking same button
-          await storage.removeCommentVote(commentId, userIdStr);
-        } else {
-          // Change vote
-          await storage.updateCommentVote(commentId, userIdStr, isUpvote);
+          return res.json({ message: "Vote removed" });
         }
-      } else {
-        // Create new vote
-        await storage.createCommentVote(commentId, userIdStr, isUpvote);
       }
-
+      
+      // Add new vote
+      await storage.updateCommentVote(commentId, parseInt(userIdStr), isUpvote);
+      
       // Get updated vote counts
       const counts = await storage.getCommentVoteCounts(commentId);
-      res.json(counts);
+      
+      return res.json({
+        message: isUpvote ? "Comment upvoted!" : "Comment downvoted!",
+        counts
+      });
     } catch (error) {
-      console.error("Error handling comment vote:", error);
-      res.status(500).json({ message: "Failed to update vote" });
+      console.error('Error handling comment vote:', error);
+      return res.status(500).json({ error: "Failed to update vote" });
     }
   });
 
@@ -1658,64 +1482,29 @@ export function registerRoutes(app: Express): void {
   app.post("/api/comments/:commentId/replies", async (req, res) => {
     try {
       const commentId = parseInt(req.params.commentId);
-      const { content, author } = req.body;
-
-      // Validate basic input
-      if (!content?.trim()) {
-        return res.status(400).json({
-          message: "Reply content is required"
-        });
+      const { content } = req.body;
+      
+      if (isNaN(commentId)) {
+        return res.status(400).json({ error: "Invalid comment ID" });
       }
       
-      // Sanitize user input using the sanitizer imported at the top of the file
-      const sanitizedContent = sanitizeHtml(content.trim());
-      const sanitizedAuthor = author ? stripHtml(author.trim()) : 'Anonymous';
-
-      // Validate input using schema
-      const replyData = insertCommentReplySchema.parse({
-        commentId,
-        content: sanitizedContent,
-        author: sanitizedAuthor
-      });
-
-      // Check for filtered words
-      const filteredWords = [
-        'hate', 'kill', 'racist', 'offensive', 'slur',
-        'violence', 'death', 'murder', 'abuse', 'discriminate'
-      ];
-
-      const containsFilteredWord = filteredWords.some(word =>
-        sanitizedContent.toLowerCase().includes(word.toLowerCase())
-      );
-
-      // Create reply with proper metadata
-      const reply = await storage.createCommentReply({
-        ...replyData,
-        is_approved: !containsFilteredWord, // Using is_approved instead of approved
-        metadata: {
-          author: sanitizedAuthor,
-          moderated: containsFilteredWord,
-          originalContent: sanitizedContent,
-          isAnonymous: !req.user?.id,
-          upvotes: 0,
-          downvotes: 0,
-          sanitized: sanitizedContent !== content.trim() || sanitizedAuthor !== (author?.trim() || 'Anonymous')
-        }
-      });
-
-      res.status(201).json(reply);
-    } catch (error) {
-      console.error("Error creating reply:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          message: "Invalid reply data",
-          errors: error.errors.map(err => ({
-            path: err.path.join('.'),
-            message: err.message
-          }))
-        });
+      if (!content || typeof content !== 'string') {
+        return res.status(400).json({ error: "Content is required" });
       }
-      res.status(500).json({ message: "Failed to create reply" });
+      
+      const replyData = insertCommentReplySchema.parse({
+        content: sanitizeHtml(content),
+        parentId: commentId,
+        authorId: req.user?.id || null,
+        isAnonymous: !req.user?.id
+      });
+      
+      const reply = await storage.createCommentReply(replyData);
+      
+      return res.status(201).json(reply);
+    } catch (error) {
+      console.error('Error creating comment reply:', error);
+      return res.status(500).json({ error: "Failed to create reply" });
     }
   });
 
@@ -1723,153 +1512,103 @@ export function registerRoutes(app: Express): void {
 
   app.get("/api/admin/info", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: "Access denied" });
+      const user = req.user as any;
+      if (!user.isAdmin) {
+        return res.status(403).json({ error: "Unauthorized access" });
       }
-
-      const info = await storage.getAdminInfo();
-      res.json(info);
-    } catch (error: unknown) {
-      const err = error as Error;
-      console.error("[Admin Info] Error:", {
-        message: err.message,
-        stack: err.stack
-      });
-      res.status(500).json({ message: "Failed to fetch admin info" });
+      
+      const adminInfo = await storage.getAdminByEmail(user.email);
+      return res.json(adminInfo);
+    } catch (error) {
+      console.error('Error fetching admin info:', error);
+      return res.status(500).json({ error: "Failed to fetch admin info" });
     }
   });
 
-  // Fix the admin profile route
   app.get("/api/admin/profile", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: "Access denied: Admin privileges required" });
+      const user = req.user as any;
+      if (!user.isAdmin) {
+        return res.status(403).json({ error: "Unauthorized access" });
       }
-
-      // Get admin user details from storage
-      const adminData = await storage.getUser(req.user.id);
-      if (!adminData) {
-        return res.status(404).json({ message: "Admin user not found" });
-      }
-
-      // Remove sensitive information
-      const { password_hash, ...safeAdminData } = adminData;
-
-      res.json({
-        ...safeAdminData,
-        role: 'admin',
-        permissions: ['manageposts', 'manage_users', 'manage_comments']
-      });
+      
+      const profile = await storage.getUser(user.id);
+      return res.json(profile);
     } catch (error) {
-      console.error("Error fetching admin profile:", error);
-      res.status(500).json({ message: "Failed to fetch admin profile" });
+      console.error('Error fetching admin profile:', error);
+      return res.status(500).json({ error: "Failed to fetch admin profile" });
     }
   });
 
-  // Fix the admin dashboard route
   app.get("/api/admin/dashboard", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: "Access denied: Admin privileges required" });
+      const user = req.user as any;
+      if (!user.isAdmin) {
+        return res.status(403).json({ error: "Unauthorized access" });
       }
+      
       const [posts, comments, users, analytics] = await Promise.all([
         storage.getPosts(1, 5),
-        storage.getRecentComments(),
-        storage.getAdminByEmail(req.user.email),
+        storage.getRecentComments(10),
+        storage.getAdminByEmail(req.user?.email || ''),
         storage.getSiteAnalytics() // Replace streak methods with general analytics
       ]);
-
-      res.json({
-        recentPosts: posts.posts.slice(0, 5),
-        recentComments: comments,
-        adminUsers: users,
-        analytics // Include analytics data in the response
+      
+      return res.json({
+        posts,
+        comments,
+        users,
+        analytics
       });
     } catch (error) {
-      console.error("Error fetching admin dashboard:", error);
-      res.status(500).json({ message: "Failed to fetch admin dashboard data" });
+      console.error('Error fetching admin dashboard:', error);
+      return res.status(500).json({ error: "Failed to fetch dashboard data" });
     }
   });
   
   // Add missing admin stats endpoint
   app.get("/api/admin/stats", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      // Set Content-Type header to ensure JSON response
-      res.setHeader('Content-Type', 'application/json');
-      
-      if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: "Access denied: Admin privileges required" });
+      const user = req.user as any;
+      if (!user.isAdmin) {
+        return res.status(403).json({ error: "Unauthorized access" });
       }
       
       // Get aggregated stats data from database via storage interface
       try {
         // Replace with more efficient queries that use specialized storage methods
-        const postsCount = await storage.getPostsCount();
+        const postsCount = await storage.getPostCount();
         const usersCount = await storage.getUsersCount();
         const commentsCount = await storage.getCommentsCount();
         const bookmarkCount = await storage.getBookmarkCount();
-        const trendingPosts = await storage.getTrendingPosts(5);
-        const adminStats = await storage.getAdminStats();
         
-        // Return structured stats response with enhanced analytics data
-        res.json({
+        return res.json({
           posts: {
-            total: postsCount.total || 0,
-            published: postsCount.published || 0,
-            community: postsCount.community || 0,
-            trending: trendingPosts || []
+            total: postsCount || 0
           },
           users: {
-            total: usersCount || 0,
-            active: adminStats?.activeUsers || 0,
-            newThisWeek: adminStats?.newUsers || 0,
-            admins: adminStats?.adminCount || 1
+            total: usersCount || 0
           },
           analytics: {
-            totalViews: adminStats?.totalViews || 0,
-            uniqueVisitors: adminStats?.uniqueVisitors || 0,
-            avgReadTime: adminStats?.avgReadTime || 0, 
-            bounceRate: adminStats?.bounceRate || 0
+            bounceRate: 0, // TODO: Implement bounce rate calculation
+            avgSessionDuration: 0 // TODO: Implement session duration calculation
           },
           comments: {
-            total: commentsCount.total || 0,
-            pending: commentsCount.pending || 0,
-            flagged: commentsCount.flagged || 0
+            total: commentsCount || 0,
+            pending: 0, // TODO: Implement pending comments count
+            flagged: 0   // TODO: Implement flagged comments count
           },
           bookmarks: {
             total: bookmarkCount || 0
-          },
-          performance: {
-            uptime: process.uptime(),
-            memory: process.memoryUsage().heapUsed,
-            serverTime: new Date().toISOString()
-          },
-          system: {
-            nodeVersion: process.version,
-            environment: process.env.NODE_ENV || 'development'
           }
         });
-      } catch (dbError) {
-        console.error("Error fetching stats data from database:", dbError);
-        
-        // Return error as JSON with proper content type
-        res.status(500).json({
-          error: "Database error",
-          message: "Failed to fetch admin statistics from database",
-          errorDetails: dbError instanceof Error ? dbError.message : "Unknown error",
-          timestamp: new Date().toISOString()
-        });
+      } catch (error) {
+        console.error('Error fetching admin stats:', error);
+        return res.status(500).json({ error: "Failed to fetch statistics" });
       }
     } catch (error) {
-      console.error("Error fetching admin stats:", error);
-      
-      // Return error as JSON with proper content type
-      res.status(500).json({ 
-        error: "Server error",
-        message: "Failed to fetch admin stats",
-        errorDetails: error instanceof Error ? error.message : "Unknown error",
-        timestamp: new Date().toISOString()
-      });
+      console.error('Error in admin stats route:', error);
+      return res.status(500).json({ error: "Internal server error" });
     }
   });
 
@@ -2317,7 +2056,7 @@ export function registerRoutes(app: Express): void {
     
     try {
       // Attempt to get recommendations from database
-      const recommendations = await storage.getRecommendedPosts(postId, limit);
+      const recommendations = await storage.getRecommendedPosts(postId || 0, limit);
       return res.json(recommendations);
     } catch (error) {
       console.error("Error fetching recommendations from database:", error);
@@ -2741,7 +2480,7 @@ export function registerRoutes(app: Express): void {
       const startTime = Date.now();
       
       // Get feedback
-      const feedback = await storage.getAllFeedback(limit, status);
+      const feedback = await storage.getAllFeedback();
       
       // Log performance metrics
       const duration = Date.now() - startTime;
