@@ -516,12 +516,8 @@ body {
     background-color: rgba(125, 125, 125, 0.3);
     border-radius: 20px;
   }
-}
 
 /* Reader container responsive styles controlled by reader-fixes.css */
-@layer components {
-  /* Reader container styles moved to reader-fixes.css for better isolation */
-}
 
 /* Container fixes to prevent overflow and remove black borders */
 .container, 
