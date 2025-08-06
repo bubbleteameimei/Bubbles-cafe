@@ -29,7 +29,7 @@ async function createNewAdminUser() {
     }
     
     // Create new admin user
-    const result = await pool.query(
+    const insertResult = await pool.query(
       `INSERT INTO users (username, email, password_hash, is_admin, created_at) 
        VALUES ($1, $2, $3, $4, NOW()) 
        RETURNING id, username, email, is_admin as "isAdmin", created_at as "createdAt"`,
@@ -37,7 +37,7 @@ async function createNewAdminUser() {
     );
     
     
-    return { id: result.rows[0].id, created: true };
+    return { id: insertResult.rows[0].id, created: true };
     
   } catch (error) {
     console.error("Error creating admin user:", error);
@@ -48,7 +48,7 @@ async function createNewAdminUser() {
 // Self-executing function to run immediately
 (async () => {
   try {
-    const result = await createNewAdminUser();
+    await createNewAdminUser();
     
     process.exit(0);
   } catch (error) {

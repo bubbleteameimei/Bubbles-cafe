@@ -34,15 +34,15 @@ export async function getPostsRecommendations(req: Request, res: Response) {
       
       
       // Return simplified metadata for display
-      const result = recentPosts.map(post => ({
-        ...post,
-        readingTime: 5, // Default time
-        authorName: 'Anonymous',
-        views: 50,
-        likes: 10
+      const result = recentPosts.map((post: any) => ({
+        id: post.id,
+        title: post.title,
+        slug: post.slug,
+        reason: 'Recent content'
       }));
-      
-      return res.json(result);
+
+      console.log('Recent posts recommendations:', result);
+      return result;
     }
     
     // Log the query for troubleshooting
@@ -63,7 +63,7 @@ export async function getPostsRecommendations(req: Request, res: Response) {
     
     
     // Return simplified metadata for display
-    const result = recommendedPosts.map(post => ({
+    const result = recommendedPosts.map((post: any) => ({
       ...post,
       readingTime: 5, // Default time
       authorName: 'Anonymous',

@@ -63,19 +63,19 @@ router.post('/vitals', async (req: Request, res: Response) => {
     });
     
     // Respond with success regardless of storage outcome
-    res.status(200).json({ message: 'Metric recorded successfully' });
+    return res.status(200).json({ message: 'Metric recorded successfully' });
   } catch (error) {
     analyticsLogger.error('Error processing performance metric', { 
       error: error instanceof Error ? error.message : 'Unknown error' 
     });
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 /**
  * Device analytics endpoint
  */
-router.get('/devices', async (req: Request, res: Response) => {
+router.get('/devices', async (_req: Request, res: Response) => {
   try {
     // This is now a public endpoint that anyone can access (no authentication needed)
     
@@ -83,19 +83,19 @@ router.get('/devices', async (req: Request, res: Response) => {
     const deviceDistribution = await storage.getDeviceDistribution();
     
     // Return data
-    res.json(deviceDistribution);
+    return res.json(deviceDistribution);
   } catch (error) {
     analyticsLogger.error('Error fetching device distribution', { 
       error: error instanceof Error ? error.message : 'Unknown error' 
     });
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 /**
  * User engagement analytics endpoint
  */
-router.get('/engagement', async (req: Request, res: Response) => {
+router.get('/engagement', async (_req: Request, res: Response) => {
   try {
     // This is now a public endpoint that anyone can access (no authentication needed)
     
@@ -117,12 +117,12 @@ router.get('/engagement', async (req: Request, res: Response) => {
     };
     
     // Return data
-    res.json(engagementMetrics);
+    return res.json(engagementMetrics);
   } catch (error) {
     analyticsLogger.error('Error fetching engagement metrics', { 
       error: error instanceof Error ? error.message : 'Unknown error' 
     });
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -135,13 +135,10 @@ router.post('/pageview', async (req: Request, res: Response) => {
     const { 
       path, 
       referrer, 
-      timestamp, 
-      userAgent, 
-      screenWidth, 
-      screenHeight 
+      userAgent 
     } = req.body;
     
-    // Basic validation
+    // Validate required fields
     if (!path) {
       return res.status(400).json({ 
         error: 'Missing required fields',
@@ -166,12 +163,12 @@ router.post('/pageview', async (req: Request, res: Response) => {
       analyticsLogger.error('Failed to store page view', { error: error instanceof Error ? error.message : String(error) });
     });
     
-    res.status(200).json({ message: 'Page view recorded' });
+    return res.status(200).json({ message: 'Page view recorded' });
   } catch (error) {
     analyticsLogger.error('Error processing page view', { 
       error: error instanceof Error ? error.message : 'Unknown error'
     });
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -181,7 +178,7 @@ router.post('/pageview', async (req: Request, res: Response) => {
  */
 router.post('/interaction', async (req: Request, res: Response) => {
   try {
-    const { interactionType, details, timestamp, path } = req.body;
+    const { interactionType, path } = req.body;
     
     // Validate
     if (!interactionType) {
@@ -204,42 +201,42 @@ router.post('/interaction', async (req: Request, res: Response) => {
       navigationType: 'interaction',
       url: path || req.headers.referer as string || 'unknown',
       userAgent: req.headers['user-agent'] as string || 'unknown'
-    }).catch((error: Error) => {
+    }).catch((error: any) => {
       analyticsLogger.error('Failed to store interaction', { error: error instanceof Error ? error.message : String(error) });
     });
     
-    res.status(200).json({ message: 'Interaction recorded' });
+    return res.status(200).json({ message: 'Interaction recorded' });
   } catch (error) {
     analyticsLogger.error('Error processing interaction', { 
       error: error instanceof Error ? error.message : 'Unknown error'
     });
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 /**
  * Summary metrics endpoint for admin dashboard
  */
-router.get('/site', async (req: Request, res: Response) => {
+router.get('/site', async (_req: Request, res: Response) => {
   try {
     // This is now a public endpoint that anyone can access (no authentication needed)
     
     // Get site analytics data
     const siteAnalytics = await storage.getSiteAnalytics();
     
-    res.json(siteAnalytics);
+    return res.json(siteAnalytics);
   } catch (error) {
     analyticsLogger.error('Error fetching site analytics', { 
       error: error instanceof Error ? error.message : 'Unknown error'
     });
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 /**
  * Reading time analytics endpoint for the admin dashboard
  */
-router.get('/reading-time', async (req: Request, res: Response) => {
+router.get('/reading-time', async (_req: Request, res: Response) => {
   try {
     // This is now a public endpoint that anyone can access (no authentication needed)
     
@@ -338,7 +335,7 @@ router.get('/reading-time', async (req: Request, res: Response) => {
       topStories: formattedTopStories
     });
   } catch (error) {
-    analyticsLogger.error('Error fetching reading time analytics:', error);
+    analyticsLogger.error('Error fetching reading time analytics:', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ message: "Failed to fetch reading time analytics" });
   }
 });
@@ -346,7 +343,7 @@ router.get('/reading-time', async (req: Request, res: Response) => {
 /**
  * Test endpoint for device analytics (no authentication required)
  */
-router.get('/devices-test', async (req: Request, res: Response) => {
+router.get('/devices-test', async (_req: Request, res: Response) => {
   try {
     // Get real device data if available, otherwise use realistic sample data
     const analytics = await storage.getAnalyticsSummary();
@@ -449,7 +446,7 @@ router.get('/devices-test', async (req: Request, res: Response) => {
       tablet: -1.5   // Tablet down 1.5%
     };
     
-    res.json({
+    return res.json({
       dailyData,
       weeklyData,
       monthlyData,
@@ -457,15 +454,15 @@ router.get('/devices-test', async (req: Request, res: Response) => {
       percentageChange
     });
   } catch (error) {
-    analyticsLogger.error('Error fetching device analytics:', error);
-    res.status(500).json({ message: "Failed to fetch device analytics" });
+    analyticsLogger.error('Error fetching device analytics:', { error: error instanceof Error ? error.message : String(error) });
+    return res.status(500).json({ message: "Failed to fetch device analytics" });
   }
 });
 
 /**
  * Test endpoint for analytics dashboard (no authentication required)
  */
-router.get('/reading-time-test', async (req: Request, res: Response) => {
+router.get('/reading-time-test', async (_req: Request, res: Response) => {
   try {
     // Get analytics summary with reading time data
     const analyticsSummary = await storage.getAnalyticsSummary();
@@ -562,7 +559,7 @@ router.get('/reading-time-test', async (req: Request, res: Response) => {
       topStories: formattedTopStories
     });
   } catch (error) {
-    analyticsLogger.error('Error fetching reading time analytics:', error);
+    analyticsLogger.error('Error fetching reading time analytics:', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ message: "Failed to fetch reading time analytics" });
   }
 });
@@ -571,7 +568,7 @@ router.get('/reading-time-test', async (req: Request, res: Response) => {
  * Engagement metrics adapter endpoint (unauthenticated) for the dashboard
  * This transforms the reading time data to match the format expected by analytics-dashboard
  */
-router.get('/engagement-test', async (req: Request, res: Response) => {
+router.get('/engagement-test', async (_req: Request, res: Response) => {
   try {
     // Get analytics summary as base data
     const analyticsSummary = await storage.getAnalyticsSummary();
@@ -587,17 +584,17 @@ router.get('/engagement-test', async (req: Request, res: Response) => {
       returning: Math.round((analyticsSummary.totalViews || 1000) * 0.4)
     };
     
-    res.json(engagementMetrics);
+    return res.json(engagementMetrics);
   } catch (error) {
-    analyticsLogger.error('Error creating engagement metrics:', error);
-    res.status(500).json({ message: "Failed to create engagement metrics" });
+    analyticsLogger.error('Error creating engagement metrics:', { error: error instanceof Error ? error.message : String(error) });
+    return res.status(500).json({ message: "Failed to create engagement metrics" });
   }
 });
 
 /**
  * Site analytics test endpoint (unauthenticated) for the dashboard
  */
-router.get('/site-test', async (req: Request, res: Response) => {
+router.get('/site-test', async (_req: Request, res: Response) => {
   try {
     // Get analytics summary as base data
     const analyticsSummary = await storage.getAnalyticsSummary();
@@ -610,21 +607,18 @@ router.get('/site-test', async (req: Request, res: Response) => {
       bounceRate: 38.5 // Average bounce rate in percentage
     };
     
-    res.json(siteAnalytics);
+    return res.json(siteAnalytics);
   } catch (error) {
-    analyticsLogger.error('Error creating site analytics:', error);
-    res.status(500).json({ message: "Failed to create site analytics" });
+    analyticsLogger.error('Error creating site analytics:', { error: error instanceof Error ? error.message : String(error) });
+    return res.status(500).json({ message: "Failed to create site analytics" });
   }
 });
 
 /**
  * Device distribution test endpoint (unauthenticated) for the dashboard
  */
-router.get('/device-distribution-test', async (req: Request, res: Response) => {
+router.get('/device-distribution-test', async (_req: Request, res: Response) => {
   try {
-    // Get analytics summary as base data
-    const analyticsSummary = await storage.getAnalyticsSummary();
-    
     // Use realistic device distribution percentages (based on 2024 web averages)
     const deviceDistribution = {
       desktop: 53, // 53% desktop users
@@ -632,10 +626,10 @@ router.get('/device-distribution-test', async (req: Request, res: Response) => {
       tablet: 5    // 5% tablet users
     };
     
-    res.json(deviceDistribution);
+    return res.json(deviceDistribution);
   } catch (error) {
-    analyticsLogger.error('Error creating device distribution:', error);
-    res.status(500).json({ message: "Failed to create device distribution" });
+    analyticsLogger.error('Error creating device distribution:', { error: error instanceof Error ? error.message : String(error) });
+    return res.status(500).json({ message: "Failed to create device distribution" });
   }
 });
 

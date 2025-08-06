@@ -62,7 +62,11 @@ function getOptimizedParams(req: Request): {
   
   const format = clientSupportsWebP(req) ? 'webp' : undefined;
   
-  return { width, quality, format };
+  return { 
+    ...(width !== undefined && { width }), 
+    ...(quality !== undefined && { quality }), 
+    ...(format !== undefined && { format }) 
+  };
 }
 
 // Get cache path for an image
@@ -81,16 +85,16 @@ function getCachePath(filePath: string, params: { width?: number; quality?: numb
 }
 
 // Mock resize function for now (to be implemented with Sharp when needed)
-function mockResizeImage(source: string, target: string, options: any): Promise<void> {
-  // Since we don't have the actual image processing library installed,
-  // we'll just copy the file as-is for now
-  return new Promise((resolve, reject) => {
-    fs.copyFile(source, target, (err) => {
-      if (err) return reject(err);
-      resolve();
-    });
-  });
-}
+// function mockResizeImage(source: string, target: string, options: any): Promise<void> {
+//   // Since we don't have the actual image processing library installed,
+//   // we'll just copy the file as-is for now
+//   return new Promise((resolve, reject) => {
+//     fs.copyFile(source, target, (err) => {
+//       if (err) return reject(err);
+//       resolve();
+//     });
+//   });
+// }
 
 // Middleware function
 export function imageOptimizationMiddleware(req: Request, res: Response, next: NextFunction) {

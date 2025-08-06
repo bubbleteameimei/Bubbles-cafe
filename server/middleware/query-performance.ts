@@ -34,12 +34,12 @@ class QueryProfiler {
   recordQuery(query: string, duration: number, source?: string) {
     // Only track slow queries
     if (duration > this.slowQueryThreshold) {
-      this.queries.push({
-        query,
-        duration,
-        timestamp: Date.now(),
-        source
-      });
+          this.queries.push({
+      query,
+      duration,
+      timestamp: Date.now(),
+      ...(source !== undefined && { source })
+    });
       
       // Trim the list if needed
       if (this.queries.length > this.maxQueries) {
@@ -118,7 +118,7 @@ export function wrapDbWithProfiler(database?: any) {
         queryProfiler.recordQuery(
           queryStr, 
           end - start,
-          source
+          source || undefined
         );
         return res;
       }).catch((err: any) => {
@@ -126,7 +126,7 @@ export function wrapDbWithProfiler(database?: any) {
         queryProfiler.recordQuery(
           `ERROR: ${queryStr}`, 
           end - start,
-          source
+          source || undefined
         );
         throw err;
       });
@@ -137,7 +137,7 @@ export function wrapDbWithProfiler(database?: any) {
     queryProfiler.recordQuery(
       queryStr, 
       end - start,
-      source
+      source || undefined
     );
     
     return result;
@@ -147,7 +147,7 @@ export function wrapDbWithProfiler(database?: any) {
 // Optimized query function that helps detect and prevent N+1 query patterns
 export function optimizedQuery<T>(
   batchQuery: (ids: any[]) => Promise<T[]>,
-  getId: (item: T) => any,
+  _getId: (item: T) => any, // Unused parameter
   itemsToLoad: any[]
 ): Promise<T[]> {
   // Remove duplicates from items to load
@@ -158,15 +158,15 @@ export function optimizedQuery<T>(
 }
 
 // Middleware to track query patterns and detect N+1 issues
-export function queryPerformanceMiddleware(req: Request, res: Response, next: NextFunction) {
+export function queryPerformanceMiddleware(_req: Request, res: Response, next: NextFunction) {
   // Clear query tracking at the start of each request
   const requestQueries: QueryInfo[] = [];
-  const startTime = performance.now();
+  // const _startTime = performance.now(); // Unused variable
   
-  // Create a listener to analyze queries after response
+    // Create a listener to analyze queries after response
   res.on('finish', () => {
-    const endTime = performance.now();
-    const requestDuration = endTime - startTime;
+    // const endTime = performance.now(); // Unused variable
+    // const _requestDuration = endTime - _startTime; // Unused variable
     
     // Check for N+1 query patterns
     if (requestQueries.length > 10) {

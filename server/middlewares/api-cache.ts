@@ -23,7 +23,7 @@ export const apiCache = (duration: number = DEFAULT_EXPIRY) => {
     }
 
     // Skip caching for authenticated requests with dynamic content
-    if (req.session?.userId) {
+    if (req.session?.user?.id) {
       return next();
     }
 

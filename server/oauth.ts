@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { storage } from './storage';
 
+
 // Define metadata types
 interface OAuthProvider {
   providerId: string;
@@ -50,7 +51,7 @@ export function setupOAuth(app: Express) {
         }
 
         // Compare hashed password
-        const isMatch = await bcrypt.compare(password, user.password_hash);
+        const isMatch = await bcrypt.compare(password, user.password_hash || '');
         if (!isMatch) {
           return done(null, false, { message: 'Invalid email or password' });
         }
@@ -72,9 +73,9 @@ export function setupOAuth(app: Express) {
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
-      done(null, user);
+      return done(null, user);
     } catch (error) {
-      done(error);
+      return done(error);
     }
   });
 
@@ -150,25 +151,35 @@ export function setupOAuth(app: Express) {
       }
       
       // Log in the user
-      req.login(user, (err) => {
-        if (err) {
-          console.error('Login error:', err);
-          return res.status(500).json({ error: 'Authentication error' });
-        }
-        
-        // Return user data without sensitive information
-        // Extract profile data from metadata since those columns don't exist
-        const metadata = (user.metadata || {}) as UserMetadata;
-        return res.status(200).json({
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          isAdmin: user.isAdmin,
-          createdAt: user.createdAt,
-          // Use metadata values instead
-          avatar: metadata.photoURL || null,
-          fullName: metadata.displayName || null,
-          bio: metadata.bio || null
+      return new Promise<void>((resolve) => {
+        req.login(user as any, (err) => {
+          if (err) {
+            console.error('Login error:', err);
+            res.status(500).json({ error: 'Authentication error' });
+            resolve();
+            return;
+          }
+          
+          // Return user data without sensitive information
+          // Extract profile data from metadata since those columns don't exist
+          if (!user) {
+            res.status(500).json({ error: 'User not found' });
+            resolve();
+            return;
+          }
+          const metadata = (user.metadata || {}) as UserMetadata;
+          res.status(200).json({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            isAdmin: user.isAdmin,
+            createdAt: user.createdAt,
+            // Use metadata values instead
+            avatar: metadata.photoURL || null,
+            fullName: metadata.displayName || null,
+            bio: metadata.bio || null
+          });
+          resolve();
         });
       });
     } catch (error) {
@@ -192,10 +203,10 @@ export function setupOAuth(app: Express) {
       if (frontendUrl && frontendUrl !== '*') {
         // In split deployment, redirect to the frontend URL
         
-        res.redirect(frontendUrl);
+        return res.redirect(frontendUrl);
       } else {
         // In development or same-domain setup, redirect to the root
-        res.redirect('/');
+        return res.redirect('/');
       }
     });
   });
@@ -243,7 +254,7 @@ export function setupOAuth(app: Express) {
     // Type assertion to avoid TypeScript errors
     const typedMetadata = metadata as Record<string, any>;
     
-    res.json({
+    return res.json({
       id: user.id,
       username: user.username,
       email: user.email,
@@ -326,6 +337,9 @@ export function setupOAuth(app: Express) {
       
       const updatedUser = await storage.updateUser(user.id, updateData);
       
+      if (!updatedUser) {
+        return res.status(500).json({ error: 'Failed to update user' });
+      }
       
       // Update session with the latest user data
       if (req.session && req.session.user) {
@@ -364,7 +378,7 @@ export function setupOAuth(app: Express) {
           
           // Update bio
           if (metadata.bio !== undefined && (updatedMetadata as UserMetadata).bio !== sessionUser.bio) {
-            sessionUser.bio = (updatedMetadata as UserMetadata).bio;
+            sessionUser.bio = (updatedMetadata as UserMetadata).bio || null;
           }
           
           console.log('[Profile] Updated session with new user data:', {
@@ -392,7 +406,7 @@ export function setupOAuth(app: Express) {
       // Type assertion to avoid TypeScript errors
       const typedMetadata = safeMetadata as Record<string, any>;
       
-      res.json({
+      return res.json({
         id: updatedUser.id,
         username: updatedUser.username,
         email: updatedUser.email,
@@ -405,7 +419,7 @@ export function setupOAuth(app: Express) {
       });
     } catch (error) {
       console.error('[Profile] Error updating user profile:', error);
-      res.status(500).json({ 
+      return res.status(500).json({ 
         error: 'Failed to update profile',
         message: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -420,7 +434,6 @@ export function setupOAuth(app: Express) {
       // Create a buffer to store the file data
       let fileData = Buffer.alloc(0);
       let contentType = '';
-      let fileName = '';
       let username = '';
       let fullName = '';
       let bio = '';
@@ -469,13 +482,9 @@ export function setupOAuth(app: Express) {
             currentField = 'avatarFile';
             collectingFileData = true;
             
-            // Extract content type and filename if available
+            // Extract content type if available
             if (chunkStr.includes('Content-Type:')) {
               contentType = chunkStr.split('Content-Type:')[1].split('\r\n')[0].trim();
-            }
-            
-            if (chunkStr.includes('filename=')) {
-              fileName = chunkStr.split('filename=')[1].split('\r\n')[0].trim().replace(/"/g, '');
             }
           }
         }
@@ -641,7 +650,7 @@ export function setupOAuth(app: Express) {
           // Type assertion to avoid TypeScript errors
           const typedMetadata = updatedMetadata as Record<string, any>;
           
-          res.json({
+          return res.json({
             success: true,
             user: {
               id: updatedUser.id,
@@ -658,18 +667,24 @@ export function setupOAuth(app: Express) {
           });
         } catch (error) {
           console.error('[Profile] Error processing image upload:', error);
-          res.status(500).json({ error: 'Failed to process image upload' });
+          return res.status(500).json({ error: 'Failed to process image upload' });
         }
       });
       
       req.on('error', (error) => {
         console.error('[Profile] Error in upload request:', error);
-        res.status(500).json({ error: 'Upload failed' });
+        return res.status(500).json({ error: 'Upload failed' });
       });
       
+      // Return a promise that resolves when the request is complete
+      return new Promise<void>((resolve) => {
+        req.on('end', () => {
+          resolve();
+        });
+      });
     } catch (error) {
       console.error('[Profile] Error in profile image upload:', error);
-      res.status(500).json({ error: 'Upload failed' });
+      return res.status(500).json({ error: 'Upload failed' });
     }
   });
 }

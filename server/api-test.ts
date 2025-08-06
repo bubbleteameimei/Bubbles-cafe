@@ -66,6 +66,10 @@ router.post('/user/:id/update-metadata', async (req, res) => {
       .returning()
       .then(rows => rows[0]);
 
+    if (!updatedUser) {
+      return res.status(500).json({ error: 'Failed to update user metadata' });
+    }
+    
     return res.json({
       success: true,
       message: 'User metadata updated successfully',
@@ -132,6 +136,10 @@ router.post('/user/:id/update', validateCsrfToken(), async (req, res) => {
       
     }
 
+    if (!updatedUser) {
+      return res.status(500).json({ error: 'Failed to update user' });
+    }
+    
     return res.json({
       success: true,
       message: 'User updated successfully through storage',
@@ -184,6 +192,10 @@ router.post('/user/:id/update-no-csrf', async (req, res) => {
       
     }
 
+    if (!updatedUser) {
+      return res.status(500).json({ error: 'Failed to update user' });
+    }
+    
     return res.json({
       success: true,
       message: 'User updated successfully through storage (no CSRF)',
@@ -255,6 +267,10 @@ router.post('/profile-update-test', async (req, res) => {
         
       }
 
+      if (!updatedUser) {
+        return res.status(500).json({ error: 'Failed to update user' });
+      }
+      
       return res.json({
         success: true,
         message: 'User profile updated with merged metadata',
@@ -282,6 +298,10 @@ router.post('/profile-update-test', async (req, res) => {
         
       }
 
+      if (!updatedUser) {
+        return res.status(500).json({ error: 'Failed to update user' });
+      }
+      
       return res.json({
         success: true,
         message: 'User profile updated without metadata changes',

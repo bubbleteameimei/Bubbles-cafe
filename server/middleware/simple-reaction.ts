@@ -70,11 +70,11 @@ export async function handleReaction(req: Request, res: Response) {
     };
     
     
-    res.json(response);
+    return res.json(response);
     
   } catch (error) {
     console.error('[Reaction] Error:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to process reaction",
       likesCount: 0,
       dislikesCount: 0 

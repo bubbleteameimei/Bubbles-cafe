@@ -329,30 +329,3 @@ export function registerRecommendationsRoutes(app: Application, storageInstance:
     }
   });
 }
-
-/**
- * Extract important keywords from a text string
- * This is a simple implementation that filters out common words
- */
-function _extractKeywords(text: string): string[] {
-  // Simplistic keyword extraction - just split text and filter out common words
-  const commonWords = new Set([
-    "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for", "with",
-    "by", "about", "as", "into", "like", "through", "after", "before", "between",
-    "from", "of", "was", "were", "is", "are", "am", "be", "been", "being",
-    "have", "has", "had", "having", "do", "does", "did", "doing", "will", "would",
-    "shall", "should", "can", "could", "may", "might", "must", "i", "you", "he",
-    "she", "it", "we", "they", "their", "his", "her", "its", "our", "your", "my",
-    "that", "this", "these", "those", "there", "here", "when", "where", "why",
-    "how", "what", "who", "whom", "which"
-  ]);
-  
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s]/g, '') // Remove punctuation
-    .split(/\s+/) // Split on whitespace
-    .filter(word => 
-      word.length > 3 && !commonWords.has(word)
-    )
-    .slice(0, 10); // Take only the first 10 keywords
-}

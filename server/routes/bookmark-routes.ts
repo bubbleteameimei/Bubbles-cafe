@@ -44,10 +44,10 @@ anonymousBookmarkRouter.get('/:postId', async (req: Request, res: Response) => {
       createdAt: req.session.anonymousBookmarks[postId].createdAt || new Date().toISOString()
     };
     
-    res.json(bookmark);
+    return res.json(bookmark);
   } catch (error) {
     console.error("Error fetching anonymous bookmark:", error);
-    res.status(500).json({ error: "Failed to fetch bookmark" });
+    return res.status(500).json({ error: "Failed to fetch bookmark" });
   }
 });
 
@@ -60,8 +60,6 @@ anonymousBookmarkRouter.get('/', async (req: Request, res: Response) => {
     if (!req.session.anonymousBookmarks) {
       req.session.anonymousBookmarks = {};
     }
-    
-    
     
     // If there are no bookmarks, return an empty array immediately
     if (Object.keys(req.session.anonymousBookmarks).length === 0) {
@@ -96,10 +94,10 @@ anonymousBookmarkRouter.get('/', async (req: Request, res: Response) => {
       new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime()
     );
     
-    res.json(bookmarks);
+    return res.json(bookmarks);
   } catch (error) {
     console.error("Error fetching anonymous bookmarks:", error);
-    res.status(500).json({ error: "Failed to fetch bookmarks" });
+    return res.status(500).json({ error: "Failed to fetch bookmarks" });
   }
 });
 
@@ -114,74 +112,69 @@ anonymousBookmarkRouter.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Post ID is required" });
     }
     
-    // Initialize session storage for anonymous bookmarks if not exists
+    // Initialize if doesn't exist
     if (!req.session.anonymousBookmarks) {
       req.session.anonymousBookmarks = {};
     }
     
-    // Store bookmark in session
-    req.session.anonymousBookmarks[postId] = {
-      notes: notes || null,
-      tags: tags || null,
-      lastPosition: "0", // Start at beginning
-      createdAt: new Date().toISOString()
-    };
-    
-    // Create response object with similar structure to authenticated bookmarks
     const bookmark = {
-      id: 0, // Not needed for anonymous bookmarks
-      userId: 0, // Anonymous user
-      postId,
       notes: notes || null,
       tags: tags || null,
       lastPosition: "0",
       createdAt: new Date().toISOString()
     };
     
-    res.status(201).json(bookmark);
+    req.session.anonymousBookmarks[postId] = bookmark;
+    
+    return res.status(201).json({
+      id: 0,
+      userId: 0,
+      postId,
+      ...bookmark
+    });
   } catch (error) {
     console.error("Error creating anonymous bookmark:", error);
-    res.status(500).json({ error: "Failed to create bookmark" });
+    return res.status(500).json({ error: "Failed to create bookmark" });
   }
 });
 
 /**
- * Update anonymous bookmark position
+ * Update anonymous bookmark
  */
 anonymousBookmarkRouter.patch('/:postId', async (req: Request, res: Response) => {
   try {
     const postId = parseInt(req.params.postId);
-    const { notes, tags, lastPosition } = req.body;
     
     if (isNaN(postId)) {
       return res.status(400).json({ error: "Invalid post ID" });
     }
     
-    // Check if bookmark exists
-    if (!req.session.anonymousBookmarks || !req.session.anonymousBookmarks[postId]) {
+    // Initialize if doesn't exist
+    if (!req.session.anonymousBookmarks) {
+      req.session.anonymousBookmarks = {};
+    }
+    
+    const existingBookmark = req.session.anonymousBookmarks[postId];
+    if (!existingBookmark) {
       return res.status(404).json({ error: "Bookmark not found" });
     }
     
-    // Update bookmark data
-    if (notes !== undefined) req.session.anonymousBookmarks[postId].notes = notes;
-    if (tags !== undefined) req.session.anonymousBookmarks[postId].tags = tags;
-    if (lastPosition !== undefined) req.session.anonymousBookmarks[postId].lastPosition = lastPosition;
+    const { notes, tags, lastPosition } = req.body;
     
-    // Return updated bookmark
-    const bookmark = {
+    // Update only provided fields
+    if (notes !== undefined) existingBookmark.notes = notes;
+    if (tags !== undefined) existingBookmark.tags = tags;
+    if (lastPosition !== undefined) existingBookmark.lastPosition = lastPosition;
+    
+    return res.json({
       id: 0,
       userId: 0,
       postId,
-      notes: req.session.anonymousBookmarks[postId].notes || null,
-      tags: req.session.anonymousBookmarks[postId].tags || null,
-      lastPosition: req.session.anonymousBookmarks[postId].lastPosition || "0",
-      createdAt: req.session.anonymousBookmarks[postId].createdAt
-    };
-    
-    res.json(bookmark);
+      ...existingBookmark
+    });
   } catch (error) {
     console.error("Error updating anonymous bookmark:", error);
-    res.status(500).json({ error: "Failed to update bookmark" });
+    return res.status(500).json({ error: "Failed to update bookmark" });
   }
 });
 
@@ -196,18 +189,22 @@ anonymousBookmarkRouter.delete('/:postId', async (req: Request, res: Response) =
       return res.status(400).json({ error: "Invalid post ID" });
     }
     
-    // Check if bookmark exists
-    if (!req.session.anonymousBookmarks || !req.session.anonymousBookmarks[postId]) {
+    // Initialize if doesn't exist
+    if (!req.session.anonymousBookmarks) {
+      req.session.anonymousBookmarks = {};
+    }
+    
+    const existingBookmark = req.session.anonymousBookmarks[postId];
+    if (!existingBookmark) {
       return res.status(404).json({ error: "Bookmark not found" });
     }
     
-    // Delete the bookmark
     delete req.session.anonymousBookmarks[postId];
     
-    res.status(204).end();
+    return res.json({ success: true });
   } catch (error) {
     console.error("Error deleting anonymous bookmark:", error);
-    res.status(500).json({ error: "Failed to delete bookmark" });
+    return res.status(500).json({ error: "Failed to delete bookmark" });
   }
 });
 
@@ -221,10 +218,8 @@ export function registerBookmarkRoutes(app: Application): void {
   app.use('/api/bookmarks', bookmarkRoutes);
   
   // Create a special middleware that disables secondary CSRF checks for these routes
-  const bypassSecondaryCSRF = (req: Request, res: Response, next: NextFunction) => {
-    // Add a marker to the request object to indicate CSRF has been checked
-    // This bypasses any secondary CSRF checks implemented elsewhere
-    (req as any)._csrfBypassApproved = true;
+  const bypassSecondaryCSRF = (_req: Request, _res: Response, next: NextFunction) => {
+    // Bypass CSRF for this specific route
     next();
   };
   

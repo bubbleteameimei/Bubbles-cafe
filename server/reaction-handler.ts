@@ -8,7 +8,7 @@
 import { Request, Response } from 'express';
 import { db } from './db';
 import { posts as postsTable } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 /**
  * Handle post reactions (likes/dislikes) from any source
@@ -39,7 +39,7 @@ export async function handlePostReaction(req: Request, res: Response) {
     // Update reaction count - increment like or dislike count
     const field = isLike ? 'likesCount' : 'dislikesCount';
     await db.update(postsTable)
-      .set({ [field]: db.raw(`${field} + 1`) })
+      .set({ [field]: sql`${field} + 1` })
       .where(eq(postsTable.id, postId));
     
     // Get updated counts
@@ -51,7 +51,7 @@ export async function handlePostReaction(req: Request, res: Response) {
     .where(eq(postsTable.id, postId));
     
     // Return success with updated counts
-    res.json({
+    return res.json({
       success: true,
       message: `Post ${isLike ? 'liked' : 'disliked'} successfully`,
       reactions: {
@@ -61,7 +61,7 @@ export async function handlePostReaction(req: Request, res: Response) {
     });
   } catch (error) {
     console.error(`Error processing reaction:`, error);
-    res.status(500).json({ error: "Failed to process reaction" });
+    return res.status(500).json({ error: "Failed to process reaction" });
   }
 }
 
@@ -88,7 +88,7 @@ export async function getPostReactions(req: Request, res: Response) {
     }
     
     // Return current counts
-    res.json({
+    return res.json({
       postId,
       reactions: {
         likes: Number(counts.likes || 0),
@@ -97,6 +97,6 @@ export async function getPostReactions(req: Request, res: Response) {
     });
   } catch (error) {
     console.error(`Error getting reaction counts:`, error);
-    res.status(500).json({ error: "Failed to get reaction counts" });
+    return res.status(500).json({ error: "Failed to get reaction counts" });
   }
 }

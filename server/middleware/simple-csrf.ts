@@ -124,15 +124,16 @@ export function simpleCSRFProtection() {
       next();
     } catch (error) {
       console.error('CSRF protection error:', error);
-      res.status(500).json({ message: 'CSRF protection error' });
+      return res.status(500).json({ message: 'CSRF protection error' });
     }
   };
 }
 
 // Endpoint to get CSRF token for client-side use
-export function getCSRFToken(req: Request, res: Response) {
+export function getCSRFToken(req: Request, res: Response): void {
   if (!req.session?.csrfToken) {
-    return res.status(500).json({ message: 'CSRF token not available' });
+    res.status(500).json({ message: 'CSRF token not available' });
+    return;
   }
   
   res.json({ 
