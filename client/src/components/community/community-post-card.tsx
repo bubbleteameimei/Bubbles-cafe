@@ -2,40 +2,17 @@ import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
-
-import { useToast } from '@/hooks/use-toast';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { Share2, Heart, Flag, Copy, MoreHorizontal, Eye, MessageCircle, Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Heart, 
-  MessageSquare, 
-  Clock, 
-  MoreVertical, 
-  Flag,
-  Share,
-  Copy,
-  Check,
-  Bookmark,
-  Eye
-} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { User } from '@/types/user';
+import { Post } from '../../../../shared/schema';
 
 // Extended Post type with UI-specific properties
 interface ExtendedPost extends Post {
@@ -46,6 +23,7 @@ interface ExtendedPost extends Post {
   hasLiked?: boolean;
   isBookmarked?: boolean;
   isFlagged?: boolean;
+  // The metadata property is already included from the base Post type
 }
 
 interface CommunityPostCardProps {
@@ -66,14 +44,15 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
   const [flagReason, setFlagReason] = useState('');
   
   // Format date
-  const formattedDate = post.updatedAt || post.createdAt;
+  const formattedDate = post.createdAt;
   const timeAgo = formatDistanceToNow(new Date(formattedDate), { addSuffix: true });
   
   // Get theme category for badge
   const getThemeBadge = () => {
-    if (!post.metadata?.themeCategory) return null;
+    const metadata = post.metadata as any;
+    if (!metadata?.themeCategory) return null;
     
-    const category = post.metadata.themeCategory;
+    const category = metadata.themeCategory;
     let colorClass = 'bg-gray-100 text-gray-800 border-gray-300';
     let displayName = category.replace('_', ' ');
     
@@ -130,9 +109,10 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
   };
   
   // Check for trigger warnings
+  const metadata = post.metadata as any;
   const hasTriggerWarnings = 
-    post.metadata?.triggerWarnings && 
-    post.metadata.triggerWarnings.length > 0;
+    metadata?.triggerWarnings && 
+    metadata.triggerWarnings.length > 0;
   
   // Like Post Mutation
   const likeMutation = useMutation({
@@ -298,7 +278,7 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="h-4 w-4" />
+                <MoreHorizontal className="h-4 w-4" />
                 <span className="sr-only">Open menu</span>
               </Button>
             </DropdownMenuTrigger>
@@ -373,14 +353,14 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
               className="flex items-center gap-1 px-2"
               onClick={() => navigate(`/reader/${post.slug}#comments`)}
             >
-              <MessageSquare className="h-4 w-4" />
+              <MessageCircle className="h-4 w-4" />
               <span>{post.commentCount}</span>
             </Button>
           </div>
           
           <div className="flex items-center text-muted-foreground">
             <Clock className="h-4 w-4 mr-1" />
-            <span className="text-xs">{post.readingTime || 5} min read</span>
+            <span className="text-xs">{post.readingTimeMinutes || 5} min read</span>
           </div>
         </div>
       </CardFooter>

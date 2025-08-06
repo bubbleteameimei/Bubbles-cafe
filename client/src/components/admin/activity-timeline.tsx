@@ -117,7 +117,7 @@ export const ActivityTimeline = ({
   }, {});
   
   // Convert grouped activities to timeline format
-  const timelineGroups: TimelineProps['groups'] = Object.entries(groupedActivities)
+  const timelineGroups: TimelineGroup[] = Object.entries(groupedActivities)
     .sort(([dateA], [dateB]) => new Date(dateB).getTime() - new Date(dateA).getTime()) // Sort by date descending
     .map(([date, activitiesForDate]) => ({
       date: formatDateHeader(date),
@@ -139,7 +139,7 @@ export const ActivityTimeline = ({
             .toUpperCase()
             .slice(0, 2)
         } : undefined,
-        date: formatDistanceToNow(parseISO(activity.timestamp), { addSuffix: true })
+        time: formatDistanceToNow(parseISO(activity.timestamp), { addSuffix: true })
       }))
     }));
   

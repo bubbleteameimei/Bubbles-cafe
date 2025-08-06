@@ -1,7 +1,7 @@
 import React from 'react';
 import SearchBar from './SearchBar';
 import { NotificationIcon } from './ui/notification-icon';
-import { useNotifications } from './NotificationProvider';
+import { useNotifications } from '../contexts/notification-context';
 import { ThemeToggleButton } from './ui/theme-toggle-button';
 
 interface SidebarHeaderProps {
@@ -14,7 +14,7 @@ export function SidebarHeader({ categories = ["PSYCHOLOGICAL", "LOVECRAFTIAN", "
   return (
     <div className="p-4">
       <div className="flex items-center justify-between pb-2">
-        <SearchBar compact={true} categories={categories} />
+        <SearchBar />
         <div className="flex items-center space-x-2">
           <ThemeToggleButton />
           <NotificationIcon notifications={notifications} />

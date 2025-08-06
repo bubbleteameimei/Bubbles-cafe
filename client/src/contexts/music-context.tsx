@@ -99,7 +99,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   // Refs for persistence and timers
   const savedPositions = useRef<Record<string, number>>({});
   const loopTimerId = useRef<number | null>(null);
-  const fadeIntervalId = useRef<number | null>(null);
+  const fadeIntervalId = useRef<number | NodeJS.Timeout | null>(null);
 
   // Storage in localStorage to persist across sessions
   const STORAGE_KEY = 'music-player-state';

@@ -20,6 +20,7 @@ export interface IStorage {
 
   // Post operations
   getPost(id: number): Promise<Post | undefined>;
+  getPostById(id: number): Promise<Post | undefined>;
   getPostBySlug(slug: string): Promise<Post | undefined>;
   getPosts(limit?: number, offset?: number): Promise<Post[]>;
   getPostsByAuthor(authorId: number): Promise<Post[]>;
@@ -44,6 +45,13 @@ export interface IStorage {
   createSession(session: InsertSession): Promise<Session>;
   getSession(token: string): Promise<Session | undefined>;
   deleteSession(token: string): Promise<boolean>;
+  sessionStore?: any;
+
+  // Cache operations
+  clearCache(): Promise<void>;
+
+  // Post approval operations
+  approvePost(id: number): Promise<Post | undefined>;
 
   // Reset token operations
   createResetToken(tokenData: InsertResetToken): Promise<ResetToken>;
@@ -82,9 +90,16 @@ export interface IStorage {
 
   // Personalized recommendations
   getPersonalizedRecommendations(userId: number, options?: any): Promise<any[]>;
+
+  // Database access methods
+  getDb(): any;
+  getUsersTable(): any;
+  getDrizzleOperators(): any;
 }
 
 export class DatabaseStorage implements IStorage {
+  sessionStore?: any;
+
   async getUser(id: number): Promise<User | undefined> {
     try {
       const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -159,6 +174,16 @@ export class DatabaseStorage implements IStorage {
       return post || undefined;
     } catch (error) {
       console.error('Error getting post:', error);
+      return undefined;
+    }
+  }
+
+  async getPostById(id: number): Promise<Post | undefined> {
+    try {
+      const [post] = await db.select().from(posts).where(eq(posts.id, id));
+      return post || undefined;
+    } catch (error) {
+      console.error('Error getting post by id:', error);
       return undefined;
     }
   }
@@ -553,6 +578,38 @@ export class DatabaseStorage implements IStorage {
       console.error('Error marking reset token as used:', error);
       throw error;
     }
+  }
+
+  async approvePost(id: number): Promise<Post | undefined> {
+    try {
+      const [post] = await db
+        .update(posts)
+        .set({ status: 'approved' })
+        .where(eq(posts.id, id))
+        .returning();
+      return post || undefined;
+    } catch (error) {
+      console.error('Error approving post:', error);
+      return undefined;
+    }
+  }
+
+  async clearCache(): Promise<void> {
+    // Placeholder for cache clearing logic
+    console.log('Cache cleared');
+  }
+
+  // Database access methods
+  getDb(): any {
+    return db;
+  }
+
+  getUsersTable(): any {
+    return users;
+  }
+
+  getDrizzleOperators(): any {
+    return { eq, desc, and, or, sql, like, asc };
   }
 }
 

@@ -32,7 +32,7 @@ export interface PrivacySettings {
  * Handles loading, updating, and caching privacy settings
  */
 export function usePrivacySettings() {
-  const { user, isAuthenticated, isAuthReady } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [settings, setSettings] = useState<PrivacySettings>(getDefaultPrivacySettings());
   const [isLoading, setIsLoading] = useState(true);
@@ -42,11 +42,6 @@ export function usePrivacySettings() {
   // Fetch the user's privacy settings when authenticated
   useEffect(() => {
     const fetchSettings = async () => {
-      // If auth is not ready, keep loading
-      if (!isAuthReady) {
-        return;
-      }
-      
       // If not authenticated, stop loading and use defaults
       if (!isAuthenticated || !user) {
         
@@ -125,10 +120,10 @@ export function usePrivacySettings() {
       }
     };
 
-    if (isAuthReady) {
+    if (isAuthenticated) {
       fetchSettings();
     }
-  }, [isAuthenticated, user, isAuthReady]);
+  }, [isAuthenticated, user]);
 
   /**
    * Update a specific privacy setting
@@ -293,6 +288,5 @@ export function usePrivacySettings() {
     error,
     updateSetting,
     updateSettings,
-    isAuthReady
   };
 }

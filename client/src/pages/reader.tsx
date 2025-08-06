@@ -118,7 +118,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   // Add authentication hook to check user role for admin actions
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin' || user?.isAdmin === true;
+  const isAdmin = user?.isAdmin === true;
   
   // Theme is now managed by the useTheme hook
   const { theme } = useTheme();

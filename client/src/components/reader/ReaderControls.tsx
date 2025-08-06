@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useFontSize } from "@/hooks/use-font-size";
+import { useFontSize, DEFAULT_FONT_SIZE } from "@/hooks/use-font-size";
 import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
 import { useTheme } from "@/components/theme-provider";
 import { 
@@ -25,17 +25,22 @@ interface ReaderControlsProps {
 
 export function ReaderControls({ onShare, onBookmark, isBookmarked }: ReaderControlsProps) {
   const [fontDialogOpen, setFontDialogOpen] = useState(false);
-  const { fontSize, increaseFontSize, decreaseFontSize, resetFontSize } = useFontSize();
-  const { fontFamily, setFontFamily } = useFontFamily();
+  const { fontSize, increaseFontSize, decreaseFontSize, updateFontSize } = useFontSize();
+  const { fontFamily, updateFontFamily } = useFontFamily();
   const { theme, setTheme } = useTheme();
 
   const handleFontFamilyChange = useCallback((value: string) => {
-    setFontFamily(value as FontFamilyKey);
-  }, [setFontFamily]);
+    updateFontFamily(value as FontFamilyKey);
+  }, [updateFontFamily]);
 
   const handleThemeToggle = useCallback(() => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   }, [theme, setTheme]);
+
+  const handleReset = useCallback(() => {
+    updateFontSize(DEFAULT_FONT_SIZE);
+    updateFontFamily('cormorant');
+  }, [updateFontSize, updateFontFamily]);
 
   const fontOptions = [
     { value: 'system', label: 'System Font' },
@@ -150,7 +155,7 @@ export function ReaderControls({ onShare, onBookmark, isBookmarked }: ReaderCont
               {/* Reset Button */}
               <Button
                 variant="outline"
-                onClick={resetFontSize}
+                onClick={handleReset}
                 className="w-full"
               >
                 Reset to Defaults

@@ -41,7 +41,7 @@ import {
 // Code Quality: Break up large components into smaller ones for maintainability.
 export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [location, setLocation] = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const { showLoading } = useLoading(); // Add loading hook
   const [displayOpen, setDisplayOpen] = React.useState(false);
   const [accountOpen, setAccountOpen] = React.useState(false);
@@ -982,8 +982,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             size="sm"
             className="w-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm uppercase tracking-wider px-4 py-2"
             onClick={() => {
-              if (logout) {
-                logout();
+              if (logoutMutation) {
+                logoutMutation();
               }
             }}
             aria-label="Sign out of your account"

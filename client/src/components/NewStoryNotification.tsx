@@ -107,7 +107,7 @@ const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
   
   // Filter for new story notifications that haven't been read
   const newStoryNotifications = notifications.filter(
-    notif => notif.type === 'new_story' && !notif.read
+    notif => notif.type === 'story' && !notif.read
   );
 
   // If no new story notifications, don't render anything

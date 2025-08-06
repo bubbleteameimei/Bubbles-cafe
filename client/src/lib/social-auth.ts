@@ -5,7 +5,7 @@ import {
   AuthError,
   Auth
 } from 'firebase/auth';
-import { auth } from './firebase';
+import { auth } from '../config/firebase';
 
 // Create providers
 const googleProvider = new GoogleAuthProvider();

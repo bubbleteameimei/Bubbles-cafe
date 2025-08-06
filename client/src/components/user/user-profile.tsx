@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { User } from '@/types/user';
+import { User } from '../../../../shared/schema';
 
 interface ProfileFormData {
   username?: string;
@@ -36,12 +36,15 @@ export function UserProfile() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  // Explicitly type the user as the shared schema User type
+  const typedUser = user as User | null;
+  
   const [formData, setFormData] = useState<ProfileFormData>({
-    username: user?.username || '',
-    email: user?.email || '',
-    fullName: user?.fullName || '',
-    bio: user?.metadata?.bio || '',
-    avatar: user?.avatar || '',
+    username: typedUser?.username || '',
+    email: typedUser?.email || '',
+    fullName: typedUser?.fullName || '',
+    bio: (typedUser?.metadata as any)?.bio || '',
+    avatar: typedUser?.avatar || '',
   });
 
   // Query for user profile data

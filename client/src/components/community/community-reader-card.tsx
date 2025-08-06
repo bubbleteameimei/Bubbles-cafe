@@ -44,6 +44,8 @@ import {
   Check
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { User } from '@/types/user';
+import { Post } from '../../../../shared/schema';
 
 // Extend the User type to include avatar
 export interface ExtendedUser extends User {
@@ -58,12 +60,7 @@ export interface ExtendedPost extends Post {
   hasLiked?: boolean;
   isBookmarked?: boolean;
   isFlagged?: boolean;
-  updatedAt?: string; // Add for typesafety
-  metadata: {
-    themeCategory?: string;
-    triggerWarnings?: string[];
-    [key: string]: any;
-  };
+  // The metadata property is already included from the base Post type
 }
 
 interface CommunityReaderCardProps {
@@ -86,7 +83,7 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
   const [flagReason, setFlagReason] = useState('');
   
   // Format date
-  const formattedDate = post.updatedAt || post.createdAt;
+  const formattedDate = post.createdAt;
   const timeAgo = format(new Date(formattedDate), 'MMM dd, yyyy');
   
   // Check if the current user is the author or admin
@@ -101,9 +98,10 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
   
   // Get category badge
   const getThemeBadge = () => {
-    if (!post.metadata?.themeCategory) return null;
+    const metadata = post.metadata as any;
+    if (!metadata?.themeCategory) return null;
     
-    const category = post.metadata.themeCategory;
+    const category = metadata.themeCategory;
     let colorClass = 'bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200';
     let displayName = category.replace('_', ' ');
     
@@ -149,9 +147,10 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
   };
   
   // Check for trigger warnings
+  const metadata = post.metadata as any;
   const hasTriggerWarnings = 
-    post.metadata?.triggerWarnings && 
-    post.metadata.triggerWarnings.length > 0;
+    metadata?.triggerWarnings && 
+    metadata.triggerWarnings.length > 0;
   
   // Like Post Mutation
   const likeMutation = useMutation({
