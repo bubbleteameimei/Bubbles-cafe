@@ -7,7 +7,7 @@ import { storage } from '../storage';
 const router = Router();
 
 // Admin info endpoint
-router.get("/info", requireAuth, requireAdmin, async (req, res) => {
+router.get("/info", requireAuth, requireAdmin, async (_req, res) => {
   try {
     const adminInfo = await storage.getAdminInfo();
     res.json(adminInfo);
@@ -18,7 +18,7 @@ router.get("/info", requireAuth, requireAdmin, async (req, res) => {
 });
 
 // WordPress sync status endpoint
-router.get("/wordpress/status", requireAuth, requireAdmin, async (req, res) => {
+router.get("/wordpress/status", requireAuth, requireAdmin, async (_req, res) => {
   try {
     // Get WordPress sync status from site settings
     const enabledSetting = await storage.getSiteSettingByKey("wordpress_sync_enabled");
@@ -59,7 +59,7 @@ router.get("/wordpress/status", requireAuth, requireAdmin, async (req, res) => {
 });
 
 // WordPress sync logs endpoint
-router.get("/wordpress/logs", requireAuth, requireAdmin, async (req, res) => {
+router.get("/wordpress/logs", requireAuth, requireAdmin, async (_req, res) => {
   try {
     // Get recent WordPress sync activity logs
     const logs = await storage.getRecentActivity(20);
@@ -135,25 +135,25 @@ router.post("/wordpress/toggle", requireAuth, requireAdmin, async (req, res) => 
       userAgent: req.get("User-Agent")
     });
     
-    res.json({
+    return res.json({
       success: true,
       enabled,
       message: `WordPress sync ${enabled ? "enabled" : "disabled"} successfully`
     });
   } catch (error) {
     console.error("[Admin] Error toggling WordPress sync:", error);
-    res.status(500).json({ error: "Failed to toggle WordPress sync" });
+    return res.status(500).json({ error: "Failed to toggle WordPress sync" });
   }
 });
 
 // Site analytics endpoint
-router.get("/analytics", requireAuth, requireAdmin, async (req, res) => {
+router.get("/analytics", requireAuth, requireAdmin, async (_req, res) => {
   try {
     const analytics = await storage.getSiteAnalytics();
-    res.json(analytics);
+    return res.json(analytics);
   } catch (error) {
     console.error("[Admin] Error fetching analytics:", error);
-    res.status(500).json({ error: "Failed to fetch analytics" });
+    return res.status(500).json({ error: "Failed to fetch analytics" });
   }
 });
 
@@ -162,10 +162,10 @@ router.get("/activity", requireAuth, requireAdmin, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
     const activity = await storage.getRecentActivity(limit);
-    res.json(activity);
+    return res.json(activity);
   } catch (error) {
     console.error("[Admin] Error fetching activity:", error);
-    res.status(500).json({ error: "Failed to fetch activity logs" });
+    return res.status(500).json({ error: "Failed to fetch activity logs" });
   }
 });
 
@@ -177,10 +177,10 @@ router.get("/users", requireAuth, requireAdmin, async (req, res) => {
     
     // Get users with pagination
     const users = await storage.getUsers(page, limit);
-    res.json(users);
+    return res.json(users);
   } catch (error) {
     console.error("[Admin] Error fetching users:", error);
-    res.status(500).json({ error: "Failed to fetch users" });
+    return res.status(500).json({ error: "Failed to fetch users" });
   }
 });
 
@@ -191,21 +191,21 @@ router.get("/posts", requireAuth, requireAdmin, async (req, res) => {
     const limit = parseInt(req.query.limit as string) || 50;
     
     const posts = await storage.getPosts(page, limit);
-    res.json(posts);
+    return res.json(posts);
   } catch (error) {
     console.error("[Admin] Error fetching posts:", error);
-    res.status(500).json({ error: "Failed to fetch posts" });
+    return res.status(500).json({ error: "Failed to fetch posts" });
   }
 });
 
 // Site settings endpoints
-router.get("/settings", requireAuth, requireAdmin, async (req, res) => {
+router.get("/settings", requireAuth, requireAdmin, async (_req, res) => {
   try {
     const settings = await storage.getAllSiteSettings();
-    res.json(settings);
+    return res.json(settings);
   } catch (error) {
     console.error("[Admin] Error fetching settings:", error);
-    res.status(500).json({ error: "Failed to fetch site settings" });
+    return res.status(500).json({ error: "Failed to fetch site settings" });
   }
 });
 

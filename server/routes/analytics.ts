@@ -63,19 +63,19 @@ router.post('/vitals', async (req: Request, res: Response) => {
     });
     
     // Respond with success regardless of storage outcome
-    res.status(200).json({ message: 'Metric recorded successfully' });
+    return res.status(200).json({ message: 'Metric recorded successfully' });
   } catch (error) {
     analyticsLogger.error('Error processing performance metric', { 
       error: error instanceof Error ? error.message : 'Unknown error' 
     });
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 /**
  * Device analytics endpoint
  */
-router.get('/devices', async (req: Request, res: Response) => {
+router.get('/devices', async (_req: Request, res: Response) => {
   try {
     // This is now a public endpoint that anyone can access (no authentication needed)
     
@@ -83,19 +83,19 @@ router.get('/devices', async (req: Request, res: Response) => {
     const deviceDistribution = await storage.getDeviceDistribution();
     
     // Return data
-    res.json(deviceDistribution);
+    return res.json(deviceDistribution);
   } catch (error) {
     analyticsLogger.error('Error fetching device distribution', { 
       error: error instanceof Error ? error.message : 'Unknown error' 
     });
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 /**
  * User engagement analytics endpoint
  */
-router.get('/engagement', async (req: Request, res: Response) => {
+router.get('/engagement', async (_req: Request, res: Response) => {
   try {
     // This is now a public endpoint that anyone can access (no authentication needed)
     
@@ -117,12 +117,12 @@ router.get('/engagement', async (req: Request, res: Response) => {
     };
     
     // Return data
-    res.json(engagementMetrics);
+    return res.json(engagementMetrics);
   } catch (error) {
     analyticsLogger.error('Error fetching engagement metrics', { 
       error: error instanceof Error ? error.message : 'Unknown error' 
     });
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -446,7 +446,7 @@ router.get('/devices-test', async (_req: Request, res: Response) => {
       tablet: -1.5   // Tablet down 1.5%
     };
     
-    res.json({
+    return res.json({
       dailyData,
       weeklyData,
       monthlyData,

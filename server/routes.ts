@@ -18,7 +18,7 @@ import { generateEnhancedResponse, generateResponseAlternatives } from './utils/
 import { sanitizeHtml, stripHtml } from './utils/sanitizer';
 import { sendNewsletterWelcomeEmail } from './utils/send-email';
 import { z } from "zod";
-import { insertPostSchema, posts } from "../shared/schema";
+import { insertPostSchema, posts, type InsertUserFeedback } from "../shared/schema";
 
 import { log } from "./vite";
 import { createTransport } from "nodemailer";
@@ -849,10 +849,10 @@ export function registerRoutes(app: Express): Server {
         (responseData.post as any).themeIcon = postMetadata.themeIcon;
       }
       
-      res.json(responseData);
+      return res.json(responseData);
     } catch (error) {
       console.error('[PATCH /api/posts/:id/theme] Error updating post theme:', error);
-      res.status(500).json({ error: 'Failed to update post theme' });
+      return res.status(500).json({ error: 'Failed to update post theme' });
     }
   });
 
@@ -866,7 +866,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       const post = await storage.approvePost(postId);
-      res.json(post);
+      return res.json(post);
     } catch (error) {
       console.error("Error approving post:", error);
       res.status(500).json({ message: "Failed to approve post" });
@@ -936,13 +936,13 @@ export function registerRoutes(app: Express): Server {
         return res.status(304).end();
       }
 
-      res.json({
+      return res.json({
         posts: filteredPosts,
         hasMore: result.hasMore
       });
     } catch (error) {
       console.error("[GET /api/posts] Error:", error);
-      res.status(500).json({ message: "Failed to fetch posts" });
+      return res.status(500).json({ message: "Failed to fetch posts" });
     }
   });
 
@@ -981,7 +981,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       
-      res.status(201).json(post);
+      return res.status(201).json(post);
     } catch (error) {
       console.error("Error creating post:", error);
       if (error instanceof z.ZodError) {
@@ -993,7 +993,7 @@ export function registerRoutes(app: Express): Server {
           }))
         });
       }
-      res.status(500).json({ message: "Failed to create post" });
+      return res.status(500).json({ message: "Failed to create post" });
     }
   });
 
@@ -1002,10 +1002,10 @@ export function registerRoutes(app: Express): Server {
     try {
       const postId = parseInt(req.params.id);
       const updatedPost = await storage.updatePost(postId, req.body);
-      res.json(updatedPost);
+      return res.json(updatedPost);
     } catch (error) {
       console.error("Error updating post:", error);
-      res.status(500).json({ message: "Failed to update post" });
+      return res.status(500).json({ message: "Failed to update post" });
     }
   });
 
@@ -1029,7 +1029,7 @@ export function registerRoutes(app: Express): Server {
       // Delete the post
       const result = await storage.deletePost(postId);
       
-      res.json({ message: "Post deleted successfully", postId });
+      return res.json({ message: "Post deleted successfully", postId });
     } catch (error) {
       console.error("[Delete Post] Error:", error);
       if (error instanceof Error) {
@@ -1040,7 +1040,7 @@ export function registerRoutes(app: Express): Server {
           return res.status(401).json({ message: "Unauthorized: Please log in again" });
         }
       }
-      res.status(500).json({ message: "Failed to delete post" });
+      return res.status(500).json({ message: "Failed to delete post" });
     }
   });
   
@@ -1066,7 +1066,7 @@ export function registerRoutes(app: Express): Server {
       // Delete the post
       const result = await storage.deletePost(postId);
       
-      res.json({ 
+      return res.json({ 
         message: "WordPress placeholder post deleted successfully", 
         postId,
         title: post.title,
@@ -1074,7 +1074,7 @@ export function registerRoutes(app: Express): Server {
       });
     } catch (error) {
       console.error("[Delete WordPress Post] Error:", error);
-      res.status(500).json({ message: "Failed to delete WordPress placeholder post" });
+      return res.status(500).json({ message: "Failed to delete WordPress placeholder post" });
     }
   });
   
@@ -1086,10 +1086,10 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/posts/secret", async (_req, res) => {
     try {
       const posts = await storage.getSecretPosts();
-      res.json(posts);
+      return res.json(posts);
     } catch (error) {
       console.error("Error fetching secret posts:", error);
-      res.status(500).json({ message: "Failed to fetch secret posts" });
+      return res.status(500).json({ message: "Failed to fetch secret posts" });
     }
   });
 
@@ -1099,10 +1099,10 @@ export function registerRoutes(app: Express): Server {
         postId: parseInt(req.params.postId),
         userId: req.body.userId
       });
-      res.json(progress);
+      return res.json(progress);
     } catch (error) {
       console.error("Error unlocking secret post:", error);
-      res.status(500).json({ message: "Failed to unlock secret post" });
+      return res.status(500).json({ message: "Failed to unlock secret post" });
     }
   });
 
@@ -1998,11 +1998,11 @@ export function registerRoutes(app: Express): Server {
         // Continue even if there's an error storing the metric
       }
 
-      res.status(201).json({ message: "Metric recorded successfully" });
+      return res.status(201).json({ message: "Metric recorded successfully" });
     } catch (error: unknown) {
       console.error('[Analytics] Error storing metric:', error);
       const err = error as Error;
-      res.status(500).json({
+      return res.status(500).json({
         message: "Failed to store metric",
         error: process.env.NODE_ENV === 'development' ? err.message : undefined
       });
@@ -2022,13 +2022,13 @@ export function registerRoutes(app: Express): Server {
         storage.getDeviceDistribution()
       ]);
 
-      res.json({
+      return res.json({
         ...analyticsSummary,
         deviceStats
       });
     } catch (error) {
       console.error("Error fetching analytics:", error);
-      res.status(500).json({ message: "Failed to fetch analytics data" });
+      return res.status(500).json({ message: "Failed to fetch analytics data" });
     }
   });
   
@@ -2037,7 +2037,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const analyticsSummary = await storage.getAnalyticsSummary();
       
-      res.json({
+      return res.json({
         totalViews: analyticsSummary.totalViews,
         uniqueVisitors: analyticsSummary.uniqueVisitors,
         avgReadTime: analyticsSummary.avgReadTime,
@@ -2045,7 +2045,7 @@ export function registerRoutes(app: Express): Server {
       });
     } catch (error) {
       console.error("[Analytics] Error fetching site analytics:", error);
-      res.status(500).json({ message: "Failed to fetch analytics data" });
+      return res.status(500).json({ message: "Failed to fetch analytics data" });
     }
   });
   
@@ -2153,7 +2153,7 @@ export function registerRoutes(app: Express): Server {
         });
       }
       
-      res.json({
+      return res.json({
         dailyData,
         weeklyData,
         monthlyData,
@@ -2162,7 +2162,7 @@ export function registerRoutes(app: Express): Server {
       });
     } catch (error) {
       console.error("Error fetching device analytics:", error);
-      res.status(500).json({ message: "Failed to fetch device analytics" });
+      return res.status(500).json({ message: "Failed to fetch device analytics" });
     }
   });
   
@@ -2617,7 +2617,7 @@ export function registerRoutes(app: Express): Server {
         });
       }
       
-      res.json({
+      return res.json({
         dailyData,
         weeklyData,
         monthlyData,
@@ -2629,7 +2629,7 @@ export function registerRoutes(app: Express): Server {
       });
     } catch (error) {
       console.error("Error fetching reading time analytics:", error);
-      res.status(500).json({ message: "Failed to fetch reading time analytics" });
+      return res.status(500).json({ message: "Failed to fetch reading time analytics" });
     }
   });
 
@@ -2640,10 +2640,10 @@ export function registerRoutes(app: Express): Server {
       }
 
       const notifications = await storage.getUnreadAdminNotifications();
-      res.json(notifications);
+      return res.json(notifications);
     } catch (error) {
       console.error("Error fetching notifications:", error);
-      res.status(500).json({ message: "Failed to fetch notifications" });
+      return res.status(500).json({ message: "Failed to fetch notifications" });
     }
   });
 
@@ -2655,10 +2655,10 @@ export function registerRoutes(app: Express): Server {
 
       const notificationId = parseInt(req.params.id);
       await storage.markNotificationAsRead(notificationId);
-      res.json({ message: "Notification marked as read" });
+      return res.json({ message: "Notification marked as read" });
     } catch (error) {
       console.error("Error marking notification as read:", error);
-      res.status(500).json({ message: "Failed to update notification" });
+      return res.status(500).json({ message: "Failed to update notification" });
     }
   });
 
@@ -2670,10 +2670,10 @@ export function registerRoutes(app: Express): Server {
 
       const limit = parseInt(req.query.limit as string) || 50;
       const logs = await storage.getRecentActivityLogs(limit);
-      res.json(logs);
+      return res.json(logs);
     } catch (error) {
       console.error("Error fetching activity logs:", error);
-      res.status(500).json({ message: "Failed to fetch activity logs" });
+      return res.status(500).json({ message: "Failed to fetch activity logs" });
     }
   });
 
@@ -2747,13 +2747,13 @@ export function registerRoutes(app: Express): Server {
         type: feedback.type
       });
       
-      res.status(201).json({ success: true, feedback });
+      return res.status(201).json({ success: true, feedback });
     } catch (error) {
       routesLogger.error('Error submitting feedback', { 
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       });
-      res.status(500).json({ error: "Failed to submit feedback" });
+      return res.status(500).json({ error: "Failed to submit feedback" });
     }
   });
 
@@ -2791,13 +2791,13 @@ export function registerRoutes(app: Express): Server {
         limit: limit
       });
       
-      res.status(200).json({ feedback });
+      return res.status(200).json({ feedback });
     } catch (error) {
       routesLogger.error('Error fetching feedback list', {
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       });
-      res.status(500).json({ error: "Failed to fetch feedback" });
+      return res.status(500).json({ error: "Failed to fetch feedback" });
     }
   });
 
@@ -2852,7 +2852,7 @@ export function registerRoutes(app: Express): Server {
       });
       
       // Return enhanced feedback suggestions along with the original ones
-      res.status(200).json({ 
+      return res.status(200).json({ 
         feedback,
         responseSuggestion: enhancedSuggestion, // Use the enhanced suggestion as primary
         alternativeSuggestions, // Include alternatives
@@ -2865,7 +2865,7 @@ export function registerRoutes(app: Express): Server {
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       });
-      res.status(500).json({ error: "Failed to fetch feedback" });
+      return res.status(500).json({ error: "Failed to fetch feedback" });
     }
   });
 
@@ -2914,7 +2914,7 @@ export function registerRoutes(app: Express): Server {
         alternativesCount: alternativeSuggestions.length
       });
       
-      res.status(200).json({
+      return res.status(200).json({
         responseSuggestion: enhancedSuggestion,
         alternativeSuggestions,
         responseHints,
@@ -2926,7 +2926,7 @@ export function registerRoutes(app: Express): Server {
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       });
-      res.status(500).json({ error: "Failed to refresh AI suggestions" });
+      return res.status(500).json({ error: "Failed to refresh AI suggestions" });
     }
   });
 
@@ -2976,7 +2976,7 @@ export function registerRoutes(app: Express): Server {
         adminId: user.id
       });
       
-      res.status(200).json({ success: true, feedback: updatedFeedback });
+      return res.status(200).json({ success: true, feedback: updatedFeedback });
     } catch (error) {
       routesLogger.error('Error updating feedback status', {
         id: req.params.id,
@@ -2984,7 +2984,7 @@ export function registerRoutes(app: Express): Server {
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       });
-      res.status(500).json({ error: "Failed to update feedback status" });
+      return res.status(500).json({ error: "Failed to update feedback status" });
     }
   });
 
@@ -3105,7 +3105,7 @@ Message ID: ${savedMessage.id}
         // We continue even if email fails - the message is already saved in DB
       }
 
-      res.status(200).json({
+      return res.status(200).json({
         message: emailSent 
           ? "Your message has been received. Thank you for contacting us!"
           : "Your message was saved, but there might be a delay in our response. We'll get back to you as soon as possible.",
@@ -3114,7 +3114,7 @@ Message ID: ${savedMessage.id}
       });
     } catch (error) {
       console.error('Error processing contact form submission:', error);
-      res.status(500).json({ message: "Failed to process your message. Please try again later." });
+      return res.status(500).json({ message: "Failed to process your message. Please try again later." });
     }
   });
 
@@ -3151,7 +3151,7 @@ Message ID: ${savedMessage.id}
   app.use(errorLoggerMiddleware);
   
   // Global error handler with enhanced logging - MUST BE LAST
-  app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     // Use the already imported routesLogger
     // Log the error with full details
     routesLogger.error('Unhandled application error', { 

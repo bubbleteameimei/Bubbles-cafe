@@ -1,4 +1,4 @@
-import { db } from "../storage-db";
+import { db } from "../db";
 import { eq, desc, sql, like, or } from "drizzle-orm";
 import { users } from "@shared/schema";
 import { createLogger } from "../utils/debug-logger";

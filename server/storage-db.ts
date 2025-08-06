@@ -761,7 +761,7 @@ export class DatabaseStorage implements IStorage {
     return [];
   }
 
-  async getPerformanceMetricsByType(type: string): Promise<any[]> {
+  async getPerformanceMetricsByType(_type: string): Promise<any[]> {
     // Placeholder for performance metrics by type logic
     return [];
   }
@@ -789,7 +789,7 @@ export class DatabaseStorage implements IStorage {
       .limit(10);
   }
 
-  async getRecommendedPosts(postId: number, limit: number): Promise<any[]> {
+  async getRecommendedPosts(_postId: number, _limit: number): Promise<any[]> {
     // Placeholder for recommended posts logic
     return [];
   }
