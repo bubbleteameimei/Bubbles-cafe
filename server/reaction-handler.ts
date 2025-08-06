@@ -51,7 +51,7 @@ export async function handlePostReaction(req: Request, res: Response) {
     .where(eq(postsTable.id, postId));
     
     // Return success with updated counts
-    res.json({
+    return res.json({
       success: true,
       message: `Post ${isLike ? 'liked' : 'disliked'} successfully`,
       reactions: {
@@ -61,7 +61,7 @@ export async function handlePostReaction(req: Request, res: Response) {
     });
   } catch (error) {
     console.error(`Error processing reaction:`, error);
-    res.status(500).json({ error: "Failed to process reaction" });
+    return res.status(500).json({ error: "Failed to process reaction" });
   }
 }
 
@@ -88,7 +88,7 @@ export async function getPostReactions(req: Request, res: Response) {
     }
     
     // Return current counts
-    res.json({
+    return res.json({
       postId,
       reactions: {
         likes: Number(counts.likes || 0),
@@ -97,6 +97,6 @@ export async function getPostReactions(req: Request, res: Response) {
     });
   } catch (error) {
     console.error(`Error getting reaction counts:`, error);
-    res.status(500).json({ error: "Failed to get reaction counts" });
+    return res.status(500).json({ error: "Failed to get reaction counts" });
   }
 }

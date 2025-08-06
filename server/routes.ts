@@ -16,18 +16,11 @@ import * as session from 'express-session';
 import { generateResponseSuggestion, getResponseHints } from './utils/feedback-ai';
 import { generateEnhancedResponse, generateResponseAlternatives } from './utils/enhanced-feedback-ai';
 import { sanitizeHtml, stripHtml } from './utils/sanitizer';
-import { sendNewsletterWelcomeEmail } from './utils/send-email';
 import { z } from "zod";
 import { insertPostSchema, posts, type InsertUserFeedback } from "../shared/schema";
 
-import { log } from "./vite";
-import { createTransport } from "nodemailer";
-import * as bcrypt from 'bcryptjs';
-
 import * as crypto from 'crypto';
 import moderationRouter from './routes/moderation';
-import { registerUserFeedbackRoutes } from './routes/user-feedback';
-import { registerPrivacySettingsRoutes } from './routes/privacy-settings';
 import { adminRoutes } from './routes/admin';
 import { firebaseAuthRoutes } from './routes/firebase-auth';
 
@@ -44,17 +37,7 @@ import { eq, sql, desc } from "drizzle-orm";
 
 const routesLogger = createSecureLogger('Routes');
 
-// Add interfaces for analytics data
-interface UserAgent {
-  browser: string;
-  version: string;
-  os: string;
-}
 
-interface PostWithAnalytics extends Post {
-  views: number;
-  timeOnPage: number;
-}
 
 // Add cacheControl middleware at the top with other middleware definitions
 const cacheControl = (duration: number) => (_req: Request, res: Response, next: NextFunction) => {
@@ -89,13 +72,7 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 50,
-  message: { message: "Too many requests, please try again later" },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+
 
 // Specific limiter for analytics endpoints with higher limits
 const analyticsLimiter = rateLimit({

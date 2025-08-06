@@ -9,16 +9,16 @@ const PORT = 3002;
 app.use(express.json());
 
 // Basic health endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Basic API routes
-app.get('/api/posts', (req, res) => {
+app.get('/api/posts', (_req, res) => {
   res.json([]);
 });
 
-app.get('/api/posts/recommendations', (req, res) => {
+app.get('/api/posts/recommendations', (_req, res) => {
   res.json([]);
 });
 

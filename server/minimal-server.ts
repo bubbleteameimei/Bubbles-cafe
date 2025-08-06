@@ -1,7 +1,5 @@
 import express from 'express';
 import { createServer } from 'http';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import { setupVite } from './vite';
 
 const app = express();
@@ -22,8 +20,7 @@ app.get('/health', (_req, res) => {
 });
 
 // Setup Vite for frontend
-const __filename = fileURLToPath(import.meta.url);
-// const __dirname = dirname(__filename); // Unused variable
+// const __filename = fileURLToPath(import.meta.url); // Unused variable
 const server = createServer(app);
 
 // Setup Vite after creating server
