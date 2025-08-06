@@ -11,15 +11,10 @@ import { apiCache } from './middlewares/api-cache';
 import { applySecurityMiddleware } from './middleware/security-validation';
 import * as session from 'express-session';
 
-// Define session types for Express
-
-import { generateResponseSuggestion, getResponseHints } from './utils/feedback-ai';
-import { generateEnhancedResponse, generateResponseAlternatives } from './utils/enhanced-feedback-ai';
 import { sanitizeHtml, stripHtml } from './utils/sanitizer';
 import { z } from "zod";
-import { insertPostSchema, posts, type InsertUserFeedback } from "../shared/schema";
+import { insertPostSchema, posts, type InsertUserFeedback, type PostMetadata } from "../shared/schema";
 
-import * as crypto from 'crypto';
 import moderationRouter from './routes/moderation';
 import { adminRoutes } from './routes/admin';
 import { firebaseAuthRoutes } from './routes/firebase-auth';
@@ -27,13 +22,11 @@ import { firebaseAuthRoutes } from './routes/firebase-auth';
 // Search router imported directly in server/index.ts to avoid Vite conflicts
 import newsletterRouter from './routes/newsletter';
 import bookmarksRouter from './routes/bookmarks';
-// CSRF protection completely removed as requested
 import { createSecureLogger } from './utils/secure-logger';
 import { requestLogger, errorLoggerMiddleware } from './utils/debug-logger';
-import { validateBody, validateQuery, validateParams, commonSchemas } from './middleware/input-validation';
-import { asyncHandler, createError } from './utils/error-handler';
 import { db } from "./db";
 import { eq, sql, desc } from "drizzle-orm";
+import * as crypto from 'crypto';
 
 const routesLogger = createSecureLogger('Routes');
 
@@ -87,15 +80,13 @@ const analyticsLimiter = rateLimit({
 
 // Update the registerRoutes function to add compression and proper caching
 // Import our recommendation routes
-import { registerRecommendationsRoutes } from "./routes/recommendations";
 import apiTestRoutes from './api-test';
 import testDeleteRoutes from './routes/test-delete';
-import csrfTestRoutes from './routes/csrf-test';
 import { storage } from './storage';
 
-export function registerRoutes(app: Express): Server {
+export function registerRoutes(app: Express): void {
   // Add a simple test route
-  app.get('/test', (req, res) => {
+  app.get('/test', (_req, res) => {
     res.json({ message: 'Server is working!' });
   });
   // Register API test routes
@@ -234,7 +225,7 @@ export function registerRoutes(app: Express): Server {
       .where(eq(posts.id, postId));
       
       // Return success with updated counts
-      res.json({
+      return res.json({
         success: true,
         message: `Post ${isLike ? 'liked' : 'disliked'} successfully`,
         reactions: {
@@ -244,7 +235,7 @@ export function registerRoutes(app: Express): Server {
       });
     } catch (error) {
       console.error(`Error processing reaction:`, error);
-      res.status(500).json({ error: "Failed to process reaction" });
+      return res.status(500).json({ error: "Failed to process reaction" });
     }
   });
   
@@ -269,7 +260,7 @@ export function registerRoutes(app: Express): Server {
       }
       
       // Return current counts
-      res.json({
+      return res.json({
         postId,
         reactions: {
           likes: Number(counts.likes || 0),
@@ -278,7 +269,7 @@ export function registerRoutes(app: Express): Server {
       });
     } catch (error) {
       console.error(`Error getting reaction counts:`, error);
-      res.status(500).json({ error: "Failed to get reaction counts" });
+      return res.status(500).json({ error: "Failed to get reaction counts" });
     }
   });
   
@@ -496,7 +487,7 @@ export function registerRoutes(app: Express): Server {
         slug: post.slug
       });
       
-      res.status(201).json(post);
+      return res.status(201).json(post);
     } catch (error) {
       console.error("[POST /api/posts/community] Error:", error);
       if (error instanceof z.ZodError) {
@@ -508,7 +499,7 @@ export function registerRoutes(app: Express): Server {
           }))
         });
       }
-      res.status(500).json({ message: "Failed to create community post" });
+      return res.status(500).json({ message: "Failed to create community post" });
     }
   });
 
@@ -614,10 +605,10 @@ export function registerRoutes(app: Express): Server {
           totalPosts: 0
         });
       }
-    } catch (error) {
-      console.error("[GET /api/posts/community] Error:", error);
-      res.status(500).json({ message: "Failed to fetch community posts" });
-    }
+          } catch (error) {
+        console.error("[GET /api/posts/community] Error:", error);
+        return res.status(500).json({ message: "Failed to fetch community posts" });
+      }
   });
   
   // Add endpoint for fetching a specific community post by slug
@@ -627,7 +618,7 @@ export function registerRoutes(app: Express): Server {
       
       
       // Fetch the post with the given slug
-      const post = await storage.getPost(slug);
+      const post = await storage.getPostBySlug(slug);
       
       if (!post) {
         return res.status(404).json({ message: "Community post not found" });
@@ -675,10 +666,10 @@ export function registerRoutes(app: Express): Server {
         readingTimeMinutes: post.readingTimeMinutes || Math.ceil(post.content.length / 1000)
       };
       
-      res.json(response);
+      return res.json(response);
     } catch (error) {
       console.error(`[GET /api/posts/community/:slug] Error:`, error);
-      res.status(500).json({ message: "Failed to fetch community post" });
+      return res.status(500).json({ message: "Failed to fetch community post" });
     }
   });
   
@@ -705,8 +696,6 @@ export function registerRoutes(app: Express): Server {
         id: posts.id,
         title: posts.title,
         themeCategory: posts.themeCategory,
-        // themeIcon is accessed through metadata which may not be in database schema
-        themeIcon: null, // Will be populated from metadata later if available
         slug: posts.slug,
         createdAt: posts.createdAt
       })
@@ -715,12 +704,12 @@ export function registerRoutes(app: Express): Server {
       
       // Get full post data to extract themeIcon from metadata
       const fullPosts = await Promise.all(allPosts.map(async (post) => {
-        const fullPost = await storage.getPostById(post.id);
+        const fullPost = await storage.getPostById(post.id as number);
         return fullPost;
       }));
       
       // Transform the results to support both naming conventions
-      const transformedPosts = fullPosts.map((post) => {
+      const transformedPosts = fullPosts.filter((post): post is NonNullable<typeof post> => post !== undefined).map((post) => {
         // Extract themeIcon from metadata
         const metadata = post.metadata as any || {};
         const themeIcon = metadata.themeIcon || null;
@@ -738,10 +727,10 @@ export function registerRoutes(app: Express): Server {
       });
       
       
-      res.json(transformedPosts);
+      return res.json(transformedPosts);
     } catch (error) {
       console.error('[GET /api/posts/admin/themes] Error fetching admin posts for theme management:', error);
-      res.status(500).json({ error: 'Failed to fetch posts' });
+      return res.status(500).json({ error: 'Failed to fetch posts' });
     }
   });
 
@@ -804,23 +793,22 @@ export function registerRoutes(app: Express): Server {
       const updatedPost = await storage.updatePost(postId, updateData);
       
       // Force cache invalidation for this post to ensure the theme is updated everywhere
-      const cacheKey = `post_${postId}`;
-      await storage.clearCache(cacheKey);
+      await storage.clearCache();
       
       // Construct the response with properties that definitely exist
       // Support both snake_case and camelCase for backward compatibility
       const responseData = {
         success: true,
         post: {
-          id: updatedPost.id,
-          title: updatedPost.title,
-          theme_category: updatedPost.themeCategory || null,
-          themeCategory: updatedPost.themeCategory || null
+          id: updatedPost?.id,
+          title: updatedPost?.title,
+          theme_category: updatedPost?.themeCategory || null,
+          themeCategory: updatedPost?.themeCategory || null
         }
       };
       
       // Extract themeIcon from metadata and add to response with both naming conventions
-      const postMetadata = updatedPost.metadata as any;
+      const postMetadata = updatedPost?.metadata as any;
       if (postMetadata && postMetadata.themeIcon) {
         (responseData.post as any).theme_icon = postMetadata.themeIcon;
         (responseData.post as any).themeIcon = postMetadata.themeIcon;
@@ -846,7 +834,7 @@ export function registerRoutes(app: Express): Server {
       return res.json(post);
     } catch (error) {
       console.error("Error approving post:", error);
-      res.status(500).json({ message: "Failed to approve post" });
+      return res.status(500).json({ message: "Failed to approve post" });
     }
   });
 
@@ -856,7 +844,6 @@ export function registerRoutes(app: Express): Server {
       const page = Number(req.query.page) || 1;
       // Set limit to 100 to ensure all 21 WordPress stories are returned in one request
       const limit = Number(req.query.limit) || 100;
-      const filter = req.query.filter as string | undefined;
       const isAdminPost = req.query.isAdminPost === 'true' ? true : 
                          req.query.isAdminPost === 'false' ? false : undefined;
 
@@ -1004,7 +991,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Delete the post
-      const result = await storage.deletePost(postId);
+      await storage.deletePost(postId);
       
       return res.json({ message: "Post deleted successfully", postId });
     } catch (error) {
@@ -1041,7 +1028,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Delete the post
-      const result = await storage.deletePost(postId);
+      await storage.deletePost(postId);
       
       return res.json({ 
         message: "WordPress placeholder post deleted successfully", 
@@ -1062,7 +1049,7 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/posts/secret", async (_req, res) => {
     try {
-      const posts = await storage.getSecretPosts();
+      const posts = await storage.getRecentPosts();
       return res.json(posts);
     } catch (error) {
       console.error("Error fetching secret posts:", error);
@@ -1072,10 +1059,10 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/posts/secret/:postId/unlock", async (req, res) => {
     try {
-      const progress = await storage.unlockSecretPost({
-        postId: parseInt(req.params.postId),
-        userId: req.body.userId
-      });
+      const progress = await storage.unlockSecretPost(
+        parseInt(req.params.postId),
+        req.body.password || ''
+      );
       return res.json(progress);
     } catch (error) {
       console.error("Error unlocking secret post:", error);
@@ -1097,7 +1084,7 @@ export function registerRoutes(app: Express): Server {
       } else {
         // It's a slug
         
-        post = await storage.getPost(slugOrId);
+        post = await storage.getPostBySlug(slugOrId);
       }
       
       if (!post) {
@@ -1120,10 +1107,10 @@ export function registerRoutes(app: Express): Server {
         return res.status(304).end();
       }
 
-      res.json(post);
+      return res.json(post);
     } catch (error) {
       console.error("[GET /api/posts/:slugOrId] Error fetching post:", error);
-      res.status(500).json({ message: "Failed to fetch post" });
+      return res.status(500).json({ message: "Failed to fetch post" });
     }
   });
 
@@ -1139,8 +1126,8 @@ export function registerRoutes(app: Express): Server {
       // Check if postId is a number or a slug
       let post;
       if (isNaN(Number(postId))) {
-        // If it's a slug, use getPost
-        post = await storage.getPost(postId);
+        // If it's a slug, use getPostBySlug
+        post = await storage.getPostBySlug(postId);
       } else {
         // If it's a number, use getPostById
         post = await storage.getPostById(Number(postId));
@@ -1156,22 +1143,22 @@ export function registerRoutes(app: Express): Server {
       // Use the numeric post ID from the post record
               const comments = await storage.getCommentsByPost(post.id);
       
-      res.json(comments || []);
+      return res.json(comments || []);
     } catch (error) {
       console.error("Error in getComments:", error);
       // Return empty array instead of error to prevent client crashes
-      res.json([]);
+      return res.json([]);
     }
   });
 
   app.get("/api/comments/recent", async (_req: Request, res: Response) => {
     try {
-      const comments = await storage.getRecentComments();
-      res.json(comments || []);
+      const comments = await storage.getRecentComments(10);
+      return res.json(comments || []);
     } catch (error) {
       console.error("Error fetching recent comments:", error);
       // Return empty array instead of error to prevent client crashes
-      res.json([]);
+      return res.json([]);
     }
   });
 
@@ -1179,7 +1166,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const commentId = parseInt(req.params.id);
       const comment = await storage.updateComment(commentId, req.body);
-      res.json(comment);
+      return res.json(comment);
     } catch (error) {
       console.error("Error updating comment:", error);
       if (error instanceof Error) {
@@ -1187,7 +1174,7 @@ export function registerRoutes(app: Express): Server {
           return res.status(404).json({ message: "Comment not found" });
         }
       }
-      res.status(500).json({ message: "Failed to update comment" });
+      return res.status(500).json({ message: "Failed to update comment" });
     }
   });
 
@@ -1203,9 +1190,9 @@ export function registerRoutes(app: Express): Server {
       
 
       // Delete the comment
-      const result = await storage.deleteComment(commentId);
+      await storage.deleteComment(commentId);
       
-      res.json({ message: "Comment deleted successfully", commentId });
+      return res.json({ message: "Comment deleted successfully", commentId });
     } catch (error) {
       console.error("[Delete Comment] Error:", error);
       if (error instanceof Error) {
@@ -1216,7 +1203,7 @@ export function registerRoutes(app: Express): Server {
           return res.status(401).json({ message: "Unauthorized: Please log in again" });
         }
       }
-      res.status(500).json({ message: "Failed to delete comment" });
+      return res.status(500).json({ message: "Failed to delete comment" });
     }
   });
 
@@ -1225,10 +1212,10 @@ export function registerRoutes(app: Express): Server {
     try {
       const comments = await storage.getPendingComments();
       
-      res.json(comments);
+      return res.json(comments);
     } catch (error) {
       console.error("Error fetching pending comments:", error);
-      res.status(500).json({ message: "Failed to fetch pending comments" });
+      return res.status(500).json({ message: "Failed to fetch pending comments" });
     }
   });
 
@@ -1250,7 +1237,7 @@ export function registerRoutes(app: Express): Server {
         }
       } else {
         // It's a slug, we need to find the corresponding post ID
-        const post = await storage.getPost(postIdParam);
+        const post = await storage.getPostBySlug(postIdParam);
         if (!post) {
           
           return res.status(404).json({ message: "Post not found" });
@@ -1277,16 +1264,13 @@ export function registerRoutes(app: Express): Server {
         moderationStatus
       });
 
-      // Determine approval status based on moderation
-      const isApproved = !needsModeration || moderationStatus === 'none';
-
       // Create the comment with properly typed metadata and sanitized content
       const comment = await storage.createComment({
         postId,
         content: sanitizedContent,
-        parentId: parentId ? parseInt(parentId) : null, // Handle replies properly
-        userId: req.user?.id || null, // Allow null for anonymous users
-        is_approved: isApproved, // Auto-approve unless moderation is needed
+        parentId: parentId ? parseInt(parentId) : undefined, // Handle replies properly
+        userId: req.user?.id || undefined, // Allow undefined for anonymous users
+        // Auto-approve unless moderation is needed - store in metadata instead
         metadata: {
           author: sanitizedAuthor,
           moderated: needsModeration === true,
@@ -1302,13 +1286,13 @@ export function registerRoutes(app: Express): Server {
       console.log('[Comments] Successfully created comment:', {
         id: comment.id,
         parentId: comment.parentId,
-        approved: comment.is_approved || comment.approved
+        approved: (comment.metadata as any)?.isApproved || false
       });
       
       return res.status(201).json(comment);
     } catch (error) {
       console.error("[Comments] Error creating comment:", error);
-      res.status(500).json({ message: "Failed to create comment" });
+      return res.status(500).json({ message: "Failed to create comment" });
     }
   });
 
@@ -1340,7 +1324,7 @@ export function registerRoutes(app: Express): Server {
           likesCount: sql`COALESCE("likesCount", 0) + 1`,
           metadata: {
             ...metadata,
-            likes: (metadata.likes || 0) + 1
+            likes: ((metadata as any).likes || 0) + 1
           }
         }).where(eq(posts.id, postId));
       } else if (isLike === false) {
@@ -1349,7 +1333,7 @@ export function registerRoutes(app: Express): Server {
           dislikesCount: sql`COALESCE("dislikesCount", 0) + 1`,
           metadata: {
             ...metadata,
-            dislikes: (metadata.dislikes || 0) + 1
+            dislikes: ((metadata as any).dislikes || 0) + 1
           }
         }).where(eq(posts.id, postId));
       }
@@ -1367,11 +1351,11 @@ export function registerRoutes(app: Express): Server {
       };
       
       
-      res.json(response);
+      return res.json(response);
       
     } catch (error) {
       console.error('[Reaction] Error:', error);
-      res.status(500).json({ error: "Failed to process reaction", likesCount: 0, dislikesCount: 0 });
+      return res.status(500).json({ error: "Failed to process reaction", likesCount: 0, dislikesCount: 0 });
     }
   });
 
@@ -1427,7 +1411,7 @@ export function registerRoutes(app: Express): Server {
       } else {
         // It's a slug, we need to find the corresponding post ID
         try {
-          const post = await storage.getPost(postIdParam);
+          const post = await storage.getPostBySlug(postIdParam);
           if (!post) {
             
             return res.status(404).json({ 
@@ -1573,7 +1557,7 @@ export function registerRoutes(app: Express): Server {
       } else {
         // It's a slug, we need to find the corresponding post ID
         try {
-          const post = await storage.getPost(postIdParam);
+          const post = await storage.getPostBySlug(postIdParam);
           if (!post) {
             
             return res.status(404).json({ 
