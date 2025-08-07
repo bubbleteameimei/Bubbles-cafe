@@ -46,6 +46,9 @@ import {
   ResponseSuggestion
 } from '@/types/feedback';
 
+// Re-export a simpler alias used by other components
+export type FeedbackItem = FeedbackWithMetadata;
+
 interface FeedbackDetailsProps {
   feedback: FeedbackWithMetadata;
   onStatusChange?: (id: number, status: string) => void;

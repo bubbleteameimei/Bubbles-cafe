@@ -33,20 +33,20 @@ export function PerformanceMonitor({
     const identifier = `${pageId || window.location.pathname}-${Date.now()}`;
     
     // Record Core Web Vitals
-    onCLS(({ value }) => recordMetric('CLS', value * 1000, identifier));
-    onFID(({ value }) => recordMetric('FID', value, identifier));
-    onLCP(({ value }) => recordMetric('LCP', value, identifier));
-    onFCP(({ value }) => recordMetric('FCP', value, identifier));
-    onTTFB(({ value }) => recordMetric('TTFB', value, identifier));
+    onCLS(({ value }) => recordMetric('CLS', value * 1000));
+    onFID(({ value }) => recordMetric('FID', value));
+    onLCP(({ value }) => recordMetric('LCP', value));
+    onFCP(({ value }) => recordMetric('FCP', value));
+    onTTFB(({ value }) => recordMetric('TTFB', value));
     
     // Record Navigation Timing
-    recordNavigationTiming(identifier);
+    recordNavigationTiming();
     
     // Record page load event once
     const handleLoad = () => {
       if (isLoadEventSent.current) return;
       
-      recordMetric('PageLoad', performance.now(), identifier);
+      recordMetric('PageLoad', performance.now());
       isLoadEventSent.current = true;
     };
     
