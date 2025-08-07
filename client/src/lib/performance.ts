@@ -141,7 +141,9 @@ export class MemoryOptimizer {
       // Implement LRU cache eviction
       if (this.cache.size >= this.MAX_CACHE_SIZE) {
         const firstKey = this.cache.keys().next().value;
-        this.cache.delete(firstKey);
+        if (firstKey) {
+          this.cache.delete(firstKey);
+        }
       }
       
       this.cache.set(key, result);
@@ -180,8 +182,9 @@ function setupLazyLoading() {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         const img = entry.target as HTMLImageElement;
-        if (img.dataset.src) {
-          img.src = img.dataset.src;
+        const src = img.dataset.src;
+        if (src) {
+          img.src = src;
           img.classList.add('loaded');
           observer.unobserve(img);
         }

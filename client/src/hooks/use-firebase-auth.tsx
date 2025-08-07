@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { auth, signInWithGoogle, signInWithEmail, createUserWithEmail, signOutUser, resetPassword } from '@/config/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { User } from '@/types/user';
+import type { User } from '../../../shared/schema';
 
 interface FirebaseAuthContextType {
   user: User | null;
@@ -54,6 +54,11 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
 
   // Monitor Firebase auth state changes
   useEffect(() => {
+    if (!auth) {
+      setIsLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
       

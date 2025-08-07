@@ -135,7 +135,7 @@ export function createLazyComponent<T extends ComponentType<any>>(
             setRetryKey(prev => prev + 1);
           }}
         >
-          <LazyComponent key={retryKey} {...props} />
+          <LazyComponent key={retryKey} {...(props as any)} />
         </ErrorBoundary>
       </Suspense>
     );
@@ -218,7 +218,7 @@ export function createIntersectionLazyComponent<T extends ComponentType<any>>(
     }
 
     const LazyComponent = createLazyComponent(importFn, lazyOptions);
-    return <LazyComponent {...props} />;
+    return <LazyComponent {...(props as any)} />;
   });
 }
 
