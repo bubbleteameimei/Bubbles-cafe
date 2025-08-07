@@ -186,8 +186,8 @@ export class CacheManager {
     return async (...args: Args): Promise<Return> => {
       const key = keyGenerator(...args);
       return this.cached(key, () => fn(...args), {
-        ttl: options.ttl,
-        tags: options.tags
+        ttl: options.ttl || undefined,
+        tags: options.tags || undefined
       });
     };
   }

@@ -247,7 +247,7 @@ class PerformanceMonitor {
       }
     });
 
-    return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+    return scores.length > 0 ? scores.reduce((a, b) => a + b, 0 as number) / scores.length : 0;
   }
 
   public getOptimizationSuggestions(): string[] {

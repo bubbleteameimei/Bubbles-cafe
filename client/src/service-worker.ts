@@ -27,7 +27,7 @@ registerRoute(
     plugins: [
       new CacheableResponsePlugin({
         statuses: [200],
-      }),
+      }) as any,
     ],
   })
 );
@@ -50,11 +50,11 @@ registerRoute(
     plugins: [
       new CacheableResponsePlugin({
         statuses: [0, 200],
-      }),
+      }) as any,
       new ExpirationPlugin({
         maxEntries: 60,
         maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
-      }),
+      }) as any,
     ],
   })
 );
@@ -67,11 +67,11 @@ registerRoute(
     plugins: [
       new CacheableResponsePlugin({
         statuses: [200],
-      }),
+      }) as any,
       new ExpirationPlugin({
         maxEntries: 100,
         maxAgeSeconds: 5 * 60, // 5 minutes
-      }),
+      }) as any,
     ],
   })
 );

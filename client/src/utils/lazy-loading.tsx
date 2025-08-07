@@ -130,13 +130,12 @@ export function createLazyComponent<T extends ComponentType<any>>(
     return (
       <Suspense fallback={fallback}>
         <ErrorBoundary
-          fallback={errorFallback}
           onError={(error) => {
             console.error('Lazy component error:', error);
             setRetryKey(prev => prev + 1);
           }}
         >
-          <LazyComponent key={retryKey} {...props} />
+          <LazyComponent key={retryKey} {...(props as any)} />
         </ErrorBoundary>
       </Suspense>
     );
@@ -219,7 +218,7 @@ export function createIntersectionLazyComponent<T extends ComponentType<any>>(
     }
 
     const LazyComponent = createLazyComponent(importFn, lazyOptions);
-    return <LazyComponent {...props} />;
+    return <LazyComponent {...(props as any)} />;
   });
 }
 
@@ -238,6 +237,7 @@ export function usePreloadComponent(
 
       return () => clearTimeout(preloadTimer);
     }
+    return undefined;
   }, [importFn, condition]);
 }
 

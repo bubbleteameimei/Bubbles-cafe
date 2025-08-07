@@ -16,8 +16,11 @@ export default function Secret() {
 
   const unlockMutation = useMutation({
     mutationFn: async (postId: number) => {
-      return apiRequest<Post>('POST', `/api/posts/secret/${postId}/unlock`, {
-        unlockedBy: code
+      return apiRequest<Post>(`/api/posts/secret/${postId}/unlock`, {
+        method: 'POST',
+        body: JSON.stringify({
+          unlockedBy: code
+        })
       });
     },
     onSuccess: (_, postId) => {

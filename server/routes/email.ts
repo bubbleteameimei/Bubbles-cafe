@@ -75,7 +75,7 @@ router.post('/test', isAdmin, async (req, res) => {
     };
     
     // Send the email
-    const result = await sendEmail(message);
+    const result = await sendEmail(message as any);
     
     return res.json({
       success: true,

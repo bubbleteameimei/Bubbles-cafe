@@ -1463,7 +1463,7 @@ export function registerRoutes(app: Express): void {
       }
       
       // Add new vote
-      await storage.updateCommentVote(commentId, parseInt(userIdStr), isUpvote);
+      await storage.updateCommentVote(parseInt(userIdStr), commentId, isUpvote ? "upvote" : "downvote");
       
       // Get updated vote counts
       const counts = await storage.getCommentVoteCounts(commentId);

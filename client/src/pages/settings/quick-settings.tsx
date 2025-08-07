@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { SettingsLayout } from '@/components/layouts/SettingsLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
