@@ -12,6 +12,15 @@ declare module 'express-session' {
       createdAt?: string;
     }>;
     csrfToken?: string;
+    /**
+     * Metadata for security tracking (IP, user agent, etc.)
+     */
+    __meta?: {
+      ipAddress?: string;
+      userAgent?: string;
+      lastActivity?: string;
+      csrfToken?: string;
+    };
     user?: {
       id: number;
       email: string;
