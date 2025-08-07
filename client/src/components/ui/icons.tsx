@@ -1,7 +1,9 @@
 
-import { Icon } from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 
-export function getIconComponent(iconName: string): Icon {
-  // Simple passthrough since we're not using custom icons yet
-  return () => null;
+// Map of icon name to component; extend as needed
+const iconMap: Record<string, LucideIcon> = {};
+
+export function getIconComponent(iconName: string): LucideIcon {
+  return iconMap[iconName] ?? (() => null);
 }

@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { type TooltipProps } from "recharts"
 import { Badge } from "@/components/ui/badge"
 
 // Define the ChartConfig type for better type safety
@@ -60,6 +59,7 @@ type ChartTooltipContentProps = {
   labelFormatter?: (value: string | number) => string | number
   nameKey?: string
   indicator?: "dot" | "line"
+  children?: React.ReactNode
 }
 
 function ChartTooltipContent({
@@ -71,8 +71,15 @@ function ChartTooltipContent({
   labelFormatter,
   nameKey,
   indicator = "dot",
+  children,
 }: ChartTooltipContentProps) {
   const context = React.useContext(ChartContext)
+
+  if (children) {
+    return (
+      <div className={`rounded-lg border bg-background px-3 py-2 text-sm shadow-sm ${className ?? ""}`}>{children}</div>
+    );
+  }
 
   if (!active || !payload?.length || !context) {
     return null
@@ -130,14 +137,17 @@ function ChartTooltipContent({
 function ChartTooltip({
   content,
   cursor,
+  children,
   ...props
-}: TooltipProps<any, any> & {
-  cursor?: React.ReactNode
-  content?: React.ReactNode
+}: {
+  cursor?: React.ReactNode;
+  content?: React.ReactNode;
+  children?: React.ReactNode;
+  [key: string]: any;
 }) {
   return (
     <foreignObject className="overflow-visible">
-      {content ?? <ChartTooltipContent {...(props as any)} />}
+      {children ?? content ?? <ChartTooltipContent {...(props as any)} />}
     </foreignObject>
   )
 }

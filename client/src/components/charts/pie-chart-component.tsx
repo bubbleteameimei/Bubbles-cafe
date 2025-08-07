@@ -83,21 +83,19 @@ export function PieChartComponent({
                     const percent = ((entry.value as number) / total * 100).toFixed(1);
                     
                     return (
-                      <ChartTooltip>
-                        <ChartTooltipContent>
-                          <div className="flex flex-col gap-1">
-                            <p className="text-sm font-medium">{entry.name}</p>
-                            <p className="text-sm font-semibold flex items-center gap-1">
+                      <ChartTooltip
+                        content={
+                          <ChartTooltipContent>
+                            <div className="flex items-center gap-2">
                               <span 
                                 className="size-3 rounded-full"
-                                style={{ backgroundColor: entry.color }}
+                                style={{ backgroundColor: entry.color || "#888" }}
                               />
-                              Value: {entry.value}
-                              {showPercentage && ` (${percent}%)`}
-                            </p>
-                          </div>
-                        </ChartTooltipContent>
-                      </ChartTooltip>
+                              {entry.name}: {entry.value}
+                            </div>
+                          </ChartTooltipContent>
+                        }
+                      />
                     )
                   }
                   return null

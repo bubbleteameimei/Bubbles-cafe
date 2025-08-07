@@ -49,7 +49,7 @@ import { Post } from '../../../../shared/schema';
 
 // Extend the User type to include avatar
 export interface ExtendedUser extends User {
-  avatar?: string;
+  avatar: string | null;
 }
 
 export interface ExtendedPost extends Post {

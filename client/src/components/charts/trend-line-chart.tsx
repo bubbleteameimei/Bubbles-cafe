@@ -103,26 +103,28 @@ export function TrendLineChart({
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     return (
-                      <ChartTooltip>
-                        <ChartTooltipContent>
-                          <div className="flex flex-col gap-2">
-                            <p className="text-sm font-medium">{payload[0].payload[xAxisDataKey]}</p>
-                            <div className="flex flex-col gap-1">
-                              {payload.map((entry, index) => (
-                                <p key={`tooltip-${index}`} className="text-sm font-semibold flex items-center gap-1">
-                                  <span 
-                                    className="size-3 rounded-full"
-                                    style={{ 
-                                      backgroundColor: entry.color || "#888" 
-                                    }}
-                                  />
-                                  {entry.name}: {entry.value}
-                                </p>
-                              ))}
+                      <ChartTooltip
+                        content={
+                          <ChartTooltipContent>
+                            <div className="flex flex-col gap-2">
+                              <p className="text-sm font-medium">{payload[0].payload[xAxisDataKey]}</p>
+                              <div className="flex flex-col gap-1">
+                                {payload.map((entry, index) => (
+                                  <p key={`tooltip-${index}`} className="text-sm font-semibold flex items-center gap-1">
+                                    <span 
+                                      className="size-3 rounded-full"
+                                      style={{ 
+                                        backgroundColor: entry.color || "#888" 
+                                      }}
+                                    />
+                                    {entry.name}: {entry.value}
+                                  </p>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        </ChartTooltipContent>
-                      </ChartTooltip>
+                          </ChartTooltipContent>
+                        }
+                      />
                     )
                   }
                   return null
