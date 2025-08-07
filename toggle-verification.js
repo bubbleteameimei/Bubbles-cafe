@@ -13,52 +13,41 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Files/directories to check
+// Directories & extensions to check
 const directories = ['client/src'];
-
-// File extensions to check
 const extensions = ['.tsx', '.jsx', '.ts', '.js'];
 
-// Files to exclude
-const excludeFiles = [
-  'node_modules',
-  'dist',
-  'build',
-  '.git',
-  '.cache'
-];
+// Directories we never want to crawl
+const excludeDirs = new Set(['node_modules', 'dist', 'build', '.git', '.cache']);
 
-// Find all files in the provided directories with the specified extensions
-function findFiles(directories, extensions) {
-  const files = [];
+/**
+ * Recursively walk directories using async fs APIs so we don't block the event-loop.
+ */
+async function findFiles(dirs, exts) {
+  const results = [];
 
-  for (const dir of directories) {
+  for (const dir of dirs) {
+    let entries;
     try {
-      const dirPath = path.resolve(dir);
-      
-      const items = fs.readdirSync(dirPath, { withFileTypes: true });
-      
-      for (const item of items) {
-        const itemPath = path.join(dirPath, item.name);
-        
-        // Skip excluded directories and files
-        if (excludeFiles.some(exclude => itemPath.includes(exclude))) {
-          continue;
-        }
-        
-        if (item.isDirectory()) {
-          // Recursively search subdirectories
-          files.push(...findFiles([itemPath], extensions));
-        } else if (extensions.some(ext => item.name.endsWith(ext))) {
-          files.push(itemPath);
-        }
+      entries = await fs.promises.readdir(path.resolve(dir), { withFileTypes: true });
+    } catch (err) {
+      console.error(`Error accessing directory ${dir}:`, err instanceof Error ? err.message : err);
+      continue;
+    }
+
+    for (const entry of entries) {
+      const entryPath = path.join(dir, entry.name);
+      if ([...excludeDirs].some(ex => entryPath.includes(ex))) continue;
+
+      if (entry.isDirectory()) {
+        results.push(...await findFiles([entryPath], exts));
+      } else if (exts.some(ext => entry.name.endsWith(ext))) {
+        results.push(entryPath);
       }
-    } catch (error) {
-      console.error(`Error accessing directory ${dir}:`, error.message);
     }
   }
-  
-  return files;
+
+  return results;
 }
 
 // Check if a file imports the Switch component
@@ -74,8 +63,9 @@ function importsSwitch(content) {
 // Check if a file uses the "size" property on the Switch component
 function usesSizeProperty(content) {
   // Look for Switch component with size property
-  const sizePropertyMatches = content.match(/<Switch[^>]*size=["'][^"']*["'][^>]*>/g);
-  const bgPropertyMatches = content.match(/<Switch[^>]*className=["'][^"']*bg-primary[^"']*["'][^>]*>/g);
+  // The /s flag makes . match across newlines so multi-line JSX is handled
+  const sizePropertyMatches = content.match(/<Switch[^>]*?\s+size=["'][^"']+["'][^>]*?>/gis);
+  const bgPropertyMatches   = content.match(/<Switch[^>]*?className=["'][^"']*bg-primary[^"']*["'][^>]*?>/gis);
   
   return {
     hasSizeProperty: sizePropertyMatches !== null && sizePropertyMatches.length > 0,
@@ -86,10 +76,10 @@ function usesSizeProperty(content) {
 }
 
 // Main function to check toggle standardization
-function checkToggleStandardization() {
+async function checkToggleStandardization() {
   console.log("Checking toggle switch standardization...");
   
-  const files = findFiles(directories, extensions);
+  const files = await findFiles(directories, extensions);
   console.log(`Found ${files.length} files to check`);
   
   let filesWithSwitch = 0;
@@ -100,7 +90,7 @@ function checkToggleStandardization() {
   // Check each file
   for (const file of files) {
     try {
-      const content = fs.readFileSync(file, 'utf8');
+      const content = await fs.promises.readFile(file, 'utf8');
       
       if (importsSwitch(content)) {
         filesWithSwitch++;
@@ -147,10 +137,16 @@ function checkToggleStandardization() {
         console.log(`   ${example}`);
       }
     }
+    // Non-zero exit so CI fails
+    process.exitCode = 1;
   } else {
     console.log("\n✅ All toggle switches follow the standard implementation!");
+    process.exitCode = 0;
   }
 }
 
 // Run the check
-checkToggleStandardization();
+checkToggleStandardization().catch(err => {
+  console.error('Error during toggle verification:', err);
+  process.exitCode = 1;
+});
