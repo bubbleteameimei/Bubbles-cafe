@@ -49,7 +49,8 @@ export function setCsrfToken(secureCookie = false) {
       res.cookie(CSRF_TOKEN_NAME, req.session.csrfToken, {
         httpOnly: false, // Needs to be accessible by JavaScript
         secure: secureCookie,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Required for cross-domain cookies
+        // SameSite must be "none" ONLY when the cookie is secure; otherwise browsers will reject it.
+        sameSite: secureCookie ? 'none' : 'lax'
       });
       return next();
     }
@@ -60,9 +61,9 @@ export function setCsrfToken(secureCookie = false) {
 
     // Set the token as a cookie for client-side access
     res.cookie(CSRF_TOKEN_NAME, token, {
-      httpOnly: false, // Needs to be accessible by JavaScript
+      httpOnly: false,
       secure: secureCookie,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Required for cross-domain cookies
+      sameSite: secureCookie ? 'none' : 'lax'
     });
 
     next();
