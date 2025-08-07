@@ -275,7 +275,7 @@ class SecureStorageManager {
             localStorageSize += localStorage[key].length;
           }
         }
-        info.localStorage.usage = localStorageSize;
+        (info.localStorage as any).usage = localStorageSize;
       } catch (error) {
         // Ignore errors getting usage
       }
@@ -289,7 +289,7 @@ class SecureStorageManager {
             sessionStorageSize += sessionStorage[key].length;
           }
         }
-        info.sessionStorage.usage = sessionStorageSize;
+        (info.sessionStorage as any).usage = sessionStorageSize;
       } catch (error) {
         // Ignore errors getting usage
       }

@@ -817,13 +817,13 @@ export class DatabaseStorage implements IStorage {
     let query = db.select().from(userFeedback);
     
     if (status) {
-      query = query.where(eq(userFeedback.status, status));
+      query = query.where(eq(userFeedback.status, status)) as any;
     }
     
-    query = query.orderBy(desc(userFeedback.createdAt));
+    query = query.orderBy(desc(userFeedback.createdAt)) as any;
     
     if (limit) {
-      query = query.limit(limit);
+      query = query.limit(limit) as any;
     }
     
     return await query;

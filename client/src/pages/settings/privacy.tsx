@@ -10,14 +10,11 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Link } from 'wouter';
 import { useCookieConsent } from '@/hooks/use-cookie-consent';
 import { CookieCategory } from '@/lib/cookie-manager';
 import { 
   AlertTriangle, 
-  ArrowRight, 
-  Info, 
   Lock, 
   Loader2, 
   Shield, 
@@ -29,11 +26,9 @@ import {
   DownloadCloud,
   Trash2 
 } from 'lucide-react';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { usePrivacySettings } from '@/hooks/use-privacy-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getPrivacyImpactLevel } from '@/utils/privacy-settings-utils';
 import { Progress } from '@/components/ui/progress';
 import { SettingsLayout } from '@/components/layouts/SettingsLayout';
@@ -54,19 +49,16 @@ import { useToast } from '@/hooks/use-toast';
 export default function PrivacySettingsPage() {
   const { toast } = useToast();
   const { 
-    cookiePreferences, 
     toggleCategory, 
-    acceptAll, 
     acceptEssentialOnly 
   } = useCookieConsent();
   
-  const { user, isAuthenticated, isAuthReady } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { 
     settings, 
     isLoading, 
     updateSetting, 
-    isUpdating,
-    isAuthReady: settingsAuthReady 
+    isUpdating
   } = usePrivacySettings();
   
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -97,15 +89,7 @@ export default function PrivacySettingsPage() {
     return Math.round((score / totalFactors) * 100);
   }, [settings, isLoading]);
 
-  // Function to toggle a specific cookie category
-  const handleToggleCategory = (category: CookieCategory) => {
-    toggleCategory(category);
-  };
 
-  // Function to clear all non-essential cookies
-  const handleClearAllCookies = () => {
-    acceptEssentialOnly();
-  };
   
   // Handle account data deletion
   const handleDeleteAccountData = async () => {
@@ -175,7 +159,7 @@ export default function PrivacySettingsPage() {
           </CardHeader>
           
           <CardContent className="space-y-4">
-            {isAuthReady && !isAuthenticated ? (
+            {!isAuthenticated ? (
               <div className="p-6 text-center border rounded-md bg-muted/50">
                 <ShieldAlert className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
                 <h3 className="text-lg font-medium mb-2">Authentication Required</h3>
@@ -421,7 +405,7 @@ export default function PrivacySettingsPage() {
           </CardContent>
         </Card>
 
-        {isAuthReady && isAuthenticated && !isLoading && (
+        {isAuthenticated && !isLoading && (
           <Card>
             <CardHeader>
               <CardTitle>Privacy Impact Summary</CardTitle>

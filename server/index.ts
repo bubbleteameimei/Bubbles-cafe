@@ -7,9 +7,10 @@ import { registerRoutes } from "./routes";
 import { setNeonAsDefault } from "./neon-config"; // Set Neon as default database
 import { setGmailCredentials } from "./config/gmail-config"; // Set Gmail credentials
 import { db } from "./db"; // Using the direct Neon database connection
-import { pool, waitForPoolInitialization } from "./db-connect"; // Import pool and wait function
+import { waitForPoolInitialization } from "./db-connect"; // Import wait function
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
+
 
 // import { seedDatabase } from "./seed"; // Unused import
 
@@ -51,7 +52,7 @@ import { registerAnalyticsRoutes } from "./routes/analytics"; // Analytics endpo
 import { registerEmailServiceRoutes } from "./routes/email-service"; // Email service routes
 import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark routes
 import { setCsrfToken, validateCsrfToken, csrfTokenToLocals, CSRF_TOKEN_NAME } from "./middleware/csrf-protection";
-import { runMigrations } from "./migrations"; // Import our custom migrations
+
 import { setupCors } from "./cors-setup";
 import sessionSyncRouter from "./routes/session-sync"; // Import session sync routes
 
@@ -85,7 +86,7 @@ app.use((req, _res, next) => {
 });
 
 // Configure secure session with Neon database store
-const sessionStore = new SecureNeonSessionStore();
+const sessionStore = new SecureNeonSessionStore() as any;
 
 app.use(session({
   store: sessionStore as any,
@@ -103,7 +104,7 @@ app.use(session({
   genid: () => {
     return crypto.randomBytes(32).toString('hex');
   }
-}));
+} as any));
 
 // Middleware to track session metadata
 app.use((req, _res, next) => {
@@ -205,7 +206,7 @@ const serverLogger = createLogger('Server');
 
 // Import our database setup utilities
 import setupDatabase from '../scripts/setup-db';
-import pushSchema from '../scripts/db-push';
+
 // import seedFromWordPressAPI from '../scripts/api-seed'; // Unused import
 
 async function startServer() {

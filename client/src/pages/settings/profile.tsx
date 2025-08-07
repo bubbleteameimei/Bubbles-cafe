@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { UserCircle, Upload, Loader2, ShieldAlert, CheckCircle, UserRoundX } from "lucide-react";
 import { SettingsLayout } from "@/components/layouts/SettingsLayout";
@@ -94,7 +95,7 @@ export default function ProfileSettingsPage() {
       username: user?.username || "",
       email: user?.email || "",
       fullName: user?.fullName || "",
-      bio: user?.bio || "",
+      bio: (user as any)?.bio || "",
       currentPassword: "",
       newPassword: "",
       confirmPassword: "",
@@ -570,9 +571,10 @@ export default function ProfileSettingsPage() {
                         render={({ field }) => (
                           <FormItem className="flex flex-row items-start space-x-3 space-y-0 bg-muted/40 rounded-md p-3">
                             <FormControl>
-                              <div className="mt-1">
-                                <RadioGroupItem checked={field.value} onCheckedChange={field.onChange} />
-                              </div>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
                             </FormControl>
                             <div className="space-y-1.5">
                               <Label className="font-medium">Show Reading History</Label>
@@ -590,9 +592,10 @@ export default function ProfileSettingsPage() {
                         render={({ field }) => (
                           <FormItem className="flex flex-row items-start space-x-3 space-y-0 bg-muted/40 rounded-md p-3">
                             <FormControl>
-                              <div className="mt-1">
-                                <RadioGroupItem checked={field.value} onCheckedChange={field.onChange} />
-                              </div>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
                             </FormControl>
                             <div className="space-y-1.5">
                               <Label className="font-medium">Show Bookmarks</Label>
@@ -610,9 +613,10 @@ export default function ProfileSettingsPage() {
                         render={({ field }) => (
                           <FormItem className="flex flex-row items-start space-x-3 space-y-0 bg-muted/40 rounded-md p-3">
                             <FormControl>
-                              <div className="mt-1">
-                                <RadioGroupItem checked={field.value} onCheckedChange={field.onChange} />
-                              </div>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
                             </FormControl>
                             <div className="space-y-1.5">
                               <Label className="font-medium">Allow @Mentions</Label>

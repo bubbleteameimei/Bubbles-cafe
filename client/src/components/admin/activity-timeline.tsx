@@ -1,5 +1,5 @@
 import React from 'react';
-import { Timeline, TimelineProps } from '@/components/ui/timeline';
+import { Timeline } from '@/components/ui/timeline';
 import { formatDistanceToNow, format, isToday, isYesterday, parseISO } from 'date-fns';
 import { 
   FileText, 
@@ -117,18 +117,14 @@ export const ActivityTimeline = ({
   }, {});
   
   // Convert grouped activities to timeline format
-  const timelineGroups: TimelineGroup[] = Object.entries(groupedActivities)
+  const timelineGroups = Object.entries(groupedActivities)
     .sort(([dateA], [dateB]) => new Date(dateB).getTime() - new Date(dateA).getTime()) // Sort by date descending
     .map(([date, activitiesForDate]) => ({
       date: formatDateHeader(date),
       items: activitiesForDate.map((activity) => ({
         id: activity.id,
-        title: (
-          <>
-            {getActivityIcon(activity.action)}
-            {activity.action}
-          </>
-        ),
+        title: <span>{activity.action}</span>,
+        icon: getActivityIcon(activity.action),
         description: formatActivityDetails(activity.details),
         user: activity.performedBy ? {
           name: activity.performedBy,
@@ -139,16 +135,19 @@ export const ActivityTimeline = ({
             .toUpperCase()
             .slice(0, 2)
         } : undefined,
-        time: formatDistanceToNow(parseISO(activity.timestamp), { addSuffix: true })
+        time: formatDistanceToNow(parseISO(activity.timestamp), { addSuffix: true }),
+        variant: "default" as const
       }))
     }));
   
   return (
     <Timeline 
-      groups={timelineGroups} 
-      className={className}
-      initialCollapsed={initialCollapsed}
-      showOlderText="Show older activities"
+      {...{
+        groups: timelineGroups as any,
+        className: className || undefined,
+        initialCollapsed: initialCollapsed,
+        showOlderText: "Show older activities"
+      } as any}
     />
   );
 };

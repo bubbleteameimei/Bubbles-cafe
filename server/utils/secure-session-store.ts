@@ -23,7 +23,7 @@ interface ExpressSessionData {
 interface SessionRecord {
   sessionId: string;
   sessionData: ExpressSessionData;
-  userId: number;
+  userId: number | null;
   ipAddress: string | null;
   userAgent: string | null;
   expiresAt: Date;
@@ -32,7 +32,7 @@ interface SessionRecord {
   csrfToken: string | null;
 }
 
-export class SecureNeonSessionStore extends Store {
+export class SecureNeonSessionStore extends (Store as any) {
   constructor() {
     super();
   }
@@ -177,13 +177,9 @@ export class SecureNeonSessionStore extends Store {
         .where(eq(sessions.isActive, true));
 
       const sessionDataArray = result.map(record => ({
-        sessionId: record.sessionId,
-        userId: record.userId,
-        ipAddress: record.ipAddress,
-        userAgent: record.userAgent,
-        expiresAt: record.expiresAt,
-        lastAccessedAt: record.lastAccessedAt,
-        createdAt: record.createdAt
+        ...(record.sessionData as any),
+        cookie: (record.sessionData as any)?.cookie || {},
+        sessionId: record.sessionId
       }));
 
       callback(null, sessionDataArray);

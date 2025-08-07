@@ -387,7 +387,6 @@ export default function FeedbackReviewPage() {
                   key={item.id}
                   feedback={item}
                   onStatusChange={handleStatusChange}
-                  onAddNote={handleAddNote}
                 />
               ))
             )
@@ -400,14 +399,13 @@ export default function FeedbackReviewPage() {
               feedbackItems={displayedFeedback.filter((item: FeedbackWithMetadata) => item.type === 'bug')} 
             />
           ) : (
-            filteredAndSortedFeedback
+                          filteredAndSortedFeedback
               .filter((item: FeedbackWithMetadata) => item.type === 'bug')
               .map((item: FeedbackWithMetadata) => (
                 <FeedbackDetails 
                   key={item.id}
                   feedback={item}
                   onStatusChange={handleStatusChange}
-                  onAddNote={handleAddNote}
                 />
               ))
           )}
@@ -419,14 +417,13 @@ export default function FeedbackReviewPage() {
               feedbackItems={displayedFeedback.filter((item: FeedbackWithMetadata) => item.type === 'suggestion')} 
             />
           ) : (
-            filteredAndSortedFeedback
+                          filteredAndSortedFeedback
               .filter((item: FeedbackWithMetadata) => item.type === 'suggestion')
               .map((item: FeedbackWithMetadata) => (
                 <FeedbackDetails 
                   key={item.id}
                   feedback={item}
                   onStatusChange={handleStatusChange}
-                  onAddNote={handleAddNote}
                 />
               ))
           )}
@@ -438,14 +435,13 @@ export default function FeedbackReviewPage() {
               feedbackItems={displayedFeedback.filter((item: FeedbackWithMetadata) => item.type === 'praise')} 
             />
           ) : (
-            filteredAndSortedFeedback
+                          filteredAndSortedFeedback
               .filter((item: FeedbackWithMetadata) => item.type === 'praise')
               .map((item: FeedbackWithMetadata) => (
                 <FeedbackDetails 
                   key={item.id}
                   feedback={item}
                   onStatusChange={handleStatusChange}
-                  onAddNote={handleAddNote}
                 />
               ))
           )}

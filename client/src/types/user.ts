@@ -1,5 +1,8 @@
 import type { User } from '../../../shared/schema';
 
+// Re-export User type
+export type { User };
+
 /**
  * User metadata interface for additional user-related information
  */

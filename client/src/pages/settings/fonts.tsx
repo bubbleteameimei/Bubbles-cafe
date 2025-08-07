@@ -14,9 +14,9 @@ import { useFontFamily, FontFamilyKey, FONT_FAMILIES } from "@/hooks/use-font-fa
 import { SettingsLayout } from '@/components/layouts/SettingsLayout';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Type, AlignLeft, LayoutGrid, AlignVerticalSpaceBetween, Text, Baseline, Check, BookOpen } from "lucide-react";
+import { Type, AlignLeft, AlignVerticalSpaceBetween, Text, Baseline, Check, BookOpen } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { Label } from "@/components/ui/label";
+
 import { toast } from "sonner";
 
 export default function FontSettingsPage() {
@@ -40,7 +40,7 @@ export default function FontSettingsPage() {
       'literata': 'https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
     };
     
-    Object.entries(fontUrls).forEach(([font, url]) => {
+    Object.entries(fontUrls).forEach(([, url]) => {
       const existingLink = document.querySelector(`link[href="${url}"]`);
       if (!existingLink) {
         const fontLink = document.createElement('link');

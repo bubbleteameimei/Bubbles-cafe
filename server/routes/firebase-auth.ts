@@ -55,7 +55,7 @@ router.post("/firebase-sync", async (req, res) => {
       fullName: user.fullName || undefined,
       avatar: user.avatar || undefined,
       isAdmin: user.isAdmin,
-    };
+    } as any;
 
     return res.json({ 
       success: true, 

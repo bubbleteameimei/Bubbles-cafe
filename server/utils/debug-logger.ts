@@ -53,7 +53,7 @@ function formatLogMessage(level: LogLevel, module: string, message: string, deta
     level,
     module,
     message,
-    details: details ? redactSensitiveInfo(details) : undefined
+    ...(details ? { details: redactSensitiveInfo(details) } : {})
   };
 }
 

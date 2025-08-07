@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 
 export default function CookieManagementPage() {
   const { cookiePreferences, toggleCategory, acceptAll, acceptEssentialOnly, allCookies } = useCookieConsent();
-  const { isAuthenticated, isAuthReady } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [selectedTab, setSelectedTab] = useState('preferences');
   const [isClearingCookies, setIsClearingCookies] = useState(false);
 
