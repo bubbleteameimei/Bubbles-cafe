@@ -174,10 +174,11 @@ app.get('/health', (req, res) => {
     req.session.csrfToken = token;
     
     // Set the token as a cookie for client-side access
+    const secureCookie = process.env.NODE_ENV === 'production';
     res.cookie(CSRF_TOKEN_NAME, token, {
-      httpOnly: false, // Must be accessible by JavaScript
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Required for cross-domain cookies
+      httpOnly: false,
+      secure: secureCookie,
+      sameSite: secureCookie ? 'none' : 'lax'
     });
   }
   
