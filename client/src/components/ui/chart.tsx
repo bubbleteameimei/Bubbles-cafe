@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { type TooltipProps } from "recharts"
 import { Badge } from "@/components/ui/badge"
 
 // Define the ChartConfig type for better type safety
@@ -140,10 +139,11 @@ function ChartTooltip({
   cursor,
   children,
   ...props
-}: TooltipProps<any, any> & {
-  cursor?: React.ReactNode
-  content?: React.ReactNode
-  children?: React.ReactNode
+}: {
+  cursor?: React.ReactNode;
+  content?: React.ReactNode;
+  children?: React.ReactNode;
+  [key: string]: any;
 }) {
   return (
     <foreignObject className="overflow-visible">
