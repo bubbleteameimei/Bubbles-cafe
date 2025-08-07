@@ -32,7 +32,7 @@ interface SessionRecord {
   csrfToken: string | null;
 }
 
-export class SecureNeonSessionStore extends Store {
+export class SecureNeonSessionStore extends (Store as any) {
   constructor() {
     super();
   }

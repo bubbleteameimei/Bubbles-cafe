@@ -86,7 +86,7 @@ app.use((req, _res, next) => {
 });
 
 // Configure secure session with Neon database store
-const sessionStore = new SecureNeonSessionStore();
+const sessionStore = new SecureNeonSessionStore() as any;
 
 app.use(session({
   store: sessionStore as any,
@@ -104,7 +104,7 @@ app.use(session({
   genid: () => {
     return crypto.randomBytes(32).toString('hex');
   }
-}));
+} as any));
 
 // Middleware to track session metadata
 app.use((req, _res, next) => {
