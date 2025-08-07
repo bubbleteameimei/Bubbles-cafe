@@ -11,6 +11,7 @@ import { waitForPoolInitialization } from "./db-connect"; // Import wait functio
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
 
+
 // import { seedDatabase } from "./seed"; // Unused import
 
 // Ensure Neon database is always used

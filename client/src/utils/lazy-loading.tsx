@@ -108,7 +108,7 @@ export function createLazyComponent<T extends ComponentType<any>>(
   }
 
   // Return wrapped component with error boundary
-  return React.forwardRef<any, React.ComponentProps<T>>((props, ref) => {
+  return React.forwardRef<any, React.ComponentProps<T>>((props, _ref) => {
     const [error, setError] = React.useState<Error | null>(null);
     const [retryKey, setRetryKey] = React.useState(0);
 
@@ -135,7 +135,7 @@ export function createLazyComponent<T extends ComponentType<any>>(
             setRetryKey(prev => prev + 1);
           }}
         >
-          <LazyComponent key={retryKey} {...(props as any)} />
+          <LazyComponent key={retryKey} {...props} />
         </ErrorBoundary>
       </Suspense>
     );
@@ -184,7 +184,7 @@ export function createIntersectionLazyComponent<T extends ComponentType<any>>(
     ...lazyOptions
   } = options;
 
-  return React.forwardRef<any, React.ComponentProps<T>>((props, ref) => {
+  return React.forwardRef<any, React.ComponentProps<T>>((props, _ref) => {
     const [shouldLoad, setShouldLoad] = React.useState(false);
     const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -218,7 +218,7 @@ export function createIntersectionLazyComponent<T extends ComponentType<any>>(
     }
 
     const LazyComponent = createLazyComponent(importFn, lazyOptions);
-    return <LazyComponent {...(props as any)} />;
+    return <LazyComponent {...props} />;
   });
 }
 

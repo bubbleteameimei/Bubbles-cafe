@@ -91,6 +91,7 @@ interface ExtendedPost extends Post {
   likes?: number;
   commentCount?: number;
   lastModifiedBy?: string;
+  updatedAt?: string | Date;
 }
 
 export default function ManagePostsPage() {
@@ -388,7 +389,7 @@ export default function ManagePostsPage() {
   
   const handleSelectAll = (checked: boolean) => {
     if (checked && postsData?.posts) {
-      setSelectedPosts(postsData.posts.map(post => post.id));
+      setSelectedPosts(postsData.posts.map((post: any) => post.id));
     } else {
       setSelectedPosts([]);
     }
@@ -416,7 +417,7 @@ export default function ManagePostsPage() {
   };
   
   // Computed values
-  const posts = postsData?.posts || [];
+  const posts = (postsData?.posts || []) as ExtendedPost[];
   const totalPosts = postsData?.total || 0;
   const isAllSelected = posts.length > 0 && selectedPosts.length === posts.length;
   const isIndeterminate = selectedPosts.length > 0 && selectedPosts.length < posts.length;

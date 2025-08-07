@@ -64,7 +64,7 @@ export function useComponentRenderTracker(
       if (!measuredComponents.has(componentName)) {
         measuredComponents.add(componentName);
         if (import.meta.env.DEV) {
-          
+          console.log(`[Performance] ${componentName} mounted`);
         }
       }
       
@@ -77,7 +77,7 @@ export function useComponentRenderTracker(
           recordMetric('Custom', duration);
           
           if (import.meta.env.DEV) {
-            
+            console.log(`[Performance] ${componentName} unmounted after ${duration.toFixed(2)}ms`);
           }
         }
       };
@@ -149,7 +149,7 @@ export function useResourceLoadTracker(
   }, []);
   
   // Track completion of resource load
-  const trackLoadComplete = useCallback((resourceId: string, success: boolean = true) => {
+  const trackLoadComplete = useCallback((resourceId: string, _success: boolean = true) => {
     const startTime = loadStartTimes.current[resourceId];
     if (!startTime) return;
     
