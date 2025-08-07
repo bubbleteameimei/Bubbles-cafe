@@ -9,8 +9,7 @@
  */
 
 import { useQuery, type UseQueryOptions, type QueryKey } from '@tanstack/react-query';
-import { useMemoDeep } from '../utils/memoization';
-import { useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { queryClient } from '@/lib/queryClient';
 
 /**
@@ -26,7 +25,7 @@ export function useOptimizedQuery<
   options?: Omit<UseQueryOptions<TQueryFnData, TError, TData, TQueryKey>, 'queryKey'>
 ) {
   // Deep memoize the query key to ensure stability across renders
-  const memoizedQueryKey = useMemoDeep(() => queryKey, [queryKey]);
+  const memoizedQueryKey = useMemo(() => queryKey, [JSON.stringify(queryKey)]);
   
   // The actual query with our optimizations
   return useQuery({
@@ -133,7 +132,7 @@ export function usePrefetch<
   queryKey: TQueryKey,
   options?: Omit<UseQueryOptions<TQueryFnData, TError, TData, TQueryKey>, 'queryKey'>
 ): PrefetchFunction {
-  const memoizedQueryKey = useMemoDeep(() => queryKey, [queryKey]);
+  const memoizedQueryKey = useMemo(() => queryKey, [JSON.stringify(queryKey)]);
   
   return useCallback(async () => {
     await queryClient.prefetchQuery({
