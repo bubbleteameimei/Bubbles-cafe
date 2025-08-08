@@ -46,6 +46,11 @@ import {
   ResponseSuggestion
 } from '@/types/feedback';
 
+// Safe access helpers for union metadata fields that may be string or object
+function asObject<T extends object>(value: unknown): Partial<T> {
+  return (value && typeof value === 'object') ? (value as Partial<T>) : {};
+}
+
 // Re-export a simpler alias used by other components
 export type FeedbackItem = FeedbackWithMetadata;
 
@@ -142,7 +147,8 @@ export function FeedbackDetails({
 
   // Handle device type icon
   const getDeviceIcon = () => {
-    const deviceType = feedback.metadata?.device?.type?.toLowerCase() || '';
+    const device = asObject<{ type?: string }>(feedback.metadata?.device);
+    const deviceType = (device.type || '').toLowerCase();
     if (deviceType.includes('mobile') || deviceType.includes('phone')) {
       return <Smartphone className="h-4 w-4 mr-1" />;
     }
@@ -158,18 +164,18 @@ export function FeedbackDetails({
             <CardDescription className="flex items-center mt-1">
               <Calendar className="h-4 w-4 mr-1" />
               {formatDate(feedback.createdAt)}
-              {feedback.metadata?.location?.path && (
+              {asObject<{ path?: string }>(feedback.metadata?.location).path && (
                 <>
                   <Globe className="h-4 w-4 ml-3 mr-1" />
-                  <span title={feedback.metadata.location.path} className="truncate max-w-[200px]">
-                    {feedback.metadata.location.path}
+                  <span title={asObject<{ path?: string }>(feedback.metadata?.location).path} className="truncate max-w-[200px]">
+                    {asObject<{ path?: string }>(feedback.metadata?.location).path}
                   </span>
                 </>
               )}
             </CardDescription>
           </div>
           <Badge className={status ? (statusColorMap[status] || 'bg-gray-500') : 'bg-gray-500'}>
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+            {(status || 'pending').charAt(0).toUpperCase() + (status || 'pending').slice(1)}
           </Badge>
         </div>
       </CardHeader>
@@ -256,16 +262,16 @@ export function FeedbackDetails({
                   {getDeviceIcon()}
                   <span className="text-sm font-medium">Device:</span>
                   <span className="ml-2 text-sm">
-                    {feedback.metadata?.device?.type || 'Unknown'} 
-                    {feedback.metadata?.device?.model ? ` (${feedback.metadata.device.model})` : ''}
+                    {asObject<{ type?: string }>(feedback.metadata?.device).type || 'Unknown'} 
+                    {asObject<{ model?: string }>(feedback.metadata?.device).model ? ` (${asObject<{ model?: string }>(feedback.metadata?.device).model})` : ''}
                   </span>
                 </div>
                 
                 <div className="flex items-center">
                   <span className="text-sm font-medium ml-6">OS:</span>
                   <span className="ml-2 text-sm">
-                    {feedback.metadata?.os?.name || 'Unknown'} 
-                    {feedback.metadata?.os?.version ? ` ${feedback.metadata.os.version}` : ''}
+                    {asObject<{ name?: string }>(feedback.metadata?.os).name || 'Unknown'} 
+                    {asObject<{ version?: string }>(feedback.metadata?.os).version ? ` ${asObject<{ version?: string }>(feedback.metadata?.os).version}` : ''}
                   </span>
                 </div>
                 
@@ -282,8 +288,8 @@ export function FeedbackDetails({
                 <div className="flex items-center">
                   <span className="text-sm font-medium">Screen:</span>
                   <span className="ml-2 text-sm">
-                    {feedback.metadata?.screen?.width && feedback.metadata?.screen?.height
-                      ? `${feedback.metadata.screen.width} x ${feedback.metadata.screen.height}`
+                    {asObject<{ width?: number; height?: number }>(feedback.metadata?.screen).width && asObject<{ width?: number; height?: number }>(feedback.metadata?.screen).height
+                      ? `${asObject<{ width?: number; height?: number }>(feedback.metadata?.screen).width} x ${asObject<{ width?: number; height?: number }>(feedback.metadata?.screen).height}`
                       : 'Unknown'}
                   </span>
                 </div>
@@ -297,11 +303,11 @@ export function FeedbackDetails({
               </div>
             </div>
             
-            {feedback.metadata?.browser?.userAgent && (
+            {asObject<{ userAgent?: string }>(feedback.metadata?.browser).userAgent && (
               <div className="mt-2">
                 <span className="text-xs font-medium">User Agent:</span>
                 <div className="mt-1 p-2 bg-muted rounded text-xs overflow-x-auto">
-                  {feedback.metadata.browser.userAgent}
+                  {asObject<{ userAgent?: string }>(feedback.metadata?.browser).userAgent}
                 </div>
               </div>
             )}

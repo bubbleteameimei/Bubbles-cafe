@@ -203,7 +203,7 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
         
         {/* Fallback for browsers that don't support WebP */}
         <img
-          ref={(node) => { imgRef.current = node; }}
+          ref={(node) => { (imgRef as React.MutableRefObject<HTMLImageElement | null>).current = node; }}
           src={getOptimizedSrc(src, 'jpg')}
           srcSet={generateSrcSet(src).replace(/f=webp/g, 'f=jpg')}
           alt={alt}

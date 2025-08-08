@@ -9,7 +9,7 @@ import { Plus, Rss, PenSquare, FileText, Loader2, Palette } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLocation } from "wouter";
-import { THEME_CATEGORIES } from "@shared/theme-categories";
+import { THEME_CATEGORIES } from '../../../shared/theme-categories';
 import type { User } from "@/types/user";
 import { useQueryClient } from "@tanstack/react-query";
 

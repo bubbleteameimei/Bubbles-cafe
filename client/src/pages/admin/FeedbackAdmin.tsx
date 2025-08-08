@@ -42,7 +42,6 @@ import { toast } from 'sonner';
 // Import shared types
 import { 
   FeedbackItem, 
-  FeedbackItemExtended,
   ResponseSuggestion
 } from '@/types/feedback';
 
