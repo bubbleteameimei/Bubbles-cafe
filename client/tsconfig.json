@@ -13,7 +13,8 @@
     "paths": {
       "@/*": ["src/*"],
       "@shared/*": ["../shared/*"]
-    }
+    },
+    "types": ["vite/client"]
   },
   "include": ["src"],
   "exclude": ["dist", "node_modules"]
