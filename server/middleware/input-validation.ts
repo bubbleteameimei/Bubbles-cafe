@@ -56,12 +56,12 @@ export const validateBody = (schema: z.ZodSchema) => {
       validationLogger.warn('Input validation failed', { 
         path: req.path,
         method: req.method,
-        error: error instanceof z.ZodError ? error.errors : 'Unknown validation error'
+        error: error instanceof z.ZodError ? error.issues : 'Unknown validation error'
       });
       
       res.status(400).json({
         error: 'Invalid input',
-        details: error instanceof z.ZodError ? error.errors : undefined
+        details: error instanceof z.ZodError ? error.issues : undefined
       });
     }
   };
@@ -70,7 +70,8 @@ export const validateBody = (schema: z.ZodSchema) => {
 export const validateQuery = (schema: z.ZodSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      req.query = schema.parse(req.query);
+      const parsed = schema.parse(req.query);
+      req.query = parsed as any;
       next();
     } catch (error) {
       validationLogger.warn('Query validation failed', { 
@@ -80,7 +81,7 @@ export const validateQuery = (schema: z.ZodSchema) => {
       
       res.status(400).json({
         error: 'Invalid query parameters',
-        details: error instanceof z.ZodError ? error.errors : undefined
+        details: error instanceof z.ZodError ? error.issues : undefined
       });
     }
   };
@@ -89,7 +90,8 @@ export const validateQuery = (schema: z.ZodSchema) => {
 export const validateParams = (schema: z.ZodSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      req.params = schema.parse(req.params);
+      const parsed = schema.parse(req.params);
+      req.params = parsed as any;
       next();
     } catch (error) {
       validationLogger.warn('Params validation failed', { 
@@ -99,7 +101,7 @@ export const validateParams = (schema: z.ZodSchema) => {
       
       res.status(400).json({
         error: 'Invalid parameters',
-        details: error instanceof z.ZodError ? error.errors : undefined
+        details: error instanceof z.ZodError ? error.issues : undefined
       });
     }
   };

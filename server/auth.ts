@@ -138,7 +138,7 @@ export function setupAuth(app: any) {
         authLogger.debug('Remember me enabled, setting long session expiration');
       }
       
-      req.login(user, loginOptions, (err: any) => {
+      req.login?.(user, loginOptions, (err: any) => {
         if (err) {
           authLogger.error('Session creation error', { err: err instanceof Error ? err.message : 'Unknown error' });
           return next(err);

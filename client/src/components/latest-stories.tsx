@@ -44,8 +44,8 @@ export default function LatestStories() {
     
     // Sort by date (newest first)
     return uniquePosts.sort((a, b) => {
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return dateB - dateA;
     }).slice(0, 3); // Only take the 3 most recent
   }, [wordpressPosts, dbPosts]);

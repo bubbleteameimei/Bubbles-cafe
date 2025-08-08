@@ -1,8 +1,8 @@
-import cron from 'node-cron';
+import cron, { type ScheduledTask } from 'node-cron';
 import { wordpressSync } from './wordpress-api-sync';
 
 export class WordPressScheduler {
-  private syncJob: cron.ScheduledTask | null = null;
+  private syncJob: ScheduledTask | null = null;
   private isRunning = false;
 
   start(): void {
@@ -29,9 +29,6 @@ export class WordPressScheduler {
       } finally {
         this.isRunning = false;
       }
-    }, {
-      scheduled: true,
-      timezone: 'UTC'
     });
 
     

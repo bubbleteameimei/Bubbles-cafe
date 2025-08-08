@@ -10,7 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { THEME_CATEGORIES } from "@shared/theme-categories";
-import { User } from '../../../../shared/schema';
+import type { User } from "@/types/user";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Import subcomponents for each tab
 import { default as WordPressSyncPage } from "./WordPressSyncPage";
@@ -21,7 +22,7 @@ export default function ContentManagementPage() {
   const { user, isLoading: authLoading } = useAuth();
   const typedUser = user as User | null;
   const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
+  const [location, navigate] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("content");
   const [isCreatingNew, setIsCreatingNew] = useState<boolean>(false);

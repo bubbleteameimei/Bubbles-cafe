@@ -6,7 +6,7 @@
  */
 import pkg from 'pg';
 const { Pool } = pkg;
-import { drizzle } from 'drizzle-orm/node-postgres';
+import { drizzle } from 'drizzle-orm/pg';
 import * as schema from '../shared/schema';
 
 /**

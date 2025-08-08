@@ -153,7 +153,7 @@ export default function Sidebar() {
                 <div className="flex items-center justify-between mb-1">
                   <p className="font-semibold text-sm">Anonymous</p>
                   <time className="text-xs text-muted-foreground">
-                    {format(new Date(comment.createdAt), 'MMM d')}
+                    {comment.createdAt ? format(new Date(comment.createdAt), 'MMM d') : ''}
                   </time>
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-2">

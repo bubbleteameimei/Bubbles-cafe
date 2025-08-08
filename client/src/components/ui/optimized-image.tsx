@@ -206,8 +206,6 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
           ref={(node) => {
             if (typeof ref === 'function') {
               ref(node);
-            } else if (ref) {
-              ref.current = node;
             }
             imgRef.current = node;
           }}

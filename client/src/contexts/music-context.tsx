@@ -334,7 +334,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   }, [currentTrack, activeAudio, primaryAudio, secondaryAudio, persistState]);
 
   // Memoized context value to prevent unnecessary re-renders
-  const contextValue = useCallback(() => ({
+  const contextValue = React.useMemo<MusicContextState>(() => ({
     isPlaying,
     volume,
     currentTrack,

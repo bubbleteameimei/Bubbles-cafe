@@ -1,7 +1,13 @@
-import type { User } from '../../../shared/schema';
+export interface User {
+  id: number;
+  email: string;
+  username?: string;
+  isAdmin?: boolean;
+  avatar?: string | null;
+}
 
 // Re-export User type
-export type { User };
+export type { User as ClientUser };
 
 /**
  * User metadata interface for additional user-related information

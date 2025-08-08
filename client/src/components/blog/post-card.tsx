@@ -172,8 +172,9 @@ const getEngagingExcerpt = (content: string): string => {
   let iconName: string | null = null;
 
   // First check if the post has manually assigned theme/icon from admin
-  if (post.themeCategory) {
-    theme = post.themeCategory as string;
+  const themeCategory = (post as any).themeCategory || (post.metadata as any)?.themeCategory;
+  if (themeCategory) {
+    theme = String(themeCategory);
     // Get icon from metadata only
     iconName = (post.metadata && (post.metadata as any).themeIcon) || null;
   } else {
@@ -193,6 +194,8 @@ const getEngagingExcerpt = (content: string): string => {
   // Convert to lowercase for consistent lookup
   const iconKey = actualIconName?.toLowerCase() || 'ghost';
 
+  const createdAtDate = post.createdAt ? new Date(post.createdAt) : new Date();
+
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
@@ -206,7 +209,7 @@ const getEngagingExcerpt = (content: string): string => {
           <CardTitle className="text-xl">{post.title}</CardTitle>
           <div className="flex items-center flex-wrap gap-2 mt-2">
             <span className="text-sm text-muted-foreground">
-              {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+              {formatDistanceToNow(createdAtDate, { addSuffix: true })}
             </span>
             <span className="text-primary/50">•</span>
             <span className="read-time text-sm text-muted-foreground flex items-center gap-1">
