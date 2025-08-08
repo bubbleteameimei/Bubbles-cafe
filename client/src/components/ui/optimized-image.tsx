@@ -206,8 +206,9 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
           ref={(node) => {
             if (typeof ref === 'function') {
               ref(node);
-            } else if (ref) {
-              ref.current = node;
+            } else if (ref && 'current' in ref) {
+              // Type narrow: safely cast to mutable ref before assignment
+              (ref as React.MutableRefObject<HTMLImageElement | null>).current = node;
             }
             imgRef.current = node;
           }}
