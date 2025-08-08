@@ -1,4 +1,4 @@
-/* @ts-nocheck */
+import React from "react";
 
 import {
   Pagination,
@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/pagination"
 
 export function PaginationDemo() {
+  const [page, setPage] = React.useState(1);
   return (
-    <Pagination>
+    <Pagination currentPage={page} totalPages={3} onPageChange={setPage}>
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious href="#" />

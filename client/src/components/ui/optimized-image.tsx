@@ -41,7 +41,7 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isInView, setIsInView] = useState(priority);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null) as React.MutableRefObject<HTMLImageElement | null>;
   const placeholderRef = useRef<HTMLDivElement>(null);
 
   // Intersection Observer for lazy loading

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useState, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -227,7 +228,7 @@ export default function ContentManagementPage() {
                       variant="outline" 
                       size="sm" 
                       className="text-xs sm:text-sm text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700"
-                      onClick={() => navigate('/admin/themes')}
+                      onClick={() => setLocation('/admin/themes')}
                     >
                       Go to Theme Management
                     </Button>

@@ -7,18 +7,23 @@ import {
 } from "lucide-react";
 
 interface PaginationProps {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
+  currentPage?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
   maxButtons?: number;
 }
 
-export function Pagination({ 
-  currentPage, 
-  totalPages, 
-  onPageChange, 
-  maxButtons = 5 
+export function Pagination({
+  currentPage: currentPageProp,
+  totalPages: totalPagesProp,
+  onPageChange: onPageChangeProp,
+  maxButtons = 5,
 }: PaginationProps) {
+  // Provide safe defaults if props omitted (demo components)
+  const currentPage = currentPageProp ?? 1;
+  const totalPages = totalPagesProp ?? 1;
+  const onPageChange = onPageChangeProp ?? (() => {});
+  
   // If there's only one page, don't show pagination
   if (totalPages <= 1) return null;
   
