@@ -9,7 +9,7 @@ import {
   type NewsletterSubscription, type InsertNewsletterSubscription,
   type ReadingProgress, type InsertProgress,
   type ResetToken, type InsertResetToken, type SecretProgress, type InsertSecretProgress,
-  type AuthorStats, type Analytics
+  type AuthorStats, type Analytics, type InsertPerformanceMetric, type PerformanceMetric
 } from "@shared/schema";
 
 import * as bcrypt from 'bcryptjs';
@@ -609,9 +609,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async storePerformanceMetric(metric: any): Promise<void> {
-    // Simple implementation - just log the metric for now
-    console.log('Performance metric:', metric);
-    // TODO: Implement actual storage in performance_metrics table
+    // Persist performance metric into performance_metrics table
+    try {
+      const insertData = {
+        metricName: metric.metricName ?? metric.name ?? 'unknown',
+        value: metric.value ?? 0,
+        identifier: metric.identifier ?? metric.id ?? 'unknown',
+        navigationType: metric.navigationType ?? metric.navigation_type ?? null,
+        url: metric.url ?? metric.page ?? '',
+        userAgent: metric.userAgent ?? metric.ua ?? null,
+      } as InsertPerformanceMetric;
+
+      await db.insert(performanceMetrics).values(insertData);
+    } catch (error) {
+      console.error('[storage] Failed to store performance metric', error);
+    }
   }
 
   async getAnalyticsSummary(): Promise<any> {
