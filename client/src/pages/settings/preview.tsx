@@ -6,7 +6,7 @@ import { Book, Monitor, Phone, Tablet, Laptop, Eye as EyeIcon, Palette } from 'l
 import { Button } from '@/components/ui/button';
 import { SettingsSection } from '@/components/settings/SettingsSection';
 import { useToast } from '@/hooks/use-toast';
-import useTheme from '@/hooks/use-theme';
+import { useTheme } from '@/hooks/use-theme';
 
 // Sample text for preview
 const sampleText = {
