@@ -98,7 +98,7 @@ export default function ResetPasswordPage() {
     } catch (error) {
       if (error instanceof z.ZodError) {
         const formattedErrors: { password?: string; confirmPassword?: string } = {};
-        error.errors.forEach(err => {
+        (error.issues || []).forEach((err: any) => {
           if (err.path[0] === 'password') {
             formattedErrors.password = err.message;
           }

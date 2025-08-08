@@ -168,7 +168,7 @@ export function FeedbackDetails({
               )}
             </CardDescription>
           </div>
-          <Badge className={statusColorMap[status] || 'bg-gray-500'}>
+          <Badge className={status ? (statusColorMap[status] || 'bg-gray-500') : 'bg-gray-500'}>
             {status.charAt(0).toUpperCase() + status.slice(1)}
           </Badge>
         </div>
