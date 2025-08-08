@@ -36,7 +36,7 @@ export const insertUserSchema = createInsertSchema(users, {
   email: emailSchema,
   username: usernameSchema,
   password_hash: z.string().min(1), // Already hashed
-  metadata: z.record(z.unknown()).optional().default({})
+  metadata: z.record(z.string(), z.unknown()).optional().default({})
 }).omit({
   id: true,
   createdAt: true
@@ -92,7 +92,7 @@ export const insertPostSchema = createInsertSchema(posts, {
   authorId: z.number().int().positive(),
   themeCategory: z.string().max(50).optional(),
   readingTimeMinutes: z.number().int().min(1).max(999).optional(),
-  metadata: z.record(z.unknown()).optional().default({})
+  metadata: z.record(z.string(), z.unknown()).optional().default({})
 }).omit({
   id: true,
   createdAt: true,
@@ -149,7 +149,7 @@ export const insertCommentSchema = createInsertSchema(comments, {
   postId: z.number().int().positive(),
   parentId: z.number().int().positive().optional(),
   userId: z.number().int().positive().optional(),
-  metadata: z.record(z.unknown()).optional().default({})
+  metadata: z.record(z.string(), z.unknown()).optional().default({})
 }).omit({
   id: true,
   createdAt: true,
@@ -519,7 +519,7 @@ export type InsertSecretProgress = z.infer<typeof insertSecretProgressSchema>;
 export type SecretProgress = typeof secretProgress.$inferSelect;
 
 export const insertContactMessageSchema = createInsertSchema(contactMessages, {}).omit({ id: true, createdAt: true }).extend({
-  metadata: z.record(z.any()).optional()
+  metadata: z.record(z.string(), z.any()).optional()
 });
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
 export type ContactMessage = typeof contactMessages.$inferSelect;
