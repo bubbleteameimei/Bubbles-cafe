@@ -1,5 +1,5 @@
 
-import type { ExtendedPost as Post } from '@shared/types/public';
+import type { ExtendedPost as Post } from '@shared/public';
 import { WordPressPost } from '../services/wordpress';
 
 export function sanitizeHtmlContent(html: string): string {

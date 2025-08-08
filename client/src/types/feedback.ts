@@ -1,4 +1,4 @@
-import type { UserFeedback } from '@shared/types/public';
+import type { UserFeedback } from '@shared/public';
 
 /**
  * Metadata for feedback including browser details, device info, etc.

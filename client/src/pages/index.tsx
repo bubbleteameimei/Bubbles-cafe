@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 // Using UI DTOs, not server schema
-import type { ExtendedPost as Post } from "@shared/types/public";
+import type { ExtendedPost as Post } from "@shared/public";
 
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";

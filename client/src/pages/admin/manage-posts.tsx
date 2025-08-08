@@ -78,10 +78,10 @@ import {
   BarChart,
   AlertCircle
 } from 'lucide-react';
-import { Post, User } from '../../../../shared/schema';
+import type { ExtendedPost as UIPost, ExtendedUser as User } from '@shared/public';
 
 // Extended Post type with admin-specific properties
-interface ExtendedPost extends Post {
+interface ExtendedPost extends UIPost {
   author?: User;
   published: boolean;
   featured?: boolean;

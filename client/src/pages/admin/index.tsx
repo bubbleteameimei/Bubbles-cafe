@@ -11,7 +11,7 @@ import {
   Tag,
   Palette
 } from "lucide-react";
-import { User } from '../../../../shared/schema';
+import type { ExtendedUser as User } from '@shared/public';
 
 export default function AdminPage() {
   const { user } = useAuth();

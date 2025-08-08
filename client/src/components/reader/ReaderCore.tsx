@@ -5,7 +5,7 @@ import { useLocation } from "wouter";
 import { usePerformanceMonitor } from "@/hooks/use-performance-monitor";
 import { cachedFetch } from "@/utils/api-cache";
 import logger from "@/utils/secure-client-logger";
-import { Post } from "../../../../shared/schema";
+import type { ExtendedPost as Post } from "@shared/public";
 
 interface ReaderCoreProps {
   slug: string;

@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { format, parseISO } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ActivityTimeline, ActivityLog } from "@/components/admin/activity-timeline";
-import { User } from '../../../../shared/schema';
+import type { ExtendedUser as User } from '@shared/public';
 
 interface SiteAnalytics {
   totalViews: number;

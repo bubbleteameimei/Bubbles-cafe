@@ -27,7 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import AdminLayout from '@/components/layout/admin-layout';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { THEME_CATEGORIES } from '@shared/theme-categories';
+import { THEME_CATEGORIES } from '../../../shared/theme-categories';
 
 // Icon mapping for theme categories
 const THEME_ICONS: Record<string, React.ReactNode> = {

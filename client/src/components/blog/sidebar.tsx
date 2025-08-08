@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ExtendedPost as Post } from "@shared/types/public";
+import type { ExtendedPost as Post } from "@shared/public";
 // NOTE: replace Comment with client-safe type if needed
 type Comment = { id: number; postId: number; content: string; author?: string; createdAt?: string };
 

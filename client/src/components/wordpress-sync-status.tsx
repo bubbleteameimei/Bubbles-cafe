@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { forceSyncNow } from '../lib/wordpress-sync';
 import { useAuth } from '../hooks/use-auth';
-import { User } from '../../../shared/schema';
+import type { ExtendedUser as User } from '@shared/public';
 import { 
   Collapsible,
   CollapsibleContent,

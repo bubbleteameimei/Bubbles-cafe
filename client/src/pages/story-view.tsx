@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ExtendedPost as Post } from "@shared/types/public";
+import type { ExtendedPost as Post } from "@shared/public";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";

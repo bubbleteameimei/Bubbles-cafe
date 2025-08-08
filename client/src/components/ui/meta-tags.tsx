@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import type { ExtendedPost as Post } from "@shared/types/public";
+import type { ExtendedPost as Post } from "@shared/public";
 
 interface MetaTagsProps {
   post?: Post;

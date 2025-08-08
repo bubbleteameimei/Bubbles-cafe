@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { User } from '../../../../shared/schema';
+import type { ExtendedUser as User } from '@shared/public';
 
 interface ProfileFormData {
   username?: string;

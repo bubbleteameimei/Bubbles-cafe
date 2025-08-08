@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ExtendedPost as Post } from "@shared/types/public";
+import type { ExtendedPost as Post } from "@shared/public";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { format } from 'date-fns';

@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route, RouteComponentProps } from "wouter";
-import { User } from "../../../shared/schema";
+import type { ExtendedUser as User } from "@shared/public";
 
 export interface ProtectedRouteProps {
   path: string;
