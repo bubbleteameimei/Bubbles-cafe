@@ -1,4 +1,4 @@
-import { UserFeedback } from '@shared/schema';
+import type { UserFeedback } from '@shared/types/public';
 
 /**
  * Metadata for feedback including browser details, device info, etc.

@@ -17,7 +17,7 @@ export function log(message: string, source = "express") {
     second: "2-digit",
     hour12: true,
   });
-  // Intentionally left minimal; upstream logging handled via viteLogger
+  // Intentionally minimal; upstream logging handled via viteLogger
 }
 
 export async function setupVite(app: Express, server: Server) {

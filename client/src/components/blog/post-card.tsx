@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { type Post } from "@shared/schema";
+import type { ExtendedPost as Post } from "@shared/types/public";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";

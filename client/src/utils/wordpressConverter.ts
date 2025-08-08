@@ -1,6 +1,7 @@
 
-import type { Post } from '@shared/schema';
-import { insertPostSchema } from '@shared/schema';
+import type { ExtendedPost as Post } from '@shared/types/public';
+// TODO: validate on server; avoid server schema in client
+
 import { WordPressPost } from '../services/wordpress';
 
 // Extend WordPressPost interface to include missing properties

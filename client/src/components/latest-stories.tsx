@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { type Post } from "@shared/schema";
+import type { ExtendedPost as Post } from "@shared/types/public";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
