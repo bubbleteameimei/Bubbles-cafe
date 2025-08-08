@@ -1,6 +1,6 @@
 import express from 'express';
 import { createServer } from 'http';
-import { setupVite } from './vite';
+import { setupVite } from './vite-dev';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3002", 10);

@@ -45,7 +45,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { User } from '@/types/user';
-import { Post } from '../../../../shared/schema';
+import type { ExtendedPost as Post } from '@shared/types/public';
 
 // Extend the User type to include avatar
 export interface ExtendedUser extends User {

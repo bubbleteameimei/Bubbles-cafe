@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { User } from '@/types/user';
-import { Post } from '../../../../shared/schema';
+import type { ExtendedPost as Post } from '@shared/types/public';
 
 // Extended Post type with UI-specific properties
 interface ExtendedPost extends Post {
