@@ -90,7 +90,7 @@ const sessionStore = new SecureNeonSessionStore() as any;
 
 app.use(session({
   store: sessionStore as any,
-  secret: process.env.SESSION_SECRET || 'horror-stories-session-secret',
+  secret: (process.env.NODE_ENV === 'production') ? (() => { if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) { throw new Error('SESSION_SECRET (>=32 chars) is required in production'); } return process.env.SESSION_SECRET; })() : (process.env.SESSION_SECRET || 'development_secret_min_32_chars_long'),
   resave: false,
   saveUninitialized: false,
   rolling: true, // Reset expiration on activity
@@ -190,17 +190,17 @@ app.get('/health', (req, res) => {
 });
 
 // Basic security headers
-app.use(helmet({
-  contentSecurityPolicy: isDev ? false : {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
-      fontSrc: ["'self'", "fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
+  app.use(helmet({
+    contentSecurityPolicy: isDev ? false : {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "fonts.googleapis.com"],
+        fontSrc: ["'self'", "fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "https:"],
+        scriptSrc: ["'self'"]
+      }
     }
-  }
-}));
+  }));
 
 // Create a server logger
 const serverLogger = createLogger('Server');

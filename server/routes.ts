@@ -94,20 +94,22 @@ export function registerRoutes(app: Express): void {
   app.get('/test', (_req, res) => {
     res.json({ message: 'Server is working!' });
   });
-  // Register API test routes
-  app.use('/api/test', apiTestRoutes);
-  // Register test delete routes - remove in production
-  app.use('/api/test-delete', testDeleteRoutes);
+  if (process.env.NODE_ENV !== 'production') {
+    // Register API test routes (dev only)
+    app.use('/api/test', apiTestRoutes);
+    // Register test delete routes (dev only)
+    app.use('/api/test-delete', testDeleteRoutes);
+  }
   // Set trust proxy before any middleware
   app.set('trust proxy', 1);
 
   // Add security headers and middleware first
   app.use(helmet({
-    contentSecurityPolicy: {
+    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "https://fonts.googleapis.com"],
         imgSrc: ["'self'", "data:", "https:"],
         connectSrc: ["'self'", "https:"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
@@ -115,7 +117,7 @@ export function registerRoutes(app: Express): void {
         mediaSrc: ["'self'"],
         frameSrc: ["'none'"],
       },
-    },
+    } : undefined,
     crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: { policy: "same-site" },
   }));
@@ -147,6 +149,7 @@ export function registerRoutes(app: Express): void {
   });
 
   // Test search endpoint to isolate issues
+  if (process.env.NODE_ENV !== 'production') {
   app.get("/api/test-search", async (req: Request, res: Response) => {
     try {
       
@@ -179,16 +182,16 @@ export function registerRoutes(app: Express): void {
     } catch (error) {
       console.error('[TestSearch] Error:', error);
       return res.status(500).json({ 
-        error: 'Search failed', 
-        message: (error as Error).message,
-        results: [] 
+        error: 'Search failed'
       });
     }
   });
+  }
 
   
-  // Add a special CSRF-free endpoint for direct API access
-  app.post("/api/csrf-test-bypass/react/:postId", async (req: Request, res: Response) => {
+  // Disabled CSRF test-bypass reaction endpoint in production
+  if (process.env.NODE_ENV !== 'production') {
+    app.post("/api/csrf-test-bypass/react/:postId", async (req: Request, res: Response) => {
     try {
       const postId = Number(req.params.postId);
       if (isNaN(postId) || postId <= 0) {
@@ -243,9 +246,11 @@ export function registerRoutes(app: Express): void {
       return res.status(500).json({ error: "Failed to process reaction" });
     }
   });
+  }
   
-  // Add a special CSRF-free endpoint for getting reaction counts
-  app.get("/api/csrf-test-bypass/reactions/:postId", async (req: Request, res: Response) => {
+  // Disable CSRF-free reaction counts in production
+  if (process.env.NODE_ENV !== 'production') {
+    app.get("/api/csrf-test-bypass/reactions/:postId", async (req: Request, res: Response) => {
     try {
       const postId = Number(req.params.postId);
       if (isNaN(postId) || postId <= 0) {
@@ -277,6 +282,7 @@ export function registerRoutes(app: Express): void {
       return res.status(500).json({ error: "Failed to get reaction counts" });
     }
   });
+  }
   
   // Mock data endpoints for temporary use while database is being fixed
   app.get("/api/mock/recent-posts", (_req: Request, res: Response) => {
@@ -1016,10 +1022,13 @@ export function registerRoutes(app: Express): void {
   // Create a special admin router that doesn't use CSRF protection
   const adminCleanupRouter = express.Router();
   
-  // Mount this router WITHOUT the CSRF middleware
-  app.use("/admin-cleanup", adminCleanupRouter);
+  // Mount this router WITHOUT the CSRF middleware (dev only)
+  if (process.env.NODE_ENV !== 'production') {
+    app.use("/admin-cleanup", adminCleanupRouter);
+  }
   
-  // Special endpoint to delete WordPress placeholder post with ID 272
+  // Special endpoint to delete WordPress placeholder post with ID 272 (dev only)
+  if (process.env.NODE_ENV !== 'production') {
   adminCleanupRouter.delete("/wordpress-post-272", async (_req: Request, res: Response) => {
     try {
       const postId = 272; // Hardcoded ID for the WordPress placeholder post
@@ -1046,11 +1055,14 @@ export function registerRoutes(app: Express): void {
       return res.status(500).json({ message: "Failed to delete WordPress placeholder post" });
     }
   });
+  }
   
-  // Add a test endpoint to verify the admin cleanup router is working
-  adminCleanupRouter.get("/test", (_req: Request, res: Response) => {
-    res.json({ message: "Admin cleanup router is working" });
-  });
+  // Add a test endpoint to verify the admin cleanup router is working (dev only)
+  if (process.env.NODE_ENV !== 'production') {
+    adminCleanupRouter.get("/test", (_req: Request, res: Response) => {
+      res.json({ message: "Admin cleanup router is working" });
+    });
+  }
 
   app.get("/api/posts/secret", async (_req, res) => {
     try {
