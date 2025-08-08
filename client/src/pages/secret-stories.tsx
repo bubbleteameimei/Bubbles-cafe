@@ -65,7 +65,7 @@ export default function SecretStories() {
                   </p>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">
-                      {format(new Date(post.createdAt), 'MMMM d, yyyy')}
+                      {post.createdAt ? format(new Date(post.createdAt), 'MMMM d, yyyy') : ''}
                     </span>
                     <Button
                       variant="ghost"

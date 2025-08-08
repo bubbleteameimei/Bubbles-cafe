@@ -149,7 +149,7 @@ export function ReaderCore({ slug, onPostLoad, onError }: ReaderCoreProps) {
           )}
           
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+            <span>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ''}</span>
             {post.readingTimeMinutes && (
               <span>{post.readingTimeMinutes} min read</span>
             )}

@@ -134,7 +134,7 @@ export default function IndexView() {
   
   // Always initialize these variables, even if they're empty
   const sortedPosts = [...allPosts].sort((a: Post, b: Post) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    (b.createdAt ? new Date(b.createdAt).getTime() : 0) - (a.createdAt ? new Date(a.createdAt).getTime() : 0)
   );
   
   // Display all posts instead of paginating
@@ -173,8 +173,8 @@ export default function IndexView() {
     // Modified scoring system that considers recency as a major factor
     const sortedByEngagement = [...currentPosts].sort((a, b) => {
       // Get creation dates for recency
-      const aDate = new Date(a.createdAt).getTime();
-      const bDate = new Date(b.createdAt).getTime();
+      const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       
       // Calculate recency score - newer posts get higher scores
       // Posts in the last 7 days get the most recency bonus
@@ -549,7 +549,7 @@ export default function IndexView() {
                           <div className="text-xs text-muted-foreground space-y-1 whitespace-nowrap">
                             <div className="flex items-center gap-1 justify-end">
                               <Calendar className="h-3 w-3" />
-                              <time className="text-[10px] sm:text-xs">{format(new Date(post.createdAt), 'MMM d, yyyy')}</time>
+                              <time className="text-[10px] sm:text-xs">{post.createdAt ? format(new Date(post.createdAt), 'MMM d, yyyy') : ''}</time>
                             </div>
                             <div className="flex items-center gap-1 justify-end read-time">
                               <Clock className="h-3 w-3" />

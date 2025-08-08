@@ -4,7 +4,7 @@ export interface AuthorSummary {
   id?: number;
   username?: string;
   fullName?: string;
-  avatar?: string;
+  avatar?: string | null;
 }
 
 export interface PostMetadata {
