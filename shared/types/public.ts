@@ -21,6 +21,8 @@ export interface ExtendedPost {
   readingTimeMinutes?: number;
   author?: AuthorSummary;
   metadata?: PostMetadata;
+  likesCount?: number;
+  dislikesCount?: number;
 }
 
 export interface ExtendedUser {
