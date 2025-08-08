@@ -37,7 +37,7 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
   objectFit = 'cover',
   aspectRatio,
   ...props
-}, ref) => {
+}, _ref) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isInView, setIsInView] = useState(priority);
@@ -203,14 +203,7 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
         
         {/* Fallback for browsers that don't support WebP */}
         <img
-          ref={(node) => {
-            if (typeof ref === 'function') {
-              ref(node);
-            } else if (ref) {
-              ref.current = node;
-            }
-            imgRef.current = node;
-          }}
+          ref={(node) => { imgRef.current = node; }}
           src={getOptimizedSrc(src, 'jpg')}
           srcSet={generateSrcSet(src).replace(/f=webp/g, 'f=jpg')}
           alt={alt}

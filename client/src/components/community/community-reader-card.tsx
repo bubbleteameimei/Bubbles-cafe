@@ -45,7 +45,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { User } from '@/types/user';
-import { Post } from '../../../../shared/schema';
+import type { ExtendedPost as Post } from '@shared/types/public';
 
 // Extend the User type to include avatar
 export interface ExtendedUser extends User {
@@ -83,11 +83,11 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
   const [flagReason, setFlagReason] = useState('');
   
   // Format date
-  const formattedDate = post.createdAt;
+  const formattedDate = post.createdAt || new Date().toISOString();
   const timeAgo = format(new Date(formattedDate), 'MMM dd, yyyy');
   
   // Check if the current user is the author or admin
-  const isAuthor = currentUser?.id === post.authorId;
+  const isAuthor = currentUser?.id === (post.author as any)?.id;
   const isAdmin = currentUser?.isAdmin === true;
   
   // Create excerpt from content using horror-intensive paragraph finder
@@ -136,9 +136,9 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
   
   // Get author initials for avatar fallback
   const getAuthorInitials = () => {
-    if (!post.author || !post.author.username) return 'U';
-    
-    return post.author.username
+    if (!post.author || !(post.author as any).username) return 'U';
+    const username = (post.author as any).username as string;
+    return username
       .split(' ')
       .map(part => part[0])
       .join('')

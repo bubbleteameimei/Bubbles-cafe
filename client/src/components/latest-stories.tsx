@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { type Post } from "@shared/schema";
+import type { ExtendedPost as Post } from "@shared/types/public";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
@@ -44,8 +44,8 @@ export default function LatestStories() {
     
     // Sort by date (newest first)
     return uniquePosts.sort((a, b) => {
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return dateB - dateA;
     }).slice(0, 3); // Only take the 3 most recent
   }, [wordpressPosts, dbPosts]);

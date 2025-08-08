@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { type Post } from "@shared/schema";
+import type { ExtendedPost as Post } from "@shared/types/public";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
@@ -48,7 +48,7 @@ export default function StoryView({ slug }: StoryViewProps) {
         >
           <h1 className="text-3xl font-bold mb-2">{post.title}</h1>
           <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground mb-8 font-mono">
-            <time>{format(new Date(post.createdAt), 'MMMM d, yyyy')}</time>
+            <time>{post.createdAt ? format(new Date(post.createdAt), 'MMMM d, yyyy') : ''}</time>
             <ShareButton 
               title={post.title} 
               text={`Read "${post.title}" on Stories`}

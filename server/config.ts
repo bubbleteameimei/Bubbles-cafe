@@ -62,9 +62,7 @@ loadEnvFile();
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production']).default('development'),
   PORT: z.coerce.number().default(5000),
-  DATABASE_URL: z.string({
-    required_error: "DATABASE_URL is required. Make sure the database is provisioned."
-  }),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required. Make sure the database is provisioned.'),
   // Payment processing
   PAYSTACK_SECRET_KEY: z.string().optional(),
   PAYSTACK_WEBHOOK_SECRET: z.string().optional(),

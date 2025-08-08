@@ -193,7 +193,7 @@ export function sanitizeInput(schema: z.ZodSchema) {
       
       res.status(400).json({
         error: 'Invalid input data',
-        details: error instanceof z.ZodError ? error.errors : undefined
+        details: error instanceof z.ZodError ? error.issues : undefined
       });
       return;
     }

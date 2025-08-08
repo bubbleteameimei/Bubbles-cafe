@@ -1,26 +1,13 @@
-import { UserFeedback } from '@shared/schema';
+import type { UserFeedback } from '@shared/types/public';
 
 /**
  * Metadata for feedback including browser details, device info, etc.
  */
 export interface FeedbackMetadata {
-  browser?: {
-    name: string;
-    version: string;
-    userAgent: string;
-  };
-  device?: {
-    type: string;
-    model?: string;
-  };
-  os?: {
-    name: string;
-    version: string;
-  };
-  screen?: {
-    width: number;
-    height: number;
-  };
+  browser?: string; // Align with server string storage
+  device?: string;
+  os?: string;
+  screen?: string;
   location?: {
     path: string;
     referrer?: string;
@@ -43,10 +30,9 @@ export interface FeedbackItem {
   content: string;
   type: string;
   status: string;
-  priority: string;
-  contactRequested: boolean;
+  priority?: string;
   createdAt: string;
-  metadata: FeedbackMetadata;
+  metadata?: FeedbackMetadata;
 }
 
 /**
@@ -81,10 +67,7 @@ export interface FeedbackItemExtended {
  * Interface for components that expect UserFeedback with additional UI metadata
  */
 export interface FeedbackWithMetadata extends UserFeedback {
-  metadata: FeedbackMetadata;
-  subject: string;
-  email: string | null;
-  contactRequested: boolean;
+  metadata?: FeedbackMetadata;
 }
 
 /**

@@ -162,7 +162,7 @@ export function useFocusManagement(options: UseFocusManagementOptions = {}) {
       if (elementToFocus.focus) {
         elementToFocus.focus({ preventScroll: false });
       }
-      previousActiveElement.current = null;
+      (previousActiveElement as unknown as { current: Element | null }).current = null;
     }
   }, [isActive, restoreFocus]);
 

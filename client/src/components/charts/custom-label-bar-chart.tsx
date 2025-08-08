@@ -117,7 +117,7 @@ export function CustomLabelBarChart({
                   maxBarSize={50}
                   label={{
                     position: 'top',
-                    formatter: (value: number) => {
+                    formatter: (value: any) => {
                       if (value >= 1000) {
                         return `${(value / 1000).toFixed(1)}k`
                       }

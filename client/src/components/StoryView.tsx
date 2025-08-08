@@ -54,7 +54,7 @@ const StoryView: React.FC<StoryViewProps> = ({ post, author, showFullContent = f
               <span>•</span>
             </>
           )}
-          <span>{formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}</span>
+          <span>{post.createdAt ? formatDistanceToNow(new Date(post.createdAt), { addSuffix: true }) : ''}</span>
           {post.readingTime && (
             <>
               <span>•</span>

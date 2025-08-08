@@ -5,7 +5,7 @@
  * It uses client-side measurements and submits them to our analytics API.
  */
 import { useEffect, useRef } from 'react';
-import { onCLS, onFID, onFCP, onLCP, onTTFB } from 'web-vitals';
+import { onCLS, onINP, onFCP, onLCP, onTTFB, type Metric } from 'web-vitals';
 import { usePerformanceMonitoring } from '@/hooks/use-performance-monitoring';
 
 interface PerformanceMonitorProps {
@@ -30,20 +30,21 @@ export function PerformanceMonitor({
   useEffect(() => {
     if (!isEnabled) return;
     
-    const identifier = `${pageId || window.location.pathname}-${Date.now()}`;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const identifier: string = `${pageId || window.location.pathname}-${Date.now()}`;
     
     // Record Core Web Vitals
-    onCLS(({ value }) => recordMetric('CLS', value * 1000));
-    onFID(({ value }) => recordMetric('FID', value));
-    onLCP(({ value }) => recordMetric('LCP', value));
-    onFCP(({ value }) => recordMetric('FCP', value));
-    onTTFB(({ value }) => recordMetric('TTFB', value));
+    onCLS(({ value }: Metric) => recordMetric('CLS', value * 1000));
+    onINP(({ value }: Metric) => recordMetric('INP', value));
+    onLCP(({ value }: Metric) => recordMetric('LCP', value));
+    onFCP(({ value }: Metric) => recordMetric('FCP', value));
+    onTTFB(({ value }: Metric) => recordMetric('TTFB', value));
     
     // Record Navigation Timing
     recordNavigationTiming();
     
     // Record page load event once
-    const handleLoad = () => {
+    const handleLoad = (): void => {
       if (isLoadEventSent.current) return;
       
       recordMetric('PageLoad', performance.now());

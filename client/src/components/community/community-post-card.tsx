@@ -11,23 +11,22 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { User } from '@/types/user';
-import { Post } from '../../../../shared/schema';
+import type { User } from '@/types/user';
+import type { ExtendedPost as Post, AuthorSummary } from '@shared/types/public';
 
 // Extended Post type with UI-specific properties
-interface ExtendedPost extends Post {
-  author?: User;
-  likes: number;
-  commentCount: number;
-  views: number;
+interface UIExtendedPost extends Post {
+  author?: AuthorSummary;
+  likes?: number;
+  commentCount?: number;
+  views?: number;
   hasLiked?: boolean;
   isBookmarked?: boolean;
   isFlagged?: boolean;
-  // The metadata property is already included from the base Post type
 }
 
 interface CommunityPostCardProps {
-  post: ExtendedPost;
+  post: UIExtendedPost;
   isAuthenticated: boolean;
   currentUser?: User | null;
 }
@@ -44,15 +43,15 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
   const [flagReason, setFlagReason] = useState('');
   
   // Format date
-  const formattedDate = post.createdAt;
+  const formattedDate = post.createdAt || new Date().toISOString();
   const timeAgo = formatDistanceToNow(new Date(formattedDate), { addSuffix: true });
   
   // Get theme category for badge
   const getThemeBadge = () => {
-    const metadata = post.metadata as any;
+    const metadata: any = post.metadata;
     if (!metadata?.themeCategory) return null;
     
-    const category = metadata.themeCategory;
+    const category = metadata.themeCategory as string;
     let colorClass = 'bg-gray-100 text-gray-800 border-gray-300';
     let displayName = category.replace('_', ' ');
     
@@ -109,10 +108,10 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
   };
   
   // Check for trigger warnings
-  const metadata = post.metadata as any;
+  const metadata: any = post.metadata;
   const hasTriggerWarnings = 
     metadata?.triggerWarnings && 
-    metadata.triggerWarnings.length > 0;
+    (metadata.triggerWarnings as any[]).length > 0;
   
   // Like Post Mutation
   const likeMutation = useMutation({
@@ -129,26 +128,31 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
       // Optimistic update
       setIsLiked(true);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/community/posts'] });
-      toast({
-        title: 'Story Liked',
-        description: 'You have liked this story.',
-      });
-    },
-    onError: (error: Error) => {
-      // Reset to previous state
-      setIsLiked(post.hasLiked || false);
-      
+    onError: () => {
+      setIsLiked(false);
       toast({
         title: 'Error',
-        description: error.message,
+        description: 'Could not like the post. Please try again.',
         variant: 'destructive',
       });
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
   });
   
-  // Flag Post Mutation
+  const handleLikeClick = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please sign in to like content',
+        variant: 'default',
+      });
+      return;
+    }
+    likeMutation.mutate();
+  };
+  
   const flagMutation = useMutation({
     mutationFn: async (reason: string) => {
       const response = await fetch(`/api/posts/${post.id}/flag`, {
@@ -161,40 +165,20 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
       return response.json();
     },
     onSuccess: () => {
-      setShowFlagDialog(false);
-      setFlagReason('');
-      
-      queryClient.invalidateQueries({ queryKey: ['/api/community/posts'] });
-      
       toast({
-        title: 'Content Reported',
-        description: 'Thank you for reporting this content. Our moderators will review it.',
+        title: 'Reported',
+        description: 'Thank you for your report. Our moderators will review it.',
       });
     },
-    onError: (error: Error) => {
+    onError: () => {
       toast({
         title: 'Error',
-        description: error.message,
+        description: 'Could not report the post. Please try again.',
         variant: 'destructive',
       });
     },
   });
   
-  // Handle like click
-  const handleLikeClick = () => {
-    if (!isAuthenticated) {
-      toast({
-        title: 'Authentication Required',
-        description: 'Please sign in to like stories',
-        variant: 'default',
-      });
-      return;
-    }
-    
-    likeMutation.mutate();
-  };
-  
-  // Handle flag dialog
   const handleFlag = () => {
     if (!isAuthenticated) {
       toast({
@@ -222,9 +206,11 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
     flagMutation.mutate(flagReason);
   };
   
+  const safeSlug = post.slug || `${post.id}`;
+  
   // Copy post link to clipboard
   const copyLink = () => {
-    const url = `${window.location.origin}/reader/${post.slug}`;
+    const url = `${window.location.origin}/reader/${safeSlug}`;
     navigator.clipboard.writeText(url).then(
       () => {
         setIsCopied(true);
@@ -251,8 +237,8 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
       navigator.share({
         title: post.title,
         text: post.excerpt || createExcerpt(post.content),
-        url: `${window.location.origin}/reader/${post.slug}`,
-      }).catch(error => {
+        url: `${window.location.origin}/reader/${safeSlug}`,
+      }).catch(() => {
         
       });
     } else {
@@ -283,7 +269,7 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => navigate(`/reader/${post.slug}`)}>
+              <DropdownMenuItem onClick={() => navigate(`/reader/${safeSlug}`)}>
                 <Eye className="h-4 w-4 mr-2" />
                 Read Story
               </DropdownMenuItem>
@@ -313,7 +299,7 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
       <CardContent className="pb-3 flex-grow">
         <CardTitle 
           className="text-lg mb-2 line-clamp-2 hover:text-primary cursor-pointer"
-          onClick={() => navigate(`/reader/${post.slug}`)}
+          onClick={() => navigate(`/reader/${safeSlug}`)}
         >
           {post.title}
         </CardTitle>
@@ -344,17 +330,17 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
               disabled={likeMutation.isPending}
             >
               <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
-              <span>{post.likes}</span>
+              <span>{post.likes ?? 0}</span>
             </Button>
             
             <Button 
               variant="ghost" 
               size="sm" 
               className="flex items-center gap-1 px-2"
-              onClick={() => navigate(`/reader/${post.slug}#comments`)}
+              onClick={() => navigate(`/reader/${safeSlug}#comments`)}
             >
               <MessageCircle className="h-4 w-4" />
-              <span>{post.commentCount}</span>
+              <span>{post.commentCount ?? 0}</span>
             </Button>
           </div>
           
@@ -371,33 +357,17 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
           <DialogHeader>
             <DialogTitle id="report-content-title">Report Content</DialogTitle>
             <DialogDescription id="report-content-description">
-              Please let us know why you're reporting this content. This will help our moderators review it appropriately.
+              Please provide a reason for reporting this content.
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="py-4">
-            <Textarea
-              placeholder="Please explain why you're reporting this content..."
-              className="min-h-[100px]"
-              value={flagReason}
-              onChange={(e) => setFlagReason(e.target.value)}
-            />
-          </div>
-          
+          <Textarea 
+            value={flagReason}
+            onChange={(e) => setFlagReason(e.target.value)}
+            placeholder="Describe the issue..."
+          />
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowFlagDialog(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={submitFlag}
-              disabled={flagMutation.isPending || !flagReason.trim()}
-            >
-              {flagMutation.isPending ? 'Submitting...' : 'Submit Report'}
-            </Button>
+            <Button variant="secondary" onClick={() => setShowFlagDialog(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={submitFlag}>Submit Report</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

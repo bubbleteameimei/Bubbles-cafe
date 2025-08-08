@@ -1,5 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { type Post, type Comment } from "@shared/schema";
+import type { ExtendedPost as Post } from "@shared/types/public";
+// NOTE: replace Comment with client-safe type if needed
+type Comment = { id: number; postId: number; content: string; author?: string; createdAt?: string };
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SiWordpress, SiX, SiInstagram } from "react-icons/si";
 import { useLocation } from "wouter";
@@ -150,7 +153,7 @@ export default function Sidebar() {
                 <div className="flex items-center justify-between mb-1">
                   <p className="font-semibold text-sm">Anonymous</p>
                   <time className="text-xs text-muted-foreground">
-                    {format(new Date(comment.createdAt), 'MMM d')}
+                    {comment.createdAt ? format(new Date(comment.createdAt), 'MMM d') : ''}
                   </time>
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-2">

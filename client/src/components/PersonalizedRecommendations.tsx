@@ -170,7 +170,7 @@ export function PersonalizedRecommendations({
                   </CardDescription>
                 </CardContent>
                 <CardFooter className="flex justify-between text-sm text-muted-foreground">
-                  <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                  <span>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ''}</span>
                   {post.readingTimeMinutes && (
                     <span>{post.readingTimeMinutes} min read</span>
                   )}

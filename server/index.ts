@@ -3,7 +3,7 @@ import express from "express";
 import { createServer } from "http";
 import crypto from "crypto";
 // Session types are declared in server/types/session.d.ts
-import { setupVite, serveStatic } from "./vite";
+import { setupVite, serveStatic } from "./vite-dev";
 import { registerRoutes } from "./routes";
 import { setNeonAsDefault } from "./neon-config"; // Set Neon as default database
 import { setGmailCredentials } from "./config/gmail-config"; // Set Gmail credentials

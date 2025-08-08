@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useTheme } from '@/hooks/use-theme';
+import useTheme from '@/hooks/use-theme';
 import { SettingsFormRow } from '@/components/settings/SettingsFormRow';
 import { SettingsSection } from '@/components/settings/SettingsSection';
 import { useToast } from '@/hooks/use-toast';

@@ -10,7 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ReportedContent } from "@shared/schema";
+type ReportedContent = { id: number; contentId: number; contentType: string; reason: string; status?: string; createdAt?: string; reporterId?: number };
+
 import { ActivityTimeline } from "@/components/admin/activity-timeline";
 import { 
   AlertTriangle, 

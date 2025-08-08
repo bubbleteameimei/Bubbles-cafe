@@ -34,7 +34,8 @@ export function ForgotPasswordDialog() {
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        setEmailError(error.errors[0]?.message || 'Invalid email');
+        const first = (error.issues && error.issues[0]?.message) || (error as any).errors?.[0]?.message;
+        setEmailError(first || 'Invalid email');
       } else {
         setEmailError('Please enter a valid email address');
       }

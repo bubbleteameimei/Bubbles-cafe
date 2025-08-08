@@ -217,7 +217,7 @@ export function handleWordPressError(error: unknown): ApplicationError {
  * Handle Zod validation errors with helpful formatting
  */
 export function handleValidationError(error: z.ZodError): ApplicationError {
-  const issues = error.errors.map(err => ({
+  const issues = (error.issues || []).map(err => ({
     path: err.path.join('.'),
     message: err.message,
     code: err.code

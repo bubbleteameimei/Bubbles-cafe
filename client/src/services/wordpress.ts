@@ -1,4 +1,4 @@
-import type { Post } from '@shared/schema';
+import type { ExtendedPost as Post } from '@shared/types/public';
 
 export interface WordPressPost {
   id: number;

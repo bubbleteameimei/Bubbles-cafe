@@ -69,7 +69,7 @@ router.post('/subscribe', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Invalid subscription data',
-        errors: error.errors
+        errors: error.issues
       });
     }
     
@@ -149,7 +149,7 @@ router.post('/unsubscribe', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Invalid email address',
-        errors: error.errors
+        errors: error.issues
       });
     }
     
