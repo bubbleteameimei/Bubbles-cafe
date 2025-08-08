@@ -216,7 +216,9 @@ export function useScreenReaderAnnouncement() {
     announcementRef.current.setAttribute('aria-live', priority);
     
     // Clear previous message
-    announcementRef.current.textContent = '';
+    if (announcementRef.current) {
+      announcementRef.current.textContent = '';
+    }
     
     // Set new message after a brief delay to ensure screen readers pick it up
     setTimeout(() => {

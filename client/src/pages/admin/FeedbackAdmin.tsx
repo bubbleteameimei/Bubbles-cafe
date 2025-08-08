@@ -325,8 +325,8 @@ const FeedbackAdmin = () => {
                                   )}
                                 </TableCell>
                                 <TableCell>
-                                  <Badge className={getStatusColor(item.status)}>
-                                    {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                                  <Badge className={getStatusColor(item.status || 'pending')}>
+                                    {(item.status || 'pending').charAt(0).toUpperCase() + (item.status || 'pending').slice(1)}
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="text-muted-foreground text-xs">
@@ -383,11 +383,11 @@ const FeedbackAdmin = () => {
                 
                 // Add schema specific fields
                 page: selectedFeedback.metadata?.location?.path || '',
-                browser: selectedFeedback.metadata?.browser?.name || '',
-                operatingSystem: selectedFeedback.metadata?.os?.name || '',
+                browser: (selectedFeedback.metadata?.browser as any)?.name || '',
+                operatingSystem: (selectedFeedback.metadata?.os as any)?.name || '',
                 screenResolution: selectedFeedback.metadata?.screen ? 
-                  `${selectedFeedback.metadata.screen.width}x${selectedFeedback.metadata.screen.height}` : '',
-                userAgent: selectedFeedback.metadata?.browser?.userAgent || ''
+                  `${(selectedFeedback.metadata?.screen as any)?.width}x${(selectedFeedback.metadata?.screen as any)?.height}` : '',
+                userAgent: (selectedFeedback.metadata?.browser as any)?.userAgent || ''
               } as any}
               onStatusChange={handleStatusChange}
               onSendResponse={handleSendResponse}

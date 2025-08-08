@@ -368,7 +368,7 @@ export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
         content: wpPost.content?.rendered || 'Content unavailable',
         excerpt: 'No excerpt available',
         slug: wpPost.slug || `untitled-${Date.now()}`,
-        createdAt: wpPost.date ? new Date(wpPost.date) : new Date()
+        createdAt: wpPost.date ? new Date(wpPost.date).toISOString() : new Date().toISOString()
       };
       return fallbackPost;
     }
@@ -384,7 +384,7 @@ export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
       content: sanitizedContent,
       excerpt,
       slug: wpPost.slug,
-      createdAt: new Date(wpPost.date)
+      createdAt: new Date(wpPost.date).toISOString()
     };
     
     // Cache the converted post
@@ -399,7 +399,7 @@ export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
       content: 'There was an error loading this story. Please try again later.',
       excerpt: 'Error loading content',
       slug: `error-${Date.now()}`,
-      createdAt: new Date()
+      createdAt: new Date().toISOString()
     };
   }
 }
