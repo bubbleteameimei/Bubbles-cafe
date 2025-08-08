@@ -15,13 +15,13 @@ function requireAuth(req: Request, res: Response, next: NextFunction): void {
 }
 
 function csrfProtection(req: Request, res: Response, next: NextFunction): void {
-  return validateCsrfToken()(req, res, next);
+  const mw = validateCsrfToken();
+  mw(req, res, next);
 }
 
 const limiter = rateLimit({ windowMs: 60 * 1000, max: 5 });
 function rateLimitMiddleware(_req: Request, _res: Response, next: NextFunction): void {
   // Attach express-rate-limit instance
-  // @ts-expect-error types for middleware wrapping
   return limiter(_req, _res, next);
 }
 
@@ -32,26 +32,19 @@ export function registerWordPressSyncRoutes(app: any) {
   
 
   // Manual sync trigger
-  app.post('/api/wordpress/sync', requireAuth, csrfProtection, rateLimitMiddleware, async (_req: Request, res: Response) => {
+  app.post('/api/wordpress/sync', requireAuth, csrfProtection, rateLimitMiddleware, async (_req: Request, res: Response): Promise<void> => {
     try {
       
       
       // Import and call sync function
       const { syncWordPressPosts } = await import('../wordpress-sync');
-      const result = await syncWordPressPosts();
-      
-      return res.json({
-        success: true,
-        message: 'WordPress sync completed',
-        data: result
-      });
-    } catch (error) {
-      console.error('[WordPress Sync] Error during manual sync:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'WordPress sync failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      const summary = await syncWordPressPosts();
+      res.json({ success: true, summary });
+      return;
+    } catch (error: any) {
+      console.error('[WordPress Sync] Error:', error);
+      res.status(500).json({ success: false, message: error?.message || 'WordPress sync failed' });
+      return;
     }
   });
 
@@ -112,37 +105,23 @@ export function registerWordPressSyncRoutes(app: any) {
   });
 
   // Sync specific post by ID
-  app.post('/api/wordpress/sync/:postId', requireAuth, csrfProtection, async (req: Request, res: Response) => {
+  app.post('/api/wordpress/sync/:id', requireAuth, csrfProtection, rateLimitMiddleware, async (req: Request, res: Response): Promise<void> => {
     try {
-      const { postId } = req.params;
-      
-      if (!postId || isNaN(parseInt(postId))) {
-        return res.status(400).json({ error: 'Invalid post ID' });
+      const postId = Number(req.params.id);
+      if (Number.isNaN(postId)) {
+        res.status(400).json({ success: false, message: 'Invalid post ID' });
+        return;
       }
 
       
-      
-      const result = await syncSingleWordPressPost(parseInt(postId));
-      
-      if (!result) {
-        return res.status(400).json({
-          success: false,
-          message: 'Failed to sync post - post may not exist'
-        });
-      }
-
-      return res.json({
-        success: true,
-        message: `Post ${postId} synced successfully`,
-        data: result
-      });
-    } catch (error) {
-      console.error(`[WordPress Sync] Error syncing post ${req.params.postId}:`, error);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to sync post',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      const { syncSingleWordPressPost } = await import('../wordpress-sync');
+      const result = await syncSingleWordPressPost(postId);
+      res.json({ success: true, result });
+      return;
+    } catch (error: any) {
+      console.error('[WordPress Sync] Error syncing post:', error);
+      res.status(500).json({ success: false, message: error?.message || 'Failed to sync post' });
+      return;
     }
   });
 

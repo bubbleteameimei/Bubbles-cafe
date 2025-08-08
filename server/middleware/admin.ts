@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 
 export const isAdmin = (req: Request, res: Response, next: NextFunction): void => {
-  if (!req.isAuthenticated()) {
+  if (typeof req.isAuthenticated !== 'function' || !req.isAuthenticated()) {
     res.status(401).json({ message: "Not authenticated" });
     return;
   }

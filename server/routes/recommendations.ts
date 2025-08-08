@@ -86,11 +86,12 @@ export function registerRecommendationsRoutes(app: Application, storageInstance:
       });
       
       // Collect post IDs from user history
-      const historyPostIds = new Set([
-        ...readingHistory.map((item: {postId: number}) => item.postId),
-        ...likedPosts.map((item: {postId: number}) => item.postId),
-        ...userBookmarks.map((item: {postId: number}) => item.postId)
-      ]);
+      const historyPostIds = new Set<number>(
+        ([] as number[])
+          .concat((readingHistory as Array<{ postId: number }>).map((item) => item.postId))
+          .concat((likedPosts as Array<{ postId: number }>).map((item) => item.postId))
+          .concat((userBookmarks as Array<{ postId: number }>).map((item) => item.postId))
+      );
       
       // If user has no history, fall back to trending posts with theme preferences
       if (historyPostIds.size === 0) {

@@ -55,7 +55,7 @@ function generateSlug(title: string): string {
 
 // Protected middleware
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  if (req.isAuthenticated()) {
+  if (typeof req.isAuthenticated === 'function' && req.isAuthenticated()) {
     return next();
   }
   res.status(401).json({ message: "Unauthorized" });
@@ -504,7 +504,7 @@ export function registerRoutes(app: Express): void {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           message: "Invalid post data",
-          errors: error.errors.map(err => ({
+          errors: error.issues.map(err => ({
             path: err.path.join('.'),
             message: err.message
           }))
@@ -720,22 +720,24 @@ export function registerRoutes(app: Express): void {
       }));
       
       // Transform the results to support both naming conventions
-      const transformedPosts = fullPosts.filter((post): post is NonNullable<typeof post> => post !== undefined).map((post) => {
-        // Extract themeIcon from metadata
-        const metadata = post.metadata as any || {};
-        const themeIcon = metadata.themeIcon || null;
-        
-        return {
-          id: post.id,
-          title: post.title,
-          themeCategory: post.themeCategory,
-          themeIcon: themeIcon,
-          theme_category: post.themeCategory, // Add snake_case version for backward compatibility
-          theme_icon: themeIcon, // Add snake_case version for backward compatibility
-          slug: post.slug,
-          createdAt: post.createdAt
-        };
-      });
+      const transformedPosts = fullPosts
+        .filter(<T>(post: T | undefined): post is NonNullable<T> => post !== undefined)
+        .map((post: NonNullable<(typeof fullPosts)[number]>) => {
+          // Extract themeIcon from metadata
+          const metadata = post.metadata as any || {};
+          const themeIcon = metadata.themeIcon || null;
+          
+          return {
+            id: post.id,
+            title: post.title,
+            themeCategory: post.themeCategory,
+            themeIcon: themeIcon,
+            theme_category: post.themeCategory, // Add snake_case version for backward compatibility
+            theme_icon: themeIcon, // Add snake_case version for backward compatibility
+            slug: post.slug,
+            createdAt: post.createdAt
+          };
+        });
       
       
       return res.json(transformedPosts);
@@ -962,7 +964,7 @@ export function registerRoutes(app: Express): void {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           message: "Invalid post data",
-          errors: error.errors.map(err => ({
+          errors: error.issues.map(err => ({
             path: err.path.join('.'),
             message: err.message
           }))
@@ -2835,7 +2837,7 @@ Message ID: ${savedMessage.id}
   
   // Add auth status endpoint before other routes
   app.get('/api/auth/status', (req: Request, res: Response) => {
-    if (req.isAuthenticated()) {
+    if (typeof req.isAuthenticated === 'function' && req.isAuthenticated()) {
       res.json({ 
         isAuthenticated: true, 
         user: req.user 

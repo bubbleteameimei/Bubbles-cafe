@@ -138,7 +138,7 @@ export function setupAuth(app: any) {
         authLogger.debug('Remember me enabled, setting long session expiration');
       }
       
-      req.login?.(user, loginOptions, (err: any) => {
+      (req as any).login(user, loginOptions, (err: any) => {
         if (err) {
           authLogger.error('Session creation error', { err: err instanceof Error ? err.message : 'Unknown error' });
           return next(err);
@@ -203,7 +203,7 @@ export function setupAuth(app: any) {
       const { password_hash, ...safeUser } = user;
 
       // Log user in after registration
-      req.login(safeUser, (err: any) => {
+      (req as any).login(safeUser, (err: any) => {
         if (err) {
           authLogger.error('Error logging in after registration', { err: err instanceof Error ? err.message : 'Unknown error' });
           res.status(500).json({ message: "Error logging in after registration" });
@@ -222,7 +222,7 @@ export function setupAuth(app: any) {
   app.post("/api/auth/logout", (req: Request, res: Response) => {
     const userId = req.user?.id;
     authLogger.debug('Logout request received', { userId });
-    req.logout((err: any) => {
+    (req as any).logout((err: any) => {
       if (err) {
         authLogger.error('Logout error', { err: err instanceof Error ? err.message : 'Unknown error' });
         return res.status(500).json({ message: "Error logging out" });
@@ -233,7 +233,7 @@ export function setupAuth(app: any) {
   });
 
   app.get("/api/auth/user", (req: Request, res: Response) => {
-    if (!req.isAuthenticated()) {
+    if (typeof req.isAuthenticated !== 'function' || !req.isAuthenticated()) {
       authLogger.debug('Unauthenticated user info request');
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -322,7 +322,7 @@ export function setupAuth(app: any) {
       const { password_hash, ...safeUser } = user;
       
       // Log the user in using the session
-      req.login(safeUser, (err: any) => {
+      (req as any).login(safeUser, (err: any) => {
         if (err) {
           authLogger.error('Session creation error during social login', { err: err instanceof Error ? err.message : 'Unknown error' });
           res.status(500).json({ message: "Error logging in with social account" });
@@ -584,7 +584,7 @@ export function setupAuth(app: any) {
 // Fix function return type
 export const authenticateUser = (req: Request, res: Response, next: NextFunction): void => {
   // Function body
-  if (req.isAuthenticated()) {
+  if (typeof req.isAuthenticated === 'function' && req.isAuthenticated()) {
     return next();
   }
   res.status(401).json({ error: 'Authentication required' });
@@ -592,14 +592,14 @@ export const authenticateUser = (req: Request, res: Response, next: NextFunction
 
 // Fix return types for other functions
 export const requireAuth = (req: Request, res: Response, next: NextFunction): void => {
-  if (req.isAuthenticated()) {
+  if (typeof req.isAuthenticated === 'function' && req.isAuthenticated()) {
     return next();
   }
   res.status(401).json({ error: 'Authentication required' });
 };
 
 export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
-  if (req.isAuthenticated() && req.user?.isAdmin) {
+  if (typeof req.isAuthenticated === 'function' && req.isAuthenticated() && req.user?.isAdmin) {
     return next();
   }
   res.status(403).json({ error: 'Admin access required' });
