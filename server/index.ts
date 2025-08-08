@@ -147,9 +147,10 @@ app.use(validateCsrfToken({
     '/api/recommendations',
     '/api/analytics', // Exclude all analytics endpoints from CSRF checks
     '/api/analytics/vitals', // Explicitly exclude analytics/vitals endpoint 
-    '/api/wordpress/sync',
-    '/api/wordpress/sync/status',
-    '/api/wordpress/posts',
+         // WordPress sync endpoints now protected by auth+CSRF
+     // '/api/wordpress/sync',
+     '/api/wordpress/sync/status',
+     '/api/wordpress/posts',
     '/api/reader/bookmarks', // Allow anonymous bookmarks without CSRF protection
     '/admin-cleanup' // Special admin cleanup route that bypasses CSRF protection
   ]
