@@ -36,47 +36,23 @@ interface FeedbackAnalyticsProps {
 export function FeedbackAnalytics({ feedbackItems }: FeedbackAnalyticsProps) {
   // Process feedback data for charts
   const feedbackByType = React.useMemo(() => {
-    const result = {
-      suggestion: 0,
-      bug: 0,
-      praise: 0,
-      complaint: 0
-    };
-    
-    feedbackItems.forEach(item => {
-      if (item.type in result) {
-        result[item.type as keyof typeof result]++;
-      }
-    });
-    
-    return Object.entries(result).map(([type, count]) => ({
-      type,
-      count,
-      fill: `var(--color-${type})`
-    }));
+    const aggregate: Record<string, number> = {};
+    for (const item of feedbackItems) {
+      const key = (item.type ?? 'unknown') as string;
+      aggregate[key] = (aggregate[key] ?? 0) + 1;
+    }
+    return Object.entries(aggregate).map(([type, count]) => ({ type, count, fill: `var(--color-${type})` }));
   }, [feedbackItems]);
 
   // Rating analytics removed
 
   const feedbackByStatus = React.useMemo(() => {
-    const result = {
-      pending: 0,
-      reviewed: 0,
-      resolved: 0,
-      rejected: 0
-    };
-    
-    feedbackItems.forEach(item => {
-      if (item.status in result) {
-        result[item.status as keyof typeof result]++;
-      }
-    });
-    
-    return Object.entries(result).map(([status, count]) => ({
-      status,
-      count,
-      fill: `var(--color-${status})`
-    }));
+    const aggregate: Record<string, number> = {};
+    for (const item of feedbackItems) {
+      const key = (item.status ?? 'pending') as string;
+      aggregate[key] = (aggregate[key] ?? 0) + 1;
+    }
+    return Object.entries(aggregate).map(([status, count]) => ({ status, count, fill: `var(--color-${status})` }));
   }, [feedbackItems]);
 
   const totalFeedback = feedbackItems.length;
