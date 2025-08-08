@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { getExcerpt } from '@/lib/content-analysis';
+import { sanitizeHtmlContent } from '@/utils/wordpressConverter';
 
 interface SearchResultsProps {
   query: string;
@@ -114,7 +115,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query, onSelect }) => {
           className="p-3 rounded-md hover:bg-muted transition-colors cursor-pointer"
           onClick={() => handlePostClick(post.slug)}
         >
-          <div className="font-medium" dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
+          <div className="font-medium" dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.title.rendered) }} />
           <div className="text-sm text-muted-foreground line-clamp-2 mt-1">
             {getExcerpt(post.content.rendered)}
           </div>

@@ -1,5 +1,6 @@
-/* Font loading moved to HTML head for better performance */
 @import "./styles/sidebar-enhanced.css";
+@import './styles/responsive.css';
+/* Font loading moved to HTML head for better performance */
 
 /* Mobile responsiveness update - March 2025 */
 @tailwind base;
@@ -14,9 +15,6 @@ html, body {
 body {
   overflow-y: auto;
 }
-
-/* Import responsive framework */
-@import './styles/responsive.css';
 
 /* Screen reader only utility */
 .sr-only {

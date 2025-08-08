@@ -25,6 +25,9 @@ export function sanitizeHtmlContent(html: string): string {
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
     .replace(/on\w+="[^"]*"/g, '') // Remove inline event handlers
+    .replace(/\s(xlink:href|href|src)="\s*(javascript:|vbscript:)[^"]*"/gi, '') // Strip dangerous protocols
+    .replace(/\sstyle="[^"]*expression\(/gi, '') // Strip CSS expressions
+    .replace(/\s(xlink:href|href|src)="\s*data:[^"]*"/gi, '') // Strip data URIs in attributes
     .replace(/javascript:[^\s>]*/g, ''); // Remove javascript: URLs
 }
 

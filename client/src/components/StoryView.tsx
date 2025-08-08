@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { Clock, Eye, Heart } from 'lucide-react';
+import { sanitizeHtmlContent } from '@/utils/wordpressConverter';
 
 // Define Post type locally
 interface Post {
@@ -69,7 +70,7 @@ const StoryView: React.FC<StoryViewProps> = ({ post, author, showFullContent = f
       <CardContent>
         <div className="story-content prose dark:prose-invert max-w-none">
           {showFullContent ? (
-            <div dangerouslySetInnerHTML={{ __html: post.content }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.content) }} />
           ) : (
             <p>{post.excerpt || post.content.substring(0, 200) + '...'}</p>
           )}

@@ -4,20 +4,25 @@
  */
 import { Router, Request, Response, NextFunction } from 'express';
 import { syncSingleWordPressPost } from '../wordpress-sync';
+import { isAdmin } from '../middlewares/auth';
+import { validateCsrfToken } from '../middleware/csrf-protection';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
-// Middleware functions (simplified for now)
-function requireAuth(_req: Request, _res: Response, next: NextFunction): void {
-  next(); // Skip auth for now
+function requireAuth(req: Request, res: Response, next: NextFunction): void {
+  return isAdmin(req, res, next);
 }
 
-function csrfProtection(_req: Request, _res: Response, next: NextFunction): void {
-  next(); // Skip CSRF for now
+function csrfProtection(req: Request, res: Response, next: NextFunction): void {
+  return validateCsrfToken()(req, res, next);
 }
 
-function rateLimit(_req: Request, _res: Response, next: NextFunction): void {
-  next(); // Skip rate limiting for now
+const limiter = rateLimit({ windowMs: 60 * 1000, max: 5 });
+function rateLimitMiddleware(_req: Request, _res: Response, next: NextFunction): void {
+  // Attach express-rate-limit instance
+  // @ts-expect-error types for middleware wrapping
+  return limiter(_req, _res, next);
 }
 
 /**
@@ -27,7 +32,7 @@ export function registerWordPressSyncRoutes(app: any) {
   
 
   // Manual sync trigger
-  app.post('/api/wordpress/sync', requireAuth, csrfProtection, rateLimit, async (_req: Request, res: Response) => {
+  app.post('/api/wordpress/sync', requireAuth, csrfProtection, rateLimitMiddleware, async (_req: Request, res: Response) => {
     try {
       
       

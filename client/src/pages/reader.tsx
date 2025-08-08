@@ -50,7 +50,7 @@ import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 // WordPress API functions removed (unused)
 
 // Native HTML sanitization function (avoiding DOMPurify dependency conflicts)
-const sanitizeHtmlContent = (html: string): string => {
+export const sanitizeHtmlContent = (html: string): string => {
   try {
     // Create a temporary div to parse HTML safely
     const temp = document.createElement('div');

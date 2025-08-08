@@ -10,6 +10,7 @@ import { validateCsrfToken } from '../middleware/csrf-protection';
 const router = express.Router();
 
 // Public GET endpoint - should be accessible without CSRF protection
+if (process.env.NODE_ENV !== 'production') {
 router.get('/csrf-test', (req, res) => {
   res.json({
     message: 'GET endpoint successful - no CSRF protection needed',
@@ -37,5 +38,6 @@ router.post('/csrf-test-bypass', (req, res) => {
     sessionToken: req.session.csrfToken ? req.session.csrfToken.substr(0, 8) + '...' : null
   });
 });
+}
 
 export default router;
