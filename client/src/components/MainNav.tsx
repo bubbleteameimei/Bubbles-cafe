@@ -63,14 +63,14 @@ export default function MainNav() {
         <div className="flex items-center space-x-2">
           {/* Only show hamburger on mobile/tablet when sidebar is not visible by default */}
           {(deviceType === 'mobile' || deviceType === 'tablet') && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => sidebar.setOpenMobile(true)}
-              className="lg:hidden h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                        transition-all duration-200 ease-in-out transform active:scale-95"
-              aria-label="Open menu"
-            >
+                      <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => sidebar.setOpenMobile(true)}
+            className="lg:hidden h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                      transition-all duration-200 ease-in-out transform active:scale-95 touch-target-comfortable"
+            aria-label="Open navigation menu"
+          >
               <Menu className="h-5 w-5" />
             </Button>
           )}
@@ -95,8 +95,8 @@ export default function MainNav() {
             variant="ghost"
             size="icon"
             className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                      transition-all duration-200 ease-in-out"
-            aria-label="Search"
+                      transition-all duration-200 ease-in-out touch-target-comfortable"
+            aria-label="Search stories and content"
           >
             <Search className="h-5 w-5" />
           </Button>
@@ -110,8 +110,8 @@ export default function MainNav() {
               variant="ghost"
               size="icon"
               className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                        transition-all duration-200 ease-in-out"
-              aria-label="Notifications"
+                        transition-all duration-200 ease-in-out touch-target-comfortable"
+              aria-label="View notifications and updates"
             >
               <Bell className="h-5 w-5" />
             </Button>
@@ -122,8 +122,8 @@ export default function MainNav() {
             variant="ghost"
             size="icon"
             className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                      transition-all duration-200 ease-in-out"
-            aria-label="Account"
+                      transition-all duration-200 ease-in-out touch-target-comfortable"
+            aria-label={user ? `Account menu for ${user.username || user.email}` : "Sign in to your account"}
           >
             {user ? (
               <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-primary-foreground text-xs font-medium">

@@ -3,6 +3,8 @@ import { Route, Switch, useLocation } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 // Import our new GlobalLoadingProvider component that handles loading state
 import { GlobalLoadingProvider, useLoading } from './components/GlobalLoadingProvider';
+import PageTransitionLoader from './components/PageTransitionLoader';
+import { usePageTransition } from './hooks/use-page-transition';
 import { queryClient } from './lib/queryClient';
 import { Toaster } from './components/ui/toaster';
 import { Sonner } from './components/ui/sonner';
@@ -373,8 +375,8 @@ const AppContent = () => {
 // Main App component
 function App() {
   // Setup performance monitoring
-
   const [location] = useLocation();
+  const { isLoading: isPageTransitioning } = usePageTransition();
   
   // Set up global error handlers
   useEffect(() => {
@@ -450,6 +452,9 @@ function App() {
                             )}
                             {/* Conditionally show FeedbackButton */}
                             <ConditionalFeedbackButton />
+                            
+                            {/* Page transition loader */}
+                            <PageTransitionLoader isVisible={isPageTransitioning} />
                             
                             {/* Toast notifications */}
                             <Toaster />

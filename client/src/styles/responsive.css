@@ -285,6 +285,20 @@
   min-width: var(--touch-target-large);
 }
 
+/* Ensure all interactive elements meet minimum touch target size */
+button, 
+a, 
+[role="button"], 
+[role="link"], 
+input[type="checkbox"], 
+input[type="radio"],
+.clickable {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  /* Add comfortable padding for better accessibility */
+  padding: max(8px, calc((var(--touch-target-min) - 1em) / 2));
+}
+
 /* Safe area insets for notched devices */
 .safe-area-top { padding-top: env(safe-area-inset-top); }
 .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }

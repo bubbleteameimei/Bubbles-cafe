@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { PasswordStrength } from "@/components/ui/password-strength";
 import { 
   Eye, 
   EyeOff, 
@@ -37,44 +38,13 @@ export default function AuthPage() {
   const { registerMutation } = useAuth();
   const { toast } = useToast();
   
-  // Password validation states
-  const [passwordStrength, setPasswordStrength] = useState(0);
+  // Simplified password validation states
+  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'fair' | 'good' | 'strong'>('weak');
   const [passwordsMatch, setPasswordsMatch] = useState<boolean | null>(null);
-  const [validations, setValidations] = useState({
-    hasMinLength: false,
-    hasUpperCase: false,
-    hasLowerCase: false,
-    hasNumber: false,
-    hasSpecial: false
-  });
+  const [showPasswordValidation, setShowPasswordValidation] = useState(false);
   
   useEffect(() => {
-    if (password) {
-      const newValidations = {
-        hasMinLength: password.length >= 6,
-        hasUpperCase: /[A-Z]/.test(password),
-        hasLowerCase: /[a-z]/.test(password),
-        hasNumber: /[0-9]/.test(password),
-        hasSpecial: /[^A-Za-z0-9]/.test(password)
-      };
-      
-      setValidations(newValidations);
-      const strength = Object.values(newValidations).filter(Boolean).length;
-      setPasswordStrength(strength);
-    } else {
-      setValidations({
-        hasMinLength: false,
-        hasUpperCase: false,
-        hasLowerCase: false,
-        hasNumber: false,
-        hasSpecial: false
-      });
-      setPasswordStrength(0);
-    }
-  }, [password]);
-  
-  useEffect(() => {
-    if (confirmPassword) {
+    if (confirmPassword && password) {
       setPasswordsMatch(password === confirmPassword);
     } else {
       setPasswordsMatch(null);
@@ -125,7 +95,7 @@ export default function AuthPage() {
           throw new Error("Passwords do not match");
         }
         
-        if (passwordStrength < 3) {
+        if (passwordStrength === 'weak') {
           throw new Error("Please choose a stronger password");
         }
         
@@ -211,18 +181,8 @@ export default function AuthPage() {
     }
   };
 
-  const getPasswordStrengthColor = () => {
-    if (passwordStrength <= 1) return "bg-red-500";
-    if (passwordStrength <= 2) return "bg-yellow-500";
-    if (passwordStrength <= 3) return "bg-blue-500";
-    return "bg-green-500";
-  };
-
-  const getPasswordStrengthLabel = () => {
-    if (passwordStrength <= 1) return "Weak";
-    if (passwordStrength <= 2) return "Fair";
-    if (passwordStrength <= 3) return "Good";
-    return "Strong";
+  const handlePasswordStrengthChange = (strength: 'weak' | 'fair' | 'good' | 'strong') => {
+    setPasswordStrength(strength);
   };
 
   return (
@@ -363,55 +323,12 @@ export default function AuthPage() {
                   </button>
                 </div>
 
-                {/* Password Strength Indicator for Sign Up */}
+                {/* Simplified Password Strength Indicator for Sign Up */}
                 {!isSignIn && password && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-600 dark:text-gray-400">
-                        Password strength: <span className="font-medium">{getPasswordStrengthLabel()}</span>
-                      </span>
-                    </div>
-                    <div className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-300 ${getPasswordStrengthColor()}`}
-                        style={{ width: `${(passwordStrength / 5) * 100}%` }}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex items-center">
-                        {validations.hasMinLength ? (
-                          <CheckCircle2 className="h-3 w-3 text-green-500 mr-1" />
-                        ) : (
-                          <XCircle className="h-3 w-3 text-red-500 mr-1" />
-                        )}
-                        <span>6+ characters</span>
-                      </div>
-                      <div className="flex items-center">
-                        {validations.hasUpperCase ? (
-                          <CheckCircle2 className="h-3 w-3 text-green-500 mr-1" />
-                        ) : (
-                          <XCircle className="h-3 w-3 text-red-500 mr-1" />
-                        )}
-                        <span>Uppercase</span>
-                      </div>
-                      <div className="flex items-center">
-                        {validations.hasNumber ? (
-                          <CheckCircle2 className="h-3 w-3 text-green-500 mr-1" />
-                        ) : (
-                          <XCircle className="h-3 w-3 text-red-500 mr-1" />
-                        )}
-                        <span>Number</span>
-                      </div>
-                      <div className="flex items-center">
-                        {validations.hasSpecial ? (
-                          <CheckCircle2 className="h-3 w-3 text-green-500 mr-1" />
-                        ) : (
-                          <XCircle className="h-3 w-3 text-red-500 mr-1" />
-                        )}
-                        <span>Special char</span>
-                      </div>
-                    </div>
-                  </div>
+                  <PasswordStrength 
+                    password={password} 
+                    onStrengthChange={handlePasswordStrengthChange}
+                  />
                 )}
               </div>
 
