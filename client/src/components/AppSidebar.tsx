@@ -1,5 +1,5 @@
 import { useSidebar } from "./ui/sidebar";
-import { SimplifiedSidebarNavigation } from "./ui/simplified-sidebar-menu";
+import { SidebarNavigation } from "./ui/sidebar-menu";
 import { Sidebar, SidebarContent } from "./ui/sidebar";
 import { X, Menu } from "lucide-react";
 import { Button } from "./ui/button";
@@ -116,7 +116,7 @@ export function AppSidebar() {
         {/* Scrollable content area with improved padding for different device sizes */}
         <div className="flex-1 overflow-y-auto scrollbar-hide">
           <div className="p-2 sm:p-3 md:p-4 lg:p-5 xl:p-6">
-            <SimplifiedSidebarNavigation onNavigate={handleToggle} />
+            <SidebarNavigation onNavigate={handleToggle} />
           </div>
         </div>
         
