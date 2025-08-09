@@ -37,11 +37,11 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
   objectFit = 'cover',
   aspectRatio,
   ...props
-}, _ref) => {
+}, ref) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isInView, setIsInView] = useState(priority);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null) as React.MutableRefObject<HTMLImageElement | null>;
   const placeholderRef = useRef<HTMLDivElement>(null);
 
   // Intersection Observer for lazy loading
@@ -203,7 +203,15 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
         
         {/* Fallback for browsers that don't support WebP */}
         <img
-          ref={(node) => { (imgRef as React.MutableRefObject<HTMLImageElement | null>).current = node; }}
+          ref={(node) => {
+            if (typeof ref === 'function') {
+              ref(node);
+            } else if (ref && 'current' in ref) {
+              // Type narrow: safely cast to mutable ref before assignment
+              (ref as React.MutableRefObject<HTMLImageElement | null>).current = node;
+            }
+            imgRef.current = node;
+          }}
           src={getOptimizedSrc(src, 'jpg')}
           srcSet={generateSrcSet(src).replace(/f=webp/g, 'f=jpg')}
           alt={alt}

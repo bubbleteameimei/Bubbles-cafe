@@ -7,18 +7,23 @@ import {
 } from "lucide-react";
 
 interface PaginationProps {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
+  currentPage?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
   maxButtons?: number;
 }
 
-export function Pagination({ 
-  currentPage, 
-  totalPages, 
-  onPageChange, 
-  maxButtons = 5 
+export function Pagination({
+  currentPage: currentPageProp,
+  totalPages: totalPagesProp,
+  onPageChange: onPageChangeProp,
+  maxButtons = 5,
 }: PaginationProps) {
+  // Provide safe defaults if props omitted (demo components)
+  const currentPage = currentPageProp ?? 1;
+  const totalPages = totalPagesProp ?? 1;
+  const onPageChange = onPageChangeProp ?? (() => {});
+  
   // If there's only one page, don't show pagination
   if (totalPages <= 1) return null;
   
@@ -134,3 +139,42 @@ export function Pagination({
     </div>
   );
 }
+
+// --- Additional sub-components for compatibility with existing imports ---
+// These are lightweight wrappers so demo files compile until a full design system rewrite.
+import React from "react";
+
+interface PaginationContentProps {
+  children: React.ReactNode;
+}
+
+export const PaginationContent: React.FC<PaginationContentProps> = ({ children }) => (
+  <div className="flex items-center space-x-1">{children}</div>
+);
+
+// Re-use the same wrapper for items to keep markup simple.
+export const PaginationItem = PaginationContent;
+
+export const PaginationEllipsis: React.FC = () => <span className="px-2">…</span>;
+
+interface PaginationLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+  isActive?: boolean;
+}
+
+export const PaginationLink: React.FC<PaginationLinkProps> = ({ isActive, children, className = '', ...props }) => (
+  <a
+    {...props}
+    aria-current={isActive ? 'page' : undefined}
+    className={`px-3 py-1 rounded-md ${isActive ? 'font-bold bg-muted' : ''} ${className}`.trim()}
+  >
+    {children}
+  </a>
+);
+
+export const PaginationPrevious: React.FC<React.AnchorHTMLAttributes<HTMLAnchorElement>> = ({ children = 'Previous', ...props }) => (
+  <a {...props}>{children}</a>
+);
+
+export const PaginationNext: React.FC<React.AnchorHTMLAttributes<HTMLAnchorElement>> = ({ children = 'Next', ...props }) => (
+  <a {...props}>{children}</a>
+);

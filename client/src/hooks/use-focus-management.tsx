@@ -198,7 +198,7 @@ export function useFocusManagement(options: UseFocusManagementOptions = {}) {
 
 // Hook for managing announcements to screen readers
 export function useScreenReaderAnnouncement() {
-  const announcementRef = useRef<HTMLDivElement>(null);
+  const announcementRef = useRef<HTMLDivElement | null>(null) as React.MutableRefObject<HTMLDivElement | null>;
 
   const announce = useCallback((message: string, priority: 'polite' | 'assertive' = 'polite') => {
     if (!announcementRef.current) {

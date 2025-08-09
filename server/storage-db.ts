@@ -3,13 +3,14 @@ import { eq, desc, and, or, sql, like } from "drizzle-orm";
 import {
   users, posts, comments, bookmarks, sessions, contactMessages, userFeedback,
   newsletterSubscriptions, readingProgress, resetTokens, secretProgress, authorStats, analytics, userPrivacySettings, siteSettings,
+  performanceMetrics,
   type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment,
   type Bookmark, type InsertBookmark, type Session, type InsertSession,
   type ContactMessage, type InsertContactMessage, type UserFeedback, type InsertUserFeedback,
   type NewsletterSubscription, type InsertNewsletterSubscription,
   type ReadingProgress, type InsertProgress,
   type ResetToken, type InsertResetToken, type SecretProgress, type InsertSecretProgress,
-  type AuthorStats, type Analytics, type PerformanceMetric, type InsertPerformanceMetric
+  type AuthorStats, type Analytics, type InsertPerformanceMetric, type PerformanceMetric
 } from "../shared/schema";
 
 import * as bcrypt from 'bcryptjs';
@@ -608,41 +609,21 @@ export class DatabaseStorage implements IStorage {
     return recommendations;
   }
 
-  async storePerformanceMetric(metric: InsertPerformanceMetric): Promise<void> {
+  async storePerformanceMetric(metric: any): Promise<void> {
+    // Persist performance metric into performance_metrics table
     try {
-      await db.insert(performanceMetrics).values(metric).onConflictDoNothing();
-    } catch (error) {
-      console.error('Error storing performance metric:', error);
-    }
-  }
+      const insertData = {
+        metricName: metric.metricName ?? metric.name ?? 'unknown',
+        value: metric.value ?? 0,
+        identifier: metric.identifier ?? metric.id ?? 'unknown',
+        navigationType: metric.navigationType ?? metric.navigation_type ?? null,
+        url: metric.url ?? metric.page ?? '',
+        userAgent: metric.userAgent ?? metric.ua ?? null,
+      } as InsertPerformanceMetric;
 
-  async getUsersCount(): Promise<number> {
-    try {
-      const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(users);
-      return countRow.count || 0;
+      await db.insert(performanceMetrics).values(insertData);
     } catch (error) {
-      console.error('Error getting users count:', error);
-      return 0;
-    }
-  }
-
-  async getCommentsCount(): Promise<number> {
-    try {
-      const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(comments);
-      return countRow.count || 0;
-    } catch (error) {
-      console.error('Error getting comments count:', error);
-      return 0;
-    }
-  }
-
-  async getBookmarkCount(): Promise<number> {
-    try {
-      const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(bookmarks);
-      return countRow.count || 0;
-    } catch (error) {
-      console.error('Error getting bookmark count:', error);
-      return 0;
+      console.error('[storage] Failed to store performance metric', error);
     }
   }
 
