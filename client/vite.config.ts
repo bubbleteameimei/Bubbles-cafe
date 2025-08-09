@@ -190,12 +190,11 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000
   },
   server: {
-    port: 3000,
+    port: 5173,
     host: '0.0.0.0',
-    strictPort: true,
+    strictPort: false,
     hmr: {
-      clientPort: 443,
-      port: 3000,
+      port: 5173,
       host: '0.0.0.0',
     },
     watch: {

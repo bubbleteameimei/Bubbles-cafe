@@ -12,12 +12,20 @@ export function usePageTransition() {
       setIsLoading(true);
       setPreviousLocation(location);
       
-      // Show loading for minimum 300ms to ensure users see it
+      // Show loading for minimum 200ms but maximum 800ms to prevent hanging
       const minLoadingTime = setTimeout(() => {
         setIsLoading(false);
-      }, 300);
+      }, 200);
+      
+      // Force hide after maximum time to prevent hanging
+      const maxLoadingTime = setTimeout(() => {
+        setIsLoading(false);
+      }, 800);
 
-      return () => clearTimeout(minLoadingTime);
+      return () => {
+        clearTimeout(minLoadingTime);
+        clearTimeout(maxLoadingTime);
+      };
     }
   }, [location, previousLocation]);
 

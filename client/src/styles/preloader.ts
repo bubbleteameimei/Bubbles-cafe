@@ -76,13 +76,13 @@ export function setupStylePreloader() {
   // Check stylesheet loading status
   checkStylesheetsLoaded();
   
-  // Set a timeout to ensure loading screen doesn't hang indefinitely
+  // Set a shorter timeout to prevent hanging during page transitions
   setTimeout(() => {
     if (!stylesLoaded) {
       console.warn('[Preloader] Timeout: forcing styles as loaded');
       markStylesLoaded();
     }
-  }, 3000);
+  }, 1500); // Reduced from 3000ms to 1500ms
   
   // Add load event listeners to stylesheets
   const stylesheets = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
@@ -131,12 +131,36 @@ export function addInitialLoadingIndicator() {
   initialLoadingOverlay = document.createElement('div');
   initialLoadingOverlay.className = 'initial-loading-overlay';
   
-  // Create spinner
+  // Create your beautiful LOADING animation
+  const loadingText = document.createElement('div');
+  loadingText.className = 'loading-text';
+  loadingText.innerHTML = `
+    <span>L</span>
+    <span>O</span>
+    <span>A</span>
+    <span>D</span>
+    <span>I</span>
+    <span>N</span>
+    <span>G</span>
+  `;
+  
+  // Create fallback spinner (shows until Megrim font loads)
   const spinner = document.createElement('div');
   spinner.className = 'loading-spinner';
   
-  // Add spinner to overlay (removed loading text to prevent overlapping)
+  // Add both to overlay
   initialLoadingOverlay.appendChild(spinner);
+  initialLoadingOverlay.appendChild(loadingText);
+  
+  // Hide spinner once font loads
+  document.fonts.ready.then(() => {
+    spinner.style.display = 'none';
+  }).catch(() => {
+    // If font loading fails, still hide spinner after delay
+    setTimeout(() => {
+      spinner.style.display = 'none';
+    }, 1000);
+  });
   
   // Add overlay to body
   document.body.appendChild(initialLoadingOverlay);
