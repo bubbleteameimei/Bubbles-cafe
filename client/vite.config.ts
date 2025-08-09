@@ -190,15 +190,24 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000
   },
   server: {
-    port: 5173,
+    port: parseInt(process.env.CLIENT_PORT || "5173"),
     host: '0.0.0.0',
     strictPort: false,
     hmr: {
-      port: 5173,
+      port: parseInt(process.env.CLIENT_PORT || "5173"),
       host: '0.0.0.0',
     },
     watch: {
       usePolling: true,
+    },
+    // Replit-specific optimizations
+    cors: true,
+    proxy: {
+      '/api': {
+        target: `http://localhost:${process.env.PORT || "3002"}`,
+        changeOrigin: true,
+        secure: false,
+      }
     }
   },
   resolve: {

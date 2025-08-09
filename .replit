@@ -1,26 +1,44 @@
 modules = ["nodejs-20", "web", "postgresql-16", "python-3.11"]
-run = "bash -c 'npm install && npm run dev'"
+run = "npm run replit:simple"
+entrypoint = "package.json"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
-channel = "stable-24_05"
+channel = "stable-24.05"
+
+[env]
+PORT = "3002"
+CLIENT_PORT = "5173"
+
+[packager]
+language = "nodejs"
+
+[packager.features]
+packageSearch = true
+guessImports = true
+
+[languages.javascript]
+pattern = "**/*.{js,jsx,ts,tsx}"
+syntax = "javascript"
+
+[languages.javascript.languageServer]
+start = [ "typescript-language-server", "--stdio" ]
 
 [deployment]
+run = ["sh", "-c", "npm run build && npm run -w server start"]
 deploymentTarget = "cloudrun"
-build = ["sh", "-c", "npm install && npm run build"]
-run = ["sh", "-c", "npm start"]
-
-[[ports]]
-localPort = 3000
-externalPort = 80
-
-[[ports]]
-localPort = 3001
-externalPort = 3001
 
 [[ports]]
 localPort = 3002
 externalPort = 3002
+
+[[ports]]
+localPort = 5173
+externalPort = 5173
+
+[[ports]]
+localPort = 3001
+externalPort = 3001
 
 [[ports]]
 localPort = 3003

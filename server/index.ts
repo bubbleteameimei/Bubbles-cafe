@@ -59,17 +59,30 @@ import sessionSyncRouter from "./routes/session-sync"; // Import session sync ro
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
-// Use port 3002 to match Replit workflow configuration
-const PORT = parseInt(process.env.PORT || "3002", 10);
+// Use Replit's port system - fallback to 3002 for local development
+const PORT = parseInt(process.env.PORT || process.env.REPLIT_PORT || "3002", 10);
 const HOST = '0.0.0.0';
 
 // Create server instance outside startServer for proper cleanup
 let server: ReturnType<typeof createServer>;
 
+// Add keep-alive mechanism for Replit
+let keepAliveInterval: NodeJS.Timeout;
+
 // Configure basic middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(compression());
+
+// Health check endpoint for Replit
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    port: PORT
+  });
+});
 
 // Configure CORS for cross-domain requests when deployed on Vercel/Render
 setupCors(app);
@@ -388,6 +401,16 @@ async function startServer() {
         // Wait for a moment to ensure the server is fully ready
         setTimeout(() => {
           serverLogger.info('Server is fully ready and listening');
+          
+          // Start keep-alive mechanism for Replit
+          keepAliveInterval = setInterval(() => {
+            serverLogger.debug('Keep-alive ping');
+            // Send a heartbeat to keep the process alive
+            if (process.send) {
+              process.send({ type: 'heartbeat', timestamp: Date.now() });
+            }
+          }, 30000); // Send heartbeat every 30 seconds
+          
         }, 1000);
 
         resolve();
@@ -430,6 +453,9 @@ startServer().then(() => {
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
   serverLogger.info('SIGTERM received, initiating graceful shutdown');
+  if (keepAliveInterval) {
+    clearInterval(keepAliveInterval);
+  }
   server?.close(() => {
     serverLogger.info('Server closed successfully');
     process.exit(0);
