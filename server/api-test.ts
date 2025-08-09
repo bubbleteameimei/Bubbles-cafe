@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { users } from '@shared/schema';
+import { users } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { validateCsrfToken } from './middleware/csrf-protection';

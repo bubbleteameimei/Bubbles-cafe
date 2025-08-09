@@ -10,7 +10,7 @@ import {
   type ReadingProgress, type InsertProgress,
   type ResetToken, type InsertResetToken, type SecretProgress, type InsertSecretProgress,
   type AuthorStats, type Analytics
-} from "@shared/schema";
+} from "../shared/schema";
 
 import * as bcrypt from 'bcryptjs';
 

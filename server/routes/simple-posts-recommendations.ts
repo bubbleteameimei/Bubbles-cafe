@@ -1,4 +1,4 @@
-import { posts } from "@shared/schema";
+import { posts } from "../../shared/schema";
 import { db } from "../db";
 import { desc, ne } from "drizzle-orm";
 

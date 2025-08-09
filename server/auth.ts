@@ -4,7 +4,7 @@ import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import * as crypto from 'crypto';
 // import { db } from './db'; // Unused import
-import { InsertResetToken } from "@shared/schema";
+import { InsertResetToken } from "../shared/schema";
 
 import { emailService } from "./utils/email-service";
 import { authRateLimiter, sensitiveOperationsRateLimiter } from "./middlewares/rate-limiter";

@@ -1,4 +1,4 @@
-import { User } from '@shared/schema';
+import { User } from '../../shared/schema';
 
 // Session type declarations for express-session
 declare module 'express-session' {

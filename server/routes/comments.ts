@@ -6,7 +6,7 @@ import { createError, asyncHandler } from "../utils/error-handler";
 import { validateBody, validateParams } from "../middleware/input-validation";
 import { apiRateLimiter } from "../middlewares/rate-limiter";
 import { createLogger } from "../utils/debug-logger";
-import { insertCommentSchema, insertCommentReplySchema } from "@shared/schema";
+import { insertCommentSchema, insertCommentReplySchema } from "../../shared/schema";
 
 const router = express.Router();
 const commentsLogger = createLogger("comments");

@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { posts, users } from "@shared/schema";
+import { posts, users } from "../../shared/schema";
 import { eq, sql, desc, like } from "drizzle-orm";
 
 import { postLogger } from '../utils/debug-logger';

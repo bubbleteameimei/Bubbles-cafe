@@ -9,7 +9,7 @@ import { setNeonAsDefault } from "./neon-config"; // Set Neon as default databas
 import { setGmailCredentials } from "./config/gmail-config"; // Set Gmail credentials
 import { db } from "./db"; // Using the direct Neon database connection
 import { waitForPoolInitialization } from "./db-connect"; // Import wait function
-import { posts } from "@shared/schema";
+import { posts } from "../shared/schema";
 import { count } from "drizzle-orm";
 
 

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import type { Application } from 'express';
-import { posts, readingProgress, postLikes, bookmarks } from "@shared/schema";
+import { posts, readingProgress, postLikes, bookmarks } from "../../shared/schema";
 import { and, eq, or, like, desc, sql, not } from "drizzle-orm";
 import { db } from '../db';
 

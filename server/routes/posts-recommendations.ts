@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import type { Application } from 'express';
 import { db } from '../db';
-import { posts } from "@shared/schema";
+import { posts } from "../../shared/schema";
 import { and, eq, ne, or, desc, sql } from "drizzle-orm";
 
 /**

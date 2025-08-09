@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from './db-connect';
-import { posts } from '@shared/schema';
+import { posts } from '../shared/schema';
 import { desc, sql } from 'drizzle-orm';
 
 /**

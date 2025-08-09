@@ -3,7 +3,7 @@ import { createSecureLogger } from '../utils/secure-logger';
 import { validateBody, commonSchemas } from '../middleware/input-validation';
 import { asyncHandler, createError } from '../utils/error-handler';
 import { z } from "zod";
-import { userRegistrationSchema, userLoginSchema } from "@shared/schema";
+import { userRegistrationSchema, userLoginSchema } from "../../shared/schema";
 import { authRateLimiter, sensitiveOperationsRateLimiter } from '../middlewares/rate-limiter';
 import passport from "passport";
 import * as bcrypt from 'bcryptjs';
