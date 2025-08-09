@@ -76,7 +76,8 @@ export default function ConnectedAccountsPage() {
             </div>
             <Button
               variant={connections.twitter ? "destructive" : "default"}
-              onClick={() => handleConnect('twitter')}
+              disabled
+              onClick={() => {}}
             >
               {connections.twitter ? 'Disconnect' : 'Connect'}
             </Button>
@@ -96,7 +97,8 @@ export default function ConnectedAccountsPage() {
             </div>
             <Button
               variant={connections.github ? "destructive" : "default"}
-              onClick={() => handleConnect('github')}
+              disabled
+              onClick={() => {}}
             >
               {connections.github ? 'Disconnect' : 'Connect'}
             </Button>
@@ -116,7 +118,8 @@ export default function ConnectedAccountsPage() {
             </div>
             <Button
               variant={connections.discord ? "destructive" : "default"}
-              onClick={() => handleConnect('discord')}
+              disabled
+              onClick={() => {}}
             >
               {connections.discord ? 'Disconnect' : 'Connect'}
             </Button>
@@ -136,7 +139,8 @@ export default function ConnectedAccountsPage() {
             </div>
             <Button
               variant={connections.ghost ? "destructive" : "default"}
-              onClick={() => handleConnect('ghost')}
+              disabled
+              onClick={() => {}}
             >
               {connections.ghost ? 'Disconnect' : 'Connect'}
             </Button>

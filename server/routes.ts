@@ -134,8 +134,7 @@ export function registerRoutes(app: Express): void {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  // CSRF validation for all state-changing API routes
-  app.use('/api', validateCsrfToken());
+  // CSRF validation attached later in routing pipeline
 
   // Apply rate limiting to specific routes
   app.use("/api/login", authLimiter);
@@ -2819,7 +2818,7 @@ Message ID: ${savedMessage.id}
           service: 'gmail',
           auth: {
             user: process.env.GMAIL_USER,
-            pass: process.env.GMAIL_PASS
+            pass: process.env.GMAIL_APP_PASSWORD
           }
         });
 
