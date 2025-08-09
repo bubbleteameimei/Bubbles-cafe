@@ -14,6 +14,7 @@ import * as session from 'express-session';
 import { sanitizeHtml, stripHtml } from './utils/sanitizer';
 import { z } from "zod";
 import { insertPostSchema, posts, type InsertUserFeedback, type PostMetadata, insertCommentReplySchema } from "../shared/schema";
+import { analytics, comments } from "../shared/schema";
 
 // Add missing imports for AI feedback functions
 import { generateResponseSuggestion, getResponseHints } from './utils/feedback-ai';
@@ -1596,6 +1597,20 @@ export function registerRoutes(app: Express): void {
         const commentsCount = await storage.getCommentsCount();
         const bookmarkCount = await storage.getBookmarkCount();
         
+        // Aggregate analytics metrics
+        const [analyticsAgg] = await db
+          .select({
+            avgBounceRate: sql<number>`avg(${analytics.bounceRate})`,
+            avgReadTime: sql<number>`avg(${analytics.averageReadTime})`
+          })
+          .from(analytics);
+
+        // Pending comments (not approved yet)
+        const [pendingAgg] = await db
+          .select({ pending: sql<number>`count(*)` })
+          .from(comments)
+          .where(eq(comments.is_approved, false));
+
         return res.json({
           posts: {
             total: postsCount || 0
@@ -1604,13 +1619,13 @@ export function registerRoutes(app: Express): void {
             total: usersCount || 0
           },
           analytics: {
-            bounceRate: 0, // TODO: Implement bounce rate calculation
-            avgSessionDuration: 0 // TODO: Implement session duration calculation
+            bounceRate: Number(analyticsAgg?.avgBounceRate ?? 0),
+            avgSessionDuration: Number(analyticsAgg?.avgReadTime ?? 0)
           },
           comments: {
             total: commentsCount || 0,
-            pending: 0, // TODO: Implement pending comments count
-            flagged: 0   // TODO: Implement flagged comments count
+            pending: Number(pendingAgg?.pending ?? 0),
+            flagged: 0
           },
           bookmarks: {
             total: bookmarkCount || 0

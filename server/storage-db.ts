@@ -9,7 +9,7 @@ import {
   type NewsletterSubscription, type InsertNewsletterSubscription,
   type ReadingProgress, type InsertProgress,
   type ResetToken, type InsertResetToken, type SecretProgress, type InsertSecretProgress,
-  type AuthorStats, type Analytics
+  type AuthorStats, type Analytics, type PerformanceMetric, type InsertPerformanceMetric
 } from "../shared/schema";
 
 import * as bcrypt from 'bcryptjs';
@@ -59,7 +59,7 @@ export interface IStorage {
   getPostAnalytics(postId: number): Promise<Analytics | undefined>;
   
   // Performance metrics
-  storePerformanceMetric(metric: any): Promise<void>;
+  storePerformanceMetric(metric: InsertPerformanceMetric): Promise<void>;
   getAnalyticsSummary(): Promise<any>;
   
   // Admin methods
@@ -608,10 +608,12 @@ export class DatabaseStorage implements IStorage {
     return recommendations;
   }
 
-  async storePerformanceMetric(metric: any): Promise<void> {
-    // Simple implementation - just log the metric for now
-    console.log('Performance metric:', metric);
-    // TODO: Implement actual storage in performance_metrics table
+  async storePerformanceMetric(metric: InsertPerformanceMetric): Promise<void> {
+    try {
+      await db.insert(performanceMetrics).values(metric).onConflictDoNothing();
+    } catch (error) {
+      console.error('Error storing performance metric:', error);
+    }
   }
 
   async getAnalyticsSummary(): Promise<any> {
