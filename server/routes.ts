@@ -33,6 +33,7 @@ import { requestLogger, errorLoggerMiddleware } from './utils/debug-logger';
 import { db } from "./db";
 import { eq, sql, desc } from "drizzle-orm";
 import * as crypto from 'crypto';
+import { validateCsrfToken } from './middleware/csrf-protection';
 
 const routesLogger = createSecureLogger('Routes');
 
@@ -132,6 +133,9 @@ export function registerRoutes(app: Express): void {
   // Body parsing middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // CSRF validation for all state-changing API routes
+  app.use('/api', validateCsrfToken());
 
   // Apply rate limiting to specific routes
   app.use("/api/login", authLimiter);
@@ -2898,4 +2902,14 @@ Message ID: ${savedMessage.id}
       error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   });
+
+  // Attach CSRF validation to all API routes except safe methods
+  app.use('/api', validateCsrfToken());
+
+  if (process.env.NODE_ENV !== 'production') {
+    // Register API test routes (dev only)
+    app.use('/api/test', apiTestRoutes);
+    // Register test delete routes (dev only)
+    app.use('/api/test-delete', testDeleteRoutes);
+  }
 }  

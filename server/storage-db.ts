@@ -616,6 +616,36 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getUsersCount(): Promise<number> {
+    try {
+      const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(users);
+      return countRow.count || 0;
+    } catch (error) {
+      console.error('Error getting users count:', error);
+      return 0;
+    }
+  }
+
+  async getCommentsCount(): Promise<number> {
+    try {
+      const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(comments);
+      return countRow.count || 0;
+    } catch (error) {
+      console.error('Error getting comments count:', error);
+      return 0;
+    }
+  }
+
+  async getBookmarkCount(): Promise<number> {
+    try {
+      const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(bookmarks);
+      return countRow.count || 0;
+    } catch (error) {
+      console.error('Error getting bookmark count:', error);
+      return 0;
+    }
+  }
+
   async getAnalyticsSummary(): Promise<any> {
     return new Promise((resolve) => {
       db.select({ count: sql<number>`count(*)` }).from(users)
