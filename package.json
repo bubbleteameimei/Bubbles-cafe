@@ -4,7 +4,8 @@
   "type": "module",
   "workspaces": [
     "client",
-    "server"
+    "server",
+    "shared"
   ],
   "scripts": {
     "build": "npm run -w client build && npm run -w server build",

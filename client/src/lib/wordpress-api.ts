@@ -48,7 +48,7 @@ export const wordpressPostSchema = z.object({
   featured_media: z.number().optional(),
   categories: z.array(z.number()).optional(),
   tags: z.array(z.number()).optional(),
-  meta: z.record(z.any()).optional()
+  meta: z.record(z.unknown()).optional()
 }).passthrough(); // Allow additional properties
 
 // WordPress post type

@@ -35,7 +35,11 @@ export interface ExtendedUser {
 export interface FeedbackMetadata {
   [key: string]: unknown;
   page?: string;
-  browser?: string;
+  browser?: {
+    name?: string;
+    version?: string;
+    userAgent?: string;
+  };
   operatingSystem?: string;
   screenResolution?: string;
   userAgent?: string;

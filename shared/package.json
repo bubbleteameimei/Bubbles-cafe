@@ -1,0 +1,16 @@
+{
+  "name": "bubbles-cafe-shared",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./types/*": "./types/*",
+    "./schema": "./schema.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.44.4",
+    "drizzle-zod": "0.8.3",
+    "zod": "4.0.15"
+  }
+}

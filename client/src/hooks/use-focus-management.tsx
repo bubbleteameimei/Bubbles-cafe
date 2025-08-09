@@ -213,7 +213,9 @@ export function useScreenReaderAnnouncement() {
     }
 
     // Update aria-live attribute if priority changed
-    announcementRef.current.setAttribute('aria-live', priority);
+    if (announcementRef.current) {
+      announcementRef.current.setAttribute('aria-live', priority);
+    }
     
     // Clear previous message
     if (announcementRef.current) {
