@@ -49,10 +49,10 @@ const SUBJECT_OPTIONS = [
 const contactFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
-  subject: z.preprocess((val) => val === undefined ? "General Inquiry" : val, z.string().min(3, "Subject must be at least 3 characters")),
+  subject: z.string().min(3, "Subject must be at least 3 characters"),
   customSubject: z.string().optional(),
   message: z.string().min(10, "Message must be at least 10 characters"),
-  showEmail: z.preprocess((val) => val === undefined ? false : val, z.boolean()),
+  showEmail: z.boolean(),
 });
 
 type ContactFormValues = z.infer<typeof contactFormSchema>;
