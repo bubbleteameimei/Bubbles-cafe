@@ -10,11 +10,12 @@ import { z } from 'zod';
 
 // Load environment variables from .env file
 function loadEnvFile() {
-  // Check for environment-specific files first
+  // Check for environment-specific files first, starting from workspace root
   const envFiles = ['.env.local', '.env.development', '.env'];
   
   for (const envFile of envFiles) {
-    const envPath = path.resolve(process.cwd(), envFile);
+    // Look in the parent directory (workspace root) where .env files are located
+    const envPath = path.resolve(process.cwd(), '..', envFile);
     
     try {
       if (fs.existsSync(envPath)) {
@@ -44,6 +45,7 @@ function loadEnvFile() {
           }
         }
         
+        console.log(`[Config] Loaded environment from ${envFile}`);
         return true;
       }
     } catch (error) {

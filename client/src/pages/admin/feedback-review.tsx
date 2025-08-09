@@ -147,14 +147,16 @@ export default function FeedbackReviewPage() {
   const sampleFeedbackData: FeedbackWithMetadata[] = [
     {
       id: 1,
+      userId: 1,
+      email: "john.doe@example.com",
+      subject: "Comment editing bug",
       content: "I found a bug in the comments section. When I try to edit my comment, it doesn't save properly.",
       type: "bug",
-      rating: 2,
-      page: "/stories/the-haunting",
-      category: "User Interface",
       status: "pending",
-      createdAt: new Date("2025-03-14T10:30:00Z"),
+      createdAt: "2025-03-14T10:30:00Z",
       metadata: {
+        page: "/stories/the-haunting",
+        category: "User Interface",
         browser: {
           name: "Chrome",
           version: "121.0.6167.85",
@@ -163,20 +165,21 @@ export default function FeedbackReviewPage() {
         operatingSystem: "Windows 11",
         screenResolution: "1920x1080",
         userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-        name: "John Doe",
-        email: "john.doe@example.com"
+        name: "John Doe"
       }
     },
     {
       id: 2,
+      userId: 2,
+      email: "jane.smith@example.com",
+      subject: "Dark mode praise",
       content: "I absolutely love the new dark mode feature! It makes reading horror stories at night so much more immersive.",
       type: "praise",
-      rating: 5,
-      page: "/settings/display",
-      category: "User Experience",
       status: "reviewed",
-      createdAt: new Date("2025-03-13T15:45:00Z"),
+      createdAt: "2025-03-13T15:45:00Z",
       metadata: {
+        page: "/settings/display",
+        category: "User Experience",
         browser: {
           name: "Firefox",
           version: "123.0",
@@ -185,20 +188,21 @@ export default function FeedbackReviewPage() {
         operatingSystem: "macOS 13.4",
         screenResolution: "2560x1600",
         userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
-        name: "Jane Smith",
-        email: "jane.smith@example.com"
+        name: "Jane Smith"
       }
     },
     {
       id: 3,
+      userId: null,
+      email: "anonymous@example.com",
+      subject: "Bookmark feature request",
       content: "It would be great if you could add a feature to bookmark specific paragraphs in stories for later reference.",
       type: "suggestion",
-      rating: 4,
-      page: "/reader/the-shadow-in-the-corner",
-      category: "Feature Request",
       status: "resolved",
-      createdAt: new Date("2025-03-12T09:15:00Z"),
+      createdAt: "2025-03-12T09:15:00Z",
       metadata: {
+        page: "/reader/the-shadow-in-the-corner",
+        category: "Feature Request",
         browser: {
           name: "Safari",
           version: "17.2",
@@ -207,21 +211,21 @@ export default function FeedbackReviewPage() {
         operatingSystem: "iOS 17.3",
         screenResolution: "1170x2532",
         userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1",
-        name: "",
-        email: "anonymous@example.com"
-      },
-      internalNotes: "This is already planned for the next release. Marking as resolved."
+        name: ""
+      }
     },
     {
       id: 4,
+      userId: 4,
+      email: "chris.johnson@example.com",
+      subject: "Intrusive pop-up ads",
       content: "The pop-up ads are too intrusive and disrupt my reading experience. Please reduce them.",
       type: "complaint",
-      rating: 1,
-      page: "/reader/whispers-in-the-dark",
-      category: "Advertisements",
       status: "rejected",
-      createdAt: new Date("2025-03-11T22:05:00Z"),
+      createdAt: "2025-03-11T22:05:00Z",
       metadata: {
+        page: "/reader/whispers-in-the-dark",
+        category: "Advertisements",
         browser: {
           name: "Edge",
           version: "121.0.2277.83",
@@ -230,21 +234,21 @@ export default function FeedbackReviewPage() {
         operatingSystem: "Windows 10",
         screenResolution: "1366x768",
         userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.2277.83",
-        name: "Chris Johnson",
-        email: "chris.johnson@example.com"
-      },
-      internalNotes: "User might be experiencing third-party ads. We don't show pop-ups. Need to follow up."
+        name: "Chris Johnson"
+      }
     },
     {
       id: 5,
+      userId: 5,
+      email: "alex.wong@example.com",
+      subject: "Font size adjustment request",
       content: "I think the font size in the reader is too small. Please consider making it adjustable.",
       type: "suggestion",
-      rating: 3,
-      page: "/reader/the-empty-house",
-      category: "Accessibility",
       status: "resolved",
-      createdAt: new Date("2025-03-10T14:20:00Z"),
+      createdAt: "2025-03-10T14:20:00Z",
       metadata: {
+        page: "/reader/the-empty-house",
+        category: "Accessibility",
         browser: {
           name: "Chrome",
           version: "121.0.6167.85",
@@ -253,8 +257,7 @@ export default function FeedbackReviewPage() {
         operatingSystem: "Android 14",
         screenResolution: "1080x2400",
         userAgent: "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.85 Mobile Safari/537.36",
-        name: "Alex Wong",
-        email: "alex.wong@example.com"
+        name: "Alex Wong"
       }
     }
   ];

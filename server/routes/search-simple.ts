@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db } from '../db';
-import { posts } from '@shared/schema';
+import { posts } from '../../shared/schema';
 
 const router = Router();
 

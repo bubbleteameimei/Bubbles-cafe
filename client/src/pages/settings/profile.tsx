@@ -86,7 +86,7 @@ export default function ProfileSettingsPage() {
   const [activeTab, setActiveTab] = useState("personal");
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar || null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   
   // Form for personal information
   const profileForm = useForm<ProfileFormValues>({
@@ -94,7 +94,7 @@ export default function ProfileSettingsPage() {
     defaultValues: {
       username: user?.username || "",
       email: user?.email || "",
-      fullName: user?.fullName || "",
+      fullName: "",
       bio: (user as any)?.bio || "",
       currentPassword: "",
       newPassword: "",

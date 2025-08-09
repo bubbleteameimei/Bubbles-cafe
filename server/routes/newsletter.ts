@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { insertNewsletterSubscriptionSchema } from '@shared/schema';
+import { insertNewsletterSubscriptionSchema } from '../../shared/schema';
 import { z } from 'zod';
 import { sendNewsletterWelcomeEmail } from '../utils/send-email';
 import { storage } from '../storage';

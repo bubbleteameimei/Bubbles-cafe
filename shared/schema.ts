@@ -519,7 +519,7 @@ export type InsertSecretProgress = z.infer<typeof insertSecretProgressSchema>;
 export type SecretProgress = typeof secretProgress.$inferSelect;
 
 export const insertContactMessageSchema = createInsertSchema(contactMessages, {}).omit({ id: true, createdAt: true }).extend({
-  metadata: z.record(z.string(), z.any()).optional()
+  metadata: z.record(z.string(), z.unknown()).optional()
 });
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
 export type ContactMessage = typeof contactMessages.$inferSelect;

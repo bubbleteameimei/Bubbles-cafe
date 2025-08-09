@@ -10,8 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-type ReportedContent = { id: number; contentId: number; contentType: string; reason: string; status?: string; createdAt?: string; reporterId?: number };
-
 import { ActivityTimeline } from "@/components/admin/activity-timeline";
 import { 
   AlertTriangle, 
@@ -36,6 +34,9 @@ import {
   Activity,
   History
 } from "lucide-react";
+
+// Type definitions
+type ReportedContent = { id: number; contentId: number; contentType: string; reason: string; status?: string; createdAt?: string; reporterId?: number };
 
 // Extended interface to include additional properties needed for the UI
 interface ExtendedReportedContent extends ReportedContent {
@@ -199,7 +200,7 @@ function ContentDetailView({ content, onClose, onApprove, onReject }: ContentDet
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Reported On</p>
-              <p className="font-medium">{new Date(content.createdAt).toLocaleString()}</p>
+              <p className="font-medium">{content.createdAt ? new Date(content.createdAt).toLocaleString() : 'Unknown'}</p>
             </div>
           </div>
         </div>
@@ -351,7 +352,8 @@ export default function ContentModerationPage() {
     const today = new Date().setHours(0, 0, 0, 0);
     activityStats.moderatedToday = reportedContent.filter(c => 
       (c.status === 'approved' || c.status === 'rejected') && 
-      new Date(c.updatedAt || c.createdAt).getTime() >= today
+      (c.updatedAt || c.createdAt) && 
+      new Date(c.updatedAt || c.createdAt!).getTime() >= today
     ).length;
   }
 
@@ -554,7 +556,7 @@ export default function ContentModerationPage() {
                                     {contentType.label} #{content.contentId}
                                   </h3>
                                   <p className="text-xs text-muted-foreground">
-                                    Reported on {new Date(content.createdAt).toLocaleDateString()}
+                                    Reported on {content.createdAt ? new Date(content.createdAt).toLocaleDateString() : 'Unknown'}
                                   </p>
                                 </div>
                                 <Badge className={reason.color}>

@@ -1,6 +1,6 @@
 import { Store } from 'express-session';
 import { db } from '../db';
-import { sessions } from '@shared/schema';
+import { sessions } from '../../shared/schema';
 import { eq, lt } from 'drizzle-orm';
 import crypto from 'crypto';
 

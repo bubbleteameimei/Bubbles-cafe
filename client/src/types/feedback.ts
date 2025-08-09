@@ -39,7 +39,7 @@ export interface FeedbackMetadata {
 export interface FeedbackWithMetadata extends Omit<UserFeedback, 'metadata'> {
   metadata?: FeedbackMetadata;
   contactRequested?: boolean;
-  subject?: string;
+  subject: string;
   type?: string;
   status?: string;
 }

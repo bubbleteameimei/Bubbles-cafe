@@ -700,7 +700,7 @@ export function registerRoutes(app: Express): void {
       }
       
       // Import from schema
-      const { posts } = await import("@shared/schema");
+      const { posts } = await import("../shared/schema");
       
       // Fetch all posts with theme data
       const allPosts = await db.select({

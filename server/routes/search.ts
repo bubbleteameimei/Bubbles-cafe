@@ -4,7 +4,7 @@ import {
   posts, 
   comments, 
   users
-} from '@shared/schema';
+} from '../../shared/schema';
 
 // Define types for search use
 type Post = typeof posts.$inferSelect;

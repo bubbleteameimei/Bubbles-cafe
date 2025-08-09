@@ -1,6 +1,6 @@
 import { db } from "../db";
 import { eq, desc, sql, like, or } from "drizzle-orm";
-import { users } from "@shared/schema";
+import { users } from "../../shared/schema";
 import { createLogger } from "../utils/debug-logger";
 import { handleDatabaseError } from '../utils/error-handler';
 

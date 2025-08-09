@@ -4,7 +4,7 @@
 
 import { Request, Response } from 'express';
 import { db } from '../db';
-import { posts } from '@shared/schema';
+import { posts } from '../../shared/schema';
 import { eq, sql } from 'drizzle-orm';
 
 export async function handleReaction(req: Request, res: Response) {
