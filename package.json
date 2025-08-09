@@ -8,8 +8,8 @@
     "shared"
   ],
   "dependencies": {
-    "react-hook-form": "7.51.5",
-    "@hookform/resolvers": "5.2.1",
+    "react-hook-form": "^7.62.0",
+    "@hookform/resolvers": "^5.2.1",
     "react-is": "18.2.0",
     "terser": "^5.29.1"
   },

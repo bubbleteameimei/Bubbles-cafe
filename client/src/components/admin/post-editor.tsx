@@ -64,8 +64,8 @@ const postSchema = z.object({
   status: z.enum(["published", "draft", "pending"]),
   categories: z.array(z.string()).min(1, "Select at least one category"),
   featuredImage: z.string().optional(),
-  allowComments: z.boolean().default(true),
-  isFeatured: z.boolean().default(false)
+  allowComments: z.preprocess((val) => val === undefined ? true : val, z.boolean()),
+  isFeatured: z.preprocess((val) => val === undefined ? false : val, z.boolean())
 });
 
 export type PostFormValues = z.infer<typeof postSchema>;
@@ -93,8 +93,8 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
       status: (post?.metadata as any)?.status || "draft",
       categories: (post?.metadata as any)?.categories || [],
       featuredImage: (post?.metadata as any)?.featuredImage || "",
-      allowComments: true,
-      isFeatured: false
+      allowComments: (post?.metadata as any)?.allowComments ?? true,
+      isFeatured: (post?.metadata as any)?.isFeatured ?? false
     }
   });
 
@@ -325,7 +325,7 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
                           <FormItem className="flex items-center space-x-2">
                             <FormControl>
                               <Switch
-                                checked={field.value}
+                                checked={field.value ?? true}
                                 onCheckedChange={field.onChange}
                               />
                             </FormControl>
@@ -348,7 +348,7 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
                           <FormItem className="flex items-center space-x-2">
                             <FormControl>
                               <Switch
-                                checked={field.value}
+                                checked={field.value ?? false}
                                 onCheckedChange={field.onChange}
                               />
                             </FormControl>

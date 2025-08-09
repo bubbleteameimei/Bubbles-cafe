@@ -185,13 +185,13 @@ SilentPingToggle.displayName = 'SilentPingToggle';
 
 // Define the notification form schema
 const NotificationFormSchema = z.object({
-  story_updates: z.boolean().default(true),
-  community_activity: z.boolean().default(true),
-  security_alerts: z.boolean().default(true),
-  reading_reminders: z.boolean().default(false),
-  recommendations: z.boolean().default(true),
-  preferred_time: z.string().default('morning'),
-  timezone: z.string().default('UTC')
+  story_updates: z.preprocess((val) => val === undefined ? true : val, z.boolean()),
+  community_activity: z.preprocess((val) => val === undefined ? true : val, z.boolean()),
+  security_alerts: z.preprocess((val) => val === undefined ? true : val, z.boolean()),
+  reading_reminders: z.preprocess((val) => val === undefined ? false : val, z.boolean()),
+  recommendations: z.preprocess((val) => val === undefined ? true : val, z.boolean()),
+  preferred_time: z.preprocess((val) => val === undefined ? 'morning' : val, z.string()),
+  timezone: z.preprocess((val) => val === undefined ? 'UTC' : val, z.string())
 });
 
 // Default form values
