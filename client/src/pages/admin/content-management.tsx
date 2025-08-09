@@ -12,7 +12,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { THEME_CATEGORIES } from '@sharedlib/theme-categories';
 import type { User } from "@/types/user";
-import { useQueryClient } from "@tanstack/react-query";
 
 // Import subcomponents for each tab
 import { default as WordPressSyncPage } from "./WordPressSyncPage";
@@ -229,7 +228,7 @@ export default function ContentManagementPage() {
                       variant="outline" 
                       size="sm" 
                       className="text-xs sm:text-sm text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700"
-                      onClick={() => setLocation('/admin/themes')}
+                      onClick={() => navigate('/admin/themes')}
                     >
                       Go to Theme Management
                     </Button>
