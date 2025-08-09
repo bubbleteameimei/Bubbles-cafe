@@ -14,6 +14,7 @@ import * as session from 'express-session';
 import { sanitizeHtml, stripHtml } from './utils/sanitizer';
 import { z } from "zod";
 import { insertPostSchema, posts, type InsertUserFeedback, type PostMetadata, insertCommentReplySchema } from "../shared/schema";
+import { analytics, comments } from "../shared/schema";
 
 // Add missing imports for AI feedback functions
 import { generateResponseSuggestion, getResponseHints } from './utils/feedback-ai';
@@ -32,6 +33,7 @@ import { requestLogger, errorLoggerMiddleware } from './utils/debug-logger';
 import { db } from "./db";
 import { eq, sql, desc } from "drizzle-orm";
 import * as crypto from 'crypto';
+import { validateCsrfToken } from './middleware/csrf-protection';
 
 const routesLogger = createSecureLogger('Routes');
 
@@ -131,6 +133,8 @@ export function registerRoutes(app: Express): void {
   // Body parsing middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // CSRF validation attached later in routing pipeline
 
   // Apply rate limiting to specific routes
   app.use("/api/login", authLimiter);
@@ -1596,6 +1600,20 @@ export function registerRoutes(app: Express): void {
         const commentsCount = await storage.getCommentsCount();
         const bookmarkCount = await storage.getBookmarkCount();
         
+        // Aggregate analytics metrics
+        const [analyticsAgg] = await db
+          .select({
+            avgBounceRate: sql<number>`avg(${analytics.bounceRate})`,
+            avgReadTime: sql<number>`avg(${analytics.averageReadTime})`
+          })
+          .from(analytics);
+
+        // Pending comments (not approved yet)
+        const [pendingAgg] = await db
+          .select({ pending: sql<number>`count(*)` })
+          .from(comments)
+          .where(eq(comments.is_approved, false));
+
         return res.json({
           posts: {
             total: postsCount || 0
@@ -1604,13 +1622,13 @@ export function registerRoutes(app: Express): void {
             total: usersCount || 0
           },
           analytics: {
-            bounceRate: 0, // TODO: Implement bounce rate calculation
-            avgSessionDuration: 0 // TODO: Implement session duration calculation
+            bounceRate: Number(analyticsAgg?.avgBounceRate ?? 0),
+            avgSessionDuration: Number(analyticsAgg?.avgReadTime ?? 0)
           },
           comments: {
             total: commentsCount || 0,
-            pending: 0, // TODO: Implement pending comments count
-            flagged: 0   // TODO: Implement flagged comments count
+            pending: Number(pendingAgg?.pending ?? 0),
+            flagged: 0
           },
           bookmarks: {
             total: bookmarkCount || 0
@@ -2800,7 +2818,7 @@ Message ID: ${savedMessage.id}
           service: 'gmail',
           auth: {
             user: process.env.GMAIL_USER,
-            pass: process.env.GMAIL_PASS
+            pass: process.env.GMAIL_APP_PASSWORD
           }
         });
 
@@ -2883,4 +2901,14 @@ Message ID: ${savedMessage.id}
       error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   });
+
+  // Attach CSRF validation to all API routes except safe methods
+  app.use('/api', validateCsrfToken());
+
+  if (process.env.NODE_ENV !== 'production') {
+    // Register API test routes (dev only)
+    app.use('/api/test', apiTestRoutes);
+    // Register test delete routes (dev only)
+    app.use('/api/test-delete', testDeleteRoutes);
+  }
 }  

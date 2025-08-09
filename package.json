@@ -7,11 +7,18 @@
     "server",
     "shared"
   ],
+  "dependencies": {
+    "react-hook-form": "7.51.5",
+    "@hookform/resolvers": "5.2.1",
+    "react-is": "18.2.0",
+    "terser": "^5.29.1"
+  },
   "scripts": {
     "build": "npm run -w client build && npm run -w server build",
     "dev": "concurrently \"npm run -w server dev\" \"npm run -w client dev\"",
-    "typecheck": "npm run -w client typecheck || true && npm run -w server typecheck || true",
-    "deploy:prepare": "npm run build && mkdir -p server/public && cp -r client/dist/* server/public/"
+    "deploy:prepare": "npm run build && mkdir -p server/public && cp -r client/dist/* server/public/",
+    "test": "node scripts/run-tests.mjs",
+    "typecheck": "npm run -w client typecheck || true && npm run -w server typecheck || true"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

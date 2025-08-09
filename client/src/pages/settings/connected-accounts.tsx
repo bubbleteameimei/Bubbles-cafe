@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SiGoogle, SiGithub, SiDiscord, SiGhost } from 'react-icons/si';
+import { signInWithGoogle, signOutUser } from '@/config/firebase';
 import { AiOutlineTwitter } from 'react-icons/ai';
 
 export default function ConnectedAccountsPage() {
@@ -13,12 +14,22 @@ export default function ConnectedAccountsPage() {
     ghost: false
   });
 
-  const handleConnect = (platform: keyof typeof connections) => {
-    // TODO: Implement actual OAuth connection logic
-    setConnections(prev => ({
-      ...prev,
-      [platform]: !prev[platform]
-    }));
+  const handleConnect = async (platform: keyof typeof connections) => {
+    try {
+      if (platform === 'google') {
+        if (!connections.google) {
+          await signInWithGoogle();
+        } else {
+          await signOutUser();
+        }
+        setConnections(prev => ({ ...prev, google: !prev.google }));
+      } else {
+        alert('OAuth integration for ' + platform + ' is coming soon.');
+      }
+    } catch (err) {
+      console.error('OAuth error', err);
+      alert('Authentication failed: ' + (err as Error).message);
+    }
   };
 
   return (
@@ -65,7 +76,8 @@ export default function ConnectedAccountsPage() {
             </div>
             <Button
               variant={connections.twitter ? "destructive" : "default"}
-              onClick={() => handleConnect('twitter')}
+              disabled
+              onClick={() => {}}
             >
               {connections.twitter ? 'Disconnect' : 'Connect'}
             </Button>
@@ -85,7 +97,8 @@ export default function ConnectedAccountsPage() {
             </div>
             <Button
               variant={connections.github ? "destructive" : "default"}
-              onClick={() => handleConnect('github')}
+              disabled
+              onClick={() => {}}
             >
               {connections.github ? 'Disconnect' : 'Connect'}
             </Button>
@@ -105,7 +118,8 @@ export default function ConnectedAccountsPage() {
             </div>
             <Button
               variant={connections.discord ? "destructive" : "default"}
-              onClick={() => handleConnect('discord')}
+              disabled
+              onClick={() => {}}
             >
               {connections.discord ? 'Disconnect' : 'Connect'}
             </Button>
@@ -125,7 +139,8 @@ export default function ConnectedAccountsPage() {
             </div>
             <Button
               variant={connections.ghost ? "destructive" : "default"}
-              onClick={() => handleConnect('ghost')}
+              disabled
+              onClick={() => {}}
             >
               {connections.ghost ? 'Disconnect' : 'Connect'}
             </Button>

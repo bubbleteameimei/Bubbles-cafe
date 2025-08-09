@@ -8,7 +8,7 @@ import nodemailer from 'nodemailer';
 
 // Gmail configuration
 const GMAIL_USER = process.env.GMAIL_USER || process.env.EMAIL_USER;
-const GMAIL_PASS = process.env.GMAIL_PASS || process.env.EMAIL_PASS;
+const GMAIL_PASS = process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASS;
 
 // Create Gmail transporter
 function createGmailTransporter() {

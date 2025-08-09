@@ -7,7 +7,7 @@ const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAJ-ZRi3GUVHUaM0p5vbbRB8NoqV4b_VvM",
   authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || "bubbles-cafe"}.firebaseapp.com`,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "bubbles-cafe",
-  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || "bubbles-cafe"}.firebasestorage.app`,
+  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || "bubbles-cafe"}.appspot.com`,
   appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:870151001940:web:f11d39b75764457a91ac1",
 };
 
