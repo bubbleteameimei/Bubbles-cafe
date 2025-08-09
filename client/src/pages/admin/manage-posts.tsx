@@ -500,7 +500,8 @@ export default function ManagePostsPage() {
   };
   
   // Format date
-  const formatDate = (date: string | Date) => {
+  const formatDate = (date: string | Date | undefined) => {
+    if (!date) return 'Unknown';
     return format(new Date(date), 'MMM d, yyyy');
   };
   

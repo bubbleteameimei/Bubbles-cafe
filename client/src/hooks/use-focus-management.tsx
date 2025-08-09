@@ -88,11 +88,11 @@ export function useFocusManagement(options: UseFocusManagementOptions = {}) {
 
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
-    const activeElement = document.activeElement as FocusableElement;
+    const activeElement = document.activeElement as FocusableElement | null;
 
     switch (key) {
       case 'Tab':
-        if (trapFocus) {
+        if (trapFocus && activeElement) {
           if (shiftKey) {
             // Shift + Tab: focus previous element
             if (activeElement === firstElement) {

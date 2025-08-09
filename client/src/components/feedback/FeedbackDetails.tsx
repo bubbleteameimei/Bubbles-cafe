@@ -278,8 +278,8 @@ export function FeedbackDetails({
                 <div className="flex items-center">
                   <span className="text-sm font-medium ml-6">Browser:</span>
                   <span className="ml-2 text-sm">
-                    {feedback.metadata?.browser?.name || 'Unknown'} 
-                    {feedback.metadata?.browser?.version ? ` ${feedback.metadata.browser.version}` : ''}
+                    {typeof feedback.metadata?.browser === 'object' && feedback.metadata.browser?.name ? feedback.metadata.browser.name : 'Unknown'} 
+                    {typeof feedback.metadata?.browser === 'object' && feedback.metadata.browser?.version ? ` ${feedback.metadata.browser.version}` : ''}
                   </span>
                 </div>
               </div>
@@ -303,11 +303,11 @@ export function FeedbackDetails({
               </div>
             </div>
             
-            {asObject<{ userAgent?: string }>(feedback.metadata?.browser).userAgent && (
+            {typeof feedback.metadata?.browser === 'object' && feedback.metadata.browser?.userAgent && (
               <div className="mt-2">
                 <span className="text-xs font-medium">User Agent:</span>
                 <div className="mt-1 p-2 bg-muted rounded text-xs overflow-x-auto">
-                  {asObject<{ userAgent?: string }>(feedback.metadata?.browser).userAgent}
+                  {feedback.metadata.browser.userAgent}
                 </div>
               </div>
             )}

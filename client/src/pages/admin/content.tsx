@@ -12,26 +12,20 @@ import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import PostEditor from "@/components/admin/post-editor";
 
-export interface Post {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
+import type { ExtendedPost } from "@shared/public";
+
+// Extended interface for admin content management
+interface AdminPost extends ExtendedPost {
   status: "published" | "draft" | "pending";
-  createdAt: string;
+  sourceType: "wordpress" | "manual" | "community";
   updatedAt: string;
-  categories: string[];
-  featuredImage?: string;
-  authorId?: string;
   authorName?: string;
   views: number;
-  sourceType: "wordpress" | "manual" | "community";
 }
 
 export default function ContentPage() {
   const { toast } = useToast();
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [selectedPost, setSelectedPost] = useState<AdminPost | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
@@ -40,7 +34,7 @@ export default function ContentPage() {
   const [sourceFilter, setSourceFilter] = useState<string>("all");
 
   // Fetch posts with react-query
-  const { data, isLoading, isError, refetch } = useQuery<{posts: Post[], hasMore: boolean}>({
+  const { data, isLoading, isError, refetch } = useQuery<{posts: AdminPost[], hasMore: boolean}>({
     queryKey: ['/api/posts'],
     queryFn: async () => {
       const response = await fetch('/api/posts');
@@ -55,18 +49,18 @@ export default function ContentPage() {
   const posts = data?.posts || [];
 
   // Handle editing a post
-  const handleEdit = (post: Post) => {
+  const handleEdit = (post: AdminPost) => {
     setSelectedPost(post);
     setIsEditDialogOpen(true);
   };
 
   // Handle viewing a post
-  const handleView = (post: Post) => {
+  const handleView = (post: AdminPost) => {
     window.open(`/reader/${post.slug}`, '_blank');
   };
 
   // Handle deleting a post
-  const handleDelete = (post: Post) => {
+  const handleDelete = (post: AdminPost) => {
     setSelectedPost(post);
     setIsDeleteDialogOpen(true);
   };

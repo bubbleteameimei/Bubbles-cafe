@@ -41,7 +41,7 @@
     "@types/passport": "1.0.17",
     "@types/passport-local": "1.0.38",
     "@types/ws": "8.18.1",
-    "esbuild": "^0.23.0",
+    "esbuild": "^0.25.8",
     "tsx": "^4.20.3",
     "typescript": "^5.5.4"
   }
