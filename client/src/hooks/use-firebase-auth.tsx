@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { auth, signInWithGoogle, signInWithEmail, createUserWithEmail, signOutUser, resetPassword } from '@/config/firebase';
 import { useToast } from '@/hooks/use-toast';
-import type { User } from '../../../shared/schema';
+import type { ExtendedUser as User } from '@shared/public';
 
 interface FirebaseAuthContextType {
   user: User | null;

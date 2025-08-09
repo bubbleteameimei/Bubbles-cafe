@@ -80,7 +80,7 @@ router.post('/login',
         return _next(createError.unauthorized('Invalid email or password'));
       }
       
-      req.logIn(user, (err) => {
+      (req as any).logIn(user, (err: any) => {
         if (err) {
           authLogger.error('Login session error', { error: err });
           return _next(createError.internal('Login failed'));
@@ -113,7 +113,7 @@ router.post('/logout',
   asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?.id;
     
-    req.logout((err) => {
+    (req as any).logout((err: any) => {
       if (err) {
         authLogger.error('Logout error', { userId, error: err });
         throw createError.internal('Logout failed');

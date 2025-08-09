@@ -5,7 +5,7 @@
  * shared connection module. It ensures proper error handling and reports
  * connection status.
  */
-import { initializeDatabaseConnection } from '../scripts/connect-db';
+import { initializeDatabaseConnection } from './connect-db';
 
 // Create a placeholder for the pool and db
 export let pool: any = {

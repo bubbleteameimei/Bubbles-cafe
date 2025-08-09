@@ -1,6 +1,7 @@
 {
   "name": "bubbles-cafe-monorepo",
   "private": true,
+  "type": "module",
   "workspaces": [
     "client",
     "server"
@@ -8,7 +9,8 @@
   "scripts": {
     "build": "npm run -w client build && npm run -w server build",
     "dev": "concurrently \"npm run -w server dev\" \"npm run -w client dev\"",
-    "typecheck": "npm run -w client typecheck || true && npm run -w server typecheck || true"
+    "typecheck": "npm run -w client typecheck || true && npm run -w server typecheck || true",
+    "deploy:prepare": "npm run build && mkdir -p server/public && cp -r client/dist/* server/public/"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

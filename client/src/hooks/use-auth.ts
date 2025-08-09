@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { User } from '../../../shared/schema';
+import type { ExtendedUser as User } from '@shared/public';
 
 // Define types
 export interface LoginData {

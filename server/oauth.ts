@@ -152,7 +152,7 @@ export function setupOAuth(app: Express) {
       
       // Log in the user
       return new Promise<void>((resolve) => {
-        req.login(user as any, (err) => {
+        (req as any).login(user as any, (err: any) => {
           if (err) {
             console.error('Login error:', err);
             res.status(500).json({ error: 'Authentication error' });
@@ -192,7 +192,7 @@ export function setupOAuth(app: Express) {
 
   // Logout route
   app.get('/api/auth/logout', (req: Request, res: Response) => {
-    req.logout(function(err) {
+    (req as any).logout(function(err: any) {
       if (err) {
         return res.status(500).json({ error: 'Logout failed' });
       }
@@ -213,7 +213,7 @@ export function setupOAuth(app: Express) {
 
   // Auth status route
   app.get('/api/auth/status', (req: Request, res: Response) => {
-    if (req.isAuthenticated()) {
+    if (typeof req.isAuthenticated === 'function' && req.isAuthenticated()) {
       const user = req.user as any;
       
       
@@ -241,7 +241,7 @@ export function setupOAuth(app: Express) {
 
   // Authentication middleware for protected routes
   const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-    if (req.isAuthenticated()) {
+    if (typeof req.isAuthenticated === 'function' && req.isAuthenticated()) {
       return next();
     }
     res.status(401).json({ error: 'Unauthorized' });

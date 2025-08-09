@@ -10,7 +10,7 @@ const EmailSubscriptionSchema = z.object({
   email: z.string().email(),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
-  preferences: z.record(z.boolean()).optional()
+  preferences: z.record(z.string(), z.boolean()).optional()
 });
 
 /**
@@ -39,7 +39,7 @@ router.post('/subscribe', async (req, res) => {
       
       
       // Send a fresh welcome email anyway
-      const emailSent = await sendFreshNewsletter(email);
+      const emailSent = await sendFreshNewsletter(email as string);
       
       return res.status(200).json({
         success: true,
@@ -68,7 +68,7 @@ router.post('/subscribe', async (req, res) => {
     }
     
     // Send welcome email
-    const emailSent = await sendFreshNewsletter(email);
+    const emailSent = await sendFreshNewsletter(email as string);
     
     
     return res.status(200).json({

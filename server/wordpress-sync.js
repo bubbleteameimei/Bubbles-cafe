@@ -5,7 +5,7 @@
 import pg from 'pg';
 import bcrypt from 'bcryptjs';
 import { db } from './db-connect.js';
-import { log } from './vite.js';
+import { log } from './vite-shim.js';
 import { determineThemeCategory as determineThemeCategoryFromShared, STORY_THEME_MAPPING } from '../shared/theme-categories.js';
 
 const { Pool } = pg;

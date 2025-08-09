@@ -57,7 +57,7 @@ import {
 } from "@/components/ui/chart";
 import { Progress } from "@/components/ui/progress";
 import { useState } from "react";
-import { User as UserType } from '../../../../shared/schema';
+import type { ExtendedUser as UserType } from '@shared/public';
 
 // Mock data for the chart
 const activityData = [

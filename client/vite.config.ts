@@ -154,9 +154,9 @@ export default defineConfig({
           vendor: ['react', 'react-dom'],
           router: ['wouter'],
           ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs'],
-          charts: ['chart.js', 'react-chartjs-2'],
+          charts: ['recharts'],
           forms: ['react-hook-form', '@hookform/resolvers'],
-          utils: ['date-fns', 'clsx', 'class-variance-authority'],
+          utils: ['date-fns', 'class-variance-authority', 'tailwind-merge'],
           markdown: ['react-markdown', 'remark-gfm'],
           animations: ['framer-motion']
         },
@@ -206,6 +206,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "src"),
       "@shared": path.resolve(__dirname, "../shared"),
+      "@sharedlib": path.resolve(__dirname, "../shared"),
     },
   },
   // CSS optimization

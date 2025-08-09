@@ -222,7 +222,7 @@ async function testConnection(retries = 3, delay = 2000): Promise<boolean> {
     pool = realPool;
     
     // Set up event handlers
-    pool.on('error', (err) => {
+    pool.on('error', (err: any) => {
       console.error('Unexpected error on idle client', {
         message: err.message,
         stack: err.stack

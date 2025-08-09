@@ -137,7 +137,7 @@ export function useFocusManagement(options: UseFocusManagementOptions = {}) {
     if (isActive) return;
 
     // Store the currently active element to restore later
-    previousActiveElement.current = document.activeElement;
+    (previousActiveElement as unknown as { current: Element | null }).current = document.activeElement;
     
     setIsActive(true);
 
@@ -209,14 +209,16 @@ export function useScreenReaderAnnouncement() {
       element.className = 'sr-only';
       element.id = 'screen-reader-announcements';
       document.body.appendChild(element);
-      announcementRef.current = element;
+      (announcementRef as unknown as { current: HTMLDivElement | null }).current = element;
     }
 
     // Update aria-live attribute if priority changed
     announcementRef.current.setAttribute('aria-live', priority);
     
     // Clear previous message
-    announcementRef.current.textContent = '';
+    if (announcementRef.current) {
+      announcementRef.current.textContent = '';
+    }
     
     // Set new message after a brief delay to ensure screen readers pick it up
     setTimeout(() => {

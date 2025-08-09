@@ -41,7 +41,7 @@ declare module 'express-session' {
 import { setupAuth } from "./auth";
 import { setupOAuth } from "./oauth";
 
-import { createLogger, requestLogger } from "./utils/debug-logger";
+import { createLogger, requestLogger, initLogs } from "./utils/debug-logger";
 import { registerUserFeedbackRoutes } from "./routes/user-feedback";
 import { registerRecommendationsRoutes } from "./routes/recommendations";
 import { storage } from "./storage";
@@ -214,6 +214,7 @@ import setupDatabase from '../scripts/setup-db';
 
 async function startServer() {
   try {
+    await initLogs();
     serverLogger.info('Starting server initialization', {
       environment: process.env.NODE_ENV,
       host: HOST,

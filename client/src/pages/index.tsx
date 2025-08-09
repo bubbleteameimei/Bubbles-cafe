@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 // Using UI DTOs, not server schema
-import type { ExtendedPost as Post } from "@shared/types/public";
+import type { ExtendedPost as Post } from "@shared/public";
 
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
@@ -413,7 +413,7 @@ export default function IndexView() {
                       <div className="flex items-center gap-2 sm:gap-4 text-xs text-muted-foreground mb-3 md:mb-0">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          <time className="text-xs sm:text-xs">{format(new Date(featuredStory.createdAt), 'MMM d, yyyy')}</time>
+                          <time className="text-xs sm:text-xs">{featuredStory.createdAt ? format(new Date(featuredStory.createdAt), 'MMM d, yyyy') : ''}</time>
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />

@@ -287,8 +287,11 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
           
           if (!result.success) {
             // Log validation errors but don't fail
-            console.warn(`[WordPress] Post validation warnings for post ID ${post.id}:`, 
-              result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; '));
+            const zErr: any = result.error;
+            const messages = Array.isArray(zErr?.issues)
+              ? zErr.issues.map((e: any) => `${(e.path || []).join('.')}: ${e.message}`).join('; ')
+              : String(zErr?.message || 'Unknown validation error');
+            console.warn(`[WordPress] Post validation warnings for post ID ${post.id}:`, messages);
             
             // Build a valid structure from available data
             return {

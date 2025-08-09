@@ -3,6 +3,7 @@ import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import * as vite from "vite";
+import type { LogErrorOptions } from 'vite';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import { type Server } from "http";
@@ -30,7 +31,7 @@ export async function setupVite(app: Express, server: Server) {
     root: path.resolve(__dirname, "..", "client"),
     customLogger: {
       ...viteLogger,
-      error: (msg, options) => {
+      error: (msg: string, options?: LogErrorOptions) => {
         viteLogger.error(msg, options);
         process.exit(1);
       },

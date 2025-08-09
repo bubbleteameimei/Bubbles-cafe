@@ -45,20 +45,16 @@ export function registerPostRecommendationsRoutes(app: Application) {
       });
       
       if (!sourcePost) {
-        
-        // Try alternative method to find the post
         const sourcePosts = await db.select()
           .from(posts)
           .where(eq(posts.id, postId))
           .limit(1);
-          
         if (sourcePosts && sourcePosts.length > 0) {
           sourcePost = sourcePosts[0];
-          
-        } else {
-          
-          return res.status(404).json({ message: "Post not found" });
         }
+      }
+      if (!sourcePost) {
+        return res.status(404).json({ message: "Post not found" });
       }
       
       

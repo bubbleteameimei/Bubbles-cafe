@@ -36,7 +36,7 @@ export const insertUserSchema = createInsertSchema(users, {
   email: emailSchema,
   username: usernameSchema,
   password_hash: z.string().min(1), // Already hashed
-  metadata: z.record(z.unknown()).optional().default({})
+  metadata: z.record(z.string(), z.unknown()).optional().default({})
 }).omit({
   id: true,
   createdAt: true
@@ -92,7 +92,7 @@ export const insertPostSchema = createInsertSchema(posts, {
   authorId: z.number().int().positive(),
   themeCategory: z.string().max(50).optional(),
   readingTimeMinutes: z.number().int().min(1).max(999).optional(),
-  metadata: z.record(z.unknown()).optional().default({})
+  metadata: z.record(z.string(), z.unknown()).optional().default({})
 }).omit({
   id: true,
   createdAt: true,
@@ -149,7 +149,7 @@ export const insertCommentSchema = createInsertSchema(comments, {
   postId: z.number().int().positive(),
   parentId: z.number().int().positive().optional(),
   userId: z.number().int().positive().optional(),
-  metadata: z.record(z.unknown()).optional().default({})
+  metadata: z.record(z.string(), z.unknown()).optional().default({})
 }).omit({
   id: true,
   createdAt: true,
@@ -501,31 +501,31 @@ export type PostMetadata = {
 // Use the insertPostSchema from above (already defined at line 82)
 
 // Use the insertCommentSchema from above (already defined at line 142)
-export const insertCommentReactionSchema = createInsertSchema(commentReactions).omit({ id: true, createdAt: true });
-export const insertCommentVoteSchema = createInsertSchema(commentVotes).omit({ id: true, createdAt: true });
+export const insertCommentReactionSchema = createInsertSchema(commentReactions, {}).omit({ id: true, createdAt: true });
+export const insertCommentVoteSchema = createInsertSchema(commentVotes, {}).omit({ id: true, createdAt: true });
 export type CommentReaction = typeof commentReactions.$inferSelect;
 export type InsertCommentReaction = z.infer<typeof insertCommentReactionSchema>;
 export type CommentVote = typeof commentVotes.$inferSelect;
 export type InsertCommentVote = z.infer<typeof insertCommentVoteSchema>;
 
 
-export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
+export const insertProgressSchema = createInsertSchema(readingProgress, {}).omit({ id: true });
 export type InsertProgress = z.infer<typeof insertProgressSchema>;
 export type InsertReadingProgress = InsertProgress; // Alias for backward compatibility
 export type ReadingProgress = typeof readingProgress.$inferSelect;
 
-export const insertSecretProgressSchema = createInsertSchema(secretProgress).omit({ id: true, discoveryDate: true });
+export const insertSecretProgressSchema = createInsertSchema(secretProgress, {}).omit({ id: true, discoveryDate: true });
 export type InsertSecretProgress = z.infer<typeof insertSecretProgressSchema>;
 export type SecretProgress = typeof secretProgress.$inferSelect;
 
-export const insertContactMessageSchema = createInsertSchema(contactMessages).omit({ id: true, createdAt: true }).extend({
-  metadata: z.record(z.any()).optional()
+export const insertContactMessageSchema = createInsertSchema(contactMessages, {}).omit({ id: true, createdAt: true }).extend({
+  metadata: z.record(z.string(), z.any()).optional()
 });
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
 export type ContactMessage = typeof contactMessages.$inferSelect;
 
 // Newsletter subscription schema
-export const insertNewsletterSubscriptionSchema = createInsertSchema(newsletterSubscriptions).omit({ 
+export const insertNewsletterSubscriptionSchema = createInsertSchema(newsletterSubscriptions, {}).omit({ 
   id: true, 
   createdAt: true, 
   updatedAt: true,
@@ -534,19 +534,19 @@ export const insertNewsletterSubscriptionSchema = createInsertSchema(newsletterS
 export type InsertNewsletterSubscription = z.infer<typeof insertNewsletterSubscriptionSchema>;
 export type NewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
 
-export const insertSessionSchema = createInsertSchema(sessions).omit({ id: true, createdAt: true });
+export const insertSessionSchema = createInsertSchema(sessions, {}).omit({ id: true, createdAt: true });
 export type InsertSession = z.infer<typeof insertSessionSchema>;
 export type Session = typeof sessions.$inferSelect;
 
 // Reset Token Schema
-export const insertResetTokenSchema = createInsertSchema(resetTokens).omit({ id: true, createdAt: true });
+export const insertResetTokenSchema = createInsertSchema(resetTokens, {}).omit({ id: true, createdAt: true });
 export type InsertResetToken = z.infer<typeof insertResetTokenSchema>;
 export type ResetToken = typeof resetTokens.$inferSelect;
 
 export type PostLike = typeof postLikes.$inferSelect;
 
 // Update the insert schema for comment replies
-export const insertCommentReplySchema = createInsertSchema(commentReplies)
+export const insertCommentReplySchema = createInsertSchema(commentReplies, {})
   .omit({ id: true, createdAt: true })
   .extend({
     content: z.string().min(3, "Reply must be at least 3 characters"),
@@ -566,53 +566,53 @@ export type CommentReply = typeof commentReplies.$inferSelect;
 
 export type AuthorStats = typeof authorStats.$inferSelect;
 
-export const insertWritingChallengeSchema = createInsertSchema(writingChallenges).omit({ id: true, createdAt: true });
+export const insertWritingChallengeSchema = createInsertSchema(writingChallenges, {}).omit({ id: true, createdAt: true });
 export type InsertWritingChallenge = z.infer<typeof insertWritingChallengeSchema>;
 export type WritingChallenge = typeof writingChallenges.$inferSelect;
 
-export const insertChallengeEntrySchema = createInsertSchema(challengeEntries).omit({ id: true, submissionDate: true });
+export const insertChallengeEntrySchema = createInsertSchema(challengeEntries, {}).omit({ id: true, submissionDate: true });
 export type InsertChallengeEntry = z.infer<typeof insertChallengeEntrySchema>;
 export type ChallengeEntry = typeof challengeEntries.$inferSelect;
 
-export const insertContentProtectionSchema = createInsertSchema(contentProtection).omit({ id: true, createdAt: true });
+export const insertContentProtectionSchema = createInsertSchema(contentProtection, {}).omit({ id: true, createdAt: true });
 export type InsertContentProtection = z.infer<typeof insertContentProtectionSchema>;
 export type ContentProtection = typeof contentProtection.$inferSelect;
 
-export const insertReportedContentSchema = createInsertSchema(reportedContent).omit({ id: true, createdAt: true });
+export const insertReportedContentSchema = createInsertSchema(reportedContent, {}).omit({ id: true, createdAt: true });
 export type InsertReportedContent = z.infer<typeof insertReportedContentSchema>;
 export type ReportedContent = typeof reportedContent.$inferSelect;
 
-export const insertAuthorTipSchema = createInsertSchema(authorTips).omit({ id: true, createdAt: true });
+export const insertAuthorTipSchema = createInsertSchema(authorTips, {}).omit({ id: true, createdAt: true });
 export type InsertAuthorTip = z.infer<typeof insertAuthorTipSchema>;
 export type AuthorTip = typeof authorTips.$inferSelect;
 
-export const insertWebhookSchema = createInsertSchema(webhooks).omit({ id: true, createdAt: true });
+export const insertWebhookSchema = createInsertSchema(webhooks, {}).omit({ id: true, createdAt: true });
 export type InsertWebhook = z.infer<typeof insertWebhookSchema>;
 export type Webhook = typeof webhooks.$inferSelect;
 
 export type Analytics = typeof analytics.$inferSelect;
 
-export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({ id: true, createdAt: true });
+export const insertActivityLogSchema = createInsertSchema(activityLogs, {}).omit({ id: true, createdAt: true });
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
 export type ActivityLog = typeof activityLogs.$inferSelect;
 
-export const insertSiteSettingSchema = createInsertSchema(siteSettings).omit({ id: true, updatedAt: true });
+export const insertSiteSettingSchema = createInsertSchema(siteSettings, {}).omit({ id: true, updatedAt: true });
 export type InsertSiteSetting = z.infer<typeof insertSiteSettingSchema>;
 export type SiteSetting = typeof siteSettings.$inferSelect;
 
-export const insertAdminNotificationSchema = createInsertSchema(adminNotifications).omit({ id: true, createdAt: true });
+export const insertAdminNotificationSchema = createInsertSchema(adminNotifications, {}).omit({ id: true, createdAt: true });
 export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
 export type AdminNotification = typeof adminNotifications.$inferSelect;
 
 // Add new insert schemas and types
 // Achievement system schemas removed
 
-export const insertUserProgressSchema = createInsertSchema(userProgress).omit({ 
+export const insertUserProgressSchema = createInsertSchema(userProgress, {}).omit({ 
   id: true,
   lastActivityAt: true 
 });
 
-export const insertSiteAnalyticsSchema = createInsertSchema(siteAnalytics).omit({ 
+export const insertSiteAnalyticsSchema = createInsertSchema(siteAnalytics, {}).omit({ 
   id: true,
   timestamp: true 
 });
@@ -657,7 +657,7 @@ export interface CommentMetadata {
 }
 
 // Add insert schema and types for performance metrics
-export const insertPerformanceMetricSchema = createInsertSchema(performanceMetrics).omit({ 
+export const insertPerformanceMetricSchema = createInsertSchema(performanceMetrics, {}).omit({ 
   id: true,
   timestamp: true 
 });
@@ -666,7 +666,7 @@ export type InsertPerformanceMetric = z.infer<typeof insertPerformanceMetricSche
 export type PerformanceMetric = typeof performanceMetrics.$inferSelect;
 
 // Bookmark schema and types
-export const insertBookmarkSchema = createInsertSchema(bookmarks).omit({ 
+export const insertBookmarkSchema = createInsertSchema(bookmarks, {}).omit({ 
   id: true, 
   createdAt: true 
 });
@@ -674,7 +674,7 @@ export type InsertBookmark = z.infer<typeof insertBookmarkSchema>;
 export type Bookmark = typeof bookmarks.$inferSelect;
 
 // User Feedback schema and types
-export const insertUserFeedbackSchema = createInsertSchema(userFeedback).omit({ 
+export const insertUserFeedbackSchema = createInsertSchema(userFeedback, {}).omit({ 
   id: true, 
   createdAt: true 
 }).extend({
@@ -886,7 +886,7 @@ export const userPrivacySettingsRelations = relations(userPrivacySettings, ({ on
 }));
 
 // User Privacy Settings schema and types
-export const insertUserPrivacySettingsSchema = createInsertSchema(userPrivacySettings).omit({ 
+export const insertUserPrivacySettingsSchema = createInsertSchema(userPrivacySettings, {}).omit({ 
   id: true, 
   updatedAt: true 
 });
