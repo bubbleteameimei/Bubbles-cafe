@@ -34,7 +34,7 @@ COPY package.json package-lock.json* ./
 COPY client/package.json ./client/
 COPY server/package.json ./server/
 COPY shared/package.json ./shared/
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Copy built artifacts (shared workspace doesn't have dist, just source files)
 COPY --from=build /app/client/dist ./client/dist
