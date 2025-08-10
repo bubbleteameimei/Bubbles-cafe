@@ -328,36 +328,73 @@ async function startServer() {
     } else {
       serverLogger.info('Setting up production environment');
       
-      // Register main routes
+      // Register main routes (these should work without database)
       registerRoutes(app);
       
-      // Register user feedback routes
-      registerUserFeedbackRoutes(app);
+      // Only register database-dependent routes if database is available
+      if (databaseAvailable) {
+        try {
+          // Register user feedback routes
+          registerUserFeedbackRoutes(app);
+          
+          // Register recommendation routes
+          registerRecommendationsRoutes(app, storage);
+          
+          // Register privacy settings routes
+          registerPrivacySettingsRoutes(app, storage);
+          
+          serverLogger.info('Database-dependent routes registered successfully');
+        } catch (routeError) {
+          serverLogger.warn('Some database-dependent routes failed to register', { 
+            error: routeError instanceof Error ? routeError.message : 'Unknown error' 
+          });
+        }
+      } else {
+        serverLogger.info('Skipping database-dependent routes (database not available)');
+      }
       
-      // Register recommendation routes
-      registerRecommendationsRoutes(app, storage);
+      // Only start WordPress sync if database is available
+      if (databaseAvailable) {
+        try {
+          // Register WordPress sync routes
+          registerWordPressSyncRoutes(app);
+          
+          // Setup WordPress sync schedule (run every 5 minutes)
+          setupWordPressSyncSchedule(5 * 60 * 1000);
+          serverLogger.info('WordPress sync services started (database available)');
+        } catch (syncError) {
+          serverLogger.warn('WordPress sync setup failed, but continuing', { 
+            error: syncError instanceof Error ? syncError.message : 'Unknown error' 
+          });
+        }
+      } else {
+        serverLogger.info('Skipping WordPress sync services (database not available)');
+      }
       
-      
-      // Register privacy settings routes
-      registerPrivacySettingsRoutes(app, storage);
-      
-      // Register WordPress sync routes
-      registerWordPressSyncRoutes(app);
-      
-      // Register analytics routes
-      registerAnalyticsRoutes(app);
-      
-      // Register email service routes
-      registerEmailServiceRoutes(app);
-      
-      // Register bookmark routes
-      registerBookmarkRoutes(app);
-      
-      // Register session sync routes
-      app.use('/api/session-sync', sessionSyncRouter);
-      
-      // Setup WordPress sync schedule (run every 5 minutes)
-      setupWordPressSyncSchedule(5 * 60 * 1000);
+      // Only register other database-dependent services if database is available
+      if (databaseAvailable) {
+        try {
+          // Register analytics routes
+          registerAnalyticsRoutes(app);
+          
+          // Register email service routes
+          registerEmailServiceRoutes(app);
+          
+          // Register bookmark routes
+          registerBookmarkRoutes(app);
+          
+          // Register session sync routes
+          app.use('/api/session-sync', sessionSyncRouter);
+          
+          serverLogger.info('Additional database-dependent services registered successfully');
+        } catch (serviceError) {
+          serverLogger.warn('Some additional database-dependent services failed to register', { 
+            error: serviceError instanceof Error ? serviceError.message : 'Unknown error' 
+          });
+        }
+      } else {
+        serverLogger.info('Skipping additional database-dependent services (database not available)');
+      }
       
       // We've moved the post recommendations endpoint to main routes.ts
       // registerPostRecommendationsRoutes(app);
