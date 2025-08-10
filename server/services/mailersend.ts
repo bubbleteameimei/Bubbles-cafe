@@ -4,7 +4,7 @@
  * Functions for working with MailerSend email service.
  */
 
-import fetch from 'node-fetch';
+// Using native fetch (Node.js 18+)
 import logger from '../utils/logger';
 import { EmailMessage, EmailResult, MailerSendEmail, MailerSendRecipient } from './email-types';
 

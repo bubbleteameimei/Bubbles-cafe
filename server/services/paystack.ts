@@ -5,7 +5,7 @@
  * It's the only monetization method allowed in the system.
  */
 import { config } from '../config';
-import fetch from 'node-fetch';
+// Using native fetch (Node.js 18+)
 import crypto from 'crypto';
 import { logger } from '../utils/debug-logger';
 
