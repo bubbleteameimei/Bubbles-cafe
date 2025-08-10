@@ -16,6 +16,9 @@ RUN npm ci --ignore-scripts
 # Build stage
 FROM base AS build
 WORKDIR /app
+# Copy node_modules from base stage first
+COPY --from=base /app/node_modules ./node_modules
+# Then copy source code
 COPY . .
 # Build both client and server
 RUN npm run -w client build && npm run -w server build
