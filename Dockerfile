@@ -10,14 +10,17 @@ COPY client/package.json ./client/
 COPY server/package.json ./server/
 COPY shared/package.json ./shared/
 
-# Install dependencies for all workspaces
-RUN npm ci --ignore-scripts
+# Install dependencies for all workspaces (remove --ignore-scripts to ensure proper workspace setup)
+RUN npm ci
 
 # Build stage
 FROM base AS build
 WORKDIR /app
 # Copy node_modules from base stage first
 COPY --from=base /app/node_modules ./node_modules
+COPY --from=base /app/client/node_modules ./client/node_modules
+COPY --from=base /app/server/node_modules ./server/node_modules
+COPY --from=base /app/shared/node_modules ./shared/node_modules
 # Copy source code (excluding node_modules)
 COPY . .
 # Build both client and server
@@ -30,6 +33,9 @@ ENV NODE_ENV=production
 
 # Copy node_modules and built artifacts
 COPY --from=base /app/node_modules ./node_modules
+COPY --from=base /app/client/node_modules ./client/node_modules
+COPY --from=base /app/server/node_modules ./server/node_modules
+COPY --from=base /app/shared/node_modules ./shared/node_modules
 COPY --from=build /app/client/dist ./client/dist
 COPY --from=build /app/server/dist ./server/dist
 COPY --from=build /app/shared/dist ./shared/dist
