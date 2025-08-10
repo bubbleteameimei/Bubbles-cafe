@@ -4,14 +4,20 @@ FROM node:22-alpine AS base
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Install deps
+# Copy package files for all workspaces first
 COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
+COPY client/package.json ./client/
+COPY server/package.json ./server/
+COPY shared/package.json ./shared/
+
+# Install dependencies for all workspaces
 RUN npm ci --ignore-scripts
 
-# Build client
+# Build stage
 FROM base AS build
 WORKDIR /app
 COPY . .
+# Build both client and server
 RUN npm run -w client build && npm run -w server build
 
 # Runtime image
