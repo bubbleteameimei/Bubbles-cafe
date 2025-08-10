@@ -15,6 +15,7 @@
   },
   "scripts": {
     "build": "npm run -w client build && npm run -w server build",
+    "render:build": "npm install && npm run -w client build && npm run -w server build && npm run deploy:prepare",
     "dev": "concurrently --kill-others-on-fail \"npm run -w server dev\" \"npm run -w client dev\"",
     "dev:server": "npm run -w server dev",
     "dev:client": "npm run -w client dev",
