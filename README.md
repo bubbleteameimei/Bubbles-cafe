@@ -1,4 +1,4 @@
-# Interactive Storytelling Platform
+# BUBBLE'S CAFE
 
 An advanced AI-powered digital storytelling platform that creates immersive and interactive narrative experiences through cutting-edge technologies and enhanced user interaction capabilities.
 
