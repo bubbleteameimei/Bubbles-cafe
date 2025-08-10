@@ -126,45 +126,36 @@ function determineThemeCategory(title, content) {
  */
 async function getOrCreateAdminUser(pool) {
   try {
-    // First, remove admin privileges from any other users except vantalison@gmail.com
-    await pool.query(`
-      UPDATE users SET is_admin = false 
-      WHERE email != 'vantalison@gmail.com' AND is_admin = true
-    `);
+    // Prefer explicitly configured admin email
+    const adminEmail = process.env.ADMIN_EMAIL;
 
-    // Always use vantalison@gmail.com as the primary admin
-    const existingUser = await pool.query(`
-      SELECT id, username, email, is_admin
-      FROM users
-      WHERE email = 'vantalison@gmail.com'
-      LIMIT 1
-    `);
-
-    if (existingUser.rows.length > 0) {
-      // Ensure this user is admin and update password
-      const hashedPassword = await bcrypt.hash("admin124", 12);
-      await pool.query(`
-        UPDATE users SET is_admin = true, username = 'vantalison', password_hash = $1
-        WHERE email = 'vantalison@gmail.com'
-      `, [hashedPassword]);
-      
-      log(`Found and updated admin user with ID: ${existingUser.rows[0].id}`, 'wordpress-sync');
-      return { ...existingUser.rows[0], is_admin: true };
+    if (adminEmail) {
+      const result = await pool.query(
+        `SELECT id, username, email, is_admin FROM users WHERE email = $1 LIMIT 1`,
+        [adminEmail]
+      );
+      if (result.rows.length > 0) {
+        log(`Using configured admin user ${adminEmail} with ID: ${result.rows[0].id}`, 'wordpress-sync');
+        return result.rows[0];
+      }
+      log(`Configured ADMIN_EMAIL ${adminEmail} not found in users table`, 'wordpress-sync');
     }
 
-    // Create vantalison@gmail.com admin user if it doesn't exist
-    const hashedPassword = await bcrypt.hash("admin124", 12);
-    const newUser = await pool.query(`
-      INSERT INTO users (username, email, password_hash, is_admin, created_at)
-      VALUES ('vantalison', 'vantalison@gmail.com', $1, true, NOW())
-      RETURNING id, username, email, is_admin
-    `, [hashedPassword]);
+    // Fallback: any existing admin user
+    const existingAdmin = await pool.query(
+      `SELECT id, username, email, is_admin FROM users WHERE is_admin = true LIMIT 1`
+    );
+    if (existingAdmin.rows.length > 0) {
+      log(`Using existing admin user with ID: ${existingAdmin.rows[0].id}`, 'wordpress-sync');
+      return existingAdmin.rows[0];
+    }
 
-    log(`Created admin user vantalison@gmail.com with ID: ${newUser.rows[0].id}`, 'wordpress-sync');
-    return newUser.rows[0];
+    // No admin available; return null to let caller decide
+    log(`No admin user found; WordPress posts will be created without admin association`, 'wordpress-sync');
+    return null;
   } catch (error) {
-    log(`Error getting/creating admin user: ${error.message}`, 'wordpress-sync');
-    throw error;
+    log(`Error getting admin user: ${error.message}`, 'wordpress-sync');
+    return null;
   }
 }
 
@@ -354,66 +345,66 @@ export async function syncWordPressPosts() {
           
           if (existingPost.rows.length === 0) {
             // Create new post - all WordPress posts are admin posts and should not appear in community
-            const result = await pool.query(`
-              INSERT INTO posts (
-                title, content, excerpt, slug, author_id, 
-                is_secret, "isAdminPost", created_at, mature_content, reading_time_minutes, 
-                theme_category, metadata
-              ) VALUES (
-                $1, $2, $3, $4, $5, 
-                false, true, $6, false, $7, 
-                $8, $9
-              ) RETURNING id
-            `, [
-              title, 
-              content, 
-              excerpt, 
-              slug, 
-              admin.id, 
-              pubDate, 
-              readingTimeMinutes,
-              themeCategory || categoryNames[0] || 'General',
-              JSON.stringify({
-                ...metadataObj,
-                isWordPressPost: true,
-                excludeFromCommunity: true // Explicitly mark to exclude from community feeds
-              })
-            ]);
+                          const result = await pool.query(`
+                INSERT INTO posts (
+                  title, content, excerpt, slug, author_id, 
+                  is_secret, "isAdminPost", created_at, mature_content, reading_time_minutes, 
+                  theme_category, metadata
+                ) VALUES (
+                  $1, $2, $3, $4, $5, 
+                  false, true, $6, false, $7, 
+                  $8, $9
+                ) RETURNING id
+              `, [
+                title, 
+                content, 
+                excerpt, 
+                slug, 
+                admin ? admin.id : null, 
+                pubDate, 
+                readingTimeMinutes,
+                themeCategory || categoryNames[0] || 'General',
+                JSON.stringify({
+                  ...metadataObj,
+                  isWordPressPost: true,
+                  excludeFromCommunity: true // Explicitly mark to exclude from community feeds
+                })
+              ]);
             
             created++;
             log(`Created post: "${title}" (ID: ${result.rows[0].id})`, 'wordpress-sync');
           } else {
             // Update existing post - ensure it's marked as admin post and excluded from community
             const postId = existingPost.rows[0].id;
-            await pool.query(`
-              UPDATE posts SET
-                title = $1,
-                content = $2,
-                excerpt = $3,
-                reading_time_minutes = $4,
-                theme_category = $5,
-                metadata = $6,
-                "isAdminPost" = $7,
-                author_id = $8,
-                created_at = $9
-              WHERE id = $10
-            `, [
-              title, 
-              content, 
-              excerpt, 
-              readingTimeMinutes,
-              themeCategory || categoryNames[0] || 'General',
-              JSON.stringify({
-                ...metadataObj,
-                lastUpdated: new Date().toISOString(),
-                isWordPressPost: true,
-                excludeFromCommunity: true // Explicitly mark to exclude from community feeds
-              }),
-              true, // WordPress posts are always admin posts
-              admin.id, // Ensure author is the admin user
-              pubDate, // Use the original publication date
-              postId
-            ]);
+                          await pool.query(`
+                UPDATE posts SET
+                  title = $1,
+                  content = $2,
+                  excerpt = $3,
+                  reading_time_minutes = $4,
+                  theme_category = $5,
+                  metadata = $6,
+                  "isAdminPost" = $7,
+                  author_id = $8,
+                  created_at = $9
+                WHERE id = $10
+              `, [
+                title, 
+                content, 
+                excerpt, 
+                readingTimeMinutes,
+                themeCategory || categoryNames[0] || 'General',
+                JSON.stringify({
+                  ...metadataObj,
+                  lastUpdated: new Date().toISOString(),
+                  isWordPressPost: true,
+                  excludeFromCommunity: true // Explicitly mark to exclude from community feeds
+                }),
+                true,
+                admin ? admin.id : null,
+                pubDate,
+                postId
+              ]);
             
             updated++;
             log(`Updated post: "${title}" (ID: ${postId})`, 'wordpress-sync');

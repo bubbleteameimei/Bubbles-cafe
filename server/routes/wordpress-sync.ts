@@ -3,7 +3,8 @@
  * These routes handle WordPress content importing and synchronization
  */
 import { Router, Request, Response, NextFunction } from 'express';
-import { syncSingleWordPressPost } from '../wordpress-sync';
+// removed eager import to avoid side effects and keep sync lazily loaded
+// import { syncSingleWordPressPost } from '../wordpress-sync';
 import { isAdmin } from '../middlewares/auth';
 import { validateCsrfToken } from '../middleware/csrf-protection';
 import rateLimit from 'express-rate-limit';

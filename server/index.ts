@@ -122,15 +122,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(compression());
 
-// Health check endpoint for Replit
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    port: PORT
-  });
-});
+// Basic readiness endpoint is defined later with CSRF initialization
 
 // Configure CORS for cross-domain requests when deployed on Vercel/Render
 setupCors(app);

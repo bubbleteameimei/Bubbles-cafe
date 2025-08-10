@@ -38,6 +38,7 @@ RUN npm ci --omit=dev
 
 # Copy built artifacts (shared workspace doesn't have dist, just source files)
 COPY --from=build /app/client/dist ./client/dist
+COPY --from=build /app/client/dist ./server/dist/public
 COPY --from=build /app/server/dist ./server/dist
 COPY --from=build /app/shared ./shared
 
