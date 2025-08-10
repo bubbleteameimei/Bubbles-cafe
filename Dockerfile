@@ -2,7 +2,8 @@
 
 FROM node:22-alpine AS base
 WORKDIR /app
-ENV NODE_ENV=production
+# Don't set NODE_ENV=production here since we need devDependencies for building
+ENV NODE_ENV=development
 
 # Copy package files for all workspaces first
 COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
@@ -10,7 +11,7 @@ COPY client/package.json ./client/
 COPY server/package.json ./server/
 COPY shared/package.json ./shared/
 
-# Install dependencies for all workspaces (remove --ignore-scripts to ensure proper workspace setup)
+# Install dependencies for all workspaces (including devDependencies for building)
 RUN npm ci
 
 # Build stage
@@ -28,8 +29,14 @@ FROM node:22-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Copy node_modules and built artifacts (npm workspaces hoist dependencies to root)
-COPY --from=base /app/node_modules ./node_modules
+# Install only production dependencies for runtime
+COPY package.json package-lock.json* ./
+COPY client/package.json ./client/
+COPY server/package.json ./server/
+COPY shared/package.json ./shared/
+RUN npm ci --only=production
+
+# Copy built artifacts
 COPY --from=build /app/client/dist ./client/dist
 COPY --from=build /app/server/dist ./server/dist
 COPY --from=build /app/shared/dist ./shared/dist
