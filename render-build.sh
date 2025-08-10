@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # Render build script for Bubbles Cafe monorepo
+set -e  # Exit on any error
+
 echo "🚀 Starting Render build process..."
 
 # Install root dependencies
