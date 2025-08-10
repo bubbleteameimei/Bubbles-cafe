@@ -3,71 +3,72 @@ import { Express, Request, Response, NextFunction } from "express";
 
 /**
  * Sets up CORS for cross-domain deployment
- * This file should be imported and used in server/index.ts
- * when deploying the backend separately from the frontend
- * 
- * Usage:
- * import { setupCors } from "./cors-setup";
- * 
- * // Add after initializing Express
- * setupCors(app);
+ * Use env FRONTEND_URL or FRONTEND_URLS (comma-separated) to configure allowed origins
  */
 export function setupCors(app: Express) {
-  // List of allowed origins
-  const allowedOrigins = [
-    // Add frontend URL from environment variables for production
-    process.env.FRONTEND_URL,
-    // Development URLs
+  // Collect allowed origins from env (support comma-separated list)
+  const envOriginsRaw = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '')
+    .split(',')
+    .map(o => o.trim())
+    .filter(Boolean);
+
+  // Normalize by stripping trailing slashes
+  const normalize = (o: string) => o.replace(/\/$/, '');
+  const envOrigins = Array.from(new Set(envOriginsRaw.map(normalize)));
+
+  // Development defaults
+  const devOrigins = [
     "http://localhost:3000",
     "http://localhost:5173",
     "http://localhost:5174"
-  ].filter(Boolean); // Filter out undefined values
+  ];
 
-  // CORS middleware
+  const isProd = process.env.NODE_ENV === 'production';
+
   app.use((req: Request, res: Response, next: NextFunction) => {
-    const origin = req.headers.origin;
-    
-    // Special case: if FRONTEND_URL is set to '*', allow all origins
+    const origin = (req.headers.origin || '').replace(/\/$/, '');
+
+    // Always vary on Origin for proxies/CDNs
+    res.setHeader('Vary', 'Origin');
+
+    // Allow list logic
+    const allowedOrigins = isProd ? envOrigins : [...envOrigins, ...devOrigins];
+
     if (process.env.FRONTEND_URL === '*') {
+      // Wildcard: no credentials per spec
       res.setHeader("Access-Control-Allow-Origin", "*");
-      // Note: Cannot use credentials with wildcard origin
-    } 
-    // Allow specific origins and include credentials
-    else if (origin && allowedOrigins.includes(origin)) {
-      res.setHeader("Access-Control-Allow-Origin", origin);
-      // Allow credentials (only works with specific origins, not wildcard)
-      res.setHeader("Access-Control-Allow-Credentials", "true");
-    }
-    // If no match but we're not in production, allow the origin anyway for development convenience
-    else if (origin && process.env.NODE_ENV !== 'production') {
+      // Do not set Allow-Credentials with wildcard
+    } else if (origin && allowedOrigins.includes(origin)) {
+      // Echo allowed origin and enable credentials
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
-    }
-    // In production, only allow specified origins
-    else if (origin && process.env.NODE_ENV === 'production') {
+    } else if (origin && !isProd) {
+      // In dev, allow any origin for convenience
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+    } else if (origin && isProd) {
+      // In production, log blocked origins for debugging
       console.warn(`[CORS] Blocked unauthorized origin: ${origin}`);
     }
-    
+
     // Allow specific headers
     res.setHeader(
       "Access-Control-Allow-Headers",
       "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRF-Token"
     );
-    
+
     // Allow specific methods
     res.setHeader(
       "Access-Control-Allow-Methods",
       "GET, POST, PUT, PATCH, DELETE, OPTIONS"
     );
-    
-    // Handle preflight requests
+
+    // Handle preflight
     if (req.method === "OPTIONS") {
       res.status(200).end();
       return;
     }
-    
+
     next();
   });
-
-  
 }

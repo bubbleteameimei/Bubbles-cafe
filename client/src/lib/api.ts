@@ -11,6 +11,13 @@ import { applyCSRFToken, fetchCsrfTokenIfNeeded } from './csrf-token';
 // For local development, we leave it empty to use relative paths
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
+// Minimal runtime banner for debugging deployment issues
+if (typeof window !== 'undefined') {
+  const banner = `[Client] API_BASE_URL=${API_BASE_URL || '(relative)'} env.PROD=${import.meta.env.PROD}`;
+  // eslint-disable-next-line no-console
+  console.log(banner);
+}
+
 export async function apiRequest(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   endpoint: string,
