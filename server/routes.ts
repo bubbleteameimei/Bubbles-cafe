@@ -9,7 +9,8 @@ import express from 'express';
 import { apiRateLimiter } from './middlewares/rate-limiter';
 import { apiCache } from './middlewares/api-cache';
 import { applySecurityMiddleware } from './middleware/security-validation';
-import * as session from 'express-session';
+// Removed duplicate express-session import and setup; index.ts configures session securely
+// import * as session from 'express-session';
 
 import { sanitizeHtml, stripHtml } from './utils/sanitizer';
 import { z } from "zod";
@@ -388,18 +389,18 @@ export function registerRoutes(app: Express): void {
   });
 
   // Set up session configuration before route registration
-  const sessionSettings: session.SessionOptions = {
-    secret: process.env.REPL_ID!,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: app.get('env') === 'production',
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    },
-    store: storage.sessionStore,
-  };
-  app.use(session.default(sessionSettings));
+  // const sessionSettings: session.SessionOptions = {
+  //   secret: process.env.REPL_ID!,
+  //   resave: false,
+  //   saveUninitialized: false,
+  //   cookie: {
+  //     secure: app.get('env') === 'production',
+  //     httpOnly: true,
+  //     maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  //   },
+  //   store: storage.sessionStore,
+  // };
+  // app.use(session.default(sessionSettings));
   app.use(compression());
   
   // Set up auth BEFORE routes

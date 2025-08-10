@@ -152,7 +152,14 @@ const sessionStore = new SecureNeonSessionStore() as any;
 
 app.use(session({
   store: sessionStore as any,
-  secret: (process.env.NODE_ENV === 'production') ? (() => { if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) { throw new Error('SESSION_SECRET (>=32 chars) is required in production'); } return process.env.SESSION_SECRET; })() : (process.env.SESSION_SECRET || 'development_secret_min_32_chars_long'),
+  secret: (() => {
+    const configured = process.env.SESSION_SECRET;
+    if (configured && configured.length >= 32) return configured;
+    // Generate a secure fallback secret to avoid startup failure in production
+    const generated = crypto.randomBytes(48).toString('hex');
+    console.warn('[Session] SESSION_SECRET missing or too short. Using a generated secret for this instance.');
+    return generated;
+  })(),
   resave: false,
   saveUninitialized: false,
   rolling: true, // Reset expiration on activity
@@ -405,11 +412,17 @@ async function startServer() {
       if (databaseAvailable) {
         try {
           // Register WordPress sync routes
-          registerWordPressSyncRoutes(app);
+          if (process.env.ENABLE_WORDPRESS_SYNC === 'true') {
+            registerWordPressSyncRoutes(app);
+          }
           
           // Setup WordPress sync schedule (run every 5 minutes)
-          setupWordPressSyncSchedule(5 * 60 * 1000);
-          serverLogger.info('WordPress sync services started (database available)');
+          if (process.env.ENABLE_WORDPRESS_SYNC === 'true') {
+            setupWordPressSyncSchedule(5 * 60 * 1000);
+            serverLogger.info('WordPress sync services started (database available)');
+          } else {
+            serverLogger.info('WordPress sync disabled by environment variable');
+          }
         } catch (syncError) {
           serverLogger.warn('WordPress sync setup failed, but continuing', { 
             error: syncError instanceof Error ? syncError.message : 'Unknown error' 

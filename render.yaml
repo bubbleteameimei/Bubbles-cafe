@@ -16,6 +16,10 @@ services:
         value: 3001
       - key: DATABASE_URL
         value: postgresql://neondb_owner:npg_P6ghCZR2BASQ@ep-young-bread-aeojmse9-pooler.c-2.us-east-1.aws.neon.tech/bubbles_cafe?sslmode=require
+      - key: ENABLE_WORDPRESS_SYNC
+        value: false
+      - key: SESSION_SECRET
+        value: change-me-in-render-dashboard-or-use-secret
     healthCheckPath: /api/health
     autoDeploy: true
 

@@ -30,7 +30,8 @@ interface EmailResult {
 export async function sendEmail(message: EmailMessage): Promise<EmailResult> {
   try {
     if (!gmailTransporter) {
-      throw new Error('Email transporter not configured');
+      console.warn('Email transporter not configured; skipping send.');
+      return { success: false, error: new Error('Email transporter not configured') };
     }
     
     const result = await gmailTransporter.sendMail({
