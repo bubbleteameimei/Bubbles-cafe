@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Currently Offline - Horror Stories</title>
+  <style>
+    :root {
+      --background: #121212;
+      --foreground: #e1e1e1;
+      --primary: #9147ff;
+      --accent: #ff4081;
+      --paper: #1e1e1e;
+      --border: rgba(255, 255, 255, 0.15);
+    }
+    
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: var(--background);
+      color: var(--foreground);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    
+    .container {
+      max-width: 800px;
+      padding: 2rem;
+      background-color: var(--paper);
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      margin: 0 1rem;
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: var(--primary);
+    }
+    
+    p {
+      font-size: 1.2rem;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+    
+    .accent {
+      color: var(--accent);
+    }
+    
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    button:hover {
+      background-color: #7c3adb;
+    }
+    
+    .offline-image {
+      width: 120px;
+      height: 120px;
+      margin-bottom: 2rem;
+      opacity: 0.8;
+    }
+    
+    .footer {
+      margin-top: 2rem;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.6);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <svg class="offline-image" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" color="#9147ff">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m-3.536-3.536a5 5 0 010-7.071m-2.121 7.071a3 3 0 010-4.242M9.172 16.172a3 3 0 00-4.242-4.242M12 12h.01" />
+    </svg>
+    
+    <h1>You're Currently Offline</h1>
+    <p>
+      It appears that you're not connected to the internet. 
+      <span class="accent">Don't worry</span>, some of the stories you've viewed earlier 
+      might still be available offline.
+    </p>
+    <p>
+      Check your internet connection and try again.
+    </p>
+    
+    <button onclick="tryReconnecting()">Try Again</button>
+    
+    <div class="footer">
+      Horror Stories Reader - Offline Mode
+    </div>
+  </div>
+
+  <script>
+    function tryReconnecting() {
+      window.location.reload();
+    }
+  </script>
+</body>
+</html>

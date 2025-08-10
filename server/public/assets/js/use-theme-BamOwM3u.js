@@ -1,0 +1,1 @@
+import{b8 as e}from"./index-CaZ-hcXF.js";function a(){const{theme:a,setTheme:t,toggleTheme:m}=e();return{theme:{mode:"light"===a?"light":"dark",appearance:a},toggleTheme:m,setTheme:e=>{e.mode?t(e.mode):e.appearance&&"system"!==e.appearance?t(e.appearance):"system"===e.appearance&&t("system")}}}export{a as u};
