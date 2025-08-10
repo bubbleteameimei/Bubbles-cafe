@@ -229,7 +229,7 @@ setupAuth(app);
 setupOAuth(app);
 
 // Add health check endpoint with CSRF token initialization
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   // Ensure a CSRF token is set
   if (!req.session.csrfToken) {
     const token = crypto.randomBytes(32).toString('hex');
@@ -249,6 +249,12 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     csrfToken: req.session.csrfToken 
   });
+});
+
+// Backward compatibility: /health forwards to /api/health
+app.get('/health', (req, res, next) => {
+  (req as any).url = '/api/health';
+  next();
 });
 
 // Basic security headers
