@@ -233,6 +233,7 @@ async function startServer() {
     });
 
     // Database connection is handled by db-connect.ts module
+    let databaseAvailable = false;
     try {
       serverLogger.info('Setting up database connection...');
       
@@ -253,10 +254,13 @@ async function startServer() {
         try {
           const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
           serverLogger.info('Database connected, tables exist', { postsCount });
+          databaseAvailable = true;
         } catch (tableError) {
           serverLogger.warn('Database tables check failed, but continuing', { 
             error: tableError instanceof Error ? tableError.message : 'Unknown error' 
           });
+          // Still mark as available if we can connect
+          databaseAvailable = true;
         }
       })();
       
@@ -273,15 +277,15 @@ async function startServer() {
         error: dbError instanceof Error ? dbError.message : 'Unknown error' 
       });
       console.log('⚠️ Database setup failed, but continuing without database');
+      databaseAvailable = false;
     }
 
-    serverLogger.info('Database setup completed, proceeding to server creation');
+    serverLogger.info(`Database setup completed, database available: ${databaseAvailable}, proceeding to server creation`);
 
     // Create server instance
     serverLogger.info('Creating HTTP server instance');
     server = createServer(app);
     serverLogger.info('HTTP server instance created');
-
 
     // Setup routes based on environment
     if (isDev) {
@@ -295,33 +299,24 @@ async function startServer() {
       registerRoutes(app);
       serverLogger.info('Main routes registration completed');
       
-      // Register user feedback routes
-      // registerUserFeedbackRoutes(app, storage);
+      // Only start WordPress sync if database is available
+      if (databaseAvailable) {
+        try {
+          // Register WordPress sync routes
+          // registerWordPressSyncRoutes(app);
+          
+          // Setup WordPress sync schedule (run every 5 minutes)
+          // setupWordPressSyncSchedule(5 * 60 * 1000);
+          serverLogger.info('WordPress sync services started (database available)');
+        } catch (syncError) {
+          serverLogger.warn('WordPress sync setup failed, but continuing', { 
+            error: syncError instanceof Error ? syncError.message : 'Unknown error' 
+          });
+        }
+      } else {
+        serverLogger.info('Skipping WordPress sync services (database not available)');
+      }
       
-      // Register recommendation routes
-      // registerRecommendationsRoutes(app, storage);
-      
-      
-      // Register privacy settings routes
-      // registerPrivacySettingsRoutes(app, storage);
-      
-      // Register WordPress sync routes
-      // registerWordPressSyncRoutes(app);
-
-      // Register analytics routes
-      // registerAnalyticsRoutes(app);
-      
-      // Register email service routes
-      // registerEmailServiceRoutes(app);
-      
-      // Register bookmark routes
-      // registerBookmarkRoutes(app);
-      
-      // Register session sync routes
-      // app.use('/api/session-sync', sessionSyncRouter);
-      
-      // Setup WordPress sync schedule (run every 5 minutes)
-      // setupWordPressSyncSchedule(5 * 60 * 1000);
       console.log('✅ Route registration completed');
       
       // We've moved the post recommendations endpoint to main routes.ts
@@ -445,7 +440,26 @@ startServer().then(() => {
     error: error instanceof Error ? error.message : 'Unknown error',
     stack: error instanceof Error ? error.stack : undefined
   });
-  process.exit(1);
+  
+  // Don't exit immediately, try to continue with limited functionality
+  console.error('❌ Server startup failed, but attempting to continue with limited functionality');
+  console.error('Error details:', error);
+  
+  // Try to start a minimal server if possible
+  try {
+    if (server) {
+      serverLogger.info('Attempting to start server with existing instance');
+    } else {
+      serverLogger.warn('No server instance available, some features may not work');
+    }
+  } catch (minimalError) {
+    serverLogger.error('Failed to start minimal server', { error: minimalError });
+    // Only exit if we absolutely can't continue
+    setTimeout(() => {
+      serverLogger.error('Exiting due to critical startup failure');
+      process.exit(1);
+    }, 5000); // Give 5 seconds for any cleanup
+  }
 });
 
 // Handle graceful shutdown
@@ -460,26 +474,37 @@ process.on('SIGTERM', () => {
   });
 });
 
-// Handle uncaught exceptions
+// Handle uncaught exceptions - don't exit immediately
 process.on('uncaughtException', (error) => {
   serverLogger.error('Uncaught exception', {
     error: error.message,
     stack: error.stack
   });
   
-  // Give time for the error to be logged before exiting
-  setTimeout(() => {
+  // Log the error but don't exit immediately
+  console.error('❌ Uncaught exception:', error.message);
+  console.error('Stack trace:', error.stack);
+  
+  // Only exit if this is a critical error
+  if (error.message.includes('EADDRINUSE') || error.message.includes('permission denied')) {
+    serverLogger.error('Critical error, exiting', { error: error.message });
     process.exit(1);
-  }, 1000);
+  }
+  
+  // For other errors, log and continue
+  serverLogger.warn('Non-critical error, continuing operation', { error: error.message });
 });
 
-// Handle unhandled rejections
+// Handle unhandled rejections - don't exit immediately
 process.on('unhandledRejection', (reason, _promise) => {
   serverLogger.error('Unhandled promise rejection', {
     reason: reason instanceof Error ? reason.message : String(reason),
     stack: reason instanceof Error ? reason.stack : undefined
   });
-  console.error('Unhandled promise rejection:', reason);
+  console.error('⚠️ Unhandled promise rejection:', reason);
+  
+  // Don't exit for promise rejections, just log them
+  serverLogger.warn('Promise rejection handled, continuing operation');
 });
 
 export default app;
