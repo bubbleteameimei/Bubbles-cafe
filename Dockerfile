@@ -21,7 +21,7 @@ WORKDIR /app
 COPY --from=base /app/node_modules ./node_modules
 # Copy source code (excluding node_modules)
 COPY . .
-# Build both client and server
+# Build both client and server (shared workspace doesn't need building)
 RUN npm run -w client build && npm run -w server build
 
 # Runtime image
@@ -36,10 +36,10 @@ COPY server/package.json ./server/
 COPY shared/package.json ./shared/
 RUN npm ci --only=production
 
-# Copy built artifacts
+# Copy built artifacts (shared workspace doesn't have dist, just source files)
 COPY --from=build /app/client/dist ./client/dist
 COPY --from=build /app/server/dist ./server/dist
-COPY --from=build /app/shared/dist ./shared/dist
+COPY --from=build /app/shared ./shared
 
 # Copy package files for runtime
 COPY package.json ./
