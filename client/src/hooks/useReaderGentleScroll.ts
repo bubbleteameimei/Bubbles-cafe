@@ -157,13 +157,15 @@ const useReaderGentleScroll = ({
           const position = JSON.parse(positionJSON) as ScrollPosition;
           
           // Log debug info
-          console.log('[ReaderGentleScroll] Found saved position:', {
-            position,
-            isRefresh: isRefresh.current,
-            currentTime: Date.now(),
-            difference: Date.now() - position.timestamp,
-            maxAge: maxAgeMs
-          });
+          if (import.meta.env.DEV) {
+            console.log('[ReaderGentleScroll] Found saved position:', {
+              position,
+              isRefresh: isRefresh.current,
+              currentTime: Date.now(),
+              difference: Date.now() - position.timestamp,
+              maxAge: maxAgeMs
+            });
+          }
           
           // Check if position is still valid (not too old)
           const now = Date.now();

@@ -18,6 +18,12 @@ import logger from "./utils/secure-client-logger";
 
 logger.info("Starting application...");
 
+// Ensure we're in a browser environment
+if (typeof window === 'undefined' || typeof document === 'undefined') {
+  logger.error("Not in browser environment");
+  throw new Error("Application must run in browser environment");
+}
+
 const root = document.getElementById("root");
 if (!root) {
   logger.error("Root element not found");
@@ -64,31 +70,37 @@ logger.debug("CSS styles loaded");
 logger.info("Mounting React application...");
 
 // Add performance markers for debugging (simplified)
-try {
-  performance.mark('react-init-start');
-} catch (e) {
-  console.warn('Performance API not available');
+if (typeof performance !== 'undefined') {
+  try {
+    performance.mark('react-init-start');
+  } catch (e) {
+    logger.warn('Performance API not available');
+  }
 }
 
 // Initialize React with error handling and performance tracking
 const renderApp = () => {
   try {
-    performance.mark('react-render-start');
+    if (typeof performance !== 'undefined') {
+      performance.mark('react-render-start');
+    }
     const rootElement = createRoot(root);
     rootElement.render(
       <React.StrictMode>
         <App />
       </React.StrictMode>
     );
-    performance.mark('react-render-end');
-    performance.measure('React Render Time', 'react-render-start', 'react-render-end');
+    if (typeof performance !== 'undefined') {
+      performance.mark('react-render-end');
+      performance.measure('React Render Time', 'react-render-start', 'react-render-end');
+      
+      // Log performance metrics
+      const measurements = performance.getEntriesByType('measure');
+      measurements.forEach(measurement => {
+        logger.debug(`Performance: ${measurement.name}: ${measurement.duration.toFixed(2)}ms`);
+      });
+    }
     logger.info("React application mounted successfully");
-
-    // Log performance metrics
-    const measurements = performance.getEntriesByType('measure');
-    measurements.forEach(measurement => {
-      logger.debug(`Performance: ${measurement.name}: ${measurement.duration.toFixed(2)}ms`);
-    });
   } catch (error) {
     logger.error("Error mounting React application:", error);
   }

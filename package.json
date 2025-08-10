@@ -8,8 +8,8 @@
     "shared"
   ],
   "dependencies": {
-    "react-hook-form": "^7.62.0",
     "@hookform/resolvers": "^5.2.1",
+    "react-hook-form": "^7.62.0",
     "react-is": "18.2.0",
     "terser": "^5.29.1"
   },
@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
+    "puppeteer": "^24.16.0",
     "typescript": "^5.5.4"
   }
 }

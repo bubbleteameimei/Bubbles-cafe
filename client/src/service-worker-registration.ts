@@ -2,6 +2,10 @@
 // This file handles the registration and lifecycle management of the service worker
 
 export function register() {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return; // Not in browser environment
+  }
+  
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       const swUrl = '/service-worker.js';
@@ -10,12 +14,16 @@ export function register() {
       
       // Add a listener for when the network status changes
       window.addEventListener('online', () => {
-        
+        if (import.meta.env.DEV) {
+          console.log('App is online');
+        }
         document.dispatchEvent(new CustomEvent('app-online'));
       });
       
       window.addEventListener('offline', () => {
-        
+        if (import.meta.env.DEV) {
+          console.log('App is offline');
+        }
         document.dispatchEvent(new CustomEvent('app-offline'));
       });
     });
@@ -32,7 +40,9 @@ function registerValidSW(swUrl: string) {
       // Setup a regular interval for service worker updates
       setInterval(() => {
         registration.update();
-        
+        if (import.meta.env.DEV) {
+          console.log('Service worker update check performed');
+        }
       }, 60 * 60 * 1000); // Check for updates once per hour
       
       registration.onupdatefound = () => {
@@ -47,12 +57,17 @@ function registerValidSW(swUrl: string) {
               // but the previous service worker will still serve the older
               // content until all client tabs are closed.
               
+              if (import.meta.env.DEV) {
+                console.log('New content is available and will be used when all tabs for this page are closed.');
+              }
               
               // Dispatch an event for the app to display an update notification
               document.dispatchEvent(new CustomEvent('app-update-available'));
             } else {
               // At this point, everything has been precached.
-              
+              if (import.meta.env.DEV) {
+                console.log('Content is cached for offline use.');
+              }
             }
           }
         };
@@ -64,6 +79,10 @@ function registerValidSW(swUrl: string) {
 }
 
 export function unregister() {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return; // Not in browser environment
+  }
+  
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready
       .then((registration) => {
@@ -78,6 +97,10 @@ export function unregister() {
 // Function to apply the update and reload the application
 // Call this when the user confirms they want to update
 export function applyUpdate() {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return; // Not in browser environment
+  }
+  
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then((registration) => {
       if (registration.waiting) {
