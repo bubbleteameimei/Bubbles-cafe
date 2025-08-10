@@ -69,6 +69,54 @@ let server: ReturnType<typeof createServer>;
 // Add keep-alive mechanism for Replit
 let keepAliveInterval: NodeJS.Timeout;
 
+// Global error handler to prevent WordPress sync from crashing the server
+process.on('uncaughtException', (error: Error & { code?: string }) => {
+  // Check if this is a WordPress sync related error
+  if (error.message.includes('wordpress-sync') || 
+      error.stack?.includes('wordpress-sync') ||
+      error.message.includes('WordPress') ||
+      error.message.includes('DATABASE_URL')) {
+    serverLogger.error('WordPress sync error isolated, preventing server crash', { 
+      error: error.message,
+      stack: error.stack 
+    });
+    // Don't exit for WordPress sync errors
+    return;
+  }
+  
+  // For other critical errors, log and potentially exit
+  if (error.code === 'EADDRINUSE') {
+    serverLogger.error('Port already in use, exiting', { error: error.message });
+    process.exit(1);
+  }
+  
+  serverLogger.error('Uncaught exception (non-WordPress sync)', { 
+    error: error.message,
+    stack: error.stack 
+  });
+  // Continue running for non-critical errors
+});
+
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  // Check if this is a WordPress sync related rejection
+  if (reason?.message?.includes('wordpress-sync') || 
+      reason?.message?.includes('WordPress') ||
+      reason?.message?.includes('DATABASE_URL')) {
+    serverLogger.error('WordPress sync unhandled rejection isolated, preventing server crash', { 
+      reason: reason?.message || 'Unknown WordPress sync error',
+      stack: reason?.stack 
+    });
+    // Don't exit for WordPress sync rejections
+    return;
+  }
+  
+  serverLogger.error('Unhandled rejection', { 
+    reason: reason?.message || 'Unknown error',
+    stack: reason?.stack 
+  });
+  // Continue running for non-critical rejections
+});
+
 // Configure basic middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -256,11 +304,11 @@ async function startServer() {
           serverLogger.info('Database connected, tables exist', { postsCount });
           databaseAvailable = true;
         } catch (tableError) {
-          serverLogger.warn('Database tables check failed, but continuing', { 
+          serverLogger.warn('Database tables check failed, database not available', { 
             error: tableError instanceof Error ? tableError.message : 'Unknown error' 
           });
-          // Still mark as available if we can connect
-          databaseAvailable = true;
+          // If tables don't exist, database is not available
+          databaseAvailable = false;
         }
       })();
       

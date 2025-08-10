@@ -462,15 +462,23 @@ export async function syncWordPressPosts() {
 export function setupWordPressSyncSchedule(intervalMs = 5 * 60 * 1000) {
   log(`Setting up WordPress sync schedule (every ${intervalMs / (60 * 1000)} minutes)`, 'wordpress-sync');
   
-  // Run once at startup
-  syncWordPressPosts().catch(err => {
-    log(`Error in initial WordPress sync: ${err.message}`, 'wordpress-sync');
-  });
+  // Run once at startup with better error isolation
+  setTimeout(() => {
+    syncWordPressPosts().catch(err => {
+      log(`Error in initial WordPress sync: ${err.message}`, 'wordpress-sync');
+    }).catch(() => {
+      // Double-catch to prevent any unhandled rejections
+      log(`Critical error in initial WordPress sync, but continuing`, 'wordpress-sync');
+    });
+  }, 1000); // Delay startup sync by 1 second to let server fully start
   
-  // Set up interval
+  // Set up interval with better error isolation
   const intervalId = setInterval(() => {
     syncWordPressPosts().catch(err => {
       log(`Error in scheduled WordPress sync: ${err.message}`, 'wordpress-sync');
+    }).catch(() => {
+      // Double-catch to prevent any unhandled rejections
+      log(`Critical error in scheduled WordPress sync, but continuing`, 'wordpress-sync');
     });
   }, intervalMs);
   
