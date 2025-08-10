@@ -220,9 +220,7 @@ app.get('/health', (req, res) => {
 // Create a server logger
 const serverLogger = createLogger('Server');
 
-// Import our database setup utilities
-import setupDatabase from '../scripts/setup-db';
-
+// Database setup is handled by db-connect.ts module
 // import seedFromWordPressAPI from '../scripts/api-seed'; // Unused import
 
 async function startServer() {
@@ -234,13 +232,13 @@ async function startServer() {
       port: PORT
     });
 
-    // Setup database connection with timeout
+    // Database connection is handled by db-connect.ts module
     try {
       serverLogger.info('Setting up database connection...');
       
       // Set a timeout for database setup
       const dbSetupPromise = (async () => {
-        await setupDatabase();
+        // Database setup is handled automatically by db-connect.ts
         serverLogger.info('Database setup completed successfully');
         
         // Wait for database pool to be initialized with timeout
