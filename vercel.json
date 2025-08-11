@@ -16,6 +16,9 @@
   "outputDirectory": "client/dist",
   "framework": "vite",
   "installCommand": "npm install",
+  "functions": {
+    "nodeVersion": "20.x"
+  },
   "headers": [
     {
       "source": "/(.*)",

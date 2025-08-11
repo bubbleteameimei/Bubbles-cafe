@@ -2,6 +2,9 @@
   "name": "bubbles-cafe-monorepo",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "workspaces": [
     "client",
     "server",
