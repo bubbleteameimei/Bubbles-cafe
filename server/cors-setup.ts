@@ -79,6 +79,8 @@ export function setupCors(app: Express) {
       "Access-Control-Allow-Headers",
       "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRF-Token"
     );
+    // Allow client JS to read Set-Cookie header (needed for CSRF/session)
+    res.setHeader("Access-Control-Expose-Headers", "Set-Cookie");
 
     // Allow specific methods
     res.setHeader(
