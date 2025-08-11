@@ -23,10 +23,9 @@ let API_BASE_URL: string = apiBase;
 if (!API_BASE_URL && typeof window !== 'undefined') {
   const { hostname, protocol } = window.location;
 
-  // If frontend is on bubblescafe.space/* assume backend is the Render service
-  if (hostname.endsWith('bubblescafe.space')) {
-    API_BASE_URL = `${protocol}//bubbles-cafe-backend.onrender.com`;
-  }
+  // Compute apex domain (strip www.) and use api.<apex>
+  const apex = hostname.replace(/^www\./, '');
+  API_BASE_URL = `${protocol}//api.${apex}`;
 }
 
 // Minimal runtime banner for debugging deployment issues
