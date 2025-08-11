@@ -30,6 +30,9 @@ if (typeof window !== 'undefined') {
   console.log(banner);
 }
 
+// Export for other modules that need the resolved URL
+export { API_BASE_URL };
+
 export async function apiRequest(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   endpoint: string,

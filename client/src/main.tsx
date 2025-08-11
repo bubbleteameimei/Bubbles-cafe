@@ -14,9 +14,28 @@ import { setupStylePreloader, addInitialLoadingIndicator } from "./styles/preloa
 // We're now using only the standard loading-screen.tsx component directly
 // Import CSRF protection
 import { initCSRFProtection } from "@/lib/csrf-token";
+import { API_BASE_URL } from "@/lib/api";
 import logger from "./utils/secure-client-logger";
 
 logger.info("Starting application...");
+
+// Patch global fetch to automatically prepend API_BASE_URL for relative API calls
+if (typeof window !== 'undefined' && API_BASE_URL) {
+  const originalFetch = window.fetch.bind(window);
+
+  window.fetch = ((input: RequestInfo, init?: RequestInit) => {
+    try {
+      if (typeof input === 'string' && input.startsWith('/api/')) {
+        input = `${API_BASE_URL}${input}`;
+      } else if (input instanceof Request && input.url.startsWith('/api/')) {
+        input = new Request(`${API_BASE_URL}${input.url}`, input);
+      }
+    } catch (e) {
+      // Fail silently, fallback to original fetch
+    }
+    return originalFetch(input as any, init);
+  }) as typeof fetch;
+}
 
 // Ensure we're in a browser environment
 if (typeof window === 'undefined' || typeof document === 'undefined') {
