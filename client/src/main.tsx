@@ -1,5 +1,3 @@
-// Import preloader CSS first to ensure it takes effect immediately
-import "./styles/preloader.css";
 // Import scroll effects CSS
 import "./styles/scroll-effects.css";
 // Import reader fixes to ensure proper story content padding
@@ -8,8 +6,6 @@ import { createRoot } from "react-dom/client";
 import React from 'react';
 import App from "./App";
 import "./index.css";
-// Import the preloader script
-import { setupStylePreloader, addInitialLoadingIndicator } from "./styles/preloader";
 // All scroll to top functionality has been completely removed from the application
 // We're now using only the standard loading-screen.tsx component directly
 // Import CSRF protection
@@ -57,10 +53,10 @@ linkElements.forEach(link => {
 });
 
 // Add initial loading indicator to prevent FOUC
-addInitialLoadingIndicator();
+// Removed addInitialLoadingIndicator();
 
 // Initialize style preloader
-setupStylePreloader();
+// Removed setupStylePreloader();
 
 // Initialize CSRF protection - async but we don't block rendering on it
 logger.debug("Initializing CSRF protection...");
