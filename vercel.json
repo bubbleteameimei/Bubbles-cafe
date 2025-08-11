@@ -12,9 +12,10 @@
       "destination": "/"
     }
   ],
-  "buildCommand": "npm install --no-audit --no-fund && npm run build",
-  "outputDirectory": "dist",
+  "buildCommand": "npm install --no-audit --no-fund && npm run -w client build",
+  "outputDirectory": "client/dist",
   "framework": "vite",
+  "installCommand": "npm install",
   "headers": [
     {
       "source": "/(.*)",
