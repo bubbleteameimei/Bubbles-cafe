@@ -16,6 +16,17 @@ export function setupCors(app: Express) {
   const normalize = (o: string) => o.replace(/\/$/, '');
   const envOrigins = Array.from(new Set(envOriginsRaw.map(normalize)));
 
+  // Pre-compute hosts for sub-domain matching
+  const envHosts = envOrigins
+    .map(o => {
+      try {
+        return new URL(o).host;
+      } catch {
+        return undefined;
+      }
+    })
+    .filter(Boolean) as string[];
+
   // Development defaults
   const devOrigins = [
     "http://localhost:3000",
@@ -34,11 +45,23 @@ export function setupCors(app: Express) {
     // Allow list logic
     const allowedOrigins = isProd ? envOrigins : [...envOrigins, ...devOrigins];
 
+    // Helper: determine if the request origin is permitted (supports sub-domains)
+    const isAllowed = (originToCheck: string): boolean => {
+      if (!originToCheck) return false;
+      try {
+        const { host } = new URL(originToCheck);
+        // Direct host match or sub-domain of an allowed host
+        return envHosts.some(allowedHost => host === allowedHost || host.endsWith(`.${allowedHost}`));
+      } catch {
+        return false;
+      }
+    };
+
     if (process.env.FRONTEND_URL === '*') {
       // Wildcard: no credentials per spec
       res.setHeader("Access-Control-Allow-Origin", "*");
       // Do not set Allow-Credentials with wildcard
-    } else if (origin && allowedOrigins.includes(origin)) {
+    } else if (origin && (allowedOrigins.includes(origin) || isAllowed(origin))) {
       // Echo allowed origin and enable credentials
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
@@ -47,8 +70,8 @@ export function setupCors(app: Express) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
     } else if (origin && isProd) {
-      // In production, log blocked origins for debugging
-      console.warn(`[CORS] Blocked unauthorized origin: ${origin}`);
+      // In production, log blocked origins for debugging with allow-list context
+      console.warn(`[CORS] Blocked unauthorized origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
     }
 
     // Allow specific headers
