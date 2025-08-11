@@ -12,7 +12,7 @@
       "destination": "/"
     }
   ],
-  "buildCommand": "cd client && npm ci && npm run build",
+  "buildCommand": "cd client && npm install --no-audit --no-fund && npm run build",
   "outputDirectory": "client/dist",
   "framework": "vite",
   "headers": [
