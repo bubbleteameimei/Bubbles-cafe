@@ -7,12 +7,18 @@
  */
 import { applyCSRFToken, fetchCsrfTokenIfNeeded } from './csrf-token';
 
+// Primary + fallback base URL from environment
+export const apiBase =
+  (import.meta.env.VITE_API_URL as string | undefined) ||
+  (import.meta.env.VITE_API_FALLBACK_URL as string | undefined) ||
+  '';
+
 // Resolve API base URL dynamically:
 // 1. Prefer compile-time VITE_API_URL (set in Vercel env)
 // 2. Fallback to a hard-coded Render domain if running on bubblescafe.space
 // 3. Otherwise use relative path (works in dev when the API is served from same host)
 
-let API_BASE_URL: string = import.meta.env.VITE_API_URL || '';
+let API_BASE_URL: string = apiBase;
 
 if (!API_BASE_URL && typeof window !== 'undefined') {
   const { hostname, protocol } = window.location;
