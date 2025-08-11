@@ -7,9 +7,21 @@
  */
 import { applyCSRFToken, fetchCsrfTokenIfNeeded } from './csrf-token';
 
-// This will be set in production deployment to the URL of the backend API server
-// For local development, we leave it empty to use relative paths
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+// Resolve API base URL dynamically:
+// 1. Prefer compile-time VITE_API_URL (set in Vercel env)
+// 2. Fallback to a hard-coded Render domain if running on bubblescafe.space
+// 3. Otherwise use relative path (works in dev when the API is served from same host)
+
+let API_BASE_URL: string = import.meta.env.VITE_API_URL || '';
+
+if (!API_BASE_URL && typeof window !== 'undefined') {
+  const { hostname, protocol } = window.location;
+
+  // If frontend is on bubblescafe.space/* assume backend is the Render service
+  if (hostname.endsWith('bubblescafe.space')) {
+    API_BASE_URL = `${protocol}//bubbles-cafe-backend.onrender.com`;
+  }
+}
 
 // Minimal runtime banner for debugging deployment issues
 if (typeof window !== 'undefined') {
