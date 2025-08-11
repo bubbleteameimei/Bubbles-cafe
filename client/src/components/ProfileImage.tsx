@@ -15,12 +15,13 @@ export default function ProfileImage() {
   // Define optimized images with progressive loading strategy
   const images = [
     { 
-      src: '/images/optimized/profile-optimized.jpg', 
+      // Use existing images under public/images
+      src: '/images/IMG_5266.png', 
       alt: 'Bubble\'s Cafe creator profile photo - atmospheric portrait with dark academia aesthetic',
-      // Smaller blur version for faster loading
-      blurSrc: '/images/optimized/profile-blur.jpg',
-      // Proper srcset for responsive loading
-      srcset: '/images/optimized/profile-optimized.jpg 600w, /images/IMG_5266.png 900w'
+      // Fallback blur can be the same source to avoid 404
+      blurSrc: '/images/IMG_5266.png',
+      // Provide a srcset using existing file
+      srcset: '/images/IMG_5266.png 900w'
     }
   ];
   
