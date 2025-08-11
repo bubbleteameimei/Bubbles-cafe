@@ -2,6 +2,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { RefreshCw, Bug, AlertTriangle } from 'lucide-react';
+import { apiRequest } from '@/lib/api';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -86,11 +87,7 @@ class ErrorLogger {
 
   private async sendToErrorService(errorReport: any) {
     try {
-      await fetch('/api/errors', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(errorReport)
-      });
+      await apiRequest('POST', '/api/errors', errorReport);
     } catch (err) {
       console.warn('Failed to send error report:', err);
     }
@@ -130,18 +127,14 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
 
   const handleSendReport = async () => {
     try {
-      await fetch('/api/user-feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'bug',
-          content: `Error Report - ID: ${errorId}`,
-          metadata: {
-            errorId,
-            userAgent: navigator.userAgent,
-            url: window.location.href
-          }
-        })
+      await apiRequest('POST', '/api/user-feedback', {
+        type: 'bug',
+        content: `Error Report - ID: ${errorId}`,
+        metadata: {
+          errorId,
+          userAgent: navigator.userAgent,
+          url: window.location.href
+        }
       });
       alert('Error report sent. Thank you!');
     } catch (err) {
