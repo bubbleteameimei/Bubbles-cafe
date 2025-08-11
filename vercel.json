@@ -4,6 +4,9 @@
     { "src": "/api/(.*)", "dest": "https://api.bubblescafe.space/api/$1" },
     { "src": "/.*", "dest": "/index.html" }
   ],
+  "buildCommand": "cd client && npm install && npm run build",
+  "outputDirectory": "client/dist",
+  "framework": "vite",
   "headers": [
     {
       "source": "/(.*)",
