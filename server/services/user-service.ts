@@ -1,5 +1,6 @@
 import { createSecureLogger } from '../utils/secure-logger';
-import { AppError, ValidationError, NotFoundError } from '../utils/error-handler';
+import { createError } from '../utils/error-handler';
+import { handleDatabaseError } from './post-service';
 import { db } from "../db";
 import { users, type User, type InsertUser } from "@shared/schema";
 import { eq, sql, and } from "drizzle-orm";
@@ -209,12 +210,10 @@ export class UserService {
   }
 
   // Get users with pagination
-  async getUsers(options: { page?: number; limit?: number } = {}): Promise<{ users: User[]; total: number }> {
-    const page = options.page || 1;
-    const limit = Math.min(options.limit || 10, 100); // Max 100 users per page
-    const offset = (page - 1) * limit;
-
+  async getUsers(page: number = 1, limit: number = 20): Promise<{ users: User[]; total: number; }> {
     try {
+      const offset = (page - 1) * limit;
+      
       const [usersData, totalResult] = await Promise.all([
         db.select({
           id: users.id,
@@ -227,12 +226,11 @@ export class UserService {
           .limit(limit)
           .offset(offset)
           .orderBy(users.createdAt),
-        
         db.select({ count: sql<number>`count(*)` }).from(users)
       ]);
 
       return {
-        users: usersData,
+        users: usersData as unknown as User[],
         total: totalResult[0].count
       };
     } catch (error) {
