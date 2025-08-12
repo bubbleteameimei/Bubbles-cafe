@@ -10,8 +10,8 @@ import { determineThemeCategory as determineThemeCategoryFromShared, STORY_THEME
 
 const { Pool } = pg;
 
-// WordPress API endpoint
-const WP_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
+// WordPress API endpoint - configurable via environment variable
+const WP_API_URL = process.env.WORDPRESS_API_URL || 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
 
 /**
  * Clean HTML content from WordPress to simpler format

@@ -41,7 +41,7 @@ const DefaultErrorFallback: ComponentType<LazyComponentProps> = ({ error, retry 
   </div>
 );
 
-// Enhanced lazy loading with retry logic
+// Enhanced lazy loading with retry logic and better performance
 export function createLazyComponent<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
   options: LazyLoadOptions = {}
@@ -49,8 +49,8 @@ export function createLazyComponent<T extends ComponentType<any>>(
   const {
     fallback = <DefaultLoadingFallback />,
     errorFallback: ErrorFallback = DefaultErrorFallback,
-    timeout = 10000,
-    retryAttempts = 3,
+    timeout = 5000, // Reduced timeout for better UX
+    retryAttempts = 2, // Reduced retry attempts
     preload = false
   } = options;
 

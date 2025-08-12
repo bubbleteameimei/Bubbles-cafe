@@ -29,10 +29,11 @@ import { setCsrfToken, validateCsrfToken, csrfTokenToLocals, CSRF_TOKEN_NAME } f
 import { runMigrations } from "./migrations"; // Import our custom migrations
 import { setupCors } from "./cors-setup";
 
+import { config } from './config';
+
 const app = express();
-const isDev = process.env.NODE_ENV !== "production";
-// Use port 3002 for Replit preview compatibility
-const PORT = parseInt(process.env.PORT || "3002", 10);
+const isDev = config.isDev;
+const PORT = config.port;
 const HOST = '0.0.0.0';
 
 // Create server instance outside startServer for proper cleanup
@@ -60,13 +61,13 @@ app.use((req, _res, next) => {
 
 // Configure session
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'horror-stories-session-secret',
+  secret: config.session.secret,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Only secure in production
+    secure: config.session.secure,
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Required for cross-domain cookies
+    sameSite: config.session.sameSite,
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   },
   store: storage.sessionStore
@@ -84,19 +85,12 @@ app.use(validateCsrfToken({
     '/api/auth/status', 
     '/api/auth/login',
     '/api/auth/register',
-    '/api/auth/forgot-password', // Allow password reset requests without CSRF protection (for testing)
-    '/api/auth/reset-password', // Allow password reset without CSRF protection (for testing)
-    '/api/auth/verify-reset-token', // Allow token verification without CSRF protection (for testing)
-    '/api/feedback',
-    '/api/posts',
-    '/api/recommendations',
-    '/api/analytics', // Exclude all analytics endpoints from CSRF checks
-    '/api/analytics/vitals', // Explicitly exclude analytics/vitals endpoint 
-    '/api/wordpress/sync',
-    '/api/wordpress/sync/status',
-    '/api/wordpress/posts',
-    '/api/reader/bookmarks', // Allow anonymous bookmarks without CSRF protection
-    '/admin-cleanup' // Special admin cleanup route that bypasses CSRF protection
+    '/api/auth/forgot-password', // Allow password reset requests without CSRF protection
+    '/api/auth/reset-password', // Allow password reset without CSRF protection
+    '/api/auth/verify-reset-token', // Allow token verification without CSRF protection
+    '/api/analytics/vitals', // Performance metrics endpoint
+    '/api/wordpress/sync/status', // WordPress sync status check
+    '/api/reader/bookmarks' // Allow anonymous bookmarks without CSRF protection
   ]
 }));
 

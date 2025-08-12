@@ -18,27 +18,21 @@ let isInitialized = false;
 let initializationPromise: Promise<void>;
 
 // Function to wait for initialization to complete
-export async function waitForPoolInitialization(timeoutMs = 10000): Promise<boolean> {
-  // If already initialized, return immediately
-  if (isInitialized) return true;
+export async function waitForPoolInitialization(timeoutMs: number = 5000): Promise<boolean> {
+  const startTime = Date.now();
   
-  // If initialization is in progress, wait for it
-  if (initializationPromise) {
+  while (Date.now() - startTime < timeoutMs) {
     try {
-      await Promise.race([
-        initializationPromise,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Pool initialization timeout')), timeoutMs)
-        )
-      ]);
-      return isInitialized;
+      // Try to get a connection to test if pool is ready
+      const client = await pool.connect();
+      client.release();
+      return true;
     } catch (error) {
-      console.error('Error waiting for pool initialization:', error);
-      return false;
+      // Wait a bit before trying again
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
   
-  // Initialization hasn't started yet, so return false
   return false;
 }
 
@@ -84,4 +78,5 @@ initializationPromise = (async () => {
   }
 })();
 
-export default db;
+// Re-export from the main db.ts file for compatibility
+export { pool, db } from './db';
