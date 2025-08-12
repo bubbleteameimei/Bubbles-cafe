@@ -570,9 +570,14 @@ export default function ProfileSettingsPage() {
                         render={({ field }) => (
                           <FormItem className="flex flex-row items-start space-x-3 space-y-0 bg-muted/40 rounded-md p-3">
                             <FormControl>
-                              <div className="mt-1">
-                                <RadioGroupItem checked={field.value} onCheckedChange={field.onChange} />
-                              </div>
+                              <RadioGroup value={field.value ? 'on' : 'off'} onValueChange={(v) => field.onChange(v === 'on')}>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <RadioGroupItem value="on" id="showReadingHistory-on" />
+                                  <Label htmlFor="showReadingHistory-on">On</Label>
+                                  <RadioGroupItem value="off" id="showReadingHistory-off" />
+                                  <Label htmlFor="showReadingHistory-off">Off</Label>
+                                </div>
+                              </RadioGroup>
                             </FormControl>
                             <div className="space-y-1.5">
                               <Label className="font-medium">Show Reading History</Label>
@@ -590,9 +595,14 @@ export default function ProfileSettingsPage() {
                         render={({ field }) => (
                           <FormItem className="flex flex-row items-start space-x-3 space-y-0 bg-muted/40 rounded-md p-3">
                             <FormControl>
-                              <div className="mt-1">
-                                <RadioGroupItem checked={field.value} onCheckedChange={field.onChange} />
-                              </div>
+                              <RadioGroup value={field.value ? 'on' : 'off'} onValueChange={(v) => field.onChange(v === 'on')}>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <RadioGroupItem value="on" id="showBookmarks-on" />
+                                  <Label htmlFor="showBookmarks-on">On</Label>
+                                  <RadioGroupItem value="off" id="showBookmarks-off" />
+                                  <Label htmlFor="showBookmarks-off">Off</Label>
+                                </div>
+                              </RadioGroup>
                             </FormControl>
                             <div className="space-y-1.5">
                               <Label className="font-medium">Show Bookmarks</Label>
@@ -610,9 +620,14 @@ export default function ProfileSettingsPage() {
                         render={({ field }) => (
                           <FormItem className="flex flex-row items-start space-x-3 space-y-0 bg-muted/40 rounded-md p-3">
                             <FormControl>
-                              <div className="mt-1">
-                                <RadioGroupItem checked={field.value} onCheckedChange={field.onChange} />
-                              </div>
+                              <RadioGroup value={field.value ? 'on' : 'off'} onValueChange={(v) => field.onChange(v === 'on')}>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <RadioGroupItem value="on" id="allowMentions-on" />
+                                  <Label htmlFor="allowMentions-on">On</Label>
+                                  <RadioGroupItem value="off" id="allowMentions-off" />
+                                  <Label htmlFor="allowMentions-off">Off</Label>
+                                </div>
+                              </RadioGroup>
                             </FormControl>
                             <div className="space-y-1.5">
                               <Label className="font-medium">Allow @Mentions</Label>

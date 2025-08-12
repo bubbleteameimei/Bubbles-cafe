@@ -73,6 +73,7 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
 
   // Generate responsive image URLs
   const generateSrcSet = (baseSrc: string, widths: number[] = [320, 640, 768, 1024, 1280, 1920]) => {
+    if (typeof window === 'undefined') return '';
     return widths
       .map(width => {
         const url = new URL(baseSrc, window.location.origin);
@@ -203,11 +204,11 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
         {/* Fallback for browsers that don't support WebP */}
         <img
           ref={(node) => {
+            // Forward to parent callback ref if provided
             if (typeof ref === 'function') {
               ref(node);
-            } else if (ref) {
-              ref.current = node;
             }
+            // Store internally for intersection observer
             imgRef.current = node;
           }}
           src={getOptimizedSrc(src, 'jpg')}
