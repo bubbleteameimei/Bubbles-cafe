@@ -1,8 +1,7 @@
 
-import { Icon } from "lucide-react";
-import { ThemeCategory } from "@shared/schema";
+import type { LucideIcon } from "lucide-react";
 
-export function getIconComponent(iconName: string): Icon {
+export function getIconComponent(_iconName: string): LucideIcon {
   // Simple passthrough since we're not using custom icons yet
-  return () => null;
+  return () => null as any;
 }
