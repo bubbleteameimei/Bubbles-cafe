@@ -54,18 +54,23 @@ export default function Sidebar() {
     queryFn: async () => {
       try {
         const response = await fetch('/api/posts?page=1&limit=5');
-        if (!response.ok) throw new Error('Failed to fetch posts');
+        if (!response.ok) {
+          console.warn('Posts API not available, using empty array');
+          return { posts: [], hasMore: false };
+        }
         const data = await response.json();
         return {
           posts: Array.isArray(data.posts) ? data.posts : [],
           hasMore: !!data.hasMore
         };
       } catch (error) {
-        console.error('Error fetching posts:', error);
+        console.warn('Posts temporarily unavailable:', error.message);
         return { posts: [], hasMore: false };
       }
     },
-    staleTime: 5 * 60 * 1000
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+    refetchOnWindowFocus: false
   });
 
   const { data: comments = [], isLoading: isLoadingComments } = useQuery<Comment[]>({
@@ -73,14 +78,19 @@ export default function Sidebar() {
     queryFn: async () => {
       try {
         const response = await fetch('/api/comments/recent');
-        if (!response.ok) throw new Error('Failed to fetch comments');
+        if (!response.ok) {
+          console.warn('Comments API not available, using empty array');
+          return [];
+        }
         const data = await response.json();
         return Array.isArray(data) ? data : [];
       } catch (error) {
-        console.error('Error fetching comments:', error);
+        console.warn('Comments temporarily unavailable:', error.message);
         return [];
       }
-    }
+    },
+    retry: false,
+    refetchOnWindowFocus: false
   });
 
   if (isLoadingPosts || isLoadingComments) {
