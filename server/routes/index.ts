@@ -3,16 +3,16 @@ import { createSecureLogger } from '../utils/secure-logger';
 import { postsRouter } from './posts';
 import { commentsRouter } from './comments';
 import { authRouter } from './auth';
-import adminRoutes from './admin';
-import analyticsRoutes from './analytics';
+import { adminRoutes } from './admin';
 import searchRoutes from './search';
 import newsletterRoutes from './newsletter';
 import bookmarksRoutes from './bookmarks';
 import emailRoutes from './email';
 import moderationRoutes from './moderation';
-import privacySettingsRoutes from './privacy-settings';
-import recommendationsRoutes from './recommendations';
-import userFeedbackRegister from '../routes/user-feedback';
+import { registerPrivacySettingsRoutes } from './privacy-settings';
+import { registerRecommendationsRoutes } from './recommendations';
+import { registerUserFeedbackRoutes } from '../routes/user-feedback';
+import { storage } from '../storage';
 
 const routesLogger = createSecureLogger('RoutesIndex');
 
@@ -50,12 +50,12 @@ export function registerModularRoutes(app: Express) {
     app.use('/api', moderationRoutes);
     routesLogger.info('Moderation routes registered');
 
-    // Privacy settings
-    app.use('/api', privacySettingsRoutes as any);
+    // Privacy settings (function-based registration)
+    registerPrivacySettingsRoutes(app, storage);
     routesLogger.info('Privacy settings routes registered');
 
-    // Recommendations
-    app.use('/api', recommendationsRoutes as any);
+    // Recommendations (function-based registration)
+    registerRecommendationsRoutes(app, storage);
     routesLogger.info('Recommendations routes registered');
 
     // Admin
@@ -63,8 +63,7 @@ export function registerModularRoutes(app: Express) {
     routesLogger.info('Admin routes registered');
 
     // User feedback (function-based registration)
-    // @ts-expect-error register function signature
-    userFeedbackRegister.registerUserFeedbackRoutes(app, require('../storage').storage);
+    registerUserFeedbackRoutes(app, storage);
     routesLogger.info('User feedback routes registered');
 
     routesLogger.info('All modular routes registered successfully');

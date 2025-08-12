@@ -65,29 +65,29 @@ router.post('/posts/:postId/comments',
     
     try {
       // Moderate comment content
-      const moderationResult = await moderateComment(req.body.content);
-      if (!moderationResult.approved) {
+      const moderation = await moderateComment(req.body.content);
+      if (moderation.isBlocked) {
         throw createError.badRequest('Comment contains inappropriate content');
       }
       
       const commentData = {
         ...req.body,
         postId: Number(postId),
-        authorId: req.user?.id || null,
-        content: moderationResult.content || req.body.content
-      };
+        userId: req.user?.id || null,
+        content: moderation.moderatedText || req.body.content
+      } as any;
       
       const newComment = await storage.createComment(commentData);
       
       commentsLogger.info('Comment created successfully', { 
         commentId: newComment.id,
         postId,
-        authorId: req.user?.id 
+        userId: req.user?.id 
       });
       
       res.status(201).json(newComment);
     } catch (error) {
-      if (error.statusCode) throw error;
+      if ((error as any).statusCode) throw error;
       commentsLogger.error('Error creating comment', { postId, error });
       throw createError.internal('Failed to create comment');
     }
@@ -104,29 +104,29 @@ router.post('/comments/:id/replies',
     
     try {
       // Moderate reply content
-      const moderationResult = await moderateComment(req.body.content);
-      if (!moderationResult.approved) {
+      const moderation = await moderateComment(req.body.content);
+      if (moderation.isBlocked) {
         throw createError.badRequest('Reply contains inappropriate content');
       }
       
       const replyData = {
         ...req.body,
         parentId: Number(id),
-        authorId: req.user?.id || null,
-        content: moderationResult.content || req.body.content
-      };
+        userId: req.user?.id || null,
+        content: moderation.moderatedText || req.body.content
+      } as any;
       
       const newReply = await storage.createCommentReply(replyData);
       
       commentsLogger.info('Comment reply created successfully', { 
         replyId: newReply.id,
         parentId: id,
-        authorId: req.user?.id 
+        userId: req.user?.id 
       });
       
       res.status(201).json(newReply);
     } catch (error) {
-      if (error.statusCode) throw error;
+      if ((error as any).statusCode) throw error;
       commentsLogger.error('Error creating comment reply', { parentId: id, error });
       throw createError.internal('Failed to create reply');
     }

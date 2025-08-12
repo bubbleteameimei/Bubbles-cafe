@@ -63,7 +63,7 @@ import type { CommentMetadata } from "@shared/schema";
 import { db } from "./db";
 import pkg from 'pg';
 import { createHash } from 'crypto';
-const { Pool } = pkg;
+const { Pool, PoolConfig } = pkg;
 
 // Helper function to safely create Date objects
 function safeCreateDate(value: unknown): Date {
@@ -103,7 +103,6 @@ const pool = new Pool({
   min: 1, // Minimum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
   connectionTimeoutMillis: 3000, // Reduced timeout for faster failures
-  acquireTimeoutMillis: 2000, // Add acquire timeout
   maxUses: 3000, // Reduced max uses to prevent memory issues
   allowExitOnIdle: false, // Don't exit when the pool is empty - better for production
   keepAlive: true, // Enable TCP keep-alive
@@ -973,6 +972,7 @@ export class DatabaseStorage implements IStorage {
   async createUser(user: InsertUser): Promise<User> {
     try {
       // Hash the password before storing
+      const bcrypt = await import('bcryptjs');
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(user.password, salt);
 
@@ -1008,11 +1008,9 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error in createUser:", error);
       if (error instanceof Error) {
-        if (error.message.includes('duplicate key')) {
-          throw new Error("User with this email already exists");
-        }
+        throw error;
       }
-      throw new Error("Failed to create user");
+      throw new Error('Unknown error in createUser');
     }
   }
   
