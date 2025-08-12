@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=IM+Fell+English:ital,wght@0,400;1,400&family=Megrim&display=swap');
-@import "./styles/sidebar-enhanced.css";
 @import './styles/responsive.css';
+@import "./styles/sidebar-enhanced.css";
 
 /* Mobile responsiveness update - March 2025 */
 @tailwind base;
@@ -15,9 +15,6 @@ html, body {
 body {
   overflow-y: auto;
 }
-
-/* Import responsive framework */
-@import './styles/responsive.css';
 
 /* Screen reader only utility */
 .sr-only {
