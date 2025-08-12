@@ -44,10 +44,9 @@ export function CommentWithMarkdown({
                 {new Date(createdAt).toLocaleDateString()}
               </span>
             </div>
-            <div className="comment-content mt-2 text-sm">
+            <div className="comment-content mt-2 text-sm prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown 
                 remarkPlugins={[remarkGfm]}
-                className="prose prose-sm dark:prose-invert max-w-none"
               >
                 {content}
               </ReactMarkdown>

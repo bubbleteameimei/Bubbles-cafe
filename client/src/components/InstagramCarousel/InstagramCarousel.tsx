@@ -68,6 +68,7 @@ export const InstagramCarousel: React.FC<InstagramCarouselProps> = memo(({
       carouselElement.addEventListener('scroll', handleScroll);
       return () => carouselElement.removeEventListener('scroll', handleScroll);
     }
+    return undefined;
   }, [activeIndex, images.length]);
 
   // Keyboard navigation
