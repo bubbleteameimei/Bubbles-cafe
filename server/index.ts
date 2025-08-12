@@ -28,6 +28,7 @@ import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark r
 import { setCsrfToken, validateCsrfToken, csrfTokenToLocals, CSRF_TOKEN_NAME } from "./middleware/csrf-protection";
 import { runMigrations } from "./migrations"; // Import our custom migrations
 import { setupCors } from "./cors-setup";
+import { handleError } from "./utils/error-handler";
 
 import { config } from './config';
 

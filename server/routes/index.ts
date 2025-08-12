@@ -14,11 +14,18 @@ import { registerPrivacySettingsRoutes } from './privacy-settings';
 import { registerRecommendationsRoutes } from './recommendations';
 import { registerUserFeedbackRoutes } from '../routes/user-feedback';
 import { storage } from '../storage';
+import { handleError } from '../utils/error-handler';
+import healthRoutes from './health';
 
 const routesLogger = createSecureLogger('RoutesIndex');
 
 export function registerModularRoutes(app: Express) {
   try {
+    // Health check routes (should be first for load balancers)
+    app.use('/health', healthRoutes);
+    app.use('/api/health', healthRoutes);
+    routesLogger.info('Health check routes registered');
+
     // Authentication routes
     app.use('/api/auth', authRouter);
     routesLogger.info('Auth routes registered');
@@ -70,6 +77,10 @@ export function registerModularRoutes(app: Express) {
     // User feedback (function-based registration)
     registerUserFeedbackRoutes(app, storage);
     routesLogger.info('User feedback routes registered');
+
+    // Global error handler - must be last
+    app.use(handleError);
+    routesLogger.info('Global error handler registered');
 
     routesLogger.info('All modular routes registered successfully');
   } catch (error) {
