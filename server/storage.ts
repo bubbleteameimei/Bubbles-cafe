@@ -2726,6 +2726,17 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  // Convenience: fetch a post by numeric id (used by some routes)
+  async getPostById(id: number): Promise<Post | undefined> {
+    const [post] = await db.select()
+      .from(postsTable)
+      .where(eq(postsTable.id, id))
+      .limit(1);
+    return post
+      ? { ...post, createdAt: safeCreateDate(post.createdAt) }
+      : undefined;
+  }
+
   // Admin notification methods
   async createAdminNotification(notification: InsertAdminNotification): Promise<AdminNotification> {
     const [newNotification] = await db.insert(adminNotifications)

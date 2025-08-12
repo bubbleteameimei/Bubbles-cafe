@@ -58,7 +58,9 @@ router.get('/:id',
     const { id } = req.params;
     
     try {
-      const post = await storage.getPost(Number(id));
+      const post = await (storage as any).getPostById
+        ? (storage as any).getPostById(Number(id))
+        : storage.getPost(String(id));
       
       if (!post) {
         throw createError.notFound('Post not found');
@@ -118,7 +120,9 @@ router.put('/:id',
     
     try {
       // Check if post exists and user is author
-      const existingPost = await storage.getPost(Number(id));
+      const existingPost = await ((storage as any).getPostById
+        ? (storage as any).getPostById(Number(id))
+        : storage.getPost(String(id)));
       if (!existingPost) {
         throw createError.notFound('Post not found');
       }
@@ -156,7 +160,9 @@ router.delete('/:id',
     
     try {
       // Check if post exists and user is author
-      const existingPost = await storage.getPost(Number(id));
+      const existingPost = await ((storage as any).getPostById
+        ? (storage as any).getPostById(Number(id))
+        : storage.getPost(String(id)));
       if (!existingPost) {
         throw createError.notFound('Post not found');
       }
