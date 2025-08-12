@@ -3559,7 +3559,7 @@ export class DatabaseStorage implements IStorage {
 }
 
 // In-Memory Storage Implementation (for development/testing)
-class MemStorage implements IStorage {
+class MemStorage {
   private users: User[] = [];
   private posts: Post[] = [];
   private comments: Comment[] = [];
