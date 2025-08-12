@@ -14,7 +14,7 @@ export function optimizeImagesForConnection() {
     if (isSlowConnection) {
       document.querySelectorAll("img").forEach(img => {
         const lowRes = img.getAttribute('data-lowres');
-        if (lowRes) {
+        if (typeof lowRes === 'string') {
           img.src = lowRes;
         }
       });

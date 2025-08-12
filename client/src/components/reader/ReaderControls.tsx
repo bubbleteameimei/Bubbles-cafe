@@ -25,13 +25,13 @@ interface ReaderControlsProps {
 
 export function ReaderControls({ onShare, onBookmark, isBookmarked }: ReaderControlsProps) {
   const [fontDialogOpen, setFontDialogOpen] = useState(false);
-  const { fontSize, increaseFontSize, decreaseFontSize, resetFontSize } = useFontSize();
-  const { fontFamily, setFontFamily } = useFontFamily();
+  const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
+  const { fontFamily, updateFontFamily } = useFontFamily();
   const { theme, setTheme } = useTheme();
 
   const handleFontFamilyChange = useCallback((value: string) => {
-    setFontFamily(value as FontFamilyKey);
-  }, [setFontFamily]);
+    updateFontFamily(value as FontFamilyKey);
+  }, [updateFontFamily]);
 
   const handleThemeToggle = useCallback(() => {
     setTheme(theme === 'dark' ? 'light' : 'dark');

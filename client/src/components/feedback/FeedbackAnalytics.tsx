@@ -45,8 +45,9 @@ export function FeedbackAnalytics({ feedbackItems }: FeedbackAnalyticsProps) {
     };
     
     feedbackItems.forEach(item => {
-      if (item.type in result) {
-        result[item.type as keyof typeof result]++;
+      const t = item.type ?? '';
+      if (t in result) {
+        result[t as keyof typeof result]++;
       }
     });
     

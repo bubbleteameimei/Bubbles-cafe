@@ -19,7 +19,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { FeedbackDetails, FeedbackItem } from '@/components/feedback/FeedbackDetails';
+import { FeedbackDetails } from '@/components/feedback/FeedbackDetails';
 import { FeedbackAnalytics } from '@/components/feedback/FeedbackAnalytics';
 import { FeedbackCategoryFilter, FeedbackCategory, FeedbackStatus } from '@/components/feedback/FeedbackCategoryFilter';
 import { toast } from 'sonner';
@@ -143,7 +143,19 @@ export default function FeedbackReviewPage() {
   })();
 
   // Sample data for development - this would normally come from the API
-  const sampleFeedbackData: FeedbackItem[] = [
+  type SampleFeedback = {
+    id: number;
+    content: string;
+    type: 'bug' | 'suggestion' | 'praise' | 'complaint';
+    rating: number;
+    page: string;
+    category: string;
+    status: 'pending' | 'reviewed' | 'resolved' | 'rejected' | 'inProgress' | 'closed';
+    createdAt: string;
+    metadata: Record<string, unknown>;
+    internalNotes?: string;
+  };
+  const sampleFeedbackData: SampleFeedback[] = [
     {
       id: 1,
       content: "I found a bug in the comments section. When I try to edit my comment, it doesn't save properly.",
@@ -376,12 +388,12 @@ export default function FeedbackReviewPage() {
         <TabsContent value="bugs" className="space-y-4">
           {view === 'analytics' ? (
             <FeedbackAnalytics 
-              feedbackItems={displayedFeedback.filter((item: FeedbackItem) => item.type === 'bug')} 
+              feedbackItems={displayedFeedback.filter((item: any) => item.type === 'bug')} 
             />
           ) : (
             filteredAndSortedFeedback
-              .filter((item: FeedbackItem) => item.type === 'bug')
-              .map((item: FeedbackItem) => (
+              .filter((item: any) => item.type === 'bug')
+              .map((item: any) => (
                 <FeedbackDetails 
                   key={item.id}
                   feedback={item}
@@ -395,12 +407,12 @@ export default function FeedbackReviewPage() {
         <TabsContent value="suggestions" className="space-y-4">
           {view === 'analytics' ? (
             <FeedbackAnalytics 
-              feedbackItems={displayedFeedback.filter((item: FeedbackItem) => item.type === 'suggestion')} 
+              feedbackItems={displayedFeedback.filter((item: any) => item.type === 'suggestion')} 
             />
           ) : (
             filteredAndSortedFeedback
-              .filter((item: FeedbackItem) => item.type === 'suggestion')
-              .map((item: FeedbackItem) => (
+              .filter((item: any) => item.type === 'suggestion')
+              .map((item: any) => (
                 <FeedbackDetails 
                   key={item.id}
                   feedback={item}
@@ -414,12 +426,12 @@ export default function FeedbackReviewPage() {
         <TabsContent value="praise" className="space-y-4">
           {view === 'analytics' ? (
             <FeedbackAnalytics 
-              feedbackItems={displayedFeedback.filter((item: FeedbackItem) => item.type === 'praise')} 
+              feedbackItems={displayedFeedback.filter((item: any) => item.type === 'praise')} 
             />
           ) : (
             filteredAndSortedFeedback
-              .filter((item: FeedbackItem) => item.type === 'praise')
-              .map((item: FeedbackItem) => (
+              .filter((item: any) => item.type === 'praise')
+              .map((item: any) => (
                 <FeedbackDetails 
                   key={item.id}
                   feedback={item}
