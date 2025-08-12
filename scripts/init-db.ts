@@ -1,5 +1,5 @@
-import { db } from '../server/db/index.js';
-import { users, posts, comments, authorStats, siteSettings, bookmarks, categories } from '../shared/schema.js';
+import { db } from '../server/db.js';
+import { users, posts, comments, authorStats, siteSettings, bookmarks } from '../shared/schema.js';
 import { sql } from 'drizzle-orm';
 import * as bcrypt from 'bcrypt';
 
