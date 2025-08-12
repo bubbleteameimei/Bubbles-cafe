@@ -205,7 +205,7 @@ router.post('/reset-password',
       const hashedPassword = await bcrypt.hash(newPassword, 12);
       
       // Update user password
-      await storage.updateUserPassword(resetToken.userId, hashedPassword);
+      await storage.updateUser(resetToken.userId, { password_hash: hashedPassword });
       
       // Delete used token
       await storage.markResetTokenAsUsed(token);
@@ -256,7 +256,7 @@ router.post('/change-password',
       const hashedPassword = await bcrypt.hash(newPassword, 12);
       
       // Update password
-      await storage.updateUserPassword(userId, hashedPassword);
+      await storage.updateUser(userId, { password_hash: hashedPassword });
       
       authLogger.info('Password changed successfully', { userId });
       
