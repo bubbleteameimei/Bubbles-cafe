@@ -7,7 +7,10 @@ This project is an interactive storytelling platform built with a modern web sta
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
-- **August 12, 2025**: Enhanced icon sizes and animations in browse stories and start reading buttons
+- **August 12, 2025**: Simplified sidebar animations and enhanced icon animations
+  - Removed complex Framer Motion top-level animations from sidebar for improved performance
+  - Replaced motion.div with regular div and removed staggered children animations
+  - Kept UI layout and styling intact while simplifying animation complexity
   - Book icons in browse stories made slightly smaller (h-5 w-5 → h-4 w-4) with improved multi-stage animation (rotation + scale)
   - Arrow icons on start reading buttons made slightly larger (h-5 w-5 → h-6 w-6)  
   - Enhanced book icon animations with smoother rotation and scale effects
