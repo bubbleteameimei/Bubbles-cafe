@@ -62,7 +62,17 @@ import {
 import type { CommentMetadata } from "@shared/schema";
 import { db } from "./db";
 import pkg from 'pg';
+import { createHash } from 'crypto';
 const { Pool } = pkg;
+
+// Helper function to safely create Date objects
+function safeCreateDate(value: unknown): Date {
+  if (value instanceof Date) return value;
+  if (typeof value === 'string' || typeof value === 'number') {
+    return new Date(value);
+  }
+  return new Date();
+}
 
 // Database operation utility function with retry logic
 async function safeDbOperation<T>(
@@ -1459,7 +1469,7 @@ export class DatabaseStorage implements IStorage {
       return {
         posts: paginatedPosts.map(post => ({
           ...post,
-          createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+          createdAt: safeCreateDate(post.createdAt)
         })),
         hasMore
       };
@@ -1480,7 +1490,7 @@ export class DatabaseStorage implements IStorage {
 
       return posts.map(post => ({
         ...post,
-        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+        createdAt: safeCreateDate(post.createdAt)
       }));
     } catch (error) {
       console.error("Error in getSecretPosts:", error);
@@ -1502,7 +1512,7 @@ export class DatabaseStorage implements IStorage {
   
           return {
             ...post,
-            createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+            createdAt: safeCreateDate(post.createdAt)
           };
         } catch (queryError: any) {
           console.log("Initial getPost query failed, trying fallback.", queryError.message);
@@ -1567,7 +1577,7 @@ export class DatabaseStorage implements IStorage {
 
       return posts.map(post => ({
         ...post,
-        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+        createdAt: safeCreateDate(post.createdAt)
       }));
     } catch (error) {
       console.error("Error in getPostsByAuthor:", error);
@@ -1642,7 +1652,7 @@ export class DatabaseStorage implements IStorage {
 
       return {
         ...newPost,
-        createdAt: newPost.createdAt instanceof Date ? newPost.createdAt : new Date(newPost.createdAt)
+        createdAt: safeCreateDate(newPost.createdAt)
       };
     } catch (error) {
       console.error("Error in createPost:", error);
@@ -1691,7 +1701,7 @@ export class DatabaseStorage implements IStorage {
 
       return {
         ...updatedPost,
-        createdAt: updatedPost.createdAt instanceof Date ? updatedPost.createdAt : new Date(updatedPost.createdAt)
+        createdAt: safeCreateDate(updatedPost.createdAt)
       };
     } catch (error) {
       console.error("Error in updatePost:", error);
@@ -1733,10 +1743,10 @@ export class DatabaseStorage implements IStorage {
 
       return {
         ...post,
-        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
+        createdAt: safeCreateDate(post.createdAt),
         comments: postComments.map(comment => ({
           ...comment,
-          createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
+          createdAt: safeCreateDate(comment.createdAt)
         }))
       };
     } catch (error) {
@@ -1764,8 +1774,8 @@ export class DatabaseStorage implements IStorage {
 
       return result.rows.map(comment => ({
         ...comment,
-        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt),
-        editedAt: comment.editedAt ? (comment.editedAt instanceof Date ? comment.editedAt : new Date(comment.editedAt)) : null,
+        createdAt: safeCreateDate(comment.createdAt),
+        editedAt: comment.editedAt ? safeCreateDate(comment.editedAt) : null,
         is_approved: comment.approved // Map to both field names for compatibility
       }));
     } catch (error) {
@@ -1789,8 +1799,8 @@ export class DatabaseStorage implements IStorage {
 
       return result.rows.map(comment => ({
         ...comment,
-        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt),
-        editedAt: comment.editedAt ? (comment.editedAt instanceof Date ? comment.editedAt : new Date(comment.editedAt)) : null,
+        createdAt: safeCreateDate(comment.createdAt),
+        editedAt: comment.editedAt ? safeCreateDate(comment.editedAt) : null,
         is_approved: comment.approved
       }));
     } catch (error) {
@@ -1813,8 +1823,8 @@ export class DatabaseStorage implements IStorage {
 
       return result.rows.map(comment => ({
         ...comment,
-        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt),
-        editedAt: comment.editedAt ? (comment.editedAt instanceof Date ? comment.editedAt : new Date(comment.editedAt)) : null,
+        createdAt: safeCreateDate(comment.createdAt),
+        editedAt: comment.editedAt ? safeCreateDate(comment.editedAt) : null,
         is_approved: comment.approved
       }));
     } catch (error) {
@@ -1952,7 +1962,7 @@ export class DatabaseStorage implements IStorage {
 
       return {
         ...updatedComment,
-        createdAt: updatedComment.createdAt instanceof Date ? updatedComment.createdAt : new Date(updatedComment.createdAt)
+        createdAt: safeCreateDate(updatedComment.createdAt)
       };
     } catch (error) {
       console.error("Error updating comment:", error);
@@ -1994,7 +2004,7 @@ export class DatabaseStorage implements IStorage {
 
       return {
         ...comment,
-        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
+        createdAt: safeCreateDate(comment.createdAt)
       };
     } catch (error) {
       console.error("Error in getComment:", error);
@@ -2026,7 +2036,7 @@ export class DatabaseStorage implements IStorage {
 
     return messages.map(message => ({
       ...message,
-      createdAt: message.createdAt instanceof Date ? message.createdAt : new Date(message.createdAt)
+      createdAt: safeCreateDate(message.createdAt)
     }));
   }
 
@@ -2037,7 +2047,7 @@ export class DatabaseStorage implements IStorage {
 
     return {
       ...newMessage,
-      createdAt: newMessage.createdAt instanceof Date ? newMessage.createdAt : new Date(newMessage.createdAt)
+      createdAt: safeCreateDate(newMessage.createdAt)
     };
   }
 
@@ -2274,7 +2284,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Generate a consistent userId from sessionId for anonymous users
       const userId = data.sessionId ? 
-        parseInt(crypto.createHash('md5').update(data.sessionId).digest('hex').substring(0, 8), 16) : 
+        parseInt(createHash('md5').update(data.sessionId).digest('hex').substring(0, 8), 16) : 
         -1; // Use -1 for anonymous reactions
       
       const isLike = data.isLike;
@@ -2305,7 +2315,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async getPersonalizedRecommendations(userId: number): Promise<Post[]> {
+  async getPersonalizedRecommendations(_userId: number): Promise<Post[]> {
     try {
       // Simple implementation - just return recent posts
       return this.getRecentPosts();
@@ -2409,7 +2419,7 @@ export class DatabaseStorage implements IStorage {
 
       return {
         ...newReply,
-        createdAt: newReply.createdAt instanceof Date ? newReply.createdAt : new Date(newReply.createdAt)
+        createdAt: safeCreateDate(newReply.createdAt)
       };
     } catch (error) {
       console.error('[Storage] Error creating comment reply:', error);
@@ -2490,7 +2500,7 @@ export class DatabaseStorage implements IStorage {
     return newProtection;
   }
 
-  async checkContentSimilarity(content: string): Promise<boolean> {
+  async checkContentSimilarity(_content: string): Promise<boolean> {
     try {
       // TODO: Implement similarity checking logic
       console.log('[Storage] Checking content similarity');
@@ -2696,7 +2706,7 @@ export class DatabaseStorage implements IStorage {
 
     return posts.map(post => ({
       ...post,
-      createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+      createdAt: safeCreateDate(post.createdAt)
     }));
   }
 
@@ -2714,7 +2724,7 @@ export class DatabaseStorage implements IStorage {
 
     return {
       ...post,
-      createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+      createdAt: safeCreateDate(post.createdAt)
     };
   }
 
@@ -2916,7 +2926,7 @@ export class DatabaseStorage implements IStorage {
       
       const userComments = await db.select()
         .from(comments)
-        .where(eq(comments.userId, userId.toString()))
+        .where(eq(comments.userId, userId))
         .orderBy(desc(comments.createdAt));
       
       console.log(`[Storage] Found ${userComments.length} comments for user: ${userId}`);
@@ -3006,7 +3016,7 @@ export class DatabaseStorage implements IStorage {
       console.log(`[Storage] Found post:`, post);
       return {
         ...post,
-        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+        createdAt: safeCreateDate(post.createdAt)
       };
     } catch (error) {
       console.error(`[Storage] Error getting post by ID ${id}:`, error);
@@ -3143,7 +3153,7 @@ export class DatabaseStorage implements IStorage {
         ) as returning_visitors
       `);
       
-      return result.rows[0]?.count || 0;
+      return Number(result.rows[0]?.count) || 0;
     } catch (error) {
       console.error('[Storage] Error getting returning user count:', error);
       return 0;
@@ -3226,7 +3236,7 @@ export class DatabaseStorage implements IStorage {
       bookmarkedPosts.forEach(post => {
         postsMap.set(post.id, {
           ...post,
-          createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+          createdAt: safeCreateDate(post.createdAt)
         });
       });
       
@@ -3234,7 +3244,7 @@ export class DatabaseStorage implements IStorage {
       return userBookmarks.map(bookmark => ({
         ...bookmark,
         post: postsMap.get(bookmark.postId)!,
-        createdAt: bookmark.createdAt instanceof Date ? bookmark.createdAt : new Date(bookmark.createdAt)
+        createdAt: safeCreateDate(bookmark.createdAt)
       }));
     } catch (error) {
       console.error("Error in getUserBookmarks:", error);
@@ -3319,7 +3329,7 @@ export class DatabaseStorage implements IStorage {
       bookmarkedPosts.forEach(post => {
         postsMap.set(post.id, {
           ...post,
-          createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+          createdAt: safeCreateDate(post.createdAt)
         });
       });
       
@@ -3327,7 +3337,7 @@ export class DatabaseStorage implements IStorage {
       return userBookmarks.map(bookmark => ({
         ...bookmark,
         post: postsMap.get(bookmark.postId)!,
-        createdAt: bookmark.createdAt instanceof Date ? bookmark.createdAt : new Date(bookmark.createdAt)
+        createdAt: safeCreateDate(bookmark.createdAt)
       }));
     } catch (error) {
       console.error("Error in getBookmarksByTag:", error);
@@ -3678,7 +3688,7 @@ class MemStorage implements IStorage {
       
       return recentPosts.map(post => ({
         ...post,
-        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+        createdAt: safeCreateDate(post.createdAt)
       }));
     } catch (error) {
       console.error('[Storage] Error in getRecentPosts:', error);
@@ -3701,7 +3711,7 @@ class MemStorage implements IStorage {
       
       return recommendedPosts.map(post => ({
         ...post,
-        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+        createdAt: safeCreateDate(post.createdAt)
       }));
     } catch (error) {
       console.error('[Storage] Error in getRecommendedPosts:', error);
@@ -3797,7 +3807,7 @@ class MemStorage implements IStorage {
           
           return trendingPosts.map(post => ({
             ...post,
-            createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+            createdAt: safeCreateDate(post.createdAt)
           }));
         } catch (error) {
           console.error(`[Storage] Error getting trending posts:`, error);
@@ -3810,7 +3820,7 @@ class MemStorage implements IStorage {
           });
           return recentPosts.map(post => ({
             ...post,
-            createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+            createdAt: safeCreateDate(post.createdAt)
           }));
         }
       }
@@ -3886,7 +3896,7 @@ class MemStorage implements IStorage {
               not(eq(postLikes.userId, userId)) // Exclude the current user
             ))
             .groupBy(postLikes.userId)
-            .having({ count: count() }, gte(count(), 2)) // Users who liked at least 2 posts
+            .having(gte(count(), 2)) // Users who liked at least 2 posts
             .limit(10);
         });
         
@@ -3906,7 +3916,7 @@ class MemStorage implements IStorage {
               .limit(10);
           });
           
-          similarUsersPostIds = new Set(similarUsersPosts.map(item => item.postId));
+          const similarUsersPostIds = new Set(similarUsersPosts.map(item => item.postId));
           console.log(`[Storage] Found ${similarUsersPostIds.size} collaborative filtering recommendations`);
         }
       } catch (error) {
@@ -4046,11 +4056,11 @@ class MemStorage implements IStorage {
           const result = [
             ...contentBasedRecommendations.map(post => ({
               ...post,
-              createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+              createdAt: safeCreateDate(post.createdAt)
             })),
             ...popularSupplements.map(post => ({
               ...post,
-              createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+              createdAt: safeCreateDate(post.createdAt)
             }))
           ];
           
@@ -4064,7 +4074,7 @@ class MemStorage implements IStorage {
           // Return what we have so far if this fails
           return contentBasedRecommendations.map(post => ({
             ...post,
-            createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+            createdAt: safeCreateDate(post.createdAt)
           }));
         }
       }
@@ -4077,7 +4087,7 @@ class MemStorage implements IStorage {
       
       return contentBasedRecommendations.map(post => ({
         ...post,
-        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+        createdAt: safeCreateDate(post.createdAt)
       }));
     } catch (error) {
       console.error(`[Storage] Error getting personalized recommendations:`, error);
@@ -4147,7 +4157,7 @@ class MemStorage implements IStorage {
         totalLikes: 0, // This would need to be calculated from likes data
         recentActivity: recentActivity.map(log => ({
           ...log,
-          createdAt: log.createdAt instanceof Date ? log.createdAt : new Date(log.createdAt)
+          createdAt: safeCreateDate(log.createdAt)
         }))
       };
     }, {
@@ -4159,7 +4169,7 @@ class MemStorage implements IStorage {
     }, 'getAdminInfo');
   }
 
-  async getSiteSettingByKey(key: string): Promise<SiteSettings | undefined> {
+  async getSiteSettingByKey(key: string): Promise<SiteSetting | undefined> {
     return this.safeDbOperation(async () => {
       const [setting] = await db.select()
         .from(siteSettings)
@@ -4168,13 +4178,12 @@ class MemStorage implements IStorage {
       
       return setting ? {
         ...setting,
-        createdAt: setting.createdAt instanceof Date ? setting.createdAt : new Date(setting.createdAt),
         updatedAt: setting.updatedAt instanceof Date ? setting.updatedAt : new Date(setting.updatedAt)
       } : undefined;
     }, undefined, 'getSiteSettingByKey');
   }
 
-  async setSiteSetting(key: string, value: string, category: string, description?: string): Promise<SiteSettings> {
+  async setSiteSetting(key: string, value: string, category: string, description?: string): Promise<SiteSetting> {
     return this.safeDbOperation(async () => {
       const now = new Date();
       
@@ -4192,7 +4201,6 @@ class MemStorage implements IStorage {
       if (updated) {
         return {
           ...updated,
-          createdAt: updated.createdAt instanceof Date ? updated.createdAt : new Date(updated.createdAt),
           updatedAt: updated.updatedAt instanceof Date ? updated.updatedAt : new Date(updated.updatedAt)
         };
       }
@@ -4204,20 +4212,18 @@ class MemStorage implements IStorage {
           value,
           category,
           description: description || null,
-          createdAt: now,
           updatedAt: now
         })
         .returning();
 
       return {
         ...newSetting,
-        createdAt: newSetting.createdAt instanceof Date ? newSetting.createdAt : new Date(newSetting.createdAt),
         updatedAt: newSetting.updatedAt instanceof Date ? newSetting.updatedAt : new Date(newSetting.updatedAt)
       };
-    }, {} as SiteSettings, 'setSiteSetting');
+    }, {} as SiteSetting, 'setSiteSetting');
   }
 
-  async getAllSiteSettings(): Promise<SiteSettings[]> {
+  async getAllSiteSettings(): Promise<SiteSetting[]> {
     return this.safeDbOperation(async () => {
       const settings = await db.select()
         .from(siteSettings)
@@ -4225,7 +4231,6 @@ class MemStorage implements IStorage {
 
       return settings.map(setting => ({
         ...setting,
-        createdAt: setting.createdAt instanceof Date ? setting.createdAt : new Date(setting.createdAt),
         updatedAt: setting.updatedAt instanceof Date ? setting.updatedAt : new Date(setting.updatedAt)
       }));
     }, [], 'getAllSiteSettings');
@@ -4262,7 +4267,7 @@ class MemStorage implements IStorage {
         bounceRate: 0,
         trendingPosts: trendingPosts.map(post => ({
           ...post,
-          createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+          createdAt: safeCreateDate(post.createdAt)
         })),
         activeUsers: userCount.count || 0,
         newUsers: 0,
@@ -4292,7 +4297,7 @@ class MemStorage implements IStorage {
 
       return userList.map(user => ({
         ...user,
-        createdAt: user.createdAt instanceof Date ? user.createdAt : new Date(user.createdAt)
+        createdAt: safeCreateDate(user.createdAt)
       }));
     }, [], 'getUsers');
   }
