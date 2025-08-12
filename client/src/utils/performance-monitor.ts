@@ -121,24 +121,18 @@ class PerformanceMonitor {
     }
   }
 
-  private recordMetric(name: string, value: number, delta: number = 0) {
+  public recordMetric(name: string, value: number, delta: number = 0) {
     const metric: PerformanceMetric = {
       name,
+      id: `${name}-${Math.round(performance.now())}`,
       value,
       delta,
-      id: this.generateId(),
+      rating: this.getRating(name, value),
+      navigationType: (performance.getEntriesByType('navigation')[0] as any)?.type || null,
       timestamp: Date.now(),
-      navigationType: this.getNavigationType(),
-      rating: getRating(name, value)
     };
-
+    
     this.metrics.set(name, metric);
-    this.onMetric(metric);
-
-    // Log performance issues
-    if (metric.rating === 'poor') {
-      console.warn(`Poor ${name} performance:`, metric);
-    }
   }
 
   private generateId(): string {
@@ -232,7 +226,9 @@ class PerformanceMonitor {
 
   public getPerformanceScore(): number {
     const coreVitals = this.getCoreWebVitals();
-    const scores = Object.values(coreVitals).map(metric => {
+    const scores = Object.values(coreVitals)
+      .filter((m): m is PerformanceMetric => !!m)
+      .map(metric => {
       switch (metric.rating) {
         case 'good': return 100;
         case 'needs-improvement': return 50;
@@ -240,8 +236,8 @@ class PerformanceMonitor {
         default: return 50;
       }
     });
-
-    return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+    
+    return scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
   }
 
   public getOptimizationSuggestions(): string[] {
