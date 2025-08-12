@@ -77,31 +77,11 @@ export function PieChartComponent({
                 ))}
               </Pie>
               <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const entry = payload[0];
-                    const percent = ((entry.value as number) / total * 100).toFixed(1);
-                    
-                    return (
-                      <ChartTooltip>
-                        <ChartTooltipContent>
-                          <div className="flex flex-col gap-1">
-                            <p className="text-sm font-medium">{entry.name}</p>
-                            <p className="text-sm font-semibold flex items-center gap-1">
-                              <span 
-                                className="size-3 rounded-full"
-                                style={{ backgroundColor: entry.color }}
-                              />
-                              Value: {entry.value}
-                              {showPercentage && ` (${percent}%)`}
-                            </p>
-                          </div>
-                        </ChartTooltipContent>
-                      </ChartTooltip>
-                    )
-                  }
-                  return null
+                formatter={(value: any, name: any, entry: any) => {
+                  const percent = total > 0 ? (((value as number) / total) * 100).toFixed(1) : '0.0';
+                  return [showPercentage ? `${value} (${percent}%)` : value, String(name)];
                 }}
+                labelFormatter={(label: any) => String(label)}
               />
               {showLegend && (
                 <Legend 

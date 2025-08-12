@@ -64,7 +64,7 @@ export default function Sidebar() {
           hasMore: !!data.hasMore
         };
       } catch (error) {
-        console.warn('Posts temporarily unavailable:', error.message);
+        console.warn('Posts temporarily unavailable:', (error as any)?.message || error);
         return { posts: [], hasMore: false };
       }
     },
@@ -85,7 +85,7 @@ export default function Sidebar() {
         const data = await response.json();
         return Array.isArray(data) ? data : [];
       } catch (error) {
-        console.warn('Comments temporarily unavailable:', error.message);
+        console.warn('Comments temporarily unavailable:', (error as any)?.message || error);
         return [];
       }
     },

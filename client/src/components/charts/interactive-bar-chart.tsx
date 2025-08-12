@@ -118,29 +118,8 @@ export function InteractiveBarChart({
                 }}
               />
               <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <ChartTooltip>
-                        <ChartTooltipContent>
-                          <div className="flex flex-col gap-2">
-                            <p className="text-sm font-medium">{payload[0].payload[dateField]}</p>
-                            <p className="text-sm font-semibold flex items-center gap-1">
-                              <span 
-                                className="size-3 rounded-full"
-                                style={{ 
-                                  backgroundColor: categoryColors[selectedCategory] || "#888" 
-                                }}
-                              />
-                              {selectedCategory}: {payload[0].value}
-                            </p>
-                          </div>
-                        </ChartTooltipContent>
-                      </ChartTooltip>
-                    )
-                  }
-                  return null
-                }}
+                formatter={(value: any, name: any) => [value as number, String(name)]}
+                labelFormatter={(label: any) => String(label)}
               />
               <Bar
                 dataKey={selectedCategory}
