@@ -20,9 +20,10 @@ router.get("/info", requireAuth, requireAdmin, async (req, res) => {
 router.get("/wordpress/status", requireAuth, requireAdmin, async (req, res) => {
   try {
     // Get WordPress sync status from site settings
-    const enabledSetting = await storage.getSiteSettingByKey("wordpress_sync_enabled");
-    const lastSyncSetting = await storage.getSiteSettingByKey("last_wordpress_sync");
-    const intervalSetting = await storage.getSiteSettingByKey("wordpress_sync_interval");
+    const allSettings = await storage.getSiteSettings();
+    const enabledSetting = allSettings.find(s => s.key === "wordpress_sync_enabled");
+    const lastSyncSetting = allSettings.find(s => s.key === "last_wordpress_sync");
+    const intervalSetting = allSettings.find(s => s.key === "wordpress_sync_interval");
     
     const enabled = enabledSetting?.value === "true";
     const lastSync = lastSyncSetting?.value ? new Date(parseInt(lastSyncSetting.value)) : null;
@@ -119,7 +120,7 @@ router.post("/wordpress/toggle", requireAuth, requireAdmin, async (req, res) => 
     }
     
     // Update the WordPress sync enabled setting
-    await storage.setSiteSetting("wordpress_sync_enabled", enabled.toString(), "wordpress");
+    await storage.updateSiteSetting("wordpress_sync_enabled", enabled.toString());
     
     // Log the toggle action
     await storage.logActivity({
@@ -200,7 +201,7 @@ router.get("/posts", requireAuth, requireAdmin, async (req, res) => {
 // Site settings endpoints
 router.get("/settings", requireAuth, requireAdmin, async (req, res) => {
   try {
-    const settings = await storage.getAllSiteSettings();
+    const settings = await storage.getSiteSettings();
     res.json(settings);
   } catch (error) {
     console.error("[Admin] Error fetching settings:", error);
@@ -219,7 +220,7 @@ router.post("/settings", requireAuth, requireAdmin, async (req, res) => {
     
     const { key, value, category, description } = settingsSchema.parse(req.body);
     
-    await storage.setSiteSetting(key, value, category, description);
+    await storage.updateSiteSetting(key, value);
     
     // Log the setting change
     await storage.logActivity({
