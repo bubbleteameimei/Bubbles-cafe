@@ -8,29 +8,25 @@ import TableOfContents from "@/components/reader/TableOfContents";
 import SwipeNavigation from "@/components/reader/SwipeNavigation";
 import "@/styles/reader-fixes.css"; // Import custom reader fixes
 import { 
-  Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronLeft, ChevronRight, BookOpen,
+  Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronRight, BookOpen,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
   Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog,
-  Menu, BookText, Home, Trash, X
+  BookText, Trash, X
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { format } from 'date-fns';
 import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { useFontSize } from "@/hooks/use-font-size";
 import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
 import { detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
-import type { ThemeCategory } from "@/shared/types";
 // Import social icons directly since lazy loading was causing issues
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
-import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
 import ApiLoader from "@/components/api-loader";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-import MistEffect from "@/components/effects/MistEffect";
-import { MistControl } from "@/components/ui/mist-control";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import { useToast } from "@/hooks/use-toast";
 // Import our reader-specific gentle scroll memory hook
@@ -45,14 +41,13 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-  DialogClose,
+
 } from "@/components/ui/dialog";
 
 // Import comment section directly for now to avoid lazy loading issues
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
-// Import the WordPress API functions with error handling
-import { fetchWordPressPosts } from "@/lib/wordpress-api";
+// WordPress API functions removed - using internal API instead
 
 // Native HTML sanitization function (avoiding DOMPurify dependency conflicts)
 const sanitizeHtmlContent = (html: string): string => {
@@ -114,11 +109,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const queryClient = useQueryClient();
   
   // Add authentication hook to check user role for admin actions
-  const { user, isAuthenticated } = useAuth();
+  const { user, logout } = useAuth();
   const isAdmin = user?.isAdmin === true;
   
   // Theme is now managed by the useTheme hook
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   
   // Font size and family adjustments
   const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
@@ -132,7 +127,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
   
-  // Will initialize this after data is loaded
+  // Auto save slug for navigation memory
   const [autoSaveSlug, setAutoSaveSlug] = useState<string>("");
   
   // Fixed constants for better text readability (replacing auto-contrast)
@@ -154,13 +149,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
      )))
   );
   
-  // Helper function to close dialogs safely
-  const safeCloseDialog = () => {
-    const closeButton = document.querySelector('[aria-label="Close"]');
-    if (closeButton instanceof HTMLElement) {
-      closeButton.click();
-    }
-  };
+  // Safe dialog close function (currently unused but available for future use)
   
   // Reading progress tracking with scroll-based calculation
   useEffect(() => {
@@ -554,9 +543,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         const styleTag = document.createElement('style');
         styleTag.id = 'reader-dynamic-styles';
         
-        // Get fresh styles every time by calling the function
-        const currentStyles = generateStoryContentStyles();
-        styleTag.textContent = currentStyles || '';
+        // Use the complete storyStyles instead of the simplified version
+        styleTag.textContent = storyStyles;
         
         document.head.appendChild(styleTag);
       } catch (error) {
@@ -793,22 +781,37 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const storyStyles = `
   .story-content {
     font-family: ${availableFonts[fontFamily].family};
-    width: 100%; /* Full width instead of max-width constraint */
+    width: 100%; 
     margin: 0 auto;
     color: hsl(var(--foreground));
     transition: color 0.3s ease, background-color 0.3s ease;
   }
-  .story-content p, .story-content .story-paragraph {
-    line-height: 1.7;  /* Improved line height for readability */
-    margin-bottom: 1.7em;  /* Restored paragraph spacing to improve readability */
-    text-align: justify;
-    letter-spacing: 0.01em; /* Subtle letter spacing */
-    font-kerning: normal; /* Improves kerning pairs */
-    font-feature-settings: "kern", "liga", "clig", "calt"; /* Typography features */
-    max-width: none; /* Remove width constraint for full-width layout */
-    margin-left: auto;
-    margin-right: auto;
+  
+  /* WordPress-inspired paragraph styling with proper spacing */
+  .story-content p, 
+  .story-content .story-paragraph {
+    line-height: 1.6 !important;  /* WordPress default line height */
+    margin-bottom: 1.5em !important;  /* WordPress-style paragraph spacing */
+    margin-top: 0 !important;
+    text-align: left; /* Left-align like WordPress default */
+    letter-spacing: 0.01em; 
+    font-kerning: normal; 
+    font-feature-settings: "kern", "liga", "clig", "calt"; 
+    max-width: none; 
     font-family: ${availableFonts[fontFamily].family};
+    font-size: 16px; /* Consistent font size */
+    color: inherit;
+  }
+  
+  /* Ensure first paragraph doesn't have extra top margin */
+  .story-content p:first-of-type {
+    margin-top: 0 !important;
+  }
+  
+  /* WordPress-style paragraph spacing between adjacent paragraphs */
+  .story-content p + p {
+    margin-top: 1.5em !important;
+    margin-bottom: 1.5em !important;
   }
   .story-content em {
     font-family: ${availableFonts[fontFamily].family};
@@ -835,9 +838,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }
   @media (max-width: 768px) {
     .story-content p, .story-content .story-paragraph {
-      margin-bottom: 1.5em; /* Slightly reduced on mobile but still maintaining good spacing */
-      line-height: 1.75; /* Slightly increased on mobile for readability */
+      margin-bottom: 1.4em !important; 
+      line-height: 1.7 !important; 
       font-family: ${availableFonts[fontFamily].family};
+      font-size: 16px;
+    }
+    .story-content p + p {
+      margin-top: 1.4em !important;
+      margin-bottom: 1.4em !important;
     }
   }
   .story-content img {
@@ -1342,12 +1350,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             >
               <div className="flex items-center justify-between">
                 <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
-                <DialogClose asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Close</span>
-                  </Button>
-                </DialogClose>
+                <button 
+                  onClick={() => setContentsDialogOpen(false)}
+                  className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  aria-label="Close dialog"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
               <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
               <TableOfContents 
