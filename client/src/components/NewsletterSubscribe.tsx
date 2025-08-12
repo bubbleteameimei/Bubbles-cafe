@@ -1,84 +1,25 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { useMutation } from "@tanstack/react-query";
+import NewsletterForm from './newsletter/newsletter-form';
 
-interface StoryRating {
-  postId: number;
-  isLike: boolean;
+interface NewsletterSubscribeProps {
+  className?: string;
+  title?: string;
+  description?: string;
 }
 
-interface StoryRatingProps {
-  postId: number;
-}
-
-export function StoryRating({ postId }: StoryRatingProps) {
-  const { toast } = useToast();
-  const [userRating, setUserRating] = useState<boolean | null>(null);
-
-  const form = useForm<StoryRating>({
-    defaultValues: {
-      postId,
-      isLike: false // Provide explicit default value
-    }
-  });
-
-  const rateMutation = useMutation({
-    mutationFn: async (data: StoryRating) => {
-      const response = await fetch('/api/stories/rate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to rate story');
-      }
-
-      return response.json();
-    },
-    onSuccess: (_, variables) => {
-      setUserRating(variables.isLike);
-      toast({
-        title: "Rating submitted!",
-        description: `You ${variables.isLike ? 'liked' : 'disliked'} this story.`,
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to submit rating. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  function onSubmit(data: StoryRating) {
-    rateMutation.mutate(data);
-  }
-
+export function NewsletterSubscribe({ 
+  className = '',
+  title = 'Stay Updated',
+  description = 'Subscribe to our newsletter for the latest stories and updates.'
+}: NewsletterSubscribeProps) {
   return (
-    <div className="w-full max-w-md mx-auto p-4 space-y-4 bg-card rounded-lg shadow-sm">
-      <div className="flex justify-center space-x-4">
-        <Button
-          variant={userRating === true ? "default" : "outline"}
-          onClick={() => onSubmit({ postId, isLike: true })}
-          disabled={rateMutation.isPending}
-        >
-          👍 Like
-        </Button>
-        <Button
-          variant={userRating === false ? "default" : "outline"}
-          onClick={() => onSubmit({ postId, isLike: false })}
-          disabled={rateMutation.isPending}
-        >
-          👎 Dislike
-        </Button>
+    <div className={`newsletter-subscribe ${className}`}>
+      <div className="text-center mb-4">
+        <h3 className="text-lg font-semibold mb-2">{title}</h3>
+        <p className="text-sm text-muted-foreground">{description}</p>
       </div>
+      <NewsletterForm />
     </div>
   );
 }
+
+export default NewsletterSubscribe;

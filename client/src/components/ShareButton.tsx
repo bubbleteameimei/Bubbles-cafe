@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Share, Copy, X } from 'lucide-react';
+import { Share, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -8,8 +8,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-  DialogClose
+  DialogTrigger
 } from '@/components/ui/dialog';
 
 interface ShareButtonProps {
