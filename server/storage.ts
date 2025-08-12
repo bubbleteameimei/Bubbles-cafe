@@ -1924,22 +1924,18 @@ export class DatabaseStorage implements IStorage {
       console.log('[Storage] Comment created successfully:', {
         id: newComment.id,
         parentId: newComment.parentId,
-        approved: newComment.approved
+        approved: newComment.is_approved
       });
 
       // Return properly formatted comment
       return {
         ...newComment,
-        createdAt: newComment.createdAt instanceof Date 
-          ? newComment.createdAt 
-          : new Date(newComment.createdAt),
-        editedAt: newComment.editedAt 
-          ? (newComment.editedAt instanceof Date ? newComment.editedAt : new Date(newComment.editedAt))
-          : null,
-        is_approved: newComment.approved,
-        metadata: typeof newComment.metadata === 'string' 
-          ? JSON.parse(newComment.metadata) 
-          : newComment.metadata
+        createdAt: safeCreateDate(newComment.createdAt),
+        editedAt: newComment.editedAt ? safeCreateDate(newComment.editedAt) : null,
+        is_approved: (newComment as any).is_approved ?? (newComment as any).approved ?? false,
+        metadata: typeof (newComment as any).metadata === 'string' 
+          ? JSON.parse((newComment as any).metadata) 
+          : (newComment as any).metadata || {}
       };
     } catch (error) {
       console.error('[Storage] Error creating comment:', error);
@@ -2313,15 +2309,8 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async getPersonalizedRecommendations(_userId: number): Promise<Post[]> {
-    try {
-      // Simple implementation - just return recent posts
-      return this.getRecentPosts();
-    } catch (error) {
-      console.error('[Storage] Error getting personalized recommendations:', error);
-      return [];
-    }
-  }
+  // Legacy stub removed; use the enhanced implementation further below
+  // async getPersonalizedRecommendations(_userId: number): Promise<Post[]> { return []; }
 
   // Comment votes methods
   async getCommentVote(commentId: number, userId: string): Promise<CommentVote | undefined> {
@@ -2413,11 +2402,11 @@ export class DatabaseStorage implements IStorage {
         )
         RETURNING *;
       `);
-      const newReply = result.rows[0];
+      const newReplyRow = result.rows[0] as CommentReply;
 
       return {
-        ...newReply,
-        createdAt: safeCreateDate(newReply.createdAt)
+        ...newReplyRow,
+        createdAt: safeCreateDate(newReplyRow.createdAt)
       };
     } catch (error) {
       console.error('[Storage] Error creating comment reply:', error);
@@ -2726,16 +2715,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  // Convenience: fetch a post by numeric id (used by some routes)
-  async getPostById(id: number): Promise<Post | undefined> {
-    const [post] = await db.select()
-      .from(postsTable)
-      .where(eq(postsTable.id, id))
-      .limit(1);
-    return post
-      ? { ...post, createdAt: safeCreateDate(post.createdAt) }
-      : undefined;
-  }
+  // Convenience: getPostById is implemented later with logging
 
   // Admin notification methods
   async createAdminNotification(notification: InsertAdminNotification): Promise<AdminNotification> {
@@ -3423,16 +3403,16 @@ export class DatabaseStorage implements IStorage {
       let feedbackList: UserFeedback[] = [];
       
       if (status === 'all') {
-        feedbackList = await db.query.userFeedback.findMany({
-          orderBy: (userFeedback, { desc }) => [desc(userFeedback.createdAt)],
-          limit: limit
-        });
+        feedbackList = await db.select()
+          .from(userFeedback)
+          .orderBy(desc(userFeedback.createdAt))
+          .limit(limit);
       } else {
-        feedbackList = await db.query.userFeedback.findMany({
-          where: eq(userFeedback.status, status),
-          orderBy: (userFeedback, { desc }) => [desc(userFeedback.createdAt)],
-          limit: limit
-        });
+        feedbackList = await db.select()
+          .from(userFeedback)
+          .where(eq(userFeedback.status, status))
+          .orderBy(desc(userFeedback.createdAt))
+          .limit(limit);
       }
       
       return feedbackList;
@@ -3467,10 +3447,10 @@ export class DatabaseStorage implements IStorage {
       console.log(`[Storage] Retrieving feedback for user ID: ${userId}`);
       
       // Using the most efficient query pattern available
-      const feedbackList = await db.query.userFeedback.findMany({
-        where: eq(userFeedback.userId, userId),
-        orderBy: (userFeedbackTable, { desc }) => [desc(userFeedbackTable.createdAt)],
-      });
+      const feedbackList = await db.select()
+        .from(userFeedback)
+        .where(eq(userFeedback.userId, userId))
+        .orderBy(desc(userFeedback.createdAt));
       
       console.log(`[Storage] Found ${feedbackList.length} feedback items for user ${userId}`);
       return feedbackList;
@@ -3584,15 +3564,14 @@ class MemStorage implements IStorage {
   private posts: Post[] = [];
   private comments: Comment[] = [];
   private bookmarks: Bookmark[] = [];
+  private userFeedback: UserFeedback[] = [];
+  private nextFeedbackId = 1;
   private nextUserId = 1;
   private nextPostId = 1;
   private nextCommentId = 1;
   private nextBookmarkId = 1;
 
-  // Session store implementation
-  sessionStore = new MemoryStore({
-    checkPeriod: 86400000 // Prune expired entries every 24h
-  });
+  // Session store implementation removed for MemStorage
 
   // Implement necessary comment methods
   async getCommentsByPostId(postId: number): Promise<Comment[]> {
@@ -3622,13 +3601,16 @@ class MemStorage implements IStorage {
     return true;
   }
   
-  async createBookmark(userId: number, postId: number): Promise<Bookmark> {
+  async createBookmark(bookmark: InsertBookmark): Promise<Bookmark> {
     const newBookmark: Bookmark = {
       id: this.nextBookmarkId++,
-      userId,
-      postId,
-      createdAt: new Date()
-    };
+      userId: bookmark.userId,
+      postId: bookmark.postId,
+      createdAt: new Date(),
+      tags: bookmark.tags ?? null,
+      notes: bookmark.notes ?? null,
+      lastPosition: (bookmark as any).lastPosition ?? '0'
+    } as Bookmark;
     this.bookmarks.push(newBookmark);
     return newBookmark;
   }
@@ -3637,13 +3619,11 @@ class MemStorage implements IStorage {
     return this.bookmarks.filter(bookmark => bookmark.userId === userId);
   }
   
-  async deleteBookmark(id: number): Promise<boolean> {
-    const index = this.bookmarks.findIndex(bookmark => bookmark.id === id);
+  async deleteBookmark(userId: number, postId: number): Promise<void> {
+    const index = this.bookmarks.findIndex(bookmark => bookmark.userId === userId && bookmark.postId === postId);
     if (index !== -1) {
       this.bookmarks.splice(index, 1);
-      return true;
     }
-    return false;
   }
   
   async getPostBookmarks(postId: number): Promise<number> {
@@ -3664,8 +3644,8 @@ class MemStorage implements IStorage {
     return newFeedback;
   }
   
-  async getUserFeedback(): Promise<UserFeedback[]> {
-    return this.userFeedback;
+  async getUserFeedback(userId: number): Promise<UserFeedback[]> {
+    return this.userFeedback.filter(f => f.userId === userId);
   }
   
   // Other required methods with minimal implementations
@@ -3787,7 +3767,7 @@ class MemStorage implements IStorage {
       // If user has no history, fall back to trending posts with theme preferences
       if (historyPostIds.size === 0) {
         console.log(`[Storage] User ${userId} has no history, using trending posts`);
-        let query = db.select()
+        let query: any = db.select()
           .from(postsTable)
           .orderBy(desc(postsTable.likesCount), desc(postsTable.createdAt));
         
@@ -3937,7 +3917,7 @@ class MemStorage implements IStorage {
       let contentBasedRecommendations: Post[] = [];
       try {
         // Query posts based on themes
-        let query = db.select()
+        let query: any = db.select()
           .from(postsTable);
         
         if (allThemes.length > 0 && historyPostIds.size > 0) {
@@ -4109,16 +4089,14 @@ class MemStorage implements IStorage {
   private async logRecommendationPerformance(userId: number, method: string, count: number, durationMs: number): Promise<void> {
     try {
       const metric: InsertPerformanceMetric = {
-        label: `recommendations_${method}`,
+        metricName: `recommendations_${method}`,
         value: durationMs,
-        metadata: {
-          userId: userId.toString(),
-          method,
-          count: count.toString(),
-          timestamp: new Date().toISOString()
-        },
-        createdAt: new Date()
-      };
+        identifier: `user:${userId}:${method}:${Date.now()}`,
+        url: method,
+        navigationType: null,
+        userAgent: null,
+        timestamp: new Date()
+      } as InsertPerformanceMetric;
       
       await db.insert(performanceMetrics).values(metric);
     } catch (error) {
@@ -4149,7 +4127,7 @@ class MemStorage implements IStorage {
     recentActivity: ActivityLog[];
   }> {
     return this.safeDbOperation(async () => {
-      const [postsCount] = await db.select({ count: sql<number>`count(*)` }).from(posts);
+      const [postsCount] = await db.select({ count: sql<number>`count(*)` }).from(postsTable);
       const [usersCount] = await db.select({ count: sql<number>`count(*)` }).from(users);
       const [commentsCount] = await db.select({ count: sql<number>`count(*)` }).from(comments);
       
@@ -4265,8 +4243,8 @@ class MemStorage implements IStorage {
 
       // Get trending posts (most liked/viewed recently)
       const trendingPosts = await db.select()
-        .from(posts)
-        .orderBy(desc(posts.likesCount), desc(posts.createdAt))
+        .from(postsTable)
+        .orderBy(desc(postsTable.likesCount), desc(postsTable.createdAt))
         .limit(5);
 
       return {
