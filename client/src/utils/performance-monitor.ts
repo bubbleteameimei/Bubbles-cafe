@@ -127,8 +127,8 @@ class PerformanceMonitor {
       id: `${name}-${Math.round(performance.now())}`,
       value,
       delta,
-      rating: this.getRating(name, value),
-      navigationType: (performance.getEntriesByType('navigation')[0] as any)?.type || null,
+      rating: getRating(name, value),
+      navigationType: ((performance.getEntriesByType('navigation')[0] as any)?.type || null) as any,
       timestamp: Date.now(),
     };
     
