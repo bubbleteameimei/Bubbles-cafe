@@ -3,7 +3,7 @@ import { createSecureLogger } from '../utils/secure-logger';
 import { postsRouter } from './posts';
 import { commentsRouter } from './comments';
 import { authRouter } from './auth';
-import adminRoutes from './admin';
+import { adminRoutes } from './admin';
 import searchRoutes from './search';
 import newsletterRoutes from './newsletter';
 import bookmarksRoutes from './bookmarks';
