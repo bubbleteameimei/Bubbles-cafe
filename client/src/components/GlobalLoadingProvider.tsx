@@ -39,7 +39,7 @@ const PREVENT_RAPID_SHOW_DURATION = 1000; // Duration to prevent rapid multiple 
 export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Core state
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<string | undefined>(undefined);
+  const [_message, setMessage] = useState<string | undefined>(undefined);
   
   // Refs for tracking state between renders
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);

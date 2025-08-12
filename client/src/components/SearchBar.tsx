@@ -19,8 +19,8 @@ export const SearchBar = ({
   showIcon = true,
   animate = true,
   onSearchChange,
-  compact = false,
-  categories = []
+  compact: _compact = false,
+  categories: _categories = []
 }: SearchBarProps) => {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
