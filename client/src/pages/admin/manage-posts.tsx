@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import type { CheckedState } from '@radix-ui/react-checkbox';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -357,8 +358,10 @@ export default function ManagePostsPage() {
       title: post.title,
       status: post.published ? 'published' : 'draft',
       featured: post.featured || false,
-      themeCategory: post.metadata?.themeCategory || '',
-      triggerWarnings: post.metadata?.triggerWarnings?.join(', ') || '',
+      themeCategory: (post.metadata as any)?.themeCategory || '',
+      triggerWarnings: Array.isArray((post.metadata as any)?.triggerWarnings)
+        ? ((post.metadata as any).triggerWarnings as string[]).join(', ')
+        : '',
     });
     setIsEditDialogOpen(true);
   };
@@ -715,7 +718,10 @@ export default function ManagePostsPage() {
                           <Checkbox 
                             checked={isAllSelected}
                             indeterminate={isIndeterminate}
-                            onCheckedChange={handleSelectAll}
+                            onCheckedChange={(checked: CheckedState) => {
+                              const e = { target: { checked: Boolean(checked) } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                              handleSelectAll(e);
+                            }}
                             aria-label="Select all posts"
                           />
                         </TableHead>
@@ -788,56 +794,17 @@ export default function ManagePostsPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuGroup>
-                                    <DropdownMenuItem onClick={() => navigate(`/reader/${post.slug}`)}>
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      View
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleEditPost(post)}>
-                                      <Pencil className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => navigate(`/admin/analytics?postId=${post.id}`)}>
-                                      <BarChart className="h-4 w-4 mr-2" />
-                                      Analytics
-                                    </DropdownMenuItem>
-                                  </DropdownMenuGroup>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuGroup>
-                                    <DropdownMenuItem onClick={() => handleTogglePublish(post)}>
-                                      {post.published ? (
-                                        <>
-                                          <Ban className="h-4 w-4 mr-2" />
-                                          Unpublish
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Check className="h-4 w-4 mr-2" />
-                                          Publish
-                                        </>
-                                      )}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleToggleFeature(post)}>
-                                      {post.featured ? (
-                                        <>
-                                          <Ban className="h-4 w-4 mr-2" />
-                                          Unfeature
-                                        </>
-                                      ) : (
-                                        <>
-                                          <CheckCircle2 className="h-4 w-4 mr-2" />
-                                          Feature
-                                        </>
-                                      )}
-                                    </DropdownMenuItem>
-                                  </DropdownMenuGroup>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeletePost(post)}
-                                    className="text-destructive focus:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
+                                  <DropdownMenuItem onClick={() => navigate(`/reader/${post.slug}`)}>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEditPost(post)}>
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => navigate(`/admin/analytics?postId=${post.id}`)}>
+                                    <BarChart className="h-4 w-4 mr-2" />
+                                    Analytics
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -875,7 +842,10 @@ export default function ManagePostsPage() {
                           <Checkbox 
                             checked={isAllSelected}
                             indeterminate={isIndeterminate}
-                            onCheckedChange={handleSelectAll}
+                            onCheckedChange={(checked: CheckedState) => {
+                              const e = { target: { checked: Boolean(checked) } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                              handleSelectAll(e);
+                            }}
                             aria-label="Select all posts"
                           />
                         </TableHead>
@@ -996,7 +966,10 @@ export default function ManagePostsPage() {
                           <Checkbox 
                             checked={isAllSelected}
                             indeterminate={isIndeterminate}
-                            onCheckedChange={handleSelectAll}
+                            onCheckedChange={(checked: CheckedState) => {
+                              const e = { target: { checked: Boolean(checked) } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                              handleSelectAll(e);
+                            }}
                             aria-label="Select all posts"
                           />
                         </TableHead>
@@ -1091,7 +1064,10 @@ export default function ManagePostsPage() {
                           <Checkbox 
                             checked={isAllSelected}
                             indeterminate={isIndeterminate}
-                            onCheckedChange={handleSelectAll}
+                            onCheckedChange={(checked: CheckedState) => {
+                              const e = { target: { checked: Boolean(checked) } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                              handleSelectAll(e);
+                            }}
                             aria-label="Select all posts"
                           />
                         </TableHead>
