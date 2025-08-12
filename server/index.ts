@@ -217,72 +217,24 @@ async function startServer() {
       // Add global request logging in development
       app.use(requestLogger);
       
-      // Register main routes
-      registerRoutes(app);
-      
-      // Register user feedback routes
-      registerUserFeedbackRoutes(app, storage);
-      
-      // Register recommendation routes
-      registerRecommendationsRoutes(app, storage);
-      
-      
-      // Register privacy settings routes
-      registerPrivacySettingsRoutes(app, storage);
-      
-      // Register WordPress sync routes
-      registerWordPressSyncRoutes(app);
+      // Register modular routes (replaces legacy monolithic routes)
+      const { registerModularRoutes } = await import('./routes');
+      registerModularRoutes(app);
 
-      // Register analytics routes
-      registerAnalyticsRoutes(app);
-      
-      // Register email service routes
-      registerEmailServiceRoutes(app);
-      
-      // Register bookmark routes
-      registerBookmarkRoutes(app);
-      
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);
-      
-      // We've moved the post recommendations endpoint to main routes.ts
-      // registerPostRecommendationsRoutes(app);
-      
+
       await setupVite(app, server);
     } else {
       serverLogger.info('Setting up production environment');
       
-      // Register main routes
-      registerRoutes(app);
-      
-      // Register user feedback routes
-      registerUserFeedbackRoutes(app, storage);
-      
-      // Register recommendation routes
-      registerRecommendationsRoutes(app, storage);
-      
-      
-      // Register privacy settings routes
-      registerPrivacySettingsRoutes(app, storage);
-      
-      // Register WordPress sync routes
-      registerWordPressSyncRoutes(app);
-      
-      // Register analytics routes
-      registerAnalyticsRoutes(app);
-      
-      // Register email service routes
-      registerEmailServiceRoutes(app);
-      
-      // Register bookmark routes
-      registerBookmarkRoutes(app);
-      
+      // Register modular routes (replaces legacy monolithic routes)
+      const { registerModularRoutes } = await import('./routes');
+      registerModularRoutes(app);
+
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);
-      
-      // We've moved the post recommendations endpoint to main routes.ts
-      // registerPostRecommendationsRoutes(app);
-      
+
       serveStatic(app);
     }
 
