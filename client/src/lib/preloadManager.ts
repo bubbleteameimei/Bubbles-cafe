@@ -243,7 +243,7 @@ export async function preloadRoute(route: string, assets: string[] = []): Promis
   
   // Common assets for all routes (background images removed)
   const commonAssets = [
-    '/fonts/horror-type.woff2',
+    // Fonts removed from hardcoded preload to avoid 404s
   ];
   
   // Route-specific assets (background images removed)
