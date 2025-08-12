@@ -162,7 +162,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const hashedPassword = await bcrypt.hash(insertUser.password, 10);
+    const hashedPassword = await bcrypt.hash(insertUser.password_hash, 10);
     
     const [user] = await db
       .insert(users)
@@ -303,7 +303,7 @@ export class DatabaseStorage implements IStorage {
       .insert(comments)
       .values({
         ...insertComment,
-        is_approved: insertComment.approved !== undefined ? insertComment.approved : false
+        is_approved: insertComment.is_approved !== undefined ? insertComment.is_approved : false
       })
       .returning();
     

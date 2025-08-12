@@ -3556,6 +3556,11 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Failed to update privacy settings');
     }
   }
+
+  // Satisfy interface by delegating to the enhanced implementation below
+  async getPersonalizedRecommendations(userId: number, preferredThemes: string[] = [], limit: number = 5): Promise<Post[]> {
+    return this.getPersonalizedRecommendations(userId, preferredThemes, limit);
+  }
 }
 
 // In-Memory Storage Implementation (for development/testing)
@@ -3852,8 +3857,8 @@ class MemStorage {
         
         // Also check metadata for themeCategory
         if (post.metadata && typeof post.metadata === 'object') {
-          const metadata = post.metadata as any;
-          if (metadata?.themeCategory) {
+          const metadata: any = (post.metadata as any) || {};
+          if (metadata.themeCategory) {
             const currentWeight = userThemes.get(metadata.themeCategory) || 0;
             userThemes.set(metadata.themeCategory, currentWeight + weight);
           }
