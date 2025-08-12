@@ -156,7 +156,7 @@ export function generateResponseSuggestion(feedback: UserFeedback): ResponseSugg
     const confidenceFactors = {
       contentLength: Math.min(feedback.content.length / 1000, 0.4), // Longer content up to a point
       hasMetadata: feedback.metadata && Object.keys(feedback.metadata).length > 0 ? 0.1 : 0,
-      hasRating: feedback.rating !== null && feedback.rating > 0 ? 0.1 : 0,
+      hasRating: (typeof (feedback as any).rating === 'number' && (feedback as any).rating > 0) ? 0.1 : 0,
       categoryMatchScore: category === feedback.type ? 0.2 : 0
     };
     
@@ -223,10 +223,11 @@ function generateTags(feedback: UserFeedback, category: FeedbackCategory): strin
   }
   
   // Add rating-based tag
-  if (feedback.rating !== null && feedback.rating > 0) {
-    if (feedback.rating >= 4) {
+  const ratingValue = (feedback as any).rating as number | null | undefined;
+  if (typeof ratingValue === 'number' && ratingValue > 0) {
+    if (ratingValue >= 4) {
       tags.push('high-rating');
-    } else if (feedback.rating <= 2) {
+    } else if (ratingValue <= 2) {
       tags.push('low-rating');
     }
   }

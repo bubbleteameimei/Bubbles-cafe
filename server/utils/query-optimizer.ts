@@ -189,7 +189,7 @@ export async function optimizedBulkInsert<T extends Record<string, any>>(
       );
       
       // Execute batch insert with raw SQL for optimal performance
-      await db.execute(sql`
+      await (db as any).execute(sql`
         INSERT INTO ${sql.identifier(table)} (${columns.map(c => sql.identifier(c))})
         VALUES ${sql.raw(placeholders)}
       `, values);
