@@ -242,7 +242,7 @@ export async function preloadRoute(route: string, assets: string[] = []): Promis
   console.log(`[Preloader] Preloading assets for route: ${route}`);
   
   // Common assets for all routes (background images removed)
-  const commonAssets = [
+  const commonAssets: string[] = [
     // Fonts removed from hardcoded preload to avoid 404s
   ];
   
