@@ -3,12 +3,13 @@ import { createSecureLogger } from '../utils/secure-logger';
 import { postsRouter } from './posts';
 import { commentsRouter } from './comments';
 import { authRouter } from './auth';
-import { adminRoutes } from './admin';
+import adminRoutes from './admin';
 import searchRoutes from './search';
 import newsletterRoutes from './newsletter';
 import bookmarksRoutes from './bookmarks';
 import emailRoutes from './email';
 import moderationRoutes from './moderation';
+import analyticsRoutes from './analytics';
 import { registerPrivacySettingsRoutes } from './privacy-settings';
 import { registerRecommendationsRoutes } from './recommendations';
 import { registerUserFeedbackRoutes } from '../routes/user-feedback';
@@ -49,6 +50,10 @@ export function registerModularRoutes(app: Express) {
     // Moderation routes
     app.use('/api', moderationRoutes);
     routesLogger.info('Moderation routes registered');
+
+    // Analytics routes
+    app.use('/api/analytics', analyticsRoutes);
+    routesLogger.info('Analytics routes registered');
 
     // Privacy settings (function-based registration)
     registerPrivacySettingsRoutes(app, storage);
