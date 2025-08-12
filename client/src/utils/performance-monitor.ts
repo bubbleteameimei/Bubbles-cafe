@@ -281,9 +281,9 @@ class PerformanceMonitor {
     const coreVitals = this.getCoreWebVitals();
     
     // Send to your analytics service
-    if (typeof gtag !== 'undefined') {
+    if (typeof window !== 'undefined' && typeof window.gtag !== 'undefined') {
       for (const [name, metric] of Object.entries(coreVitals)) {
-        gtag('event', name, {
+        window.gtag!('event', name, {
           value: Math.round(metric.value),
           metric_id: metric.id,
           metric_rating: metric.rating,
@@ -392,3 +392,9 @@ export function trackImagePerformance(src: string, onLoad?: () => void, onError?
 }
 
 export type { PerformanceMetric, WebVitalsThresholds };
+
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+  }
+}

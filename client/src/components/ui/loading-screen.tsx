@@ -27,7 +27,7 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
       fontDisplay: 'swap',
       log: true,
       onLoad: () => console.log("Megrim font loaded successfully"),
-      onError: (err) => console.error("Failed to load Megrim font:", err)
+      onError: (err: unknown) => console.error("Failed to load Megrim font:", err)
     });
     
     // Preload other critical assets needed for the loading screen

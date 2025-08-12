@@ -6,8 +6,9 @@
  * Check connection speed and optimize images accordingly
  */
 export function optimizeImagesForConnection() {
-  if (navigator.connection && 'effectiveType' in navigator.connection) {
-    const connection = navigator.connection as any;
+  const nav = navigator as Navigator & { connection?: { effectiveType?: string } };
+  if (nav.connection && typeof nav.connection.effectiveType === 'string') {
+    const connection = nav.connection;
     const isSlowConnection = ['slow-2g', '2g'].includes(connection.effectiveType);
 
     if (isSlowConnection) {
