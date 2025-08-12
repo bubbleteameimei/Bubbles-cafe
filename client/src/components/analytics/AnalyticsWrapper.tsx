@@ -23,46 +23,38 @@ export function AnalyticsWrapper({
     runIfAllowed('analytics', () => {
       // In a real implementation, this would call your analytics service
       console.log(`Analytics event tracked: ${eventName}`, eventData);
-      
-      // Example of sending to a hypothetical analytics service:
-      // analyticsService.trackEvent(eventName, eventData);
-    });
+      return true;
+    }, () => false);
+    return () => {};
   }, [eventName, eventData, runIfAllowed]);
 
   // Performance tracking can still work if performance cookies are allowed
   useEffect(() => {
+    let remove: (() => void) | undefined;
     runIfAllowed('performance', () => {
       // Track performance metrics if performance cookies are allowed
       const trackPerformance = () => {
         if (window.performance && 'getEntriesByType' in window.performance) {
           const performanceEntries = window.performance.getEntriesByType('navigation');
-          
           console.log('Performance data tracked:', performanceEntries);
-          // Send performance data to your performance monitoring service
         }
       };
-      
-      // Wait until the page is fully loaded
       if (document.readyState === 'complete') {
         trackPerformance();
       } else {
         window.addEventListener('load', trackPerformance);
-        return () => window.removeEventListener('load', trackPerformance);
+        remove = () => window.removeEventListener('load', trackPerformance);
       }
-    });
+      return true;
+    }, () => false);
+    return () => { if (remove) remove(); };
   }, [runIfAllowed]);
 
   return (
     <>
-      {/* Optionally show a consent notice if analytics tracking is disabled */}
       {!isAllowed('analytics') && (
-        <div className="hidden">
-          {/* Hidden by default, but you could make this visible to encourage users to enable analytics */}
-          {/* For example, a small notification that analytics are disabled */}
-        </div>
+        <div className="hidden" />
       )}
-      
-      {/* Render the children regardless of analytics consent */}
       {children}
     </>
   );

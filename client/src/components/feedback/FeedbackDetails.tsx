@@ -46,6 +46,13 @@ import {
   ResponseSuggestion
 } from '@/types/feedback';
 
+export type FeedbackItem = {
+  id: number;
+  subject: string;
+  content: string;
+  status: string;
+};
+
 interface FeedbackDetailsProps {
   feedback: FeedbackWithMetadata;
   onStatusChange?: (id: number, status: string) => void;

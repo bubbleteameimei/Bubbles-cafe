@@ -16,8 +16,16 @@ export function ReaderCore({ slug, onPostLoad, onError }: ReaderCoreProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [readingProgress, setReadingProgress] = useState(0);
 
+  type PostShape = {
+    title?: string;
+    content?: string;
+    excerpt?: string | null;
+    createdAt?: string | Date;
+    readingTimeMinutes?: number | null;
+  } | null;
+
   // Optimized post fetching with caching
-  const { data: post, isLoading, error } = useQuery({
+  const { data: post, isLoading, error } = useQuery<PostShape>({
     queryKey: ['post', slug],
     queryFn: async () => {
       mark('fetch-start');
@@ -26,14 +34,13 @@ export function ReaderCore({ slug, onPostLoad, onError }: ReaderCoreProps) {
           ttl: 10 * 60 * 1000 // 10 minutes cache
         });
         measure('fetch-duration', 'fetch-start');
-        return data;
+        return data as PostShape;
       } catch (err) {
         logger.error('Failed to fetch post', { slug, error: err });
-        throw err;
+        throw err as Error;
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 30 * 60 * 1000, // 30 minutes
     enabled: !!slug
   });
 
@@ -48,8 +55,7 @@ export function ReaderCore({ slug, onPostLoad, onError }: ReaderCoreProps) {
             const element = contentRef.current;
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             const scrollHeight = element.scrollHeight - window.innerHeight;
-            const progress = Math.min(Math.max(scrollTop / scrollHeight * 100, 0), 100);
-            
+            const progress = Math.min(Math.max((scrollTop / Math.max(scrollHeight, 1)) * 100, 0), 100);
             setReadingProgress(Math.round(progress));
           }
           ticking = false;
@@ -63,7 +69,7 @@ export function ReaderCore({ slug, onPostLoad, onError }: ReaderCoreProps) {
   useEffect(() => {
     const handleScroll = updateReadingProgress;
     
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true } as any);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [updateReadingProgress]);
 
@@ -77,16 +83,15 @@ export function ReaderCore({ slug, onPostLoad, onError }: ReaderCoreProps) {
   // Error callback
   useEffect(() => {
     if (error && onError) {
-      onError(error);
+      onError(error as Error);
     }
   }, [error, onError]);
 
   // Sanitize content for security
   const sanitizedContent = useMemo(() => {
-    if (!post?.content) return '';
-    
-    // Basic XSS protection while preserving formatting
-    return post.content
+    const html = post?.content ?? '';
+    if (!html) return '';
+    return html
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
       .replace(/javascript:/gi, '')
       .replace(/on\w+="[^"]*"/gi, '');
@@ -138,18 +143,18 @@ export function ReaderCore({ slug, onPostLoad, onError }: ReaderCoreProps) {
       <article ref={contentRef} className="max-w-4xl mx-auto px-6 py-8">
         <header className="mb-8">
           <h1 className="text-4xl font-bold mb-4 leading-tight">
-            {post.title}
+            {post?.title ?? ''}
           </h1>
           
-          {post.excerpt && (
+          {post?.excerpt && (
             <p className="text-xl text-muted-foreground mb-4 leading-relaxed">
               {post.excerpt}
             </p>
           )}
           
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-            {post.readingTimeMinutes && (
+            <span>{post?.createdAt ? new Date(post.createdAt as any).toLocaleDateString() : ''}</span>
+            {post?.readingTimeMinutes && (
               <span>{post.readingTimeMinutes} min read</span>
             )}
             <span>Progress: {readingProgress}%</span>
