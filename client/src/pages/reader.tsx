@@ -787,11 +787,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     transition: color 0.3s ease, background-color 0.3s ease;
   }
   
-  /* WordPress-inspired paragraph styling with proper spacing */
+  /* Enhanced WordPress-inspired paragraph styling with proper spacing */
   .story-content p, 
   .story-content .story-paragraph {
-    line-height: 1.6 !important;  /* WordPress default line height */
-    margin-bottom: 1.5em !important;  /* WordPress-style paragraph spacing */
+    line-height: 1.8 !important;  /* Enhanced line height for better readability */
+    margin-bottom: 2em !important;  /* Increased paragraph spacing for better separation */
     margin-top: 0 !important;
     text-align: left; /* Left-align like WordPress default */
     letter-spacing: 0.01em; 
@@ -801,6 +801,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     font-family: ${availableFonts[fontFamily].family};
     font-size: 16px; /* Consistent font size */
     color: inherit;
+    display: block; /* Ensure proper block display */
   }
   
   /* Ensure first paragraph doesn't have extra top margin */
@@ -808,10 +809,20 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     margin-top: 0 !important;
   }
   
-  /* WordPress-style paragraph spacing between adjacent paragraphs */
-  .story-content p + p {
-    margin-top: 1.5em !important;
-    margin-bottom: 1.5em !important;
+  /* Enhanced WordPress-style paragraph spacing between adjacent paragraphs */
+  .story-content p + p,
+  .story-content .story-paragraph + .story-paragraph {
+    margin-top: 2em !important;
+    margin-bottom: 2em !important;
+  }
+  
+  /* Ensure text content has proper spacing even without explicit paragraph tags */
+  .story-content > * {
+    margin-bottom: 1.5em;
+  }
+  
+  .story-content > *:last-child {
+    margin-bottom: 0;
   }
   .story-content em {
     font-family: ${availableFonts[fontFamily].family};
