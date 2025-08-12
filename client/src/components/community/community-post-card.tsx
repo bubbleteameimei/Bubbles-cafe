@@ -66,14 +66,14 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
   const [flagReason, setFlagReason] = useState('');
   
   // Format date
-  const formattedDate = post.updatedAt || post.createdAt;
+  const formattedDate = (post as any).updatedAt || post.createdAt;
   const timeAgo = formatDistanceToNow(new Date(formattedDate), { addSuffix: true });
   
   // Get theme category for badge
   const getThemeBadge = () => {
-    if (!post.metadata?.themeCategory) return null;
+    if (!(post.metadata as any)?.themeCategory) return null;
     
-    const category = post.metadata.themeCategory;
+    const category = (post.metadata as any).themeCategory;
     let colorClass = 'bg-gray-100 text-gray-800 border-gray-300';
     let displayName = category.replace('_', ' ');
     
@@ -131,8 +131,8 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
   
   // Check for trigger warnings
   const hasTriggerWarnings = 
-    post.metadata?.triggerWarnings && 
-    post.metadata.triggerWarnings.length > 0;
+    (post.metadata as any)?.triggerWarnings && 
+    (post.metadata as any).triggerWarnings.length > 0;
   
   // Like Post Mutation
   const likeMutation = useMutation({
@@ -286,7 +286,7 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={post.author?.avatar || ''} alt={post.author?.username || 'Author'} />
+              <AvatarImage src={(post.author as any)?.avatar || ''} alt={post.author?.username || 'Author'} />
               <AvatarFallback>{getAuthorInitials()}</AvatarFallback>
             </Avatar>
             <div>
@@ -380,7 +380,7 @@ export function CommunityPostCard({ post, isAuthenticated, currentUser }: Commun
           
           <div className="flex items-center text-muted-foreground">
             <Clock className="h-4 w-4 mr-1" />
-            <span className="text-xs">{post.readingTime || 5} min read</span>
+                          <span className="text-xs">{(post as any).readingTime || 5} min read</span>
           </div>
         </div>
       </CardFooter>

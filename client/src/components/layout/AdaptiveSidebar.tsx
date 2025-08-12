@@ -8,7 +8,7 @@ interface AdaptiveSidebarProps {
   className?: string;
 }
 
-const AdaptiveSidebar: React.FC<AdaptiveSidebarProps> = ({ className = "" }) => {
+const AdaptiveSidebar: React.FC<AdaptiveSidebarProps> = ({ className = "" }): JSX.Element => {
   const [isOpen, setIsOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 

@@ -61,6 +61,7 @@ const envSchema = z.object({
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters').default('horror-stories-session-secret-development-only'),
   FRONTEND_URL: z.string().url().optional(),
   WORDPRESS_API_URL: z.string().url().optional(),
+  WORDPRESS_API: z.string().url().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GMAIL_APP_PASSWORD: z.string().optional(),
@@ -109,7 +110,7 @@ export const config = {
     credentials: true,
   },
   wordpress: {
-    apiUrl: env.WORDPRESS_API_URL,
+    apiUrl: env.WORDPRESS_API_URL || env.WORDPRESS_API,
   },
   auth: {
     google: {
