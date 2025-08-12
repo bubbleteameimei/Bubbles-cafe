@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,8 +43,8 @@ export function PersonalizedRecommendations({
 }: PersonalizedRecommendationsProps) {
   const { toast } = useToast();
   
-  // Build the URL with query parameters
-  const buildQueryUrl = () => {
+  // Build the URL with query parameters (unused but kept for future use)
+  const _buildQueryUrl = () => {
     const url = new URL('/api/recommendations/personalized', window.location.origin);
     
     // Add the limit parameter

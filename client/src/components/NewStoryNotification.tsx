@@ -46,7 +46,7 @@ interface NewStoryNotificationProps {
 
 const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
   newStories = 1,
-  lastChecked,
+  lastChecked: _lastChecked,
   onDismiss,
   className = '',
   autoHideDuration = 10000, // 10 seconds
@@ -73,6 +73,7 @@ const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
       
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [newStories, addNotification]);
 
   useEffect(() => {
@@ -84,6 +85,7 @@ const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
       
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isVisible, autoHideDuration]);
 
   const handleDismiss = () => {
