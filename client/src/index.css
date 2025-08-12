@@ -50,39 +50,7 @@ body {
   -webkit-text-stroke: 0 transparent !important;
 }
 
-/* Canvas-based blood dripping effect replaces CSS-based drops */
 
-/* Blood stains that appear on elements below */
-@keyframes bloodStain {
-  0% {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  50% {
-    opacity: 0.4;
-    transform: scale(1.1);
-  }
-  100% {
-    opacity: 0.2;
-    transform: scale(1);
-  }
-}
-
-/* Add subtle blood stains to buttons when hovered */
-.group:hover::after {
-  content: '';
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 8px;
-  height: 8px;
-  background: radial-gradient(circle, rgba(220, 38, 38, 0.3), rgba(153, 27, 27, 0.1));
-  border-radius: 50%;
-  animation: bloodStain 1s ease-out;
-  pointer-events: none;
-  z-index: 10;
-}
 
 /* Global responsive design fixes */
 @layer base {

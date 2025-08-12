@@ -9,20 +9,16 @@ import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { getExcerpt } from "@/lib/content-analysis";
 import ApiLoader from "@/components/api-loader";
-import BloodDrippingText from "@/components/BloodDrippingText";
+
 
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const [imageLoaded, setImageLoaded] = useState(false);
   
   // Basic setup for homepage without background images
   useEffect(() => {
     // Set body to default background
     document.body.style.backgroundColor = "hsl(var(--background))";
-    
-    // Mark as loaded for consistency
-    setImageLoaded(true);
     
     return () => {
       // Clean up styling
@@ -39,10 +35,7 @@ export default function Home() {
     refetchOnWindowFocus: false,
   });
   
-  // Function to navigate to a story detail page
-  const navigateToStory = (slug: string) => {
-    setLocation(`/reader/${slug}`);
-  };
+
 
   // Format date helper
   const formatDate = (date: string) => {
@@ -130,10 +123,7 @@ export default function Home() {
             <div className="relative">
               <h1 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-white flex flex-col items-center">
                 <span>BUBBLES</span>
-                <BloodDrippingText 
-                  text="CAFE" 
-                  className="mt-1 md:mt-2 text-red-700 relative"
-                />
+                <span className="mt-1 md:mt-2 text-red-700 relative">CAFE</span>
               </h1>
             </div>
           
