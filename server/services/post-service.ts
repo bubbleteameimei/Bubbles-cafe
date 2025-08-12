@@ -430,3 +430,9 @@ export class PostService {
 
 // Export singleton instance
 export const postService = new PostService();
+
+// Shared DB error handler used by other services
+export function handleDatabaseError(error: unknown): Error {
+  if (error instanceof Error) return error;
+  return new Error('Database operation failed');
+}
