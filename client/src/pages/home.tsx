@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { format } from 'date-fns';
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Book, ArrowRight, ChevronRight } from "lucide-react";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
