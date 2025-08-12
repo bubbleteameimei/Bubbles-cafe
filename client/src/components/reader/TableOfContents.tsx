@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Shuffle, Search, Home, X, BookOpen } from "lucide-react";
+import { Shuffle, Search, Home, BookOpen } from "lucide-react";
 
 interface Post {
   id: number;
@@ -20,7 +19,6 @@ interface TableOfContentsProps {
 
 export default function TableOfContents({ currentPostId, onClose }: TableOfContentsProps) {
   const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [, setLocation] = useLocation();
 
@@ -44,7 +42,7 @@ export default function TableOfContents({ currentPostId, onClose }: TableOfConte
       } catch (error) {
         console.error('Error fetching posts:', error);
       } finally {
-        setLoading(false);
+        // Posts loaded
       }
     }
 

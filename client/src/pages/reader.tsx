@@ -790,7 +790,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   ];
 
-  const unusedStyles = `
+  const storyStyles = `
   .story-content {
     font-family: ${availableFonts[fontFamily].family};
     width: 100%; /* Full width instead of max-width constraint */
