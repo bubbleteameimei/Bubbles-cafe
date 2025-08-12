@@ -1,22 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
-import { createSecureLogger } from './secure-logger';
+import { logger } from './debug-logger';
 
-const errorLogger = createSecureLogger('ErrorHandler');
+// Error types for better error handling
+export class AppError extends Error {
+  public statusCode: number;
+  public isOperational: boolean;
 
-export interface AppError extends Error {
-  code?: string;
-  statusCode?: number;
-  isOperational?: boolean;
-}
-
-export class CustomError extends Error implements AppError {
-  public readonly code: string;
-  public readonly statusCode: number;
-  public readonly isOperational: boolean;
-
-  constructor(message: string, code: string = 'INTERNAL_ERROR', statusCode: number = 500, isOperational: boolean = true) {
+  constructor(message: string, statusCode: number = 500, isOperational: boolean = true) {
     super(message);
-    this.code = code;
     this.statusCode = statusCode;
     this.isOperational = isOperational;
     
@@ -24,92 +15,147 @@ export class CustomError extends Error implements AppError {
   }
 }
 
-// Common error types
-export const createError = {
-  badRequest: (message: string) => new CustomError(message, 'BAD_REQUEST', 400),
-  unauthorized: (message: string = 'Unauthorized') => new CustomError(message, 'UNAUTHORIZED', 401),
-  forbidden: (message: string = 'Forbidden') => new CustomError(message, 'FORBIDDEN', 403),
-  notFound: (message: string = 'Resource not found') => new CustomError(message, 'NOT_FOUND', 404),
-  conflict: (message: string) => new CustomError(message, 'CONFLICT', 409),
-  validationError: (message: string) => new CustomError(message, 'VALIDATION_ERROR', 422),
-  tooManyRequests: (message: string = 'Too many requests') => new CustomError(message, 'TOO_MANY_REQUESTS', 429),
-  internal: (message: string = 'Internal server error') => new CustomError(message, 'INTERNAL_ERROR', 500)
-};
+export class ValidationError extends AppError {
+  constructor(message: string) {
+    super(message, 400);
+  }
+}
 
-// Safe error response (doesn't leak sensitive information)
-const createErrorResponse = (error: AppError, isDev: boolean) => {
-  const response: any = {
-    error: true,
-    code: error.code || 'INTERNAL_ERROR',
-    message: error.message || 'Something went wrong'
-  };
+export class AuthenticationError extends AppError {
+  constructor(message: string = 'Authentication required') {
+    super(message, 401);
+  }
+}
 
-  // Only include stack trace in development
-  if (isDev && error.stack) {
-    response.stack = error.stack;
+export class AuthorizationError extends AppError {
+  constructor(message: string = 'Insufficient permissions') {
+    super(message, 403);
+  }
+}
+
+export class NotFoundError extends AppError {
+  constructor(message: string = 'Resource not found') {
+    super(message, 404);
+  }
+}
+
+export class ConflictError extends AppError {
+  constructor(message: string = 'Resource conflict') {
+    super(message, 409);
+  }
+}
+
+// Error response interface
+interface ErrorResponse {
+  error: string;
+  message: string;
+  statusCode: number;
+  timestamp: string;
+  path: string;
+  requestId?: string;
+}
+
+// Centralized error handler
+export function handleError(error: Error, req: Request, res: Response, next: NextFunction) {
+  let statusCode = 500;
+  let message = 'Internal server error';
+  let isOperational = false;
+
+  // Handle known error types
+  if (error instanceof AppError) {
+    statusCode = error.statusCode;
+    message = error.message;
+    isOperational = error.isOperational;
+  } else if (error.name === 'ValidationError') {
+    statusCode = 400;
+    message = 'Validation error';
+  } else if (error.name === 'CastError') {
+    statusCode = 400;
+    message = 'Invalid data format';
+  } else if (error.name === 'JsonWebTokenError') {
+    statusCode = 401;
+    message = 'Invalid token';
+  } else if (error.name === 'TokenExpiredError') {
+    statusCode = 401;
+    message = 'Token expired';
   }
 
-  return response;
-};
+  // Log error details
+  const logLevel = isOperational ? 'warn' : 'error';
+  logger[logLevel]('Request error', {
+    error: error.message,
+    stack: error.stack,
+    statusCode,
+    method: req.method,
+    path: req.path,
+    userAgent: req.get('User-Agent'),
+    ip: req.ip,
+    userId: (req as any).user?.id
+  });
 
-// Async error handler wrapper
-export const asyncHandler = (fn: Function) => {
+  // Create error response
+  const errorResponse: ErrorResponse = {
+    error: error.name || 'Error',
+    message: process.env.NODE_ENV === 'production' && !isOperational 
+      ? 'Internal server error' 
+      : message,
+    statusCode,
+    timestamp: new Date().toISOString(),
+    path: req.path
+  };
+
+  // Add request ID if available
+  if ((req as any).requestId) {
+    errorResponse.requestId = (req as any).requestId;
+  }
+
+  // Send error response
+  res.status(statusCode).json(errorResponse);
+}
+
+// Async error wrapper
+export function asyncHandler(fn: Function) {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
-};
+}
 
-// Global error handling middleware
-export const globalErrorHandler = (
-  error: Error | AppError,
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const isDev = process.env.NODE_ENV === 'development';
-  const appError = error as AppError;
+// Error response helper
+export function sendErrorResponse(res: Response, error: Error | string, statusCode: number = 500) {
+  const message = typeof error === 'string' ? error : error.message;
   
-  // Log error details (sensitive data already filtered by secure logger)
-  errorLogger.error('Unhandled error', {
-    message: error.message,
-    code: appError.code,
-    statusCode: appError.statusCode,
-    path: req.path,
-    method: req.method,
-    stack: isDev ? error.stack : undefined
+  logger.error('API Error Response', {
+    message,
+    statusCode,
+    stack: error instanceof Error ? error.stack : undefined
   });
 
-  // Default error values
-  const statusCode = appError.statusCode || 500;
-  const response = createErrorResponse(appError, isDev);
+  return res.status(statusCode).json({
+    error: 'Error',
+    message: process.env.NODE_ENV === 'production' && statusCode >= 500 
+      ? 'Internal server error' 
+      : message,
+    statusCode,
+    timestamp: new Date().toISOString()
+  });
+}
 
-  res.status(statusCode).json(response);
-};
+// Success response helper
+export function sendSuccessResponse(res: Response, data: any, message: string = 'Success') {
+  return res.json({
+    success: true,
+    message,
+    data,
+    timestamp: new Date().toISOString()
+  });
+}
 
-// Handle specific database errors
-export const handleDatabaseError = (error: any): AppError => {
-  if (error.code === '23505') { // PostgreSQL unique violation
-    return createError.conflict('Resource already exists');
-  }
-  
-  if (error.code === '23503') { // PostgreSQL foreign key violation
-    return createError.badRequest('Referenced resource not found');
-  }
-  
-  if (error.code === '23502') { // PostgreSQL not null violation
-    return createError.badRequest('Required field is missing');
-  }
-
-  // Default to internal error
-  return createError.internal('Database operation failed');
-};
-
-// Validation error handler
-export const handleValidationError = (error: any): AppError => {
-  if (error.name === 'ZodError') {
-    const message = error.errors?.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ');
-    return createError.validationError(message || 'Validation failed');
-  }
-  
-  return createError.badRequest('Invalid input data');
-};
+// Validation error helper
+export function sendValidationError(res: Response, field: string, message: string) {
+  return res.status(400).json({
+    error: 'ValidationError',
+    message: `${field}: ${message}`,
+    statusCode: 400,
+    timestamp: new Date().toISOString()
+  });
+}
