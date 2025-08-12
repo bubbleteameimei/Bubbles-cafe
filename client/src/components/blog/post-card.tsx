@@ -175,7 +175,7 @@ const getEngagingExcerpt = (content: string): string => {
   if (post.themeCategory) {
     theme = post.themeCategory as string;
     // Get icon from direct property or metadata
-    iconName = post.themeIcon || 
+    iconName = (post as any).themeIcon || 
               (post.metadata && (post.metadata as any).themeIcon) || 
               null;
   } else {
