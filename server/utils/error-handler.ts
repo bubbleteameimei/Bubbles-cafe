@@ -161,3 +161,8 @@ export function sendValidationError(res: Response, field: string, message: strin
     timestamp: new Date().toISOString()
   });
 }
+
+// Create error helper function
+export function createError(message: string, statusCode: number = 500) {
+  return new AppError(message, statusCode);
+}

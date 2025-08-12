@@ -78,5 +78,4 @@ initializationPromise = (async () => {
   }
 })();
 
-// Re-export from the main db.ts file for compatibility
-export { pool, db } from './db';
+// Note: pool and db are exported at the top of this file
