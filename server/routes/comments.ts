@@ -35,18 +35,13 @@ router.get('/posts/:postId/comments',
     const { page, limit } = req.query as any;
     
     try {
-      const comments = await storage.getComments(Number(postId), {
-        page: Number(page),
-        limit: Number(limit)
-      });
-      
+      const comments = await storage.getComments(Number(postId));
       commentsLogger.debug('Comments retrieved successfully', { 
         postId,
         count: comments.length,
         page,
         limit 
       });
-      
       res.json(comments);
     } catch (error) {
       commentsLogger.error('Error retrieving comments', { postId, error });
@@ -65,16 +60,16 @@ router.post('/posts/:postId/comments',
     
     try {
       // Moderate comment content
-      const moderation = await moderateComment(req.body.content);
-      if (moderation.isBlocked) {
+      const moderationResult = moderateComment(req.body.content);
+      if (moderationResult.isBlocked) {
         throw createError.badRequest('Comment contains inappropriate content');
       }
       
       const commentData = {
         ...req.body,
         postId: Number(postId),
-        userId: req.user?.id || null,
-        content: moderation.moderatedText || req.body.content
+        userId: (req.user as any)?.id || null,
+        content: moderationResult.moderatedText || req.body.content
       } as any;
       
       const newComment = await storage.createComment(commentData);
@@ -82,12 +77,12 @@ router.post('/posts/:postId/comments',
       commentsLogger.info('Comment created successfully', { 
         commentId: newComment.id,
         postId,
-        userId: req.user?.id 
+        authorId: (req.user as any)?.id 
       });
       
       res.status(201).json(newComment);
     } catch (error) {
-      if ((error as any).statusCode) throw error;
+      if ((error as any).statusCode) throw error as any;
       commentsLogger.error('Error creating comment', { postId, error });
       throw createError.internal('Failed to create comment');
     }
@@ -104,16 +99,16 @@ router.post('/comments/:id/replies',
     
     try {
       // Moderate reply content
-      const moderation = await moderateComment(req.body.content);
-      if (moderation.isBlocked) {
+      const moderationResult = moderateComment(req.body.content);
+      if (moderationResult.isBlocked) {
         throw createError.badRequest('Reply contains inappropriate content');
       }
       
       const replyData = {
         ...req.body,
         parentId: Number(id),
-        userId: req.user?.id || null,
-        content: moderation.moderatedText || req.body.content
+        userId: (req.user as any)?.id || null,
+        content: moderationResult.moderatedText || req.body.content
       } as any;
       
       const newReply = await storage.createCommentReply(replyData);
@@ -121,12 +116,12 @@ router.post('/comments/:id/replies',
       commentsLogger.info('Comment reply created successfully', { 
         replyId: newReply.id,
         parentId: id,
-        userId: req.user?.id 
+        authorId: (req.user as any)?.id 
       });
       
       res.status(201).json(newReply);
     } catch (error) {
-      if ((error as any).statusCode) throw error;
+      if ((error as any).statusCode) throw error as any;
       commentsLogger.error('Error creating comment reply', { parentId: id, error });
       throw createError.internal('Failed to create reply');
     }
@@ -138,7 +133,7 @@ router.delete('/comments/:id',
   apiRateLimiter,
   validateParams(commentIdSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    if (!req.user) {
+    if (!(req as any).user) {
       throw createError.unauthorized('Authentication required');
     }
     
@@ -151,7 +146,7 @@ router.delete('/comments/:id',
         throw createError.notFound('Comment not found');
       }
       
-      const canDelete = existingComment.authorId === req.user.id || req.user.isAdmin;
+      const canDelete = (existingComment as any).userId === (req as any).user.id || (req as any).user.isAdmin;
       if (!canDelete) {
         throw createError.forbidden('You can only delete your own comments');
       }
@@ -160,19 +155,19 @@ router.delete('/comments/:id',
       
       commentsLogger.info('Comment deleted successfully', { 
         commentId: id,
-        authorId: req.user.id 
+        authorId: (req as any).user.id 
       });
       
       res.status(204).send();
     } catch (error) {
-      if (error.statusCode) throw error;
+      if ((error as any).statusCode) throw error as any;
       commentsLogger.error('Error deleting comment', { commentId: id, error });
       throw createError.internal('Failed to delete comment');
     }
   })
 );
 
-// POST /api/comments/:id/vote - Vote on comment (like/dislike)
+// POST /api/comments/:id/vote - Vote on comment (like/dislike/none)
 router.post('/comments/:id/vote',
   apiRateLimiter,
   validateParams(commentIdSchema),
@@ -181,18 +176,32 @@ router.post('/comments/:id/vote',
   })),
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { vote } = req.body;
+    const { vote } = req.body as { vote: 'like' | 'dislike' | 'none' };
+    const userKey = (req as any).user?.id?.toString() || (req.sessionID ?? 'anon');
     
     try {
-      const result = await storage.voteOnComment(Number(id), vote, req.user?.id);
-      
+      const existing = await (storage as any).getCommentVote(Number(id), userKey);
+      if (existing) {
+        if ((vote === 'like' && existing.isUpvote) || (vote === 'dislike' && !existing.isUpvote) || vote === 'none') {
+          await (storage as any).removeCommentVote(Number(id), userKey);
+        } else {
+          await (storage as any).updateCommentVote(Number(id), userKey, vote === 'like');
+        }
+      } else {
+        if (vote !== 'none') {
+          await (storage as any).createCommentVote(Number(id), userKey, vote === 'like');
+        }
+      }
+
+      const counts = await (storage as any).getCommentVoteCounts(Number(id));
       commentsLogger.debug('Comment vote recorded', { 
         commentId: id,
         vote,
-        userId: req.user?.id 
+        userKey,
+        counts
       });
       
-      res.json(result);
+      res.json(counts);
     } catch (error) {
       commentsLogger.error('Error voting on comment', { commentId: id, error });
       throw createError.internal('Failed to record vote');

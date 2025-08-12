@@ -281,3 +281,12 @@ export function getResponseHints(feedback: UserFeedback): string[] {
   
   return hints;
 }
+
+// Remove rating-based logic as rating field is not present in schema
+export function scoreFeedback(_feedback: any): number {
+  return 0;
+}
+
+export function computePriority(_feedback: any): 'low' | 'medium' | 'high' {
+  return 'medium';
+}
