@@ -88,18 +88,22 @@ const fixUnclosedTags = (html: string, tagName: string): string => {
  * Normalizes paragraph tags that might be malformed from WordPress
  * 
  * @param html HTML content to normalize
- * @returns Normalized HTML with proper paragraph structure
+ * @returns Normalized HTML with proper paragraph structure and spacing
  */
 const normalizeParagraphs = (html: string): string => {
-  // Replace consecutive <br> tags with paragraphs
+  // Replace consecutive <br> tags with proper paragraph breaks
   html = html.replace(/(<br\s*\/?>\s*){2,}/gi, '</p><p>');
   
   // Remove empty paragraphs that can cause spacing issues
   html = html.replace(/<p>\s*<\/p>/gi, '');
   
+  // Enhanced paragraph spacing - ensure proper WordPress-style paragraph separation
+  // Add story-paragraph class for better CSS control
+  html = html.replace(/<p(?![^>]*class=["'][^"']*story-paragraph)/gi, '<p class="story-paragraph"');
+  
   // Ensure content starts with a paragraph if it doesn't have one
   if (!html.trim().startsWith('<p>')) {
-    html = '<p>' + html;
+    html = '<p class="story-paragraph">' + html;
   }
   
   // Ensure content ends with a closing paragraph if it doesn't have one
@@ -107,12 +111,18 @@ const normalizeParagraphs = (html: string): string => {
     html = html + '</p>';
   }
   
-  // Fix paragraph spacing - sometimes WordPress inserts excessive space between paragraphs
-  html = html.replace(/<\/p>\s*<p>/gi, '</p><p>');
+  // Fix paragraph spacing - ensure proper separation between paragraphs
+  html = html.replace(/<\/p>\s*<p/gi, '</p>\n<p');
   
   // Fix nested paragraphs which can cause layout issues
-  html = html.replace(/<p>\s*<p>/gi, '<p>');
+  html = html.replace(/<p[^>]*>\s*<p[^>]*>/gi, '<p class="story-paragraph">');
   html = html.replace(/<\/p>\s*<\/p>/gi, '</p>');
+  
+  // Ensure text content outside paragraphs gets wrapped
+  html = html.replace(/^([^<]+)/gm, '<p class="story-paragraph">$1</p>');
+  
+  // Fix any double paragraphs that might have been created
+  html = html.replace(/<p[^>]*>\s*<p[^>]*>/gi, '<p class="story-paragraph">');
   
   return html;
 };

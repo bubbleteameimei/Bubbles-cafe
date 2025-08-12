@@ -9,12 +9,11 @@ import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
-  ArrowRight, ChevronRight, Clock, Calendar, Book, Loader2,
+  ArrowRight, ChevronRight, Clock, Calendar, Book,
   TrendingUp, Star, Award
 } from "lucide-react";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { Badge } from "@/components/ui/badge";
-import Mist from "@/components/effects/mist";
 import { useLoading } from "@/components/GlobalLoadingProvider";
 
 
@@ -82,12 +81,8 @@ export default function IndexView() {
   // Fallback to infinite query with pagination if the all posts query fails
   const {
     data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
     isLoading: isPaginatedLoading,
     error: paginatedError,
-    refetch
   } = useInfiniteQuery<WordPressResponse>({
     queryKey: ["wordpress", "posts"],
     queryFn: async ({ pageParam = 1 }) => {
@@ -429,7 +424,7 @@ export default function IndexView() {
                       >
                         <span className="relative z-10 hidden sm:inline transition-transform group-hover/btn:translate-x-0.5">Read Featured Story</span>
                         <span className="relative z-10 sm:hidden transition-transform group-hover/btn:translate-x-0.5">Read Story</span>
-                        <ArrowRight className="relative z-10 h-4 w-4 sm:h-5 sm:w-5 ml-1 transition-transform duration-300 group-hover/btn:translate-x-1" />
+                        <ArrowRight className="relative z-10 h-5 w-5 sm:h-6 sm:w-6 ml-1 transition-transform duration-300 group-hover/btn:translate-x-1" />
                       </Button>
                     </div>
                   </div>
@@ -484,7 +479,7 @@ export default function IndexView() {
               </p>
               <Button 
                 variant="default"
-                onClick={() => refetch()}
+                onClick={() => window.location.reload()}
                 className="shadow-sm text-sm sm:text-base h-9 sm:h-10"
               >
                 Refresh
@@ -582,7 +577,7 @@ export default function IndexView() {
                         onClick={() => navigateToReader(globalIndex)}
                       >
                         <span className="relative inline-block after:absolute after:bottom-0 after:left-0 after:h-[1px] after:bg-primary after:w-0 group-hover:after:w-full after:transition-all after:duration-300 cursor-pointer">Read more</span> 
-                        <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
+                        <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </CardContent>
 
@@ -598,7 +593,7 @@ export default function IndexView() {
                         >
                           <span className="relative z-10 hidden xs:inline transition-transform group-hover/btn:translate-x-0.5">Read More</span>
                           <span className="relative z-10 xs:hidden transition-transform group-hover/btn:translate-x-0.5">Read more</span>
-                          <ArrowRight className="relative z-10 h-3 w-3 sm:h-4 sm:w-4 transition-transform duration-300 group-hover/btn:translate-x-0.5" />
+                          <ArrowRight className="relative z-10 h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-300 group-hover/btn:translate-x-0.5" />
                         </Button>
                       </div>
                     </CardFooter>

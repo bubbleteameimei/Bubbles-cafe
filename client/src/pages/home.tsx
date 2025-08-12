@@ -194,7 +194,7 @@ export default function Home() {
                           ease: "easeInOut"
                         }}
                       >
-                        <ChevronRight className="h-6 w-6 group-hover:translate-x-2 transition-transform duration-300" />
+                        <ChevronRight className="h-8 w-8 group-hover:translate-x-2 transition-transform duration-300" />
                       </motion.div>
                     </Button>
                   </motion.div>
@@ -229,7 +229,7 @@ export default function Home() {
                     </div>
                     <div className="flex items-center justify-center text-sm sm:text-base md:text-lg lg:text-xl text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium">
                       Read full story 
-                      <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 group-hover:translate-x-1 transition-transform" />
+                      <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 group-hover:translate-x-1 transition-transform" />
                     </div>
                     <div className="text-sm sm:text-base md:text-lg font-medium text-white/70 mt-3 md:mt-4">
                       {posts[0]?.date ? formatDate(posts[0].date) : ''}
