@@ -88,7 +88,7 @@ export const verifyTransaction = async (reference: string) => {
     });
     
     const data = await handlePaystackResponse(response);
-    console.log(`[PAYSTACK] Transaction verification status: ${data.data.status}`);
+    console.log(`[PAYSTACK] Transaction verification status: ${(data as any).data.status}`);
     return data;
   } catch (error) {
     console.error(`[PAYSTACK] Failed to verify transaction:`, error);
@@ -117,7 +117,7 @@ export const listTransactions = async (filters: Record<string, any> = {}) => {
     });
     
     const data = await handlePaystackResponse(response);
-    console.log(`[PAYSTACK] Retrieved ${data.data.length} transactions`);
+    console.log(`[PAYSTACK] Retrieved ${(data as any).data.length} transactions`);
     return data;
   } catch (error) {
     console.error(`[PAYSTACK] Failed to list transactions:`, error);
@@ -152,7 +152,7 @@ export const createPlan = async (
     });
     
     const data = await handlePaystackResponse(response);
-    console.log(`[PAYSTACK] Plan created successfully. ID: ${data.data.id}`);
+    console.log(`[PAYSTACK] Plan created successfully. ID: ${(data as any).data.id}`);
     return data;
   } catch (error) {
     console.error(`[PAYSTACK] Failed to create plan:`, error);
@@ -179,7 +179,7 @@ export const createSubscription = async (customerEmail: string, planCode: string
     });
     
     const data = await handlePaystackResponse(response);
-    console.log(`[PAYSTACK] Subscription created successfully. ID: ${data.data.id}`);
+    console.log(`[PAYSTACK] Subscription created successfully. ID: ${(data as any).data.id}`);
     return data;
   } catch (error) {
     console.error(`[PAYSTACK] Failed to create subscription:`, error);

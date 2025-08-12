@@ -1,5 +1,5 @@
 import { createSecureLogger } from '../utils/secure-logger';
-import { handleDatabaseError, createError } from '../utils/error-handler';
+import { AppError, ValidationError, NotFoundError } from '../utils/error-handler';
 import { db } from "../db";
 import { users, type User, type InsertUser } from "@shared/schema";
 import { eq, sql, and } from "drizzle-orm";

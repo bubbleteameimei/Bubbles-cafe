@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { logger } from './debug-logger';
+import { createLogger } from './debug-logger';
+
+const logger = createLogger('ErrorHandler');
 
 // Error types for better error handling
 export class AppError extends Error {

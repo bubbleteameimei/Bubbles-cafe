@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
-import { logger } from '../utils/debug-logger';
+import { createLogger } from '../utils/debug-logger';
+
+const logger = createLogger('Health');
 
 const router = Router();
 
