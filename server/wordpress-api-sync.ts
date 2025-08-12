@@ -84,7 +84,7 @@ export class WordPressAPISync {
             console.log(`[WordPress Sync] Synced post: ${wpPost.title.rendered}`);
           } catch (error) {
             console.error(`[WordPress Sync] Error syncing post ${wpPost.id}:`, error);
-            errors.push({ postId: wpPost.id, error: error.message });
+            errors.push({ postId: wpPost.id, error: error instanceof Error ? error.message : String(error) });
           }
         }
 
@@ -98,7 +98,7 @@ export class WordPressAPISync {
 
       } catch (error) {
         console.error(`[WordPress Sync] Error fetching page ${page}:`, error);
-        errors.push({ page, error: error.message });
+        errors.push({ page, error: error instanceof Error ? error.message : String(error) });
         hasMore = false;
       }
     }
@@ -284,7 +284,7 @@ export class WordPressAPISync {
     } catch (error) {
       return {
         status: 'error',
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }

@@ -64,7 +64,7 @@ import { db } from "./db";
 import pkg from 'pg';
 import { createHash } from 'crypto';
 import * as bcrypt from 'bcryptjs';
-const { Pool, PoolConfig } = pkg;
+const { Pool } = pkg;
 
 // Helper function to safely create Date objects
 function safeCreateDate(value: unknown): Date {
@@ -114,7 +114,7 @@ const pool = new Pool({
   statement_timeout: 30000, // 30 second query timeout
   query_timeout: 30000,
   // Connection validation
-  idleInTransactionSessionTimeout: 60000 // 1 minute timeout for idle transactions
+  idle_in_transaction_session_timeout: 60000 // 1 minute timeout for idle transactions
 });
 
 // Add pool error handling
