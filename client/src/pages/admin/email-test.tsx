@@ -5,16 +5,16 @@
  */
 
 import React from 'react';
-import { Helmet } from 'react-helmet';
+// import { Helmet } from 'react-helmet';
 import EmailServiceTest from '@/components/admin/EmailServiceTest';
 import AdminLayout from '@/components/layout/admin-layout';
 
 export default function EmailTestPage() {
   return (
     <>
-      <Helmet>
+      {/* <Helmet>
         <title>Email Service Test | Bubble's Cafe Admin</title>
-      </Helmet>
+      </Helmet> */}
       
       <AdminLayout title="Email Service Test">
         <EmailServiceTest />

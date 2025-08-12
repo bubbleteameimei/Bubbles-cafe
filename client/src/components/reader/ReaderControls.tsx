@@ -5,7 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFontSize } from "@/hooks/use-font-size";
 import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
-import { useTheme } from "@/components/theme-provider";
+import { useTheme } from "@/components/theme-provider"; // setTheme provided via useThemeContext alias
 import { 
   Type, 
   Palette, 

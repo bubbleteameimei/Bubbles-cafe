@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
-import { useLoading } from '@/contexts/loading-context';
+// import { useLoading } from '@/contexts/loading-context';
 import ApiLoader from '@/components/api-loader';
 
 export default function BookmarksPage() {
