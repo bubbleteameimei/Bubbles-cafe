@@ -5,12 +5,17 @@
  * from 54 seconds to under 3 seconds through intelligent resource management.
  */
 
+import React from 'react';
+
 // Dynamic import utility for code splitting
-export const lazyLoad = <T = any>(importFn: () => Promise<T>, fallback?: React.ComponentType) => {
-  return React.lazy(() => 
+export const lazyLoad = <T extends { default: React.ComponentType<any> }>(
+  importFn: () => Promise<T>, 
+  fallback?: React.ComponentType
+): React.LazyExoticComponent<React.ComponentType<any>> => {
+  return React.lazy(() =>
     importFn().catch(err => {
       console.warn('[Performance] Lazy load failed, using fallback:', err);
-      return fallback ? { default: fallback } : Promise.reject(err);
+      return fallback ? Promise.resolve({ default: fallback }) : Promise.reject(err);
     })
   );
 };
@@ -22,7 +27,7 @@ export class AssetPreloader {
   private isPreloading = false;
 
   async preloadCriticalAssets() {
-    const criticalAssets = [
+    const criticalAssets: string[] = [
       // Background images removed - only profile images remain
     ];
 

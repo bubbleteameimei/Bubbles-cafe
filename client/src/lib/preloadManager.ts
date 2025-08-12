@@ -291,9 +291,11 @@ export async function preloadRoute(route: string, assets: string[] = []): Promis
     const highPriorityAssets = allAssets.slice(0, 2);
     await preloadAll(highPriorityAssets, { priority: 'high' });
     
-    // Then preload the rest
+    // Then preload the rest (do not let rejections be unhandled)
     const remainingAssets = allAssets.slice(2);
-    preloadAll(remainingAssets, { priority: 'low' });
+    preloadAll(remainingAssets, { priority: 'low' }).catch((error) => {
+      console.warn('[Preloader] Non-critical assets failed to preload', error);
+    });
     
     console.log(`[Preloader] Successfully triggered preload for ${allAssets.length} assets`);
   } catch (error) {

@@ -166,3 +166,11 @@ export function sendValidationError(res: Response, field: string, message: strin
 export function createError(message: string, statusCode: number = 500) {
   return new AppError(message, statusCode);
 }
+
+// Provide helper factories to match existing usages across routes
+createError.internal = (message: string = 'Internal server error', statusCode: number = 500) => new AppError(message, statusCode);
+createError.unauthorized = (message: string = 'Unauthorized') => new AuthenticationError(message);
+createError.forbidden = (message: string = 'Forbidden') => new AuthorizationError(message);
+createError.badRequest = (message: string = 'Bad request') => new ValidationError(message);
+createError.notFound = (message: string = 'Not found') => new NotFoundError(message);
+createError.conflict = (message: string = 'Conflict') => new ConflictError(message);

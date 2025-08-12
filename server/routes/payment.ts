@@ -68,14 +68,13 @@ export const registerPaymentRoutes = (app: Express) => {
       );
       
       // Log transaction in activity logs
-      await storage.createActivityLog({
+      await storage.logActivity({
         userId: req.session.user.id,
         action: 'payment_initiated',
         details: {
           amount,
           reference: txReference
-        },
-        createdAt: new Date()
+        }
       });
       
       return res.status(200).json(response);
@@ -104,20 +103,19 @@ export const registerPaymentRoutes = (app: Express) => {
         });
       }
       
-      const response = await paystackService.verifyTransaction(reference);
+      const response: any = await paystackService.verifyTransaction(reference);
       
       // If payment is successful, update user records
       if (response.data.status === 'success' && req.session?.user) {
         // Log transaction in activity logs
-        await storage.createActivityLog({
+        await storage.logActivity({
           userId: req.session.user.id,
           action: 'payment_successful',
           details: {
             amount: response.data.amount,
             reference: reference,
             paymentDate: new Date().toISOString()
-          },
-          createdAt: new Date()
+          }
         });
         
         // You can add more logic here to update user's subscription status, etc.
@@ -163,15 +161,14 @@ export const registerPaymentRoutes = (app: Express) => {
           if (event.data.metadata?.userId) {
             const userId = parseInt(event.data.metadata.userId);
             
-            await storage.createActivityLog({
+            await storage.logActivity({
               userId,
               action: 'payment_webhook_received',
               details: {
                 amount: event.data.amount,
                 reference: event.data.reference,
                 status: 'success'
-              },
-              createdAt: new Date()
+              }
             });
             
             // Add more logic to update user subscription, etc.

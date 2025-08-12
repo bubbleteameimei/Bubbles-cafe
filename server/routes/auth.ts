@@ -163,7 +163,13 @@ router.post('/forgot-password',
       }
       
       // Generate reset token
-      const resetToken = await storage.createPasswordResetToken(user.id);
+      const resetToken = await storage.createResetToken({
+        userId: user.id,
+        token: require('crypto').randomBytes(32).toString('hex'),
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        used: false,
+        metadata: {}
+      });
       
       // Send reset email (implement email service)
       // await emailService.sendPasswordResetEmail(email, resetToken);
@@ -190,7 +196,7 @@ router.post('/reset-password',
     
     try {
       // Verify reset token
-      const resetToken = await storage.verifyPasswordResetToken(token);
+      const resetToken = await storage.getResetTokenByToken(token);
       if (!resetToken) {
         throw createError.badRequest('Invalid or expired reset token');
       }
@@ -202,7 +208,7 @@ router.post('/reset-password',
       await storage.updateUserPassword(resetToken.userId, hashedPassword);
       
       // Delete used token
-      await storage.deletePasswordResetToken(token);
+      await storage.markResetTokenAsUsed(token);
       
       authLogger.info('Password reset successful', { userId: resetToken.userId });
       
@@ -235,7 +241,7 @@ router.post('/change-password',
     
     try {
       // Get user with password hash
-      const user = await storage.getUserWithPassword(userId);
+      const user = await storage.getUser(userId);
       if (!user || !user.password_hash) {
         throw createError.notFound('User not found');
       }

@@ -30,20 +30,19 @@ router.get('/',
     const { page, limit, category, search } = req.query as any;
     
     try {
-      const posts = await storage.getPosts({
-        page: Number(page),
-        limit: Number(limit),
-        category,
-        search
-      });
+      const result = await storage.getPosts(
+        Number(page),
+        Number(limit),
+        { category, search }
+      );
       
       postsLogger.debug('Posts retrieved successfully', { 
-        count: posts.length, 
+        count: result.posts.length, 
         page, 
         limit 
       });
       
-      res.json(posts);
+      res.json(result);
     } catch (error) {
       postsLogger.error('Error retrieving posts', { error });
       throw createError.internal('Failed to retrieve posts');

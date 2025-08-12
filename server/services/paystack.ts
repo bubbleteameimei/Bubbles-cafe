@@ -6,6 +6,7 @@
  */
 import fetch from 'node-fetch';
 import { Request, Response, Router } from 'express';
+import type { Response as FetchResponse } from 'node-fetch';
 const router = Router();
 
 // Check for required environment variables
@@ -27,7 +28,7 @@ const getHeaders = () => {
 /**
  * Error handling middleware for Paystack API calls
  */
-const handlePaystackResponse = async (response: Response) => {
+const handlePaystackResponse = async (response: FetchResponse) => {
   if (!response.ok) {
     const errorData = await response.json();
     console.error('[PAYSTACK] API Error:', errorData);
