@@ -110,7 +110,7 @@ export default function ContactForm() {
         }
       };
       
-      const response = await apiRequest<ContactResponse>('POST', '/api/contact', contactData);
+      const response = await apiRequest<ContactResponse>('POST', '/api/contact', contactData, undefined);
 
       // Update UI based on response
       if (response.emailStatus === 'success') {
