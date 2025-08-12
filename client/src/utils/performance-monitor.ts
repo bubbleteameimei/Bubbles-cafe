@@ -279,6 +279,7 @@ class PerformanceMonitor {
     // Send to your analytics service
     if (typeof window !== 'undefined' && typeof window.gtag !== 'undefined') {
       for (const [name, metric] of Object.entries(coreVitals)) {
+        if (!metric) continue;
         window.gtag!('event', name, {
           value: Math.round(metric.value),
           metric_id: metric.id,

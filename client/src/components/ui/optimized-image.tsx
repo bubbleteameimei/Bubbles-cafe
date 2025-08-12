@@ -209,7 +209,10 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
               ref(node);
             }
             // Store internally for intersection observer
-            imgRef.current = node;
+            if (node) {
+              // Use local ref only to avoid writing to forwarded ref .current
+              (imgRef as React.MutableRefObject<HTMLImageElement | null>).current = node;
+            }
           }}
           src={getOptimizedSrc(src, 'jpg')}
           srcSet={generateSrcSet(src).replace(/f=webp/g, 'f=jpg')}
