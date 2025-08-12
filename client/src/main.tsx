@@ -53,7 +53,7 @@ initCSRFProtection().then(() => {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
+      .then((_registration) => {
         logger.info('Service Worker registered successfully');
       })
       .catch((error) => {
