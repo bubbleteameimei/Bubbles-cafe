@@ -63,6 +63,7 @@ import type { CommentMetadata } from "@shared/schema";
 import { db } from "./db";
 import pkg from 'pg';
 import { createHash } from 'crypto';
+import * as bcrypt from 'bcryptjs';
 const { Pool, PoolConfig } = pkg;
 
 // Helper function to safely create Date objects
@@ -102,7 +103,7 @@ const pool = new Pool({
   max: 10, // Optimized maximum number of clients in the pool
   min: 1, // Minimum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 3000, // Reduced timeout for faster failures
+  connectionTimeoutMillis: 30000, // Reduced timeout for faster failures
   maxUses: 3000, // Reduced max uses to prevent memory issues
   allowExitOnIdle: false, // Don't exit when the pool is empty - better for production
   keepAlive: true, // Enable TCP keep-alive
@@ -972,7 +973,6 @@ export class DatabaseStorage implements IStorage {
   async createUser(user: InsertUser): Promise<User> {
     try {
       // Hash the password before storing
-      const bcrypt = await import('bcryptjs');
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(user.password, salt);
 
