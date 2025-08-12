@@ -1,7 +1,7 @@
 import React from 'react';
 import SearchBar from './SearchBar';
 import { NotificationIcon } from './ui/notification-icon';
-import { useNotifications } from './NotificationProvider';
+import { useNotifications } from '@/contexts/notification-context';
 import { ThemeToggleButton } from './ui/theme-toggle-button';
 
 interface SidebarHeaderProps {
