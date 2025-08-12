@@ -53,29 +53,85 @@ function loadEnvFile() {
 // Load environment variables before validation
 loadEnvFile();
 
-// Define environment schema
+// Environment variable validation schema
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production']).default('development'),
-  PORT: z.coerce.number().default(5000),
-  DATABASE_URL: z.string({
-    required_error: "DATABASE_URL is required. Make sure the database is provisioned."
-  }),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  PORT: z.string().transform(Number).default('3002'),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters').default('horror-stories-session-secret-development-only'),
+  FRONTEND_URL: z.string().url().optional(),
+  WORDPRESS_API_URL: z.string().url().optional(),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GMAIL_APP_PASSWORD: z.string().optional(),
+  SENDGRID_API_KEY: z.string().optional(),
+  MAILERSEND_API_KEY: z.string().optional(),
+  VITE_ENABLE_ERROR_REPORTING: z.string().optional(),
 });
 
-// Export validated config
-export const config = {
-  NODE_ENV: process.env.NODE_ENV || 'development',
-  PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : 5000,
-  DATABASE_URL: process.env.DATABASE_URL,
-};
-
-// Validate config
-try {
-  envSchema.parse(config);
-  console.log('[Config] Environment configuration validated successfully');
-} catch (error) {
-  console.error('[Config] Environment validation failed:', error);
-  throw new Error('Invalid environment configuration');
+// Validate environment variables
+function validateEnv() {
+  try {
+    const env = envSchema.parse(process.env);
+    return env;
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      console.error('❌ Environment validation failed:');
+      error.errors.forEach((err) => {
+        console.error(`  - ${err.path.join('.')}: ${err.message}`);
+      });
+      console.error('\n💡 Please check your environment variables and try again.');
+      process.exit(1);
+    }
+    throw error;
+  }
 }
 
-export default config;
+// Export validated environment variables
+export const env = validateEnv();
+
+// Configuration object
+export const config = {
+  isDev: env.NODE_ENV === 'development',
+  isProd: env.NODE_ENV === 'production',
+  isTest: env.NODE_ENV === 'test',
+  port: env.PORT,
+  database: {
+    url: env.DATABASE_URL,
+  },
+  session: {
+    secret: env.SESSION_SECRET,
+    secure: env.NODE_ENV === 'production',
+    sameSite: env.NODE_ENV === 'production' ? 'none' as const : 'lax' as const,
+  },
+  cors: {
+    origin: env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
+  },
+  wordpress: {
+    apiUrl: env.WORDPRESS_API_URL,
+  },
+  auth: {
+    google: {
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
+    },
+  },
+  email: {
+    gmail: {
+      appPassword: env.GMAIL_APP_PASSWORD,
+    },
+    sendgrid: {
+      apiKey: env.SENDGRID_API_KEY,
+    },
+    mailersend: {
+      apiKey: env.MAILERSEND_API_KEY,
+    },
+  },
+  features: {
+    errorReporting: env.VITE_ENABLE_ERROR_REPORTING === 'true',
+  },
+} as const;
+
+// Type for the config object
+export type Config = typeof config;

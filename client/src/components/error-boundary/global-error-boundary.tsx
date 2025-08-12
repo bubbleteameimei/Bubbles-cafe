@@ -86,13 +86,19 @@ class ErrorLogger {
 
   private async sendToErrorService(errorReport: any) {
     try {
-      await fetch('/api/errors', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(errorReport)
-      });
+      // Only send error reports in production or if explicitly enabled
+      if (process.env.NODE_ENV === 'production' || process.env.VITE_ENABLE_ERROR_REPORTING === 'true') {
+        await fetch('/api/errors', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(errorReport)
+        });
+      }
     } catch (err) {
-      console.warn('Failed to send error report:', err);
+      // Silently fail in development, log in production
+      if (process.env.NODE_ENV === 'production') {
+        console.warn('Failed to send error report:', err);
+      }
     }
   }
 
