@@ -45,17 +45,19 @@ import {
   FeedbackWithMetadata, 
   ResponseSuggestion
 } from '@/types/feedback';
+import type { FeedbackStatus } from '@/components/feedback/FeedbackCategoryFilter';
 
 export type FeedbackItem = {
   id: number;
   subject: string;
   content: string;
   status: string;
+  type: string;
 };
 
 interface FeedbackDetailsProps {
   feedback: FeedbackWithMetadata;
-  onStatusChange?: (id: number, status: string) => void;
+  onStatusChange?: (id: number, status: FeedbackStatus) => void;
   onSendResponse?: (id: number, response: string) => void;
   className?: string;
   responseSuggestion?: ResponseSuggestion;
@@ -90,7 +92,7 @@ export function FeedbackDetails({
   };
 
   // Handle status change
-  const handleStatusChange = (value: string) => {
+  const handleStatusChange = (value: FeedbackStatus) => {
     setStatus(value);
     if (onStatusChange) {
       onStatusChange(feedback.id, value);

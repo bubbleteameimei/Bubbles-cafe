@@ -27,10 +27,11 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { FeedbackItem } from './FeedbackDetails';
+
+type FeedbackSummaryItem = { type?: string; status: string };
 
 interface FeedbackAnalyticsProps {
-  feedbackItems: FeedbackItem[];
+  feedbackItems: FeedbackSummaryItem[];
 }
 
 export function FeedbackAnalytics({ feedbackItems }: FeedbackAnalyticsProps) {
