@@ -71,16 +71,18 @@ export default function Home() {
                 Browse Stories
                 <motion.div
                   animate={{ 
-                    x: [0, 3, 0]
+                    x: [0, 3, 0],
+                    rotate: [0, 10, -5, 0],
+                    scale: [1, 1.05, 0.98, 1]
                   }}
                   transition={{ 
-                    duration: 2,
+                    duration: 3,
                     repeat: Infinity,
                     ease: "easeInOut"
                   }}
                   className="ml-2"
                 >
-                  <Book className="h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
+                  <Book className="h-4 w-4 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300" />
                 </motion.div>
               </Button>
             </motion.div>
@@ -105,7 +107,7 @@ export default function Home() {
                   }}
                   className="ml-2"
                 >
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-2 transition-transform duration-300" />
+                  <ArrowRight className="h-6 w-6 group-hover:translate-x-2 transition-transform duration-300" />
                 </motion.div>
               </Button>
             </motion.div>
@@ -153,15 +155,16 @@ export default function Home() {
                       <span className="text-center mr-2">Browse Stories</span>
                       <motion.div
                         animate={{ 
-                          rotate: [0, 10, -5, 0]
+                          rotate: [0, 15, -8, 5, 0],
+                          scale: [1, 1.1, 0.95, 1.05, 1]
                         }}
                         transition={{ 
-                          duration: 3,
+                          duration: 4,
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
                       >
-                        <Book className="h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
+                        <Book className="h-4 w-4 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300" />
                       </motion.div>
                     </Button>
                   </motion.div>
@@ -191,7 +194,7 @@ export default function Home() {
                           ease: "easeInOut"
                         }}
                       >
-                        <ChevronRight className="h-5 w-5 group-hover:translate-x-2 transition-transform duration-300" />
+                        <ChevronRight className="h-6 w-6 group-hover:translate-x-2 transition-transform duration-300" />
                       </motion.div>
                     </Button>
                   </motion.div>

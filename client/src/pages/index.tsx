@@ -429,7 +429,7 @@ export default function IndexView() {
                       >
                         <span className="relative z-10 hidden sm:inline transition-transform group-hover/btn:translate-x-0.5">Read Featured Story</span>
                         <span className="relative z-10 sm:hidden transition-transform group-hover/btn:translate-x-0.5">Read Story</span>
-                        <ArrowRight className="relative z-10 h-3 w-3 sm:h-4 sm:w-4 ml-1 transition-transform duration-300 group-hover/btn:translate-x-1" />
+                        <ArrowRight className="relative z-10 h-4 w-4 sm:h-5 sm:w-5 ml-1 transition-transform duration-300 group-hover/btn:translate-x-1" />
                       </Button>
                     </div>
                   </div>
@@ -477,7 +477,7 @@ export default function IndexView() {
             transition={{ duration: 0.4, delay: 0.3 }}
           >
             <div className="w-full">
-              <Book className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 text-primary/40 mb-3 sm:mb-4 mt-3 sm:mt-4" />
+              <Book className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 text-primary/40 mb-3 sm:mb-4 mt-3 sm:mt-4" />
               <h3 className="text-lg sm:text-xl font-decorative mb-2 sm:mb-3">No Stories Found</h3>
               <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed px-2">
                 No stories are available at the moment. Check back soon or try refreshing the page.
@@ -564,8 +564,8 @@ export default function IndexView() {
                             variant={themeInfo.badgeVariant === "cosmic" ? "outline" : themeInfo.badgeVariant || "outline"}
                             className="w-fit text-xs font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 group-hover:shadow-sm group-hover:opacity-90 transition-all duration-300"
                           >
-                            <span className="h-3 w-3 mr-1 group-hover:rotate-12 transition-transform duration-500">
-                              <Book className="h-3 w-3" />
+                            <span className="h-3 w-3 mr-1 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500">
+                              <Book className="h-2.5 w-2.5" />
                             </span>
                             {displayName}
                           </Badge>
@@ -582,7 +582,7 @@ export default function IndexView() {
                         onClick={() => navigateToReader(globalIndex)}
                       >
                         <span className="relative inline-block after:absolute after:bottom-0 after:left-0 after:h-[1px] after:bg-primary after:w-0 group-hover:after:w-full after:transition-all after:duration-300 cursor-pointer">Read more</span> 
-                        <ChevronRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 group-hover:translate-x-1 transition-transform" />
+                        <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </CardContent>
 
@@ -598,7 +598,7 @@ export default function IndexView() {
                         >
                           <span className="relative z-10 hidden xs:inline transition-transform group-hover/btn:translate-x-0.5">Read More</span>
                           <span className="relative z-10 xs:hidden transition-transform group-hover/btn:translate-x-0.5">Read more</span>
-                          <ArrowRight className="relative z-10 h-2.5 w-2.5 sm:h-3 sm:w-3 transition-transform duration-300 group-hover/btn:translate-x-0.5" />
+                          <ArrowRight className="relative z-10 h-3 w-3 sm:h-4 sm:w-4 transition-transform duration-300 group-hover/btn:translate-x-0.5" />
                         </Button>
                       </div>
                     </CardFooter>
