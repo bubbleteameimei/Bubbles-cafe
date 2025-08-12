@@ -1,7 +1,7 @@
 import express from "express";
 import { createServer } from "http";
 import { setupVite, serveStatic } from "./vite";
-import { registerRoutes } from "./routes";
+import { registerModularRoutes } from "./routes";
 import { db } from "./db"; // Using the direct Neon database connection
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
@@ -31,8 +31,8 @@ import { setupCors } from "./cors-setup";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
-// Use port 3000 for Replit preview compatibility
-const PORT = parseInt(process.env.PORT || "3000", 10);
+// Use port 3002 for Replit preview compatibility
+const PORT = parseInt(process.env.PORT || "3002", 10);
 const HOST = '0.0.0.0';
 
 // Create server instance outside startServer for proper cleanup
