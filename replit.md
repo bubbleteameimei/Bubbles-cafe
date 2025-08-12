@@ -6,6 +6,13 @@ This project is an interactive storytelling platform built with a modern web sta
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+- **August 12, 2025**: Enhanced icon sizes and animations in browse stories and start reading buttons
+  - Book icons in browse stories made slightly smaller (h-5 w-5 → h-4 w-4) with improved multi-stage animation (rotation + scale)
+  - Arrow icons on start reading buttons made slightly larger (h-5 w-5 → h-6 w-6)  
+  - Enhanced book icon animations with smoother rotation and scale effects
+  - Updated both home page and stories index page for consistency
+
 ## System Architecture
 
 ### Frontend
