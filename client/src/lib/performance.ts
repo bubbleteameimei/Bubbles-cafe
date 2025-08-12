@@ -135,8 +135,11 @@ export class MemoryOptimizer {
       
       // Implement LRU cache eviction
       if (this.cache.size >= this.MAX_CACHE_SIZE) {
-        const firstKey = this.cache.keys().next().value;
-        this.cache.delete(firstKey);
+        const iterator = this.cache.keys().next();
+        const firstKey = iterator.value as string | undefined;
+        if (typeof firstKey === 'string') {
+          this.cache.delete(firstKey);
+        }
       }
       
       this.cache.set(key, result);
