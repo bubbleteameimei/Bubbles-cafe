@@ -973,34 +973,36 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(user: InsertUser): Promise<User> {
     try {
-      // Hash the password before storing
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(user.password, salt);
-
-      // Extract email from user or metadata and normalize it
-      let email = (user.metadata as any)?.email || user.email;
-      
-      // Normalize email to prevent case-sensitivity issues
+      // Support both hashed and plaintext password payloads by normalizing to password_hash
+      let email: string | undefined = (user as any).email;
       if (email) {
-        email = email.trim().toLowerCase();
-        // Also update the metadata
-        if (user.metadata && typeof user.metadata === 'object') {
-          (user.metadata as any).email = email;
-        }
+        email = String(email).trim().toLowerCase();
+      } else if ((user as any).metadata && typeof (user as any).metadata === 'object') {
+        const metaEmail = (user as any).metadata.email;
+        if (metaEmail) email = String(metaEmail).trim().toLowerCase();
       }
-      
-      console.log('[Storage] Creating user with email:', email);
 
-      // Prepare user values including the metadata field
+      // Derive password_hash from either provided hash or plaintext password
+      let passwordHash: string;
+      const maybeHash = (user as any).password_hash;
+      const maybePlain = (user as any).password;
+      if (typeof maybeHash === 'string' && maybeHash.length > 0) {
+        passwordHash = maybeHash;
+      } else if (typeof maybePlain === 'string' && maybePlain.length > 0) {
+        const salt = await bcrypt.genSalt(10);
+        passwordHash = await bcrypt.hash(maybePlain, salt);
+      } else {
+        throw new Error('Missing password or password_hash');
+      }
+
       const userValues = {
-        username: user.username.trim(),
-        email, // The email is now normalized
-        password_hash: hashedPassword,
-        isAdmin: user.isAdmin ?? false,
-        metadata: user.metadata || {} // Include metadata now that it exists in the database
+        username: String((user as any).username || '').trim(),
+        email: email || String((user as any).email || '').trim().toLowerCase(),
+        password_hash: passwordHash,
+        isAdmin: (user as any).isAdmin ?? false,
+        metadata: (user as any).metadata && typeof (user as any).metadata === 'object' ? (user as any).metadata : {}
       };
 
-      // Insert user with hashed password
       const [newUser] = await db.insert(users)
         .values(userValues)
         .returning();
@@ -1008,10 +1010,7 @@ export class DatabaseStorage implements IStorage {
       return newUser;
     } catch (error) {
       console.error("Error in createUser:", error);
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Unknown error in createUser');
+      throw new Error('Failed to create user');
     }
   }
   
@@ -1042,21 +1041,20 @@ export class DatabaseStorage implements IStorage {
         console.log('[Storage] New metadata:', JSON.stringify(userData.metadata, null, 2));
         
         // Ensure both metadata objects are actual objects before merging
-        const existingMetadataObj = typeof existingMetadata === 'object' ? existingMetadata : {};
-        const newMetadataObj = typeof userData.metadata === 'object' ? userData.metadata : {};
+        const existingMetadataObj = typeof existingMetadata === 'object' ? (existingMetadata as Record<string, unknown>) : {};
+        const newMetadataObj = typeof userData.metadata === 'object' ? (userData.metadata as Record<string, unknown>) : {};
         
         // Deep merge the existing metadata with the new metadata
         updateData.metadata = {
           ...existingMetadataObj,
           ...newMetadataObj
-        };
+        } as Record<string, unknown>;
         
         // Make sure nested properties are correctly merged
-        if (newMetadataObj.oauth && existingMetadataObj.oauth) {
-          updateData.metadata.oauth = {
-            ...existingMetadataObj.oauth,
-            ...newMetadataObj.oauth
-          };
+        const existingOauth = (existingMetadataObj as any)?.oauth;
+        const newOauth = (newMetadataObj as any)?.oauth;
+        if (existingOauth || newOauth) {
+          (updateData.metadata as any).oauth = { ...(existingOauth || {}), ...(newOauth || {}) };
         }
         
         console.log('[Storage] Merged metadata:', JSON.stringify(updateData.metadata, null, 2));

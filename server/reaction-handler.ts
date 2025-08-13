@@ -8,7 +8,7 @@
 import { Request, Response } from 'express';
 import { db } from './db';
 import { posts as postsTable } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 /**
  * Handle post reactions (likes/dislikes) from any source
@@ -37,10 +37,15 @@ export async function handlePostReaction(req: Request, res: Response) {
     }
     
     // Update reaction count - increment like or dislike count
-    const field = isLike ? 'likesCount' : 'dislikesCount';
-    await db.update(postsTable)
-      .set({ [field]: db.raw(`${field} + 1`) })
-      .where(eq(postsTable.id, postId));
+    if (isLike) {
+      await db.update(postsTable)
+        .set({ likesCount: sql`${postsTable.likesCount} + 1` })
+        .where(eq(postsTable.id, postId));
+    } else {
+      await db.update(postsTable)
+        .set({ dislikesCount: sql`${postsTable.dislikesCount} + 1` })
+        .where(eq(postsTable.id, postId));
+    }
     
     // Get updated counts
     const [updatedCounts] = await db.select({

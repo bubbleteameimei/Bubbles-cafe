@@ -187,8 +187,8 @@ export function setupAuth(app: Express) {
       authLogger.debug('Creating user with registration data');
       const user = await storage.createUser({
         username,
-        password,
         email, // Keep email as top-level property for backward compatibility
+        password: password, // storage handles hashing into password_hash
         isAdmin: false,
         metadata: {
           email, // Also store in metadata for our new approach
@@ -211,7 +211,7 @@ export function setupAuth(app: Express) {
       });
     } catch (error) {
       authLogger.error('Registration error', { error: error instanceof Error ? error.message : 'Unknown error' });
-      res.status(500).json({ message: "Error creating user" });
+      return res.status(500).json({ message: "Error creating user" });
     }
   });
 
@@ -234,7 +234,7 @@ export function setupAuth(app: Express) {
       return res.status(401).json({ message: "Not authenticated" });
     }
     authLogger.debug('User info request', { id: req.user?.id });
-    res.json(req.user);
+    return res.json(req.user);
   });
   
   // Add social login endpoint with rate limiting
