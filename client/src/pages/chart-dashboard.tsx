@@ -104,7 +104,7 @@ export default function ChartDashboard() {
               description="January - June 2025"
               footer="Desktop remains the primary access method"
               trendingText="Desktop usage trending up by"
-              trendingValue={Number(desktopGrowth).toFixed(1)}
+              trendingValue={Number(desktopGrowth)}
               data={deviceDistribution}
             />
           </div>
@@ -149,7 +149,7 @@ export default function ChartDashboard() {
               description="January - June 2025"
               footer="Mobile usage increasing steadily"
               trendingText="Mobile growth rate:"
-              trendingValue={Number(mobileGrowth).toFixed(1)}
+              trendingValue={Number(mobileGrowth)}
               data={deviceDistribution}
             />
           </div>

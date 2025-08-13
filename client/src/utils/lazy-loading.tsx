@@ -109,7 +109,7 @@ export function createLazyComponent<T extends ComponentType<any>>(
   }
 
   // Return wrapped component with error boundary
-  return React.forwardRef<any, React.ComponentProps<T>>((props, ref) => {
+  return ((props: React.ComponentProps<T>) => {
     const [error, setError] = React.useState<Error | null>(null);
     const [retryKey, setRetryKey] = React.useState(0);
 
@@ -125,7 +125,7 @@ export function createLazyComponent<T extends ComponentType<any>>(
     return (
       <Suspense fallback={fallback}>
         <ErrorBoundary onError={setError}>
-          <LazyComponent key={retryKey} {...props} ref={ref} />
+          <LazyComponent key={retryKey} {...props} />
         </ErrorBoundary>
       </Suspense>
     );
@@ -174,7 +174,7 @@ export function createIntersectionLazyComponent<T extends ComponentType<any>>(
     ...lazyOptions
   } = options;
 
-  return React.forwardRef<any, React.ComponentProps<T>>((props, ref) => {
+  return ((props: React.ComponentProps<T>) => {
     const [shouldLoad, setShouldLoad] = React.useState(false);
     const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -208,7 +208,7 @@ export function createIntersectionLazyComponent<T extends ComponentType<any>>(
     }
 
     const LazyComponent = createLazyComponent(importFn, lazyOptions);
-    return <LazyComponent {...props} ref={ref} />;
+    return <LazyComponent {...props} />;
   });
 }
 
@@ -227,6 +227,7 @@ export function usePreloadComponent(
 
       return () => clearTimeout(preloadTimer);
     }
+    return () => {};
   }, [importFn, condition]);
 }
 
@@ -235,27 +236,29 @@ export function useBatchPreload(
   imports: Array<() => Promise<{ default: ComponentType<any> }>>,
   options: { delay?: number; batchSize?: number } = {}
 ) {
-  const { delay = 100, batchSize = 3 } = options;
-
   React.useEffect(() => {
-    const preloadBatch = async () => {
-      for (let i = 0; i < imports.length; i += batchSize) {
-        const batch = imports.slice(i, i + batchSize);
-        
-        await Promise.allSettled(
-          batch.map(importFn => importFn().catch(error => {
-            logger.warn('Batch preload failed for component', { error });
+    const { delay = 100, batchSize = 3 } = options;
+    let cancelled = false;
+    if (imports.length === 0) return;
+    
+    const batches: Array<Array<() => Promise<{ default: ComponentType<any> }>>> = [];
+    for (let i = 0; i < imports.length; i += batchSize) {
+      batches.push(imports.slice(i, i + batchSize));
+    }
+    
+    async function processBatches() {
+      for (const batch of batches) {
+        if (cancelled) return;
+        await Promise.all(
+          batch.map(fn => fn().catch(error => {
+            logger.warn('Batch preload failed', { error });
           }))
         );
-
-        // Delay between batches to prevent overwhelming the network
-        if (i + batchSize < imports.length) {
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
-    };
-
-    const timer = setTimeout(preloadBatch, delay);
-    return () => clearTimeout(timer);
-  }, [imports, delay, batchSize]);
+    }
+    
+    processBatches();
+    return () => { cancelled = true; };
+  }, [imports, options]);
 }

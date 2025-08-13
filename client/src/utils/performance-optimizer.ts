@@ -82,6 +82,7 @@ export function useComponentRenderTracker(
         }
       };
     }
+    return () => {};
   }, [componentName, trackMounts, trackUnmounts, recordMetric]);
   
   // Function to track render start

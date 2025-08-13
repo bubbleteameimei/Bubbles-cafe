@@ -136,6 +136,7 @@ export function MusicButton({ className }: MusicButtonProps) {
       
       return () => clearTimeout(timer);
     }
+    return () => {};
   }, [showVolumeControls]);
 
   return (

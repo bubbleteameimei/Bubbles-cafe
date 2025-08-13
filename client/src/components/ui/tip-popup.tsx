@@ -31,6 +31,7 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
         return () => clearTimeout(timer);
       }
     }
+    return () => {};
   }, [autoShow]);
 
   const handleTip = () => {

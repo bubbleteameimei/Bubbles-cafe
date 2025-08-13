@@ -6,6 +6,7 @@
  */
 import pkg from 'pg';
 const { Pool } = pkg;
+import type { Pool as PgPool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '../shared/schema';
 import fs from 'fs';
@@ -14,7 +15,7 @@ import path from 'path';
 /**
  * Initialize database connection
  */
-export async function initializeDatabaseConnection(): Promise<{ pool: typeof Pool, db: any }> {
+export async function initializeDatabaseConnection(): Promise<{ pool: PgPool, db: any }> {
   // Ensure DATABASE_URL is available
   if (!process.env.DATABASE_URL) {
     console.warn("⚠️ DATABASE_URL environment variable is not set, checking .env file...");
