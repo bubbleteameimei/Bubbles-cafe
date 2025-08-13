@@ -67,14 +67,17 @@ router.get("/wordpress/logs", requireAuth, requireAdmin, async (req, res) => {
     // Filter and format WordPress sync logs
     const syncLogs = logs
       .filter(log => log.action === "wordpress_sync")
-      .map(log => ({
-        id: log.id.toString(),
-        timestamp: log.createdAt.toISOString(),
-        status: log.details?.status || "success",
-        message: log.details?.message || "WordPress sync completed",
-        postsProcessed: log.details?.postsProcessed || 0,
-        duration: log.details?.duration || 0
-      }));
+      .map(log => {
+        const details = (log.details as any) || {};
+        return {
+          id: log.id.toString(),
+          timestamp: log.createdAt.toISOString(),
+          status: details.status || "success",
+          message: details.message || "WordPress sync completed",
+          postsProcessed: details.postsProcessed || 0,
+          duration: details.duration || 0
+        };
+      });
     
     res.json(syncLogs);
   } catch (error) {

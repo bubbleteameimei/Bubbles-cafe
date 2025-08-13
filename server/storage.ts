@@ -186,7 +186,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getAdminByEmail(email: string): Promise<User[]>;
   getUsersCount(): Promise<number>;
-  createUser(user: InsertUser): Promise<User>;
+  createUser(user: InsertUser | { username: string; email?: string; password?: string; isAdmin?: boolean; metadata?: unknown }): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User>;
   getUserComments(userId: number): Promise<Comment[]>;
   getUserReadingHistory(userId: number): Promise<ReadingProgress[]>;
@@ -971,7 +971,7 @@ export class DatabaseStorage implements IStorage {
     return this.getRecentActivityLogs(limit);
   }
 
-  async createUser(user: InsertUser): Promise<User> {
+  async createUser(user: InsertUser | { username: string; email?: string; password?: string; isAdmin?: boolean; metadata?: unknown }): Promise<User> {
     try {
       // Support both hashed and plaintext password payloads by normalizing to password_hash
       let email: string | undefined = (user as any).email;

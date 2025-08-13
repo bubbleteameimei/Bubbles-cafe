@@ -8,9 +8,11 @@ import * as bcrypt from 'bcryptjs';
 
 const userLogger = createSecureLogger('UserService');
 
+type PublicUser = Omit<User, 'password_hash'>;
+
 export class UserService {
   // Get user by ID
-  async getUser(id: number): Promise<User | null> {
+  async getUser(id: number): Promise<PublicUser | null> {
     try {
       const [user] = await db.select({
         id: users.id,
@@ -60,9 +62,8 @@ export class UserService {
   }
 
   // Create new user
-  async createUser(userData: InsertUser): Promise<User> {
+  async createUser(userData: InsertUser): Promise<PublicUser> {
     try {
-      // Check if user already exists
       const existingUser = await this.getUserByEmail(userData.email);
       if (existingUser) {
         throw createError.conflict('User with this email already exists');
@@ -90,14 +91,14 @@ export class UserService {
   }
 
   // Update user
-  async updateUser(id: number, userData: Partial<InsertUser>): Promise<User> {
+  async updateUser(id: number, userData: Partial<InsertUser>): Promise<PublicUser> {
     try {
       const existingUser = await this.getUser(id);
       if (!existingUser) {
         throw createError.notFound('User not found');
       }
 
-      const updateData = { ...userData };
+      const updateData = { ...userData } as Partial<InsertUser>;
       if (updateData.email) {
         updateData.email = updateData.email.toLowerCase();
       }
@@ -173,7 +174,7 @@ export class UserService {
   }
 
   // Get admin users
-  async getAdminUsers(): Promise<User[]> {
+  async getAdminUsers(): Promise<PublicUser[]> {
     try {
       const adminUsers = await db.select({
         id: users.id,
@@ -210,10 +211,9 @@ export class UserService {
   }
 
   // Get users with pagination
-  async getUsers(page: number = 1, limit: number = 20): Promise<{ users: User[]; total: number; }> {
+  async getUsers(page: number = 1, limit: number = 20): Promise<{ users: PublicUser[]; total: number; }> {
     try {
       const offset = (page - 1) * limit;
-      
       const [usersData, totalResult] = await Promise.all([
         db.select({
           id: users.id,
@@ -222,19 +222,17 @@ export class UserService {
           isAdmin: users.isAdmin,
           metadata: users.metadata,
           createdAt: users.createdAt
-        }).from(users)
+        })
+          .from(users)
+          .orderBy(users.createdAt)
           .limit(limit)
-          .offset(offset)
-          .orderBy(users.createdAt),
+          .offset(offset),
         db.select({ count: sql<number>`count(*)` }).from(users)
       ]);
 
-      return {
-        users: usersData as unknown as User[],
-        total: totalResult[0].count
-      };
+      return { users: usersData, total: totalResult[0].count };
     } catch (error) {
-      userLogger.error('Error fetching users with pagination', { page, limit, error });
+      userLogger.error('Error fetching users', { error });
       throw handleDatabaseError(error);
     }
   }

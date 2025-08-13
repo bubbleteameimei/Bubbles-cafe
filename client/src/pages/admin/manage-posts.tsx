@@ -368,28 +368,30 @@ export default function ManagePostsPage() {
   
   const handleUpdatePost = () => {
     if (!selectedPost) return;
-    
+
     const triggerWarnings = editedPostData.triggerWarnings
       ? editedPostData.triggerWarnings.split(',').map(tw => tw.trim()).filter(Boolean)
       : [];
-    
+
+    const baseMeta: Record<string, unknown> = (selectedPost.metadata && typeof selectedPost.metadata === 'object') ? (selectedPost.metadata as Record<string, unknown>) : {};
+
     const data = {
       title: editedPostData.title,
       published: editedPostData.status === 'published',
       featured: editedPostData.featured,
       metadata: {
-        ...selectedPost.metadata,
+        ...baseMeta,
         themeCategory: editedPostData.themeCategory,
         triggerWarnings,
       }
-    };
-    
+    } as const;
+
     updatePostMutation.mutate({ id: selectedPost.id, data });
   };
   
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked && postsData?.posts) {
-      setSelectedPosts(postsData.posts.map(post => post.id));
+      setSelectedPosts((postsData.posts as ExtendedPost[]).map((p: ExtendedPost) => p.id));
     } else {
       setSelectedPosts([]);
     }
@@ -465,9 +467,10 @@ export default function ManagePostsPage() {
   
   // Get theme category badge
   const getThemeBadge = (post: ExtendedPost) => {
-    if (!post.metadata?.themeCategory) return null;
-    
-    const category = post.metadata.themeCategory;
+    const metadata = (post.metadata as any) || {};
+    if (!metadata.themeCategory) return null;
+
+    const category = metadata.themeCategory as string;
     let colorClass = 'bg-gray-100 text-gray-800 border-gray-300';
     
     switch (category) {
