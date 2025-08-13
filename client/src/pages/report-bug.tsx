@@ -66,7 +66,7 @@ export default function ReportBugPage() {
       if (data.screenshot && data.screenshot[0]) {
         formData.append("screenshot", data.screenshot[0]);
       }
-      return apiRequest("POST", "/api/bug-report", formData);
+      return apiRequest("/api/bug-report", { method: 'POST', body: formData });
     },
     onSuccess: () => {
       toast({
