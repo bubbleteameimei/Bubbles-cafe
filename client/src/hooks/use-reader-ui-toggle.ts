@@ -41,6 +41,7 @@ const useReaderUIToggle = () => {
       
       return () => clearTimeout(tooltipTimer);
     }
+    return () => {};
   }, []);
   
   // Effect to allow ESC key to exit distraction-free mode

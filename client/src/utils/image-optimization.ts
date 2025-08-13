@@ -9,7 +9,8 @@ export function optimizeImagesForConnection() {
   const nav = navigator as Navigator & { connection?: { effectiveType?: string } };
   if (nav.connection && typeof nav.connection.effectiveType === 'string') {
     const connection = nav.connection;
-    const isSlowConnection = ['slow-2g', '2g'].includes(connection.effectiveType);
+    const effectiveType = connection.effectiveType ?? '';
+    const isSlowConnection = ['slow-2g', '2g'].includes(effectiveType);
 
     if (isSlowConnection) {
       document.querySelectorAll("img").forEach(img => {
