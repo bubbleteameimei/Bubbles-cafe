@@ -939,7 +939,8 @@ export class DatabaseStorage implements IStorage {
         count: count(users.id)
       })
       .from(users)
-      .where(gt(users.lastLogin, lastMonth));
+      // Approximate active users as those created within last 30 days (no lastLogin column)
+      .where(gt(users.createdAt, lastMonth));
       
       return {
         totalViews: analyticsData.totalViews,
