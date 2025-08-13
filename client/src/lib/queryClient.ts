@@ -96,30 +96,28 @@ export async function apiRequest<T = unknown>(
     throw new APIError('API URL is required', undefined, undefined, 'INVALID_REQUEST');
   }
 
+  const isFormData = options.body instanceof FormData;
+
   // Prepare request options
   const requestOptions: RequestInit = {
     method: options.method || 'GET',
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...options.headers,
     },
-    credentials: 'include', // Always include credentials for auth cookies
+    credentials: 'include',
     ...options,
   };
 
   try {
-    // Use getApiPath to ensure proper URL formation in cross-domain setup
     const fullUrl = url.startsWith('http') ? url : getApiPath(url);
-    
     if (import.meta.env.DEV) {
       console.log(`API Request to ${fullUrl}`, requestOptions.method);
     }
-    
-    // Handle network errors explicitly
     const timeoutId = setTimeout(() => {
       console.warn(`API request to ${fullUrl} is taking longer than expected`);
-    }, 5000); // 5-second timeout warning
-    
+    }, 5000);
+
     let res: Response;
     try {
       res = await fetch(fullUrl, requestOptions);
@@ -136,62 +134,18 @@ export async function apiRequest<T = unknown>(
     }
 
     await throwIfResNotOk(res);
-    
+
     // Parse response based on content type
-    const contentType = res.headers.get('content-type');
-    let responseData: T;
-    
-    if (contentType && contentType.includes('application/json')) {
-      try {
-        responseData = await res.json();
-      } catch (jsonError) {
-        console.error('Error parsing JSON response:', jsonError);
-        throw new APIError(
-          'Failed to parse JSON response', 
-          res.status, 
-          { parseError: String(jsonError) },
-          'PARSE_ERROR'
-        );
-      }
-    } else {
-      try {
-        const textResponse = await res.text();
-        try {
-          // Try to parse as JSON even if content-type is not JSON
-          responseData = JSON.parse(textResponse) as T;
-        } catch {
-          // If parsing fails, return text as is
-          responseData = textResponse as unknown as T;
-        }
-      } catch (textError) {
-        console.error('Error reading response text:', textError);
-        throw new APIError(
-          'Failed to read response', 
-          res.status, 
-          { readError: String(textError) },
-          'READ_ERROR'
-        );
-      }
+    const contentType = res.headers.get('Content-Type') || '';
+    if (contentType.includes('application/json')) {
+      return (await res.json()) as T;
     }
-    
-    return responseData;
+    // For non-JSON, return as text or blob based on caller expectation
+    // Default to text
+    return (await res.text()) as unknown as T;
   } catch (error) {
-    // Rethrow APIErrors directly since they're already formatted
-    if (error instanceof APIError) {
-      throw error;
-    }
-    
-    // Get proper URL for logging
-    const requestUrl = url.startsWith('http') ? url : getApiPath(url);
-    
-    // Convert unexpected errors to APIErrors
-    console.error(`API Request failed (${requestUrl} ${options.method || 'GET'}):`, error);
-    throw new APIError(
-      error instanceof Error ? error.message : 'Unknown error occurred',
-      undefined,
-      { originalError: error },
-      'UNEXPECTED_ERROR'
-    );
+    if (error instanceof APIError) throw error;
+    throw new APIError('Unexpected error during API request', undefined, { originalError: error }, 'UNKNOWN');
   }
 }
 
