@@ -53,6 +53,8 @@ export function ThemeProvider({
     // Apply theme changes
     root.classList.remove("light", "dark");
 
+    let removeListener: (() => void) | null = null;
+
     if (theme === "system") {
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
         .matches
@@ -71,20 +73,22 @@ export function ThemeProvider({
       };
       
       mediaQuery.addEventListener("change", handleSystemThemeChange);
-      return () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
+      removeListener = () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
     } else {
       // Apply explicit theme
       root.classList.add(theme);
     }
     
     // Restore transitions after theme change is complete
-    // This small delay ensures the theme is fully applied before enabling transitions
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        document.head.removeChild(transitionStyle);
-      });
-    });
-  }, [theme]);
+    const timeout = window.setTimeout(() => {
+      document.head.removeChild(transitionStyle);
+    }, 50);
+
+    return () => {
+      window.clearTimeout(timeout);
+      if (removeListener) removeListener();
+    };
+  }, [theme, storageKey]);
 
   // Toggle between light and dark themes
   const toggleTheme = () => {
