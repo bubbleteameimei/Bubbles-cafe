@@ -19,7 +19,7 @@ const router = Router();
  * Core Web Vitals analytics endpoint
  * This endpoint is explicitly exempted from CSRF protection
  */
-router.post('/vitals', async (req: Request, res: Response) => {
+router.post('/vitals', async (req: Request, res: Response): Promise<void> => {
   try {
     const { 
       metricName,
@@ -49,7 +49,7 @@ router.post('/vitals', async (req: Request, res: Response) => {
     }
     
     // Store in database - don't await to avoid blocking response
-    storage.storePerformanceMetric({
+    void storage.storePerformanceMetric({
       metricName,
       value,
       // Provide all required fields for the performance metric
@@ -57,24 +57,24 @@ router.post('/vitals', async (req: Request, res: Response) => {
       url: url || (req.headers.referer as string) || 'unknown',
       identifier: identifier || `metric-${Date.now()}`,
       navigationType: navigationType || 'navigation'
-    } as unknown as Record<string, unknown>).catch(error => {
-      analyticsLogger.error('Failed to store performance metric', { error });
     });
     
     // Respond with success regardless of storage outcome
     res.status(200).json({ message: 'Metric recorded successfully' });
+    return;
   } catch (error) {
     analyticsLogger.error('Error processing performance metric', { 
       error: error instanceof Error ? error.message : 'Unknown error' 
     });
     res.status(500).json({ error: 'Internal server error' });
+    return;
   }
 });
 
 /**
  * Device analytics endpoint
  */
-router.get('/devices', async (req: Request, res: Response) => {
+router.get('/devices', async (req: Request, res: Response): Promise<void> => {
   try {
     // This is now a public endpoint that anyone can access (no authentication needed)
     
@@ -83,18 +83,20 @@ router.get('/devices', async (req: Request, res: Response) => {
     
     // Return data
     res.json(deviceDistribution);
+    return;
   } catch (error) {
     analyticsLogger.error('Error fetching device distribution', { 
       error: error instanceof Error ? error.message : 'Unknown error' 
     });
     res.status(500).json({ error: 'Internal server error' });
+    return;
   }
 });
 
 /**
  * User engagement analytics endpoint
  */
-router.get('/engagement', async (req: Request, res: Response) => {
+router.get('/engagement', async (req: Request, res: Response): Promise<void> => {
   try {
     // This is now a public endpoint that anyone can access (no authentication needed)
     
@@ -117,11 +119,13 @@ router.get('/engagement', async (req: Request, res: Response) => {
     
     // Return data
     res.json(engagementMetrics);
+    return;
   } catch (error) {
     analyticsLogger.error('Error fetching engagement metrics', { 
       error: error instanceof Error ? error.message : 'Unknown error' 
     });
     res.status(500).json({ error: 'Internal server error' });
+    return;
   }
 });
 
@@ -129,7 +133,7 @@ router.get('/engagement', async (req: Request, res: Response) => {
  * Page view analytics endpoint
  * Also exempted from CSRF protection
  */
-router.post('/pageview', async (req: Request, res: Response) => {
+router.post('/pageview', async (req: Request, res: Response): Promise<void> => {
   try {
     const { 
       path, 
@@ -154,23 +158,23 @@ router.post('/pageview', async (req: Request, res: Response) => {
     }
     
     // Store in database asynchronously as a performance metric
-    storage.storePerformanceMetric({
+    void storage.storePerformanceMetric({
       metricName: 'pageview',
       value: 1,
       identifier: `pageview-${Date.now()}`,
       navigationType: 'navigation',
       url: path,
       userAgent: userAgent || req.headers['user-agent'] as string || 'unknown'
-    } as unknown as Record<string, unknown>).catch(error => {
-      analyticsLogger.error('Failed to store page view', { error: error instanceof Error ? error.message : String(error) });
     });
     
     res.status(200).json({ message: 'Page view recorded' });
+    return;
   } catch (error) {
     analyticsLogger.error('Error processing page view', { 
       error: error instanceof Error ? error.message : 'Unknown error'
     });
     res.status(500).json({ error: 'Internal server error' });
+    return;
   }
 });
 
@@ -178,7 +182,7 @@ router.post('/pageview', async (req: Request, res: Response) => {
  * User interaction analytics endpoint
  * Also exempted from CSRF protection
  */
-router.post('/interaction', async (req: Request, res: Response) => {
+router.post('/interaction', async (req: Request, res: Response): Promise<void> => {
   try {
     const { interactionType, details, timestamp, path } = req.body;
     
@@ -196,23 +200,23 @@ router.post('/interaction', async (req: Request, res: Response) => {
     }
     
     // Store in database asynchronously as a performance metric
-    storage.storePerformanceMetric({
+    void storage.storePerformanceMetric({
       metricName: `interaction_${interactionType}`,
       value: 1,
       identifier: `interaction-${Date.now()}`,
       navigationType: 'interaction',
       url: path || req.headers.referer as string || 'unknown',
       userAgent: req.headers['user-agent'] as string || 'unknown'
-    } as unknown as Record<string, unknown>).catch((error: Error) => {
-      analyticsLogger.error('Failed to store interaction', { error: error instanceof Error ? error.message : String(error) });
     });
     
     res.status(200).json({ message: 'Interaction recorded' });
+    return;
   } catch (error) {
     analyticsLogger.error('Error processing interaction', { 
       error: error instanceof Error ? error.message : 'Unknown error'
     });
     res.status(500).json({ error: 'Internal server error' });
+    return;
   }
 });
 

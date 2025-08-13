@@ -117,7 +117,7 @@ export async function validateSession(req: Request, res: Response, next: NextFun
       sessionId: req.sessionID,
       ip: req.ip,
       userAgent: req.get('User-Agent'),
-      storedFingerprint: req.session.fingerprint,
+      storedFingerprint: (req.session as any).fingerprint,
       currentFingerprint
     });
     
@@ -129,7 +129,7 @@ export async function validateSession(req: Request, res: Response, next: NextFun
   }
 
   // Set fingerprint for new sessions
-  if (!req.session.fingerprint) {
+  if (!(req.session as any).fingerprint) {
     (req.session as any).fingerprint = currentFingerprint;
   }
 
