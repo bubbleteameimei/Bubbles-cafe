@@ -183,6 +183,7 @@ export function sanitizeInput(schema: z.ZodSchema) {
       }
 
       next();
+      return;
     } catch (error) {
       securityLogger.warn('Input validation failed', {
         path: req.path,

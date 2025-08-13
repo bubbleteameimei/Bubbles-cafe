@@ -19,7 +19,7 @@ const router = Router();
  * Core Web Vitals analytics endpoint
  * This endpoint is explicitly exempted from CSRF protection
  */
-router.post('/vitals', async (req: Request, res: Response): Promise<void> => {
+router.post('/vitals', async (req: Request, res: Response) => {
   try {
     const { 
       metricName,
@@ -74,7 +74,7 @@ router.post('/vitals', async (req: Request, res: Response): Promise<void> => {
 /**
  * Device analytics endpoint
  */
-router.get('/devices', async (req: Request, res: Response): Promise<void> => {
+router.get('/devices', async (req: Request, res: Response) => {
   try {
     // This is now a public endpoint that anyone can access (no authentication needed)
     
@@ -96,7 +96,7 @@ router.get('/devices', async (req: Request, res: Response): Promise<void> => {
 /**
  * User engagement analytics endpoint
  */
-router.get('/engagement', async (req: Request, res: Response): Promise<void> => {
+router.get('/engagement', async (req: Request, res: Response) => {
   try {
     // This is now a public endpoint that anyone can access (no authentication needed)
     
@@ -133,7 +133,7 @@ router.get('/engagement', async (req: Request, res: Response): Promise<void> => 
  * Page view analytics endpoint
  * Also exempted from CSRF protection
  */
-router.post('/pageview', async (req: Request, res: Response): Promise<void> => {
+router.post('/pageview', async (req: Request, res: Response) => {
   try {
     const { 
       path, 
@@ -182,7 +182,7 @@ router.post('/pageview', async (req: Request, res: Response): Promise<void> => {
  * User interaction analytics endpoint
  * Also exempted from CSRF protection
  */
-router.post('/interaction', async (req: Request, res: Response): Promise<void> => {
+router.post('/interaction', async (req: Request, res: Response) => {
   try {
     const { interactionType, details, timestamp, path } = req.body;
     
