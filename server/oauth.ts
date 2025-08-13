@@ -129,11 +129,12 @@ export function setupOAuth(app: Express) {
         // Create a new user
         const username = email.split('@')[0] + '_' + Math.floor(Math.random() * 10000);
         const password = uuidv4(); // Generate random password
+        const password_hash = await bcrypt.hash(password, 10);
         
         user = await storage.createUser({
           email,
           username,
-          password,
+          password_hash,
           // Store displayName and photoURL in metadata instead
           metadata: {
             displayName: displayName || null,
