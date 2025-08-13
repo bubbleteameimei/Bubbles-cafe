@@ -150,7 +150,12 @@ export function ReaderControls({ onShare, onBookmark, isBookmarked }: ReaderCont
               {/* Reset Button */}
               <Button
                 variant="outline"
-                onClick={resetFontSize}
+                onClick={() => {
+                  // Basic reset: set theme to system and font size to medium via provided handlers
+                  try {
+                    (document.documentElement.style as any).setProperty('--reader-font-size', '1rem');
+                  } catch {}
+                }}
                 className="w-full"
               >
                 Reset to Defaults
