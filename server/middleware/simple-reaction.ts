@@ -7,17 +7,18 @@ import { db } from '../db';
 import { posts } from '@shared/schema';
 import { eq, sql } from 'drizzle-orm';
 
-export async function handleReaction(req: Request, res: Response) {
+export async function handleReaction(req: Request, res: Response): Promise<void> {
   try {
     const postIdParam = req.params.postId;
     const { isLike } = req.body;
     
     if (!postIdParam || isNaN(Number(postIdParam))) {
-      return res.status(400).json({ 
+      res.status(400).json({ 
         error: "Invalid post ID",
         likesCount: 0,
         dislikesCount: 0 
       });
+      return;
     }
     
     const postId = Number(postIdParam);
@@ -30,11 +31,12 @@ export async function handleReaction(req: Request, res: Response) {
       .limit(1);
       
     if (!existingPost.length) {
-      return res.status(404).json({ 
+      res.status(404).json({ 
         error: "Post not found",
         likesCount: 0,
         dislikesCount: 0 
       });
+      return;
     }
     
     // Update counts based on reaction
@@ -71,6 +73,7 @@ export async function handleReaction(req: Request, res: Response) {
     
     console.log(`[Reaction] Response for post ${postId}:`, response);
     res.json(response);
+    return;
     
   } catch (error) {
     console.error('[Reaction] Error:', error);
@@ -79,5 +82,6 @@ export async function handleReaction(req: Request, res: Response) {
       likesCount: 0,
       dislikesCount: 0 
     });
+    return;
   }
 }

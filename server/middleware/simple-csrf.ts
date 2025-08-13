@@ -125,6 +125,7 @@ export function simpleCSRFProtection() {
     } catch (error) {
       console.error('CSRF protection error:', error);
       res.status(500).json({ message: 'CSRF protection error' });
+      return;
     }
   };
 }
