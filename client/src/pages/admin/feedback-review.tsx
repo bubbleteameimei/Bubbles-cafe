@@ -378,7 +378,6 @@ export default function FeedbackReviewPage() {
                   key={item.id}
                   feedback={item}
                   onStatusChange={handleStatusChange}
-                  onAddNote={handleAddNote}
                 />
               ))
             )
@@ -398,7 +397,6 @@ export default function FeedbackReviewPage() {
                   key={item.id}
                   feedback={item}
                   onStatusChange={handleStatusChange}
-                  onAddNote={handleAddNote}
                 />
               ))
           )}
@@ -417,7 +415,6 @@ export default function FeedbackReviewPage() {
                   key={item.id}
                   feedback={item}
                   onStatusChange={handleStatusChange}
-                  onAddNote={handleAddNote}
                 />
               ))
           )}
@@ -436,7 +433,6 @@ export default function FeedbackReviewPage() {
                   key={item.id}
                   feedback={item}
                   onStatusChange={handleStatusChange}
-                  onAddNote={handleAddNote}
                 />
               ))
           )}

@@ -29,6 +29,7 @@ const AdaptiveSidebar: React.FC<AdaptiveSidebarProps> = ({ className = "" }): JS
       window.addEventListener("resize", handleResize);
       return () => window.removeEventListener("resize", handleResize);
     }
+    return () => {};
   }, [isOpen]);
 
   const sidebarVariants = {

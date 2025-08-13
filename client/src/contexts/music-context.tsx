@@ -98,8 +98,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
   // Refs for persistence and timers
   const savedPositions = useRef<Record<string, number>>({});
-  const loopTimerId = useRef<number | null>(null);
-  const fadeIntervalId = useRef<number | null>(null);
+  const loopTimerId = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fadeIntervalId = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Storage in localStorage to persist across sessions
   const STORAGE_KEY = 'music-player-state';
@@ -167,10 +167,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       primary.src = '';
       secondary.src = '';
       if (loopTimerId.current) {
-        window.clearTimeout(loopTimerId.current);
+        window.clearTimeout(loopTimerId.current as any);
       }
       if (fadeIntervalId.current) {
-        window.clearInterval(fadeIntervalId.current);
+        window.clearInterval(fadeIntervalId.current as any);
       }
     };
   }, []); // Empty dependency array - only run once

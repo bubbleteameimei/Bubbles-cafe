@@ -30,6 +30,7 @@ export function optimizeImagesForConnection() {
  * @returns Optimized image URL
  */
 export function getOptimizedImageUrl(url: string, width: number, height?: number): string {
+  if (!url) return '';
   // If the URL is already using a modern format, keep it
   if (url.match(/\.(webp|avif)(\?.*)?$/i)) {
     return url;
