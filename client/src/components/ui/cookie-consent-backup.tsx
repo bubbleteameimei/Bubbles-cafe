@@ -90,6 +90,7 @@ export function CookieConsent() {
       
       return () => clearInterval(steamInterval);
     }
+    return () => {};
   }, [showConsentBanner]);
 
   if (!showConsentBanner) return null;
