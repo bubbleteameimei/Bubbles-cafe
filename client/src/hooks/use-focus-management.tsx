@@ -356,6 +356,7 @@ export function useKeyboardNavigation(items: any[], options: {
       container.addEventListener('keydown', handleKeyDown);
       return () => container.removeEventListener('keydown', handleKeyDown);
     }
+    return () => {};
   }, [handleKeyDown]);
 
   return {

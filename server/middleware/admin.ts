@@ -2,11 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 
 export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
   if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "Not authenticated" });
+    res.status(401).json({ message: "Not authenticated" });
+    return;
   }
   
   if (!req.user?.isAdmin) {
-    return res.status(403).json({ message: "Access denied: Admin privileges required" });
+    res.status(403).json({ message: "Access denied: Admin privileges required" });
+    return;
   }
 
   next();

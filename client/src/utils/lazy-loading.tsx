@@ -125,7 +125,9 @@ export function createLazyComponent<T extends ComponentType<any>>(
     return (
       <Suspense fallback={fallback}>
         <ErrorBoundary onError={setError}>
-          <LazyComponent key={retryKey} {...props} />
+          {(LazyComponent as unknown as ComponentType<any>) && (
+            React.createElement(LazyComponent as unknown as ComponentType<any>, { key: retryKey, ...(props as any) })
+          )}
         </ErrorBoundary>
       </Suspense>
     );
@@ -207,8 +209,8 @@ export function createIntersectionLazyComponent<T extends ComponentType<any>>(
       );
     }
 
-    const LazyComponent = createLazyComponent(importFn, lazyOptions);
-    return <LazyComponent {...props} />;
+    const LazyComponent = createLazyComponent(importFn, lazyOptions) as unknown as ComponentType<any>;
+    return React.createElement(LazyComponent, props as any);
   });
 }
 
