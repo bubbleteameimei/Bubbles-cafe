@@ -10,33 +10,25 @@ import { db } from './db';
 import { posts as postsTable } from '@shared/schema';
 import { eq, sql } from 'drizzle-orm';
 
-/**
- * Handle post reactions (likes/dislikes) from any source
- * This function is designed to bypass CSRF checks and work for both
- * authenticated and unauthenticated users.
- */
-export async function handlePostReaction(req: Request, res: Response) {
+export async function handlePostReaction(req: Request, res: Response): Promise<void> {
   try {
     const postId = Number(req.params.postId);
     if (isNaN(postId) || postId <= 0) {
-      return res.status(400).json({ error: "Invalid post ID" });
+      res.status(400).json({ error: "Invalid post ID" });
+      return;
     }
-    
     const { isLike } = req.body;
     if (typeof isLike !== 'boolean') {
-      return res.status(400).json({ error: "Invalid reaction data - isLike must be a boolean" });
+      res.status(400).json({ error: "Invalid reaction data - isLike must be a boolean" });
+      return;
     }
-    
-    // Check if post exists
     const [post] = await db.select({ id: postsTable.id })
       .from(postsTable)
       .where(eq(postsTable.id, postId));
-      
     if (!post) {
-      return res.status(404).json({ error: "Post not found" });
+      res.status(404).json({ error: "Post not found" });
+      return;
     }
-    
-    // Update reaction count - increment like or dislike count
     if (isLike) {
       await db.update(postsTable)
         .set({ likesCount: sql`${postsTable.likesCount} + 1` })
@@ -46,16 +38,12 @@ export async function handlePostReaction(req: Request, res: Response) {
         .set({ dislikesCount: sql`${postsTable.dislikesCount} + 1` })
         .where(eq(postsTable.id, postId));
     }
-    
-    // Get updated counts
     const [updatedCounts] = await db.select({
       likes: postsTable.likesCount,
       dislikes: postsTable.dislikesCount
     })
-    .from(postsTable)
-    .where(eq(postsTable.id, postId));
-    
-    // Return success with updated counts
+      .from(postsTable)
+      .where(eq(postsTable.id, postId));
     res.json({
       success: true,
       message: `Post ${isLike ? 'liked' : 'disliked'} successfully`,
@@ -64,35 +52,31 @@ export async function handlePostReaction(req: Request, res: Response) {
         dislikes: Number(updatedCounts.dislikes || 0)
       }
     });
+    return;
   } catch (error) {
     console.error(`Error processing reaction:`, error);
     res.status(500).json({ error: "Failed to process reaction" });
+    return;
   }
 }
 
-/**
- * Get current reaction counts for a post
- */
-export async function getPostReactions(req: Request, res: Response) {
+export async function getPostReactions(req: Request, res: Response): Promise<void> {
   try {
     const postId = Number(req.params.postId);
     if (isNaN(postId) || postId <= 0) {
-      return res.status(400).json({ error: "Invalid post ID" });
+      res.status(400).json({ error: "Invalid post ID" });
+      return;
     }
-    
-    // Get current counts
     const [counts] = await db.select({
       likes: postsTable.likesCount,
       dislikes: postsTable.dislikesCount
     })
-    .from(postsTable)
-    .where(eq(postsTable.id, postId));
-    
+      .from(postsTable)
+      .where(eq(postsTable.id, postId));
     if (!counts) {
-      return res.status(404).json({ error: "Post not found" });
+      res.status(404).json({ error: "Post not found" });
+      return;
     }
-    
-    // Return current counts
     res.json({
       postId,
       reactions: {
@@ -100,8 +84,10 @@ export async function getPostReactions(req: Request, res: Response) {
         dislikes: Number(counts.dislikes || 0)
       }
     });
+    return;
   } catch (error) {
     console.error(`Error getting reaction counts:`, error);
     res.status(500).json({ error: "Failed to get reaction counts" });
+    return;
   }
 }
