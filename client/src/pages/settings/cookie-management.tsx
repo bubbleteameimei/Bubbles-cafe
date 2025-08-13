@@ -122,7 +122,7 @@ export default function CookieManagementPage() {
               <CardDescription>Control what cookies are used on this site</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Alert variant="warning" className="mb-4">
+              <Alert variant="default" className="mb-4">
                 <AlertCircle size={16} className="mr-2" />
                 <AlertTitle>Important</AlertTitle>
                 <AlertDescription>
