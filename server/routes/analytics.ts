@@ -57,7 +57,7 @@ router.post('/vitals', async (req: Request, res: Response) => {
       url: url || (req.headers.referer as string) || 'unknown',
       identifier: identifier || `metric-${Date.now()}`,
       navigationType: navigationType || 'navigation'
-    } as any).catch(error => {
+    } as unknown as Record<string, unknown>).catch(error => {
       analyticsLogger.error('Failed to store performance metric', { error });
     });
     
@@ -161,7 +161,7 @@ router.post('/pageview', async (req: Request, res: Response) => {
       navigationType: 'navigation',
       url: path,
       userAgent: userAgent || req.headers['user-agent'] as string || 'unknown'
-    }).catch(error => {
+    } as unknown as Record<string, unknown>).catch(error => {
       analyticsLogger.error('Failed to store page view', { error: error instanceof Error ? error.message : String(error) });
     });
     
@@ -203,7 +203,7 @@ router.post('/interaction', async (req: Request, res: Response) => {
       navigationType: 'interaction',
       url: path || req.headers.referer as string || 'unknown',
       userAgent: req.headers['user-agent'] as string || 'unknown'
-    }).catch((error: Error) => {
+    } as unknown as Record<string, unknown>).catch((error: Error) => {
       analyticsLogger.error('Failed to store interaction', { error: error instanceof Error ? error.message : String(error) });
     });
     

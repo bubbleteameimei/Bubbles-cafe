@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage";
+import { userService } from '../services/user-service';
 import { requireAuth, requireAdmin } from "../middlewares/auth";
 import { z } from "zod";
 
@@ -179,7 +180,7 @@ router.get("/users", requireAuth, requireAdmin, async (req, res) => {
     const limit = parseInt(req.query.limit as string) || 50;
     
     // Get users with pagination
-    const users = await storage.getUsers(page, limit);
+    const users = await userService.getUsers(page, limit);
     res.json(users);
   } catch (error) {
     console.error("[Admin] Error fetching users:", error);

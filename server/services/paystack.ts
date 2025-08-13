@@ -49,7 +49,7 @@ export const initializeTransaction = async (
   email: string,
   reference?: string,
   callbackUrl?: string,
-  metadata?: any
+  metadata?: Record<string, any>
 ) => {
   try {
     console.log(`[PAYSTACK] Initializing transaction for ${email}, amount: ${amount}`);
@@ -66,9 +66,9 @@ export const initializeTransaction = async (
       })
     });
     
-    const data = await handlePaystackResponse(response);
-    console.log(`[PAYSTACK] Transaction initialized successfully. Reference: ${data.data.reference}`);
-    return data;
+    const data: any = await handlePaystackResponse(response);
+    console.log(`[PAYSTACK] Transaction initialized successfully. Reference: ${data.data?.reference}`);
+    return data as any;
   } catch (error) {
     console.error(`[PAYSTACK] Failed to initialize transaction:`, error);
     throw error;
@@ -88,9 +88,9 @@ export const verifyTransaction = async (reference: string) => {
       headers: getHeaders()
     });
     
-    const data = await handlePaystackResponse(response);
-    console.log(`[PAYSTACK] Transaction verification status: ${(data as any).data.status}`);
-    return data;
+    const data: any = await handlePaystackResponse(response);
+    console.log(`[PAYSTACK] Transaction verification status: ${data?.data?.status}`);
+    return data as any;
   } catch (error) {
     console.error(`[PAYSTACK] Failed to verify transaction:`, error);
     throw error;
@@ -117,7 +117,7 @@ export const listTransactions = async (filters: Record<string, any> = {}) => {
       headers: getHeaders()
     });
     
-    const data = await handlePaystackResponse(response);
+    const data: any = await handlePaystackResponse(response);
     console.log(`[PAYSTACK] Retrieved ${(data as any).data.length} transactions`);
     return data;
   } catch (error) {
