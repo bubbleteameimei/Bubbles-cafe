@@ -2,10 +2,11 @@
  * WordPress Sync API Routes
  * These routes handle WordPress content importing and synchronization
  */
-import { Express, Request, Response } from 'express';
+import { Express, Request, Response, NextFunction } from 'express';
 import { syncWordPressPosts, syncSingleWordPressPost, SyncResult, getSyncStatus } from '../wordpress-sync';
 import { wordpressSync } from '../wordpress-api-sync';
 import { log } from '../vite.js';
+import { z } from 'zod';
 
 // Track sync status
 let syncInProgress = false;
@@ -24,28 +25,19 @@ let lastSyncTime: string | null = null;
 // - Backup DB regularly
 // - Add unit/integration tests for backend logic
 
-import { z } from 'zod';
 
 // Placeholder middleware for authentication/authorization
-function requireAuth(req, res, next) {
-  // Implement authentication/authorization logic here
-  // e.g., check req.user or session
-  // If not authenticated, return res.status(401).json({ error: 'Unauthorized' });
-  // Example: if (!req.user || !req.user.isAdmin) return res.status(403).json({ error: 'Forbidden' });
+function requireAuth(_req: Request, _res: Response, next: NextFunction) {
   next();
 }
 
 // Placeholder middleware for CSRF protection
-function csrfProtection(req, res, next) {
-  // Implement CSRF token validation here
-  // If invalid, return res.status(403).json({ error: 'Invalid CSRF token' });
+function csrfProtection(_req: Request, _res: Response, next: NextFunction) {
   next();
 }
 
 // Placeholder middleware for rate limiting
-function rateLimit(req, res, next) {
-  // Implement rate limiting logic here (e.g., express-rate-limit)
-  // If rate limit exceeded, return res.status(429).json({ error: 'Too many requests' });
+function rateLimit(_req: Request, _res: Response, next: NextFunction) {
   next();
 }
 
@@ -55,7 +47,7 @@ const syncPostSchema = z.object({
 });
 
 // Example logging utility
-function logEvent(message, meta) {
+function logEvent(message: string, meta?: Record<string, unknown>) {
   // Replace with a real logger (e.g., Winston, Pino, Sentry)
   console.log(`[LOG] ${message}`, meta || '');
 }
@@ -135,9 +127,9 @@ export function registerWordPressSyncRoutes(app: Express): void {
    * POST /api/wordpress/sync
    * Trigger a WordPress sync manually
    */
-  app.post('/api/wordpress/sync', requireAuth, csrfProtection, rateLimit, async (_req: Request, res: Response) => {
+  app.post('/api/wordpress/sync', requireAuth, csrfProtection, rateLimit, async (req: Request, res: Response) => {
     // Example: log event
-    logEvent('Manual WordPress sync triggered via API', { user: _req.user });
+    logEvent('Manual WordPress sync triggered via API', { user: (req as any).user });
     // TODO: Add input validation if accepting body data
     // Standardize error handling below
     if (syncInProgress) {
@@ -148,6 +140,8 @@ export function registerWordPressSyncRoutes(app: Express): void {
       });
     }
 
+    // Immediately acknowledge and start sync in background
+    res.json({ success: true, message: 'WordPress sync started' });
     syncInProgress = true;
     
     try {
@@ -181,9 +175,9 @@ export function registerWordPressSyncRoutes(app: Express): void {
     if (!parseResult.success) {
       return res.status(400).json({ error: 'Invalid post ID' });
     }
-    logEvent('Manual sync triggered for WordPress post ID', { user: req.user, postId: req.params.postId });
+    logEvent('Manual sync triggered for WordPress post ID', { user: (req as any).user, postId: req.params.postId });
     
-    const postId = parseInt(req.params.postId);
+    const postId = parseInt(req.params.postId, 10);
     
     if (!postId || isNaN(postId)) {
       return res.status(400).json({
@@ -219,18 +213,8 @@ export function registerWordPressSyncRoutes(app: Express): void {
     try {
       // With the updated requirements, we want to fetch all posts in one request
       // We'll use a large limit value to get as many posts as possible
-      const limit = parseInt(req.query.limit as string) || 100;
-      const searchQuery = req.query.search as string || '';
-      
-      const wpApiUrl = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
-      let apiUrl = `${wpApiUrl}/posts?per_page=${limit}&_fields=id,date,title,excerpt,slug,categories,status`;
-      
-      // If search query is provided, add it to the API URL
-      if (searchQuery) {
-        apiUrl += `&search=${encodeURIComponent(searchQuery)}`;
-      }
-      
-      const response = await fetch(apiUrl);
+      const wpApiUrl = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts?per_page=100';
+      const response = await fetch(wpApiUrl);
       
       if (!response.ok) {
         throw new Error(`WordPress API error: ${response.status} ${response.statusText}`);

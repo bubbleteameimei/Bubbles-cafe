@@ -328,7 +328,7 @@ export default function ManagePostsPage() {
   });
   
   // Helper functions
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch: React.FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
     // The search will be triggered by the onChange of the query param
   };
@@ -740,7 +740,7 @@ export default function ManagePostsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {posts.map((post) => (
+                      {posts.map((post: ExtendedPost) => (
                         <TableRow key={post.id}>
                           <TableCell>
                             <Checkbox 
@@ -864,7 +864,7 @@ export default function ManagePostsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {posts.map((post) => (
+                      {posts.map((post: ExtendedPost) => (
                         <TableRow key={post.id}>
                           <TableCell>
                             <Checkbox 
@@ -981,7 +981,7 @@ export default function ManagePostsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {posts.map((post) => (
+                      {posts.map((post: ExtendedPost) => (
                         <TableRow key={post.id}>
                           <TableCell>
                             <Checkbox 
@@ -1079,7 +1079,7 @@ export default function ManagePostsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {posts.map((post) => (
+                      {posts.map((post: ExtendedPost) => (
                         <TableRow key={post.id}>
                           <TableCell>
                             <Checkbox 
