@@ -156,9 +156,8 @@ export function setupAuth(app: Express) {
       // Validate input
       if (!email || !password || !username) {
         authLogger.warn('Missing registration fields', { email: !!email, password: !!password, username: !!username });
-        return res.status(400).json({ 
-          message: "Email, password, and username are required" 
-        });
+        res.status(400).json({ message: "Email, password, and username are required" });
+        return;
       }
       
       // Normalize email to prevent duplicate accounts with different case
@@ -167,31 +166,36 @@ export function setupAuth(app: Express) {
       
       // Basic validation
       if (email === '') {
-        return res.status(400).json({ message: "Email cannot be empty" });
+        res.status(400).json({ message: "Email cannot be empty" });
+        return;
       }
       if (username === '') {
-        return res.status(400).json({ message: "Username cannot be empty" });
+        res.status(400).json({ message: "Username cannot be empty" });
+        return;
       }
       if (password.length < 6) {
-        return res.status(400).json({ message: "Password must be at least 6 characters long" });
+        res.status(400).json({ message: "Password must be at least 6 characters long" });
+        return;
       }
 
       // Check if user already exists with normalized email
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         authLogger.warn('Registration failed - email already exists', { email });
-        return res.status(400).json({ message: "Email already registered" });
+        res.status(400).json({ message: "Email already registered" });
+        return;
       }
 
       // Create user - storage will handle password hashing
       authLogger.debug('Creating user with registration data');
+      const password_hash = await bcryptjs.hash(password, SALT_ROUNDS);
       const user = await storage.createUser({
         username,
-        email, // Keep email as top-level property for backward compatibility
-        password: password, // storage handles hashing into password_hash
+        email,
+        password_hash,
         isAdmin: false,
         metadata: {
-          email, // Also store in metadata for our new approach
+          email,
           registeredAt: new Date().toISOString(),
           lastLogin: new Date().toISOString()
         }
@@ -204,14 +208,17 @@ export function setupAuth(app: Express) {
       req.login(safeUser, (err) => {
         if (err) {
           authLogger.error('Error logging in after registration', { err: err instanceof Error ? err.message : 'Unknown error' });
-          return res.status(500).json({ message: "Error logging in after registration" });
+          res.status(500).json({ message: "Error logging in after registration" });
+          return;
         }
         authLogger.info('Registration successful', { id: user.id, email });
-        return res.status(201).json(safeUser);
+        res.status(201).json(safeUser);
+        return;
       });
     } catch (error) {
       authLogger.error('Registration error', { error: error instanceof Error ? error.message : 'Unknown error' });
-      return res.status(500).json({ message: "Error creating user" });
+      res.status(500).json({ message: "Error creating user" });
+      return;
     }
   });
 
@@ -268,10 +275,11 @@ export function setupAuth(app: Express) {
         
         try {
           // Create new user with social metadata
+          const password_hash = await bcryptjs.hash(randomPassword, SALT_ROUNDS);
           user = await storage.createUser({
             username: username || email.split('@')[0],
-            email, // Include as top-level property for backward compatibility
-            password: randomPassword, // pass the unhashed password, storage handles hashing
+            email,
+            password_hash,
             isAdmin: false,
             metadata: {
               email, // Also store in metadata for our new approach
@@ -417,10 +425,11 @@ export function setupAuth(app: Express) {
       const email = `test${timestamp}@example.com`;
       
       // Create a test user with metadata
+      const password_hash = await bcryptjs.hash("password123", SALT_ROUNDS);
       const testUser = await storage.createUser({
         username,
         email,
-        password: "password123",
+        password_hash,
         isAdmin: false,
         metadata: {
           displayName: "Test Metadata User",
