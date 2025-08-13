@@ -78,11 +78,9 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
   // Set initial states when component mounts
   useEffect(() => {
     try {
-      // Check if the user has already made a choice and if it's still valid
       const hasChoice = hasConsentChoice();
       console.log('Cookie consent choice detected:', hasChoice);
       
-      // Only force the banner on the test page
       const isTestPage = window.location.pathname === '/cookie-test';
       if (isTestPage) {
         localStorage.removeItem(COOKIE_CONSENT_KEY);
@@ -90,28 +88,21 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
         setShowConsentBanner(true);
         console.log('Forced cookie consent banner to show for testing page');
       } else {
-        // Check if the consent has expired
         if (hasConsentExpired()) {
           console.log('Cookie consent has expired, showing banner again');
           setShowConsentBanner(true);
         } else if (hasChoice) {
-          // Valid choice exists, don't show banner
           setShowConsentBanner(false);
         } else {
-          // No choice has been made, show the banner
           setShowConsentBanner(true);
         }
       }
       
-      // Initialize preferences from localStorage
       setCookiePreferences(getCookiePreferences());
       
-      // Set up event listener for storage changes (in case other tabs update preferences)
       const handleStorageChange = (event: StorageEvent) => {
         if (event.key === COOKIE_CONSENT_KEY || event.key === COOKIE_DECISION_EXPIRY_KEY) {
           setCookiePreferences(getCookiePreferences());
-          
-          // Update banner visibility based on consent status
           const hasValidConsent = hasConsentChoice() && !hasConsentExpired();
           setShowConsentBanner(!hasValidConsent);
         }
@@ -121,8 +112,8 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
       return () => window.removeEventListener('storage', handleStorageChange);
     } catch (error) {
       console.error('Error initializing cookie consent:', error);
-      // Fallback to showing the banner if there's an error
       setShowConsentBanner(true);
+      return () => {};
     }
   }, []);
   

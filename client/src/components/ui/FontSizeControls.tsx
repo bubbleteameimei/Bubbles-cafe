@@ -78,6 +78,7 @@ export function FontSizeControls() {
       const timer = setTimeout(() => setBounce(false), 500);
       return () => clearTimeout(timer);
     }
+    return () => {};
   }, [bounce]);
   
   // Clean up debounce timer

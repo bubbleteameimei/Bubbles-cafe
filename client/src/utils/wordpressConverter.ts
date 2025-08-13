@@ -42,15 +42,15 @@ export function convertToPost(wpPost: WordPressPost): Partial<Post> {
     matureContent: false,
     themeCategory: 'horror', // Default category for horror blog
     metadata: {
-      wordpressId: wpPost.id,
-      modified: wpPost.modified,
-      status: wpPost.status as 'publish',
-      type: wpPost.type,
-      originalAuthor: wpPost.author,
-      featuredMedia: wpPost.featured_media,
-      categories: wpPost.categories,
+      wordpressId: (wpPost as any).id,
+      modified: (wpPost as any)?.modified ?? null,
+      status: (wpPost as any)?.status ?? 'publish',
+      type: (wpPost as any)?.type ?? 'post',
+      originalAuthor: (wpPost as any)?.author ?? null,
+      featuredMedia: (wpPost as any)?.featured_media ?? null,
+      categories: (wpPost as any)?.categories ?? []
     },
-    createdAt: new Date(wpPost.date),
+    createdAt: new Date((wpPost as any)?.date)
   };
 }
 

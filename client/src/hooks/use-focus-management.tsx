@@ -156,13 +156,12 @@ export function useFocusManagement(options: UseFocusManagementOptions = {}) {
 
     setIsActive(false);
 
-    // Restore focus to the previously active element
     if (restoreFocus && previousActiveElement.current) {
       const elementToFocus = previousActiveElement.current as FocusableElement;
       if (elementToFocus.focus) {
         elementToFocus.focus({ preventScroll: false });
       }
-      previousActiveElement.current = null;
+      (previousActiveElement as React.MutableRefObject<FocusableElement | null>).current = null;
     }
   }, [isActive, restoreFocus]);
 
