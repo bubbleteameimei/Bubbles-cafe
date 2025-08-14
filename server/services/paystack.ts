@@ -30,7 +30,7 @@ const getHeaders = () => {
  */
 const handlePaystackResponse = async (response: FetchResponse) => {
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData: any = await response.json();
     console.error('[PAYSTACK] API Error:', errorData);
     throw new Error(errorData.message || 'Failed to complete Paystack operation');
   }

@@ -77,7 +77,8 @@ router.post('/comments/:commentId/replies', async (req, res) => {
 
     const reply = await storage.createCommentReply({
       content,
-      commentId,
+      postId: null,
+      parentId: commentId,
       userId: req.user?.id || null,
       metadata: {
         author: author || 'Anonymous',

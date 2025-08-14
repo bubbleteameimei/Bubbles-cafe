@@ -23,10 +23,11 @@ router.get('/', isAuthenticated, async (req, res) => {
     const userId = req.user?.id;
     
     if (!userId) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'User not authenticated'
       });
+      return;
     }
 
     const userBookmarks = await db
@@ -38,6 +39,7 @@ router.get('/', isAuthenticated, async (req, res) => {
       success: true,
       bookmarks: userBookmarks
     });
+    return;
   } catch (error: any) {
     logger.error('[Bookmarks] Error fetching user bookmarks', {
       error: error.message,
@@ -49,6 +51,7 @@ router.get('/', isAuthenticated, async (req, res) => {
       message: 'Failed to fetch bookmarks',
       error: error.message
     });
+    return;
   }
 });
 
@@ -63,17 +66,19 @@ router.get('/:postId', isAuthenticated, async (req, res) => {
     const postId = parseInt(req.params.postId);
     
     if (!userId) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'User not authenticated'
       });
+      return;
     }
     
     if (isNaN(postId)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Invalid post ID'
       });
+      return;
     }
     
     const bookmark = await db
@@ -92,6 +97,7 @@ router.get('/:postId', isAuthenticated, async (req, res) => {
       bookmarked: bookmark.length > 0,
       bookmark: bookmark[0] || null
     });
+    return;
   } catch (error: any) {
     logger.error('[Bookmarks] Error checking bookmark status', {
       error: error.message,
@@ -104,6 +110,7 @@ router.get('/:postId', isAuthenticated, async (req, res) => {
       message: 'Failed to check bookmark status',
       error: error.message
     });
+    return;
   }
 });
 
@@ -118,17 +125,19 @@ router.post('/:postId', isAuthenticated, async (req, res) => {
     const postId = parseInt(req.params.postId);
     
     if (!userId) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'User not authenticated'
       });
+      return;
     }
     
     if (isNaN(postId)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Invalid post ID'
       });
+      return;
     }
     
     // Check if already bookmarked
@@ -144,11 +153,12 @@ router.post('/:postId', isAuthenticated, async (req, res) => {
       .limit(1);
     
     if (existingBookmark.length > 0) {
-      return res.json({
+      res.json({
         success: true,
         message: 'Post already bookmarked',
         bookmark: existingBookmark[0]
       });
+      return;
     }
     
     // Create new bookmark
@@ -167,6 +177,7 @@ router.post('/:postId', isAuthenticated, async (req, res) => {
       message: 'Post bookmarked successfully',
       bookmark: newBookmark[0]
     });
+    return;
   } catch (error: any) {
     logger.error('[Bookmarks] Error creating bookmark', {
       error: error.message,
@@ -179,6 +190,7 @@ router.post('/:postId', isAuthenticated, async (req, res) => {
       message: 'Failed to bookmark post',
       error: error.message
     });
+    return;
   }
 });
 
@@ -193,17 +205,19 @@ router.delete('/:postId', isAuthenticated, async (req, res) => {
     const postId = parseInt(req.params.postId);
     
     if (!userId) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'User not authenticated'
       });
+      return;
     }
     
     if (isNaN(postId)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Invalid post ID'
       });
+      return;
     }
     
     const deletedBookmarks = await db
@@ -217,10 +231,11 @@ router.delete('/:postId', isAuthenticated, async (req, res) => {
       .returning();
     
     if (deletedBookmarks.length === 0) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Bookmark not found'
       });
+      return;
     }
     
     res.json({
@@ -228,6 +243,7 @@ router.delete('/:postId', isAuthenticated, async (req, res) => {
       message: 'Bookmark removed successfully',
       bookmark: deletedBookmarks[0]
     });
+    return;
   } catch (error: any) {
     logger.error('[Bookmarks] Error removing bookmark', {
       error: error.message,
@@ -240,6 +256,7 @@ router.delete('/:postId', isAuthenticated, async (req, res) => {
       message: 'Failed to remove bookmark',
       error: error.message
     });
+    return;
   }
 });
 
