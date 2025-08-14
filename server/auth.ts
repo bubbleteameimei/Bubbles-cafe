@@ -188,11 +188,11 @@ export function setupAuth(app: Express) {
 
       // Create user - storage will handle password hashing
       authLogger.debug('Creating user with registration data');
-      const password_hash = await bcryptjs.hash(password, SALT_ROUNDS);
+      const hashedPassword = await bcryptjs.hash(password, SALT_ROUNDS);
       const user = await storage.createUser({
         username,
         email,
-        password_hash,
+        password_hash: hashedPassword,
         isAdmin: false,
         metadata: {
           email,
@@ -215,6 +215,7 @@ export function setupAuth(app: Express) {
         res.status(201).json(safeUser);
         return;
       });
+      return;
     } catch (error) {
       authLogger.error('Registration error', { error: error instanceof Error ? error.message : 'Unknown error' });
       res.status(500).json({ message: "Error creating user" });
@@ -222,7 +223,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/auth/logout", (req, res) => {
+  app.post("/api/auth/logout", (req, res): void => {
     const userId = req.user?.id;
     authLogger.debug('Logout request received', { userId });
     req.logout((err) => {
@@ -335,9 +336,11 @@ export function setupAuth(app: Express) {
         authLogger.info('Social login successful', { id: user.id, provider });
         return res.json(safeUser);
       });
+      return;
     } catch (error) {
       authLogger.error('Social login error', { error: error instanceof Error ? error.message : 'Unknown error' });
       res.status(500).json({ message: "Error processing social login" });
+      return;
     }
   });
 
