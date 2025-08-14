@@ -133,11 +133,13 @@ export function simpleCSRFProtection() {
 // Endpoint to get CSRF token for client-side use
 export function getCSRFToken(req: Request, res: Response) {
   if (!req.session?.csrfToken) {
-    return res.status(500).json({ message: 'CSRF token not available' });
+    res.status(500).json({ message: 'CSRF token not available' });
+    return;
   }
   
   res.json({ 
     csrfToken: req.session.csrfToken,
     cookieName: CSRF_COOKIE_NAME
   });
+  return;
 }
