@@ -46,7 +46,14 @@ export function setupCors(app: Express) {
     }
     // In production, only allow specified origins
     else if (origin && process.env.NODE_ENV === 'production') {
-      console.warn(`[CORS] Blocked unauthorized origin: ${origin}`);
+      // Allow Replit preview domains in production
+      const isReplit = /\.repl\.co$/.test(origin) || /\.replit\.dev$/.test(origin);
+      if (isReplit) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+        res.setHeader("Access-Control-Allow-Credentials", "true");
+      } else {
+        console.warn(`[CORS] Blocked unauthorized origin: ${origin}`);
+      }
     }
     
     // Allow specific headers
