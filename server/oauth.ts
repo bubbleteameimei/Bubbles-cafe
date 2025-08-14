@@ -445,7 +445,8 @@ export function setupOAuth(app: Express) {
       
       // Check if the request's content type is multipart/form-data
       if (!req.headers['content-type']?.includes('multipart/form-data')) {
-        return res.status(400).json({ error: 'Content type must be multipart/form-data' });
+        res.status(400).json({ error: 'Content type must be multipart/form-data' });
+        return;
       }
       
       // Get the boundary from the content type
@@ -455,7 +456,8 @@ export function setupOAuth(app: Express) {
         .split('=')[1];
       
       if (!boundary) {
-        return res.status(400).json({ error: 'Invalid multipart/form-data format' });
+        res.status(400).json({ error: 'Invalid multipart/form-data format' });
+        return;
       }
       
       let currentField = '';
@@ -521,7 +523,8 @@ export function setupOAuth(app: Express) {
         try {
           // Ensure we have file data
           if (fileDataChunks.length === 0) {
-            return res.status(400).json({ error: 'No file uploaded' });
+            res.status(400).json({ error: 'No file uploaded' });
+            return;
           }
           
           // Combine all the file data chunks
@@ -544,17 +547,20 @@ export function setupOAuth(app: Express) {
           
           // Validate the file
           if (fileData.length === 0) {
-            return res.status(400).json({ error: 'Empty file uploaded' });
+            res.status(400).json({ error: 'Empty file uploaded' });
+            return;
           }
           
           // Check if the file size is too large (adjust for multipart overhead)
           if (fileData.length > MAX_FILE_SIZE) {
-            return res.status(400).json({ error: 'File is too large (max 10MB)' });
+            res.status(400).json({ error: 'File is too large (max 10MB)' });
+            return;
           }
           
           // Check file type
           if (!ACCEPTED_IMAGE_TYPES.includes(contentType)) {
-            return res.status(400).json({ error: 'File type not supported (use .jpg, .jpeg, .png, or .webp)' });
+            res.status(400).json({ error: 'File type not supported (use .jpg, .jpeg, .png, or .webp)' });
+            return;
           }
           
           // Convert image to base64 for storage
@@ -563,7 +569,8 @@ export function setupOAuth(app: Express) {
           // Get the current user to properly access existing metadata
           const currentUser = await storage.getUser(user.id);
           if (!currentUser) {
-            return res.status(404).json({ error: 'User not found' });
+            res.status(404).json({ error: 'User not found' });
+            return;
           }
           
           // Extract current metadata with fallback to empty object
@@ -583,7 +590,8 @@ export function setupOAuth(app: Express) {
             // Check if username is already taken 
             const existingUser = await storage.getUserByUsername(username);
             if (existingUser && existingUser.id !== user.id) {
-              return res.status(400).json({ error: 'Username is already taken' });
+              res.status(400).json({ error: 'Username is already taken' });
+              return;
             }
             updateData.username = username;
           }
@@ -608,7 +616,8 @@ export function setupOAuth(app: Express) {
             .returning();
           
           if (!updatedUser) {
-            return res.status(500).json({ error: 'Failed to update user' });
+            res.status(500).json({ error: 'Failed to update user' });
+            return;
           }
           
           // Update session with latest user data
