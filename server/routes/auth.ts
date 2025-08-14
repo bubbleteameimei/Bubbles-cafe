@@ -57,7 +57,8 @@ router.post('/register',
         message: 'Registration successful'
       });
     } catch (error) {
-      if (error.statusCode) throw error;
+      const anyError = error as any;
+      if (anyError?.statusCode) throw anyError;
       authLogger.error('Registration error', { email, error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Registration failed');
     }
@@ -93,7 +94,7 @@ router.post('/login',
         }
         
         authLogger.info('User logged in successfully', { userId: user.id });
-        res.json({
+        return res.json({
           success: true,
           user,
           message: 'Login successful'
@@ -216,7 +217,8 @@ router.post('/reset-password',
         message: 'Password reset successful'
       });
     } catch (error) {
-      if (error.statusCode) throw error;
+      const anyError = error as any;
+      if (anyError?.statusCode) throw anyError;
       authLogger.error('Password reset error', { error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Password reset failed');
     }
@@ -264,7 +266,8 @@ router.post('/change-password',
         message: 'Password changed successfully'
       });
     } catch (error) {
-      if (error.statusCode) throw error;
+      const anyError = error as any;
+      if (anyError?.statusCode) throw anyError;
       authLogger.error('Password change error', { userId, error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Password change failed');
     }
