@@ -83,7 +83,8 @@ export function setupOAuth(app: Express) {
       const { providerId, email, displayName, photoURL, provider } = req.body;
       
       if (!email) {
-        return res.status(400).json({ error: 'Email is required' });
+        res.status(400).json({ error: 'Email is required' });
+        return;
       }
 
       // Check if user exists
@@ -153,13 +154,14 @@ export function setupOAuth(app: Express) {
       req.login(user, (err) => {
         if (err) {
           console.error('Login error:', err);
-          return res.status(500).json({ error: 'Authentication error' });
+          res.status(500).json({ error: 'Authentication error' });
+          return;
         }
         
         // Return user data without sensitive information
         // Extract profile data from metadata since those columns don't exist
         const metadata = (user.metadata || {}) as UserMetadata;
-        return res.status(200).json({
+        res.status(200).json({
           id: user.id,
           username: user.username,
           email: user.email,
@@ -170,10 +172,12 @@ export function setupOAuth(app: Express) {
           fullName: metadata.displayName || null,
           bio: metadata.bio || null
         });
+        return;
       });
     } catch (error) {
       console.error('Social login error:', error);
-      return res.status(500).json({ error: 'Social login failed' });
+      res.status(500).json({ error: 'Social login failed' });
+      return;
     }
   });
   

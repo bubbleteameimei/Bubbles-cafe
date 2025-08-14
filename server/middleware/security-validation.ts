@@ -300,7 +300,8 @@ export function preventSQLInjection(req: Request, res: Response, next: NextFunct
         data: JSON.stringify(input.data)
       });
       
-      return res.status(400).json({ error: 'Invalid request format' });
+      res.status(400).json({ error: 'Invalid request format' });
+      return;
     }
   }
 
@@ -406,7 +407,8 @@ export function limitRequestSize(maxSize: number = 10 * 1024 * 1024) {
         path: req.path
       });
       
-      return res.status(413).json({ error: 'Request too large' });
+      res.status(413).json({ error: 'Request too large' });
+      return;
     }
     
     next();
