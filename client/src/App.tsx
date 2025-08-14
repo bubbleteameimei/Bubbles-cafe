@@ -62,78 +62,78 @@ import HomePage from './pages/home';
 import StoriesPage from './pages/index';
 
 // Lazy-load all other pages to improve initial load time
-const ReaderPage = React.lazy(() => import('./pages/reader'));
-const AboutPage = React.lazy(() => import('./pages/about'));
-const ContactPage = React.lazy(() => import('./pages/contact'));
-const PrivacyPage = React.lazy(() => import('./pages/privacy'));
-const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
+const ReaderPage = lazyWithRetry(() => import('./pages/reader'));
+const AboutPage = lazyWithRetry(() => import('./pages/about'));
+const ContactPage = lazyWithRetry(() => import('./pages/contact'));
+const PrivacyPage = lazyWithRetry(() => import('./pages/privacy'));
+const ReportBugPage = lazyWithRetry(() => import('./pages/report-bug'));
 
-const AuthPage = React.lazy(() => import('./pages/auth'));
-const AuthSuccessPage = React.lazy(() => import('./pages/auth-success'));
-const ProfilePage = React.lazy(() => import('./pages/profile'));
-const BookmarksPage = React.lazy(() => import('./pages/bookmarks'));
-const SearchResultsPage = React.lazy(() => import('./pages/SearchResults'));
-const NotificationsPage = React.lazy(() => import('./pages/notifications'));
-const RecommendationsPage = React.lazy(() => import('./pages/recommendations'));
+const AuthPage = lazyWithRetry(() => import('./pages/auth'));
+const AuthSuccessPage = lazyWithRetry(() => import('./pages/auth-success'));
+const ProfilePage = lazyWithRetry(() => import('./pages/profile'));
+const BookmarksPage = lazyWithRetry(() => import('./pages/bookmarks'));
+const SearchResultsPage = lazyWithRetry(() => import('./pages/SearchResults'));
+const NotificationsPage = lazyWithRetry(() => import('./pages/notifications'));
+const RecommendationsPage = lazyWithRetry(() => import('./pages/recommendations'));
 
 // Settings pages - lazy loaded
-const ProfileSettingsPage = React.lazy(() => import('./pages/settings/profile'));
-const ConnectedAccountsPage = React.lazy(() => import('./pages/settings/connected-accounts'));
-const FontSettingsPage = React.lazy(() => import('./pages/settings/fonts'));
-const AccessibilitySettingsPage = React.lazy(() => import('./pages/settings/accessibility'));
-const NotificationSettingsPage = React.lazy(() => import('./pages/settings/notifications'));
-const PrivacySettingsPage = React.lazy(() => import('./pages/settings/privacy'));
-const CookieManagementPage = React.lazy(() => import('./pages/settings/cookie-management'));
-const QuickSettingsPage = React.lazy(() => import('./pages/settings/quick-settings'));
-const PreviewSettingsPage = React.lazy(() => import('./pages/settings/preview'));
+const ProfileSettingsPage = lazyWithRetry(() => import('./pages/settings/profile'));
+const ConnectedAccountsPage = lazyWithRetry(() => import('./pages/settings/connected-accounts'));
+const FontSettingsPage = lazyWithRetry(() => import('./pages/settings/fonts'));
+const AccessibilitySettingsPage = lazyWithRetry(() => import('./pages/settings/accessibility'));
+const NotificationSettingsPage = lazyWithRetry(() => import('./pages/settings/notifications'));
+const PrivacySettingsPage = lazyWithRetry(() => import('./pages/settings/privacy'));
+const CookieManagementPage = lazyWithRetry(() => import('./pages/settings/cookie-management'));
+const QuickSettingsPage = lazyWithRetry(() => import('./pages/settings/quick-settings'));
+const PreviewSettingsPage = lazyWithRetry(() => import('./pages/settings/preview'));
 
 
 
 // Demo pages - lazy loaded
 // Admin pages - lazy loaded
-const AdminPage = React.lazy(() => import('./pages/admin'));
-const AdminAnalyticsPage = React.lazy(() => import('./pages/admin/analytics'));
-const AdminAnalyticsDashboardPage = React.lazy(() => import('./pages/admin/analytics-dashboard'));
-const AdminUsersPage = React.lazy(() => import('./pages/admin/users'));
-const AdminSettingsPage = React.lazy(() => import('./pages/admin/settings'));
-const AdminPostsPage = React.lazy(() => import('./pages/admin/posts'));
-const AdminManagePostsPage = React.lazy(() => import('./pages/admin/manage-posts'));
-const AdminFeedbackPage = React.lazy(() => import('./pages/admin/feedback'));
-const AdminFeedbackManagementPage = React.lazy(() => import('./pages/admin/FeedbackAdmin'));
-const AdminFeedbackReviewPage = React.lazy(() => import('./pages/admin/feedback-review'));
-const AdminBugReportsPage = React.lazy(() => import('./pages/admin/bug-reports'));
-const AdminContentModerationPage = React.lazy(() => import('./pages/admin/content-moderation'));
-const AdminContentPage = React.lazy(() => import('./pages/admin/content'));
-const AdminDashboardPage = React.lazy(() => import('./pages/admin/dashboard'));
-const AdminSiteStatisticsPage = React.lazy(() => import('./pages/admin/site-statistics'));
-const AdminWordPressSyncPage = React.lazy(() => import('./pages/admin/WordPressSyncPage'));
-const AdminContentManagementPage = React.lazy(() => import('./pages/admin/content-management'));
-const AdminThemesPage = React.lazy(() => import('./pages/admin/themes'));
-const ResetPasswordPage = React.lazy(() => import('./pages/reset-password'));
+const AdminPage = lazyWithRetry(() => import('./pages/admin'));
+const AdminAnalyticsPage = lazyWithRetry(() => import('./pages/admin/analytics'));
+const AdminAnalyticsDashboardPage = lazyWithRetry(() => import('./pages/admin/analytics-dashboard'));
+const AdminUsersPage = lazyWithRetry(() => import('./pages/admin/users'));
+const AdminSettingsPage = lazyWithRetry(() => import('./pages/admin/settings'));
+const AdminPostsPage = lazyWithRetry(() => import('./pages/admin/posts'));
+const AdminManagePostsPage = lazyWithRetry(() => import('./pages/admin/manage-posts'));
+const AdminFeedbackPage = lazyWithRetry(() => import('./pages/admin/feedback'));
+const AdminFeedbackManagementPage = lazyWithRetry(() => import('./pages/admin/FeedbackAdmin'));
+const AdminFeedbackReviewPage = lazyWithRetry(() => import('./pages/admin/feedback-review'));
+const AdminBugReportsPage = lazyWithRetry(() => import('./pages/admin/bug-reports'));
+const AdminContentModerationPage = lazyWithRetry(() => import('./pages/admin/content-moderation'));
+const AdminContentPage = lazyWithRetry(() => import('./pages/admin/content'));
+const AdminDashboardPage = lazyWithRetry(() => import('./pages/admin/dashboard'));
+const AdminSiteStatisticsPage = lazyWithRetry(() => import('./pages/admin/site-statistics'));
+const AdminWordPressSyncPage = lazyWithRetry(() => import('./pages/admin/WordPressSyncPage'));
+const AdminContentManagementPage = lazyWithRetry(() => import('./pages/admin/content-management'));
+const AdminThemesPage = lazyWithRetry(() => import('./pages/admin/themes'));
+const ResetPasswordPage = lazyWithRetry(() => import('./pages/reset-password'));
 
 // Placeholder 404 page for discontinued features
-const EdenHollow404 = React.lazy(() => import('./pages/EdenHollow404'));
+const EdenHollow404 = lazyWithRetry(() => import('./pages/EdenHollow404'));
 
 // Error pages - lazy loaded
-const Error403Page = React.lazy(() => import('./pages/errors/403'));
-const Error404Page = React.lazy(() => import('./pages/errors/404'));
-const Error429Page = React.lazy(() => import('./pages/errors/429'));
-const Error500Page = React.lazy(() => import('./pages/errors/500'));
-const Error503Page = React.lazy(() => import('./pages/errors/503'));
-const Error504Page = React.lazy(() => import('./pages/errors/504'));
+const Error403Page = lazyWithRetry(() => import('./pages/errors/403'));
+const Error404Page = lazyWithRetry(() => import('./pages/errors/404'));
+const Error429Page = lazyWithRetry(() => import('./pages/errors/429'));
+const Error500Page = lazyWithRetry(() => import('./pages/errors/500'));
+const Error503Page = lazyWithRetry(() => import('./pages/errors/503'));
+const Error504Page = lazyWithRetry(() => import('./pages/errors/504'));
 
 // Legal Pages - lazy loaded
-const CopyrightPage = React.lazy(() => import('./pages/legal/copyright'));
-const TermsPage = React.lazy(() => import('./pages/legal/terms'));
-const CookiePolicyPage = React.lazy(() => import('./pages/legal/cookie-policy'));
+const CopyrightPage = lazyWithRetry(() => import('./pages/legal/copyright'));
+const TermsPage = lazyWithRetry(() => import('./pages/legal/terms'));
+const CookiePolicyPage = lazyWithRetry(() => import('./pages/legal/cookie-policy'));
 
 // Community Pages - lazy loaded
-const CommunityPage = React.lazy(() => import('./pages/community'));
-const SubmitStoryPage = React.lazy(() => import('./pages/submit-story'));
-const EditStoryPage = React.lazy(() => import('./pages/edit-story'));
-const FeedbackPage = React.lazy(() => import('./pages/feedback'));
-const UserFeedbackDashboardPage = React.lazy(() => import('./pages/user/feedback-dashboard'));
-const GuidelinesPage = React.lazy(() => import('./pages/support/guidelines'));
+const CommunityPage = lazyWithRetry(() => import('./pages/community'));
+const SubmitStoryPage = lazyWithRetry(() => import('./pages/submit-story'));
+const EditStoryPage = lazyWithRetry(() => import('./pages/edit-story'));
+const FeedbackPage = lazyWithRetry(() => import('./pages/feedback'));
+const UserFeedbackDashboardPage = lazyWithRetry(() => import('./pages/user/feedback-dashboard'));
+const GuidelinesPage = lazyWithRetry(() => import('./pages/support/guidelines'));
 
 // Defer WordPress posts preloading until after initial page render
 // This improves initial load time significantly
