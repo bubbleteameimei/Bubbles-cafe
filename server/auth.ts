@@ -229,7 +229,8 @@ export function setupAuth(app: Express) {
     req.logout((err) => {
       if (err) {
         authLogger.error('Logout error', { err: err instanceof Error ? err.message : 'Unknown error' });
-        return res.status(500).json({ message: "Error logging out" });
+        res.status(500).json({ message: "Error logging out" });
+        return;
       }
       authLogger.info('Logout successful', { userId });
       res.json({ message: "Logged out successfully" });

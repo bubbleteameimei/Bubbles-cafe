@@ -2,6 +2,10 @@ import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
+import { config } from 'dotenv';
+
+// Load environment variables first
+config({ override: true });
 
 // Configure WebSocket for Neon serverless with enhanced error handling
 try {
@@ -12,6 +16,13 @@ try {
   // Fallback to default HTTP mode if WebSocket fails
   console.log('Falling back to HTTP mode for Neon connections');
 }
+
+// Debug environment loading
+console.log('Environment loading debug:', {
+  nodeEnv: process.env.NODE_ENV,
+  hasDatabase: !!process.env.DATABASE_URL,
+  databaseLength: process.env.DATABASE_URL?.length
+});
 
 // Validate DATABASE_URL
 if (!process.env.DATABASE_URL) {
