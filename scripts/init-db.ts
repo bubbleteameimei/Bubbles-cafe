@@ -53,12 +53,12 @@ async function initializeDatabase() {
     // Initialize site settings
     console.log('Setting up site configuration...');
     const defaultSettings = [
-      { key: 'site_name', value: 'Bubbles Cafe', type: 'string', description: 'The name of the website' },
-      { key: 'site_description', value: 'Interactive horror and gothic storytelling platform', type: 'string', description: 'Site description for SEO' },
-      { key: 'enable_comments', value: 'true', type: 'boolean', description: 'Allow comments on posts' },
-      { key: 'enable_bookmarks', value: 'true', type: 'boolean', description: 'Allow users to bookmark posts' },
-      { key: 'max_upload_size', value: '10485760', type: 'number', description: 'Maximum upload size in bytes' },
-      { key: 'theme_color', value: '#dc2626', type: 'string', description: 'Primary theme color - red for horror theme' }
+      { key: 'site_name', value: 'Bubbles Cafe', category: 'general', description: 'The name of the website' },
+      { key: 'site_description', value: 'Interactive horror and gothic storytelling platform', category: 'general', description: 'Site description for SEO' },
+      { key: 'enable_comments', value: 'true', category: 'features', description: 'Allow comments on posts' },
+      { key: 'enable_bookmarks', value: 'true', category: 'features', description: 'Allow users to bookmark posts' },
+      { key: 'max_upload_size', value: '10485760', category: 'limits', description: 'Maximum upload size in bytes' },
+      { key: 'theme_color', value: '#dc2626', category: 'appearance', description: 'Primary theme color - red for horror theme' }
     ];
 
     for (const setting of defaultSettings) {
