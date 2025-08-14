@@ -34,7 +34,7 @@ export function registerPostRecommendationsRoutes(app: Express) {
         .from(posts)
         .limit(20);
       
-      console.log("Available post IDs:", allPosts.map(p => p.id).join(", "));
+      console.log("Available post IDs:", allPosts.map((p: { id: number }) => p.id).join(", "));
       
       // If we have a postId, try to find related posts
       // First, get the source post to extract metadata
@@ -111,13 +111,13 @@ export function registerPostRecommendationsRoutes(app: Express) {
         const titleKeywords = sourcePost.title
           .toLowerCase()
           .split(' ')
-          .filter(word => word.length > 3)
+          .filter((word: string) => word.length > 3)
           .slice(0, 3);
           
         if (titleKeywords.length > 0) {
           console.log(`Using keywords: ${titleKeywords.join(', ')}`);
           
-          const conditions = titleKeywords.map(keyword => 
+          const conditions = titleKeywords.map((keyword: string) => 
             sql`${posts.title} ILIKE ${`%${keyword}%`} OR ${posts.excerpt} ILIKE ${`%${keyword}%`}`
           );
           
@@ -152,7 +152,7 @@ export function registerPostRecommendationsRoutes(app: Express) {
           recommendedPosts = await fetchRecentPosts(limit, postId);
         } else {
           // Otherwise, add more posts to reach the limit
-          const existingIds = recommendedPosts.map(p => p.id);
+          const existingIds = recommendedPosts.map((p: { id: number }) => p.id);
           
           // Only try to supplement if we have existing posts and there are at least 2 ids
           if (existingIds.length > 0) {

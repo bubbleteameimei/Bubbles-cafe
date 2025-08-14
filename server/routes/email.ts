@@ -27,7 +27,7 @@ router.get('/status', isAdmin, async (req, res) => {
     const sendgrid = await checkSendGridStatus();
     const mailersend = await checkMailerSendStatus();
     
-    res.json({
+    return res.json({
       success: true,
       services: {
         gmail,
@@ -41,7 +41,7 @@ router.get('/status', isAdmin, async (req, res) => {
       error: error.message
     });
     
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to check email service status',
       error: error.message
@@ -77,7 +77,7 @@ router.post('/test', isAdmin, async (req, res) => {
     // Send the email
     const result = await sendEmail(message);
     
-    res.json({
+    return res.json({
       success: true,
       message: 'Test email sent successfully',
       details: result
@@ -88,7 +88,7 @@ router.post('/test', isAdmin, async (req, res) => {
       stack: error.stack
     });
     
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to send test email',
       error: error.message

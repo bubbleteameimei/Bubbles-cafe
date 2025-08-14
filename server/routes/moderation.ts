@@ -9,10 +9,10 @@ const router = Router();
 router.get('/reported-content', async (req, res) => {
   try {
     const reportedContent = await storage.getReportedContent();
-    res.json(reportedContent);
+    return res.json(reportedContent);
   } catch (error) {
     console.error('Error fetching reported content:', error);
-    res.status(500).json({ error: 'Failed to fetch reported content' });
+    return res.status(500).json({ error: 'Failed to fetch reported content' });
   }
 });
 
@@ -33,10 +33,10 @@ router.patch('/reported-content/:id', async (req, res) => {
 
     // Update the content status
     const updatedContent = await storage.updateReportedContent(id, status);
-    res.json(updatedContent);
+    return res.json(updatedContent);
   } catch (error) {
     console.error('Error updating reported content:', error);
-    res.status(500).json({ error: 'Failed to update content status' });
+    return res.status(500).json({ error: 'Failed to update content status' });
   }
 });
 
@@ -52,10 +52,10 @@ router.post('/report', async (req, res) => {
 
     const report = schema.parse(req.body);
     const newReport = await storage.reportContent(report);
-    res.status(201).json(newReport);
+    return res.status(201).json(newReport);
   } catch (error) {
     console.error('Error creating content report:', error);
-    res.status(500).json({ error: 'Failed to create content report' });
+    return res.status(500).json({ error: 'Failed to create content report' });
   }
 });
 
@@ -91,7 +91,7 @@ router.post('/comments/:commentId/replies', async (req, res) => {
       is_approved: true
     });
 
-    res.status(201).json(reply);
+    return res.status(201).json(reply);
   } catch (error) {
     console.error('Error creating comment reply:', error);
     if (error instanceof z.ZodError) {
@@ -103,7 +103,7 @@ router.post('/comments/:commentId/replies', async (req, res) => {
         }))
       });
     }
-    res.status(500).json({ error: 'Failed to create reply' });
+    return res.status(500).json({ error: 'Failed to create reply' });
   }
 });
 
