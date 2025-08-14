@@ -21,7 +21,8 @@ anonymousBookmarkRouter.get('/:postId', async (req: Request, res: Response) => {
     const postId = parseInt(req.params.postId);
     
     if (isNaN(postId)) {
-      return res.status(400).json({ error: "Invalid post ID" });
+      res.status(400).json({ error: "Invalid post ID" });
+      return;
     }
     
     // Initialize if doesn't exist
@@ -32,7 +33,8 @@ anonymousBookmarkRouter.get('/:postId', async (req: Request, res: Response) => {
     const isBookmarked = req.session.anonymousBookmarks[postId] ? true : false;
     
     if (!isBookmarked) {
-      return res.status(404).json({ error: "Bookmark not found" });
+      res.status(404).json({ error: "Bookmark not found" });
+      return;
     }
     
     const bookmark = {
@@ -46,6 +48,7 @@ anonymousBookmarkRouter.get('/:postId', async (req: Request, res: Response) => {
     };
     
     res.json(bookmark);
+    return;
   } catch (error) {
     console.error("Error fetching anonymous bookmark:", error);
     res.status(500).json({ error: "Failed to fetch bookmark" });
@@ -66,7 +69,8 @@ anonymousBookmarkRouter.get('/', async (req: Request, res: Response) => {
     
     // If there are no bookmarks, return an empty array immediately
     if (Object.keys(req.session.anonymousBookmarks).length === 0) {
-      return res.json([]);
+      res.json([]);
+      return;
     }
     
     // Filter by tag if provided in query params
@@ -98,6 +102,7 @@ anonymousBookmarkRouter.get('/', async (req: Request, res: Response) => {
     );
     
     res.json(bookmarks);
+    return;
   } catch (error) {
     console.error("Error fetching anonymous bookmarks:", error);
     res.status(500).json({ error: "Failed to fetch bookmarks" });
@@ -112,7 +117,8 @@ anonymousBookmarkRouter.post('/', async (req: Request, res: Response) => {
     const { postId, notes, tags } = req.body;
     
     if (!postId) {
-      return res.status(400).json({ error: "Post ID is required" });
+      res.status(400).json({ error: "Post ID is required" });
+      return;
     }
     
     // Initialize session storage for anonymous bookmarks if not exists
@@ -140,6 +146,7 @@ anonymousBookmarkRouter.post('/', async (req: Request, res: Response) => {
     };
     
     res.status(201).json(bookmark);
+    return;
   } catch (error) {
     console.error("Error creating anonymous bookmark:", error);
     res.status(500).json({ error: "Failed to create bookmark" });
@@ -155,12 +162,14 @@ anonymousBookmarkRouter.patch('/:postId', async (req: Request, res: Response) =>
     const { notes, tags, lastPosition } = req.body;
     
     if (isNaN(postId)) {
-      return res.status(400).json({ error: "Invalid post ID" });
+      res.status(400).json({ error: "Invalid post ID" });
+      return;
     }
     
     // Check if bookmark exists
     if (!req.session.anonymousBookmarks || !req.session.anonymousBookmarks[postId]) {
-      return res.status(404).json({ error: "Bookmark not found" });
+      res.status(404).json({ error: "Bookmark not found" });
+      return;
     }
     
     // Update bookmark data
@@ -180,6 +189,7 @@ anonymousBookmarkRouter.patch('/:postId', async (req: Request, res: Response) =>
     };
     
     res.json(bookmark);
+    return;
   } catch (error) {
     console.error("Error updating anonymous bookmark:", error);
     res.status(500).json({ error: "Failed to update bookmark" });
@@ -194,18 +204,21 @@ anonymousBookmarkRouter.delete('/:postId', async (req: Request, res: Response) =
     const postId = parseInt(req.params.postId);
     
     if (isNaN(postId)) {
-      return res.status(400).json({ error: "Invalid post ID" });
+      res.status(400).json({ error: "Invalid post ID" });
+      return;
     }
     
     // Check if bookmark exists
     if (!req.session.anonymousBookmarks || !req.session.anonymousBookmarks[postId]) {
-      return res.status(404).json({ error: "Bookmark not found" });
+      res.status(404).json({ error: "Bookmark not found" });
+      return;
     }
     
     // Delete the bookmark
     delete req.session.anonymousBookmarks[postId];
     
     res.status(204).end();
+    return;
   } catch (error) {
     console.error("Error deleting anonymous bookmark:", error);
     res.status(500).json({ error: "Failed to delete bookmark" });
