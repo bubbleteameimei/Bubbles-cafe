@@ -58,7 +58,7 @@ export function registerPostRecommendationsRoutes(app: Express) {
       .limit(limit);
       
       console.log(`Found ${recommendedPosts.length} posts to recommend:`, 
-        recommendedPosts.map(p => p.id));
+        recommendedPosts.map((p: { id: number }) => p.id));
       
       // Add metadata for frontend display
       const enhancedPosts = enhancePostsWithMetadata(recommendedPosts);

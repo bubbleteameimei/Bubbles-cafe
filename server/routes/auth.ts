@@ -58,7 +58,7 @@ router.post('/register',
       });
     } catch (error) {
       if (error.statusCode) throw error;
-      authLogger.error('Registration error', { email, error });
+      authLogger.error('Registration error', { email, error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Registration failed');
     }
   })
@@ -139,7 +139,7 @@ router.get('/me',
     }
     
     authLogger.debug('User info request', { userId: req.user.id });
-    res.json({ user: req.user });
+    return res.json({ user: req.user });
   })
 );
 
@@ -180,7 +180,7 @@ router.post('/forgot-password',
         message: 'If an account with that email exists, a password reset link has been sent.'
       });
     } catch (error) {
-      authLogger.error('Password reset request error', { email, error });
+      authLogger.error('Password reset request error', { email, error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Password reset request failed');
     }
   })
@@ -265,7 +265,7 @@ router.post('/change-password',
       });
     } catch (error) {
       if (error.statusCode) throw error;
-      authLogger.error('Password change error', { userId, error });
+      authLogger.error('Password change error', { userId, error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Password change failed');
     }
   })

@@ -44,7 +44,7 @@ router.get('/',
       
       res.json(result);
     } catch (error) {
-      postsLogger.error('Error retrieving posts', { error });
+      postsLogger.error('Error retrieving posts', { error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Failed to retrieve posts');
     }
   })
@@ -70,7 +70,7 @@ router.get('/:id',
       res.json(post);
     } catch (error) {
       if (error.statusCode) throw error;
-      postsLogger.error('Error retrieving post', { postId: id, error });
+      postsLogger.error('Error retrieving post', { postId: id, error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Failed to retrieve post');
     }
   })
@@ -100,7 +100,7 @@ router.post('/',
       
       res.status(201).json(newPost);
     } catch (error) {
-      postsLogger.error('Error creating post', { authorId: req.user.id, error });
+      postsLogger.error('Error creating post', { authorId: req.user.id, error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Failed to create post');
     }
   })
@@ -141,7 +141,7 @@ router.put('/:id',
       res.json(updatedPost);
     } catch (error) {
       if (error.statusCode) throw error;
-      postsLogger.error('Error updating post', { postId: id, error });
+      postsLogger.error('Error updating post', { postId: id, error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Failed to update post');
     }
   })
@@ -181,7 +181,7 @@ router.delete('/:id',
       res.status(204).send();
     } catch (error) {
       if (error.statusCode) throw error;
-      postsLogger.error('Error deleting post', { postId: id, error });
+      postsLogger.error('Error deleting post', { postId: id, error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Failed to delete post');
     }
   })
