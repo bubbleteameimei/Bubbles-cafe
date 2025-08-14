@@ -247,7 +247,9 @@ router.get('/reading-time', async (req: Request, res: Response) => {
     // This is now a public endpoint that anyone can access (no authentication needed)
     
     // Get analytics summary with reading time data
-    const analyticsSummary = await storage.getAnalyticsSummary() as unknown as Record<string, unknown>;
+    const analyticsSummaryRaw = await storage.getAnalyticsSummary();
+    const avgReadTime = Number((analyticsSummaryRaw as any)?.avgReadTime ?? 180);
+    const totalViewsBase = Number((analyticsSummaryRaw as any)?.totalViews ?? 1000);
     
     // Get top stories by reading time (top 5 posts)
     const topStories = await storage.getPosts(1, 5);
@@ -258,7 +260,7 @@ router.get('/reading-time', async (req: Request, res: Response) => {
       title: story.title,
       slug: story.slug,
       // Use real average reading time if available, otherwise estimate based on content length
-      avgReadingTime: Math.max(60, analyticsSummary.avgReadTime || 180), // Minimum 1 minute
+      avgReadingTime: Math.max(60, avgReadTime), // Minimum 1 minute
       views: story.id * 50 + Math.floor(Math.random() * 200) // Deterministic view count based on ID
     }));
     
@@ -270,8 +272,8 @@ router.get('/reading-time', async (req: Request, res: Response) => {
     
     // Base statistics
     const baseStats = {
-      avgReadingTime: analyticsSummary.avgReadTime || 180, // Default to 3 minutes if no data
-      totalViews: analyticsSummary.totalViews || 1000,
+      avgReadingTime: avgReadTime, // Default handled above
+      totalViews: totalViewsBase,
       changeFromLastPeriod: {
         readingTime: { value: 5.2, trend: 'up' },
         views: { value: 12.7, trend: 'up' }
@@ -352,7 +354,7 @@ router.get('/reading-time', async (req: Request, res: Response) => {
 router.get('/devices-test', async (req: Request, res: Response) => {
   try {
     // Get real device data if available, otherwise use realistic sample data
-    const analytics = await storage.getAnalyticsSummary() as unknown as Record<string, unknown>;
+    const analytics = await storage.getAnalyticsSummary();
     
     // Default distribution (matches real-world averages from 2024)
     const distribution = {
@@ -362,7 +364,7 @@ router.get('/devices-test', async (req: Request, res: Response) => {
     };
     
     // Base totals from real analytics data or reasonable defaults 
-    const totalSessions = analytics?.totalViews || 1281;
+    const totalSessions = Number((analytics as any)?.totalViews ?? 1281);
     const baseTotals = {
       desktop: Math.round(totalSessions * distribution.desktop),
       mobile: Math.round(totalSessions * distribution.mobile),
@@ -471,7 +473,9 @@ router.get('/devices-test', async (req: Request, res: Response) => {
 router.get('/reading-time-test', async (req: Request, res: Response) => {
   try {
     // Get analytics summary with reading time data
-    const analyticsSummary = await storage.getAnalyticsSummary() as unknown as Record<string, unknown>;
+    const analyticsSummaryRaw = await storage.getAnalyticsSummary();
+    const avgReadTime = Number((analyticsSummaryRaw as any)?.avgReadTime ?? 180);
+    const totalViewsBase = Number((analyticsSummaryRaw as any)?.totalViews ?? 1000);
     
     // Get top stories by reading time (top 5 posts)
     const topStories = await storage.getPosts(1, 5);
@@ -482,7 +486,7 @@ router.get('/reading-time-test', async (req: Request, res: Response) => {
       title: story.title,
       slug: story.slug,
       // Use real average reading time if available, otherwise estimate based on content length
-      avgReadingTime: Math.max(60, analyticsSummary.avgReadTime || 180), // Minimum 1 minute
+      avgReadingTime: Math.max(60, avgReadTime), // Minimum 1 minute
       views: story.id * 50 + Math.floor(Math.random() * 200) // Deterministic view count based on ID
     }));
     
@@ -494,8 +498,8 @@ router.get('/reading-time-test', async (req: Request, res: Response) => {
     
     // Base statistics
     const baseStats = {
-      avgReadingTime: analyticsSummary.avgReadTime || 180, // Default to 3 minutes if no data
-      totalViews: analyticsSummary.totalViews || 1000,
+      avgReadingTime: avgReadTime, // Default to 3 minutes if no data
+      totalViews: totalViewsBase,
       changeFromLastPeriod: {
         readingTime: { value: 5.2, trend: 'up' },
         views: { value: 12.7, trend: 'up' }
@@ -577,17 +581,19 @@ router.get('/reading-time-test', async (req: Request, res: Response) => {
 router.get('/engagement-test', async (req: Request, res: Response) => {
   try {
     // Get analytics summary as base data
-    const analyticsSummary = await storage.getAnalyticsSummary() as unknown as Record<string, unknown>;
+    const analyticsSummaryRaw = await storage.getAnalyticsSummary();
+    const avgReadTime = Number((analyticsSummaryRaw as any)?.avgReadTime ?? 180);
+    const totalViewsBase = Number((analyticsSummaryRaw as any)?.totalViews ?? 1000);
     
     // Create engagement metrics structure that matches what the dashboard expects
     const engagementMetrics = {
-      totalReadingTime: Math.round((analyticsSummary.avgReadTime || 180) * (analyticsSummary.totalViews || 1000) * 0.7),
-      averageSessionDuration: analyticsSummary.avgReadTime || 180,
-      totalUsers: Math.round((analyticsSummary.totalViews || 1000) * 0.6),
-      activeUsers: Math.round((analyticsSummary.totalViews || 1000) * 0.3),
-      interactions: Math.round((analyticsSummary.totalViews || 1000) * 2.5),
-      pageViews: analyticsSummary.totalViews || 1000,
-      returning: Math.round((analyticsSummary.totalViews || 1000) * 0.4)
+      totalReadingTime: Math.round(avgReadTime * totalViewsBase * 0.7),
+      averageSessionDuration: avgReadTime,
+      totalUsers: Math.round(totalViewsBase * 0.6),
+      activeUsers: Math.round(totalViewsBase * 0.3),
+      interactions: Math.round(totalViewsBase * 2.5),
+      pageViews: totalViewsBase,
+      returning: Math.round(totalViewsBase * 0.4)
     };
     
     res.json(engagementMetrics);
@@ -603,13 +609,14 @@ router.get('/engagement-test', async (req: Request, res: Response) => {
 router.get('/site-test', async (req: Request, res: Response) => {
   try {
     // Get analytics summary as base data
-    const analyticsSummary = await storage.getAnalyticsSummary() as unknown as Record<string, unknown>;
+    const analyticsSummaryRaw = await storage.getAnalyticsSummary();
+    const totalViewsBase = Number((analyticsSummaryRaw as any)?.totalViews ?? 1281);
     
     // Create site analytics structure that matches what the dashboard expects
     const siteAnalytics = {
-      totalViews: analyticsSummary.totalViews || 1281,
-      uniqueVisitors: Math.round((analyticsSummary.totalViews || 1281) * 0.49), // About 49% of views are unique visitors
-      avgReadTime: analyticsSummary.avgReadTime || 171,
+      totalViews: totalViewsBase,
+      uniqueVisitors: Math.round(totalViewsBase * 0.49), // About 49% of views are unique visitors
+      avgReadTime: Number((analyticsSummaryRaw as any)?.avgReadTime ?? 171),
       bounceRate: 38.5 // Average bounce rate in percentage
     };
     
@@ -626,7 +633,7 @@ router.get('/site-test', async (req: Request, res: Response) => {
 router.get('/device-distribution-test', async (req: Request, res: Response) => {
   try {
     // Get analytics summary as base data
-    const analyticsSummary = await storage.getAnalyticsSummary() as unknown as Record<string, unknown>;
+    const analyticsSummaryRaw = await storage.getAnalyticsSummary();
     
     // Use realistic device distribution percentages (based on 2024 web averages)
     const deviceDistribution = {
