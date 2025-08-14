@@ -120,7 +120,8 @@ router.post("/wordpress/toggle", requireAuth, requireAdmin, async (req, res) => 
     const { enabled } = req.body;
     
     if (typeof enabled !== "boolean") {
-      return res.status(400).json({ error: "Invalid enabled value" });
+      res.status(400).json({ error: "Invalid enabled value" });
+      return;
     }
     
     // Update the WordPress sync enabled setting

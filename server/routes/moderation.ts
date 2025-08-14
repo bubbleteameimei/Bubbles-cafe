@@ -87,7 +87,7 @@ router.post('/comments/:commentId/replies', async (req, res) => {
         upvotes: 0,
         downvotes: 0
       },
-      approved: true
+      is_approved: true
     });
 
     res.status(201).json(reply);
