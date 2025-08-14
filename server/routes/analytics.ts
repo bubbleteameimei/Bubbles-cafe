@@ -115,7 +115,7 @@ router.get('/engagement', async (req: Request, res: Response) => {
       interactions: interactionMetrics.length,
       pageViews: pageViewMetrics.length,
       returning: await storage.getReturningUserCount()
-    };
+    } as Record<string, unknown>;
     
     // Return data
     res.json(engagementMetrics);
@@ -247,7 +247,7 @@ router.get('/reading-time', async (req: Request, res: Response) => {
     // This is now a public endpoint that anyone can access (no authentication needed)
     
     // Get analytics summary with reading time data
-    const analyticsSummary = await storage.getAnalyticsSummary();
+    const analyticsSummary = await storage.getAnalyticsSummary() as unknown as Record<string, unknown>;
     
     // Get top stories by reading time (top 5 posts)
     const topStories = await storage.getPosts(1, 5);
@@ -352,7 +352,7 @@ router.get('/reading-time', async (req: Request, res: Response) => {
 router.get('/devices-test', async (req: Request, res: Response) => {
   try {
     // Get real device data if available, otherwise use realistic sample data
-    const analytics = await storage.getAnalyticsSummary();
+    const analytics = await storage.getAnalyticsSummary() as unknown as Record<string, unknown>;
     
     // Default distribution (matches real-world averages from 2024)
     const distribution = {
@@ -471,7 +471,7 @@ router.get('/devices-test', async (req: Request, res: Response) => {
 router.get('/reading-time-test', async (req: Request, res: Response) => {
   try {
     // Get analytics summary with reading time data
-    const analyticsSummary = await storage.getAnalyticsSummary();
+    const analyticsSummary = await storage.getAnalyticsSummary() as unknown as Record<string, unknown>;
     
     // Get top stories by reading time (top 5 posts)
     const topStories = await storage.getPosts(1, 5);
@@ -577,7 +577,7 @@ router.get('/reading-time-test', async (req: Request, res: Response) => {
 router.get('/engagement-test', async (req: Request, res: Response) => {
   try {
     // Get analytics summary as base data
-    const analyticsSummary = await storage.getAnalyticsSummary();
+    const analyticsSummary = await storage.getAnalyticsSummary() as unknown as Record<string, unknown>;
     
     // Create engagement metrics structure that matches what the dashboard expects
     const engagementMetrics = {
@@ -603,7 +603,7 @@ router.get('/engagement-test', async (req: Request, res: Response) => {
 router.get('/site-test', async (req: Request, res: Response) => {
   try {
     // Get analytics summary as base data
-    const analyticsSummary = await storage.getAnalyticsSummary();
+    const analyticsSummary = await storage.getAnalyticsSummary() as unknown as Record<string, unknown>;
     
     // Create site analytics structure that matches what the dashboard expects
     const siteAnalytics = {
@@ -626,7 +626,7 @@ router.get('/site-test', async (req: Request, res: Response) => {
 router.get('/device-distribution-test', async (req: Request, res: Response) => {
   try {
     // Get analytics summary as base data
-    const analyticsSummary = await storage.getAnalyticsSummary();
+    const analyticsSummary = await storage.getAnalyticsSummary() as unknown as Record<string, unknown>;
     
     // Use realistic device distribution percentages (based on 2024 web averages)
     const deviceDistribution = {

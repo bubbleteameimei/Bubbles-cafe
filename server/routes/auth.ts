@@ -68,10 +68,10 @@ router.post('/register',
 router.post('/login',
   authRateLimiter,
   validateBody(userLoginSchema),
-  asyncHandler(async (req: Request, res: Response, next) => {
+  asyncHandler(async (req: Request, res: Response, next: (err?: any) => void) => {
     passport.authenticate('local', (err: any, user: any, info: any) => {
       if (err) {
-        authLogger.error('Login authentication error', { error: err });
+        authLogger.error('Login authentication error', { error: err instanceof Error ? err.message : String(err) });
         return next(createError.internal('Authentication failed'));
       }
       
@@ -82,7 +82,7 @@ router.post('/login',
       
       req.logIn(user, (err) => {
         if (err) {
-          authLogger.error('Login session error', { error: err });
+          authLogger.error('Login session error', { error: err instanceof Error ? err.message : String(err) });
           return next(createError.internal('Login failed'));
         }
         
