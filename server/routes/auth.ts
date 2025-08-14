@@ -70,7 +70,7 @@ router.post('/login',
   authRateLimiter,
   validateBody(userLoginSchema),
   asyncHandler(async (req: Request, res: Response, next: (err?: any) => void) => {
-    passport.authenticate('local', (err: any, user: any, info: any) => {
+    return passport.authenticate('local', (err: any, user: any, info: any) => {
       if (err) {
         authLogger.error('Login authentication error', { error: err instanceof Error ? err.message : String(err) });
         return next(createError.internal('Authentication failed'));
