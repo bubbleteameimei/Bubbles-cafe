@@ -100,7 +100,7 @@ export function setupAuth(app: Express) {
       }
 
       // Omit password_hash from user object before passing to client
-      const { password_hash, ...safeUser } = user;
+      const { password_hash: user_password_hash, ...safeUser } = user;
       authLogger.info('Login successful', { email: normalizedEmail, userId: safeUser.id });
       return done(null, safeUser);
     } catch (error) {
