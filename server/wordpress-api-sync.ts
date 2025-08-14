@@ -112,6 +112,37 @@ export class WordPressAPISync {
     };
   }
 
+  /**
+   * Public method to sync a single WordPress post by WordPress post ID
+   */
+  async syncOnePostById(wpId: number): Promise<{ success: boolean; synced: number; errors: any[] }> {
+    try {
+      // Ensure admin user exists (same logic as syncAllPosts)
+      let adminUser = await db.select().from(users).where(eq(users.email, 'admin@storytelling.com')).limit(1);
+      if (adminUser.length === 0) {
+        const [newAdmin] = await db.insert(users).values({
+          username: 'admin',
+          email: 'admin@storytelling.com',
+          password_hash: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+          isAdmin: true,
+          metadata: { fullName: 'Site Administrator', bio: 'WordPress content sync admin' }
+        }).returning();
+        adminUser = [newAdmin];
+      }
+      const adminUserId = adminUser[0].id;
+      
+      const response = await fetch(`${this.baseUrl}/posts/${wpId}?_fields=id,date,slug,title,content,excerpt,author,categories,tags,featured_media,status,type,modified`);
+      if (!response.ok) {
+        throw new Error(`WordPress API error: ${response.status} ${response.statusText}`);
+      }
+      const wpPost: WordPressPost = await response.json();
+      await this.syncSinglePost(wpPost, adminUserId);
+      return { success: true, synced: 1, errors: [] };
+    } catch (error) {
+      return { success: false, synced: 0, errors: [{ postId: wpId, error: error instanceof Error ? error.message : String(error) }] };
+    }
+  }
+
   private async syncSinglePost(wpPost: WordPressPost, authorId: number): Promise<void> {
     // Clean and process content
     const cleanContent = this.cleanWordPressContent(wpPost.content.rendered);
