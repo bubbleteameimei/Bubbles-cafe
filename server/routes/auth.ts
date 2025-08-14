@@ -167,8 +167,7 @@ router.post('/forgot-password',
         userId: user.id,
         token: require('crypto').randomBytes(32).toString('hex'),
         expiresAt: new Date(Date.now() + 60 * 60 * 1000),
-        used: false,
-        metadata: {}
+        used: false
       });
       
       // Send reset email (implement email service)
@@ -218,7 +217,7 @@ router.post('/reset-password',
       });
     } catch (error) {
       if (error.statusCode) throw error;
-      authLogger.error('Password reset error', { error });
+      authLogger.error('Password reset error', { error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Password reset failed');
     }
   })

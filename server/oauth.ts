@@ -187,7 +187,8 @@ export function setupOAuth(app: Express) {
   app.get('/api/auth/logout', (req: Request, res: Response) => {
     req.logout(function(err) {
       if (err) {
-        return res.status(500).json({ error: 'Logout failed' });
+        res.status(500).json({ error: 'Logout failed' });
+        return;
       }
       
       // For cross-domain setup, check if we need to redirect to frontend URL
@@ -197,9 +198,11 @@ export function setupOAuth(app: Express) {
         // In split deployment, redirect to the frontend URL
         console.log('[Auth] Redirecting to frontend URL after logout:', frontendUrl);
         res.redirect(frontendUrl);
+        return;
       } else {
         // In development or same-domain setup, redirect to the root
         res.redirect('/');
+        return;
       }
     });
   });
@@ -258,6 +261,7 @@ export function setupOAuth(app: Express) {
       fullName: typedMetadata.fullName || typedMetadata.displayName || null,
       bio: typedMetadata.bio || null
     });
+    return;
   });
 
   // User profile update route - PATCH
@@ -270,14 +274,16 @@ export function setupOAuth(app: Express) {
       
       // Validate input
       if (username && (username.length < 3 || username.length > 30)) {
-        return res.status(400).json({ error: 'Username must be between 3 and 30 characters' });
+        res.status(400).json({ error: 'Username must be between 3 and 30 characters' });
+        return;
       }
       
       // Check if username is already taken (if being changed)
       if (username && username !== user.username) {
         const existingUser = await storage.getUserByUsername(username);
         if (existingUser && existingUser.id !== user.id) {
-          return res.status(400).json({ error: 'Username is already taken' });
+          res.status(400).json({ error: 'Username is already taken' });
+          return;
         }
       }
 
@@ -323,7 +329,8 @@ export function setupOAuth(app: Express) {
       
       // Only update if there are changes
       if (Object.keys(updateData).length === 0) {
-        return res.status(400).json({ error: 'No changes provided' });
+        res.status(400).json({ error: 'No changes provided' });
+        return;
       }
       
       // Save updates
@@ -407,12 +414,14 @@ export function setupOAuth(app: Express) {
         fullName: typedMetadata.fullName || typedMetadata.displayName || null,
         bio: typedMetadata.bio || null
       });
+      return;
     } catch (error) {
       console.error('[Profile] Error updating user profile:', error);
       res.status(500).json({ 
         error: 'Failed to update profile',
         message: error instanceof Error ? error.message : 'Unknown error'
       });
+      return;
     }
   });
 
