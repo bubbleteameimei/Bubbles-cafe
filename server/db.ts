@@ -3,12 +3,6 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
 
-// Load environment variables first using dynamic import to avoid TS resolution issues
-try {
-	// eslint-disable-next-line @typescript-eslint/no-floating-promises
-	import('dotenv').then(m => m.config({ override: true })).catch(() => {});
-} catch {}
-
 // Configure WebSocket for Neon serverless with enhanced error handling
 try {
 	neonConfig.webSocketConstructor = ws;
