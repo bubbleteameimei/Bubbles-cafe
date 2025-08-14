@@ -49,18 +49,7 @@ initCSRFProtection().then(() => {
   logger.error("Error initializing CSRF protection:", error);
 });
 
-// Register Service Worker for PWA functionality
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((_registration) => {
-        logger.info('Service Worker registered successfully');
-      })
-      .catch((error) => {
-        logger.error('Service Worker registration failed:', error);
-      });
-  });
-}
+// Service Worker deliberately not registered to avoid preview/runtime conflicts
 
 logger.debug("CSS styles loaded");
 logger.info("Mounting React application...");
