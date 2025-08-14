@@ -343,7 +343,7 @@ router.get('/reading-time', async (req: Request, res: Response) => {
       topStories: formattedTopStories
     });
   } catch (error) {
-    analyticsLogger.error('Error fetching reading time analytics:', error);
+    analyticsLogger.error('Error fetching reading time analytics:', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ message: "Failed to fetch reading time analytics" });
   }
 });
@@ -462,7 +462,7 @@ router.get('/devices-test', async (req: Request, res: Response) => {
       percentageChange
     });
   } catch (error) {
-    analyticsLogger.error('Error fetching device analytics:', error);
+    analyticsLogger.error('Error fetching device analytics:', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ message: "Failed to fetch device analytics" });
   }
 });
@@ -569,7 +569,7 @@ router.get('/reading-time-test', async (req: Request, res: Response) => {
       topStories: formattedTopStories
     });
   } catch (error) {
-    analyticsLogger.error('Error fetching reading time analytics:', error);
+    analyticsLogger.error('Error fetching reading time analytics:', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ message: "Failed to fetch reading time analytics" });
   }
 });
@@ -598,7 +598,7 @@ router.get('/engagement-test', async (req: Request, res: Response) => {
     
     res.json(engagementMetrics);
   } catch (error) {
-    analyticsLogger.error('Error creating engagement metrics:', error);
+    analyticsLogger.error('Error creating engagement metrics:', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ message: "Failed to create engagement metrics" });
   }
 });
@@ -622,7 +622,7 @@ router.get('/site-test', async (req: Request, res: Response) => {
     
     res.json(siteAnalytics);
   } catch (error) {
-    analyticsLogger.error('Error creating site analytics:', error);
+    analyticsLogger.error('Error creating site analytics:', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ message: "Failed to create site analytics" });
   }
 });
@@ -644,7 +644,7 @@ router.get('/device-distribution-test', async (req: Request, res: Response) => {
     
     res.json(deviceDistribution);
   } catch (error) {
-    analyticsLogger.error('Error creating device distribution:', error);
+    analyticsLogger.error('Error creating device distribution:', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ message: "Failed to create device distribution" });
   }
 });
