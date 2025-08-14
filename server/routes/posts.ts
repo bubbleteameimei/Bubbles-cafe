@@ -69,7 +69,8 @@ router.get('/:id',
       postsLogger.debug('Post retrieved successfully', { postId: id });
       res.json(post);
     } catch (error) {
-      if (error.statusCode) throw error;
+      const anyError = error as any;
+      if (anyError?.statusCode) throw anyError;
       postsLogger.error('Error retrieving post', { postId: id, error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Failed to retrieve post');
     }
@@ -140,7 +141,8 @@ router.put('/:id',
       
       res.json(updatedPost);
     } catch (error) {
-      if (error.statusCode) throw error;
+      const anyError = error as any;
+      if (anyError?.statusCode) throw anyError;
       postsLogger.error('Error updating post', { postId: id, error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Failed to update post');
     }
@@ -180,7 +182,8 @@ router.delete('/:id',
       
       res.status(204).send();
     } catch (error) {
-      if (error.statusCode) throw error;
+      const anyError = error as any;
+      if (anyError?.statusCode) throw anyError;
       postsLogger.error('Error deleting post', { postId: id, error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Failed to delete post');
     }
