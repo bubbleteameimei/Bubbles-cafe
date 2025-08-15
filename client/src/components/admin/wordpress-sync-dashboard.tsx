@@ -24,12 +24,13 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
+interface SyncErrorObj { id?: string; timestamp?: string; message?: string; details?: unknown }
 interface SyncStatus {
   isRunning: boolean;
   lastSync: string;
   nextSync: string;
   postsCount: number;
-  errors: string[];
+  errors: (string | SyncErrorObj)[];
   totalProcessed: number;
   syncInterval: number;
   enabled: boolean;
@@ -312,9 +313,11 @@ export function WordPressSyncDashboard() {
                 <span className="font-medium text-red-700">Recent Errors</span>
               </div>
               <ul className="text-sm text-red-600 space-y-1">
-                {syncStatus.errors.map((error, index) => (
-                  <li key={index}>• {error}</li>
-                ))}
+                {syncStatus.errors.map((e, index) => {
+                  const label = typeof e === 'string' ? e : (e.message || 'Unknown error');
+                  const when = typeof e === 'string' ? null : e.timestamp ? ` — ${formatDate(e.timestamp)}` : null;
+                  return <li key={index}>• {label}{when}</li>;
+                })}
               </ul>
             </div>
           )}
