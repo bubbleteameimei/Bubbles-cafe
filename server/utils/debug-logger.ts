@@ -90,8 +90,10 @@ async function log(level: LogLevel, module: string, message: string, details?: R
   const consoleMessage = `${prefix} [${module}] ${message}`;
   const consoleDetails = details ? ` ${JSON.stringify(redactSensitiveInfo(details), null, 2)}` : '';
   
-  // Output to console with colors
-  console.log(`${timestamp} ${consoleMessage}${consoleDetails}`);
+  // Output to console: suppress debug in production
+  if (process.env.NODE_ENV !== 'production' || level !== 'debug') {
+    console.log(`${timestamp} ${consoleMessage}${consoleDetails}`);
+  }
   
   // Format for file output
   const fileMessage = JSON.stringify(logMessage);
