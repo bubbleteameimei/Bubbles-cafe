@@ -246,7 +246,7 @@ export class DatabaseStorage implements IStorage {
       .offset(offset);
     
     const hasMore = results.length > limit;
-    const posts_result = hasMore ? results.slice(0, -1) : results;
+    const posts_result = (hasMore ? results.slice(0, -1) : results) as unknown as Post[];
     
     return { posts: posts_result, hasMore };
   }
