@@ -1766,11 +1766,17 @@ export class DatabaseStorage implements IStorage {
         ORDER BY created_at DESC
       `);
 
-      return result.rows.map(comment => ({
-        ...comment,
+      return result.rows.map((comment: any) => ({
+        id: comment.id,
+        content: comment.content,
+        postId: comment.postId ?? comment.post_id ?? null,
+        userId: comment.userId ?? comment.user_id ?? null,
         createdAt: safeCreateDate(comment.createdAt),
+        parentId: comment.parentId ?? comment.parent_id ?? null,
+        is_approved: comment.approved === undefined ? !!comment.is_approved : !!comment.approved,
+        edited: !!comment.edited,
         editedAt: comment.editedAt ? safeCreateDate(comment.editedAt) : null,
-        is_approved: comment.approved // Map to both field names for compatibility
+        metadata: typeof comment.metadata === 'string' ? JSON.parse(comment.metadata) : (comment.metadata || {})
       }));
     } catch (error) {
       console.error("Error in getComments:", error);
@@ -1791,11 +1797,17 @@ export class DatabaseStorage implements IStorage {
         LIMIT 10
       `);
 
-      return result.rows.map(comment => ({
-        ...comment,
+      return result.rows.map((comment: any) => ({
+        id: comment.id,
+        content: comment.content,
+        postId: comment.postId ?? comment.post_id ?? null,
+        userId: comment.userId ?? comment.user_id ?? null,
         createdAt: safeCreateDate(comment.createdAt),
+        parentId: comment.parentId ?? comment.parent_id ?? null,
+        is_approved: comment.approved === undefined ? !!comment.is_approved : !!comment.approved,
+        edited: !!comment.edited,
         editedAt: comment.editedAt ? safeCreateDate(comment.editedAt) : null,
-        is_approved: comment.approved
+        metadata: typeof comment.metadata === 'string' ? JSON.parse(comment.metadata) : (comment.metadata || {})
       }));
     } catch (error) {
       console.error("Error in getRecentComments:", error);
@@ -1815,11 +1827,17 @@ export class DatabaseStorage implements IStorage {
         ORDER BY created_at DESC
       `);
 
-      return result.rows.map(comment => ({
-        ...comment,
+      return result.rows.map((comment: any) => ({
+        id: comment.id,
+        content: comment.content,
+        postId: comment.postId ?? comment.post_id ?? null,
+        userId: comment.userId ?? comment.user_id ?? null,
         createdAt: safeCreateDate(comment.createdAt),
+        parentId: comment.parentId ?? comment.parent_id ?? null,
+        is_approved: comment.approved === undefined ? !!comment.is_approved : !!comment.approved,
+        edited: !!comment.edited,
         editedAt: comment.editedAt ? safeCreateDate(comment.editedAt) : null,
-        is_approved: comment.approved
+        metadata: typeof comment.metadata === 'string' ? JSON.parse(comment.metadata) : (comment.metadata || {})
       }));
     } catch (error) {
       console.error("Error in getPendingComments:", error);
