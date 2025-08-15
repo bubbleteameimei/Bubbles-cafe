@@ -1221,7 +1221,7 @@ export class DatabaseStorage implements IStorage {
           console.log("[Storage] Fetching posts with page:", page, "limit:", limit, "filters:", JSON.stringify(filters));
           
           // Build WHERE conditions based on filters
-          const whereConditions = [];
+          const whereConditions: any[] = [];
           
           // Filter for community posts - exclude admin posts
           if (filters.isCommunityPost === true) {
@@ -1250,7 +1250,7 @@ export class DatabaseStorage implements IStorage {
           // Query to get posts with proper filtering
           console.log("[Storage] Executing optimized Drizzle query with filters:", filters);
           
-          let query = db.select({
+          const baseQuery = db.select({
             id: postsTable.id,
             title: postsTable.title,
             content: postsTable.content,
@@ -1267,9 +1267,7 @@ export class DatabaseStorage implements IStorage {
           .from(postsTable);
           
           // Apply WHERE conditions if any
-          if (whereConditions.length > 0) {
-            query = query.where(and(...whereConditions));
-          }
+          const query: any = whereConditions.length > 0 ? (baseQuery as any).where(and(...whereConditions)) : baseQuery;
           
           const rawPosts = await query
             .orderBy(desc(postsTable.createdAt))
@@ -1289,21 +1287,21 @@ export class DatabaseStorage implements IStorage {
             
             // Get values with fallbacks - prioritize database columns over metadata
             return {
-              id: post.id,
-              title: post.title,
-              content: post.content,
-              slug: post.slug,
-              excerpt: post.excerpt,
-              authorId: post.authorId,
-              createdAt: new Date(post.createdAt),
+              id: Number(post.id),
+              title: String(post.title),
+              content: String(post.content),
+              slug: String(post.slug),
+              excerpt: post.excerpt as string | null,
+              authorId: Number(post.authorId),
+              createdAt: safeCreateDate(post.createdAt),
               metadata: metadata as unknown,
-              isAdminPost: post.isAdminPost ?? (metadata.isAdminPost === true ? true : null),
-              isSecret: !!post.isSecret,
-              matureContent: !!post.matureContent,
-              themeCategory: post.themeCategory || metadata.themeCategory || null,
-              readingTimeMinutes: typeof metadata.readingTimeMinutes === 'number' ? metadata.readingTimeMinutes : null,
-              likesCount: typeof metadata.likes === 'number' ? metadata.likes : 0,
-              dislikesCount: typeof metadata.dislikes === 'number' ? metadata.dislikes : 0
+              isAdminPost: (post.isAdminPost === true ? true : (post.isAdminPost === false ? false : null)),
+              isSecret: Boolean(post.isSecret),
+              matureContent: Boolean(post.matureContent),
+              themeCategory: (post.themeCategory || (metadata as any).themeCategory || null) as string | null,
+              readingTimeMinutes: (typeof (metadata as any).readingTimeMinutes === 'number' ? (metadata as any).readingTimeMinutes : null),
+              likesCount: (typeof (metadata as any).likes === 'number' ? (metadata as any).likes : 0),
+              dislikesCount: (typeof (metadata as any).dislikes === 'number' ? (metadata as any).dislikes : 0)
             } as Post;
           });
           
@@ -1311,7 +1309,7 @@ export class DatabaseStorage implements IStorage {
           let filteredPosts = transformedPosts;
           if (filters.search) {
             const searchTerm = filters.search.toLowerCase();
-            filteredPosts = filteredPosts.filter(post => 
+            filteredPosts = filteredPosts.filter((post: Post) => 
               post.title.toLowerCase().includes(searchTerm) || 
               post.content.toLowerCase().includes(searchTerm) ||
               (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm))
@@ -1320,7 +1318,7 @@ export class DatabaseStorage implements IStorage {
           
           // Apply category filter if specified
           if (filters.category) {
-            filteredPosts = filteredPosts.filter(post => 
+            filteredPosts = filteredPosts.filter((post: Post) => 
               post.themeCategory === filters.category
             );
           }
@@ -1384,8 +1382,8 @@ export class DatabaseStorage implements IStorage {
       let filteredPosts = simplePosts;
       
       if (filters.isCommunityPost !== undefined || filters.category) {
-        filteredPosts = simplePosts.filter(post => {
-          const metadata = post.metadata || {};
+        filteredPosts = simplePosts.filter((post: any) => {
+          const metadata: Record<string, any> = (post.metadata as any) || {};
           
           // Check for community post flag in metadata
           if (filters.isCommunityPost !== undefined) {
@@ -1395,7 +1393,7 @@ export class DatabaseStorage implements IStorage {
           
           // Filter by category if specified
           if (filters.category) {
-            const themeCategory = metadata.themeCategory;
+            const themeCategory = (metadata as any).themeCategory;
             if (themeCategory !== filters.category) return false;
           }
           
@@ -1412,7 +1410,7 @@ export class DatabaseStorage implements IStorage {
             SELECT id FROM posts WHERE "isAdminPost" = ${filters.isAdminPost}
           `);
           
-          const adminPostIds = result.rows.map(row => row.id);
+          const adminPostIds = result.rows.map((row: any) => Number(row.id));
           
           // Further filter the posts to those matching the admin post filter
           if (adminPostIds.length > 0) {
@@ -1426,9 +1424,9 @@ export class DatabaseStorage implements IStorage {
         } catch (filterError) {
           console.warn("Failed to filter by isAdminPost column, falling back to metadata check:", filterError);
           // Fall back to metadata check if column doesn't exist
-          filteredPosts = filteredPosts.filter(post => {
-            const metadata = post.metadata || {};
-            const isAdminPost = metadata.isAdminPost === true;
+          filteredPosts = filteredPosts.filter((post: any) => {
+            const metadata: Record<string, any> = (post.metadata as any) || {};
+            const isAdminPost = (metadata as any).isAdminPost === true;
             return isAdminPost === filters.isAdminPost;
           });
         }
@@ -1464,10 +1462,10 @@ export class DatabaseStorage implements IStorage {
       console.log(`[Storage] Found ${paginatedPosts.length} posts using fallback query, hasMore: ${hasMore}`);
       
       return {
-        posts: paginatedPosts.map(post => ({
+        posts: paginatedPosts.map((post: any) => ({
           ...post,
           createdAt: safeCreateDate(post.createdAt)
-        })),
+        })) as unknown as Post[],
         hasMore
       };
     } catch (fallbackError) {
@@ -1485,10 +1483,10 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(postsTable.createdAt))
         .limit(10);
 
-      return posts.map(post => ({
+      return posts.map((post: any) => ({
         ...post,
         createdAt: safeCreateDate(post.createdAt)
-      }));
+      })) as unknown as Post[];
     } catch (error) {
       console.error("Error in getSecretPosts:", error);
       throw new Error("Failed to fetch secret posts");
@@ -1500,7 +1498,23 @@ export class DatabaseStorage implements IStorage {
       async () => {
         // Try the standard Drizzle query first
         try {
-          const [post] = await db.select()
+          const [post] = await db.select({
+              id: postsTable.id,
+              title: postsTable.title,
+              content: postsTable.content,
+              slug: postsTable.slug,
+              excerpt: postsTable.excerpt,
+              authorId: postsTable.authorId,
+              isSecret: postsTable.isSecret,
+              isAdminPost: postsTable.isAdminPost,
+              matureContent: postsTable.matureContent,
+              themeCategory: postsTable.themeCategory,
+              readingTimeMinutes: postsTable.readingTimeMinutes,
+              likesCount: postsTable.likesCount,
+              dislikesCount: postsTable.dislikesCount,
+              metadata: postsTable.metadata,
+              createdAt: postsTable.createdAt
+            })
             .from(postsTable)
             .where(eq(postsTable.slug, slug))
             .limit(1);
@@ -1508,9 +1522,22 @@ export class DatabaseStorage implements IStorage {
           if (!post) return undefined;
   
           return {
-            ...post,
-            createdAt: safeCreateDate(post.createdAt)
-          };
+            id: Number(post.id),
+            title: String(post.title),
+            content: String(post.content),
+            slug: String(post.slug),
+            excerpt: post.excerpt as string | null,
+            authorId: Number(post.authorId),
+            isSecret: Boolean(post.isSecret),
+            isAdminPost: (post.isAdminPost === true ? true : (post.isAdminPost === false ? false : null)),
+            matureContent: Boolean(post.matureContent),
+            themeCategory: (post.themeCategory as string | null),
+            metadata: (post.metadata || {}) as unknown,
+            createdAt: safeCreateDate(post.createdAt),
+            readingTimeMinutes: (post.readingTimeMinutes as number | null) ?? Math.ceil(String(post.content || '').split(/\s+/).length / 200),
+            likesCount: (post.likesCount as number | null) ?? 0,
+            dislikesCount: (post.dislikesCount as number | null) ?? 0
+          } as Post;
         } catch (queryError: any) {
           console.log("Initial getPost query failed, trying fallback.", queryError.message);
           
@@ -1538,21 +1565,21 @@ export class DatabaseStorage implements IStorage {
             const post = rows[0];
             
             return {
-              id: post.id,
-              title: post.title,
-              content: post.content,
-              slug: post.slug,
-              excerpt: post.excerpt,
-              authorId: post.author_id,
-              isSecret: !!post.is_secret,
-              isAdminPost: post.is_admin_post ?? null,
-              matureContent: !!post.mature_content,
-              themeCategory: post.theme_category,
-              metadata: post.metadata || {},
-              createdAt: post.created_at instanceof Date ? post.created_at : new Date(post.created_at),
-              readingTimeMinutes: post.reading_time_minutes || Math.ceil((post.content || '').length / 1000),
-              likesCount: post.likes_count || 0,
-              dislikesCount: post.dislikes_count || 0
+              id: Number(post.id),
+              title: String(post.title),
+              content: String(post.content),
+              slug: String(post.slug),
+              excerpt: post.excerpt as string | null,
+              authorId: Number(post.author_id),
+              isSecret: Boolean(post.is_secret),
+              isAdminPost: (post.is_admin_post === true ? true : (post.is_admin_post === false ? false : null)),
+              matureContent: Boolean(post.mature_content),
+              themeCategory: post.theme_category as string | null,
+              metadata: (post.metadata || {}) as unknown,
+              createdAt: safeCreateDate(post.created_at),
+              readingTimeMinutes: Number(post.reading_time_minutes ?? Math.ceil(String(post.content || '').length / 1000)),
+              likesCount: Number(post.likes_count || 0),
+              dislikesCount: Number(post.dislikes_count || 0)
             };
           } else {
             // If it's another type of error, rethrow it
@@ -1573,10 +1600,10 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(postsTable.createdAt))
         .limit(limit);
 
-      return posts.map(post => ({
+      return posts.map((post: any) => ({
         ...post,
         createdAt: safeCreateDate(post.createdAt)
-      }));
+      })) as unknown as Post[];
     } catch (error) {
       console.error("Error in getPostsByAuthor:", error);
       throw new Error("Failed to fetch posts by author");
@@ -1649,9 +1676,22 @@ export class DatabaseStorage implements IStorage {
       });
 
       return {
-        ...newPost,
-        createdAt: safeCreateDate(newPost.createdAt)
-      };
+        id: Number(newPost.id),
+        title: String(newPost.title),
+        content: String(newPost.content),
+        slug: String(newPost.slug),
+        excerpt: newPost.excerpt as string | null,
+        authorId: Number(newPost.authorId ?? newPost.author_id),
+        isSecret: Boolean(newPost.isSecret ?? newPost.is_secret),
+        isAdminPost: (newPost.isAdminPost === true ? true : (newPost.isAdminPost === false ? false : null)),
+        matureContent: Boolean(newPost.matureContent ?? newPost.mature_content),
+        themeCategory: (newPost.themeCategory ?? newPost.theme_category ?? null) as string | null,
+        metadata: (newPost.metadata || {}) as unknown,
+        createdAt: safeCreateDate(newPost.createdAt ?? newPost.created_at),
+        readingTimeMinutes: (newPost.readingTimeMinutes as number | null) ?? Math.ceil(String(newPost.content || '').split(/\s+/).length / 200),
+        likesCount: (newPost.likesCount as number | null) ?? 0,
+        dislikesCount: (newPost.dislikesCount as number | null) ?? 0
+      } as Post;
     } catch (error) {
       console.error("Error in createPost:", error);
       if (error instanceof Error) {
@@ -1700,7 +1740,7 @@ export class DatabaseStorage implements IStorage {
       return {
         ...updatedPost,
         createdAt: safeCreateDate(updatedPost.createdAt)
-      };
+      } as Post;
     } catch (error) {
       console.error("Error in updatePost:", error);
       if (error instanceof Error) {
@@ -1886,14 +1926,14 @@ export class DatabaseStorage implements IStorage {
   async createComment(comment: InsertComment): Promise<Comment> {
     try {
       console.log('[Storage] Creating new comment:', {
-        postId: comment.postId,
+        postId: Number(comment.postId),
         isAnonymous: !comment.userId,
         hasParentId: !!comment.parentId
       });
       
       // Ensure the post exists before creating a comment on it
-      const postId = comment.postId;
-      if (typeof postId !== 'number') {
+      const postId = Number(comment.postId);
+      if (!Number.isFinite(postId)) {
         throw new Error('Invalid post ID: Post ID must be a number');
       }
       
@@ -1903,18 +1943,16 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Create comprehensive metadata for the comment
+      const baseMeta: any = (comment.metadata || {}) as any;
       const commentMetadata: CommentMetadata = {
         moderated: false,
         originalContent: comment.content,
         isAnonymous: !comment.userId,
-        author: (comment.metadata && typeof comment.metadata.author === 'string') 
-          ? comment.metadata.author 
-          : (comment.userId ? 'User' : 'Anonymous'),
+        author: (typeof baseMeta.author === 'string') ? baseMeta.author : (comment.userId ? 'User' : 'Anonymous'),
         upvotes: 0,
         downvotes: 0,
         replyCount: 0,
-        // Merge any additional metadata from the request
-        ...(comment.metadata || {})
+        ...baseMeta
       };
 
       // Create a direct SQL query to ensure proper column mapping and return data
@@ -1947,19 +1985,19 @@ export class DatabaseStorage implements IStorage {
 
       // Return properly formatted comment
       return {
-        id: newComment.id,
-        content: newComment.content,
-        postId: newComment.postId ?? newComment.post_id ?? null,
-        userId: newComment.userId ?? newComment.user_id ?? null,
+        id: Number(newComment.id),
+        content: String(newComment.content),
+        postId: (newComment.postId ?? newComment.post_id ?? null) as number | null,
+        userId: (newComment.userId ?? newComment.user_id ?? null) as number | null,
         createdAt: safeCreateDate(newComment.createdAt ?? newComment.created_at),
-        parentId: newComment.parentId ?? newComment.parent_id ?? null,
-        is_approved: (newComment as any).is_approved ?? (newComment as any).approved ?? false,
-        edited: !!newComment.edited,
+        parentId: (newComment.parentId ?? newComment.parent_id ?? null) as number | null,
+        is_approved: Boolean((newComment as any).is_approved ?? (newComment as any).approved ?? false),
+        edited: Boolean(newComment.edited),
         editedAt: newComment.editedAt ? safeCreateDate(newComment.editedAt) : (newComment.edited_at ? safeCreateDate(newComment.edited_at) : null),
         metadata: typeof (newComment as any).metadata === 'string' 
           ? JSON.parse((newComment as any).metadata) 
-          : (newComment as any).metadata || {}
-      };
+          : ((newComment as any).metadata || {})
+      } as Comment;
     } catch (error) {
       console.error('[Storage] Error creating comment:', error);
       throw error;
@@ -3588,6 +3626,8 @@ export class DatabaseStorage implements IStorage {
 
 // In-Memory Storage Implementation (for development/testing)
 class MemStorage {
+  // Use top-level safeDbOperation helper directly inside methods when needed
+
   private users: User[] = [];
   private posts: Post[] = [];
   private comments: Comment[] = [];
@@ -3603,18 +3643,18 @@ class MemStorage {
 
   // Implement necessary comment methods
   async getCommentsByPostId(postId: number): Promise<Comment[]> {
-    return this.comments.filter(comment => comment.postId === postId);
+    return this.comments.filter((comment: Comment) => comment.postId === postId);
   }
   
   async getCommentById(id: number): Promise<Comment | undefined> {
-    return this.comments.find(comment => comment.id === id);
+    return this.comments.find((comment: Comment) => comment.id === id);
   }
   
   // Stub implementations for required methods to satisfy the interface
   // These can be expanded as needed
   
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return this.users.find(user => user.email === email);
+    return this.users.find((user: User) => user.email === email);
   }
   
   async addPostView(postId: number): Promise<boolean> {
@@ -3632,19 +3672,19 @@ class MemStorage {
   async createBookmark(bookmark: InsertBookmark): Promise<Bookmark> {
     const newBookmark: Bookmark = {
       id: this.nextBookmarkId++,
-      userId: bookmark.userId,
-      postId: bookmark.postId,
+      userId: Number(bookmark.userId),
+      postId: Number(bookmark.postId),
       createdAt: new Date(),
-      tags: bookmark.tags ?? null,
+      tags: (bookmark.tags as string[] | null) ?? null,
       notes: bookmark.notes ?? null,
-      lastPosition: (bookmark as any).lastPosition ?? '0'
+      lastPosition: ((bookmark as any).lastPosition ?? '0') as any
     } as Bookmark;
     this.bookmarks.push(newBookmark);
     return newBookmark;
   }
   
   async getBookmarksByUserId(userId: number): Promise<Bookmark[]> {
-    return this.bookmarks.filter(bookmark => bookmark.userId === userId);
+    return this.bookmarks.filter((bookmark: Bookmark) => bookmark.userId === userId);
   }
   
   async deleteBookmark(userId: number, postId: number): Promise<void> {
@@ -3659,7 +3699,7 @@ class MemStorage {
   }
   
   async getUserPostBookmark(userId: number, postId: number): Promise<Bookmark | undefined> {
-    return this.bookmarks.find(bookmark => bookmark.userId === userId && bookmark.postId === postId);
+    return this.bookmarks.find((bookmark: Bookmark) => bookmark.userId === userId && bookmark.postId === postId);
   }
   
   async createUserFeedback(feedback: UserFeedback): Promise<UserFeedback> {
@@ -3667,13 +3707,13 @@ class MemStorage {
       ...feedback,
       id: this.nextFeedbackId++,
       createdAt: new Date()
-    };
+    } as UserFeedback;
     this.userFeedback.push(newFeedback);
     return newFeedback;
   }
   
   async getUserFeedback(userId: number): Promise<UserFeedback[]> {
-    return this.userFeedback.filter(f => f.userId === userId);
+    return this.userFeedback.filter((f: UserFeedback) => f.userId === userId);
   }
   
   // Other required methods with minimal implementations
@@ -3686,7 +3726,7 @@ class MemStorage {
       edited: false,
       editedAt: null,
       metadata: {}
-    };
+    } as Comment;
     this.comments.push(newComment);
     return newComment;
   }
@@ -3703,10 +3743,10 @@ class MemStorage {
       
       console.log(`[Storage] Found ${recentPosts.length} recent posts`);
       
-      return recentPosts.map(post => ({
+      return recentPosts.map((post: any) => ({
         ...post,
         createdAt: safeCreateDate(post.createdAt)
-      }));
+      })) as unknown as Post[];
     } catch (error) {
       console.error('[Storage] Error in getRecentPosts:', error);
       throw new Error('Failed to fetch recent posts');
@@ -3726,10 +3766,10 @@ class MemStorage {
       
       console.log(`[Storage] Found ${recommendedPosts.length} recommended posts`);
       
-      return recommendedPosts.map(post => ({
+      return recommendedPosts.map((post: any) => ({
         ...post,
         createdAt: safeCreateDate(post.createdAt)
-      }));
+      })) as unknown as Post[];
     } catch (error) {
       console.error('[Storage] Error in getRecommendedPosts:', error);
       throw new Error('Failed to fetch recommended posts');
@@ -3825,7 +3865,7 @@ class MemStorage {
           return trendingPosts.map((post: any) => ({
             ...post,
             createdAt: safeCreateDate(post.createdAt)
-          }));
+          })) as unknown as Post[];
         } catch (error) {
           console.error(`[Storage] Error getting trending posts:`, error);
           // Fallback to most recent posts if there's an error
@@ -3974,7 +4014,7 @@ class MemStorage {
         });
         
         // Score posts based on multiple factors
-        const scoredPosts = candidatePosts.map((post: any) => {
+        const scoredPosts = candidatePosts.map((post: any): { post: Post; score: number } => {
           let score = 0;
           
           // Collaborative filtering boost
@@ -4009,9 +4049,9 @@ class MemStorage {
           }
           
           // Recency bias (newer posts get a boost)
-          const postDate = post.createdAt instanceof Date 
+                     const postDate = post.createdAt instanceof Date 
             ? post.createdAt 
-            : new Date(post.createdAt);
+            : new Date(post.createdAt as unknown as string | number | Date);
           
           const daysSincePosted = (Date.now() - postDate.getTime()) / (1000 * 60 * 60 * 24);
           if (daysSincePosted < 7) { // Posts less than a week old
@@ -4028,9 +4068,9 @@ class MemStorage {
         scoredPosts.sort((a: { score: number }, b: { score: number }) => b.score - a.score);
         
         // Take top posts
-        contentBasedRecommendations = scoredPosts
-          .slice(0, limit)
-          .map(({ post }) => post);
+                 contentBasedRecommendations = scoredPosts
+           .slice(0, limit)
+           .map(({ post }: { post: Post; score: number }) => post);
           
       } catch (error) {
         console.error(`[Storage] Error getting content-based recommendations:`, error);
@@ -4154,7 +4194,7 @@ class MemStorage {
     totalLikes: number;
     recentActivity: ActivityLog[];
   }> {
-    return this.safeDbOperation(async () => {
+    return safeDbOperation(async () => {
       const [postsCount] = await db.select({ count: sql<number>`count(*)` }).from(postsTable);
       const [usersCount] = await db.select({ count: sql<number>`count(*)` }).from(users);
       const [commentsCount] = await db.select({ count: sql<number>`count(*)` }).from(comments);
@@ -4166,11 +4206,11 @@ class MemStorage {
         .limit(10);
 
       return {
-        totalPosts: postsCount.count || 0,
-        totalUsers: usersCount.count || 0,
-        totalComments: commentsCount.count || 0,
-        totalLikes: 0, // This would need to be calculated from likes data
-        recentActivity: recentActivity.map(log => ({
+        totalPosts: Number(postsCount.count || 0),
+        totalUsers: Number(usersCount.count || 0),
+        totalComments: Number(commentsCount.count || 0),
+        totalLikes: 0,
+        recentActivity: recentActivity.map((log: any) => ({
           ...log,
           createdAt: safeCreateDate(log.createdAt)
         }))
@@ -4185,7 +4225,7 @@ class MemStorage {
   }
 
   async getSiteSettingByKey(key: string): Promise<SiteSetting | undefined> {
-    return this.safeDbOperation(async () => {
+    return safeDbOperation(async () => {
       const [setting] = await db.select()
         .from(siteSettings)
         .where(eq(siteSettings.key, key))
@@ -4199,7 +4239,7 @@ class MemStorage {
   }
 
   async setSiteSetting(key: string, value: string, category: string, description?: string): Promise<SiteSetting> {
-    return this.safeDbOperation(async () => {
+    return safeDbOperation(async () => {
       const now = new Date();
       
       // Try to update existing setting first
@@ -4239,12 +4279,12 @@ class MemStorage {
   }
 
   async getAllSiteSettings(): Promise<SiteSetting[]> {
-    return this.safeDbOperation(async () => {
+    return safeDbOperation(async () => {
       const settings = await db.select()
         .from(siteSettings)
         .orderBy(siteSettings.category, siteSettings.key);
 
-      return settings.map(setting => ({
+      return settings.map((setting: any) => ({
         ...setting,
         updatedAt: setting.updatedAt instanceof Date ? setting.updatedAt : new Date(setting.updatedAt)
       }));
@@ -4261,7 +4301,7 @@ class MemStorage {
     newUsers: number;
     adminCount: number;
   }> {
-    return this.safeDbOperation(async () => {
+    return safeDbOperation(async () => {
       const [adminCount] = await db.select({ count: sql<number>`count(*)` })
         .from(users)
         .where(eq(users.isAdmin, true));
@@ -4276,17 +4316,17 @@ class MemStorage {
         .limit(5);
 
       return {
-        totalViews: 0, // This would come from analytics tracking
+        totalViews: 0,
         uniqueVisitors: 0,
         avgReadTime: 0,
         bounceRate: 0,
-        trendingPosts: trendingPosts.map(post => ({
+        trendingPosts: trendingPosts.map((post: any) => ({
           ...post,
           createdAt: safeCreateDate(post.createdAt)
-        })),
-        activeUsers: userCount.count || 0,
+        })) as unknown as Post[],
+        activeUsers: Number(userCount.count || 0),
         newUsers: 0,
-        adminCount: adminCount.count || 0
+        adminCount: Number(adminCount.count || 0)
       };
     }, {
       totalViews: 0,
@@ -4301,7 +4341,7 @@ class MemStorage {
   }
 
   async getUsers(page: number = 1, limit: number = 50): Promise<User[]> {
-    return this.safeDbOperation(async () => {
+    return safeDbOperation(async () => {
       const offset = (page - 1) * limit;
       
       const userList = await db.select()

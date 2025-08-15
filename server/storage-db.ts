@@ -207,7 +207,7 @@ export class DatabaseStorage implements IStorage {
     const limit = filters?.limit || 10;
     const offset = filters?.offset || 0;
     
-    let query = db.select({
+    const baseQuery = db.select({
       id: posts.id,
       title: posts.title,
       content: posts.content,
@@ -225,7 +225,7 @@ export class DatabaseStorage implements IStorage {
       createdAt: posts.createdAt
     }).from(posts);
     
-    const conditions = [];
+    const conditions: any[] = [];
     
     if (filters?.authorId) {
       conditions.push(eq(posts.authorId, filters.authorId));
@@ -252,9 +252,7 @@ export class DatabaseStorage implements IStorage {
       );
     }
     
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
+    const query: any = conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
     
     const results = await query
       .orderBy(desc(posts.createdAt))
