@@ -51,7 +51,7 @@ initCSRFProtection().then(() => {
 });
 
 // Optionally register service worker if enabled
-if (import.meta.env.VITE_ENABLE_PWA === 'true' && 'serviceWorker' in navigator) {
+if (import.meta.env.PROD && import.meta.env.VITE_ENABLE_PWA === 'true' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js').catch((err) => {
       console.error('SW registration failed', err);

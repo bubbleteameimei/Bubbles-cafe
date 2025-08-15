@@ -18,7 +18,8 @@ export default defineConfig(({ mode }) => ({
 			srcDir: 'src',
 			filename: 'service-worker.ts',
 			registerType: 'autoUpdate',
-			manifest: false
+			manifest: false,
+			devOptions: { enabled: false }
 		})
 	],
 	resolve: {
