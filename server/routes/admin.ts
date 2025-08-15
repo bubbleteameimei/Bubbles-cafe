@@ -189,61 +189,172 @@ router.get("/users", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-// Posts management endpoint
+// Posts management endpoint with filters
 router.get("/posts", requireAuth, requireAdmin, async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 50;
+    const search = (req.query.search as string) || undefined;
+    const category = (req.query.category as string) || undefined;
+    const featured = req.query.featured === 'true';
+    const status = (req.query.status as string) || 'all';
     
-    const posts = await storage.getPosts(page, limit);
-    res.json(posts);
+    const result = await storage.getPosts(page, limit, { search, category });
+    let posts = result.posts as any[];
+
+    // Optional UI-level filters
+    if (status && status !== 'all') {
+      posts = posts.filter(p => {
+        const meta = (p.metadata || {}) as any;
+        const s = (meta.status || '').toString().toLowerCase();
+        return status === 'published' ? s === 'publish' : s === 'draft' || s === 'pending';
+      });
+    }
+    if (featured) {
+      posts = posts.filter(p => ((p.metadata || {}) as any).featured === true);
+    }
+
+    const total = posts.length;
+    const stats = {
+      published: posts.filter(p => ((p.metadata || {}) as any).status === 'publish').length,
+      pending: 0,
+      flagged: 0,
+    };
+
+    res.json({ posts, total, stats, hasMore: result.hasMore });
   } catch (error) {
     console.error("[Admin] Error fetching posts:", error);
     res.status(500).json({ error: "Failed to fetch posts" });
   }
 });
 
-// Site settings endpoints
-router.get("/settings", requireAuth, requireAdmin, async (req, res) => {
+// Pending posts list
+router.get('/posts/pending', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const settings = await storage.getSiteSettings();
-    res.json(settings);
+    const pending = await storage.getPendingPosts();
+    res.json({ posts: pending, total: pending.length, stats: { pending: pending.length, flagged: 0, published: 0 } });
   } catch (error) {
-    console.error("[Admin] Error fetching settings:", error);
-    res.status(500).json({ error: "Failed to fetch site settings" });
+    console.error("[Admin] Error fetching pending posts:", error);
+    res.status(500).json({ error: 'Failed to fetch pending posts' });
   }
 });
 
-router.post("/settings", requireAuth, requireAdmin, async (req, res) => {
+// Flagged posts list (best-effort; depends on metadata)
+router.get('/posts/flagged', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const settingsSchema = z.object({
-      key: z.string().min(1),
-      value: z.string(),
-      category: z.string().min(1),
-      description: z.string().optional()
-    });
-    
-    const { key, value, category, description } = settingsSchema.parse(req.body);
-    
-    await storage.updateSiteSetting(key, value);
-    
-    // Log the setting change
-    await storage.logActivity({
-      userId: req.user!.id,
-      action: "setting_updated",
-      details: {
-        key,
-        category,
-        updatedBy: req.user!.email
-      },
-      ipAddress: req.ip,
-      userAgent: req.get("User-Agent")
-    });
-    
-    res.json({ success: true, message: "Setting updated successfully" });
+    const result = await storage.getPosts(1, 500, {});
+    const flagged = (result.posts as any[]).filter(p => ((p.metadata || {}) as any).flagged === true || ((p.metadata || {}) as any).flagCount > 0);
+    res.json({ posts: flagged, total: flagged.length, stats: { flagged: flagged.length, pending: 0, published: 0 } });
   } catch (error) {
-    console.error("[Admin] Error updating setting:", error);
-    res.status(500).json({ error: "Failed to update setting" });
+    console.error("[Admin] Error fetching flagged posts:", error);
+    res.status(500).json({ error: 'Failed to fetch flagged posts' });
+  }
+});
+
+// Update a post (partial)
+router.patch('/posts/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const updated = await storage.updatePost(id, req.body);
+    res.json(updated);
+  } catch (error) {
+    console.error("[Admin] Error updating post:", error);
+    res.status(500).json({ error: 'Failed to update post' });
+  }
+});
+
+// Delete a post
+router.delete('/posts/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const deleted = await storage.deletePost(id);
+    res.json(deleted);
+  } catch (error) {
+    console.error("[Admin] Error deleting post:", error);
+    res.status(500).json({ error: 'Failed to delete post' });
+  }
+});
+
+// Publish / Unpublish
+router.patch('/posts/:id/publish', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const post = await storage.updatePost(id, { metadata: { status: 'publish' } as any });
+    res.json(post);
+  } catch (error) {
+    console.error("[Admin] Error publishing post:", error);
+    res.status(500).json({ error: 'Failed to publish post' });
+  }
+});
+
+router.patch('/posts/:id/unpublish', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const post = await storage.updatePost(id, { metadata: { status: 'draft' } as any });
+    res.json(post);
+  } catch (error) {
+    console.error("[Admin] Error unpublishing post:", error);
+    res.status(500).json({ error: 'Failed to unpublish post' });
+  }
+});
+
+// Feature / Unfeature
+router.patch('/posts/:id/feature', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const post = await storage.updatePost(id, { metadata: { featured: true } as any });
+    res.json(post);
+  } catch (error) {
+    console.error("[Admin] Error featuring post:", error);
+    res.status(500).json({ error: 'Failed to feature post' });
+  }
+});
+
+router.patch('/posts/:id/unfeature', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const post = await storage.updatePost(id, { metadata: { featured: false } as any });
+    res.json(post);
+  } catch (error) {
+    console.error("[Admin] Error unfeaturing post:", error);
+    res.status(500).json({ error: 'Failed to unfeature post' });
+  }
+});
+
+// Bulk actions
+router.post('/posts/bulk', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const schema = z.object({
+      action: z.enum(['publish', 'unpublish', 'delete', 'feature', 'unfeature']),
+      postIds: z.array(z.number().int().positive())
+    });
+    const { action, postIds } = schema.parse(req.body);
+
+    const results: any[] = [];
+    for (const id of postIds) {
+      switch (action) {
+        case 'publish':
+          results.push(await storage.updatePost(id, { metadata: { status: 'publish' } as any }));
+          break;
+        case 'unpublish':
+          results.push(await storage.updatePost(id, { metadata: { status: 'draft' } as any }));
+          break;
+        case 'feature':
+          results.push(await storage.updatePost(id, { metadata: { featured: true } as any }));
+          break;
+        case 'unfeature':
+          results.push(await storage.updatePost(id, { metadata: { featured: false } as any }));
+          break;
+        case 'delete':
+          results.push(await storage.deletePost(id));
+          break;
+      }
+    }
+
+    res.json({ success: true, count: results.length, results });
+  } catch (error) {
+    console.error("[Admin] Error processing bulk action:", error);
+    res.status(500).json({ error: 'Failed to process bulk action' });
   }
 });
 
