@@ -91,6 +91,7 @@ class ErrorLogger {
         await fetch('/api/errors', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify(errorReport)
         });
       }

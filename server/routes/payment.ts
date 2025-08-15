@@ -5,6 +5,7 @@
  * Paystack is the only supported payment gateway.
  */
 import { Express, Request, Response } from 'express';
+import express from 'express';
 import * as paystackService from '../services/paystack';
 import { storage } from '../storage';
 
@@ -13,6 +14,19 @@ import { storage } from '../storage';
  */
 export const registerPaymentRoutes = (app: Express) => {
   console.log('Registering payment routes (Paystack)');
+  // Use raw body for webhook signature verification
+  app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), (req: Request, res: Response) => {
+    try {
+      const signature = req.headers['x-paystack-signature'] as string;
+      const rawBody = req.body as any; // raw Buffer
+      const parsed = rawBody && Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString('utf8')) : rawBody;
+      const event = paystackService.processWebhook(signature, parsed);
+      return res.status(200).json(event);
+    } catch (error) {
+      console.error('Error processing webhook:', error);
+      return res.status(500).json({ status: false, message: 'Failed to process webhook' });
+    }
+  });
 
   /**
    * Initialize a transaction
@@ -136,22 +150,10 @@ export const registerPaymentRoutes = (app: Express) => {
    * Handle Paystack webhook
    * POST /api/payments/webhook
    */
-  app.post('/api/payments/webhook', async (req: Request, res: Response) => {
+  // Handle different event types from the earlier webhook handler
+  app.post('/api/payments/_webhook-handler', async (req: Request, res: Response) => {
     try {
-      // Get signature from headers
-      const signature = req.headers['x-paystack-signature'] as string;
-      
-      if (!signature) {
-        return res.status(400).json({ 
-          status: false, 
-          message: 'Invalid webhook signature'
-        });
-      }
-      
-      // Process webhook
-      const event = paystackService.processWebhook(signature, req.body);
-      
-      // Handle different event types
+      const event = req.body as any;
       switch (event.event) {
         case 'charge.success':
           // Handle successful charge

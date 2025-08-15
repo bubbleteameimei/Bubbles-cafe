@@ -25,6 +25,7 @@ import { setupWordPressSyncSchedule } from "./wordpress-sync"; // Using the decl
 import { registerAnalyticsRoutes } from "./routes/analytics"; // Analytics endpoints
 import { registerEmailServiceRoutes } from "./routes/email-service"; // Email service routes
 import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark routes
+import { registerPaymentRoutes } from "./routes/payment"; // Paystack payment routes
 import { setCsrfToken, validateCsrfToken, csrfTokenToLocals, CSRF_TOKEN_NAME } from "./middleware/csrf-protection";
 import { runMigrations } from "./migrations"; // Import our custom migrations
 import { setupCors } from "./cors-setup";
@@ -91,7 +92,9 @@ app.use(validateCsrfToken({
     '/api/auth/verify-reset-token', // Allow token verification without CSRF protection
     '/api/analytics/vitals', // Performance metrics endpoint
     '/api/wordpress/sync/status', // WordPress sync status check
-    '/api/reader/bookmarks' // Allow anonymous bookmarks without CSRF protection
+    '/api/reader/bookmarks', // Allow anonymous bookmarks without CSRF protection
+    '/api/errors', // Client error reporting should be CSRF-exempt
+    '/api/payments/webhook' // Paystack webhook must be CSRF-exempt
   ]
 }));
 
@@ -148,6 +151,21 @@ const serverLogger = createLogger('Server');
 import setupDatabase from '../scripts/setup-db';
 import pushSchema from '../scripts/db-push';
 import seedFromWordPressAPI from '../scripts/api-seed';
+
+// Ensure /api/health mirrors /health by returning csrfToken when available
+app.get('/api/health', (req, res) => {
+  // Ensure a CSRF token is set
+  if (!req.session.csrfToken) {
+    const token = require('crypto').randomBytes(32).toString('hex');
+    req.session.csrfToken = token;
+    res.cookie(CSRF_TOKEN_NAME, token, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    });
+  }
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), csrfToken: req.session.csrfToken });
+});
 
 async function startServer() {
   try {
@@ -225,6 +243,7 @@ async function startServer() {
       registerEmailServiceRoutes(app);
       registerBookmarkRoutes(app);
       registerWordPressSyncRoutes(app);
+      registerPaymentRoutes(app);
 
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);
@@ -239,6 +258,7 @@ async function startServer() {
       registerEmailServiceRoutes(app);
       registerBookmarkRoutes(app);
       registerWordPressSyncRoutes(app);
+      registerPaymentRoutes(app);
 
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);

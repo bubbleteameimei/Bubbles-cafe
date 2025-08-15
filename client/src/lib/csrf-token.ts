@@ -70,9 +70,8 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
   const API_BASE_URL = import.meta.env.VITE_API_URL || '';
   
   try {
-    // Make a GET request to the health endpoint which returns the CSRF token
-    // The server will also set the CSRF cookie on the response
-    const response = await fetch(`${API_BASE_URL}/api/health`, {
+    // Request /health which returns csrfToken in JSON and sets cookie
+    const response = await fetch(`${API_BASE_URL}/health`, {
       method: 'GET',
       credentials: 'include',
       headers: {
