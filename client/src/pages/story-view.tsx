@@ -16,7 +16,7 @@ export default function StoryView({ slug }: StoryViewProps) {
   const { data: post, isLoading, error } = useQuery<Post>({
     queryKey: ["/api/posts", slug],
     queryFn: async () => {
-      const response = await fetch(`/api/posts/${slug}`);
+      const response = await fetch(`/api/posts/slug/${slug}`);
       if (!response.ok) throw new Error('Failed to fetch post');
       return response.json();
     },
