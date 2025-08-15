@@ -43,16 +43,32 @@ router.get("/wordpress/status", requireAuth, requireAdmin, async (req, res) => {
       recentActivity[0].action === "wordpress_sync" &&
       Date.now() - new Date(recentActivity[0].createdAt).getTime() < 60000; // Less than 1 minute ago
     
-    res.json({
-      enabled,
-      isRunning,
-      lastSync: lastSync?.toISOString(),
-      nextSync: nextSync?.toISOString(),
-      postsCount,
-      syncInterval: interval,
-      totalProcessed: postsCount, // For now, assume all posts are from WordPress
-      errors: [] // TODO: Implement error tracking
-    });
+          // Basic error aggregation from recent activity logs
+      const recentLogs = await storage.getRecentActivity(50);
+      const errorLogs = recentLogs
+        .filter(l => l.action.includes("wordpress_sync"))
+        .filter(l => {
+          const d = (l as any).details || {};
+          const status = (d.status || '').toString().toLowerCase();
+          return status === 'error' || !!d.error || !!d.message && (d.message as string).toLowerCase().includes('error');
+        })
+        .map(l => ({
+          id: (l as any).id?.toString?.() || '',
+          timestamp: (l as any).createdAt?.toISOString?.() || new Date().toISOString(),
+          message: (l as any).details?.message || (l as any).details?.error || 'Unknown error',
+          details: (l as any).details || {}
+        }));
+
+      res.json({
+        enabled,
+        isRunning,
+        lastSync: lastSync?.toISOString(),
+        nextSync: nextSync?.toISOString(),
+        postsCount,
+        syncInterval: interval,
+        totalProcessed: postsCount,
+        errors: errorLogs
+      });
   } catch (error) {
     console.error("[Admin] Error fetching WordPress sync status:", error);
     res.status(500).json({ error: "Failed to fetch sync status" });
@@ -356,6 +372,49 @@ router.post('/posts/bulk', requireAuth, requireAdmin, async (req, res) => {
     console.error("[Admin] Error processing bulk action:", error);
     res.status(500).json({ error: 'Failed to process bulk action' });
   }
+});
+
+router.get('/notifications', requireAuth, requireAdmin, async (_req, res) => {
+	try {
+		const notifications = await storage.getUnreadAdminNotifications();
+		res.json(notifications);
+	} catch (error) {
+		console.error('[Admin] Error fetching notifications:', error);
+		res.status(500).json({ error: 'Failed to fetch notifications' });
+	}
+});
+
+router.post('/notifications/:id/read', requireAuth, requireAdmin, async (req, res) => {
+	try {
+		const id = parseInt(req.params.id, 10);
+		await storage.markNotificationAsRead(id);
+		res.json({ success: true });
+	} catch (error) {
+		console.error('[Admin] Error marking notification as read:', error);
+		res.status(500).json({ error: 'Failed to mark notification as read' });
+	}
+});
+
+router.get('/site-settings', requireAuth, requireAdmin, async (_req, res) => {
+	try {
+		const settings = await storage.getSiteSettings();
+		res.json(settings);
+	} catch (error) {
+		console.error('[Admin] Error fetching site settings:', error);
+		res.status(500).json({ error: 'Failed to fetch site settings' });
+	}
+});
+
+router.post('/site-settings', requireAuth, requireAdmin, async (req, res) => {
+	try {
+		const schema = z.object({ key: z.string().min(1), value: z.string() });
+		const { key, value } = schema.parse(req.body);
+		const updated = await storage.updateSiteSetting(key, value);
+		res.json(updated);
+	} catch (error) {
+		console.error('[Admin] Error updating site setting:', error);
+		res.status(400).json({ error: 'Failed to update site setting' });
+	}
 });
 
 export { router as adminRoutes };

@@ -1,28 +1,42 @@
-// This is a placeholder file until Zustand is properly installed
-// Using React's useState as a temporary solution
-
 type Theme = 'light' | 'dark' | 'system';
 
-interface ThemeState {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-  toggleTheme: () => void;
+interface ThemeStoreState {
+	getTheme: () => Theme;
+	setTheme: (theme: Theme) => void;
+	toggleTheme: () => void;
+	subscribe: (listener: () => void) => () => void;
 }
 
-// Default state that will be replaced with proper Zustand store
-let state: Theme = 'system';
+let currentTheme: Theme = 'system';
+const listeners = new Set<() => void>();
 
-// Mock Zustand store
-export const useThemeStore = () => {
-  return {
-    theme: state,
-    setTheme: (theme: Theme) => { state = theme; },
-    toggleTheme: () => { 
-      state = state === 'light' 
-        ? 'dark' 
-        : state === 'dark' 
-          ? 'system' 
-          : 'light'; 
-    }
-  };
+function notifyListeners() {
+	for (const listener of listeners) listener();
+}
+
+const store: ThemeStoreState = {
+	getTheme: () => currentTheme,
+	setTheme: (theme: Theme) => {
+		currentTheme = theme;
+		notifyListeners();
+	},
+	toggleTheme: () => {
+		currentTheme = currentTheme === 'light' ? 'dark' : currentTheme === 'dark' ? 'system' : 'light';
+		notifyListeners();
+	},
+	subscribe: (listener: () => void) => {
+		listeners.add(listener);
+		return () => listeners.delete(listener);
+	}
 };
+
+export function useThemeStore() {
+	// Defer importing React to avoid SSR issues if any
+	const { useSyncExternalStore } = require('react') as typeof import('react');
+	const theme = useSyncExternalStore(store.subscribe, store.getTheme, store.getTheme);
+	return {
+		theme,
+		setTheme: store.setTheme,
+		toggleTheme: store.toggleTheme
+	};
+}
