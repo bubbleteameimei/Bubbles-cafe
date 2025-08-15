@@ -60,7 +60,7 @@ export default function Navigation() {
         padding: 0
       }}
     >
-      <div className="w-full flex h-16 md:h-18 items-center justify-between px-4 md:px-6">
+      <div className="w-full flex h-16 items-center justify-between px-4">
         {/* Left section with menu toggle for all screen sizes */}
         <div className="flex items-center -mt-1">
           {/* Menu toggle for all devices */}
@@ -78,7 +78,7 @@ export default function Navigation() {
             </SheetTrigger>
             <SheetContent 
               side="left" 
-              className="p-0 w-[280px] sm:w-[320px] md:w-[350px] lg:w-[400px] max-w-[85vw]"
+              className="p-0 w-[280px] max-w-[85vw]"
             >
               {/* Sidebar navigation for all screen sizes */}
               <div className="border-b border-border/30"></div>
