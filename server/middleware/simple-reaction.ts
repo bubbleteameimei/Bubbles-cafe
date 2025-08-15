@@ -43,14 +43,14 @@ export async function handleReaction(req: Request, res: Response): Promise<void>
     if (isLike === true) {
       await db.update(posts)
         .set({ 
-          likesCount: sql`COALESCE("likesCount", 0) + 1` 
+          likesCount: sql`COALESCE(likes_count, 0) + 1` 
         })
         .where(eq(posts.id, postId));
       console.log(`[Reaction] Incremented likes for post ${postId}`);
     } else if (isLike === false) {
       await db.update(posts)
         .set({ 
-          dislikesCount: sql`COALESCE("dislikesCount", 0) + 1` 
+          dislikesCount: sql`COALESCE(dislikes_count, 0) + 1` 
         })
         .where(eq(posts.id, postId));
       console.log(`[Reaction] Incremented dislikes for post ${postId}`);

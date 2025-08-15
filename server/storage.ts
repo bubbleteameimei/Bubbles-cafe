@@ -2313,8 +2313,8 @@ export class DatabaseStorage implements IStorage {
       // Use raw SQL to avoid column name issues
       await db.execute(sql`
         UPDATE posts 
-        SET "likesCount" = ${counts.likesCount}, 
-            "dislikesCount" = ${counts.dislikesCount}
+        SET likes_count = ${counts.likesCount}, 
+            dislikes_count = ${counts.dislikesCount}
         WHERE id = ${postId}
       `);
 
@@ -2650,11 +2650,11 @@ export class DatabaseStorage implements IStorage {
     if (existingAnalytics.length > 0) {
       const [updated] = await db.update(analytics)
         .set({
-          pageViews: data.pageViews,
-          uniqueVisitors: data.uniqueVisitors,
-          averageReadTime: data.averageReadTime,
-          bounceRate: data.bounceRate,
-          deviceStats: data.deviceStats,
+          pageViews: data.pageViews ?? (await this.getPostAnalytics(postId))?.pageViews ?? 0,
+          uniqueVisitors: data.uniqueVisitors ?? (await this.getPostAnalytics(postId))?.uniqueVisitors ?? 0,
+          averageReadTime: data.averageReadTime ?? (await this.getPostAnalytics(postId))?.averageReadTime ?? 0,
+          bounceRate: data.bounceRate ?? (await this.getPostAnalytics(postId))?.bounceRate ?? 0,
+          deviceStats: data.deviceStats ?? (await this.getPostAnalytics(postId))?.deviceStats ?? {},
           updatedAt: new Date()
         })
         .where(eq(analytics.postId, postId))
