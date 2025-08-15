@@ -1436,8 +1436,8 @@ export class DatabaseStorage implements IStorage {
       
       // Exclude WordPress content if requested (for community sections)
       if (filters.excludeWordPressContent === true) {
-        filteredPosts = filteredPosts.filter(post => {
-          const metadata = post.metadata || {};
+        filteredPosts = filteredPosts.filter((post: any) => {
+          const metadata: Record<string, any> = post.metadata || {};
           // Exclude posts that have WordPress source or are admin posts
           const isWordPressImport = (metadata as any).wordpressId || (metadata as any).source === 'wordpress';
           const isAdminPost = (metadata as any).isAdminPost === true;
@@ -1544,12 +1544,13 @@ export class DatabaseStorage implements IStorage {
               slug: post.slug,
               excerpt: post.excerpt,
               authorId: post.author_id,
-              isSecret: post.is_secret || false,
-              matureContent: post.mature_content || false,
+              isSecret: !!post.is_secret,
+              isAdminPost: post.is_admin_post ?? null,
+              matureContent: !!post.mature_content,
               themeCategory: post.theme_category,
               metadata: post.metadata || {},
               createdAt: post.created_at instanceof Date ? post.created_at : new Date(post.created_at),
-              readingTimeMinutes: post.reading_time_minutes || Math.ceil(post.content.length / 1000),
+              readingTimeMinutes: post.reading_time_minutes || Math.ceil((post.content || '').length / 1000),
               likesCount: post.likes_count || 0,
               dislikesCount: post.dislikes_count || 0
             };
@@ -1946,10 +1947,15 @@ export class DatabaseStorage implements IStorage {
 
       // Return properly formatted comment
       return {
-        ...newComment,
-        createdAt: safeCreateDate(newComment.createdAt),
-        editedAt: newComment.editedAt ? safeCreateDate(newComment.editedAt) : null,
+        id: newComment.id,
+        content: newComment.content,
+        postId: newComment.postId ?? newComment.post_id ?? null,
+        userId: newComment.userId ?? newComment.user_id ?? null,
+        createdAt: safeCreateDate(newComment.createdAt ?? newComment.created_at),
+        parentId: newComment.parentId ?? newComment.parent_id ?? null,
         is_approved: (newComment as any).is_approved ?? (newComment as any).approved ?? false,
+        edited: !!newComment.edited,
+        editedAt: newComment.editedAt ? safeCreateDate(newComment.editedAt) : (newComment.edited_at ? safeCreateDate(newComment.edited_at) : null),
         metadata: typeof (newComment as any).metadata === 'string' 
           ? JSON.parse((newComment as any).metadata) 
           : (newComment as any).metadata || {}
