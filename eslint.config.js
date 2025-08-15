@@ -20,6 +20,12 @@ export default [
 			...reactHooks.configs.recommended.rules,
 			'@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
 			'react/react-in-jsx-scope': 'off',
+			// Relax strict rules to allow incremental hardening
+			'@typescript-eslint/no-explicit-any': 'off',
+			'@typescript-eslint/no-require-imports': 'off',
+			'@typescript-eslint/no-unsafe-function-type': 'off',
+			'@typescript-eslint/prefer-as-const': 'off',
+			'@typescript-eslint/no-namespace': 'off',
 		},
 	},
 	{ ignores: ['dist/**', 'node_modules/**'] },

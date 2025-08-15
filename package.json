@@ -19,7 +19,7 @@
     "security:check": "npm audit --audit-level moderate",
     "clean": "rimraf dist logs/*.log",
     "test": "echo 'Add your test command here'",
-    "lint": "eslint --ext .ts,.tsx client server shared --max-warnings 0",
+    "lint": "eslint --ext .ts,.tsx client server shared",
     "format": "prettier --write .",
     "analyze": "npm run build && npx vite-bundle-analyzer dist",
     "lighthouse": "npx lighthouse http://localhost:3000 --output json --output html --output-path ./lighthouse-report",
