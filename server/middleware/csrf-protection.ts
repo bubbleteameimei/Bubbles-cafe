@@ -3,6 +3,10 @@
  * 
  * This middleware provides CSRF protection using a double-submit pattern
  * with the session to store the token instead of relying on cookie-parser.
+ * 
+ * SECURITY FIX: Tokens are no longer exposed via non-httpOnly cookies.
+ * Instead, tokens are delivered through a secure endpoint that requires
+ * proper authentication or session validation.
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -39,31 +43,19 @@ export function getTokenFromRequest(req: Request): string | null {
 }
 
 /**
- * Set CSRF token in the session and as a cookie
+ * Set CSRF token in the session ONLY (no cookie exposure)
+ * SECURITY FIX: Tokens are no longer exposed via cookies
  */
 export function setCsrfToken(secureCookie = false) {
   return (req: Request, res: Response, next: NextFunction) => {
     // Skip if a token is already set
     if (req.session.csrfToken) {
-      // Also set the token in the cookie for client-side access
-      res.cookie(CSRF_TOKEN_NAME, req.session.csrfToken, {
-        httpOnly: false, // Needs to be accessible by JavaScript
-        secure: secureCookie,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Required for cross-domain cookies
-      });
       return next();
     }
 
-    // Generate a new token
+    // Generate a new token and store ONLY in session
     const token = generateToken();
     req.session.csrfToken = token;
-
-    // Set the token as a cookie for client-side access
-    res.cookie(CSRF_TOKEN_NAME, token, {
-      httpOnly: false, // Needs to be accessible by JavaScript
-      secure: secureCookie,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Required for cross-domain cookies
-    });
 
     next();
   };
@@ -185,6 +177,28 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
 
     next();
   };
+}
+
+/**
+ * SECURITY FIX: New secure endpoint to retrieve CSRF token
+ * This endpoint requires a valid session and returns the token in the response body
+ * instead of exposing it via cookies
+ */
+export function getCsrfToken(req: Request, res: Response): void {
+  // Ensure user has a valid session
+  if (!req.session || !req.session.csrfToken) {
+    res.status(401).json({
+      error: 'No valid session found',
+      code: 'SESSION_REQUIRED'
+    });
+    return;
+  }
+
+  // Return the token in the response body (not as a cookie)
+  res.json({
+    csrfToken: req.session.csrfToken,
+    timestamp: new Date().toISOString()
+  });
 }
 
 // Add type definitions

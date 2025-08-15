@@ -6,19 +6,10 @@ import * as schema from "@shared/schema";
 // Configure WebSocket for Neon serverless with enhanced error handling
 try {
 	neonConfig.webSocketConstructor = ws;
-	console.log('Configured Neon with WebSocket support');
 } catch (error) {
 	console.error('Error configuring Neon WebSocket:', error);
 	// Fallback to default HTTP mode if WebSocket fails
-	console.log('Falling back to HTTP mode for Neon connections');
 }
-
-// Debug environment loading
-console.log('Environment loading debug:', {
-	nodeEnv: process.env.NODE_ENV,
-	hasDatabase: !!process.env.DATABASE_URL,
-	databaseLength: process.env.DATABASE_URL?.length
-});
 
 // Validate DATABASE_URL
 if (!process.env.DATABASE_URL) {
@@ -41,7 +32,7 @@ try {
 
 	// Test the connection
 	pool.on('connect', () => {
-		console.log('Database connection established');
+		// Connection established successfully
 	});
 
 	pool.on('error', (err) => {
@@ -50,7 +41,7 @@ try {
 
 	db = drizzle({ client: pool, schema });
 	
-	console.log('Database configuration completed successfully');
+	// Database configuration completed successfully
 } catch (error) {
 	console.error('Failed to initialize database:', error);
 	throw error;

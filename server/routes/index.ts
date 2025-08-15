@@ -16,6 +16,7 @@ import { registerUserFeedbackRoutes } from '../routes/user-feedback';
 import { storage } from '../storage';
 import { handleError } from '../utils/error-handler';
 import healthRoutes from './health';
+import { getCsrfToken } from '../middleware/csrf-protection';
 import { z } from 'zod';
 
 const routesLogger = createSecureLogger('RoutesIndex');
@@ -26,6 +27,10 @@ export function registerModularRoutes(app: Express) {
     app.use('/health', healthRoutes);
     app.use('/api/health', healthRoutes);
     routesLogger.info('Health check routes registered');
+
+    // SECURITY FIX: Secure CSRF token endpoint
+    app.get('/api/csrf-token', getCsrfToken);
+    routesLogger.info('Secure CSRF token endpoint registered');
 
     // Authentication routes
     app.use('/api/auth', authRouter);

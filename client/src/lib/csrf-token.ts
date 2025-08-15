@@ -1,100 +1,71 @@
 /**
  * CSRF Token Utilities
  * 
- * This module handles functionality for retrieving and applying
+ * This module provides utilities for handling CSRF tokens and automatically applying
  * CSRF tokens to API requests for enhanced security.
- * Uses session-based tokens via cookies.
  */
 
 // Constants for CSRF token handling
-export const CSRF_COOKIE_NAME = 'XSRF-TOKEN';
 export const CSRF_HEADER_NAME = 'X-CSRF-Token';
 
-// Track if we've fetched a token
+// Store the CSRF token in memory (not in cookies for security)
 let csrfToken: string | null = null;
 
 /**
- * Get the CSRF token from cookies
+ * Get the CSRF token from memory
  * @returns The CSRF token or null if not found
  */
 export function getCsrfToken(): string | null {
-  // Return cached token if we have one
+  // Return cached token if available
   if (csrfToken) return csrfToken;
-
-  try {
-    // Use a more reliable cookie parsing approach with regex
-    const match = document.cookie.match(new RegExp(
-      '(^|;)\\s*' + CSRF_COOKIE_NAME + '\\s*=\\s*([^;]+)')
-    );
-    
-    if (match && match[2]) {
-      // Store token in memory and return it
-      csrfToken = decodeURIComponent(match[2]);
-      console.log(`[CSRF] Retrieved token from cookies: ${csrfToken.substring(0, 10)}...`);
-      return csrfToken;
-    }
-    
-    // Alternative parsing method as a fallback
-    const cookies = document.cookie.split(';');
-    for (const cookie of cookies) {
-      const parts = cookie.trim().split('=');
-      if (parts.length >= 2) {
-        const cookieName = parts[0];
-        const cookieValue = parts.slice(1).join('='); // Handle values with = in them
-        
-        if (cookieName === CSRF_COOKIE_NAME) {
-          // Store token in memory and return it
-          csrfToken = cookieValue ? decodeURIComponent(cookieValue) : null;
-          console.log(`[CSRF] Retrieved token via fallback: ${csrfToken?.substring(0, 10)}...`);
-          return csrfToken;
-        }
-      }
-    }
-    
-    console.warn('[CSRF] No token found in cookies');
-    return null;
-  } catch (error) {
-    console.error('[CSRF] Error retrieving CSRF token:', error);
-    return null;
-  }
+  
+  return null;
 }
 
 /**
- * Fetch a new CSRF token from the server if needed
- * @returns Promise resolving to the token
+ * Set the CSRF token in memory
+ * @param token The CSRF token to store
+ */
+export function setCsrfToken(token: string): void {
+  csrfToken = token;
+}
+
+/**
+ * Clear the CSRF token from memory
+ */
+export function clearCsrfToken(): void {
+  csrfToken = null;
+}
+
+/**
+ * Fetch a new CSRF token from the server
+ * SECURITY FIX: Now uses secure endpoint instead of cookies
  */
 export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
   if (csrfToken) return csrfToken;
-  
-  // Get the API base URL from environment variable
-  const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-  
+
   try {
-    // Request /health which returns csrfToken in JSON and sets cookie
-    const response = await fetch(`${API_BASE_URL}/health`, {
+    // Use the new secure CSRF token endpoint
+    const response = await fetch('/api/csrf-token', {
       method: 'GET',
-      credentials: 'include',
+      credentials: 'include', // Include session cookies
       headers: {
-        'Accept': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     });
-    
+
     if (!response.ok) {
       console.error('Failed to fetch CSRF token, server responded with:', response.status);
       return null;
     }
-    
-    // Get the response JSON which includes the token
+
     const data = await response.json();
-    
-    // Store the token from the response
     if (data && data.csrfToken) {
       csrfToken = data.csrfToken;
       return csrfToken;
     }
-    
-    // If the server didn't include the token in the response, try to get it from cookies
-    return getCsrfToken();
+
+    return null;
   } catch (error) {
     console.error('Error fetching CSRF token:', error);
     return null;
@@ -103,82 +74,68 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
 
 /**
  * Apply CSRF token to fetch options
- * @param options Fetch options object
+ * @param options The fetch options to update
  * @returns Updated fetch options with CSRF token
  */
 export function applyCSRFToken(options: RequestInit = {}): RequestInit {
-  // Try to get a token
-  let token = getCsrfToken();
-  
-  // If no token found, try to extract directly from document.cookie as a last resort
-  if (!token) {
-    try {
-      // One more attempt with direct regex extraction
-      const match = document.cookie.match(/(^|;\s*)XSRF-TOKEN\s*=\s*([^;]+)/);
-      if (match && match[2]) {
-        token = decodeURIComponent(match[2]);
-        console.log(`[CSRF] Retrieved token directly: ${token.substring(0, 10)}...`);
-        // Update the cached token
-        csrfToken = token;
-      }
-    } catch (e) {
-      console.error('[CSRF] Error in final token extraction attempt:', e);
+  try {
+    let token = getCsrfToken();
+    
+    // If no token in memory, try to fetch one
+    if (!token) {
+      // Note: This is async but we can't make this function async
+      // The caller should ensure fetchCsrfTokenIfNeeded() is called first
+      console.warn('[CSRF] No token available, ensure fetchCsrfTokenIfNeeded() is called first');
+      return options;
     }
-  }
-  
-  // If still no token found, return original options but log a warning
-  if (!token) {
-    console.warn('[CSRF] No CSRF token found for request, request may fail');
-    // Still try to include credentials to get a token cookie even if we don't have one now
-    return { 
+
+    // Create new headers object if none exists
+    const headers = new Headers(options.headers);
+    headers.set(CSRF_HEADER_NAME, token);
+    
+    return {
       ...options,
-      credentials: 'include' 
+      headers,
     };
+  } catch (e) {
+    console.error('[CSRF] Error applying CSRF token:', e);
+    return options;
   }
-  
-  // Create headers if they don't exist
-  const headers = new Headers(options.headers || {});
-  
-  // Add token to headers
-  headers.set(CSRF_HEADER_NAME, token);
-  
-  // Log the token we're using (first 10 chars for security)
-  console.log(`[CSRF] Applied token to request: ${token.substring(0, 10)}...`);
-  
-  return {
-    ...options,
-    headers,
-    credentials: 'include' // Always include credentials
-  };
 }
 
 /**
  * Create fetch options with CSRF token for non-GET requests
- * @param method HTTP method
- * @param body Request body (will be JSON stringified)
+ * @param method The HTTP method
+ * @param body The request body
  * @returns Fetch options with CSRF token and content type
  */
 export function createCSRFRequest(method: string, body?: any): RequestInit {
   const options: RequestInit = {
     method,
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     },
-    credentials: 'include' // Always include credentials
+    credentials: 'include',
   };
-  
-  // Add body if provided
+
   if (body) {
     options.body = JSON.stringify(body);
   }
-  
+
   // Apply CSRF token
   return applyCSRFToken(options);
 }
 
 /**
- * Initialize CSRF protection for the application (simplified)
+ * Initialize CSRF protection for the application
+ * SECURITY FIX: Now uses secure endpoint instead of cookie-based approach
  */
 export async function initCSRFProtection(): Promise<void> {
-  console.log('CSRF protection initialized successfully');
+  try {
+    // Fetch initial CSRF token
+    await fetchCsrfTokenIfNeeded();
+    console.log('CSRF protection initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize CSRF protection:', error);
+  }
 }

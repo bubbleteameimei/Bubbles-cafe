@@ -105,17 +105,10 @@ setupOAuth(app);
 
 // Add health check endpoint with CSRF token initialization
 app.get('/health', (req, res) => {
-  // Ensure a CSRF token is set
+  // Ensure a CSRF token is set in session only
   if (!req.session.csrfToken) {
     const token = require('crypto').randomBytes(32).toString('hex');
     req.session.csrfToken = token;
-    
-    // Set the token as a cookie for client-side access
-    res.cookie(CSRF_TOKEN_NAME, token, {
-      httpOnly: false, // Must be accessible by JavaScript
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Required for cross-domain cookies
-    });
   }
   
   res.json({ 
@@ -154,15 +147,10 @@ import seedFromWordPressAPI from '../scripts/api-seed';
 
 // Ensure /api/health mirrors /health by returning csrfToken when available
 app.get('/api/health', (req, res) => {
-  // Ensure a CSRF token is set
+  // Ensure a CSRF token is set in session only
   if (!req.session.csrfToken) {
     const token = require('crypto').randomBytes(32).toString('hex');
     req.session.csrfToken = token;
-    res.cookie(CSRF_TOKEN_NAME, token, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-    });
   }
   res.json({ status: 'ok', timestamp: new Date().toISOString(), csrfToken: req.session.csrfToken });
 });
@@ -181,43 +169,49 @@ async function startServer() {
       serverLogger.info('Setting up database connection...');
       await setupDatabase();
       
-      // Check database connection
+      // Check database connection and run migrations
       try {
-        // This may fail if tables don't exist yet
+        serverLogger.info('Running database migrations...');
+        await runMigrations();
+        serverLogger.info('Database migrations completed');
+        
+        // Check if posts table has data
         const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
         serverLogger.info('Database connected, tables exist', { postsCount });
         
-        // Run migrations to ensure all tables defined in the schema exist
-        serverLogger.info('Running database migrations to create missing tables...');
-        await runMigrations();
-        serverLogger.info('Database migrations completed');
-    
+        // Seed database if no posts exist
         if (postsCount === 0) {
-          serverLogger.info('Tables exist but no posts - seeding database from WordPress API...');
-          await seedFromWordPressAPI();
-          serverLogger.info('Database seeding from WordPress API completed');
+          serverLogger.info('No posts found - seeding database from WordPress API...');
+          try {
+            await seedFromWordPressAPI();
+            serverLogger.info('Database seeding from WordPress API completed');
+          } catch (seedError) {
+            serverLogger.warn('WordPress API seeding failed, falling back to XML seeding', {
+              error: seedError instanceof Error ? seedError.message : 'Unknown error'
+            });
+            await seedDatabase();
+            serverLogger.info('Database seeding from XML completed');
+          }
         }
-      } catch (tableError) {
-        serverLogger.warn('Database tables check failed, attempting to create schema', { 
-          error: tableError instanceof Error ? tableError.message : 'Unknown error' 
+      } catch (dbError) {
+        serverLogger.error('Database setup failed', { 
+          error: dbError instanceof Error ? dbError.message : 'Unknown error' 
         });
         
-        // If tables don't exist, push the schema
-        serverLogger.info('Creating database schema...');
-        await pushSchema();
-        serverLogger.info('Schema created, seeding data from WordPress API...');
-        
+        // Try to create schema as last resort
+        serverLogger.info('Attempting to create database schema...');
         try {
-          await seedFromWordPressAPI();
-          serverLogger.info('Database seeding from WordPress API completed');
-        } catch (seedError) {
-          serverLogger.error('Error seeding from WordPress API, falling back to XML seeding', {
-            error: seedError instanceof Error ? seedError.message : 'Unknown error'
-          });
+          await pushSchema();
+          serverLogger.info('Schema created successfully');
           
-          // Fall back to XML seeding if WordPress API fails
+          // Seed the database
           await seedDatabase();
-          serverLogger.info('Database seeding from XML completed');
+          serverLogger.info('Database seeded successfully');
+        } catch (finalError) {
+          serverLogger.error('Critical database setup failure', {
+            error: finalError instanceof Error ? finalError.message : 'Unknown error'
+          });
+          throw new Error(`Database setup failed: ${finalError instanceof Error ? finalError.message : 'Unknown error'}`);
         }
       }
     } catch (dbError) {
@@ -355,10 +349,20 @@ process.on('uncaughtException', (error) => {
 
 // Handle unhandled rejections
 process.on('unhandledRejection', (reason, _promise) => {
+  const errorMessage = reason instanceof Error ? reason.message : String(reason);
+  const errorStack = reason instanceof Error ? reason.stack : undefined;
+  
   serverLogger.error('Unhandled promise rejection', {
-    reason: reason instanceof Error ? reason.message : String(reason),
-    stack: reason instanceof Error ? reason.stack : undefined
+    reason: errorMessage,
+    stack: errorStack
   });
+  
+  // In production, we might want to exit the process
+  // In development, we can continue but log the error
+  if (process.env.NODE_ENV === 'production') {
+    serverLogger.error('Exiting due to unhandled promise rejection in production');
+    process.exit(1);
+  }
 });
 
 export default app;
