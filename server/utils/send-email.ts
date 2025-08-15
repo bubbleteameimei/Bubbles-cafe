@@ -2,16 +2,14 @@ import { createTransport } from 'nodemailer';
 
 // Create a function to get the transporter with the latest environment variables
 function getGmailTransporter() {
-  console.log('[EmailService] Creating Gmail transporter with credentials:');
-  console.log('[EmailService] User:', process.env.GMAIL_USER ? process.env.GMAIL_USER : 'Not set');
-  console.log('[EmailService] Password:', process.env.GMAIL_APP_PASSWORD ? 'Set' : 'Not set');
+  console.log('[EmailService] Creating Gmail transporter');
   
   return createTransport({
     host: 'smtp.gmail.com',
     port: 465,
     secure: true,
     auth: {
-      user: process.env.GMAIL_USER || 'vantalison@gmail.com',
+      user: process.env.GMAIL_USER || process.env.GMAIL,
       pass: process.env.GMAIL_APP_PASSWORD?.trim()
     },
     connectionTimeout: 10000,
@@ -84,7 +82,7 @@ export async function sendNewsletterWelcomeEmail(email: string): Promise<boolean
   // Add random ID to ensure uniqueness and bypass caching
   const randomId = Math.random().toString(36).substring(2, 15);
   
-  const fromEmail = process.env.GMAIL_USER || 'vantalison@gmail.com';
+  const fromEmail = process.env.GMAIL_USER || process.env.GMAIL || 'no-reply@bubblescafe.space';
   const siteName = 'Bubble\'s Cafe';
   
   // SIMPLIFIED TITLE AS REQUESTED WITH RANDOM ID TO PREVENT CACHING

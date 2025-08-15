@@ -17,7 +17,6 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
 import { ProtectedRoute } from './lib/protected-route';
-import ScrollToTopButton from './components/ScrollToTopButton';
 // Import our enhanced page transition component
 // EnhancedPageTransition removed to fix loading animation conflicts
 // Add critical fullwidth fix stylesheet
@@ -442,9 +441,6 @@ function App() {
                             </PullToRefresh>
                             {/* Site-wide elements outside of the main layout */}
                             <CookieConsent />
-                            {location !== '/' && (
-                              <ScrollToTopButton position="bottom-right" /* Using inline styles for reliable positioning */ />
-                            )}
                             {/* Conditionally show FeedbackButton */}
                             <ConditionalFeedbackButton />
                             

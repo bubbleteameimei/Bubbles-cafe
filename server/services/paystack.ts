@@ -244,8 +244,18 @@ export const cancelSubscription = async (code: string, token: string) => {
 export const processWebhook = (signature: string, body: any) => {
   try {
     console.log(`[PAYSTACK] Processing webhook event: ${body.event}`);
-    
-    // Todo: Verify webhook signature when implementing in production
+    // Verify webhook signature
+    const secret = process.env.PAYSTACK_SECRET_KEY || process.env.PAYSTACK_LIVE_SECRET_KEY;
+    if (!secret) {
+      throw new Error('Paystack secret key not configured');
+    }
+    const computed = require('crypto')
+      .createHmac('sha512', secret)
+      .update(JSON.stringify(body))
+      .digest('hex');
+    if (!signature || signature !== computed) {
+      throw new Error('Invalid webhook signature');
+    }
     
     // Return event data for processing
     return {
