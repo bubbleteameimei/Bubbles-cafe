@@ -428,7 +428,7 @@ function App() {
                             {/* Wrap AppContent with PullToRefresh */}
                             <PullToRefresh onRefresh={handleDataRefresh}>
                               {/* Add PerformanceMonitor for metrics collection */}
-                              <PerformanceMonitor />
+                              {import.meta.env.DEV ? <PerformanceMonitor /> : null}
                               <div className="app-content">
                                 <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen">
                                   <div className="animate-pulse text-center">
