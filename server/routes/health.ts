@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
 import { createLogger } from '../utils/debug-logger';
+import { posts } from '@shared/schema';
 
 const logger = createLogger('Health');
 
@@ -44,8 +45,8 @@ router.get('/detailed', async (req: Request, res: Response) => {
     
     try {
       const dbStartTime = Date.now();
-      // Perform a lightweight select from a known table or posts count
-      await db.query.posts?.findFirst?.({});
+      // Perform a lightweight select from a known table
+      await db.select().from(posts).limit(1);
       dbResponseTime = Date.now() - dbStartTime;
       dbStatus = 'connected';
     } catch (_dbError) {
@@ -94,7 +95,7 @@ router.get('/detailed', async (req: Request, res: Response) => {
 router.get('/ready', async (req: Request, res: Response) => {
   try {
     // Try a quick no-op query to ensure DB layer is initialized
-    await db.query.posts?.findFirst?.({});
+    await db.select().from(posts).limit(1);
     
     res.json({ 
       status: 'ready',

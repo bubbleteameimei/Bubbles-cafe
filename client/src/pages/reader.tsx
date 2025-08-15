@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 // Import our reader-specific gentle scroll memory hook
 import useReaderGentleScroll from "@/hooks/useReaderGentleScroll";
 import { SupportWritingCard } from "@/components/SupportWritingCard";
+import { fetchCsrfTokenIfNeeded, applyCSRFToken } from "@/lib/csrf-token";
 
 import {
   Dialog,
@@ -906,7 +907,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     line-height: 1.7;
   }
   .story-content blockquote::before {
-    content: """;
+    content: "“";
     position: absolute;
     left: 0.5em;
     top: 0.1em;
