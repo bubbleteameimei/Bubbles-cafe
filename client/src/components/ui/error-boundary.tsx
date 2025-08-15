@@ -198,7 +198,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   {errorMessage}
                 </p>
                 
-                {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
+                {import.meta.env.DEV && this.state.errorInfo && (
                   <div className="space-y-2">
                     <p className="text-xs opacity-70" style={{
                       fontFamily: "'Special Elite', sans-serif",

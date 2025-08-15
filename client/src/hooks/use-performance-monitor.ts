@@ -150,7 +150,7 @@ export function useMemoryMonitor(componentName: string) {
 
   useEffect(() => {
     // Only monitor memory in development or when explicitly enabled
-    if (process.env.NODE_ENV !== 'development' && !localStorage.getItem('memory-monitor')) {
+    if (!import.meta.env.DEV && !localStorage.getItem('memory-monitor')) {
       return;
     }
 
