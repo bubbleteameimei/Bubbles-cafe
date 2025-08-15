@@ -321,8 +321,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       try {
         if (routeSlug) {
           // If slug is provided, fetch specific post
-          // Use the community endpoint if this is community content
-          const endpoint = isCommunityContent ? `/api/posts/community/${routeSlug}` : `/api/posts/${routeSlug}`;
+          // Use slug endpoint (community posts are in the same posts table)
+          const endpoint = `/api/posts/slug/${routeSlug}`;
           const response = await fetch(endpoint);
           if (!response.ok) throw new Error(`Failed to fetch ${isCommunityContent ? 'community' : ''} post`);
           const post = await response.json();
@@ -339,83 +339,50 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             },
             date: post.date || post.createdAt || new Date().toISOString()
           };
-          
-          return { posts: [normalizedPost], totalPages: 1, total: 1 };
-        } else {
-          // Fetch all posts from internal API (your WordPress stories are already synced here)
-          console.log('[Reader] Fetching posts...', { isCommunityContent });
-          
-          // Always use the core posts endpoint for maximum reliability with cache busting
-          const response = await fetch(`/api/posts?limit=100&_t=${Date.now()}`);
-          if (!response.ok) {
-            throw new Error('Failed to fetch posts from database');
-          }
-          
-          const data = await response.json();
-          console.log('[Reader] Successfully fetched posts:', {
-            totalPosts: data.posts?.length,
-            hasMore: data.hasMore,
-            firstPost: data.posts?.[0]?.title
-          });
-          
-          if (!data.posts || data.posts.length === 0) {
-            throw new Error('No stories available');
-          }
-          
-          // Normalize posts to ensure consistent format
-          const normalizedPosts = data.posts.map((post: any) => ({
-            ...post,
-            title: {
-              rendered: post.title?.rendered || post.title || ''
-            },
-            content: {
-              rendered: post.content?.rendered || post.content || ''
-            },
-            date: post.date || post.created_at || new Date().toISOString()
-          }));
-          
-          return { posts: normalizedPosts, totalPages: 1, total: normalizedPosts.length };
+          return { posts: [normalizedPost] };
         }
-      } catch (error) {
-        console.error('[Reader] Error fetching posts:', error);
-        // Add fallback error handling here
-        console.error('[Reader] Error or no posts available:', { error, currentIndex });
         
-        // Fallback: attempt to load from WordPress API directly to avoid blank screen
-        try {
-          const wp = await import('@/lib/wordpress-api');
-          const wpRes: any = await wp.fetchWordPressPosts({ page: 1, perPage: 20, includeContent: true });
-          const wpPosts = wpRes.posts || [];
-          if (wpPosts.length > 0) {
-            console.log('[Reader] Fallback succeeded with WordPress posts:', wpPosts.length);
-            return { posts: wpPosts, totalPages: wpRes.totalPages || 1, total: wpRes.total || wpPosts.length };
-          }
-        } catch (wpErr) {
-          console.error('[Reader] Fallback WordPress fetch failed:', wpErr);
-        }
-
-        // Try to fetch any posts to show something
-        try {
-          const endpoint = isCommunityContent ? '/api/posts/community?limit=50' : '/api/posts?limit=50';
-          const response = await fetch(endpoint);
-          if (response.ok) {
-            const data = await response.json();
-            const posts = data.posts || data;
-            if (Array.isArray(posts) && posts.length > 0) {
-              console.log('[Reader] Fallback to minimal posts succeeded:', posts.length);
-              return { posts, totalPages: 1, total: posts.length };
-            }
-          }
-        } catch (_e) {}
-        
-        // If everything fails, return empty
-        return { posts: [], totalPages: 0, total: 0 };
+        // Otherwise, fetch a list of posts for browsing
+        const response = await fetch('/api/posts?page=1&limit=20');
+        if (!response.ok) throw new Error('Failed to fetch posts');
+        const data = await response.json();
+        return { posts: data.posts || [] };
+      } catch (err) {
+        console.error('[Reader] Error fetching posts:', err);
+        throw err;
       }
     },
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true
   });
+
+  // Ensure hooks are not conditional: compute validity and correct index early
+  const postCount = postsData?.posts?.length ?? 0;
+  const invalidIndex = postCount > 0 && (currentIndex < 0 || currentIndex >= postCount);
+  useEffect(() => {
+    if (invalidIndex) {
+      setCurrentIndex(0);
+      sessionStorage.setItem('selectedStoryIndex', '0');
+    }
+  }, [invalidIndex]);
+
+  if (invalidIndex) {
+    return (
+      <div className="relative min-h-[200px]">
+        <ApiLoader 
+          isLoading={true}
+          message="Adjusting story position..."
+          minimumLoadTime={300}
+          debug={true}
+          overlayZIndex={100}
+        >
+          <div className="invisible">
+            <div className="h-[200px] w-full flex items-center justify-center">
+              <span className="sr-only">Loading story content...</span>
+            </div>
+          </div>
+        </ApiLoader>
+      </div>
+    );
+  }
 
   // Initialize the reader-specific gentle scroll memory
   // This will only work on the reader page and community-story page
@@ -645,35 +612,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }
 
   const posts = postsData.posts;
-
-  // Additional validation before rendering
-  const invalidIndex = currentIndex < 0 || currentIndex >= posts.length;
-  useEffect(() => {
-    if (invalidIndex) {
-      setCurrentIndex(0);
-      sessionStorage.setItem('selectedStoryIndex', '0');
-    }
-  }, [invalidIndex]);
-  if (invalidIndex) {
-    // Return loading state instead of null to prevent flash
-    return (
-      <div className="relative min-h-[200px]">
-        <ApiLoader 
-          isLoading={true}
-          message="Adjusting story position..."
-          minimumLoadTime={300}
-          debug={true}
-          overlayZIndex={100}
-        >
-          <div className="invisible">
-            <div className="h-[200px] w-full flex items-center justify-center">
-              <span className="sr-only">Loading story content...</span>
-            </div>
-          </div>
-        </ApiLoader>
-      </div>
-    );
-  }
 
   const currentPost = posts[currentIndex];
 

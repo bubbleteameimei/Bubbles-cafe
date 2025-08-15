@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFontSize } from "@/hooks/use-font-size";
@@ -64,6 +64,9 @@ export function ReaderControls({ onShare, onBookmark, isBookmarked }: ReaderCont
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Reading Preferences</DialogTitle>
+              <DialogDescription>
+                Adjust font size, font family, and theme for a better reading experience.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
               {/* Font Size */}

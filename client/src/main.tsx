@@ -20,6 +20,14 @@ import './lib/fetch-csrf';
 
 logger.info("Starting application...");
 
+// Global unhandled promise rejection handler
+window.addEventListener('unhandledrejection', (event) => {
+  try {
+    const reason = event.reason instanceof Error ? { message: event.reason.message, stack: event.reason.stack } : { message: String(event.reason) };
+    logger.error('Unhandled promise rejection', reason);
+  } catch (_) {}
+});
+
 const root = document.getElementById("root");
 if (!root) {
   logger.error("Root element not found");
