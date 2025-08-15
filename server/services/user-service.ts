@@ -70,8 +70,10 @@ export class UserService {
       }
 
       const [newUser] = await db.insert(users).values({
-        ...userData,
+        username: userData.username,
         email: userData.email.toLowerCase(),
+        password_hash: userData.password_hash,
+        isAdmin: (userData as any).isAdmin ?? false,
         metadata: userData.metadata || {}
       }).returning({
         id: users.id,
@@ -148,7 +150,7 @@ export class UserService {
       await db.update(users)
         .set({ 
           metadata: { 
-            ...existingUser.metadata, 
+            ...(existingUser.metadata as Record<string, any> || {}), 
             deleted: true, 
             deletedAt: new Date().toISOString() 
           } 
@@ -245,7 +247,7 @@ export class UserService {
         throw createError.notFound('User not found');
       }
 
-      const mergedMetadata = { ...existingUser.metadata, ...metadata };
+      const mergedMetadata = { ...(existingUser.metadata as Record<string, any> || {}), ...metadata };
 
       const [updatedUser] = await db.update(users)
         .set({ metadata: mergedMetadata })

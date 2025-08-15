@@ -78,6 +78,16 @@ export function registerModularRoutes(app: Express) {
     registerUserFeedbackRoutes(app, storage);
     routesLogger.info('User feedback routes registered');
 
+    // Error reporting endpoint used by client error logger
+    app.post('/api/errors', (req, res) => {
+      try {
+        routesLogger.warn('Client error report received', { id: req.body?.id, message: req.body?.message });
+        res.status(204).end();
+      } catch (_e) {
+        res.status(204).end();
+      }
+    });
+
     // Global error handler - must be last
     app.use(handleError);
     routesLogger.info('Global error handler registered');

@@ -70,21 +70,24 @@ router.post('/login',
   authRateLimiter,
   validateBody(userLoginSchema),
   asyncHandler(async (req: Request, res: Response, next: (err?: any) => void) => {
-    return passport.authenticate('local', (err: any, user: any, info: any) => {
+    passport.authenticate('local', (err: any, user: any, info: any) => {
       if (err) {
         authLogger.error('Login authentication error', { error: err instanceof Error ? err.message : String(err) });
-        return next(createError.internal('Authentication failed'));
+        next(createError.internal('Authentication failed'));
+        return;
       }
       
       if (!user) {
         authLogger.warn('Login failed - invalid credentials');
-        return next(createError.unauthorized('Invalid email or password'));
+        next(createError.unauthorized('Invalid email or password'));
+        return;
       }
       
       req.logIn(user, (err) => {
         if (err) {
           authLogger.error('Login session error', { error: err instanceof Error ? err.message : String(err) });
-          return next(createError.internal('Login failed'));
+          next(createError.internal('Login failed'));
+          return;
         }
         
         // Set session expiration based on rememberMe
@@ -93,14 +96,14 @@ router.post('/login',
           authLogger.debug('Extended session set for remember me');
         }
         
-        authLogger.info('User logged in successfully', { userId: user.id });
-        return res.json({
+    		res.json({
           success: true,
           user,
           message: 'Login successful'
         });
       });
     })(req, res, next);
+    return;
   })
 );
 

@@ -39,6 +39,7 @@ import { FeedbackButton } from './components/feedback/FeedbackButton';
 import ScrollEffectsProvider from './components/ScrollEffectsProvider';
 // Import our performance monitoring component
 import PerformanceMonitor from './components/performance-monitor';
+import { lazyWithRetry } from './utils/lazy-retry';
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
 // Removed unused imports: FullscreenButton, SearchBar
