@@ -32,59 +32,9 @@ const useAmbientLight = () => {
     }
 
     let sensor: any = null;
+    let fallbackInterval: number | null = null;
 
-    const initSensor = async () => {
-      try {
-        // Check if the Ambient Light Sensor API is available
-        if ('AmbientLightSensor' in window) {
-          // Request permission if needed
-          if (navigator.permissions) {
-            const result = await navigator.permissions.query({ name: 'ambient-light-sensor' as any });
-            if (result.state === 'denied') {
-              console.log('[AmbientLight] Permission to use light sensor denied');
-              useFallbackMethod();
-              return;
-            }
-          }
-
-          // @ts-ignore - AmbientLightSensor is not in the standard TypeScript types
-          sensor = new (window as any).AmbientLightSensor({ frequency: 1 });
-          sensor.addEventListener('reading', () => {
-            if (sensor.illuminance !== null && sensor.illuminance !== undefined) {
-              setLightLevel(sensor.illuminance);
-              
-              // Calculate contrast adjustment (more illuminance = more contrast)
-              // Typical indoor lighting is 100-500 lux, bright sunlight is 10,000+ lux
-              let adjustment = 0;
-              if (sensor.illuminance > 250) {
-                // Start increasing contrast at 250 lux (moderately bright indoor)
-                // Max out at 5000 lux (bright daylight)
-                adjustment = Math.min(Math.floor((sensor.illuminance - 250) / 50), 100);
-                setContrastAdjustment(adjustment);
-              } else {
-                setContrastAdjustment(0);
-              }
-            }
-          });
-          
-          sensor.addEventListener('error', (error: Error) => {
-            console.error('[AmbientLight] Sensor error:', error);
-            useFallbackMethod();
-          });
-          
-          sensor.start();
-        } else {
-          console.log('[AmbientLight] Ambient Light Sensor API not available');
-          useFallbackMethod();
-        }
-      } catch (error) {
-        console.error('[AmbientLight] Error initializing sensor:', error);
-        useFallbackMethod();
-      }
-    };
-
-    // Fallback method using time of day as a rough estimation
-    const useFallbackMethod = () => {
+    const startFallback = () => {
       const estimateLightLevelByTime = () => {
         const hour = new Date().getHours();
         
@@ -118,18 +68,65 @@ const useAmbientLight = () => {
       estimateLightLevelByTime();
       
       // Update estimate every 15 minutes
-      const interval = setInterval(estimateLightLevelByTime, 15 * 60 * 1000);
-      
-      return () => clearInterval(interval);
+      fallbackInterval = window.setInterval(estimateLightLevelByTime, 15 * 60 * 1000);
+    };
+
+    const initSensor = async () => {
+      try {
+        // Check if the Ambient Light Sensor API is available
+        if ('AmbientLightSensor' in window) {
+          // Request permission if needed
+          if (navigator.permissions) {
+            const result = await navigator.permissions.query({ name: 'ambient-light-sensor' as any });
+            if (result.state === 'denied') {
+              startFallback();
+              return;
+            }
+          }
+
+          // @ts-ignore - AmbientLightSensor is not in the standard TypeScript types
+          sensor = new (window as any).AmbientLightSensor({ frequency: 1 });
+          sensor.addEventListener('reading', () => {
+            if (sensor.illuminance !== null && sensor.illuminance !== undefined) {
+              setLightLevel(sensor.illuminance);
+              
+              // Calculate contrast adjustment (more illuminance = more contrast)
+              // Typical indoor lighting is 100-500 lux, bright sunlight is 10,000+ lux
+              let adjustment = 0;
+              if (sensor.illuminance > 250) {
+                // Start increasing contrast at 250 lux (moderately bright indoor)
+                // Max out at 5000 lux (bright daylight)
+                adjustment = Math.min(Math.floor((sensor.illuminance - 250) / 50), 100);
+                setContrastAdjustment(adjustment);
+              } else {
+                setContrastAdjustment(0);
+              }
+            }
+          });
+          
+          sensor.addEventListener('error', () => {
+            startFallback();
+          });
+          
+          sensor.start();
+        } else {
+          startFallback();
+        }
+      } catch {
+        startFallback();
+      }
     };
 
     // Initialize sensor or fallback
-    initSensor();
+    void initSensor();
 
     // Cleanup
     return () => {
       if (sensor) {
-        sensor.stop();
+        try { sensor.stop(); } catch {}
+      }
+      if (fallbackInterval !== null) {
+        clearInterval(fallbackInterval);
       }
     };
   }, [autoContrastEnabled]);

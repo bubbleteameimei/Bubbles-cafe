@@ -312,7 +312,7 @@ export default function ContentPage() {
           
           {selectedPost && (
             <PostEditor 
-              // @ts-ignore - post is defined in PostEditorProps
+              // @ts-expect-error - post is defined in PostEditorProps
               post={selectedPost} 
               onClose={() => setIsEditDialogOpen(false)}
               onSaveSuccess={handleSaveSuccess}

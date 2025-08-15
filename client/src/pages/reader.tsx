@@ -647,19 +647,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const posts = postsData.posts;
 
   // Additional validation before rendering
-  if (currentIndex < 0 || currentIndex >= posts.length) {
-    console.error('[Reader] Invalid current index:', {
-      currentIndex,
-      totalPosts: posts.length,
-      savedIndex: sessionStorage.getItem('selectedStoryIndex')
-    });
-    
-    // Use useEffect to prevent infinite re-renders
-    useEffect(() => {
+  const invalidIndex = currentIndex < 0 || currentIndex >= posts.length;
+  useEffect(() => {
+    if (invalidIndex) {
       setCurrentIndex(0);
       sessionStorage.setItem('selectedStoryIndex', '0');
-    }, []);
-    
+    }
+  }, [invalidIndex]);
+  if (invalidIndex) {
     // Return loading state instead of null to prevent flash
     return (
       <div className="relative min-h-[200px]">
@@ -910,7 +905,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     line-height: 1.7;
   }
   .story-content blockquote::before {
-    content: "“";
+    content: "\\201C";
     position: absolute;
     left: 0.5em;
     top: 0.1em;
