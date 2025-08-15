@@ -234,4 +234,4 @@ homepage*.html
 mobile-layout.html
 accessibility*.html
 accessibility*.md
-*.cjs
+*.cjs.env
