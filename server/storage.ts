@@ -3798,7 +3798,7 @@ class MemStorage {
           const duration = Date.now() - startTime;
           await this.logRecommendationPerformance(userId, 'trending_fallback', trendingPosts.length, duration);
           
-          return trendingPosts.map(post => ({
+          return trendingPosts.map((post: any) => ({
             ...post,
             createdAt: safeCreateDate(post.createdAt)
           }));
@@ -3811,7 +3811,7 @@ class MemStorage {
               .orderBy(desc(postsTable.createdAt))
               .limit(limit);
           });
-          return recentPosts.map(post => ({
+          return recentPosts.map((post: any) => ({
             ...post,
             createdAt: safeCreateDate(post.createdAt)
           }));
@@ -3950,7 +3950,7 @@ class MemStorage {
         });
         
         // Score posts based on multiple factors
-        const scoredPosts = candidatePosts.map(post => {
+        const scoredPosts = candidatePosts.map((post: any) => {
           let score = 0;
           
           // Collaborative filtering boost
@@ -4001,7 +4001,7 @@ class MemStorage {
         });
         
         // Sort by score, descending
-        scoredPosts.sort((a, b) => b.score - a.score);
+        scoredPosts.sort((a: { score: number }, b: { score: number }) => b.score - a.score);
         
         // Take top posts
         contentBasedRecommendations = scoredPosts
