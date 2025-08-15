@@ -381,32 +381,35 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         // Add fallback error handling here
         console.error('[Reader] Error or no posts available:', { error, currentIndex });
         
+        // Fallback: attempt to load from WordPress API directly to avoid blank screen
+        try {
+          const wp = await import('@/lib/wordpress-api');
+          const wpRes: any = await wp.fetchWordPressPosts({ page: 1, perPage: 20, includeContent: true });
+          const wpPosts = wpRes.posts || [];
+          if (wpPosts.length > 0) {
+            console.log('[Reader] Fallback succeeded with WordPress posts:', wpPosts.length);
+            return { posts: wpPosts, totalPages: wpRes.totalPages || 1, total: wpRes.total || wpPosts.length };
+          }
+        } catch (wpErr) {
+          console.error('[Reader] Fallback WordPress fetch failed:', wpErr);
+        }
+
         // Try to fetch any posts to show something
         try {
-          // Try to fetch community posts if that's what we're looking for
           const endpoint = isCommunityContent ? '/api/posts/community?limit=50' : '/api/posts?limit=50';
           const response = await fetch(endpoint);
           if (response.ok) {
             const data = await response.json();
-            if (data.posts && data.posts.length > 0) {
-              const normalizedPosts = data.posts.map((post: any) => ({
-                ...post,
-                title: {
-                  rendered: post.title?.rendered || post.title || 'Story'
-                },
-                content: {
-                  rendered: post.content?.rendered || post.content || 'Content not available.'
-                },
-                date: post.date || post.createdAt || new Date().toISOString()
-              }));
-              return { posts: normalizedPosts, totalPages: 1, total: normalizedPosts.length };
+            const posts = data.posts || data;
+            if (Array.isArray(posts) && posts.length > 0) {
+              console.log('[Reader] Fallback to minimal posts succeeded:', posts.length);
+              return { posts, totalPages: 1, total: posts.length };
             }
           }
-        } catch (fallbackError) {
-          console.error('[Reader] Fallback also failed:', fallbackError);
-        }
+        } catch (_e) {}
         
-        throw error;
+        // If everything fails, return empty
+        return { posts: [], totalPages: 0, total: 0 };
       }
     },
     staleTime: 0,
