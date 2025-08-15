@@ -1,5 +1,5 @@
 import { Request, Response, Express } from "express";
-import { db } from "../db-connect";
+import { db } from "../db";
 import { posts, Post, readingProgress, postLikes, bookmarks } from "@shared/schema";
 import { and, eq, ne, or, like, desc, asc, sql, count, not } from "drizzle-orm";
 import { IStorage } from "../storage";
@@ -59,30 +59,27 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
       
       // Step 1: Get user's reading history (posts they've read)
       const readingHistory = await safeDbOperation(async () => {
-        return await db.query.readingProgress.findMany({
-          where: eq(readingProgress.userId, userId),
-          orderBy: [desc(readingProgress.lastReadAt)],
-          limit: 10
-        });
+        return await db.select().from(readingProgress)
+          .where(eq(readingProgress.userId, userId))
+          .orderBy(desc(readingProgress.lastReadAt))
+          .limit(10);
       });
       
       // Step 2: Get user's liked posts
       const likedPosts = await safeDbOperation(async () => {
-        return await db.query.postLikes.findMany({
-          where: and(
+        return await db.select().from(postLikes)
+          .where(and(
             eq(postLikes.userId, userId),
             eq(postLikes.isLike, true)
-          ),
-          limit: 10
-        });
+          ))
+          .limit(10);
       });
       
       // Step 3: Get user's bookmarks
       const userBookmarks = await safeDbOperation(async () => {
-        return await db.query.bookmarks.findMany({
-          where: eq(bookmarks.userId, userId),
-          limit: 10
-        });
+        return await db.select().from(bookmarks)
+          .where(eq(bookmarks.userId, userId))
+          .limit(10);
       });
       
       // Collect post IDs from user history
@@ -108,14 +105,22 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
         
         // Apply theme filter if preferences exist
         if (preferredThemes.length > 0) {
-          query = query.where(
-            preferredThemes.map(theme => 
-              or(
-                like(posts.themeCategory, `%${theme}%`),
-                sql`${posts.metadata}->>'themeCategory' LIKE ${`%${theme}%`}`
-              )
-            ).reduce((acc, condition) => or(acc, condition))
+          const themeConditions = preferredThemes.map(theme => 
+            or(
+              like(posts.themeCategory, `%${theme}%`),
+              sql`${posts.metadata}->>'themeCategory' LIKE ${`%${theme}%`}`
+            )
           );
+          
+          const finalQuery = query.where(
+            themeConditions.reduce((acc, condition) => or(acc, condition))
+          );
+          
+          const trendingPosts = await safeDbOperation(async () => {
+            return await finalQuery.limit(limit);
+          });
+          
+          return res.json(trendingPosts);
         }
         
         const trendingPosts = await safeDbOperation(async () => {
@@ -128,14 +133,13 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
       // Step 4: Get content-based recommendations
       // Find posts with similar themes to what the user has engaged with
       const historicalPosts = await safeDbOperation(async () => {
-        return await db.query.posts.findMany({
-          where: sql`${posts.id} IN (${Array.from(historyPostIds).join(',')})`,
-        });
+        return await db.select().from(posts)
+          .where(sql`${posts.id} IN (${Array.from(historyPostIds).join(',')})`);
       });
       
       // Extract themes from historical posts
       const userThemes = new Set<string>();
-      historicalPosts.forEach((post: {themeCategory?: string, metadata?: any}) => {
+      historicalPosts.forEach((post) => {
         if (post.themeCategory) {
           userThemes.add(post.themeCategory);
         }

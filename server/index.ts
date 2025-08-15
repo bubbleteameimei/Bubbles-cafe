@@ -15,21 +15,15 @@ import { setupAuth } from "./auth";
 import { setupOAuth } from "./oauth";
 import { storage } from "./storage";
 import { createLogger, requestLogger } from "./utils/debug-logger";
-import { registerUserFeedbackRoutes } from "./routes/user-feedback";
-import { registerRecommendationsRoutes } from "./routes/recommendations";
 
-
-import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
 import { setupWordPressSyncSchedule } from "./wordpress-sync"; // Using the declaration file
-import { registerAnalyticsRoutes } from "./routes/analytics"; // Analytics endpoints
 import { registerEmailServiceRoutes } from "./routes/email-service"; // Email service routes
 import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark routes
 import { registerPaymentRoutes } from "./routes/payment"; // Paystack payment routes
-import { setCsrfToken, validateCsrfToken, csrfTokenToLocals, CSRF_TOKEN_NAME } from "./middleware/csrf-protection";
+import { setCsrfToken, validateCsrfToken, csrfTokenToLocals } from "./middleware/csrf-protection";
 import { runMigrations } from "./migrations"; // Import our custom migrations
 import { setupCors } from "./cors-setup";
-import { handleError } from "./utils/error-handler";
 
 import { config } from './config';
 
