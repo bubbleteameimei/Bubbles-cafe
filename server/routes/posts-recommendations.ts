@@ -1,5 +1,5 @@
 import { Request, Response, Express } from "express";
-import { db } from "../db-connect";
+import { db } from "../db";
 import { posts } from "@shared/schema";
 import { desc, eq, and, ne, or, sql } from "drizzle-orm";
 
@@ -29,42 +29,20 @@ export function registerPostRecommendationsRoutes(app: Express) {
         return res.json(enhancedPosts);
       }
       
-      // Get all posts first to log IDs for debugging
-      const allPosts = await db.select({ id: posts.id, title: posts.title })
-        .from(posts)
-        .limit(20);
-      
-      console.log("Available post IDs:", allPosts.map((p: { id: number }) => p.id).join(", "));
-      
-      // If we have a postId, try to find related posts
-      // First, get the source post to extract metadata
-      console.log(`Looking for post with ID ${postId} using findFirst`);
-      let sourcePost = await db.query.posts.findFirst({
-        where: eq(posts.id, postId)
-      });
-      
-      if (!sourcePost) {
-        console.log(`Source post with ID ${postId} not found using findFirst, trying select`);
-        // Try alternative method to find the post
-        const sourcePosts = await db.select()
-          .from(posts)
-          .where(eq(posts.id, postId))
-          .limit(1);
-          
-        if (sourcePosts && sourcePosts.length > 0) {
-          sourcePost = sourcePosts[0];
-          console.log(`Found source post using select: ${sourcePost.title}`);
-        } else {
-          console.log(`Source post with ID ${postId} not found using any method`);
-          return res.status(404).json({ message: "Post not found" });
-        }
+      // Get source post details
+      const sourcePostResult = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
+      if (sourcePostResult.length === 0) {
+        return res.status(404).json({ error: 'Source post not found' });
       }
+      const sourcePost = sourcePostResult[0];
       
       console.log(`Found source post: ${sourcePost.title}`);
       
+      // Extract metadata for theme-based recommendations
+      const metadata = sourcePost.metadata;
+      
       // Extract theme category if available
       let themeCategory = null;
-      const metadata = sourcePost.metadata;
       
       if (typeof metadata === 'string') {
         try {
