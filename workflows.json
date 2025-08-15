@@ -1,12 +1,7 @@
 {
-  "version": "1.0",
   "workflows": {
     "main": {
-      "command": "npm run dev",
-      "env": {
-        "NODE_ENV": "development"
-      },
-      "restartPolicy": "always"
+      "command": "npm run dev"
     }
   }
 }
