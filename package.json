@@ -24,13 +24,13 @@
     "analyze": "npm run build && npx vite-bundle-analyzer dist",
     "lighthouse": "npx lighthouse http://localhost:3000 --output json --output html --output-path ./lighthouse-report",
     "perf:audit": "npm run lighthouse && echo 'Performance audit complete'",
-    "optimize:images": "npx imagemin 'public/images/**/*.{jpg,jpeg,png}' --out-dir=public/images/optimized --plugin=webp --plugin=imagemin-mozjpeg --plugin=imagemin-pngquant",
+    "optimize:images": "tsx scripts/optimize-public-images.ts",
     "preload:generate": "node scripts/generate-preload-links.js",
     "cleanup:dead-code": "node scripts/cleanup-dead-code.js",
     "reorganize": "node scripts/reorganize-project.js",
     "fix:all": "npm run cleanup:dead-code && npm run check && npm run format",
     "security:scan": "npm audit && npx snyk test",
-    "validate:all": "npm run check && npm run lint && npm run security:scan"
+    "validate:all": "npm run check && npm run lint && npm run security:scan && tsx scripts/check-public-images.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",
