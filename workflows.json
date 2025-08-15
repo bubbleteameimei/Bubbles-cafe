@@ -1,9 +1,8 @@
 {
   "version": "1.0",
   "workflows": {
-    "server": {
+    "main": {
       "command": "npm run dev",
-      "description": "Start the application server",
       "env": {
         "NODE_ENV": "development"
       },
