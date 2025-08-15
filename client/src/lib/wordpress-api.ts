@@ -14,8 +14,12 @@
 import { z } from 'zod';
 import { ErrorCategory, ErrorSeverity, handleError, handleValidationError } from './error-handler';
 
-// Base URL for WordPress API - using the WordPress.com REST API for your site
-const WORDPRESS_API_BASE = import.meta.env.VITE_WORDPRESS_API_URL || 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
+// Supported WordPress API bases (tries in order). You can override via VITE_WORDPRESS_API_URL.
+const WP_BASES: string[] = [
+  import.meta.env.VITE_WORDPRESS_API_URL || '',
+  'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com',
+  'https://bubbleteameimei.wordpress.com/wp-json/wp/v2'
+].filter(Boolean);
 
 // Fallback to server API if WordPress is unavailable
 const SERVER_FALLBACK_API = '/api/posts';
@@ -176,213 +180,60 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
     }
   }
 
-  // If we had a previous fatal error within the last 5 minutes, use fallback immediately
-  const lastErrorObj = cacheUtils.getLastError();
-  const isFatalErrorRecent = lastErrorObj && 
-                            (Date.now() - lastErrorObj.timestamp < 5 * 60 * 1000) && 
-                            lastErrorObj.message.includes('fatal');
-                            
-  if (isFatalErrorRecent) {
-    console.log(`[WordPress] Skipping API call due to recent fatal error: ${lastErrorObj.message}`);
-    return await fallbackToServerAPI(options);
-  }
-  
-  // Implement retry logic
-  let retryCount = 0;
-  let currentError: any = null;
-  
-  while (retryCount <= maxRetries) {
+  // Build query parameters once
+  const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+  if (categories?.length) params.append('categories', categories.join(','));
+  if (tags?.length) params.append('tags', tags.join(','));
+  if (search) params.append('search', search);
+  if (slug) params.append('slug', slug);
+  if (!includeContent) params.append('_fields', 'id,date,title,excerpt,slug,featured_media');
+
+  // Try each base in order
+  for (const base of WP_BASES) {
+    const apiUrl = `${base}/posts?${params.toString()}`;
     try {
-      if (retryCount > 0) {
-        console.log(`[WordPress] Retry attempt ${retryCount}/${maxRetries}`);
-      }
-      
-      // Build query parameters
-      const params = new URLSearchParams({
-        page: page.toString(),
-        per_page: perPage.toString(),
-      });
-      
-      // Add optional filters
-      if (categories?.length) {
-        params.append('categories', categories.join(','));
-      }
-      
-      if (tags?.length) {
-        params.append('tags', tags.join(','));
-      }
-      
-      if (search) {
-        params.append('search', search);
-      }
-      
-      if (slug) {
-        params.append('slug', slug);
-      }
-      
-      // Set content fields based on whether we need the full content
-      if (!includeContent) {
-        params.append('_fields', 'id,date,title,excerpt,slug,featured_media');
-      }
-      
-      // Construct the API URL
-      const apiUrl = `${WORDPRESS_API_BASE}/posts?${params.toString()}`;
-      console.log(`[WordPress] Request URL: ${apiUrl}`);
-      
-      // Set up timeout handling with optimized duration
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout (reduced from 30s)
-      
-      try {
-        // Make the fetch request with extended timeout
-        const response = await fetch(apiUrl, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Origin': window.location.origin
-          },
-          mode: 'cors',
-          credentials: 'omit',
-          signal: controller.signal
-        });
-        
-        // Clear the timeout since request completed
-        clearTimeout(timeoutId);
-        
-        // Check for HTTP errors
-        if (!response.ok) {
-          const text = await response.text();
-          console.error(`[WordPress] Non-OK response ${response.status}: ${text}`);
-          throw new Error(`WordPress API error: ${response.status}`);
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const response = await fetch(apiUrl, { method: 'GET', headers: { 'Accept': 'application/json' }, signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!response.ok) throw new Error(`WordPress API error: ${response.status}`);
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) throw new Error(`Unexpected content-type: ${contentType}`);
+      const postsData = await response.json();
+      if (!Array.isArray(postsData)) throw new Error('Non-array response');
+
+      const validatedPosts = postsData.map((post: any) => {
+        const result = wordpressPostSchema.safeParse(post);
+        if (!result.success) {
+          return {
+            id: post.id || Math.floor(Math.random() * 10000),
+            date: post.date || new Date().toISOString(),
+            slug: post.slug || `post-${post.id || Date.now()}`,
+            title: { rendered: post.title?.rendered || 'Untitled Post' },
+            content: { rendered: post.content?.rendered || 'Content unavailable' },
+            excerpt: { rendered: post.excerpt?.rendered || '' }
+          };
         }
-        
-        // Ensure we got JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          console.error(`[WordPress] Wrong content type: ${contentType}`);
-          throw new Error(`API returned non-JSON content type: ${contentType}`);
-        }
-        
-        // Parse the response
-        const responseText = await response.text();
-        
-        // Log the first part of the response for debugging
-        console.log(`[WordPress] Response preview: ${responseText.substring(0, 100)}...`);
-        
-        // Parse JSON with error handling
-        const postsData = safeJsonParse(responseText);
-        
-        // Verify array structure
-        if (!Array.isArray(postsData)) {
-          console.error(`[WordPress] Invalid response format (not an array):`, typeof postsData);
-          throw new Error('API returned non-array response');
-        }
-        
-        console.log(`[WordPress] Successfully fetched ${postsData.length} posts`);
-        
-        // Process and validate each post
-        const validatedPosts = postsData.map(post => {
-          // Use safe parsing to handle validation errors gracefully
-          const result = wordpressPostSchema.safeParse(post);
-          
-          if (!result.success) {
-            // Log validation errors but don't fail
-            console.warn(`[WordPress] Post validation warnings for post ID ${post.id}:`, 
-              result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; '));
-            
-            // Build a valid structure from available data
-            return {
-              id: post.id || Math.floor(Math.random() * 10000),
-              date: post.date || new Date().toISOString(),
-              slug: post.slug || `post-${post.id || Date.now()}`,
-              title: { 
-                rendered: post.title?.rendered || 'Untitled Post' 
-              },
-              content: { 
-                rendered: post.content?.rendered || 'Content unavailable' 
-              },
-              excerpt: { 
-                rendered: post.excerpt?.rendered || 'No excerpt available' 
-              }
-            };
-          }
-          
-          return result.data;
-        });
-        
-        // Construct result object with pagination info
-        const result = {
-          posts: validatedPosts,
-          totalPages: parseInt(response.headers.get('X-WP-TotalPages') || '1'),
-          total: parseInt(response.headers.get('X-WP-Total') || validatedPosts.length.toString())
-        };
-        
-        // Cache successful results
-        const cacheKey = cacheUtils.getCacheKey(options);
-        cacheUtils.saveToCache(cacheKey, result);
-        
-        // Store the success status for UI reporting
-        localStorage.setItem('wp_sync_status', JSON.stringify({
-          status: 'success',
-          type: 'api_success',
-          message: `Successfully fetched ${result.posts.length} posts`,
-          timestamp: Date.now()
-        }));
-        
-        return result;
-      } catch (fetchError: any) {
-        // Clear timeout if fetch fails
-        clearTimeout(timeoutId);
-        
-        // Handle timeout errors specifically with better user feedback
-        if (fetchError.name === 'AbortError') {
-          console.error(`[WordPress] Request timed out after 10 seconds`);
-          // Store the timeout status for UI reporting
-          localStorage.setItem('wp_sync_status', JSON.stringify({
-            status: 'error',
-            type: 'timeout',
-            message: 'WordPress API request timed out after 10 seconds',
-            timestamp: Date.now()
-          }));
-          throw new Error('WordPress API request timed out (10s)');
-        }
-        
-        // Re-throw the error for the retry logic
-        throw fetchError;
-      }
-    } catch (error: any) {
-      currentError = error;
-      console.error(`[WordPress] Error attempt ${retryCount}:`, error);
-      
-      // Save error details for future reference
-      cacheUtils.saveError(error);
-      
-      // Increment retry counter
-      retryCount++;
-      
-      // If we have retries left, wait before trying again (exponential backoff)
-      if (retryCount <= maxRetries) {
-        const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 8000);
-        console.log(`[WordPress] Waiting ${delay}ms before retry`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
+        return result.data;
+      });
+
+      const result = {
+        posts: validatedPosts,
+        totalPages: parseInt(response.headers.get('X-WP-TotalPages') || '1'),
+        total: parseInt(response.headers.get('X-WP-Total') || String(validatedPosts.length))
+      };
+      cacheUtils.saveToCache(cacheUtils.getCacheKey(options), result);
+      localStorage.setItem('wp_sync_status', JSON.stringify({ status: 'success', type: 'api_success', message: `Fetched ${result.posts.length} posts`, timestamp: Date.now() }));
+      return result;
+    } catch (err) {
+      console.warn(`[WordPress] Base failed, trying next: ${apiUrl}`, err);
+      cacheUtils.saveError(err);
+      // try next base
     }
   }
-  
-  // If we've exhausted retries, try the server API as fallback
-  console.log(`[WordPress] Exhausted ${maxRetries} retries, using fallback`);
-  
-  // Store the retries exhausted status for UI reporting
-  localStorage.setItem('wp_sync_status', JSON.stringify({
-    status: 'warning',
-    type: 'retries_exhausted',
-    message: `Connection issues after ${maxRetries} attempts. Using cached content.`,
-    timestamp: Date.now(),
-    errorDetails: currentError?.message || 'Unknown error'
-  }));
-  
-  return await fallbackToServerAPI(options, currentError);
+
+  // All bases failed, use server API fallback
+  return await fallbackToServerAPI(options);
 }
 
 /**
@@ -479,33 +330,8 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
     console.log(`[WordPress] Fallback successful, retrieved ${formattedResult.posts.length} posts`);
     return formattedResult;
   } catch (fallbackError) {
-    // Log both the original and fallback errors
-    console.error('[WordPress] Both primary and fallback fetches failed:');
-    console.error('- Original error:', error);
-    console.error('- Fallback error:', fallbackError);
-    
-    // Store the complete failure status for UI reporting
-    localStorage.setItem('wp_sync_status', JSON.stringify({
-      status: 'error',
-      type: 'complete_failure',
-      message: 'Unable to fetch content: both WordPress API and server fallback failed',
-      timestamp: Date.now(),
-      originalError: error instanceof Error ? error.message : 'Unknown error',
-      fallbackError: fallbackError instanceof Error ? fallbackError.message : 'Unknown error'
-    }));
-    
-    // Format an empty response with error information
-    return {
-      posts: [],
-      totalPages: 0,
-      total: 0,
-      error: handleError(error || fallbackError, {
-        category: ErrorCategory.WORDPRESS,
-        severity: ErrorSeverity.ERROR,
-        showToast: true
-      }),
-      fromFallback: true
-    };
+    console.error('[WordPress] Both primary and fallback fetches failed:', { original: error, fallback: fallbackError });
+    return { posts: [], totalPages: 0, total: 0, fromFallback: true };
   }
 }
 
@@ -670,53 +496,22 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
   }
   
   try {
-    // Multiple endpoints to check, in order of reliability
-    const endpoints = [
-      '/posts?per_page=1',      // Main posts endpoint
-      '/categories?per_page=1', // Categories as fallback
-      '/tags?per_page=1'        // Tags as secondary fallback
-    ];
-    
-    // Check endpoints in sequence until one succeeds
-    for (const endpoint of endpoints) {
+    // Try both bases using GET posts with minimal fields (HEAD can be blocked by CORS)
+    for (const base of WP_BASES) {
+      const url = `${base}/posts?per_page=1&_fields=id`;
       try {
-        // Use a controller to implement timeout (with increased duration)
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout (increased from 10s)
-        
-        const response = await fetch(`${WORDPRESS_API_BASE}${endpoint}`, {
-          method: 'HEAD', // Use HEAD to be lightweight
-          headers: {
-            'Accept': 'application/json'
-          },
-          signal: controller.signal
-        });
-        
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const response = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' }, signal: controller.signal });
         clearTimeout(timeoutId);
-        
         if (response.ok) {
-          // Cache the successful status
-          localStorage.setItem('wp_api_status', JSON.stringify({
-            available: true,
-            timestamp: now,
-            endpoint
-          }));
-          
-          // Also update the user-facing sync status
-          localStorage.setItem('wp_sync_status', JSON.stringify({
-            status: 'success',
-            type: 'api_available',
-            message: 'WordPress API connection established',
-            timestamp: now
-          }));
-          
-          console.log(`[WordPress] API status check: Available (via ${endpoint})`);
+          localStorage.setItem('wp_api_status', JSON.stringify({ available: true, timestamp: now, base }));
+          localStorage.setItem('wp_sync_status', JSON.stringify({ status: 'success', type: 'api_available', message: 'WordPress API connection established', timestamp: now }));
+          console.log(`[WordPress] API status check: Available (${base})`);
           return true;
         }
-      } catch (endpointError) {
-        // This endpoint failed, try the next one
-        console.warn(`[WordPress] Endpoint ${endpoint} failed:`, endpointError);
-        continue;
+      } catch (e) {
+        console.warn('[WordPress] Status check failed for', base, e);
       }
     }
     
