@@ -32,104 +32,66 @@ export function useComponentRenderTracker(
     trackOnly = 'debug'
   } = options;
   
+  const envAllowsTracking =
+    trackOnly === 'all' ||
+    (trackOnly === 'debug' && import.meta.env.DEV) ||
+    (trackOnly === 'production' && import.meta.env.PROD);
+  
   const { recordMetric } = usePerformanceMonitoring();
   const startTime = useRef<number>(0);
   const renderCount = useRef<number>(0);
   
-  // Skip in production if configured to track only in debug
-  if (trackOnly === 'debug' && import.meta.env.PROD) {
-    // Return empty functions to avoid conditional hook calls
-    return {
-      trackMount: () => {},
-      trackRender: () => {},
-      trackUnmount: () => {}
-    };
-  }
-  
-  // Skip in debug if configured to track only in production
-  if (trackOnly === 'production' && import.meta.env.DEV) {
-    return {
-      trackMount: () => {},
-      trackRender: () => {},
-      trackUnmount: () => {}
-    };
-  }
-  
-  // Track initial mount
   useEffect(() => {
-    if (trackMounts) {
-      const mountTime = performance.now();
-      
-      // Record initial mount performance
-      if (!measuredComponents.has(componentName)) {
-        measuredComponents.add(componentName);
-        if (import.meta.env.DEV) {
-          console.log(`[Performance] Component mounted: ${componentName}`);
-        }
+    if (!envAllowsTracking || !trackMounts) return;
+    const mountTime = performance.now();
+    if (!measuredComponents.has(componentName)) {
+      measuredComponents.add(componentName);
+      if (import.meta.env.DEV) {
+        console.log(`[Performance] Component mounted: ${componentName}`);
       }
-      
-      return () => {
-        if (trackUnmounts) {
-          const unmountTime = performance.now();
-          const duration = unmountTime - mountTime;
-          
-          // Record time from mount to unmount
-          recordMetric('Custom', duration, `ComponentLifetime-${componentName}`);
-          
-          if (import.meta.env.DEV) {
-            console.log(`[Performance] Component unmounted: ${componentName}, total lifetime: ${Math.round(duration)}ms`);
-          }
-        }
-      };
     }
-    return () => {};
-  }, [componentName, trackMounts, trackUnmounts, recordMetric]);
+    return () => {
+      if (!envAllowsTracking || !trackUnmounts) return;
+      const unmountTime = performance.now();
+      const duration = unmountTime - mountTime;
+      recordMetric('Custom', duration, `ComponentLifetime-${componentName}`);
+      if (import.meta.env.DEV) {
+        console.log(`[Performance] Component unmounted: ${componentName}, total lifetime: ${Math.round(duration)}ms`);
+      }
+    };
+  }, [componentName, trackMounts, trackUnmounts, envAllowsTracking, recordMetric]);
   
-  // Function to track render start
   const trackMount = useCallback(() => {
+    if (!envAllowsTracking) return;
     startTime.current = performance.now();
     renderCount.current = 1;
-  }, []);
+  }, [envAllowsTracking]);
   
-  // Function to track render completion
   const trackRender = useCallback(() => {
-    if (!trackRenders) return;
-    
+    if (!envAllowsTracking || !trackRenders) return;
     const endTime = performance.now();
     const duration = endTime - startTime.current;
-    
-    // Only track non-initial renders to separate mount from updates
     if (renderCount.current > 1) {
       recordMetric('Custom', duration, `ComponentRender-${componentName}`);
-      
       if (import.meta.env.DEV && duration > 8) {
         console.log(`[Performance] Component render #${renderCount.current}: ${componentName}, duration: ${Math.round(duration)}ms`);
       }
     }
-    
     renderCount.current++;
-    startTime.current = performance.now(); // Reset for next render
-  }, [trackRenders, componentName, recordMetric]);
+    startTime.current = performance.now();
+  }, [envAllowsTracking, trackRenders, componentName, recordMetric]);
   
-  // Function to manually track unmount if needed
   const trackUnmount = useCallback(() => {
-    if (!trackUnmounts) return;
-    
+    if (!envAllowsTracking || !trackUnmounts) return;
     const unmountTime = performance.now();
     const duration = unmountTime - startTime.current;
-    
     recordMetric('Custom', duration, `ComponentUnmount-${componentName}`);
-    
     if (import.meta.env.DEV) {
       console.log(`[Performance] Component manual unmount: ${componentName}, duration: ${Math.round(duration)}ms`);
     }
-  }, [trackUnmounts, componentName, recordMetric]);
+  }, [envAllowsTracking, trackUnmounts, componentName, recordMetric]);
   
-  return {
-    trackMount,
-    trackRender,
-    trackUnmount
-  };
+  return { trackMount, trackRender, trackUnmount };
 }
 
 /**

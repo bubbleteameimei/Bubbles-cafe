@@ -26,6 +26,10 @@ export default [
 			'@typescript-eslint/no-unsafe-function-type': 'off',
 			'@typescript-eslint/prefer-as-const': 'off',
 			'@typescript-eslint/no-namespace': 'off',
+			// Relax non-critical React rules to reduce noise in content-heavy pages
+			'react/no-unescaped-entities': 'off',
+			'react/prop-types': 'off',
+			'react/display-name': 'off'
 		},
 	},
 	{ ignores: ['dist/**', 'node_modules/**'] },

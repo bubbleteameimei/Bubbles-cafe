@@ -12,7 +12,7 @@ export function cn(...inputs: ClassValue[]) {
 export type RouteParams = Record<string, string | undefined>;
 
 // Type for components that can receive route props
-export type WithRouteProps<P = {}> = P & Partial<RouteComponentProps<RouteParams>>;
+export type WithRouteProps<P extends object = Record<string, unknown>> = P & Partial<RouteComponentProps<RouteParams>>;
 
 // Props interfaces
 interface ErrorFallbackProps {
