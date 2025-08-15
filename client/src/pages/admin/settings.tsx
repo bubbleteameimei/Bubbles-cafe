@@ -16,10 +16,6 @@ export default function AdminSettingsPage() {
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
 
-	if (!user?.isAdmin) {
-		return <Redirect to="/" />;
-	}
-
 	async function loadSettings() {
 		try {
 			setLoading(true);
@@ -54,9 +50,16 @@ export default function AdminSettingsPage() {
 		}
 	}
 
-	useEffect(() => { loadSettings(); }, []);
+	useEffect(() => {
+		if (user?.isAdmin) {
+			loadSettings();
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [user?.isAdmin]);
 
-	return (
+	return !user?.isAdmin ? (
+		<Redirect to="/" />
+	) : (
 		<div className="container mx-auto px-4 py-8">
 			<div className="flex items-center justify-between mb-8">
 				<h1 className="text-4xl font-bold">Site Settings</h1>
