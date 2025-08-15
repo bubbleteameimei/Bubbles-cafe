@@ -240,7 +240,7 @@ export class UserService {
   }
 
   // Update user metadata
-  async updateUserMetadata(id: number, metadata: Record<string, any>): Promise<User> {
+  async updateUserMetadata(id: number, metadata: Record<string, any>): Promise<PublicUser> {
     try {
       const existingUser = await this.getUser(id);
       if (!existingUser) {

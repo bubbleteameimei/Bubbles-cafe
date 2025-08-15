@@ -112,7 +112,7 @@ router.post('/logout',
   asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?.id;
     
-    req.logout((err) => {
+          return req.logout((err) => {
       if (err) {
         authLogger.error('Logout error', { userId, error: err });
         throw createError.internal('Logout failed');
@@ -125,10 +125,10 @@ router.post('/logout',
         }
         
         authLogger.info('User logged out successfully', { userId });
-        res.json({
-          success: true,
-          message: 'Logout successful'
-        });
+              return res.json({
+        success: true,
+        message: 'Logout successful'
+      });
       });
     });
   })
@@ -179,13 +179,15 @@ router.post('/forgot-password',
       
       authLogger.info('Password reset token created', { userId: user.id });
       
-      res.json({
+      return res.json({
         success: true,
         message: 'If an account with that email exists, a password reset link has been sent.'
       });
     } catch (error) {
       authLogger.error('Password reset request error', { email, error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Password reset request failed');
+      // unreachable but keeps TS satisfied
+      return;
     }
   })
 );
@@ -215,7 +217,7 @@ router.post('/reset-password',
       
       authLogger.info('Password reset successful', { userId: resetToken.userId });
       
-      res.json({
+      return res.json({
         success: true,
         message: 'Password reset successful'
       });
@@ -224,6 +226,8 @@ router.post('/reset-password',
       if (anyError?.statusCode) throw anyError;
       authLogger.error('Password reset error', { error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Password reset failed');
+      // unreachable but keeps TS satisfied
+      return;
     }
   })
 );
