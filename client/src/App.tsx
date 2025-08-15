@@ -249,120 +249,38 @@ const AppContent = () => {
       <main className={`min-h-screen flex-1 flex flex-col w-full min-w-full max-w-[100vw] ${location === '/' ? '' : 'bg-background'}`}
              style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', overflow: 'hidden' }}>
         <AutoHideNavbar />
-        <div className={`w-full min-w-full max-w-full ${location.startsWith('/reader') ? 'pt-4' : 'pt-20'} lg:pt-6 flex-1 ${location === '/' ? '' : 'bg-background'} m-0 p-0 px-0 mx-0`}
+        <div className={`w-full min-w-full max-w-full 
+                        ${location.startsWith('/reader') ? 'pt-4' : 'pt-20'} 
+                        lg:pt-6 
+                        flex-1 
+                        ${location === '/' ? '' : 'bg-background'} 
+                        m-0 p-0 px-0 mx-0
+                        layout-mobile`}
              style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto' }}>
-          {/* Display WordPress sync status notifications */}
-          <WordPressSyncStatus />
-          <ErrorBoundary>
-            <Switch>
-              {/* Auth Routes */}
-              <Route path="/auth" component={AuthPage} />
-              <Route path="/auth/success" component={AuthSuccessPage} />
-              <Route path="/signin" component={AuthPage} />
-              <Route path="/login" component={AuthPage} />
-              <Route path="/signup" component={AuthPage} />
-              <Route path="/reset-password" component={ResetPasswordPage} />
-
-              {/* Public Routes */}
-              <Route path="/" component={HomePage} />
-              <Route path="/stories" component={StoriesPage} />
-              <Route path="/reader/:slug?">
-                {(params) => <ReaderPage params={params} />}
-              </Route>
-              <Route path="/about" component={AboutPage} />
-              <Route path="/contact" component={ContactPage} />
-              <Route path="/report-bug" component={ReportBugPage} />
-              <Route path="/privacy" component={PrivacyPage} />
-              <Route path="/search" component={SearchResultsPage} />
-              <Route path="/notifications" component={NotificationsPage} />
-              
-
-              {/* Export test route removed */}
-              <Route path="/bookmarks" component={BookmarksPage} />
-              <ProtectedRoute path="/profile" component={ProfilePage} />
-              <Route path="/recommendations" component={RecommendationsPage} />
-
-
-              
-              {/* Legal Routes */}
-              <Route path="/legal/copyright" component={CopyrightPage} />
-              <Route path="/legal/terms" component={TermsPage} />
-              <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
-
-              {/* Community Routes */}
-              <Route path="/community" component={CommunityPage} />
-              <Route path="/submit-story" component={SubmitStoryPage} />
-              <Route path="/edit-story/:id">
-                {(params) => <EditStoryPage params={params} />}
-              </Route>
-              {/* Community Reader Route - Using the same reader component but with community flag */}
-              <Route path="/community-story/:slug">
-                {(params) => <ReaderPage params={params} isCommunityContent={true} />}
-              </Route>
-              <Route path="/feedback" component={FeedbackPage} />
-              <ProtectedRoute path="/feedback/dashboard" component={UserFeedbackDashboardPage} />
-              <Route path="/support/guidelines" component={GuidelinesPage} />
-              
-              {/* Settings Routes */}
-              <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
-              <ProtectedRoute path="/settings/connected-accounts" component={ConnectedAccountsPage} />
-              <Route path="/settings/fonts" component={FontSettingsPage} />
-              <ProtectedRoute path="/settings/accessibility" component={AccessibilitySettingsPage} />
-              <Route path="/settings/notifications" component={NotificationSettingsPage} />
-              <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
-              {/* Redirect data export route to privacy settings */}
-              <Route path="/settings/data-export">
-                {() => {
-                  const [, setLocation] = useLocation();
-                  React.useEffect(() => {
-                    // Show toast notification with the Toaster component
-                    toast.error("Data Export Feature Removed", {
-                      description: "The data export functionality has been removed. Please contact support if you need your data."
-                    });
-                    // Redirect to privacy settings page
-                    setLocation('/settings/privacy');
-                  }, [setLocation]);
-                  // Return null while redirecting
-                  return null;
-                }}
-              </Route>
-              <Route path="/settings/cookie-management" component={CookieManagementPage} />
-              <Route path="/settings/quick-settings" component={QuickSettingsPage} />
-              <Route path="/settings/preview" component={PreviewSettingsPage} />
-
-              {/* Admin Routes */}
-              <ProtectedRoute path="/admin" component={AdminPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/analytics" component={AdminAnalyticsPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/analytics-dashboard" component={AdminAnalyticsDashboardPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/users" component={AdminUsersPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/settings" component={AdminSettingsPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/posts" component={AdminPostsPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/manage-posts" component={AdminManagePostsPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/feedback" component={AdminFeedbackPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/feedback-management" component={AdminFeedbackManagementPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/feedback-review" component={AdminFeedbackReviewPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/bug-reports" component={AdminBugReportsPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/content-moderation" component={AdminContentModerationPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/content" component={AdminContentPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/dashboard" component={AdminDashboardPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/site-statistics" component={AdminSiteStatisticsPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/wordpress-sync" component={AdminWordPressSyncPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/content-management" component={AdminContentManagementPage} requireAdmin={true} />
-              <ProtectedRoute path="/admin/themes" component={AdminThemesPage} requireAdmin={true} />
-              
-              {/* Placeholder routes for discontinued features */}
-              <Route path="/eden-hollow" component={EdenHollow404} />
-                
-              {/* 404 fallback */}
-              <Route>
-                <NotFoundRouteHandler>
-                  <Error404Page />
-                </NotFoundRouteHandler>
-              </Route>
-            </Switch>
-          </ErrorBoundary>
+          <Switch>
+            <Route path="/" component={HomePage} />
+            <Route path="/stories" component={StoriesPage} />
+            <Route path="/reader" component={ReaderPage} />
+            <Route path="/community" component={CommunityPage} />
+            <Route path="/about" component={AboutPage} />
+            <Route path="/auth" component={AuthPage} />
+            <Route path="/profile" component={ProfilePage} />
+            <Route path="/search" component={SearchResultsPage} />
+            <Route path="/community-story/:slug">
+              {(params) => <ReaderPage params={params} isCommunityContent={true} />}
+            </Route>
+            <Route path="/story/:slug">
+              {(params) => <ReaderPage params={params} isCommunityContent={false} />}
+            </Route>
+            <Route path="/errors/403" component={Error403Page} />
+            <Route path="/errors/404" component={Error404Page} />
+            <Route path="/errors/429" component={Error429Page} />
+            <Route path="/errors/500" component={Error500Page} />
+            <Route path="/errors/503" component={Error503Page} />
+            <Route path="/errors/504" component={Error504Page} />
+            <Route path="*" component={Error404Page} />
+          </Switch>
         </div>
-        <Footer />
       </main>
     </div>
   );
