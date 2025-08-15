@@ -50,7 +50,14 @@ initCSRFProtection().then(() => {
   logger.error("Error initializing CSRF protection:", error);
 });
 
-// Service Worker deliberately not registered to avoid preview/runtime conflicts
+// Optionally register service worker if enabled
+if (import.meta.env.VITE_ENABLE_PWA === 'true' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js').catch((err) => {
+      console.error('SW registration failed', err);
+    });
+  });
+}
 
 logger.debug("CSS styles loaded");
 logger.info("Mounting React application...");
