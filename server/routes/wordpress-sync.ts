@@ -5,7 +5,7 @@
 import { Express, Request, Response, NextFunction } from 'express';
 import { syncWordPressPosts, syncSingleWordPressPost, SyncResult, getSyncStatus } from '../wordpress-sync';
 import { wordpressSync } from '../wordpress-api-sync';
-import { log } from '../vite.js';
+import { log } from '../vite';
 import { z } from 'zod';
 
 // Track sync status

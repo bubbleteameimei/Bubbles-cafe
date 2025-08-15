@@ -149,6 +149,41 @@ router.put('/:id',
   })
 );
 
+// PUT /api/posts/:id/hide - Hide post (authenticated, admin only)
+router.put('/:id/hide',
+  apiRateLimiter,
+  validateParams(postIdSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw createError.unauthorized('Authentication required');
+    }
+
+    const { id } = req.params;
+
+    try {
+      const existingPost = await ((storage as any).getPostById
+        ? (storage as any).getPostById(Number(id))
+        : storage.getPost(String(id)));
+      if (!existingPost) {
+        throw createError.notFound('Post not found');
+      }
+
+      if (!req.user.isAdmin) {
+        throw createError.forbidden('Only admins can hide posts');
+      }
+
+      const updated = await storage.updatePost(Number(id), { metadata: { ...(existingPost as any).metadata || {}, isHidden: true } as any });
+      postsLogger.info('Post hidden successfully', { postId: id, adminId: req.user.id });
+      res.json(updated);
+    } catch (error) {
+      const anyError = error as any;
+      if (anyError?.statusCode) throw anyError;
+      postsLogger.error('Error hiding post', { postId: id, error: error instanceof Error ? error.message : String(error) });
+      throw createError.internal('Failed to hide post');
+    }
+  })
+);
+
 // DELETE /api/posts/:id - Delete post (authenticated, author only)
 router.delete('/:id',
   apiRateLimiter,

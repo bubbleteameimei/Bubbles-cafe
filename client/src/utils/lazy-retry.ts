@@ -1,10 +1,10 @@
 import React from 'react';
 
-export function lazyWithRetry<T>(
+export function lazyWithRetry<T extends React.ComponentType<any>>(
 	importer: () => Promise<{ default: T }>,
 	retries: number = 2,
 	delayMs: number = 300
-) {
+): React.LazyExoticComponent<T> {
 	return React.lazy(async () => {
 		let lastError: unknown = null;
 		for (let attempt = 0; attempt <= retries; attempt++) {

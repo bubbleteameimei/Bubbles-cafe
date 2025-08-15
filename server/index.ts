@@ -215,6 +215,7 @@ async function startServer() {
       // Register modular routes (replaces legacy monolithic routes)
       const { registerModularRoutes } = await import('./routes');
       registerModularRoutes(app);
+      registerWordPressSyncRoutes(app);
 
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);
@@ -226,6 +227,7 @@ async function startServer() {
       // Register modular routes (replaces legacy monolithic routes)
       const { registerModularRoutes } = await import('./routes');
       registerModularRoutes(app);
+      registerWordPressSyncRoutes(app);
 
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);

@@ -23,6 +23,7 @@ export class PostService {
         id: posts.id,
         title: posts.title,
         excerpt: posts.excerpt,
+        content: posts.content,
         slug: posts.slug,
         authorId: posts.authorId,
         isSecret: posts.isSecret,
@@ -35,14 +36,13 @@ export class PostService {
         metadata: posts.metadata,
         createdAt: posts.createdAt,
       };
-      if (includeContent) selectFields.content = posts.content;
 
       const [post] = await db.select(selectFields)
         .from(posts)
         .where(eq(posts.id, id))
         .limit(1);
 
-      return post || null;
+      return (post as unknown as Post) || null;
     } catch (error) {
       postLogger.error('Error fetching post by ID', { postId: id, error });
       throw handleDatabaseError(error);
@@ -202,15 +202,17 @@ export class PostService {
       if (postData.content && !postData.readingTimeMinutes) {
         postData.readingTimeMinutes = this.estimateReadingTime(postData.content);
       }
+      const existingMetadata = (existingPost.metadata as Record<string, any>) || {};
+      const mergedMetadata = postData.metadata ? { ...existingMetadata, ...(postData.metadata as any) } : existingMetadata;
       const [updatedPost] = await db.update(posts)
         .set({
           ...postData,
-          metadata: postData.metadata ? { ...existingPost.metadata, ...postData.metadata } : existingPost.metadata
+          metadata: mergedMetadata
         })
         .where(eq(posts.id, id))
         .returning();
       postLogger.info('Post updated successfully', { postId: id });
-      return updatedPost;
+      return updatedPost as unknown as Post;
     } catch (error) {
       postLogger.error('Error updating post', { postId: id, error });
       throw handleDatabaseError(error);
