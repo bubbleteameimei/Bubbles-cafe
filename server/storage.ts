@@ -1283,7 +1283,7 @@ export class DatabaseStorage implements IStorage {
           const paginatedPosts = rawPosts.slice(0, limit);
           
           // Transform posts with reliable field access
-          const transformedPosts = paginatedPosts.map((post: any) => {
+          const transformedPosts = paginatedPosts.map((post: any): Post => {
             // Extract metadata for fields that might be stored there
             const metadata: Record<string, any> = (post.metadata as any) || {};
             
@@ -1296,18 +1296,15 @@ export class DatabaseStorage implements IStorage {
               excerpt: post.excerpt,
               authorId: post.authorId,
               createdAt: new Date(post.createdAt),
-              metadata: metadata,
-              // Use database column for isAdminPost, fallback to metadata
-              isAdminPost: post.isAdminPost !== undefined ? post.isAdminPost : (metadata.isAdminPost || false),
-              // Community posts are non-admin posts
-              isCommunityPost: post.isAdminPost === false || (post.isAdminPost === null && metadata.isCommunityPost === true),
-              isSecret: post.isSecret || false,
-              matureContent: post.matureContent || false,
+              metadata: metadata as unknown,
+              isAdminPost: post.isAdminPost ?? (metadata.isAdminPost === true ? true : null),
+              isSecret: !!post.isSecret,
+              matureContent: !!post.matureContent,
               themeCategory: post.themeCategory || metadata.themeCategory || null,
-              readingTimeMinutes: metadata.readingTimeMinutes || null,
-              likesCount: metadata.likes || 0,
-              dislikesCount: metadata.dislikes || 0
-            } as Post & { isCommunityPost?: boolean };
+              readingTimeMinutes: typeof metadata.readingTimeMinutes === 'number' ? metadata.readingTimeMinutes : null,
+              likesCount: typeof metadata.likes === 'number' ? metadata.likes : 0,
+              dislikesCount: typeof metadata.dislikes === 'number' ? metadata.dislikes : 0
+            } as Post;
           });
           
           // Apply text search filter if specified (post-transform filtering)
@@ -1369,7 +1366,13 @@ export class DatabaseStorage implements IStorage {
         excerpt: postsTable.excerpt,
         metadata: postsTable.metadata,
         createdAt: postsTable.createdAt,
-        isSecret: postsTable.isSecret
+        isSecret: postsTable.isSecret,
+        isAdminPost: postsTable.isAdminPost,
+        matureContent: postsTable.matureContent,
+        themeCategory: postsTable.themeCategory,
+        readingTimeMinutes: postsTable.readingTimeMinutes,
+        likesCount: postsTable.likesCount,
+        dislikesCount: postsTable.dislikesCount
       })
       .from(postsTable)
       .where(eq(postsTable.isSecret, false))
@@ -3829,7 +3832,7 @@ class MemStorage {
           return recentPosts.map((post: any) => ({
             ...post,
             createdAt: safeCreateDate(post.createdAt)
-          }));
+          })) as unknown as Post[];
         }
       }
       

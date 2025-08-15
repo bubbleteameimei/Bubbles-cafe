@@ -207,7 +207,23 @@ export class DatabaseStorage implements IStorage {
     const limit = filters?.limit || 10;
     const offset = filters?.offset || 0;
     
-    let query = db.select().from(posts);
+    let query = db.select({
+      id: posts.id,
+      title: posts.title,
+      content: posts.content,
+      excerpt: posts.excerpt,
+      slug: posts.slug,
+      authorId: posts.authorId,
+      isSecret: posts.isSecret,
+      isAdminPost: posts.isAdminPost,
+      matureContent: posts.matureContent,
+      themeCategory: posts.themeCategory,
+      readingTimeMinutes: posts.readingTimeMinutes,
+      likesCount: posts.likesCount,
+      dislikesCount: posts.dislikesCount,
+      metadata: posts.metadata,
+      createdAt: posts.createdAt
+    }).from(posts);
     
     const conditions = [];
     
