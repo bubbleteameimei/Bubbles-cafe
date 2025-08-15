@@ -306,7 +306,7 @@ function ConfettiBurst() {
           }}
           initial={{ y: 0, opacity: 0 }}
           animate={{ y: `${60 + Math.random() * 80}vh`, opacity: [0, 1, 0] }}
-          transition={{ duration: 0.9 + Math.random() * 0.4, ease: "ease-out" }}
+          transition={{ duration: 0.9 + Math.random() * 0.4, ease: [0.22, 1, 0.36, 1] }}
         />
       ))}
     </div>
