@@ -20,11 +20,6 @@ export default function AdminNotificationsPage() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	// Redirect if not admin
-	if (!user?.isAdmin) {
-		return <Redirect to="/" />;
-	}
-
 	async function fetchNotifications() {
 		try {
 			setLoading(true);
@@ -47,9 +42,17 @@ export default function AdminNotificationsPage() {
 		} catch {}
 	}
 
-	useEffect(() => { fetchNotifications(); }, []);
+	useEffect(() => {
+		// Only fetch when admin to avoid unnecessary requests
+		if (user?.isAdmin) {
+			fetchNotifications();
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [user?.isAdmin]);
 
-	return (
+	return !user?.isAdmin ? (
+		<Redirect to="/" />
+	) : (
 		<div className="container mx-auto px-4 py-8">
 			<div className="flex items-center justify-between mb-8">
 				<h1 className="text-4xl font-bold">Notifications</h1>
