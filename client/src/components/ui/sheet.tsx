@@ -62,19 +62,45 @@ const SheetContent = React.forwardRef<
   // Determine the swipe direction based on the side
   const swipeDirection = side === 'left' ? 'left' : 'right';
   
-  // Get the SheetClose context to access the close function
+  // Generate IDs for accessibility fallbacks
+  const id = React.useId();
+  const defaultTitleId = `sheet-title-${id}`;
+  const defaultDescId = `sheet-desc-${id}`;
+
+  // Create sr-only Title/Description to always satisfy a11y requirements
+  const srOnlyTitle = (
+    <SheetPrimitive.Title
+      key={`sr-title-${id}`}
+      id={defaultTitleId}
+      className="sr-only"
+    >
+      Panel
+    </SheetPrimitive.Title>
+  );
+
+  const srOnlyDescription = (
+    <SheetPrimitive.Description
+      key={`sr-desc-${id}`}
+      id={defaultDescId}
+      className="sr-only"
+    >
+      Additional contextual information for this panel.
+    </SheetPrimitive.Description>
+  );
+
+  // Normalize children so we can safely prepend a11y elements
+  const childrenArray = React.Children.toArray(children);
+  const contentChildren = [srOnlyTitle, srOnlyDescription, ...childrenArray];
+  
+  // Use the swipe-close hook with appropriate direction
   const close = () => {
-    // Try to find any remaining close button first
     const closeButton = document.querySelector('[data-state="open"] [role="dialog"] button[aria-label="Close"]') as HTMLButtonElement | null;
     if (closeButton) {
       closeButton.click();
       return;
     }
-    
-    // Fallback: trigger close via Radix primitive's data-state attribute
     const dialogElement = document.querySelector('[data-state="open"][role="dialog"]') as HTMLElement | null;
     if (dialogElement) {
-      // Create and dispatch escape key event to close the dialog
       const escapeEvent = new KeyboardEvent('keydown', {
         key: 'Escape',
         keyCode: 27,
@@ -86,7 +112,6 @@ const SheetContent = React.forwardRef<
     }
   };
   
-  // Use the swipe-close hook with appropriate direction
   useSwipeClose({
     onClose: close,
     direction: swipeDirection,
@@ -95,11 +120,9 @@ const SheetContent = React.forwardRef<
   
   // Create a merged ref that combines both the forwarded ref and our internal ref
   const mergedRef = (node: React.ElementRef<typeof SheetPrimitive.Content> | null) => {
-    // Update the forwarded ref
     if (typeof ref === 'function') {
       ref(node);
     } else if (ref) {
-      // Cast the ref to any to avoid TypeScript read-only errors
       (ref as any).current = node;
     }
   };
@@ -111,9 +134,12 @@ const SheetContent = React.forwardRef<
         ref={mergedRef}
         className={cn(sheetVariants({ side }), className)}
         data-swipe-direction={swipeDirection}
+        aria-labelledby={(props as any)['aria-labelledby'] || defaultTitleId}
+        aria-describedby={(props as any)['aria-describedby'] || defaultDescId}
+        role="dialog"
         {...props}
       >
-        {children}
+        {contentChildren}
 
       </SheetPrimitive.Content>
     </SheetPortal>

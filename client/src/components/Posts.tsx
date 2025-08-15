@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchWordPressPosts, WordPressPost, checkWordPressApiStatus } from "@/lib/wordpress-api";
+import { WordPressPost } from "@/lib/wordpress-api";
 import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
@@ -38,14 +38,24 @@ function Posts() {
   
   // Fetch posts with enhanced error handling
   const { data, isLoading, error, isError, refetch } = useQuery({
-    queryKey: ['/api/wordpress/posts', page],
-    queryFn: () => fetchWordPressPosts({ 
-      page,
-      perPage: 9, // Adjusted for better grid display (3x3)
-      skipCache: false
-    }),
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 10000)
+    queryKey: ['/api/posts', page],
+    queryFn: async () => {
+      const res = await fetch(`/api/posts?page=${page}&limit=9`);
+      if (!res.ok) throw new Error(`Failed to fetch posts (${res.status})`);
+      const json = await res.json();
+      // Adapt shape to WordPress-like consumers in this component
+      return {
+        posts: (json.posts || []).map((p: any) => ({
+          id: p.id,
+          slug: p.slug,
+          title: { rendered: p.title },
+          excerpt: { rendered: p.excerpt || (p.content ? String(p.content).slice(0, 150) + '…' : '') },
+        })),
+        totalPages: json.hasMore ? page + 1 : page,
+      } as { posts: WordPressPost[]; totalPages: number };
+    },
+    retry: 1,
+    retryDelay: (attemptIndex) => Math.min(800 * Math.pow(2, attemptIndex), 5000)
   });
 
   // Loading state

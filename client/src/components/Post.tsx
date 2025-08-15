@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchWordPressPostBySlug } from "@/lib/wordpress-api";
+import { WordPressPost } from "@/lib/wordpress-api";
 import { useParams } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
@@ -8,8 +8,21 @@ import { extractHorrorExcerpt } from "@/lib/content-analysis";
 function Post() {
   const { slug } = useParams<{ slug: string }>();
   const { data: post, isLoading, error } = useQuery({
-    queryKey: ['/api/wordpress/posts', slug],
-    queryFn: () => fetchWordPressPostBySlug(slug),
+    queryKey: ['/api/posts/slug', slug],
+    queryFn: async () => {
+      const res = await fetch(`/api/posts/slug/${slug}`);
+      if (!res.ok) throw new Error(`Failed to fetch post (${res.status})`);
+      const p = await res.json();
+      const adapted: WordPressPost = {
+        id: p.id,
+        date: p.createdAt,
+        slug: p.slug,
+        title: { rendered: p.title },
+        content: { rendered: p.content },
+        excerpt: { rendered: p.excerpt || (p.content ? String(p.content).slice(0, 150) + '…' : '') },
+      } as any;
+      return adapted;
+    },
   });
 
   if (isLoading) {
