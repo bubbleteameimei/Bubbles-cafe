@@ -252,8 +252,9 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
         
         // Check for HTTP errors
         if (!response.ok) {
-          console.error(`[WordPress] HTTP Error: ${response.status} ${response.statusText}`);
-          throw new Error(`API returned status ${response.status}`);
+          const text = await response.text();
+          console.error(`[WordPress] Non-OK response ${response.status}: ${text}`);
+          throw new Error(`WordPress API error: ${response.status}`);
         }
         
         // Ensure we got JSON
