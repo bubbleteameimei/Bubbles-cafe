@@ -1,10 +1,12 @@
 {
   "version": "1.0",
   "workflows": {
-    "dev": {
+    "server": {
       "command": "npm run dev",
-      "description": "Start the Express server and Vite development environment",
-      "env": {},
+      "description": "Start the application server",
+      "env": {
+        "NODE_ENV": "development"
+      },
       "restartPolicy": "always"
     }
   }
