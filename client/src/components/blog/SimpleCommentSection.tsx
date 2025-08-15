@@ -412,26 +412,45 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     }
   }, [postId]);
 
+  async function safeFetchJson(input: RequestInfo | URL, init?: RequestInit): Promise<any> {
+    try {
+      const res = await fetch(input, init);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    } catch (e) {
+      // Bubble up; caller will handle
+      throw e;
+    }
+  }
+
+  async function fetchWithRetry(input: RequestInfo | URL, init?: RequestInit, retries = 1): Promise<any> {
+    try {
+      return await safeFetchJson(input, init);
+    } catch (e) {
+      if (retries > 0) {
+        await new Promise(r => setTimeout(r, 400));
+        return fetchWithRetry(input, init, retries - 1);
+      }
+      throw e;
+    }
+  }
+
   // Fetch comments with improved error handling
   const { data: comments = [], isLoading, error } = useQuery<Comment[]>({
     queryKey: [`/api/posts/${postId}/comments`],
     queryFn: async () => {
       try {
         console.log(`[Comments] Fetching comments for post ${postId}`);
-        const response = await fetch(`/api/posts/${postId}/comments`);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch comments: ${response.status}`);
-        }
-        const data = await response.json();
-        console.log(`[Comments] Fetched ${data.length} comments`);
-        return data;
-      } catch (error) {
-        console.error(`[Comments] Error fetching comments:`, error);
-        throw error;
+        const data = await fetchWithRetry(`/api/posts/${postId}/comments`, { credentials: 'include' }, 1);
+        console.log(`[Comments] Retrieved ${data.length} comments`);
+        return Array.isArray(data) ? data : (data.comments || []);
+      } catch (err) {
+        console.error(`[Comments] Error fetching comments:`, err);
+        throw err;
       }
     },
-    retry: 2,
-    staleTime: 30000, // 30 seconds
+    refetchOnWindowFocus: true,
+    staleTime: 30 * 1000
   });
 
   // Post new comment

@@ -26,6 +26,7 @@ export function PullToRefresh({
   const containerRef = useRef<HTMLDivElement>(null);
   const [pullPosition, setPullPosition] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [justRefreshed, setJustRefreshed] = useState(false);
   const startYRef = useRef<number | null>(null);
   const thresholdReached = pullPosition >= pullDistance;
   
@@ -72,6 +73,8 @@ export function PullToRefresh({
           setTimeout(() => {
             setIsRefreshing(false);
             setPullPosition(0);
+            setJustRefreshed(true);
+            setTimeout(() => setJustRefreshed(false), 900);
           }, 700); // Slightly longer delay for animation
         });
       } else {
@@ -137,6 +140,19 @@ export function PullToRefresh({
         }}
       >
         {children}
+        <AnimatePresence>
+          {justRefreshed && (
+            <motion.div
+              className="pointer-events-none fixed inset-0 z-[5]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35 }}
+            >
+              <ConfettiBurst />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   );
@@ -270,6 +286,29 @@ function RefreshIndicator() {
       >
         Refreshing...
       </motion.span>
+    </div>
+  );
+}
+
+function ConfettiBurst() {
+  // Simple confetti dots using divs
+  const dots = Array.from({ length: 18 });
+  return (
+    <div className="relative w-full h-full overflow-hidden">
+      {dots.map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-2 h-2 rounded-full"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: 0,
+            backgroundColor: ["#22c55e", "#ef4444", "#f59e0b", "#3b82f6"][i % 4],
+          }}
+          initial={{ y: 0, opacity: 0 }}
+          animate={{ y: `${60 + Math.random() * 80}vh`, opacity: [0, 1, 0] }}
+          transition={{ duration: 0.9 + Math.random() * 0.4, ease: "ease-out" }}
+        />
+      ))}
     </div>
   );
 }
