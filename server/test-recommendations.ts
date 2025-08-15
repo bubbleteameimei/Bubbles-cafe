@@ -34,7 +34,7 @@ export async function getPostsRecommendations(req: Request, res: Response) {
       console.log(`Found ${recentPosts.length} recent posts`);
       
       // Return simplified metadata for display
-      const result = recentPosts.map(post => ({
+      const result = recentPosts.map((post: { id: number; title: string; excerpt: string | null; slug: string }) => ({
         ...post,
         readingTime: 5, // Default time
         authorName: 'Anonymous',
@@ -63,7 +63,7 @@ export async function getPostsRecommendations(req: Request, res: Response) {
     console.log(`Found ${recommendedPosts.length} posts to recommend`);
     
     // Return simplified metadata for display
-    const result = recommendedPosts.map(post => ({
+    const result = recommendedPosts.map((post: { id: number; title: string; excerpt: string | null; slug: string }) => ({
       ...post,
       readingTime: 5, // Default time
       authorName: 'Anonymous',

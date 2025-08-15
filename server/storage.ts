@@ -1283,9 +1283,9 @@ export class DatabaseStorage implements IStorage {
           const paginatedPosts = rawPosts.slice(0, limit);
           
           // Transform posts with reliable field access
-          const transformedPosts = paginatedPosts.map(post => {
+          const transformedPosts = paginatedPosts.map((post: any) => {
             // Extract metadata for fields that might be stored there
-            const metadata = (post.metadata as any) || {};
+            const metadata: Record<string, any> = (post.metadata as any) || {};
             
             // Get values with fallbacks - prioritize database columns over metadata
             return {
@@ -1294,11 +1294,8 @@ export class DatabaseStorage implements IStorage {
               content: post.content,
               slug: post.slug,
               excerpt: post.excerpt,
-              author: metadata.authorName || 'admin',
               authorId: post.authorId,
               createdAt: new Date(post.createdAt),
-              likes: metadata.likes || 0,
-              views: metadata.views || 0,
               metadata: metadata,
               // Use database column for isAdminPost, fallback to metadata
               isAdminPost: post.isAdminPost !== undefined ? post.isAdminPost : (metadata.isAdminPost || false),
@@ -1310,7 +1307,7 @@ export class DatabaseStorage implements IStorage {
               readingTimeMinutes: metadata.readingTimeMinutes || null,
               likesCount: metadata.likes || 0,
               dislikesCount: metadata.dislikes || 0
-            };
+            } as Post & { isCommunityPost?: boolean };
           });
           
           // Apply text search filter if specified (post-transform filtering)
