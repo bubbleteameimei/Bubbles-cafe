@@ -17,8 +17,6 @@ export default function Navigation() {
   const { theme, setTheme } = useTheme();
 
   const [scrolled, setScrolled] = useState(false);
-  const [deviceType, setDeviceType] = useState<'mobile' | 'tablet' | 'laptop' | 'desktop'>('desktop');
-  const [isMobileLandscape, setIsMobileLandscape] = useState(false);
 
   // Effect to detect scroll position for conditional styling
   useEffect(() => {
@@ -28,43 +26,6 @@ export default function Navigation() {
     
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Enhanced device detection with orientation support
-  useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      
-      // Check if mobile is in landscape mode
-      if (width < 640 && width > height) {
-        setIsMobileLandscape(true);
-      } else {
-        setIsMobileLandscape(false);
-      }
-      
-      // Enhanced device type detection
-      if (width < 640) {
-        setDeviceType('mobile');
-      } else if (width >= 640 && width < 768) {
-        setDeviceType('tablet');
-      } else if (width >= 768 && width < 1024) {
-        setDeviceType('laptop');
-      } else {
-        setDeviceType('desktop');
-      }
-    };
-    
-    // Initial call
-    handleResize();
-    
-    // Setup resize listener
-    window.addEventListener('resize', handleResize);
-    
-    // Cleanup on component unmount
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
   }, []);
 
   // Navigation links for the nav bar
@@ -85,62 +46,12 @@ export default function Navigation() {
     }
   };
 
-  // Get responsive classes based on device type
-  const getResponsiveClasses = () => {
-    switch (deviceType) {
-      case 'mobile':
-        return {
-          navHeight: 'h-16',
-          buttonSize: 'h-10 w-10',
-          iconSize: 'h-5 w-5',
-          sheetWidth: 'w-[280px]',
-          padding: 'px-2'
-        };
-      case 'tablet':
-        return {
-          navHeight: 'h-18',
-          buttonSize: 'h-11 w-11',
-          iconSize: 'h-5 w-5',
-          sheetWidth: 'w-[350px]',
-          padding: 'px-4'
-        };
-      case 'laptop':
-        return {
-          navHeight: 'h-18',
-          buttonSize: 'h-11 w-11',
-          iconSize: 'h-5 w-5',
-          sheetWidth: 'w-[380px]',
-          padding: 'px-6'
-        };
-      case 'desktop':
-        return {
-          navHeight: 'h-20',
-          buttonSize: 'h-12 w-12',
-          iconSize: 'h-6 w-6',
-          sheetWidth: 'w-[400px]',
-          padding: 'px-8'
-        };
-      default:
-        return {
-          navHeight: 'h-16',
-          buttonSize: 'h-10 w-10',
-          iconSize: 'h-5 w-5',
-          sheetWidth: 'w-[280px]',
-          padding: 'px-2'
-        };
-    }
-  };
-
-  const responsiveClasses = getResponsiveClasses();
-
   return (
     <header 
       className={`fixed top-0 z-40 w-screen border-b 
                 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
                 transition-all duration-300 ease-in-out 
                 ${scrolled ? 'shadow-md' : ''}`}
-      data-device-type={deviceType}
-      data-mobile-landscape={isMobileLandscape}
       style={{
         width: "100vw",
         left: 0,
@@ -149,7 +60,7 @@ export default function Navigation() {
         padding: 0
       }}
     >
-      <div className={`w-full flex ${responsiveClasses.navHeight} items-center justify-between ${responsiveClasses.padding}`}>
+      <div className="w-full flex h-16 md:h-18 items-center justify-between px-4 md:px-6">
         {/* Left section with menu toggle for all screen sizes */}
         <div className="flex items-center -mt-1">
           {/* Menu toggle for all devices */}
@@ -158,16 +69,16 @@ export default function Navigation() {
               <Button
                 variant="ghost"
                 size="icon"
-                className={`${responsiveClasses.buttonSize} rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/60
-                          transition-all duration-200 ease-in-out active:scale-95 mt-2 touch-friendly`}
+                className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/60
+                          transition-all duration-200 ease-in-out active:scale-95 mt-2"
                 aria-label="Open menu"
               >
-                <Menu className={responsiveClasses.iconSize} />
+                <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent 
               side="left" 
-              className={`p-0 ${responsiveClasses.sheetWidth} max-w-[85vw] ${deviceType === 'mobile' ? 'animate-mobile' : deviceType === 'tablet' ? 'animate-tablet' : 'animate-desktop'}`}
+              className="p-0 w-[280px] sm:w-[320px] md:w-[350px] lg:w-[400px] max-w-[85vw]"
             >
               {/* Sidebar navigation for all screen sizes */}
               <div className="border-b border-border/30"></div>
@@ -190,7 +101,7 @@ export default function Navigation() {
               className={`px-5 py-2.5 rounded-md text-sm font-medium transition-colors hover:bg-accent/30 mt-2
                         ${location === link.href 
                           ? 'text-primary font-semibold bg-accent/40 border border-border/40 shadow-sm' 
-                          : 'text-foreground/80 hover:text-foreground'} hover-enhanced`}
+                          : 'text-foreground/80 hover:text-foreground'}`}
             >
               {link.label}
             </button>
@@ -207,8 +118,8 @@ export default function Navigation() {
             variant="ghost"
             size="icon"
             onClick={handleSearchButtonClick}
-            className={`h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                      transition-all duration-150 active:scale-95 mt-2 touch-friendly`}
+            className="h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                      transition-all duration-150 active:scale-95 mt-2"
             aria-label="Search"
           >
             <Search className="h-4 w-4" />
@@ -217,8 +128,8 @@ export default function Navigation() {
           {/* Notifications */}
           <NotificationIcon 
             notifications={notifications} 
-            className={`h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 
-                      transition-all duration-150 active:scale-95 mt-2 touch-friendly`} 
+            className="h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 
+                      transition-all duration-150 active:scale-95 mt-2" 
           />
           
           {/* Theme toggle */}
@@ -226,8 +137,8 @@ export default function Navigation() {
             variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className={`h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                      transition-all duration-150 active:scale-95 mt-2 touch-friendly`}
+            className="h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                      transition-all duration-150 active:scale-95 mt-2"
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {theme === 'dark' ? (
@@ -243,8 +154,8 @@ export default function Navigation() {
               variant="ghost"
               size="icon"
               onClick={() => setLocation("/auth")}
-              className={`h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                        transition-all duration-150 active:scale-95 mt-2 touch-friendly`}
+              className="h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                        transition-all duration-150 active:scale-95 mt-2"
               aria-label="Sign in"
             >
               <User className="h-4 w-4" />
@@ -254,8 +165,8 @@ export default function Navigation() {
               variant="ghost"
               size="icon"
               onClick={() => setLocation('/profile')}
-              className={`h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                        transition-all duration-150 active:scale-95 p-0 overflow-hidden mt-2 touch-friendly`}
+              className="h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                        transition-all duration-150 active:scale-95 p-0 overflow-hidden mt-2"
               aria-label="Profile"
             >
               {user.avatar ? (
@@ -275,15 +186,6 @@ export default function Navigation() {
           )}
         </div>
       </div>
-      
-      {/* Mobile landscape optimization */}
-      {isMobileLandscape && (
-        <div className="lg:hidden px-2 py-1 bg-muted/50 border-t border-border/30">
-          <div className="text-xs text-muted-foreground text-center">
-            Landscape mode - Consider rotating device for better experience
-          </div>
-        </div>
-      )}
     </header>
   );
 }
