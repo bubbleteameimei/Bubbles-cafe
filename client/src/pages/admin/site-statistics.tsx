@@ -73,9 +73,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 // Simple loading indicator component
 const LoadingIndicator = () => (
-  <div className="flex items-center justify-center w-full h-[50vh]">
+  <div className="flex items-center justify-center w-full h-[50vh]" role="status" aria-live="polite">
     <div className="flex flex-col items-center">
-      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <Loader2 className="h-12 w-12 animate-spin text-primary" aria-hidden="true" />
       <p className="mt-4 text-muted-foreground">Loading analytics data...</p>
     </div>
   </div>
@@ -136,11 +136,7 @@ export default function SiteStatisticsPage() {
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState("week");
   const [currentTab, setCurrentTab] = useState("overview");
-  
-  // Redirect if not admin
-  if (!user?.isAdmin) {
-    return <Redirect to="/" />;
-  }
+  const isAdmin = !!user?.isAdmin;
 
   // Fetch analytics data
   const { data: analytics, isLoading, error } = useQuery<SiteAnalytics>({
@@ -149,8 +145,13 @@ export default function SiteStatisticsPage() {
       const res = await fetch('/api/admin/analytics');
       if (!res.ok) throw new Error('Failed to fetch analytics data');
       return res.json();
-    }
+    },
+    enabled: isAdmin,
   });
+
+  if (!isAdmin) {
+    return <Redirect to="/" />;
+  }
 
   // Mock time series data if it's not available in the API response
   const timeSeriesData = analytics?.timeSeriesData || [
@@ -191,7 +192,7 @@ export default function SiteStatisticsPage() {
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <Alert variant="destructive">
+        <Alert variant="destructive" role="alert">
           <AlertDescription>
             Failed to load analytics data. Please try again later.
           </AlertDescription>
