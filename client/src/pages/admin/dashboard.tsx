@@ -71,11 +71,7 @@ const activityData = [
 export default function AdminDashboard() {
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState("week");
-  
-  // Redirect if not admin
-  if (!user?.isAdmin) {
-    return <Redirect to="/" />;
-  }
+  const isAdmin = !!user?.isAdmin;
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['/api/admin/info'],
@@ -83,7 +79,8 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/info');
       if (!res.ok) throw new Error('Failed to fetch dashboard data');
       return res.json();
-    }
+    },
+    enabled: isAdmin,
   });
 
   const { data: analyticsData, isLoading: analyticsLoading } = useQuery({
@@ -92,7 +89,8 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/analytics');
       if (!res.ok) throw new Error('Failed to fetch analytics data');
       return res.json();
-    }
+    },
+    enabled: isAdmin,
   });
 
   const { data: activityLogs, isLoading: activityLoading } = useQuery({
@@ -101,8 +99,13 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/activity');
       if (!res.ok) throw new Error('Failed to fetch activity data');
       return res.json();
-    }
+    },
+    enabled: isAdmin,
   });
+
+  if (!isAdmin) {
+    return <Redirect to="/" />;
+  }
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -110,14 +113,15 @@ export default function AdminDashboard() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
+      <div className="flex flex-col items-center justify-center min-h-[60vh]" role="alert">
+        <AlertTriangle className="h-12 w-12 text-red-500 mb-4" aria-hidden="true" />
         <h2 className="text-2xl font-bold mb-2">Error Loading Dashboard</h2>
         <p className="text-muted-foreground">Unable to load dashboard data. Please try again later.</p>
         <Button 
           variant="outline" 
           className="mt-4"
           onClick={() => window.location.reload()}
+          aria-label="Retry loading dashboard"
         >
           Retry
         </Button>
@@ -237,7 +241,7 @@ export default function AdminDashboard() {
                           <Badge variant="secondary" className="text-xs">
                             {post.metadata?.themeCategory || 'Story'}
                           </Badge>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Open story">
                             <Eye className="h-4 w-4" />
                           </Button>
                         </div>

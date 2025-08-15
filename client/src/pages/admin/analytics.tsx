@@ -7,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ActivityTimeline, ActivityLog } from "@/components/admin/activity-timeline";
 
@@ -30,27 +30,24 @@ interface Notification {
   type: 'info' | 'warning' | 'error';
 }
 
-// We'll use the ActivityLog type imported from activity-timeline.tsx
-
 export default function AdminAnalyticsPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-
-  // Redirect if not admin
-  if (!user?.isAdmin) {
-    return <Redirect to="/" />;
-  }
+  const isAdmin = !!user?.isAdmin;
 
   const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useQuery<SiteAnalytics>({
     queryKey: ["/api/admin/analytics"],
+    enabled: isAdmin,
   });
 
   const { data: notifications = [], isLoading: notificationsLoading } = useQuery<Notification[]>({
     queryKey: ["/api/admin/notifications"],
+    enabled: isAdmin,
   });
 
   const { data: activityLogs = [], isLoading: logsLoading } = useQuery<ActivityLog[]>({
     queryKey: ["/api/admin/activity"],
+    enabled: isAdmin,
   });
 
   const markAsRead = useMutation({
@@ -62,10 +59,14 @@ export default function AdminAnalyticsPage() {
     }
   });
 
+  if (!isAdmin) {
+    return <Redirect to="/" />;
+  }
+
   if (analyticsLoading || notificationsLoading || logsLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin mb-4" />
+      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]" role="status" aria-live="polite">
+        <Loader2 className="h-8 w-8 animate-spin mb-4" aria-hidden="true" />
         <p className="text-muted-foreground">Loading analytics data...</p>
       </div>
     );
@@ -74,7 +75,7 @@ export default function AdminAnalyticsPage() {
   if (analyticsError) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <Alert variant="destructive">
+        <Alert variant="destructive" role="alert">
           <AlertDescription>
             Failed to load analytics data. Please try again later.
           </AlertDescription>
@@ -140,20 +141,20 @@ export default function AdminAnalyticsPage() {
             <Monitor className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
+            <div className="grid grid-cols-3 gap-4" role="list">
+              <div role="listitem">
                 <p className="text-sm font-medium">Desktop</p>
                 <div className="text-2xl font-bold">
                   {((analytics?.deviceStats.desktop || 0) * 100).toFixed(1)}%
                 </div>
               </div>
-              <div>
+              <div role="listitem">
                 <p className="text-sm font-medium">Mobile</p>
                 <div className="text-2xl font-bold">
                   {((analytics?.deviceStats.mobile || 0) * 100).toFixed(1)}%
                 </div>
               </div>
-              <div>
+              <div role="listitem">
                 <p className="text-sm font-medium">Tablet</p>
                 <div className="text-2xl font-bold">
                   {((analytics?.deviceStats.tablet || 0) * 100).toFixed(1)}%
@@ -164,7 +165,6 @@ export default function AdminAnalyticsPage() {
         </Card>
       </div>
 
-      {/* Notifications Section */}
       <div className="grid gap-6 md:grid-cols-2 mb-8">
         <Card>
           <CardHeader>
@@ -193,6 +193,7 @@ export default function AdminAnalyticsPage() {
                         size="sm"
                         onClick={() => markAsRead.mutate(notification.id)}
                         disabled={markAsRead.isPending}
+                        aria-label="Mark notification as read"
                       >
                         Mark as read
                       </Button>
@@ -204,7 +205,6 @@ export default function AdminAnalyticsPage() {
           </CardContent>
         </Card>
 
-        {/* Activity Logs Section */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">

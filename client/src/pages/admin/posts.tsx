@@ -51,14 +51,11 @@ export default function AdminPostsPage() {
   const queryClient = useQueryClient();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-
-  // Redirect if not admin
-  if (!user?.isAdmin) {
-    return <Redirect to="/" />;
-  }
+  const isAdmin = !!user?.isAdmin;
 
   const { data: posts, isLoading, error } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
+    enabled: isAdmin,
   });
 
   const deletePost = useMutation({
@@ -133,10 +130,14 @@ export default function AdminPostsPage() {
     },
   });
 
+  if (!isAdmin) {
+    return <Redirect to="/" />;
+  }
+
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin mb-4" />
+      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]" role="status" aria-live="polite">
+        <Loader2 className="h-8 w-8 animate-spin mb-4" aria-hidden="true" />
         <p className="text-muted-foreground">Loading posts...</p>
       </div>
     );
@@ -145,7 +146,7 @@ export default function AdminPostsPage() {
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <Alert variant="destructive">
+        <Alert variant="destructive" role="alert">
           <AlertDescription>
             Failed to load posts. Please try again later.
           </AlertDescription>
