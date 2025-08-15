@@ -16,6 +16,7 @@ import { optimizeImagesForConnection } from "./utils/image-optimization";
 // Import CSRF protection
 import { initCSRFProtection } from "@/lib/csrf-token";
 import logger from "./utils/secure-client-logger";
+import './lib/fetch-csrf';
 
 logger.info("Starting application...");
 
