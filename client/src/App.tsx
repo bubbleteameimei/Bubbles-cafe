@@ -254,8 +254,7 @@ const AppContent = () => {
                         lg:pt-6 
                         flex-1 
                         ${location === '/' ? '' : 'bg-background'} 
-                        m-0 p-0 px-0 mx-0
-                        layout-mobile`}
+                        m-0 p-0 px-0 mx-0`}
              style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto' }}>
           <Switch>
             <Route path="/" component={HomePage} />
