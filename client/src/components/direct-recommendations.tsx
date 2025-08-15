@@ -112,7 +112,7 @@ export function DirectRecommendations({
             ? `Unable to load recommendations. ${error instanceof Error ? error.message : ''}`
             : 'Check back soon for more story recommendations.'}
         </p>
-        {process.env.NODE_ENV === 'development' && error && (
+        {import.meta.env.DEV && error && (
           <div className="mt-2 p-2 bg-red-50 text-red-600 text-xs rounded">
             {error instanceof Error ? error.message : String(error)}
           </div>
