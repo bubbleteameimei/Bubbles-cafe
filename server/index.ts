@@ -96,6 +96,7 @@ app.use(validateCsrfToken({
 }));
 
 // Setup authentication
+app.use((req, _res, next) => next());
 setupAuth(app);
 setupOAuth(app);
 
@@ -215,6 +216,8 @@ async function startServer() {
       // Register modular routes (replaces legacy monolithic routes)
       const { registerModularRoutes } = await import('./routes');
       registerModularRoutes(app);
+      registerEmailServiceRoutes(app);
+      registerBookmarkRoutes(app);
       registerWordPressSyncRoutes(app);
 
       // Setup WordPress sync schedule (run every 5 minutes)
@@ -227,6 +230,8 @@ async function startServer() {
       // Register modular routes (replaces legacy monolithic routes)
       const { registerModularRoutes } = await import('./routes');
       registerModularRoutes(app);
+      registerEmailServiceRoutes(app);
+      registerBookmarkRoutes(app);
       registerWordPressSyncRoutes(app);
 
       // Setup WordPress sync schedule (run every 5 minutes)

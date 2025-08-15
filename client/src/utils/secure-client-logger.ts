@@ -1,6 +1,6 @@
 // Client-side secure logger with conditional logging
-const isDev = process.env.NODE_ENV === 'development';
-const isDebugMode = localStorage?.getItem('debug') === 'true' || isDev;
+const isDev = import.meta.env.DEV;
+const isDebugMode = (typeof localStorage !== 'undefined' && localStorage.getItem('debug') === 'true') || isDev;
 
 // Sensitive fields that should never be logged on client
 const SENSITIVE_FIELDS = [

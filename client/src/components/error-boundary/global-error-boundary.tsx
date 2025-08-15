@@ -53,7 +53,7 @@ class ErrorLogger {
     };
 
     // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.group(`🚨 Error [${errorId}]`);
       console.error('Error:', error);
       console.error('Error Info:', errorInfo);
@@ -87,7 +87,7 @@ class ErrorLogger {
   private async sendToErrorService(errorReport: any) {
     try {
       // Only send error reports in production or if explicitly enabled
-      if (process.env.NODE_ENV === 'production' || process.env.VITE_ENABLE_ERROR_REPORTING === 'true') {
+      if (import.meta.env.PROD || import.meta.env.VITE_ENABLE_ERROR_REPORTING === 'true') {
         await fetch('/api/errors', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -96,7 +96,7 @@ class ErrorLogger {
       }
     } catch (err) {
       // Silently fail in development, log in production
-      if (process.env.NODE_ENV === 'production') {
+      if (import.meta.env.PROD) {
         console.warn('Failed to send error report:', err);
       }
     }
@@ -122,7 +122,7 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
   level, 
   errorId 
 }) => {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = import.meta.env.PROD;
   
   const getErrorMessage = () => {
     if (level === 'critical') {

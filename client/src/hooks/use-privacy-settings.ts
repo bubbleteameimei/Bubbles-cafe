@@ -84,7 +84,7 @@ export function usePrivacySettings() {
           }
           
           // For development, use demo settings when API fails
-          const isDev = process.env.NODE_ENV === 'development' || import.meta.env.DEV;
+          const isDev = import.meta.env.DEV;
           if (isDev) {
             console.log('Using demo privacy settings for development');
             // Demo settings for development
@@ -128,7 +128,7 @@ export function usePrivacySettings() {
     if (isAuthReady) {
       fetchSettings();
     }
-  }, [isAuthenticated, user, isAuthReady]);
+  }, [isAuthenticated, user, isAuthReady, toast]);
 
   /**
    * Update a specific privacy setting
@@ -155,7 +155,7 @@ export function usePrivacySettings() {
       }));
       
       // For development mode, just simulate success without API call
-      const isDev = process.env.NODE_ENV === 'development';
+      const isDev = import.meta.env.DEV;
       if (isDev) {
         setTimeout(() => {
           // Successfully updated

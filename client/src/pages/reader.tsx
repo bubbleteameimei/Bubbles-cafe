@@ -204,18 +204,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const deleteMutation = useMutation({
     mutationFn: async (postId: number) => {
       console.log(`[Reader] Attempting to delete post with ID: ${postId}`);
-      
-      const csrfToken = document.cookie.replace(/(?:(?:^|.*;\s*)XSRF-TOKEN\s*\=\s*([^;]*).*$)|^.*$/, "$1");
-      console.log('[Reader] Using CSRF token for deletion');
-      
-      const response = await fetch(`/api/posts/${postId}`, {
+      await fetchCsrfTokenIfNeeded();
+      const response = await fetch(`/api/posts/${postId}`, applyCSRFToken({
         method: 'DELETE',
         headers: { 
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken
+          'Content-Type': 'application/json'
         },
         credentials: 'include'
-      });
+      }));
       
       // Read response data
       const data = await response.json();
