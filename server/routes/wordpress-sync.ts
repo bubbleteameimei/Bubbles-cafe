@@ -14,30 +14,33 @@ let lastSyncStatus: any = null;
 let lastSyncTime: string | null = null;
 
 // Minimal real auth/authorization: require session user and admin flag
-function requireAdmin(req: Request, res: Response, next: NextFunction) {
+const requireAdmin: import('express').RequestHandler = (req, res, next) => {
   const user = (req as any).user || req.session?.user;
   if (!user) {
-    return res.status(401).json({ error: 'Authentication required' });
+    res.status(401).json({ error: 'Authentication required' });
+    return;
   }
   if (!user.isAdmin) {
-    return res.status(403).json({ error: 'Admin privileges required' });
+    res.status(403).json({ error: 'Admin privileges required' });
+    return;
   }
   next();
-}
+};
 
 // Lightweight rate limiter per-process (basic safeguard)
 const lastCallByRoute: Record<string, number> = {};
-function simpleRateLimit(windowMs = 3000) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  function simpleRateLimit(windowMs = 3000) {
+  return ((req, res, next) => {
     const key = `${req.method}:${req.path}`;
     const now = Date.now();
     const last = lastCallByRoute[key] || 0;
     if (now - last < windowMs) {
-      return res.status(429).json({ error: 'Too many requests' });
+      res.status(429).json({ error: 'Too many requests' });
+      return;
     }
     lastCallByRoute[key] = now;
     next();
-  };
+  }) as import('express').RequestHandler;
 }
 
 // Example Zod schema for POST body validation
