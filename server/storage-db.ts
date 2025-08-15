@@ -262,7 +262,24 @@ export class DatabaseStorage implements IStorage {
       .offset(offset);
     
     const hasMore = results.length > limit;
-    const posts_result = (hasMore ? results.slice(0, -1) : results) as unknown as Post[];
+    const sliced = hasMore ? results.slice(0, -1) : results;
+    const posts_result: Post[] = sliced.map((p: any) => ({
+      id: p.id,
+      title: p.title,
+      content: p.content,
+      excerpt: p.excerpt,
+      slug: p.slug,
+      authorId: p.authorId,
+      isSecret: p.isSecret,
+      isAdminPost: p.isAdminPost,
+      matureContent: p.matureContent,
+      themeCategory: p.themeCategory,
+      readingTimeMinutes: p.readingTimeMinutes,
+      likesCount: p.likesCount,
+      dislikesCount: p.dislikesCount,
+      metadata: p.metadata,
+      createdAt: p.createdAt
+    }));
     
     return { posts: posts_result, hasMore };
   }
