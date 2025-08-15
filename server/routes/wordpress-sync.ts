@@ -13,32 +13,31 @@ let syncInProgress = false;
 let lastSyncStatus: any = null;
 let lastSyncTime: string | null = null;
 
-// BACKEND IMPROVEMENTS:
-// - Require authentication/authorization for all sensitive endpoints
-// - Add CSRF protection for all POST/PUT/DELETE endpoints
-// - Add rate limiting for sensitive endpoints
-// - Use Zod for input validation
-// - Standardize error handling and logging
-// - Document and version API
-// - Use environment variables for secrets
-// - Use parameterized queries/ORM for DB access
-// - Backup DB regularly
-// - Add unit/integration tests for backend logic
-
-
-// Placeholder middleware for authentication/authorization
-function requireAuth(_req: Request, _res: Response, next: NextFunction) {
+// Minimal real auth/authorization: require session user and admin flag
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  const user = (req as any).user || req.session?.user;
+  if (!user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  if (!user.isAdmin) {
+    return res.status(403).json({ error: 'Admin privileges required' });
+  }
   next();
 }
 
-// Placeholder middleware for CSRF protection
-function csrfProtection(_req: Request, _res: Response, next: NextFunction) {
-  next();
-}
-
-// Placeholder middleware for rate limiting
-function rateLimit(_req: Request, _res: Response, next: NextFunction) {
-  next();
+// Lightweight rate limiter per-process (basic safeguard)
+const lastCallByRoute: Record<string, number> = {};
+function simpleRateLimit(windowMs = 3000) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const key = `${req.method}:${req.path}`;
+    const now = Date.now();
+    const last = lastCallByRoute[key] || 0;
+    if (now - last < windowMs) {
+      return res.status(429).json({ error: 'Too many requests' });
+    }
+    lastCallByRoute[key] = now;
+    next();
+  };
 }
 
 // Example Zod schema for POST body validation
@@ -52,7 +51,6 @@ function logEvent(message: string, meta?: Record<string, unknown>) {
   console.log(`[LOG] ${message}`, meta || '');
 }
 
-// TODO: Implement CSRF protection and rate limiting for all POST endpoints below.
 export function registerWordPressSyncRoutes(app: Express): void {
   /**
    * GET /api/wordpress/status
@@ -125,13 +123,11 @@ export function registerWordPressSyncRoutes(app: Express): void {
 
   /**
    * POST /api/wordpress/sync
-   * Trigger a WordPress sync manually
+   * Trigger a WordPress sync manually (admin only)
    */
-  app.post('/api/wordpress/sync', requireAuth, csrfProtection, rateLimit, async (req: Request, res: Response) => {
-    // Example: log event
+  app.post('/api/wordpress/sync', simpleRateLimit(), requireAdmin, async (req: Request, res: Response) => {
     logEvent('Manual WordPress sync triggered via API', { user: (req as any).user });
-    // TODO: Add input validation if accepting body data
-    // Standardize error handling below
+
     if (syncInProgress) {
       return res.status(409).json({
         success: false,
@@ -142,8 +138,6 @@ export function registerWordPressSyncRoutes(app: Express): void {
 
     // Immediately acknowledge and start sync in background
     res.json({ success: true, message: 'WordPress sync started' });
-    // Start background job and return immediately
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     (async () => {
       syncInProgress = true;
       try {
@@ -167,9 +161,9 @@ export function registerWordPressSyncRoutes(app: Express): void {
 
   /**
    * POST /api/wordpress/sync/:postId
-   * Trigger a WordPress sync for a single post
+   * Trigger a WordPress sync for a single post (admin only)
    */
-  app.post('/api/wordpress/sync/:postId', requireAuth, csrfProtection, rateLimit, async (req: Request, res: Response) => {
+  app.post('/api/wordpress/sync/:postId', simpleRateLimit(), requireAdmin, async (req: Request, res: Response) => {
     // Validate input
     const parseResult = syncPostSchema.safeParse({ postId: req.params.postId });
     if (!parseResult.success) {
@@ -182,8 +176,6 @@ export function registerWordPressSyncRoutes(app: Express): void {
     try {
       // Acknowledge immediately
       res.json({ success: true, message: `Sync for post ${postId} started` });
-      // Continue in background (not awaited)
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       (async () => {
         const result = await wordpressSync.syncOnePostById(postId);
         lastSyncStatus = result;

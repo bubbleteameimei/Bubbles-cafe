@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { FileEdit, Trash2, Eye, CheckCircle, XCircle } from "lucide-react";
+import { FileEdit, Trash2, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -41,6 +41,7 @@ interface Post {
     isApproved?: boolean;
     isCommunityPost?: boolean;
     status?: string;
+    [key: string]: any;
   };
 }
 
@@ -71,7 +72,7 @@ export default function AdminPostsPage() {
         description: "Post deleted successfully",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to delete post",
@@ -82,7 +83,7 @@ export default function AdminPostsPage() {
 
   const updatePost = useMutation({
     mutationFn: async (data: { id: number; title: string; content: string }) => {
-      await apiRequest('PATCH', `/api/posts/${data.id}`, {
+      await apiRequest('PUT', `/api/posts/${data.id}`, {
         title: data.title,
         content: data.content,
       });
@@ -95,7 +96,7 @@ export default function AdminPostsPage() {
         description: "Post updated successfully",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to update post",
@@ -105,8 +106,16 @@ export default function AdminPostsPage() {
   });
 
   const approvePost = useMutation({
-    mutationFn: async (postId: number) => {
-      await apiRequest('PATCH', `/api/posts/${postId}/approve`);
+    mutationFn: async (post: Post) => {
+      await apiRequest('PUT', `/api/posts/${post.id}`, {
+        // send only the fields expected by server update schema
+        title: post.title,
+        content: post.content,
+        metadata: {
+          ...(post.metadata || {}),
+          isApproved: true,
+        },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
@@ -115,7 +124,7 @@ export default function AdminPostsPage() {
         description: "Post approved successfully",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to approve post",
@@ -217,7 +226,7 @@ export default function AdminPostsPage() {
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => approvePost.mutate(post.id)}
+                            onClick={() => approvePost.mutate(post)}
                             title="Approve post"
                           >
                             <CheckCircle className="h-4 w-4" />

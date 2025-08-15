@@ -48,6 +48,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { applyCSRFToken, fetchCsrfTokenIfNeeded } from "@/lib/csrf-token";
 
 // Interfaces
 interface CommentMetadata {
@@ -123,13 +124,6 @@ const checkModeration = (text: string): { isFlagged: boolean, moderated: string,
   return { isFlagged, moderated, isUnderReview };
 };
 
-// Get CSRF token from cookies
-const getCSRFToken = (): string => {
-  const cookies = document.cookie.split('; ');
-  const csrfCookie = cookies.find(cookie => cookie.startsWith('csrf-token='));
-  return csrfCookie ? csrfCookie.split('=')[1] : '';
-};
-
 // Simple reply form component
 function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormProps) {
   const [content, setContent] = useState(authorToMention ? `@${authorToMention} ` : "");
@@ -161,15 +155,14 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
       // Use authenticated user's username if available, otherwise use "Anonymous"
       const replyAuthor = isAuthenticated && user ? user.username : "Anonymous";
       
-      // Get CSRF token
-      const csrfToken = getCSRFToken();
+      // Ensure we have a CSRF token and apply it
+      await fetchCsrfTokenIfNeeded();
       
       // Create a new comment with parentId set to the comment we're replying to
-      const response = await fetch(`/api/posts/${postId}/comments`, {
+      const response = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
         method: "POST",
         headers: { 
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken
+          "Content-Type": "application/json"
         },
         credentials: "include",
         body: JSON.stringify({
@@ -179,7 +172,7 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
           needsModeration: isFlagged || isUnderReview,
           moderationStatus: isFlagged ? 'flagged' : (isUnderReview ? 'under_review' : 'none'),
         })
-      });
+      }));
 
       if (!response.ok) {
         const errorData = await response.text();
@@ -448,17 +441,16 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
       const commentAuthor = isAuthenticated && user ? user.username : "Anonymous";
       
       // Get CSRF token
-      const csrfToken = getCSRFToken();
+      await fetchCsrfTokenIfNeeded();
       
       // Check if the content needs moderation
       const { isFlagged, isUnderReview } = checkModeration(content);
       
       console.log(`[Comments] Creating comment for post ${postId}`);
-      const response = await fetch(`/api/posts/${postId}/comments`, {
+      const response = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
         method: "POST",
         headers: { 
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken
+          "Content-Type": "application/json"
         },
         credentials: "include",
         body: JSON.stringify({
@@ -467,7 +459,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
           needsModeration: isFlagged || isUnderReview,
           moderationStatus: isFlagged ? 'flagged' : (isUnderReview ? 'under_review' : 'none'),
         })
-      });
+      }));
 
       if (!response.ok) {
         const errorData = await response.text();
@@ -535,18 +527,17 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     if (!commentToFlag) return;
     
     try {
-      // Get CSRF token
-      const csrfToken = getCSRFToken();
+      // Ensure we have CSRF token
+      await fetchCsrfTokenIfNeeded();
       
-      const response = await fetch(`/api/comments/${commentToFlag}/flag`, {
+      const response = await fetch(`/api/comments/${commentToFlag}/flag`, applyCSRFToken({
         method: "POST",
         headers: { 
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken
+          "Content-Type": "application/json"
         },
         credentials: "include",
         body: JSON.stringify({ reason: "inappropriate content" })
-      });
+      }));
       
       if (!response.ok) {
         throw new Error("Failed to flag comment");

@@ -32,7 +32,7 @@ const ErrorFallbackComponent = React.memo(function ErrorFallback({
       className: "flex flex-col items-center justify-center p-4 text-destructive"
     },
     React.createElement("p", null, error.message),
-    errorInfo && process.env.NODE_ENV === 'development' && 
+    errorInfo && import.meta.env.DEV && 
       React.createElement(
         "pre",
         { className: "mt-2 text-xs overflow-auto max-h-40" },

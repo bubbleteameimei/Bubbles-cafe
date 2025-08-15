@@ -1,5 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { getApiPath } from './asset-path';
+import { applyCSRFToken, fetchCsrfTokenIfNeeded } from './csrf-token';
 
 // Enhanced API error with better type checking and error categorization
 export class APIError extends Error {
@@ -120,7 +121,15 @@ export async function apiRequest<T = unknown>(
 
     let res: Response;
     try {
-      res = await fetch(fullUrl, requestOptions);
+      // Automatically apply CSRF to non-GET methods and ensure token
+      const method = (requestOptions.method || 'GET').toUpperCase();
+      const preparedOptions = method === 'GET'
+        ? requestOptions
+        : applyCSRFToken(requestOptions);
+      if (method !== 'GET') {
+        await fetchCsrfTokenIfNeeded();
+      }
+      res = await fetch(fullUrl, preparedOptions);
       clearTimeout(timeoutId);
     } catch (networkError) {
       clearTimeout(timeoutId);

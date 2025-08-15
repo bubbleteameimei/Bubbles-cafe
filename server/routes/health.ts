@@ -38,18 +38,18 @@ router.get('/detailed', async (req: Request, res: Response) => {
   try {
     const startTime = Date.now();
     
-    // Test database connection
+    // Test database connection using a safe select (drizzle style)
     let dbStatus = 'unknown';
     let dbResponseTime = 0;
     
     try {
       const dbStartTime = Date.now();
-      await db.execute('SELECT 1 as test');
+      // Perform a lightweight select from a known table or posts count
+      await db.query.posts?.findFirst?.({});
       dbResponseTime = Date.now() - dbStartTime;
       dbStatus = 'connected';
-    } catch (dbError) {
+    } catch (_dbError) {
       dbStatus = 'error';
-      logger.error('Database health check failed', { error: dbError });
     }
 
     const totalResponseTime = Date.now() - startTime;
@@ -93,8 +93,8 @@ router.get('/detailed', async (req: Request, res: Response) => {
 // Readiness check for load balancers
 router.get('/ready', async (req: Request, res: Response) => {
   try {
-    // Test database connection
-    await db.execute('SELECT 1 as test');
+    // Try a quick no-op query to ensure DB layer is initialized
+    await db.query.posts?.findFirst?.({});
     
     res.json({ 
       status: 'ready',
