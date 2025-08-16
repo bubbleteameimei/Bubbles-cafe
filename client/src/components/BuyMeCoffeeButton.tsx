@@ -211,7 +211,11 @@ export const BuyMeCoffeeButton = () => {
 
       {/* Donation Modal - Using the Dialog component */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md text-center overflow-hidden">
+        <DialogContent 
+          className="sm:max-w-md text-center overflow-hidden"
+          aria-labelledby="donation-title"
+          aria-describedby="donation-description"
+        >
           {/* Cute sparkles in the background */}
           <div className="absolute inset-0 pointer-events-none">
             {[...Array(8)].map((_, i) => (
