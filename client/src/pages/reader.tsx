@@ -1154,7 +1154,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           
           {/* Reading progress indicator - always visible for user orientation */}
           <div 
-            className="fixed left-0 z-50 h-1 bg-primary/70 top-[64px] sm:top-[64px] md:top-[72px] lg:top-[80px]"
+            className="fixed left-0 z-50 h-1 bg-gradient-to-r from-pink-500 to-purple-600 top-[60px] sm:top-[60px] md:top-[68px] lg:top-[76px]"
             style={{ 
               width: `${readingProgress}%`, 
               transition: 'width 0.2s ease-out'
