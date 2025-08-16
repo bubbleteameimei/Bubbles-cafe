@@ -13,8 +13,8 @@ export const commonSchemas = {
   content: z.string().min(1).max(50000).trim(),
   title: z.string().min(1).max(200).trim(),
   url: z.string().url().max(500),
-  page: z.number().int().min(1).default(1),
-  limit: z.number().int().min(1).max(100).default(10)
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10)
 };
 
 // Sanitize input to prevent XSS
