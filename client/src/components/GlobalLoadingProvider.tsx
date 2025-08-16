@@ -29,8 +29,8 @@ export const useLoading = () => {
 }
 
 // Add comments and centralize magic numbers
-const MIN_LOADING_DURATION = 2500; // Minimum duration for loading screen to show (ms)
-const PREVENT_RAPID_SHOW_DURATION = 1000; // Duration to prevent rapid multiple loading screen triggers (ms)
+const MIN_LOADING_DURATION = 700; // Reduced to make transitions feel snappier
+const PREVENT_RAPID_SHOW_DURATION = 400; // Shorter prevention window
 
 /**
  * GlobalLoadingProvider - Completely rewritten to work with the new loading screen
@@ -102,13 +102,13 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
       // Ignore storage errors
     }
     
-    // Safety timer: force close after 2.5 seconds regardless of other state
+    // Safety timer: force close after minimum duration regardless of other state
     if (loadingTimerRef.current) {
       clearTimeout(loadingTimerRef.current);
     }
     
     loadingTimerRef.current = setTimeout(() => {
-      console.log('Loading provider backup timer triggered after 2.5 seconds');
+      console.log('Loading provider backup timer triggered after minimum duration');
       setIsLoading(false);
       
       try {
@@ -117,7 +117,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
         // Ignore storage errors
       }
       
-      // Reset prevention flag after longer delay to prevent rapid multiple screens
+      // Reset prevention flag after short delay to prevent rapid multiple screens
       preventRapidShowRef.current = false;
     }, MIN_LOADING_DURATION);
   }, [isLoading]);

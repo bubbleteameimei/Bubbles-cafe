@@ -19,13 +19,3 @@ export function ToastSimple() {
     </Button>
   )
 }
-
-// Utility function to show toast without needing to render a button
-export function showToast(description: string, variant: "default" | "destructive" | "success" = "default") {
-  const { toast } = useToast()
-  
-  return toast({
-    description,
-    variant,
-  })
-}

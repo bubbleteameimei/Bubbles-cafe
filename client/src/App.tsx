@@ -187,7 +187,7 @@ const AppContent = () => {
       hideLoading();
       isTransitioningRef.current = false;
       loadingRef.current = null;
-    }, 2500);
+    }, 800);
     // Cleanup on unmount or route change
     return () => {
       if (loadingRef.current) {
@@ -199,22 +199,13 @@ const AppContent = () => {
     };
   }, [locationStr]);
   
-  // Track page transitions and always show loading animation between pages
+  // Track page transitions and mark location without re-triggering loader (handled above)
   useEffect(() => {
-    // Store the current location to detect actual navigation
     const prevLocation = sessionStorage.getItem('current-location');
-    
-    // Only show loading when actually changing pages (not on initial load)
-    if (prevLocation && prevLocation !== location) {
-      // Show loading animation for page transitions
-      showLoading();
+    if (!prevLocation || prevLocation !== location) {
+      sessionStorage.setItem('current-location', location);
     }
-    
-    // Update current location in session storage
-    sessionStorage.setItem('current-location', location);
-    
-    // The loading screen will automatically be hidden after the animation completes
-  }, [location, showLoading]);
+  }, [location]);
   
   // If we're on an error page, render only the error page without layout
   if (isErrorPage) {

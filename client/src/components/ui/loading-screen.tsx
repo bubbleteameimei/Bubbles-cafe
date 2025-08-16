@@ -43,7 +43,7 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
     const forceCloseTimer = setTimeout(() => {
       if (!callbackFired.current && onAnimationComplete) {
         callbackFired.current = true;
-        console.log("Loading screen force-closed after 2.5 seconds");
+        console.log("Loading screen force-closed after minimum duration");
         
         // Run cleanup before calling completion callback
         document.documentElement.classList.remove('disable-scroll');
@@ -52,7 +52,7 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
         // Execute callback last to allow proper cleanup
         onAnimationComplete();
       }
-    }, 2500); // Increased to 2.5 seconds to give more time for fonts to load
+    }, 750);
     
     // Comprehensive cleanup on unmount - ensures complete state reset
     return () => {
@@ -63,10 +63,7 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
       document.documentElement.classList.remove('disable-scroll');
       document.body.classList.remove('loading-active');
       
-      // Only restore scroll position if it's not the homepage to prevent unwanted scrolling
-      if (window.location.pathname !== '/') {
-        window.scrollTo(0, scrollY.current);
-      }
+      // Do not forcibly restore scroll on unmount to avoid jumpy transitions
       
       console.log("[LoadingScreen] Cleanup complete, scroll restored");
     };

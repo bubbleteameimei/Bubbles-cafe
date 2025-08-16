@@ -23,25 +23,26 @@ export function ToastWithAction() {
   )
 }
 
-// Utility function to show toast without needing to render a button
-export function showActionToast({
-  title, 
-  description, 
-  actionText = "Try again", 
-  altText = "Try again",
-  onAction
-}: {
-  title: string,
-  description: string,
-  actionText?: string,
-  altText?: string,
-  onAction?: () => void
-}) {
-  const { toast } = useToast()
-  
-  return toast({
+export function useActionToast() {
+  const { toast } = useToast();
+
+  return ({
     title,
     description,
-    action: <ToastAction altText={altText} onClick={onAction}>{actionText}</ToastAction>,
-  })
+    actionText = "Try again",
+    altText = "Try again",
+    onAction
+  }: {
+    title: string,
+    description: string,
+    actionText?: string,
+    altText?: string,
+    onAction?: () => void
+  }) => {
+    return toast({
+      title,
+      description,
+      action: <ToastAction altText={altText} onClick={onAction}>{actionText}</ToastAction>,
+    });
+  };
 }
