@@ -310,15 +310,14 @@ export default function ContentPage() {
             </DialogDescription>
           </DialogHeader>
           
-          {selectedPost && (
-            <PostEditor 
-              // @ts-expect-error - post is defined in PostEditorProps
-              post={selectedPost} 
-              onClose={() => setIsEditDialogOpen(false)}
-              onSaveSuccess={handleSaveSuccess}
-            />
-          )}
-        </DialogContent>
+                      {selectedPost && (
+              <PostEditor 
+                post={selectedPost} 
+                onClose={() => setIsEditDialogOpen(false)}
+                onSaveSuccess={handleSaveSuccess}
+              />
+            )}
+</DialogContent>
       </Dialog>
 
       {/* Delete Post Dialog */}
