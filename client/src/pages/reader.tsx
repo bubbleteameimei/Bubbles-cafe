@@ -1154,13 +1154,17 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           
           {/* Reading progress indicator - always visible for user orientation */}
           <div 
-            className="fixed left-0 z-50 h-1 bg-gradient-to-r from-pink-500 to-purple-600 top-[60px] sm:top-[60px] md:top-[68px] lg:top-[76px]"
-            style={{ 
-              width: `${readingProgress}%`, 
-              transition: 'width 0.2s ease-out'
-            }}
+            className="fixed left-0 right-0 z-50 top-[58px] sm:top-[58px] md:top-[66px] lg:top-[74px] pointer-events-none"
             aria-hidden="true"
-          />
+          >
+            <div
+              className="h-2 bg-gradient-to-r from-pink-500 to-purple-600"
+              style={{ 
+                width: `${readingProgress}%`, 
+                transition: 'width 0.2s ease-out'
+              }}
+            />
+          </div>
           
           {/* Floating pagination has been removed */}
           
