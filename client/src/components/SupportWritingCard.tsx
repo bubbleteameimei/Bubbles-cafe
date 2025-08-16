@@ -244,7 +244,11 @@ export const SupportWritingCard = ({ className = "" }: SupportWritingCardProps) 
 
       {/* Donation Modal */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md text-center bg-background/95 backdrop-blur-md border border-border/50 overflow-hidden">
+        <DialogContent 
+          className="sm:max-w-md text-center bg-background/95 backdrop-blur-md border border-border/50 overflow-hidden"
+          aria-labelledby="support-writing-title"
+          aria-describedby="support-writing-description"
+        >
           {/* Cute sparkles in the background */}
           <div className="absolute inset-0 pointer-events-none">
             {[...Array(6)].map((_, i) => (
@@ -277,7 +281,7 @@ export const SupportWritingCard = ({ className = "" }: SupportWritingCardProps) 
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.1, type: "spring", stiffness: 200, damping: 20 }}
             >
-              <DialogTitle className="text-xl font-semibold text-center flex items-center justify-center gap-2">
+              <DialogTitle id="support-writing-title" className="text-xl font-semibold text-center flex items-center justify-center gap-2">
                 <motion.div
                   animate={{ rotate: [0, 8, -8, 0] }}
                   transition={{ duration: 1.8, repeat: Infinity, repeatType: "reverse" }}
@@ -302,7 +306,7 @@ export const SupportWritingCard = ({ className = "" }: SupportWritingCardProps) 
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 20 }}
             >
-              <DialogDescription className="text-center text-muted-foreground">
+              <DialogDescription id="support-writing-description" className="text-center text-muted-foreground">
                 Your support means the world! Every coffee keeps my creativity brewing and helps me share more stories.
                 <motion.span
                   animate={{ opacity: [0.4, 1, 0.4] }}
