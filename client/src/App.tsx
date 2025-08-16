@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
-// Removed GlobalLoadingProvider for instant navigation
 import { queryClient } from './lib/queryClient';
 import { Toaster } from './components/ui/toaster';
 import { Sonner } from './components/ui/sonner';
@@ -55,6 +54,8 @@ import { RefreshProvider } from './contexts/refresh-context';
 // Import essential pages directly
 import HomePage from './pages/home';
 import StoriesPage from './pages/index';
+// Import footer component
+import Footer from './components/layout/footer';
 
 // Lazy-load all other pages to improve initial load time
 const ReaderPage = lazyWithRetry(() => import('./pages/reader'));
@@ -292,6 +293,8 @@ const AppContent = () => {
             <Route path="*" component={Error404Page} />
           </Switch>
         </div>
+        {/* Add Footer */}
+        <Footer />
       </main>
     </div>
   );
