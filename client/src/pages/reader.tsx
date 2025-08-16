@@ -1724,6 +1724,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
         </div>
       </div>
+      </div>
     </ErrorBoundary>
   );
 }
