@@ -1,8 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
-// Import our new GlobalLoadingProvider component that handles loading state
-import GlobalLoadingProvider, { useLoading } from './components/GlobalLoadingProvider';
+// Removed GlobalLoadingProvider for instant navigation
 import { queryClient } from './lib/queryClient';
 import { Toaster } from './components/ui/toaster';
 import { Sonner } from './components/ui/sonner';
@@ -148,12 +147,8 @@ const preloadWordPressPostsDeferred = () => {
 };
 
 const AppContent = () => {
-  // Removed unused variables: user, isSidebarOpen, setIsSidebarOpen
   const [location] = useLocation();
   const locationStr = location.toString();
-  const { showLoading, hideLoading } = useLoading();
-  const loadingRef = useRef<NodeJS.Timeout | null>(null);
-  const isTransitioningRef = useRef(false);
 
   // Check if current route is an error page
   const isErrorPage = 
@@ -164,43 +159,12 @@ const AppContent = () => {
     locationStr.includes('/errors/503') || 
     locationStr.includes('/errors/504');
 
+  // Simplified location tracking - no loading delays
   useEffect(() => {
-    if (isErrorPage) return;
-    // Always clear any previous timer
-    if (loadingRef.current) {
-      clearTimeout(loadingRef.current);
-      loadingRef.current = null;
-    }
-    // Prevent overlapping transitions
-    if (isTransitioningRef.current) {
-      hideLoading();
-      isTransitioningRef.current = false;
-    }
-    isTransitioningRef.current = true;
-    showLoading();
-    loadingRef.current = setTimeout(() => {
-      hideLoading();
-      isTransitioningRef.current = false;
-      loadingRef.current = null;
-    }, 800);
-    // Cleanup on unmount or route change
-    return () => {
-      if (loadingRef.current) {
-        clearTimeout(loadingRef.current);
-        loadingRef.current = null;
-      }
-      hideLoading();
-      isTransitioningRef.current = false;
-    };
-  }, [locationStr]);
-  
-  // Track page transitions and mark location without re-triggering loader (handled above)
-  useEffect(() => {
-    const prevLocation = sessionStorage.getItem('current-location');
-    if (!prevLocation || prevLocation !== location) {
+    if (!isErrorPage) {
       sessionStorage.setItem('current-location', location);
     }
-  }, [location]);
+  }, [location, isErrorPage]);
   
   // If we're on an error page, render only the error page without layout
   if (isErrorPage) {
@@ -326,7 +290,6 @@ function App() {
                     <MusicProvider>
                       <ScrollEffectsProvider>
                         <ErrorToastProvider>
-                          <GlobalLoadingProvider>
                             <RefreshProvider>
                             {/* Wrap AppContent with PullToRefresh */}
                             <PullToRefresh onRefresh={handleDataRefresh}>
@@ -355,7 +318,6 @@ function App() {
                             <Toaster />
                             <Sonner position="bottom-left" className="fixed-sonner" />
                             </RefreshProvider>
-                          </GlobalLoadingProvider>
                         </ErrorToastProvider>
                       </ScrollEffectsProvider>
                     </MusicProvider>

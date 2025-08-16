@@ -4,7 +4,7 @@ import { Search, X, Menu } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useLoading } from '@/components/GlobalLoadingProvider';
+// Removed loading provider for instant navigation
 import SearchResults from '../../components/SearchResults';
 
 interface FloatingNavProps {
@@ -20,7 +20,7 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [, navigate] = useLocation();
-  const { showLoading } = useLoading();
+  // Removed loading hook for instant navigation
 
   const toggleExpanded = () => {
     setExpanded(!expanded);
@@ -102,7 +102,6 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
                       variant="ghost"
                       className="justify-start uppercase tracking-wider font-medium"
                       onClick={() => {
-                        showLoading(); // Show loading screen before navigation
                         navigate(item.path);
                         setExpanded(false);
                       }}

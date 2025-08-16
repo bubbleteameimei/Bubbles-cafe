@@ -11,7 +11,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useLocation } from "wouter"
 import { useAuth } from "@/hooks/use-auth"
-import { useLoading } from "@/components/GlobalLoadingProvider"
+// Removed loading provider import for instant navigation
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 import {
@@ -37,7 +37,7 @@ import {
 export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth();
-  const { showLoading } = useLoading(); // Add loading hook
+  // Removed loading hook for instant navigation
   const [displayOpen, setDisplayOpen] = React.useState(false);
   const [accountOpen, setAccountOpen] = React.useState(false);
   const [supportOpen, setSupportOpen] = React.useState(false);
@@ -148,31 +148,22 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     };
   }, [sidebar, touchStartX]); // Dependencies include sidebar and touchStartX
 
-  // Navigation logic extracted to a separate state-controlled function
-  // This prevents race conditions and ensures clean navigation
-  const [isNavigating, setIsNavigating] = React.useState(false);
+  // Simplified navigation - no state needed for instant switching
   
   const handleNavigation = React.useCallback((path: string) => {
-    // Prevent duplicate navigation or navigation while in progress
-    if (location === path || isNavigating) {
+    // Prevent duplicate navigation
+    if (location === path) {
       // Just close sidebar if already on this page
-      if (sidebar && sidebar.isMobile && path === location) {
+      if (sidebar && sidebar.isMobile) {
         sidebar.setOpenMobile(false);
       }
       // Scroll to top if on same page
-      if (path === location) {
-        scrollToTop();
-      }
+      scrollToTop();
       return;
     }
     
     try {
-      // Set navigating state to prevent multiple clicks
-      setIsNavigating(true);
-      
-      // Execute in strict sequence to prevent UI freezing:
-      
-      // 1. Reset UI state first (all menus closed)
+      // 1. Reset UI state (all menus closed)
       setDisplayOpen(false);
       setAccountOpen(false);
       setSupportOpen(false);
@@ -188,30 +179,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         onNavigate();
       }
       
-      // 4. Show loading screen for page transitions
-      // This needs to be before navigation to ensure it's visible
-      showLoading();
-      
-      // 5. Start a timeout to ensure clean navigation
-      // This ensures the loading screen has time to appear before navigation
-      setTimeout(() => {
-        // Navigate to the new location
-        setLocation(path);
-        
-        // Reset navigation state after a delay
-        setTimeout(() => {
-          setIsNavigating(false);
-        }, 500);
-      }, 50);
+      // 4. Navigate immediately - no delays or loading screens
+      setLocation(path);
       
     } catch (error) {
       console.error("Navigation error:", error);
-      // Reset navigation state
-      setIsNavigating(false);
       // Fallback to direct location navigation as last resort
       window.location.href = path;
     }
-  }, [location, isNavigating, onNavigate, sidebar, setLocation, showLoading]);
+  }, [location, onNavigate, sidebar, setLocation, scrollToTop]);
   
   // Function to render the active indicator for menu items
   const renderActiveIndicator = (path: string) => {
