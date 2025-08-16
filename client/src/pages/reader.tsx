@@ -364,26 +364,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   }, [invalidIndex]);
 
-  if (invalidIndex) {
-    return (
-      <div className="relative min-h-[200px]">
-        <ApiLoader 
-          isLoading={true}
-          message="Adjusting story position..."
-          minimumLoadTime={300}
-          debug={true}
-          overlayZIndex={100}
-        >
-          <div className="invisible">
-            <div className="h-[200px] w-full flex items-center justify-center">
-              <span className="sr-only">Loading story content...</span>
-            </div>
-          </div>
-        </ApiLoader>
-      </div>
-    );
-  }
-
   // Initialize the reader-specific gentle scroll memory
   // This will only work on the reader page and community-story page
   const { positionRestored, isRefresh } = useReaderGentleScroll({
@@ -567,6 +547,27 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         });
     }
   }, [routeSlug, isLoading, postsData, setLocation, toast]);
+
+  // If index is invalid, render adjusting UI (after hooks are declared)
+  if (invalidIndex) {
+    return (
+      <div className="relative min-h-[200px]">
+        <ApiLoader 
+          isLoading={true}
+          message="Adjusting story position..."
+          minimumLoadTime={300}
+          debug={true}
+          overlayZIndex={100}
+        >
+          <div className="invisible">
+            <div className="h-[200px] w-full flex items-center justify-center">
+              <span className="sr-only">Loading story content...</span>
+            </div>
+          </div>
+        </ApiLoader>
+      </div>
+    );
+  }
 
   // Use our ApiLoader component to handle loading state with the global context
   if (isLoading) {
