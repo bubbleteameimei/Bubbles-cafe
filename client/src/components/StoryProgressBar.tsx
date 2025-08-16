@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { motion, useSpring } from "framer-motion";
+import { motion, useSpring, useTransform } from "framer-motion";
 
 interface StoryProgressBarProps {
   className?: string;
@@ -22,6 +22,7 @@ const StoryProgressBar: React.FC<StoryProgressBarProps> = ({
     damping: 20,
     restDelta: 0.001
   });
+  const width = useTransform(smoothProgress, (p) => `${p}%`);
 
   useEffect(() => {
     const updateProgress = () => {
@@ -29,7 +30,8 @@ const StoryProgressBar: React.FC<StoryProgressBarProps> = ({
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight;
       const winHeight = window.innerHeight;
-      const scrollPercent = scrollTop / (docHeight - winHeight);
+      const maxScrollable = Math.max(docHeight - winHeight, 1);
+      const scrollPercent = scrollTop / maxScrollable;
       
       // Convert to percentage and limit between 0-100
       const calculatedProgress = Math.min(Math.max(scrollPercent * 100, 0), 100);
@@ -47,7 +49,7 @@ const StoryProgressBar: React.FC<StoryProgressBarProps> = ({
     };
 
     // Add scroll event listener
-    window.addEventListener("scroll", updateProgress);
+    window.addEventListener("scroll", updateProgress, { passive: true });
     
     // Initial calculation
     updateProgress();
@@ -62,8 +64,7 @@ const StoryProgressBar: React.FC<StoryProgressBarProps> = ({
         className={`fixed bottom-0 left-0 ${color || "bg-accent"} z-50 ${className}`}
         style={{
           height: `${height}px`,
-          width: smoothProgress,
-          scaleX: 1,
+          width,
           transformOrigin: "left",
         }}
       />
