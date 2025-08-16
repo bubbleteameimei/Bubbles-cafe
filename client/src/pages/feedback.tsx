@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FeedbackForm } from '../components/feedback/FeedbackForm';
-import { Link, Redirect } from 'wouter';
+import { Link } from 'wouter';
 import {
   Card,
   CardContent,

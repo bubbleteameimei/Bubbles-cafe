@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SettingsLayout } from '@/components/layouts/SettingsLayout';
 import { SettingsSection } from '@/components/settings/SettingsSection';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -9,8 +9,7 @@ import { Button } from '@/components/ui/button';
 import { SettingsFormRow } from '@/components/settings/SettingsFormRow';
 import { TooltipsHighlighting } from '@/components/accessibility/TooltipsHighlighting';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, ZoomIn, MousePointer, Volume2, Sparkles, MonitorSmartphone, AlignVerticalSpaceBetween, Text, Baseline } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
+import { ZoomIn, MousePointer, Volume2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 

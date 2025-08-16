@@ -54,7 +54,7 @@ export default function AdminSettingsPage() {
 		if (user?.isAdmin) {
 			loadSettings();
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		 
 	}, [user?.isAdmin]);
 
 	return !user?.isAdmin ? (

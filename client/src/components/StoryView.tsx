@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Post } from "@shared/schema";
 import { Card } from "@/components/ui/card";

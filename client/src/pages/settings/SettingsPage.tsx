@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 import { Moon, Sun } from "lucide-react";

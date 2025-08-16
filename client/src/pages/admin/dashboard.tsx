@@ -2,7 +2,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { ActivityTimeline } from "@/components/admin/activity-timeline";
 import { useQuery } from "@tanstack/react-query";
 import { 
-  Loader2, 
   Users, 
   FileText, 
   MessageSquare, 
@@ -48,11 +47,8 @@ import {
   ResponsiveContainer
 } from "recharts";
 import {
-  ChartConfig,
-  ChartContainer,
   ChartLegend,
-  ChartTooltip,
-  ChartTooltipContent
+  ChartTooltip
 } from "@/components/ui/chart";
 import { Progress } from "@/components/ui/progress";
 import { useState } from "react";

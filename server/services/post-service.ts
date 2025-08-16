@@ -1,7 +1,7 @@
 import { createSecureLogger } from '../utils/secure-logger';
-import { AppError, ValidationError, NotFoundError, createError } from '../utils/error-handler';
+import { createError } from '../utils/error-handler';
 import { db } from "../db";
-import { posts, users, postLikes, type Post, type InsertPost } from "@shared/schema";
+import { posts, type Post, type InsertPost } from "@shared/schema";
 import { eq, sql, desc, asc, like, and, or } from "drizzle-orm";
 
 const postLogger = createSecureLogger('PostService');

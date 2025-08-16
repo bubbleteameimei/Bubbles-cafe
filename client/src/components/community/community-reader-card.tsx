@@ -43,7 +43,6 @@ import {
   Flag,
   Check
 } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
 
 // Extend the User type to include avatar
 export interface ExtendedUser extends User {

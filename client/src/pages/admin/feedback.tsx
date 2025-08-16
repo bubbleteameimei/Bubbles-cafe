@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,12 +15,6 @@ import {
   ChevronRight,
   Calendar,
   Star,
-  Mail,
-  Link2,
-  Smartphone,
-  Laptop,
-  User,
-  Menu,
   Eye,
   FileText,
   HelpCircle,
@@ -36,7 +30,6 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 
 // Types for our feedback data

@@ -11,7 +11,7 @@
  */
 
 import rateLimit from 'express-rate-limit';
-import { Request, Response, NextFunction } from 'express';
+import { Request } from 'express';
 import logger from '../utils/logger';
 import { isWhitelisted } from './ip-whitelist';
 

@@ -47,7 +47,7 @@ export default function AdminNotificationsPage() {
 		if (user?.isAdmin) {
 			fetchNotifications();
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		 
 	}, [user?.isAdmin]);
 
 	return !user?.isAdmin ? (

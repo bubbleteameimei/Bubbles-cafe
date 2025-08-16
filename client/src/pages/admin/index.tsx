@@ -8,7 +8,6 @@ import {
   BarChart, 
   Settings, 
   Bell,
-  Tag,
   Palette
 } from "lucide-react";
 

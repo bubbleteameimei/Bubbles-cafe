@@ -8,7 +8,6 @@ import { Application, NextFunction } from 'express';
 import bookmarkRoutes from './bookmarks';
 import { Router } from 'express';
 import { Request, Response } from 'express';
-import { storage } from '../storage';
 
 // Create a router for anonymous bookmark routes
 const anonymousBookmarkRouter = Router();

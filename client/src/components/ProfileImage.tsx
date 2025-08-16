@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function ProfileImage() {
   const [_loadError, setLoadError] = useState(false);

@@ -1,4 +1,4 @@
-import { detectThemes, calculateIntensity, THEME_CATEGORIES } from './content-analysis';
+import { detectThemes, calculateIntensity } from './content-analysis';
 
 // Test content samples
 const testContents = {

@@ -1,7 +1,7 @@
 import { Request, Response, Express } from "express";
 import { db } from "../db";
 import { posts } from "@shared/schema";
-import { desc, eq, and, ne, or, sql } from "drizzle-orm";
+import { desc, ne } from "drizzle-orm";
 
 /**
  * Simple post recommendations implementation focusing on reliability

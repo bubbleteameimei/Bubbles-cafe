@@ -12,7 +12,7 @@
  */
 
 import { z } from 'zod';
-import { ErrorCategory, ErrorSeverity, handleError, handleValidationError } from './error-handler';
+import { ErrorCategory, handleError } from './error-handler';
 
 // Supported WordPress API bases (tries in order). You can override via VITE_WORDPRESS_API_URL.
 const WP_BASES: string[] = [

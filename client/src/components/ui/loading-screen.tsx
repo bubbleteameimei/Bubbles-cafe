@@ -1,6 +1,5 @@
 import { memo, useEffect, useRef } from "react";
 import { usePreloading } from "@/hooks/use-preloading";
-import preloadManager from "@/lib/preloadManager";
 
 // This is a completely rewritten version of the loading screen that prioritizes
 // reliability and performance over complex features

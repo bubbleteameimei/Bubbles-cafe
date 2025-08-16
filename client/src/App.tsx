@@ -6,8 +6,6 @@ import GlobalLoadingProvider, { useLoading } from './components/GlobalLoadingPro
 import { queryClient } from './lib/queryClient';
 import { Toaster } from './components/ui/toaster';
 import { Sonner } from './components/ui/sonner';
-import { toast } from 'sonner';
-import Footer from './components/layout/footer';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from './hooks/use-auth';
 import { CookieConsent } from './components/ui/cookie-consent';
@@ -16,7 +14,6 @@ import { GlobalErrorBoundary, setupGlobalErrorHandlers } from './components/erro
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
-import { ProtectedRoute } from './lib/protected-route';
 import ScrollToTopButton from './components/ScrollToTopButton';
 // Import our enhanced page transition component
 // EnhancedPageTransition removed to fix loading animation conflicts
@@ -32,7 +29,6 @@ import { preloadWordPressPosts } from './lib/wordpress-api';
 // Import WordPress sync service
 import { initWordPressSync } from './lib/wordpress-sync';
 // Import WordPress sync status component
-import { WordPressSyncStatus } from './components/wordpress-sync-status';
 // Import FeedbackButton component for site-wide feedback
 import { FeedbackButton } from './components/feedback/FeedbackButton';
 // Import our scroll effects provider for multi-speed scroll and gentle return
@@ -53,7 +49,6 @@ import { SilentPingProvider } from './contexts/silent-ping-context';
 import { MusicProvider } from './contexts/music-context';
 // Removed unused imports: SidebarHeader, PrimaryNav
 import ErrorToastProvider from './components/providers/error-toast-provider';
-import NotFoundRouteHandler from './components/NotFoundRouteHandler';
 // Import our new refresh components
 import { PullToRefresh } from './components/ui/pull-to-refresh';
 import { RefreshProvider } from './contexts/refresh-context';

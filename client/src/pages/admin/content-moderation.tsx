@@ -74,7 +74,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
 
 // Generate different UI and badge colors based on content types
 const getContentTypeDetails = (type: string) => {

@@ -1,7 +1,7 @@
 import { Request, Response, Express } from "express";
 import { db } from "../db";
-import { posts, Post, readingProgress, postLikes, bookmarks } from "@shared/schema";
-import { and, eq, ne, or, like, desc, asc, sql, count, not } from "drizzle-orm";
+import { posts, readingProgress, postLikes, bookmarks } from "@shared/schema";
+import { and, eq, or, like, desc, sql, not } from "drizzle-orm";
 import { IStorage } from "../storage";
 
 /**

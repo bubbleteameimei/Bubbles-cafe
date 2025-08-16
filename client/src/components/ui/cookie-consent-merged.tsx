@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import { useCookieConsent } from '@/hooks/use-cookie-consent';

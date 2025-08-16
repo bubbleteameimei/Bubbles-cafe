@@ -4,7 +4,6 @@ import { useLocation } from 'wouter';
 import { format } from 'date-fns';
 import { Post, User } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
-import { ThemeProvider } from '@/components/theme-provider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,6 @@ import type { CheckedState } from '@radix-ui/react-checkbox';
 import { 
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -43,7 +41,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -56,7 +53,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { 
   ArrowUpDown, 
@@ -69,11 +65,9 @@ import {
   Search,
   AlertTriangle,
   Flag,
-  ExternalLink,
   Ban,
   CheckCircle2,
   Clock,
-  Calendar,
   MessageSquare,
   ThumbsUp,
   BarChart,

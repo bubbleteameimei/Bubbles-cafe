@@ -1,9 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { Bell, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { v4 as uuidv4 } from 'uuid';
-import { useQueryClient } from '@tanstack/react-query';
 import { CreepyTextGlitch } from '@/components/effects/CursedNotificationEffect';
 
 // Notification types

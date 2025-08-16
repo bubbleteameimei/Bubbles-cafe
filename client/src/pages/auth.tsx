@@ -8,17 +8,14 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Eye, 
   EyeOff, 
-  Loader2, 
   CheckCircle2, 
-  XCircle, 
-  AlertCircle,
+  XCircle,
   ShieldCheck,
   ShieldAlert,
   ShieldQuestion
 } from "lucide-react";
 import { AuthButton } from "@/components/auth/auth-button";
 import { ForgotPasswordDialog } from "@/components/auth/forgot-password";
-import { SocialLoginButtons } from "@/components/auth/social-login-buttons";
 import "./auth.css";
 
 export default function AuthPage() {

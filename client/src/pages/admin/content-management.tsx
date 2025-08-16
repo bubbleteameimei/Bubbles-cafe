@@ -5,7 +5,7 @@ import { Redirect } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus, Rss, PenSquare, FileText, Loader2, Palette } from "lucide-react";
+import { Plus, Rss, PenSquare, FileText, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLocation } from "wouter";

@@ -19,12 +19,10 @@ import {
   Tabs,
   TabsList,
   TabsTrigger,
-  TabsContent,
 } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -34,15 +32,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Search, RefreshCw, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertCircle, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 // Import shared types
 import { 
-  FeedbackItem, 
-  FeedbackItemExtended,
+  FeedbackItem,
   ResponseSuggestion
 } from '@/types/feedback';
 

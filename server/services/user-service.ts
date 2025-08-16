@@ -4,7 +4,6 @@ import { handleDatabaseError } from './post-service';
 import { db } from "../db";
 import { users, type User, type InsertUser } from "@shared/schema";
 import { eq, sql, and } from "drizzle-orm";
-import * as bcrypt from 'bcryptjs';
 
 const userLogger = createSecureLogger('UserService');
 

@@ -10,16 +10,14 @@ import { Separator } from "@/components/ui/separator";
 import { 
   Loader2, 
   MessageSquare, 
-  Reply, 
-  Heart,
-  Calendar,
-  ThumbsUp
+  Reply,
+  Calendar
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 // Temporary fallback if CommentReactionButtons is not available
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const CommentReactionButtons: any = (globalThis as any).CommentReactionButtons || (({ onUpvote, onDownvote }: any) => (
   <div className="flex items-center gap-2">
     <button onClick={onUpvote} className="text-xs px-2 py-1 rounded bg-muted/30">Like</button>

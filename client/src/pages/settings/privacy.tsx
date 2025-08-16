@@ -10,14 +10,11 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Link } from 'wouter';
 import { useCookieConsent } from '@/hooks/use-cookie-consent';
 import { CookieCategory } from '@/lib/cookie-manager';
 import { 
   AlertTriangle, 
-  ArrowRight, 
-  Info, 
   Lock, 
   Loader2, 
   Shield, 
@@ -29,11 +26,9 @@ import {
   DownloadCloud,
   Trash2 
 } from 'lucide-react';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { usePrivacySettings } from '@/hooks/use-privacy-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getPrivacyImpactLevel } from '@/utils/privacy-settings-utils';
 import { Progress } from '@/components/ui/progress';
 import { SettingsLayout } from '@/components/layouts/SettingsLayout';

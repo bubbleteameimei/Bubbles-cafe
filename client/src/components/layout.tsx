@@ -1,7 +1,6 @@
 import React, { ReactNode, useEffect, useState } from "react";
 import MainNav from "./MainNav";
 import { SidebarProvider } from "./ui/sidebar";
-import { AppSidebar } from "./AppSidebar";
 import { EnvironmentIndicator } from "./ui/environment-indicator";
 
 interface LayoutProps {
