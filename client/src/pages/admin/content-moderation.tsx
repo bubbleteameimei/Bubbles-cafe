@@ -587,10 +587,14 @@ export default function ContentModerationPage() {
                                     View
                                   </Button>
                                 </DialogTrigger>
-                                <DialogContent className="sm:max-w-[600px]">
+                                <DialogContent 
+                                  className="sm:max-w-[600px]"
+                                  aria-labelledby="content-review-title"
+                                  aria-describedby="content-review-description"
+                                >
                                   <DialogHeader>
-                                    <DialogTitle>Content Review</DialogTitle>
-                                    <DialogDescription>
+                                    <DialogTitle id="content-review-title">Content Review</DialogTitle>
+                                    <DialogDescription id="content-review-description">
                                       Review reported content details and make a moderation decision.
                                     </DialogDescription>
                                   </DialogHeader>

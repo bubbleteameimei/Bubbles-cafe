@@ -1348,15 +1348,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               
               {/* Story Delete Dialog */}
               <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                <DialogContent className="max-w-md">
+                <DialogContent 
+                  className="max-w-md"
+                  aria-labelledby="delete-story-dialog-title"
+                  aria-describedby="delete-story-dialog-description"
+                >
                   <DialogHeader>
-                    <DialogTitle className="flex items-center text-xl">
+                    <DialogTitle id="delete-story-dialog-title" className="flex items-center text-xl">
                       <Trash className="h-5 w-5 mr-2 text-red-500" />
                       {isAdmin && user?.id !== currentPost?.authorId ? 
                         "Delete Community Story" : 
                         "Delete Your Story"}
                     </DialogTitle>
-                    <DialogDescription className="pt-2 text-sm">
+                    <DialogDescription id="delete-story-dialog-description" className="pt-2 text-sm">
                       {isAdmin && user?.id !== currentPost?.authorId ? 
                         "As an admin, you are about to delete a user-submitted community story. This action cannot be undone." : 
                         "You are about to delete your community story. This action cannot be undone."}

@@ -40,10 +40,14 @@ export default function AccessibilityTestPage() {
           <DialogTrigger asChild>
             <Button variant="outline">Open Standard Dialog</Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent 
+            className="sm:max-w-[425px]"
+            aria-labelledby="standard-dialog-title"
+            aria-describedby="standard-dialog-description"
+          >
             <DialogHeader>
-              <DialogTitle>Edit profile</DialogTitle>
-              <DialogDescription>
+              <DialogTitle id="standard-dialog-title">Edit profile</DialogTitle>
+              <DialogDescription id="standard-dialog-description">
                 Make changes to your profile here. Click save when you're done.
               </DialogDescription>
             </DialogHeader>
@@ -81,10 +85,14 @@ export default function AccessibilityTestPage() {
           <DialogTrigger asChild>
             <Button variant="outline">Open Minimal Dialog</Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent 
+            className="sm:max-w-[425px]"
+            aria-labelledby="minimal-dialog-title"
+            aria-describedby="minimal-dialog-description"
+          >
             <DialogHeader>
-              <DialogTitle className="sr-only">Minimal Dialog Example</DialogTitle>
-              <DialogDescription className="sr-only">
+              <DialogTitle id="minimal-dialog-title" className="sr-only">Minimal Dialog Example</DialogTitle>
+              <DialogDescription id="minimal-dialog-description" className="sr-only">
                 This dialog demonstrates accessibility with visually hidden elements
               </DialogDescription>
             </DialogHeader>

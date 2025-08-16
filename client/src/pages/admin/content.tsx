@@ -301,9 +301,13 @@ export default function ContentPage() {
 
       {/* Edit Post Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[800px]" aria-describedby="edit-story-description">
+        <DialogContent 
+          className="sm:max-w-[800px]" 
+          aria-labelledby="edit-story-title"
+          aria-describedby="edit-story-description"
+        >
           <DialogHeader>
-            <DialogTitle>Edit Story</DialogTitle>
+            <DialogTitle id="edit-story-title">Edit Story</DialogTitle>
             <DialogDescription id="edit-story-description">
               Make changes to the story content, metadata, and settings.
             </DialogDescription>
@@ -321,9 +325,12 @@ export default function ContentPage() {
 
       {/* Delete Post Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent aria-describedby="delete-story-description">
+        <DialogContent 
+          aria-labelledby="delete-story-title"
+          aria-describedby="delete-story-description"
+        >
           <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogTitle id="delete-story-title">Confirm Deletion</DialogTitle>
             <DialogDescription id="delete-story-description">
               {selectedPost?.sourceType === 'wordpress' 
                 ? "This story was imported from WordPress. It will be hidden from listings but can be re-synced later."
