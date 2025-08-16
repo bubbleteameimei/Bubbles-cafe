@@ -33,7 +33,6 @@ import { useToast } from "@/hooks/use-toast";
 import useReaderGentleScroll from "@/hooks/useReaderGentleScroll";
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import { fetchCsrfTokenIfNeeded, applyCSRFToken } from "@/lib/csrf-token";
-import StoryProgressBar from "@/components/StoryProgressBar";
 
 import {
   Dialog,
@@ -989,9 +988,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     <ErrorBoundary>
       {/* Reader container */}
       <div className="w-full min-w-full max-w-full overflow-x-hidden">
-        {/* Reading progress bar */}
-        <StoryProgressBar height={3} showPercentage={false} />
-        {/* Top actions, title, etc. */}
+         {/* Top actions, title, etc. */}
         <div className="relative min-h-screen bg-background reader-page overflow-visible pt-16 sm:pt-16 md:pt-18 lg:pt-20 pb-8 flex flex-col"
           /* Added enhanced background-related styling directly here */
           data-reader-page="true" 
@@ -999,30 +996,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           
           {/* Reader page has no background image, just clean default background */}
           
-          {/* Reading Progress Bar - Always visible at the very top */}
-          <div 
-            style={{ 
-              position: 'fixed',
-              top: '0px',
-              left: '0px',
-              right: '0px',
-              width: '100%',
-              height: '3px',
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              zIndex: 999999,
-              pointerEvents: 'none'
-            }}
-          >
-            <div 
-              style={{ 
-                height: '100%',
-                width: `${readingProgress}%`,
-                background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
-                transition: 'width 0.1s ease-out',
-                boxShadow: readingProgress > 5 ? '0 0 10px rgba(59, 130, 246, 0.7)' : 'none'
-              }}
-            />
-          </div>
+          {/* Reading progress bar is rendered at app level under the main nav */}
           
           {/* Reader tooltip for distraction-free mode instructions */}
           <ReaderTooltip show={showTooltip} />

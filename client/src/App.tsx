@@ -34,6 +34,7 @@ import ScrollEffectsProvider from './components/ScrollEffectsProvider';
 // Import our performance monitoring component
 import PerformanceMonitor from './components/performance-monitor';
 import { lazyWithRetry } from './utils/lazy-retry';
+import StoryProgressBar from './components/StoryProgressBar';
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
 // Removed unused imports: FullscreenButton, SearchBar
@@ -200,6 +201,11 @@ const AppContent = () => {
       <main className={`min-h-screen flex-1 flex flex-col w-full min-w-full max-w-[100vw] ${location === '/' ? '' : 'bg-background'}`}
              style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', overflow: 'hidden' }}>
         <AutoHideNavbar />
+        {location.startsWith('/reader') && (
+          <div className="w-full sticky top-[56px] z-30">
+            <StoryProgressBar height={3} showPercentage={false} />
+          </div>
+        )}
         <div className={`w-full min-w-full max-w-full 
                         ${location.startsWith('/reader') ? 'pt-4' : 'pt-20'} 
                         lg:pt-6 

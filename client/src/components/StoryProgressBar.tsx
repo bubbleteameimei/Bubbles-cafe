@@ -61,11 +61,12 @@ const StoryProgressBar: React.FC<StoryProgressBarProps> = ({
   return (
     <>
       <motion.div
-        className={`fixed bottom-0 left-0 ${color || "bg-accent"} z-50 ${className}`}
+        className={`fixed top-0 left-0 ${color || "bg-accent"} ${className}`}
         style={{
           height: `${height}px`,
           width,
           transformOrigin: "left",
+          zIndex: 39
         }}
       />
       
