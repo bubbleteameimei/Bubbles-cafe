@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { Badge } from "@/components/ui/badge";
-import { useLoading } from "@/components/GlobalLoadingProvider";
 
 
 import { getReadingTime, extractHorrorExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";
@@ -295,17 +294,16 @@ export default function IndexView() {
     return sortedByEngagement[0];
   }, [currentPosts]);
   
-  // Use the loading hook for the global loading state
-  const { showLoading, hideLoading } = useLoading();
-  
-  // Now handle conditional renders after all hooks have been called
+  // Handle loading state locally without global loading screen
   if (isLoading) {
-    // Trigger the global loading state
-    showLoading();
-    return null; // Return null since the loading is handled globally
-  } else {
-    // Hide loading when data is ready
-    hideLoading();
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading stories...</p>
+        </div>
+      </div>
+    );
   }
   
   if (!hasAllPosts && !hasPaginatedPosts) {
