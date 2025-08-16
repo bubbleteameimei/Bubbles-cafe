@@ -7,13 +7,16 @@ This project is an interactive storytelling platform built with a modern web sta
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
-- **August 16, 2025**: Neon Database Integration Completed
+- **August 16, 2025**: Database Integration & Accessibility Improvements Completed
   - Successfully integrated Neon PostgreSQL database with connection string
   - Database URL configured in environment variables for secure access
   - Created missing admin_notifications table for complete schema compatibility
   - Database successfully connected with existing data: 2 users, 21 posts, ready for comments
   - Application workflow "Start Web Feedback App" configured and running
   - All database tables verified and accessible through Drizzle ORM
+  - **Accessibility Enhancement**: Fixed all DialogContent components missing DialogTitle elements
+  - Added proper aria-labelledby and aria-describedby attributes to all dialogs
+  - Ensured screen reader compatibility across all dialog components (bookmark, share, highlight, support, feedback, etc.)
   - Previous: WordPress API sync active with authentic content imported
 
 ## System Architecture
