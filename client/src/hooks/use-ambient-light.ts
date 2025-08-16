@@ -84,7 +84,6 @@ const useAmbientLight = () => {
             }
           }
 
-          // @ts-expect-error - AmbientLightSensor is not in the standard TypeScript types
           sensor = new (window as any).AmbientLightSensor({ frequency: 1 });
           sensor.addEventListener('reading', () => {
             if (sensor.illuminance !== null && sensor.illuminance !== undefined) {

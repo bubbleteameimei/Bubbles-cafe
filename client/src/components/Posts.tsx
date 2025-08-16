@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { WordPressPost } from "@/lib/wordpress-api";
+import { WordPressPost, checkWordPressApiStatus } from "@/lib/wordpress-api";
 import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
@@ -44,7 +44,7 @@ function Posts() {
       if (!res.ok) throw new Error(`Failed to fetch posts (${res.status})`);
       const json = await res.json();
       // Adapt shape to WordPress-like consumers in this component
-      return {
+      const adapted = {
         posts: (json.posts || []).map((p: any) => ({
           id: p.id,
           slug: p.slug,
@@ -52,7 +52,9 @@ function Posts() {
           excerpt: { rendered: p.excerpt || (p.content ? String(p.content).slice(0, 150) + '…' : '') },
         })),
         totalPages: json.hasMore ? page + 1 : page,
-      } as { posts: WordPressPost[]; totalPages: number };
+        fromFallback: json.fromFallback as boolean | undefined
+      };
+      return adapted as { posts: WordPressPost[]; totalPages: number; fromFallback?: boolean };
     },
     retry: 1,
     retryDelay: (attemptIndex) => Math.min(800 * Math.pow(2, attemptIndex), 5000)
