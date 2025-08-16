@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { storage } from '../storage';
-import { moderateComment } from '../utils/comment-moderation';
 import { z } from 'zod';
 
 const router = Router();

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
-import { Button } from "./button";
 import { useToast } from "@/hooks/use-toast";
 
 interface LikeDislikeProps {

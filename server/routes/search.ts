@@ -6,7 +6,6 @@ import {
   users,
   reportedContent
 } from '@shared/schema';
-import { eq, like, or, ilike, and, desc, asc } from 'drizzle-orm';
 
 // Define types for search use
 type Post = typeof posts.$inferSelect;

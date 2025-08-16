@@ -2,7 +2,6 @@ import {
   signInWithPopup, 
   GoogleAuthProvider, 
   OAuthProvider,
-  AuthError,
   Auth
 } from 'firebase/auth';
 import { auth } from './firebase';

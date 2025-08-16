@@ -1,4 +1,3 @@
-import { storage } from "./storage";
 import { pool } from "./db-connect";
 import bcrypt from "bcryptjs"; // Using bcryptjs to match auth.ts
 

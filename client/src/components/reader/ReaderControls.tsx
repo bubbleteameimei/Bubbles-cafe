@@ -8,8 +8,6 @@ import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
 import { useTheme } from "@/components/theme-provider"; // setTheme provided via useThemeContext alias
 import { 
   Type, 
-  Palette, 
-  Settings, 
   BookOpen,
   Minus,
   Plus,

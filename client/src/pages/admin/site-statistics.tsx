@@ -32,8 +32,6 @@ import {
 } from "recharts";
 
 import {
-  ChartConfig,
-  ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   ChartLegend,
@@ -56,14 +54,12 @@ import {
   Clock, 
   MousePointer, 
   LayoutGrid, 
-  Calendar, 
   Smartphone, 
   Laptop, 
   Tablet, 
   BarChart as BarChartIcon, 
   PieChart as PieChartIcon,
   LineChart as LineChartIcon,
-  Gauge,
   Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

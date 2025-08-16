@@ -4,7 +4,6 @@ import * as React from "react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartWrapper } from "@/components/ui/chart-wrapper"
-import { ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
 interface DataItem {
   name: string

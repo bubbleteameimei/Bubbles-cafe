@@ -3,6 +3,7 @@ import tseslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
+import unusedImports from 'eslint-plugin-unused-imports';
 
 export default [
 	{
@@ -13,12 +14,18 @@ export default [
 			ecmaVersion: 'latest',
 			globals: { window: true, document: true, navigator: true },
 		},
-		plugins: { '@typescript-eslint': tseslint, react, 'react-hooks': reactHooks },
+		plugins: { '@typescript-eslint': tseslint, react, 'react-hooks': reactHooks, 'unused-imports': unusedImports },
+		settings: {
+			react: { version: 'detect' }
+		},
 		rules: {
 			...tseslint.configs.recommended.rules,
 			...react.configs.recommended.rules,
 			...reactHooks.configs.recommended.rules,
-			'@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+			// Prefer automatic import removal over generic unused vars
+			'@typescript-eslint/no-unused-vars': 'off',
+			'unused-imports/no-unused-imports': 'error',
+			'unused-imports/no-unused-vars': ['warn', { vars: 'all', varsIgnorePattern: '^_', args: 'after-used', argsIgnorePattern: '^_' }],
 			'react/react-in-jsx-scope': 'off',
 			// Relax strict rules to allow incremental hardening
 			'@typescript-eslint/no-explicit-any': 'off',

@@ -29,7 +29,7 @@ export {
 };
 
 // Other imports
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { Session } from 'express-session';
 
 // Define type for session with admin

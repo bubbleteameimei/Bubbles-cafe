@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { 
-  Loader2, Search, ArrowLeft, Filter, File, MessageSquare, 
+  Loader2, Search, Filter, File, MessageSquare, 
   User, Flag, BookOpen, X, CheckCircle2, Settings, Scale
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -17,12 +17,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+
+
 import { Badge } from "@/components/ui/badge";
 
 // Type for search results

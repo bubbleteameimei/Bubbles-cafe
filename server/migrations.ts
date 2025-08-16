@@ -1,6 +1,5 @@
-import { pool, db, waitForPoolInitialization } from "./db-connect";
+import { pool, waitForPoolInitialization } from "./db-connect";
 import { log as viteLog } from "./vite";
-import * as schema from "@shared/schema";
 
 // Create a properly typed log function for migrations
 function log(message: string, error?: unknown): void {

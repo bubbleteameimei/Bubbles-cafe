@@ -5,13 +5,11 @@
 import {
   memo,
   useCallback,
-  useMemo,
   useRef,
   useState,
   useEffect,
   type ComponentType,
   type DependencyList,
-  type FC,
   type EffectCallback
 } from 'react';
 import isEqual from 'lodash/isEqual';

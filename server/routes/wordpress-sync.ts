@@ -2,8 +2,7 @@
  * WordPress Sync API Routes
  * These routes handle WordPress content importing and synchronization
  */
-import { Express, Request, Response, NextFunction } from 'express';
-import { syncWordPressPosts, syncSingleWordPressPost, SyncResult, getSyncStatus } from '../wordpress-sync';
+import { Express, Request, Response } from 'express';
 import { wordpressSync } from '../wordpress-api-sync';
 import { log } from '../vite';
 import { z } from 'zod';

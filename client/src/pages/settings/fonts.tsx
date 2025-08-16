@@ -14,9 +14,8 @@ import { useFontFamily, FontFamilyKey, FONT_FAMILIES } from "@/hooks/use-font-fa
 import { SettingsLayout } from '@/components/layouts/SettingsLayout';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Type, AlignLeft, LayoutGrid, AlignVerticalSpaceBetween, Text, Baseline, Check, BookOpen } from "lucide-react";
+import { Type, AlignLeft, AlignVerticalSpaceBetween, Text, Baseline, Check, BookOpen } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export default function FontSettingsPage() {

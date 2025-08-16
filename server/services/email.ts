@@ -4,7 +4,6 @@
  * Functions for sending emails using available providers.
  */
 
-import nodemailer from 'nodemailer';
 import logger from '../utils/logger';
 import { createGmailTransporter } from './gmail';
 import * as sendgrid from './sendgrid';

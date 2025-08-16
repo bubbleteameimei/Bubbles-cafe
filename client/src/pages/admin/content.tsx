@@ -1,14 +1,13 @@
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Eye, Edit, Trash2, Check, X, Loader2, BookOpen, ExternalLink } from "lucide-react";
+import { Eye, Edit, Trash2, X, Loader2, BookOpen, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import PostEditor from "@/components/admin/post-editor";
 

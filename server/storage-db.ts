@@ -5,30 +5,14 @@ import {
   comments, 
   sessions,
   resetTokens,
-  postLikes,
   bookmarks,
   analytics,
   authorStats,
-  writingChallenges,
-  challengeEntries,
-  reportedContent,
-  authorTips,
-  activityLogs,
-  userProgress,
-  siteAnalytics,
   userFeedback,
-  userPrivacySettings,
   contactMessages,
   newsletterSubscriptions,
   readingProgress,
-  secretProgress,
-  commentReactions,
-  commentVotes,
-  contentProtection,
-  webhooks,
-  adminNotifications,
-  siteSettings,
-  performanceMetrics
+  secretProgress
 } from '@shared/schema';
 import type { 
   User, 
@@ -41,7 +25,6 @@ import type {
   InsertSession,
   ResetToken,
   InsertResetToken,
-  PostLike,
   ReadingProgress,
   InsertProgress,
   SecretProgress,
@@ -51,21 +34,13 @@ import type {
   NewsletterSubscription,
   InsertNewsletterSubscription,
   AuthorStats,
-  WritingChallenge,
-  InsertWritingChallenge,
-  ChallengeEntry,
-  InsertChallengeEntry,
-  ReportedContent,
-  InsertReportedContent,
-  AuthorTip,
-  InsertAuthorTip,
   Analytics,
   UserFeedback,
   InsertUserFeedback,
   InsertBookmark,
   Bookmark
 } from '@shared/schema';
-import { eq, desc, and, or, sql, like, count, sum } from 'drizzle-orm';
+import { eq, desc, and, or, sql, like } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
 export interface IStorage {

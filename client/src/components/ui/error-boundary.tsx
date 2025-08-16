@@ -1,7 +1,4 @@
 import React, { Component, type ReactNode } from "react";
-import { AlertCircle, RefreshCcw, Home, ArrowLeft } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 
 interface Props {
   children: ReactNode;

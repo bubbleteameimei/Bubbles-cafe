@@ -27,10 +27,9 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { RefreshCcw, Clock, BookOpen, TrendingUp, TrendingDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { format } from 'date-fns'
 
 export function ReadingAnalytics() {
   const [period, setPeriod] = useState<PeriodType>('day')

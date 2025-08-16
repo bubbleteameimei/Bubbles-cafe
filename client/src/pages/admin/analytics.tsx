@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Redirect } from "wouter";
-import { TrendingUp, Users, Clock, Eye, Monitor, ArrowDownUp, Bell, Activity, Loader2 } from "lucide-react";
+import { Users, Clock, Eye, Monitor, ArrowDownUp, Bell, Activity, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { Button } from "@/components/ui/button";

@@ -1,7 +1,6 @@
 import express from "express";
 import { createServer } from "http";
 import { setupVite, serveStatic } from "./vite";
-import { registerModularRoutes } from "./routes";
 import { db } from "./db"; // Using the direct Neon database connection
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
