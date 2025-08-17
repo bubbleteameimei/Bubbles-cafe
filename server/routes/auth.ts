@@ -147,6 +147,14 @@ router.get('/me',
   })
 );
 
+// NEW: GET /api/auth/status - Simple boolean status + user
+router.get('/status',
+  asyncHandler(async (req: Request, res: Response) => {
+    const isAuthenticated = !!req.user;
+    return res.json({ authenticated: isAuthenticated, user: req.user || null });
+  })
+);
+
 // POST /api/auth/forgot-password - Request password reset
 router.post('/forgot-password',
   sensitiveOperationsRateLimiter,
