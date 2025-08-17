@@ -283,6 +283,9 @@ const AppContent = () => {
             <Route path="/community-story/:slug">
               {(params) => <ReaderPage params={params} isCommunityContent={true} />}
             </Route>
+            <Route path="/reader/:slug">
+              {(params) => <ReaderPage params={params} isCommunityContent={false} />}
+            </Route>
             <Route path="/story/:slug">
               {(params) => <ReaderPage params={params} isCommunityContent={false} />}
             </Route>
