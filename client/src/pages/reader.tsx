@@ -87,7 +87,25 @@ const sanitizeHtmlContent = (html: string): string => {
       }
     });
     
-    return temp.innerHTML;
+    let sanitized = temp.innerHTML;
+
+    // Convert plain-text line breaks into paragraphs if content lacks block tags
+    if (!/<p[\s>]/i.test(sanitized)) {
+      // Normalize Windows/Mac line endings
+      const normalized = sanitized.replace(/\r\n/g, '\n');
+      const paragraphs = normalized
+        .split(/\n\n+/)
+        .map(block => block.trim())
+        .filter(Boolean)
+        .map(block => `<p>${block.replace(/\n/g, '<br/>')}</p>`) // single newlines to <br/>
+        .join('\n');
+      if (paragraphs.length > 0) {
+        sanitized = paragraphs;
+      }
+    }
+
+    // Do not mangle underscores or emphasis characters; return cleaned content
+    return sanitized;
   } catch (error) {
     console.error('[Reader] Error sanitizing HTML:', error);
     return html; // Return original if sanitization fails

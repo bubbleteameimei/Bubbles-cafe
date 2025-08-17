@@ -20,6 +20,8 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 }) => {
   const [currentPath, setCurrentPath] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const lastY = React.useRef(0);
 
   // Track scroll position for desktop and laptop enhancements
   useEffect(() => {
@@ -30,6 +32,16 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
       } else {
         setIsScrolled(false);
       }
+
+      // Hide nav on downward scroll, show on upward
+      const delta = scrollPosition - lastY.current;
+      const threshold = 8; // small threshold to avoid jitter
+      if (delta > threshold) {
+        setHidden(true);
+      } else if (delta < -threshold) {
+        setHidden(false);
+      }
+      lastY.current = scrollPosition;
     };
 
     // Initial check
@@ -72,7 +84,7 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
   return (
     <div className={`navbar-container transition-all duration-300 fixed top-0 left-0 right-0 z-40 w-screen ${
       isScrolled ? 'lg:bg-background/90 lg:backdrop-blur-md lg:shadow-md' : 'lg:bg-transparent'
-    }`}
+    } ${hidden ? '-translate-y-full' : 'translate-y-0'}`}
     style={{
       width: "100vw",
       margin: 0,
