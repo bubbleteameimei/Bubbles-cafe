@@ -56,7 +56,7 @@ export default function Navigation() {
 
   return (
     <header 
-      className={`fixed top-0 z-40 w-screen border-b 
+      className={`relative top-0 z-40 w-screen border-b 
                 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
                 transition-all duration-300 ease-in-out 
                 ${scrolled ? 'shadow-md' : ''}`}
@@ -68,7 +68,7 @@ export default function Navigation() {
         padding: 0
       }}
     >
-      <div className="w-full flex h-16 items-center justify-between px-4">
+      <div className="w-full flex h-16 items-center justify-between px-4 main-header">
         {/* Left section with menu toggle for all screen sizes */}
         <div className="flex items-center -mt-1">
           {/* Menu toggle for all devices */}

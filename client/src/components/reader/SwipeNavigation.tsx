@@ -17,7 +17,7 @@ export function SwipeNavigation({
   onNext,
   disabled = false,
   children,
-  minSwipeDistance = 120
+  minSwipeDistance = 90
 }: SwipeNavigationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
@@ -44,23 +44,30 @@ export function SwipeNavigation({
       touchEndX.current = t.screenX;
       touchEndY.current = t.screenY;
       
-      // Calculate swipe distance
-      const swipeDistance = touchEndX.current - touchStartX.current;
-      const verticalDistance = (touchEndY.current ?? 0) - (touchStartY.current ?? 0);
+      // Calculate swipe deltas
+      const dx = (touchEndX.current ?? 0) - (touchStartX.current ?? 0);
+      const dy = (touchEndY.current ?? 0) - (touchStartY.current ?? 0);
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
       const durationMs = touchStartTime.current ? Date.now() - touchStartTime.current : 0;
+      const velocity = durationMs > 0 ? absDx / durationMs : 0; // px per ms
       
-      // Only trigger if swipe distance is significant, vertical drift is small, and gesture not too quick
-      const verticalLock = Math.abs(verticalDistance) < 40; // ignore if user mostly scrolled vertically
-      const slowEnough = durationMs > 120; // ignore ultra-quick accidental flicks
-      if (verticalLock && slowEnough && Math.abs(swipeDistance) >= minSwipeDistance) {
+      // Heuristics:
+      // - Prefer horizontal movement (ratio > 1.25)
+      // - Allow a fast flick with lower distance (velocity >= 0.6 and distance >= 60)
+      // - Allow a deliberate swipe (distance >= minSwipeDistance and vertical drift not dominant)
+      const horizontalDominant = absDx > absDy * 1.25;
+      const fastFlick = velocity >= 0.6 && absDx >= 60 && absDy <= absDx * 0.6;
+      const deliberateSwipe = absDx >= minSwipeDistance && absDy <= 60 && horizontalDominant;
+      const shouldSwipe = (fastFlick || deliberateSwipe) && absDx > 0;
+      
+      if (shouldSwipe) {
         // Prevent default browser behavior for our custom swipe
         e.preventDefault();
         
-        if (swipeDistance > 0) {
-          // Swiped left-to-right (going back, previous chapter)
+        if (dx > 0) {
           onPrevious();
         } else {
-          // Swiped right-to-left (moving forward, next chapter)
           onNext();
         }
       }

@@ -60,79 +60,35 @@ export function useFontFamily() {
 
   // Apply the font family when the component mounts and whenever it changes
   useEffect(() => {
-    console.log('[FontFamily] Setting font family:', fontFamily);
-    
-    // Make sure the fonts are loaded from Google Fonts if needed
-    const fontUrls = {
-      'cormorant': 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
-      'merriweather': 'https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap',
-      'lora': 'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
-      'roboto': 'https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap',
-      'opensans': 'https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
-      'literata': 'https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
-    };
-
-    // Only load the necessary font
-    const fontUrl = fontUrls[fontFamily];
-    
-    // Check if the font link is already in the document
-    const existingLink = document.querySelector(`link[href="${fontUrl}"]`);
-    
-    if (!existingLink && fontUrl) {
-      const fontLink = document.createElement('link');
-      fontLink.rel = 'stylesheet';
-      fontLink.href = fontUrl;
-      document.head.appendChild(fontLink);
-    }
-    
-    // Update CSS custom property for global access
-    document.documentElement.style.setProperty('--reader-font-family', FONT_FAMILIES[fontFamily].family);
-    
-    // Also set a data attribute for easier CSS targeting
-    document.documentElement.setAttribute('data-font-family', fontFamily);
-    
-    // Create or update a global style tag for consistent font styling
-    let styleTag = document.getElementById('reader-font-family-styles');
-    
-    if (!styleTag) {
-      styleTag = document.createElement('style');
-      styleTag.id = 'reader-font-family-styles';
-      document.head.appendChild(styleTag);
-    }
-    
-    // Set consistent styles for story content that will override any inline styles
-    styleTag.textContent = `
-      .story-content {
-        font-family: ${FONT_FAMILIES[fontFamily].family} !important;
-      }
-      .story-content p, 
-      .story-content li,
-      .story-content div:not(.not-content),
-      .story-content span,
-      .story-content em,
-      .story-content i,
-      .story-content b,
-      .story-content strong,
-      .story-content blockquote,
-      .story-content h1,
-      .story-content h2,
-      .story-content h3,
-      .story-content h4,
-      .story-content h5,
-      .story-content h6 {
-        font-family: ${FONT_FAMILIES[fontFamily].family} !important;
-      }
-      
-      /* Specifically target italic elements to ensure they use the selected font's italic style */
-      .story-content em,
-      .story-content i,
-      .story-content *[style*="font-style: italic"] {
-        font-family: ${FONT_FAMILIES[fontFamily].family} !important;
-        font-style: italic !important;
-      }
-    `;
-    
-    // Clean up function not needed as we want to maintain font between page navigations
+     // Make sure the fonts are loaded from Google Fonts if needed
+     const fontUrls = {
+       'cormorant': 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
+       'merriweather': 'https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap',
+       'lora': 'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
+       'roboto': 'https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap',
+       'opensans': 'https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
+       'literata': 'https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
+     };
+ 
+     // Only load the necessary font
+     const fontUrl = fontUrls[fontFamily];
+     
+     // Check if the font link is already in the document
+     const existingLink = document.querySelector(`link[href="${fontUrl}"]`);
+     
+     if (!existingLink && fontUrl) {
+       const fontLink = document.createElement('link');
+       fontLink.rel = 'stylesheet';
+       fontLink.href = fontUrl;
+       document.head.appendChild(fontLink);
+     }
+     
+    // Update CSS custom property for global access in a rAF to avoid reflow thrash
+    const raf = requestAnimationFrame(() => {
+      document.documentElement.style.setProperty('--reader-font-family', FONT_FAMILIES[fontFamily].family);
+      document.documentElement.setAttribute('data-font-family', fontFamily);
+    });
+    return () => cancelAnimationFrame(raf);
   }, [fontFamily]);
 
   const updateFontFamily = useCallback((newFamily: FontFamilyKey) => {
@@ -140,8 +96,6 @@ export function useFontFamily() {
       console.error('[FontFamily] Invalid font family:', newFamily);
       return;
     }
-    
-    console.log('[FontFamily] Updating font family to:', newFamily);
     
     // Save to localStorage before updating state
     try {
