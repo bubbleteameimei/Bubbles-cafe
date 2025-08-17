@@ -1304,6 +1304,20 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   <TableOfContents 
                     currentPostId={currentPost.id} 
                     onClose={() => setContentsDialogOpen(false)} 
+                    posts={(posts as any[]).map(p => ({
+                      id: p.id,
+                      title: (p.title?.rendered || p.title || 'Untitled') as string,
+                      slug: (p.slug || `post-${p.id}`) as string,
+                      date: (p.date || p.createdAt || new Date().toISOString()) as string
+                    }))}
+                    onSelect={(post) => {
+                      // Find the index of the selected post within the current list and switch
+                      const idx = posts.findIndex(p => p.id === post.id);
+                      if (idx >= 0) {
+                        setCurrentIndex(idx);
+                        window.scrollTo({ top: 0, behavior: 'auto' });
+                      }
+                    }}
                   />
                 </DialogContent>
               </Dialog>

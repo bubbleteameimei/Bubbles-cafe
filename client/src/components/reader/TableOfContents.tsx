@@ -15,20 +15,33 @@ interface Post {
 interface TableOfContentsProps {
   currentPostId: number;
   onClose: () => void;
+  posts?: Post[];
+  onSelect?: (post: Post) => void;
 }
 
-export default function TableOfContents({ currentPostId, onClose }: TableOfContentsProps) {
+export default function TableOfContents({ currentPostId, onClose, posts: providedPosts, onSelect }: TableOfContentsProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    async function fetchPosts() {
+    if (providedPosts && providedPosts.length > 0) {
+      // Use posts supplied by the reader to ensure consistent ordering
+      setPosts(providedPosts.map((p: any) => ({
+        id: p.id,
+        title: (p.title?.rendered || p.title || 'Untitled') as string,
+        slug: (p.slug || `post-${p.id}`) as string,
+        date: (p.date || p.createdAt || new Date().toISOString()) as string
+      })));
+      return;
+    }
+
+    // Fallback: fetch a large batch if posts not provided
+    (async function fetchPosts() {
       try {
-        const response = await fetch('/api/posts?page=1&limit=100');
+        const response = await fetch('/api/posts?page=1&limit=500');
         if (response.ok) {
           const data = await response.json();
-          // Normalize posts to have consistent structure
           const normalizedPosts = data.posts.map((post: any) => ({
             id: post.id,
             title: post.title?.rendered || post.title || 'Untitled',
@@ -36,21 +49,22 @@ export default function TableOfContents({ currentPostId, onClose }: TableOfConte
             date: post.date || post.createdAt || new Date().toISOString()
           }));
           setPosts(normalizedPosts);
-        } else {
-          console.error('Failed to fetch posts');
         }
       } catch (error) {
         console.error('Error fetching posts:', error);
-      } finally {
-        // Posts loaded
       }
-    }
-
-    fetchPosts();
-  }, []);
+    })();
+  }, [providedPosts]);
 
   const handlePostClick = (slug: string) => {
-    setLocation(`/story/${slug}`);
+    const post = posts.find(p => p.slug === slug);
+    if (onSelect && post) {
+      onSelect(post);
+      onClose();
+      return;
+    }
+    // Fallback to navigation if no onSelect provided
+    setLocation(`/reader/${slug}`);
     onClose();
   };
 
@@ -87,7 +101,8 @@ export default function TableOfContents({ currentPostId, onClose }: TableOfConte
 
   return (
     <>
-      <div className="flex gap-2 mt-2">
+      <div className="flex gap-2 mt-2 items-center justify-between">
+        <div className="flex gap-2">
         <Button 
           variant="outline" 
           size="sm" 
@@ -108,6 +123,8 @@ export default function TableOfContents({ currentPostId, onClose }: TableOfConte
           <Shuffle className="h-4 w-4 flex-shrink-0" />
           <span className="truncate">Random</span>
         </Button>
+        </div>
+        <Button variant="outline" size="sm" onClick={onClose}>Close</Button>
       </div>
       
       <div className="relative mt-3">
