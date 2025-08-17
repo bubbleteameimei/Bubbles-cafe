@@ -17,6 +17,41 @@ router.get("/info", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// NEW: Admin stats endpoint (JSON)
+router.get("/stats", requireAuth, requireAdmin, async (_req, res) => {
+	try {
+		// Basic counts via storage helpers
+		const [userCount, postsResult, recentActivity] = await Promise.all([
+			storage.getUserCount?.() ?? storage.getUsersCount?.(),
+			storage.getPosts(1, 1, {}),
+			storage.getRecentActivity(10)
+		]);
+
+		// WordPress settings snapshot
+		const siteSettings = await storage.getSiteSettings();
+		const wpEnabled = siteSettings.find(s => s.key === 'wordpress_sync_enabled')?.value === 'true';
+		const lastSyncValue = siteSettings.find(s => s.key === 'last_wordpress_sync')?.value;
+		const lastSync = lastSyncValue ? new Date(parseInt(lastSyncValue)).toISOString() : null;
+
+		return res.json({
+			users: typeof userCount === 'number' ? userCount : 0,
+			posts: (postsResult?.posts?.length ?? 0),
+			wordpress: {
+				enabled: wpEnabled,
+				lastSync,
+			},
+			recentActivity: (recentActivity || []).map(a => ({
+				id: (a as any).id?.toString?.() || '',
+				action: (a as any).action,
+				timestamp: (a as any).createdAt?.toISOString?.() || new Date().toISOString(),
+			}))
+		});
+	} catch (error) {
+		console.error('[Admin] Error building stats:', error);
+		return res.status(500).json({ error: 'Failed to fetch stats' });
+	}
+});
+
 // WordPress sync status endpoint
 router.get("/wordpress/status", requireAuth, requireAdmin, async (req, res) => {
   try {
