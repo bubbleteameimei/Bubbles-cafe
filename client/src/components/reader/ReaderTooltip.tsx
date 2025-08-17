@@ -16,7 +16,8 @@ const ReaderTooltip = ({ show }: ReaderTooltipProps) => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -10, scale: 0.9 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="fixed bottom-12 sm:bottom-16 inset-x-0 z-50 pointer-events-none" // Use inset-x-0 instead of left + transform
+          className="fixed inset-x-0 z-50 pointer-events-none"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 3.5rem)' }}
         >
           {/* Use the exact same container class as the About page to ensure consistent width */}
           <div className="container max-w-4xl mx-auto px-4">

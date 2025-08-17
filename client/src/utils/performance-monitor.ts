@@ -289,7 +289,7 @@ class PerformanceMonitor {
       }
     }
 
-    // Send to your custom analytics endpoint
+    // Send to custom analytics endpoint (CSRF-exempt)
     fetch('/api/analytics/performance', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
