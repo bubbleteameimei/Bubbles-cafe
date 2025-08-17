@@ -650,6 +650,48 @@ router.get('/device-distribution-test', async (req: Request, res: Response) => {
 });
 
 /**
+ * Performance metrics endpoint (exempted from CSRF)
+ */
+router.post('/performance', async (req: Request, res: Response) => {
+  try {
+    const { metrics, coreVitals, performanceScore, suggestions, userAgent, timestamp, path } = req.body || {};
+
+    // Log basic info in development for visibility
+    if (process.env.NODE_ENV !== 'production') {
+      analyticsLogger.debug('Received performance payload', {
+        hasMetrics: !!metrics,
+        hasCoreVitals: !!coreVitals,
+        performanceScore: typeof performanceScore === 'number' ? performanceScore : 'n/a'
+      });
+    }
+
+    // Store a summary metric to avoid large payloads in DB
+    try {
+      await storage.storePerformanceMetric({
+        metricName: 'performance_summary',
+        value: Number(performanceScore) || 0,
+        identifier: `perf-${Date.now()}`,
+        navigationType: 'navigation',
+        url: path || (req.headers.referer as string) || 'unknown',
+        userAgent: userAgent || (req.headers['user-agent'] as string) || 'unknown'
+      });
+    } catch (e) {
+      // Non-fatal; continue to return success to avoid blocking
+      analyticsLogger.warn('Failed to store performance summary metric', { error: e instanceof Error ? e.message : 'unknown' });
+    }
+
+    res.status(200).json({ message: 'Performance payload received' });
+    return;
+  } catch (error) {
+    analyticsLogger.error('Error processing performance payload', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    res.status(500).json({ error: 'Internal server error' });
+    return;
+  }
+});
+
+/**
  * Register analytics routes
  */
 export function registerAnalyticsRoutes(app: any) {

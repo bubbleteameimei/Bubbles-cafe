@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
 import { Menu, Search, Moon, Sun, User } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/contexts/notification-context";
 import { useTheme } from "@/components/theme-provider";
@@ -69,11 +77,12 @@ export default function Navigation() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/60
+                className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/60 touch-manipulation
                           transition-all duration-200 ease-in-out active:scale-95 mt-2"
                 aria-label="Open menu"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
             <SheetContent 
@@ -148,41 +157,52 @@ export default function Navigation() {
             )}
           </Button>
           
-          {/* User/Auth button - icon styling to match other buttons */}
+          {/* User/Auth button with dropdown menu */}
           {!user ? (
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setLocation("/auth")}
-              className="h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+              className="h-9 w-9 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
                         transition-all duration-150 active:scale-95 mt-2"
               aria-label="Sign in"
             >
-              <User className="h-4 w-4" />
+              <User className="h-5 w-5" />
             </Button>
           ) : (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setLocation('/profile')}
-              className="h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                        transition-all duration-150 active:scale-95 p-0 overflow-hidden mt-2"
-              aria-label="Profile"
-            >
-              {user.avatar ? (
-                <div className="h-full w-full overflow-hidden rounded-full">
-                  <img 
-                    src={user.avatar} 
-                    alt={`${user.username}'s avatar`}
-                    className="h-full w-full object-cover" 
-                  />
-                </div>
-              ) : (
-                <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center text-primary-foreground text-xs font-medium">
-                  {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
-                </div>
-              )}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                            transition-all duration-150 active:scale-95 p-0 overflow-hidden mt-2"
+                  aria-label="Account menu"
+                >
+                  {user.avatar ? (
+                    <div className="h-full w-full overflow-hidden rounded-full">
+                      <img 
+                        src={user.avatar} 
+                        alt={`${user.username}'s avatar`}
+                        className="h-full w-full object-cover" 
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center text-primary-foreground text-xs font-medium">
+                      {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setLocation('/profile')}>Profile</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLocation('/settings/profile')}>Settings</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => { (window as any).fetch && fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).finally(() => setLocation('/auth')); }}>Logout</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>

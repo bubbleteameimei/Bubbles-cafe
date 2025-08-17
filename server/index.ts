@@ -84,6 +84,7 @@ app.use(validateCsrfToken({
     '/api/auth/reset-password', // Allow password reset without CSRF protection
     '/api/auth/verify-reset-token', // Allow token verification without CSRF protection
     '/api/analytics/vitals', // Performance metrics endpoint
+    '/api/analytics/performance', // Additional performance payload endpoint
     '/api/wordpress/sync/status', // WordPress sync status check
     '/api/reader/bookmarks', // Allow anonymous bookmarks without CSRF protection
     '/api/errors', // Client error reporting should be CSRF-exempt
