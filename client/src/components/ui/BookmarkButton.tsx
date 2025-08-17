@@ -45,8 +45,8 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
   const [notes, setNotes] = useState('');
   const [tagsInput, setTagsInput] = useState('');
 
-  // Determine which API endpoint to use based on variant
-  const apiBasePath = variant === 'reader' ? '/api/reader/bookmarks' : '/api/bookmarks';
+  // Determine which API endpoint to use based on authentication status and variant
+  const apiBasePath = user ? '/api/bookmarks' : '/api/reader/bookmarks';
   
   // Query to check if post is already bookmarked
   const { data: bookmark, isLoading, error: bookmarkError } = useQuery({

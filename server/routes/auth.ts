@@ -240,6 +240,28 @@ router.post('/reset-password',
   })
 );
 
+// GET /api/auth/verify-reset-token/:token - Verify reset token validity
+router.get('/verify-reset-token/:token',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { token } = req.params;
+
+    try {
+      const resetToken = await storage.getResetTokenByToken(token);
+      if (!resetToken) {
+        throw createError.badRequest('Invalid or expired reset token');
+      }
+
+      // Token is valid
+      return res.json({ success: true, message: 'Token is valid' });
+    } catch (error) {
+      const anyError = error as any;
+      if (anyError?.statusCode) throw anyError;
+      authLogger.error('Reset token verification error', { error: error instanceof Error ? error.message : String(error) });
+      throw createError.internal('Token verification failed');
+    }
+  })
+);
+
 // POST /api/auth/change-password - Change password (authenticated)
 router.post('/change-password',
   sensitiveOperationsRateLimiter,

@@ -25,7 +25,7 @@ export default function TableOfContents({ currentPostId, onClose }: TableOfConte
   useEffect(() => {
     async function fetchPosts() {
       try {
-        const response = await fetch('/api/posts?limit=100');
+        const response = await fetch('/api/posts?page=1&limit=100');
         if (response.ok) {
           const data = await response.json();
           // Normalize posts to have consistent structure
