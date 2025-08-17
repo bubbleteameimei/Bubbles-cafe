@@ -14,7 +14,7 @@ export const commonSchemas = {
   title: z.string().min(1).max(200).trim(),
   url: z.string().url().max(500),
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(10)
+  limit: z.coerce.number().int().min(1).max(5000).default(10)
 };
 
 // Sanitize input to prevent XSS
