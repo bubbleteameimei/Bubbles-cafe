@@ -17,30 +17,42 @@ export function SwipeNavigation({
   onNext,
   disabled = false,
   children,
-  minSwipeDistance = 70
+  minSwipeDistance = 120
 }: SwipeNavigationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const touchEndY = useRef<number | null>(null);
+  const touchStartTime = useRef<number | null>(null);
   
   useEffect(() => {
     const element = containerRef.current;
     if (!element || disabled) return;
     
     const handleTouchStart = (e: TouchEvent) => {
-      touchStartX.current = e.changedTouches[0].screenX;
+      const t = e.changedTouches[0];
+      touchStartX.current = t.screenX;
+      touchStartY.current = t.screenY;
+      touchStartTime.current = Date.now();
     };
     
     const handleTouchEnd = (e: TouchEvent) => {
       if (touchStartX.current === null) return;
       
-      touchEndX.current = e.changedTouches[0].screenX;
+      const t = e.changedTouches[0];
+      touchEndX.current = t.screenX;
+      touchEndY.current = t.screenY;
       
       // Calculate swipe distance
       const swipeDistance = touchEndX.current - touchStartX.current;
+      const verticalDistance = (touchEndY.current ?? 0) - (touchStartY.current ?? 0);
+      const durationMs = touchStartTime.current ? Date.now() - touchStartTime.current : 0;
       
-      // Only trigger if swipe distance is significant enough
-      if (Math.abs(swipeDistance) >= minSwipeDistance) {
+      // Only trigger if swipe distance is significant, vertical drift is small, and gesture not too quick
+      const verticalLock = Math.abs(verticalDistance) < 40; // ignore if user mostly scrolled vertically
+      const slowEnough = durationMs > 120; // ignore ultra-quick accidental flicks
+      if (verticalLock && slowEnough && Math.abs(swipeDistance) >= minSwipeDistance) {
         // Prevent default browser behavior for our custom swipe
         e.preventDefault();
         
@@ -56,6 +68,9 @@ export function SwipeNavigation({
       // Reset touch tracking
       touchStartX.current = null;
       touchEndX.current = null;
+      touchStartY.current = null;
+      touchEndY.current = null;
+      touchStartTime.current = null;
     };
     
     // Add event listeners
