@@ -342,11 +342,23 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           return { posts: [normalizedPost] };
         }
         
-        // Otherwise, fetch a list of posts for browsing
-        const response = await fetch('/api/posts?page=1&limit=20');
-        if (!response.ok) throw new Error('Failed to fetch posts');
-        const data = await response.json();
-        return { posts: data.posts || [] };
+        // Otherwise, fetch all posts for browsing by paging through results
+        let page = 1;
+        const limit = 100;
+        let allPosts: any[] = [];
+        let hasMore = true;
+        while (hasMore) {
+          const resp = await fetch(`/api/posts?page=${page}&limit=${limit}`);
+          if (!resp.ok) throw new Error('Failed to fetch posts');
+          const json = await resp.json();
+          const batch = json?.posts || [];
+          allPosts = allPosts.concat(batch);
+          hasMore = Boolean(json?.hasMore);
+          page += 1;
+          // Safety guard to prevent infinite loops in case of malformed response
+          if (page > 100) break;
+        }
+        return { posts: allPosts };
       } catch (err) {
         console.error('[Reader] Error fetching posts:', err);
         throw err;
