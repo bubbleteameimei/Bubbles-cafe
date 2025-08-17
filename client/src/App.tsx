@@ -69,7 +69,7 @@ const AuthPage = lazyWithRetry(() => import('./pages/auth'));
 const AuthSuccessPage = lazyWithRetry(() => import('./pages/auth-success'));
 const ProfilePage = lazyWithRetry(() => import('./pages/profile'));
 const BookmarksPage = lazyWithRetry(() => import('./pages/bookmarks'));
-const SearchResultsPage = lazyWithRetry(() => import('./pages/SearchResults'));
+const SearchResultsPage = lazyWithRetry(() => import('./pages/search-results'));
 const NotificationsPage = lazyWithRetry(() => import('./pages/notifications'));
 const RecommendationsPage = lazyWithRetry(() => import('./pages/recommendations'));
 
