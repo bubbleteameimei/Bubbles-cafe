@@ -127,6 +127,7 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
         req.path.includes('/analytics/vitals') ||
         req.path.includes('/analytics/pageview') ||
         req.path.includes('/analytics/interaction') ||
+        req.path.includes('/analytics/performance') ||
         // Special case for reader bookmarks endpoints
         req.path.includes('/reader/bookmarks') ||
         // Special cases for newsletter endpoints
