@@ -344,7 +344,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         
         // Otherwise, fetch all posts for browsing by paging through results
         let page = 1;
-        const limit = 100;
+        const limit = 500;
         let allPosts: any[] = [];
         let hasMore = true;
         while (hasMore) {

@@ -50,7 +50,7 @@ export default function TableOfContents({ currentPostId, onClose }: TableOfConte
   }, []);
 
   const handlePostClick = (slug: string) => {
-    setLocation(`/reader/${slug}`);
+    setLocation(`/story/${slug}`);
     onClose();
   };
 
@@ -66,7 +66,7 @@ export default function TableOfContents({ currentPostId, onClose }: TableOfConte
       if (filteredPosts.length > 0) {
         const randomIndex = Math.floor(Math.random() * filteredPosts.length);
         const randomPost = filteredPosts[randomIndex];
-        setLocation(`/reader/${randomPost.slug}`);
+        setLocation(`/story/${randomPost.slug}`);
         onClose();
       }
     }
