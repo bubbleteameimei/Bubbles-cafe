@@ -1135,50 +1135,36 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md"
+              className="fixed inset-0 z-[1000] flex flex-col items-center justify-center backdrop-blur-md"
               // Removed onClick handler to prevent closing by clicking outside
             >
-              <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ 
-                  type: "spring", 
-                  stiffness: 300, 
-                  damping: 30 
-                }}
-                className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-full text-center border border-[#ff0000]/80"
-              >
-                <div className="absolute inset-0 rounded-lg bg-[#ff0000]/10 animate-pulse" />
-                <div className="relative z-10">
-                  <div className="mb-6">
-                    <CreepyTextGlitch 
-                      text={horrorMessageText} 
-                      className="text-4xl font-bold"
-                      intensityFactor={8} // Maximum intensity for an extremely disturbing effect
-                    />
-                  </div>
-                  {/* The button is wrapped in a div with no animations to keep it stable */}
-                  <div className="mt-4">
-                    <Button
-                      variant="outline"
-                      className="border-[#ff0000]/60 bg-background hover:bg-background/90 text-foreground w-full py-6"
-                      onClick={() => setShowHorrorMessage(false)}
-                    >
-                      <span className="mx-auto text-lg font-medium">I understand, I'm sorry</span>
-                    </Button>
-                  </div>
+              <div className="w-full max-w-3xl px-6 text-center">
+                <div className="mb-6">
+                  <CreepyTextGlitch 
+                    text={horrorMessageText} 
+                    className="text-4xl font-bold"
+                    intensityFactor={8}
+                  />
                 </div>
-              </motion.div>
+                <div className="mt-4">
+                  <Button
+                    variant="outline"
+                    className="border-[#ff0000]/60 bg-background/70 hover:bg-background/80 backdrop-blur-sm text-foreground w-full py-6"
+                    onClick={() => setShowHorrorMessage(false)}
+                  >
+                    <span className="mx-auto text-lg font-medium">I understand, I'm sorry</span>
+                  </Button>
+                </div>
+              </div>
             </motion.div>
           )}
           
           {/* Overlay to prevent interaction with the page when horror message is shown */}
           {showHorrorMessage && (
             <div 
-              className="fixed inset-0 z-[999]" 
+              className="fixed inset-0 z-[999]"
               style={{ pointerEvents: 'all' }}
               aria-hidden="true"
-              /* This div blocks all interactions with the page behind it */
             />
           )}
           

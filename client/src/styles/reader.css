@@ -13,14 +13,14 @@
 
 /* Typography improvements using literary website standards */
 .story-content {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--reader-font-family, 'Cormorant Garamond', serif);
   line-height: 1.6; /* Match About page spacing */
   letter-spacing: 0.01em; /* Slightly increased for better text flow */
   color: var(--foreground);
   max-width: 70ch; /* Use character width measurement instead of pixels */
   margin: 0 auto;
   font-size: var(--base-font-size, 16px); /* Use the base font size variable with fallback */
-  transition: font-size 0.2s ease; /* Smooth transition when font size changes */
+  transition: font-size 0.2s ease, font 0.2s ease, font-family 0.2s ease; /* Smooth transitions when size or family changes */
   width: 100%; /* Ensure full width */
   box-sizing: border-box; /* Include padding in width calculation */
   overflow-wrap: break-word; /* Prevent text overflow by breaking words */
@@ -28,7 +28,7 @@
 }
 
 .story-content p {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--reader-font-family, 'Cormorant Garamond', serif);
   margin-bottom: 0.4em; /* Even more drastically reduced paragraph spacing */
   text-align: justify;
   text-justify: inter-word;
@@ -36,7 +36,7 @@
   font-kerning: normal; /* Improved kerning for better character spacing */
   font-feature-settings: "kern", "liga", "clig", "calt"; /* Typography enhancements */
   font-size: var(--base-font-size, 16px); /* Use the base font size variable with fallback */
-  transition: font-size 0.2s ease; /* Smooth transition when font size changes */
+  transition: font-size 0.2s ease, font 0.2s ease, font-family 0.2s ease; /* Smooth transitions */
 }
 
 .story-content p + p {
@@ -51,6 +51,7 @@
   margin-top: 1.75em;
   margin-bottom: 0.75em;
   letter-spacing: -0.015em; /* Tighter tracking for headings */
+  font-family: var(--reader-font-family, 'Cormorant Garamond', serif);
 }
 
 .story-content h1 {
