@@ -75,7 +75,8 @@ export default function CommunityPage() {
       // Build query params
       const params = new URLSearchParams();
       params.append('page', String(currentPage));
-      params.append('limit', String(view === "list" ? 6 : 12));
+      // Request a very high limit as requested; server caps and pagination will still apply
+      params.append('limit', '5000');
       
       if (category !== 'all') {
         params.append('category', category);
