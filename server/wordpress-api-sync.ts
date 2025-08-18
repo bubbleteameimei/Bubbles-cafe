@@ -21,7 +21,7 @@ interface WordPressPost {
 // Removed unused WordPressAuthor interface
 
 export class WordPressAPISync {
-  private readonly baseUrl = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
+  private readonly baseUrl = (process.env.WORDPRESS_API_URL || process.env.WORDPRESS_API || 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com');
   private readonly batchSize = 20;
 
   async syncAllPosts(): Promise<{ success: boolean; synced: number; errors: any[] }> {
