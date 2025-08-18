@@ -8,7 +8,9 @@ async function fetchWithCSRF(input: RequestInfo | URL, init?: RequestInit): Prom
   if (method !== 'GET') {
     try {
       await fetchCsrfTokenIfNeeded();
-      const options = applyCSRFToken(init || {});
+      const base: RequestInit = init ? { ...init } : {};
+      if (!base.credentials) base.credentials = 'include';
+      const options = applyCSRFToken(base);
       return originalFetch(input, options);
     } catch (_e) {
       // Fall through to original fetch if CSRF instrumentation fails

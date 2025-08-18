@@ -200,7 +200,15 @@ export default function Navigation() {
                 <DropdownMenuItem onClick={() => setLocation('/profile')}>Profile</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setLocation('/settings/profile')}>Settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => { (window as any).fetch && fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).finally(() => setLocation('/auth')); }}>Logout</DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    // Ensure the call is treated as a statement
+                    void fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+                      .finally(() => setLocation('/auth'));
+                  }}
+                >
+                  Logout
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}

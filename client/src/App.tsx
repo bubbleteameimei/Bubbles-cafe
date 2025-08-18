@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
@@ -108,8 +108,7 @@ const AdminContentManagementPage = lazyWithRetry(() => import('./pages/admin/con
 const AdminThemesPage = lazyWithRetry(() => import('./pages/admin/themes'));
 const ResetPasswordPage = lazyWithRetry(() => import('./pages/reset-password'));
 
-// Placeholder 404 page for discontinued features
-const EdenHollow404 = lazyWithRetry(() => import('./pages/EdenHollow404'));
+// Placeholder for discontinued features removed
 
 // Error pages - lazy loaded
 const Error403Page = lazyWithRetry(() => import('./pages/errors/403'));

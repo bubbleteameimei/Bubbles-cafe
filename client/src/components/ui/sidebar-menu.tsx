@@ -5,7 +5,7 @@ import {
   Bug, Scroll, Shield, Monitor, Bell, Lock, Building,
   Mail, MessageSquare, Palette, Type,
   User, Link2 as Link, CircleUserRound as UserCircle, Bookmark as BookmarkIcon,
-  LineChart, GamepadIcon, Eye, Star, Compass
+  LineChart, Eye, Star, Compass
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -442,29 +442,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           </SidebarGroup>
         </motion.div>
 
-      {/* Games & Interactive Experiences - Placeholder */}
-      <SidebarGroup className="-mt-4">
-        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
-          GAMES & INTERACTIVE
-        </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-1">
-          <SidebarMenu className="space-y-0">
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                isActive={location === '/eden-hollow'}
-                onClick={() => handleNavigation('/eden-hollow')}
-                tooltip="Eden's Hollow - Coming Soon"
-                className={menuItemClass}
-                aria-current={location === '/eden-hollow' ? 'page' : undefined}
-              >
-                {renderActiveIndicator('/eden-hollow')}
-                <GamepadIcon className="h-5 w-5" />
-                <span>Eden's Hollow</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+      {/* Games & Interactive placeholder removed */}
 
       {/* Admin Navigation - Only show if user is admin */}
       {user?.isAdmin && (
