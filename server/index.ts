@@ -17,7 +17,6 @@ import { storage } from "./storage";
 import { createLogger, requestLogger } from "./utils/debug-logger";
 
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
-import { setupWordPressSyncSchedule } from "./wordpress-sync"; // Using the declaration file
 import { registerEmailServiceRoutes } from "./routes/email-service"; // Email service routes
 import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark routes
 import { registerPaymentRoutes } from "./routes/payment"; // Paystack payment routes
@@ -26,6 +25,7 @@ import { runMigrations } from "./migrations"; // Import our custom migrations
 import { setupCors } from "./cors-setup";
 
 import { config } from './config';
+import { wordpressScheduler } from './wordpress-scheduler';
 
 const app = express();
 const isDev = config.isDev;
@@ -234,8 +234,8 @@ async function startServer() {
       registerWordPressSyncRoutes(app);
       registerPaymentRoutes(app);
 
-      // Setup WordPress sync schedule (run every 5 minutes)
-      setupWordPressSyncSchedule(5 * 60 * 1000);
+      // Start WordPress scheduler
+      wordpressScheduler.start();
 
       await setupVite(app, server);
     } else {
@@ -249,8 +249,8 @@ async function startServer() {
       registerWordPressSyncRoutes(app);
       registerPaymentRoutes(app);
 
-      // Setup WordPress sync schedule (run every 5 minutes)
-      setupWordPressSyncSchedule(5 * 60 * 1000);
+      // Start WordPress scheduler
+      wordpressScheduler.start();
 
       serveStatic(app);
     }

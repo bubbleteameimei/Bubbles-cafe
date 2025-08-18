@@ -12,6 +12,22 @@ import * as schema from '../shared/schema';
 import fs from 'fs';
 import path from 'path';
 
+// Sanitize potentially malformed DATABASE_URL values
+function sanitizeDatabaseUrl(url?: string): string | undefined {
+  if (!url) return url;
+  let s = url;
+  s = s.replace(/\s+/g, '');
+  s = s.replace(/^postgresal:\/\//i, 'postgresql://');
+  s = s.replace(/^postgres:\/\//i, 'postgresql://');
+  s = s.replace(/-pool-er/gi, '-pooler');
+  s = s.replace(/re-?quire/gi, 'require');
+  return s;
+}
+
+if (process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = sanitizeDatabaseUrl(process.env.DATABASE_URL)!;
+}
+
 /**
  * Initialize database connection
  */
