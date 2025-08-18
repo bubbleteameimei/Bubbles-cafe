@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 export default defineConfig(({ mode }) => ({
 	plugins: [
 		react(),
-		runtimeErrorOverlay(),
+		...(mode === 'development' ? [runtimeErrorOverlay()] : []),
 		themePlugin(),
 	],
 	resolve: {
