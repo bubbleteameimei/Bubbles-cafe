@@ -169,18 +169,16 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       setSupportOpen(false);
       setAdminOpen(false);
       
-      // 2. Close mobile sidebar if open
-      if (sidebar && sidebar.isMobile) {
-        sidebar.setOpenMobile(false);
-      }
-      
-      // 3. If callback provided, call it
+      // 2. If callback provided, call it
       if (onNavigate) {
         onNavigate();
       }
       
-      // 4. Navigate immediately - no delays or loading screens
+      // 3. Perform navigation and then close mobile sidebar on the next frame for snappy UX
       setLocation(path);
+      if (sidebar && sidebar.isMobile) {
+        requestAnimationFrame(() => sidebar.setOpenMobile(false));
+      }
       
     } catch (error) {
       console.error("Navigation error:", error);
