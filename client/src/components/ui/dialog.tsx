@@ -206,32 +206,27 @@ const DialogClose = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Close>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Close>
 >(({ className, children, ...props }, ref) => {
-  // Add default aria-label if not provided and children is text
   const hasAriaLabel = Boolean(props['aria-label']);
-  const childrenText = typeof children === 'string' ? children : undefined;
-  
-  // If children is not an X icon, we'll add an invisible one for screen readers
-  const hasXIcon = React.Children.toArray(children).some(child => 
-    React.isValidElement(child) && 
-    child.type === X
-  );
-  
+  const childrenProvided = React.Children.count(children) > 0;
+
   return (
     <DialogPrimitive.Close
       ref={ref}
+      type="button"
       className={cn(
         "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
         className
       )}
-      aria-label={!hasAriaLabel && childrenText ? `${childrenText}` : !hasAriaLabel ? "Close dialog" : undefined}
+      aria-label={!hasAriaLabel ? "Close dialog" : (props['aria-label'] as string)}
       {...props}
     >
-      {children}
-      {!hasXIcon && (
-        <span className="sr-only">
-          <X size={16} aria-hidden="true" />
-          Close
-        </span>
+      {childrenProvided ? (
+        children
+      ) : (
+        <>
+          <X className="h-4 w-4" aria-hidden="true" />
+          <span className="sr-only">Close</span>
+        </>
       )}
     </DialogPrimitive.Close>
   );

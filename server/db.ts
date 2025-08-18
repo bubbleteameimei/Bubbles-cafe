@@ -4,6 +4,26 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
 
+// Normalize and sanitize potentially malformed DATABASE_URL values
+function sanitizeDatabaseUrl(url?: string): string | undefined {
+	if (!url) return url;
+	let s = url;
+	// Remove whitespace/newlines
+	s = s.replace(/\s+/g, '');
+	// Fix common protocol typos
+	s = s.replace(/^postgresal:\/\//i, 'postgresql://');
+	s = s.replace(/^postgres:\/\//i, 'postgresql://');
+	// Fix broken "pooler" subdomain splits like "pool-er"
+	s = s.replace(/-pool-er/gi, '-pooler');
+	// Fix split words like re-quire
+	s = s.replace(/re-?quire/gi, 'require');
+	return s;
+}
+
+if (process.env.DATABASE_URL) {
+	process.env.DATABASE_URL = sanitizeDatabaseUrl(process.env.DATABASE_URL)!;
+}
+
 // Configure WebSocket for Neon serverless with enhanced error handling
 try {
 	neonConfig.webSocketConstructor = ws;
