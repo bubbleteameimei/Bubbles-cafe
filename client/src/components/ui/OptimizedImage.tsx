@@ -44,7 +44,7 @@ function getOptimizedImageUrl(src: string, width: number): string {
     
     try {
       return optimizedPath;
-    } catch (err) {
+    } catch {
       console.debug('[OptimizedImage] Falling back to original image:', src);
       return src;
     }
