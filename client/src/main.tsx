@@ -25,7 +25,7 @@ window.addEventListener('unhandledrejection', (event) => {
   try {
     const reason = event.reason instanceof Error ? { message: event.reason.message, stack: event.reason.stack } : { message: String(event.reason) };
     logger.error('Unhandled promise rejection', reason);
-  } catch (_) {}
+  } catch {}
 });
 
 const root = document.getElementById("root");

@@ -6,15 +6,7 @@ import { Button } from "./ui/button";
 import "../styles/sidebar.css";
 import { useEffect, useState } from "react";
 
-// Define responsive sidebar widths
-const SIDEBAR_WIDTHS = {
-  mobile: "85vw", // Almost full width on mobile
-  tablet: "20rem",
-  laptop: "20rem",
-  desktop: "22rem",
-  xl: "24rem",     // Extra large screens
-  xxl: "26rem"     // Ultra wide screens
-};
+// Removed unused responsive widths constant
 
 export function AppSidebar() {
   const { toggleSidebar, isMobile, openMobile, setOpenMobile, open } = useSidebar();
