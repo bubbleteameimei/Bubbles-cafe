@@ -11,7 +11,7 @@ interface ReaderCoreProps {
 
 export function ReaderCore({ slug, onPostLoad, onError }: ReaderCoreProps) {
   const mark = (_label: string) => {};
-  const measure = (_name: string, _start: string, _end: string) => {};
+  const measure = (_name: string, _start: string, _end?: string) => {};
   const contentRef = useRef<HTMLDivElement>(null);
   const [readingProgress, setReadingProgress] = useState(0);
 
@@ -32,7 +32,7 @@ export function ReaderCore({ slug, onPostLoad, onError }: ReaderCoreProps) {
         const data = await cachedFetch(`/api/posts/by-slug/${slug}`, {
           ttl: 10 * 60 * 1000 // 10 minutes cache
         });
-        measure('fetch-duration', 'fetch-start');
+        measure('fetch-duration', 'fetch-start', 'fetch-end');
         return data as PostShape;
       } catch (err) {
         logger.error('Failed to fetch post', { slug, error: err });

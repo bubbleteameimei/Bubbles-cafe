@@ -6,7 +6,7 @@ import { authRouter } from './auth';
 import { adminRoutes } from './admin';
 import searchRoutes from './search';
 import newsletterRoutes from './newsletter';
-import bookmarksRoutes from './bookmarks';
+// import bookmarksRoutes from './bookmarks';
 import emailRoutes from './email';
 import moderationRoutes from './moderation';
 import analyticsRoutes from './analytics';
@@ -52,9 +52,7 @@ export function registerModularRoutes(app: Express) {
     app.use('/api/newsletter', newsletterRoutes);
     routesLogger.info('Newsletter routes registered');
 
-    // Bookmarks routes
-    app.use('/api', bookmarksRoutes);
-    routesLogger.info('Bookmarks routes registered');
+    // Bookmarks routes are registered via registerBookmarkRoutes to avoid conflicts
 
     // Email routes
     app.use('/api/email', emailRoutes);
