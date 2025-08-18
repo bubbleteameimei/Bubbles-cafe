@@ -209,7 +209,7 @@ export function useDynamicVirtualScroll<T>(
   return {
     visibleRange,
     itemPositions,
-    scrollTop,
+    scrollTop: _scrollTop,
     setScrollTop,
     updateItemHeight
   };

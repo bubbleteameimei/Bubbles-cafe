@@ -129,7 +129,7 @@ function ChartTooltipContent({
 // Custom tooltip component that wraps the tooltip content
 function ChartTooltip({
   content,
-  cursor,
+  cursor: _cursor,
   ...props
 }: TooltipProps<any, any> & {
   cursor?: React.ReactNode
