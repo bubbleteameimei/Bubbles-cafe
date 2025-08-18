@@ -435,15 +435,16 @@ export default function IndexView() {
 
         {/* Featured + Categories Carousel (vertical, sample sizing) */}
         {(featuredStory && currentPosts.length > 0) && (
-          <div className="mb-6 flex flex-col items-center">
-            <h2 className="text-xl font-decorative mb-2">{slideTitles[activeSlide]}</h2>
-            <Carousel
-              opts={{ align: "start", loop: true }}
-              orientation="vertical"
-              setApi={setCarouselApi}
-              className="w-full max-w-xs"
-            >
-              <CarouselContent className="-mt-1 h-[200px]">
+          <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 flex flex-col items-center">
+              <h2 className="text-xl font-decorative mb-2">{slideTitles[activeSlide]}</h2>
+              <Carousel
+                opts={{ align: "start", loop: true }}
+                orientation="vertical"
+                setApi={setCarouselApi}
+                className="w-full"
+              >
+                <CarouselContent className="-mt-1 h-[200px]">
                 {/* Slide 1: Featured */}
                 <CarouselItem className="pt-1 md:basis-1/2">
                   <Card className="overflow-hidden border bg-card/60 backdrop-blur-sm h-[200px]">
@@ -512,10 +513,39 @@ export default function IndexView() {
                   </Card>
                 </CarouselItem>
 
-              </CarouselContent>
-              <CarouselPrevious className="-top-12 left-1/2 -translate-x-1/2 rotate-90 transition-transform active:scale-95" />
-              <CarouselNext className="-bottom-12 left-1/2 -translate-x-1/2 rotate-90 transition-transform active:scale-95" />
-            </Carousel>
+                </CarouselContent>
+                <CarouselPrevious className="-top-12 left-1/2 -translate-x-1/2 rotate-90 transition-transform active:scale-95" />
+                <CarouselNext className="-bottom-12 left-1/2 -translate-x-1/2 rotate-90 transition-transform active:scale-95" />
+              </Carousel>
+            </div>
+            {/* Right: featured card matching excerpt card size for layout harmony */}
+            <div className="lg:col-span-2">
+              <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <CardTitle className="text-xl font-castoro">{featuredStory?.title}</CardTitle>
+                    <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
+                      <div className="flex items-center gap-1 justify-end">
+                        <Calendar className="h-3 w-3" />
+                        <time>{featuredStory ? format(new Date(featuredStory.createdAt), 'MMM d, yyyy') : ''}</time>
+                      </div>
+                      <div className="flex items-center gap-1 justify-end">
+                        <Clock className="h-3 w-3" />
+                        <span>{featuredStory ? getReadingTime(featuredStory.content) : ''}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground leading-6 line-clamp-3 font-serif">{featuredStory ? extractHorrorExcerpt(featuredStory.content, 220) : ''}</p>
+                  <div className="mt-3 flex items-center justify-between">
+                    {featuredStory && <LikeDislike postId={featuredStory.id} variant="index" />}
+                    <Button size="sm" onClick={() => featuredStory && navigateToReader(featuredStory.slug || featuredStory.id)} className="h-9 px-3 transition-transform active:scale-95">
+                      Read story
+                      <ArrowRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
 

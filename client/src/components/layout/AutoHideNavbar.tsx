@@ -35,7 +35,16 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 
   // Track scroll position for desktop and laptop enhancements
   useEffect(() => {
+    // Only enable auto-hide on reader pages
+    const path = window.location.pathname;
+    const enableAutoHide = path.startsWith('/reader') || path.startsWith('/community-story');
     const handleScroll = () => {
+      if (!enableAutoHide) {
+        setHidden(false);
+        setIsScrolled(window.scrollY > 20);
+        lastY.current = window.scrollY;
+        return;
+      }
       const scrollPosition = window.scrollY;
       if (scrollPosition > 20) {
         setIsScrolled(true);
