@@ -308,24 +308,21 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     queryClient.removeQueries({ queryKey: ["posts"] });
   }, [queryClient]);
 
-  // Initialize currentIndex with validation
+  // Prefer direct slug/id if provided by index page for faster load
   const [currentIndex, setCurrentIndex] = useState(() => {
     try {
+      const directSlug = sessionStorage.getItem('selectedPostSlug');
+      if (directSlug) {
+        sessionStorage.removeItem('selectedStoryIndex');
+        console.log('[Reader] Using direct slug/id from sessionStorage:', directSlug);
+        // We'll resolve to index after fetching posts
+        return 0;
+      }
       const savedIndex = sessionStorage.getItem('selectedStoryIndex');
       console.log('[Reader] Retrieved saved index:', savedIndex);
-
-      if (!savedIndex) {
-        console.log('[Reader] No saved index found, defaulting to 0');
-        return 0;
-      }
-
+      if (!savedIndex) return 0;
       const parsedIndex = parseInt(savedIndex, 10);
-      if (isNaN(parsedIndex) || parsedIndex < 0) {
-        console.log('[Reader] Invalid saved index, defaulting to 0');
-        return 0;
-      }
-
-      return parsedIndex;
+      return isNaN(parsedIndex) || parsedIndex < 0 ? 0 : parsedIndex;
     } catch (error) {
       console.error('[Reader] Error reading from sessionStorage:', error);
       return 0;
@@ -337,6 +334,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     queryFn: async () => {
       console.log('[Reader] Fetching posts...', { routeSlug, isCommunityContent });
       try {
+        const directSlug = sessionStorage.getItem('selectedPostSlug');
+        if (directSlug) {
+          const endpoint = `/api/posts/slug/${directSlug}`;
+          const response = await fetch(endpoint);
+          if (!response.ok) throw new Error('Failed to fetch post');
+          const post = await response.json();
+          return { posts: [post] };
+        }
         if (routeSlug) {
           // If slug is provided, fetch specific post
           // Use slug endpoint (community posts are in the same posts table)
@@ -407,6 +412,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Validate and update currentIndex when posts data changes
   useEffect(() => {
     if (postsData?.posts && postsData.posts.length > 0) {
+      const directSlug = sessionStorage.getItem('selectedPostSlug');
+      if (directSlug) {
+        const idx = postsData.posts.findIndex(p => p.slug === directSlug || String(p.id) === directSlug);
+        if (idx >= 0) {
+          setCurrentIndex(idx);
+          sessionStorage.removeItem('selectedPostSlug');
+        }
+      }
       console.log('[Reader] Validating current index:', {
         currentIndex,
         totalPosts: postsData.posts.length,
