@@ -139,6 +139,8 @@ const SheetContent = React.forwardRef<
         {...props}
       >
         {contentChildren}
+        {/* Hidden close button for a11y and programmatic closing */}
+        <button aria-label="Close" className="sr-only" onClick={() => (document.activeElement as HTMLElement)?.blur?.()} />
 
       </SheetPrimitive.Content>
     </SheetPortal>

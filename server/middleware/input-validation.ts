@@ -6,7 +6,7 @@ const validationLogger = createSecureLogger('InputValidation');
 
 // Common validation schemas
 export const commonSchemas = {
-  id: z.number().int().positive(),
+  id: z.coerce.number().int().positive(),
   slug: z.string().min(1).max(255).regex(/^[a-zA-Z0-9-_]+$/, "Invalid slug format"),
   email: z.string().email().min(1).max(255).transform(s => s.toLowerCase().trim()),
   username: z.string().min(2).max(50).regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, underscores, and hyphens"),
