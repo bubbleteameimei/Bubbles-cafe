@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Navigation from './navigation';
 
 interface AutoHideNavbarProps {
@@ -22,6 +22,16 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
   const [isScrolled, setIsScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
   const lastY = React.useRef(0);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [navbarHeight, setNavbarHeight] = useState<number>(56);
+
+  // Helper to update CSS variables for progress positioning
+  const updateCssVars = (isHidden: boolean, heightPx: number) => {
+    const root = document.documentElement;
+    root.style.setProperty('--navbar-height', `${heightPx}px`);
+    root.style.setProperty('--progress-top-offset', isHidden ? '0px' : `${heightPx}px`);
+    root.toggleAttribute('data-nav-hidden', isHidden);
+  };
 
   // Track scroll position for desktop and laptop enhancements
   useEffect(() => {
@@ -53,6 +63,25 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
     };
   }, []);
 
+  // Measure navbar height and keep CSS variables in sync
+  useEffect(() => {
+    const measure = () => {
+      const el = containerRef.current;
+      const rect = el?.getBoundingClientRect();
+      const height = Math.max(1, Math.round(rect?.height || 56));
+      setNavbarHeight(height);
+      updateCssVars(hidden, height);
+    };
+    measure();
+    window.addEventListener('resize', measure, { passive: true } as any);
+    return () => window.removeEventListener('resize', measure as any);
+  }, [hidden]);
+
+  // Keep CSS vars updated when hidden state changes
+  useEffect(() => {
+    updateCssVars(hidden, navbarHeight);
+  }, [hidden, navbarHeight]);
+
   useEffect(() => {
     // Update current path when component mounts
     setCurrentPath(window.location.pathname);
@@ -82,7 +111,7 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 
   // Return navigation with responsive class for device optimization
   return (
-    <div className={`navbar-container transition-transform duration-300 fixed top-0 left-0 right-0 z-40 w-screen ${hidden ? '-translate-y-full' : 'translate-y-0'}`}
+    <div ref={containerRef} className={`navbar-container transition-transform duration-300 fixed top-0 left-0 right-0 z-40 w-screen ${hidden ? '-translate-y-full' : 'translate-y-0'}`}
       style={{ width: "100vw", margin: 0, padding: 0 }}>
       <div className={`${isScrolled ? 'lg:bg-background/90 lg:backdrop-blur-md lg:shadow-md' : 'lg:bg-transparent'}`}>
         <Navigation />
