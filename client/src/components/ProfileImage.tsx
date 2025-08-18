@@ -112,7 +112,7 @@ export default function ProfileImage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeIndex]); // Add dependency to fix the closure issue
+  }, [handlePrev, handleNext]);
 
   // Update the active index based on scroll position
   useEffect(() => {
