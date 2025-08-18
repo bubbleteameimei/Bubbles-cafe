@@ -37,11 +37,6 @@ export default function EmailServiceTest() {
     message: 'This is a test email from the Bubble\'s Cafe admin panel.'
   });
 
-  // Fetch email service status on component mount
-  useEffect(() => {
-    fetchEmailStatus();
-  }, [fetchEmailStatus]);
-
   // Handle form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -71,6 +66,11 @@ export default function EmailServiceTest() {
       setStatusLoading(false);
     }
   }, [toast]);
+
+  // Fetch email service status on component mount
+  useEffect(() => {
+    fetchEmailStatus();
+  }, [fetchEmailStatus]);
 
   // Send test email
   const sendTestEmail = async (e: React.FormEvent) => {
