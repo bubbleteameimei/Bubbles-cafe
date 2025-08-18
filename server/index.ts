@@ -8,6 +8,7 @@ import { seedDatabase } from "./seed";
 
 import helmet from "helmet";
 import compression from "compression";
+import crypto from 'crypto';
 
 import session from "express-session";
 import { setupAuth } from "./auth";
@@ -101,7 +102,7 @@ setupOAuth(app);
 app.get('/health', (req, res) => {
   // Ensure a CSRF token is set in session only
   if (!req.session.csrfToken) {
-    const token = require('crypto').randomBytes(32).toString('hex');
+    const token = crypto.randomBytes(32).toString('hex');
     req.session.csrfToken = token;
   }
   
@@ -143,7 +144,7 @@ import seedFromWordPressAPI from '../scripts/api-seed';
 app.get('/api/health', (req, res) => {
   // Ensure a CSRF token is set in session only
   if (!req.session.csrfToken) {
-    const token = require('crypto').randomBytes(32).toString('hex');
+    const token = crypto.randomBytes(32).toString('hex');
     req.session.csrfToken = token;
   }
   res.json({ status: 'ok', timestamp: new Date().toISOString(), csrfToken: req.session.csrfToken });

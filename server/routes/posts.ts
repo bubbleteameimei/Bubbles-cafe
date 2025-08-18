@@ -6,6 +6,9 @@ import { storage } from "../storage";
 import { z } from "zod";
 import { insertPostSchema, updatePostSchema } from "@shared/schema";
 import { apiRateLimiter } from '../middlewares/rate-limiter';
+// DB helpers imported where needed
+import { db } from '../db';
+import { posts as postsTable } from '@shared/schema';
 
 const postsLogger = createSecureLogger('PostsRoutes');
 const router = Router();
@@ -132,6 +135,84 @@ router.get('/community',
 			throw createError.internal('Failed to retrieve community posts');
 		}
 	})
+);
+
+// GET /api/posts/admin/themes - Admin list of posts with theme info
+router.get('/admin/themes',
+  apiRateLimiter,
+  asyncHandler(async (_req: Request, res: Response) => {
+    try {
+      // Prefer DB when available for efficiency
+      const rows = await db.select({
+        id: postsTable.id,
+        title: postsTable.title,
+        slug: postsTable.slug,
+        createdAt: postsTable.createdAt,
+        themeCategory: postsTable.themeCategory,
+        metadata: postsTable.metadata
+      }).from(postsTable);
+
+      const data = rows.map((r: any) => ({
+        id: r.id,
+        title: r.title,
+        slug: r.slug,
+        createdAt: r.createdAt,
+        themeCategory: r.themeCategory,
+        theme_category: r.themeCategory,
+        themeIcon: (r.metadata as any)?.themeIcon,
+        theme_icon: (r.metadata as any)?.themeIcon,
+        metadata: r.metadata
+      }));
+
+      res.json(data);
+    } catch (error) {
+      postsLogger.error('Error retrieving admin theme list', { error: error instanceof Error ? error.message : String(error) });
+      throw createError.internal('Failed to retrieve posts for themes');
+    }
+  })
+);
+
+// PATCH /api/posts/:id/theme - Update a post's theme category and optional icon
+router.patch('/:id/theme',
+  apiRateLimiter,
+  validateParams(postIdSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user || !req.user.isAdmin) {
+      throw createError.forbidden('Admin privileges required');
+    }
+
+    const { id } = req.params;
+    const { themeCategory, theme_category, themeIcon, icon } = req.body || {};
+    const newCategory: string | undefined = themeCategory || theme_category;
+    const newIcon: string | undefined = themeIcon || icon;
+
+    try {
+      // Load existing post
+      const existing = await (storage as any).getPostById
+        ? (storage as any).getPostById(Number(id))
+        : storage.getPost(String(id));
+      if (!existing) throw createError.notFound('Post not found');
+
+      // Merge metadata with new icon if provided
+      const mergedMetadata = {
+        ...(existing as any).metadata || {},
+        ...(newIcon ? { themeIcon: String(newIcon) } : {})
+      } as any;
+
+      // Build update payload
+      const updatePayload: any = { metadata: mergedMetadata };
+      if (newCategory) updatePayload.themeCategory = String(newCategory);
+
+      const updated = await storage.updatePost(Number(id), updatePayload);
+      postsLogger.info('Theme updated', { postId: id, themeCategory: newCategory, themeIcon: newIcon });
+      res.json(updated);
+    } catch (error) {
+      const anyError = error as any;
+      if (anyError?.statusCode) throw anyError;
+      postsLogger.error('Error updating theme', { postId: id, error: error instanceof Error ? error.message : String(error) });
+      throw createError.internal('Failed to update theme');
+    }
+  })
 );
 
 // POST /api/posts - Create new post (authenticated)

@@ -1,1 +1,2 @@
-// This file can be deleted as the rating system has been removed
+// Ratings feature removed. Keeping empty module to avoid import breakages.
+export {};

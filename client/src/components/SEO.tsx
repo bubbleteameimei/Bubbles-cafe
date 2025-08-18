@@ -183,7 +183,7 @@ export default function SEO({
     setLinkTag('icon', '/favicon.ico', { sizes: 'any' });
     setLinkTag('icon', '/favicon.svg', { type: 'image/svg+xml' });
     setLinkTag('apple-touch-icon', '/apple-touch-icon.png');
-    setLinkTag('manifest', '/manifest.json');
+    // Manifest removed
     
     // Generate and set JSON-LD structured data
     const generateStructuredData = () => {
