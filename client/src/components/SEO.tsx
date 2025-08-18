@@ -275,10 +275,30 @@ export default function SEO({
       });
     };
   }, [
-    fullTitle, description, canonical, imageUrl, type, author, published, modified, 
-    keywords, category, tags, readingTime, wordCount, locale, siteName, 
-    twitterCreator, twitterSite, noindex, nofollow, robots, breadcrumbs, 
-    siteUrl, pageUrl
+    // Stable core values
+    fullTitle,
+    description,
+    imageUrl,
+    type,
+    author,
+    published,
+    modified,
+    locale,
+    siteName,
+    twitterCreator,
+    twitterSite,
+    noindex,
+    nofollow,
+    robots,
+    siteUrl,
+    pageUrl,
+    // Derived lists; join to avoid reference changes
+    keywords.join(','),
+    tags.join(','),
+    breadcrumbs.map(b => `${b.name}:${b.url}`).join('|'),
+    category ?? '',
+    String(readingTime ?? ''),
+    String(wordCount ?? '')
   ]);
   
   // This component doesn't render anything visible
