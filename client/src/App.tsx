@@ -33,7 +33,6 @@ import { FeedbackButton } from './components/feedback/FeedbackButton';
 import ScrollEffectsProvider from './components/ScrollEffectsProvider';
 // Import our performance monitoring component
 // Performance monitor overlay removed
-import { lazyWithRetry } from './utils/lazy-retry';
 import StoryProgressBar from './components/StoryProgressBar';
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
@@ -58,78 +57,78 @@ import StoriesPage from './pages/index';
 // Import footer component
 import Footer from './components/layout/footer';
 
-// Lazy-load all other pages to improve initial load time
-const ReaderPage = lazyWithRetry(() => import('./pages/reader'));
-const AboutPage = lazyWithRetry(() => import('./pages/about'));
-const ContactPage = lazyWithRetry(() => import('./pages/contact'));
-const PrivacyPage = lazyWithRetry(() => import('./pages/privacy'));
-const ReportBugPage = lazyWithRetry(() => import('./pages/report-bug'));
+// Eager-load all pages for faster route switching
+import ReaderPage from './pages/reader';
+import AboutPage from './pages/about';
+import ContactPage from './pages/contact';
+import PrivacyPage from './pages/privacy';
+import ReportBugPage from './pages/report-bug';
 
-const AuthPage = lazyWithRetry(() => import('./pages/auth'));
-const AuthSuccessPage = lazyWithRetry(() => import('./pages/auth-success'));
-const ProfilePage = lazyWithRetry(() => import('./pages/profile'));
-const BookmarksPage = lazyWithRetry(() => import('./pages/bookmarks'));
-const SearchResultsPage = lazyWithRetry(() => import('./pages/search-results'));
-const NotificationsPage = lazyWithRetry(() => import('./pages/notifications'));
-const RecommendationsPage = lazyWithRetry(() => import('./pages/recommendations'));
+import AuthPage from './pages/auth';
+import AuthSuccessPage from './pages/auth-success';
+import ProfilePage from './pages/profile';
+import BookmarksPage from './pages/bookmarks';
+import SearchResultsPage from './pages/search-results';
+import NotificationsPage from './pages/notifications';
+import RecommendationsPage from './pages/recommendations';
 
-// Settings pages - lazy loaded
-const ProfileSettingsPage = lazyWithRetry(() => import('./pages/settings/profile'));
-const ConnectedAccountsPage = lazyWithRetry(() => import('./pages/settings/connected-accounts'));
-const FontSettingsPage = lazyWithRetry(() => import('./pages/settings/fonts'));
-const AccessibilitySettingsPage = lazyWithRetry(() => import('./pages/settings/accessibility'));
-const NotificationSettingsPage = lazyWithRetry(() => import('./pages/settings/notifications'));
-const PrivacySettingsPage = lazyWithRetry(() => import('./pages/settings/privacy'));
-const CookieManagementPage = lazyWithRetry(() => import('./pages/settings/cookie-management'));
-const QuickSettingsPage = lazyWithRetry(() => import('./pages/settings/quick-settings'));
-const PreviewSettingsPage = lazyWithRetry(() => import('./pages/settings/preview'));
+// Settings pages - eager loaded
+import ProfileSettingsPage from './pages/settings/profile';
+import ConnectedAccountsPage from './pages/settings/connected-accounts';
+import FontSettingsPage from './pages/settings/fonts';
+import AccessibilitySettingsPage from './pages/settings/accessibility';
+import NotificationSettingsPage from './pages/settings/notifications';
+import PrivacySettingsPage from './pages/settings/privacy';
+import CookieManagementPage from './pages/settings/cookie-management';
+import QuickSettingsPage from './pages/settings/quick-settings';
+import PreviewSettingsPage from './pages/settings/preview';
 
 
 
 // Demo pages - lazy loaded
-// Admin pages - lazy loaded
-const AdminPage = lazyWithRetry(() => import('./pages/admin'));
-const AdminAnalyticsPage = lazyWithRetry(() => import('./pages/admin/analytics'));
-const AdminAnalyticsDashboardPage = lazyWithRetry(() => import('./pages/admin/analytics-dashboard'));
-const AdminUsersPage = lazyWithRetry(() => import('./pages/admin/users'));
-const AdminSettingsPage = lazyWithRetry(() => import('./pages/admin/settings'));
-const AdminPostsPage = lazyWithRetry(() => import('./pages/admin/posts'));
-const AdminManagePostsPage = lazyWithRetry(() => import('./pages/admin/manage-posts'));
-const AdminFeedbackPage = lazyWithRetry(() => import('./pages/admin/feedback'));
-const AdminFeedbackManagementPage = lazyWithRetry(() => import('./pages/admin/FeedbackAdmin'));
-const AdminFeedbackReviewPage = lazyWithRetry(() => import('./pages/admin/feedback-review'));
-const AdminBugReportsPage = lazyWithRetry(() => import('./pages/admin/bug-reports'));
-const AdminContentModerationPage = lazyWithRetry(() => import('./pages/admin/content-moderation'));
-const AdminContentPage = lazyWithRetry(() => import('./pages/admin/content'));
-const AdminDashboardPage = lazyWithRetry(() => import('./pages/admin/dashboard'));
-const AdminSiteStatisticsPage = lazyWithRetry(() => import('./pages/admin/site-statistics'));
-const AdminWordPressSyncPage = lazyWithRetry(() => import('./pages/admin/WordPressSyncPage'));
-const AdminContentManagementPage = lazyWithRetry(() => import('./pages/admin/content-management'));
-const AdminThemesPage = lazyWithRetry(() => import('./pages/admin/themes'));
-const ResetPasswordPage = lazyWithRetry(() => import('./pages/reset-password'));
+// Admin pages - eager loaded
+import AdminPage from './pages/admin';
+import AdminAnalyticsPage from './pages/admin/analytics';
+import AdminAnalyticsDashboardPage from './pages/admin/analytics-dashboard';
+import AdminUsersPage from './pages/admin/users';
+import AdminSettingsPage from './pages/admin/settings';
+import AdminPostsPage from './pages/admin/posts';
+import AdminManagePostsPage from './pages/admin/manage-posts';
+import AdminFeedbackPage from './pages/admin/feedback';
+import AdminFeedbackManagementPage from './pages/admin/FeedbackAdmin';
+import AdminFeedbackReviewPage from './pages/admin/feedback-review';
+import AdminBugReportsPage from './pages/admin/bug-reports';
+import AdminContentModerationPage from './pages/admin/content-moderation';
+import AdminContentPage from './pages/admin/content';
+import AdminDashboardPage from './pages/admin/dashboard';
+import AdminSiteStatisticsPage from './pages/admin/site-statistics';
+import AdminWordPressSyncPage from './pages/admin/WordPressSyncPage';
+import AdminContentManagementPage from './pages/admin/content-management';
+import AdminThemesPage from './pages/admin/themes';
+import ResetPasswordPage from './pages/reset-password';
 
 // Placeholder for discontinued features removed
 
-// Error pages - lazy loaded
-const Error403Page = lazyWithRetry(() => import('./pages/errors/403'));
-const Error404Page = lazyWithRetry(() => import('./pages/errors/404'));
-const Error429Page = lazyWithRetry(() => import('./pages/errors/429'));
-const Error500Page = lazyWithRetry(() => import('./pages/errors/500'));
-const Error503Page = lazyWithRetry(() => import('./pages/errors/503'));
-const Error504Page = lazyWithRetry(() => import('./pages/errors/504'));
+// Error pages - eager loaded
+import Error403Page from './pages/errors/403';
+import Error404Page from './pages/errors/404';
+import Error429Page from './pages/errors/429';
+import Error500Page from './pages/errors/500';
+import Error503Page from './pages/errors/503';
+import Error504Page from './pages/errors/504';
 
-// Legal Pages - lazy loaded
-const CopyrightPage = lazyWithRetry(() => import('./pages/legal/copyright'));
-const TermsPage = lazyWithRetry(() => import('./pages/legal/terms'));
-const CookiePolicyPage = lazyWithRetry(() => import('./pages/legal/cookie-policy'));
+// Legal Pages - eager loaded
+import CopyrightPage from './pages/legal/copyright';
+import TermsPage from './pages/legal/terms';
+import CookiePolicyPage from './pages/legal/cookie-policy';
 
-// Community Pages - lazy loaded
-const CommunityPage = lazyWithRetry(() => import('./pages/community'));
-const SubmitStoryPage = lazyWithRetry(() => import('./pages/submit-story'));
-const EditStoryPage = lazyWithRetry(() => import('./pages/edit-story'));
-const FeedbackPage = lazyWithRetry(() => import('./pages/feedback'));
-const UserFeedbackDashboardPage = lazyWithRetry(() => import('./pages/user/feedback-dashboard'));
-const GuidelinesPage = lazyWithRetry(() => import('./pages/support/guidelines'));
+// Community Pages - eager loaded
+import CommunityPage from './pages/community';
+import SubmitStoryPage from './pages/submit-story';
+import EditStoryPage from './pages/edit-story';
+import FeedbackPage from './pages/feedback';
+import UserFeedbackDashboardPage from './pages/user/feedback-dashboard';
+import GuidelinesPage from './pages/support/guidelines';
 
 // Defer WordPress posts preloading until after initial page render
 // This improves initial load time significantly
