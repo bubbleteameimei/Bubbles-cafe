@@ -15,8 +15,8 @@ interface AutoHideNavbarProps {
  * 3. Navigation visibility based on page context
  */
 const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
-  // Modified to show navigation on reader pages
-  hideOnPaths = ['/community-story/*'] 
+  // Do not hide on any path by default
+  hideOnPaths = [] 
 }) => {
   const [currentPath, setCurrentPath] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
@@ -111,8 +111,8 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 
   // Return navigation with responsive class for device optimization
   return (
-    <div ref={containerRef} className={`navbar-container transition-transform duration-300 fixed top-0 left-0 right-0 z-40 w-screen ${hidden ? '-translate-y-full' : 'translate-y-0'}`}
-      style={{ width: "100vw", margin: 0, padding: 0 }}>
+    <div ref={containerRef} className={`navbar-container transition-transform duration-300 fixed top-0 left-0 right-0 z-40 w-full ${hidden ? '-translate-y-full' : 'translate-y-0'}`}
+      style={{ width: "100%", margin: 0, padding: 0 }}>
       <div className={`${isScrolled ? 'lg:bg-background/90 lg:backdrop-blur-md lg:shadow-md' : 'lg:bg-transparent'}`}>
         <Navigation />
       </div>
