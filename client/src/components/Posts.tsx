@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle, RefreshCw, WifiOff } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { sanitizeHtmlContent } from "@/lib/sanitize-content";
 
 function Posts() {
   const [page, setPage] = useState(1);
@@ -130,13 +131,13 @@ function Posts() {
               <h2 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-primary/90 transition-colors">
                 <Link href={`/reader/${post.slug}`}>
                   {typeof post.title === 'object' 
-                    ? <span dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
+                    ? <span dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.title.rendered) }} />
                     : post.title}
                 </Link>
               </h2>
               <div className="text-sm text-muted-foreground mb-4 line-clamp-3">
                 {post.excerpt?.rendered 
-                  ? <span dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }} />
+                  ? <span dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.excerpt.rendered) }} />
                   : "No excerpt available"}
               </div>
               <div className="mt-auto pt-3 border-t border-muted/40">
@@ -220,13 +221,13 @@ function Posts() {
           >
             <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3 line-clamp-2 group hover:text-primary transition-colors">
               <Link href={`/reader/${post.slug}`}>
-                <span dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
+                <span dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.title.rendered) }} />
               </Link>
             </h2>
             {post.excerpt?.rendered ? (
               <div 
                 className="text-sm sm:text-base text-muted-foreground mb-4 line-clamp-3 flex-grow"
-                dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.excerpt.rendered) }}
               />
             ) : (
               <div className="text-sm sm:text-base text-muted-foreground mb-4 flex-grow">

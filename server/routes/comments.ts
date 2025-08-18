@@ -129,6 +129,31 @@ router.post('/comments/:id/replies',
 	})
 );
 
+// POST /api/comments/:id/flag - Flag a comment for moderation
+router.post('/comments/:id/flag',
+  apiRateLimiter,
+  validateParams(commentIdSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    try {
+      // Minimal implementation: mark the comment as needing moderation in metadata
+      const existing = await storage.getComment(Number(id));
+      if (!existing) {
+        throw createError.notFound('Comment not found');
+      }
+      const updated = await storage.updateComment(Number(id), {
+        metadata: { ...(existing as any).metadata, flagged: true, flaggedAt: new Date().toISOString() }
+      } as any);
+      commentsLogger.warn('Comment flagged by user', { commentId: id, userId: (req as any).user?.id });
+      res.status(204).send();
+    } catch (error) {
+      if ((error as any).statusCode) throw error as any;
+      commentsLogger.error('Error flagging comment', { commentId: id, error });
+      throw createError.internal('Failed to flag comment');
+    }
+  })
+);
+
 // DELETE /api/comments/:id - Delete comment (author or admin only)
 router.delete('/comments/:id',
 	apiRateLimiter,

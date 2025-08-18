@@ -76,6 +76,11 @@ const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
     return undefined;
   }, [newStories, addNotification]);
 
+  const handleDismiss = useCallback(() => {
+    setIsVisible(false);
+    if (onDismiss) onDismiss();
+  }, [onDismiss]);
+
   useEffect(() => {
     // Auto-hide the notification after specified duration
     if (isVisible && autoHideDuration) {
@@ -87,11 +92,6 @@ const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
     }
     return undefined;
   }, [isVisible, autoHideDuration, handleDismiss]);
-
-  const handleDismiss = useCallback(() => {
-    setIsVisible(false);
-    if (onDismiss) onDismiss();
-  }, [onDismiss]);
 
   const handleClick = () => {
     navigate('/stories');
