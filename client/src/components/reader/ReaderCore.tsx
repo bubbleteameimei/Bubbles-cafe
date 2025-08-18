@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { usePerformanceMonitor } from "@/hooks/use-performance-monitor";
 import { cachedFetch } from "@/utils/api-cache";
 import logger from "@/utils/secure-client-logger";
 
@@ -11,7 +10,8 @@ interface ReaderCoreProps {
 }
 
 export function ReaderCore({ slug, onPostLoad, onError }: ReaderCoreProps) {
-  const { mark, measure } = usePerformanceMonitor('ReaderCore');
+  const mark = (_label: string) => {};
+  const measure = (_name: string, _start: string, _end: string) => {};
   const contentRef = useRef<HTMLDivElement>(null);
   const [readingProgress, setReadingProgress] = useState(0);
 

@@ -10,7 +10,7 @@ import { CookieConsent } from './components/ui/cookie-consent';
 import { CookieConsentProvider } from './hooks/use-cookie-consent';
 import { GlobalErrorBoundary, setupGlobalErrorHandlers } from './components/error-boundary/global-error-boundary';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
+// Performance monitoring removed
 import { SidebarProvider } from './components/ui/sidebar';
 import ScrollToTopButton from './components/ScrollToTopButton';
 // Import our enhanced page transition component
@@ -32,7 +32,7 @@ import { FeedbackButton } from './components/feedback/FeedbackButton';
 // Import our scroll effects provider for multi-speed scroll and gentle return
 import ScrollEffectsProvider from './components/ScrollEffectsProvider';
 // Import our performance monitoring component
-import PerformanceMonitor from './components/performance-monitor';
+// Performance monitor overlay removed
 import { lazyWithRetry } from './utils/lazy-retry';
 import StoryProgressBar from './components/StoryProgressBar';
 
@@ -310,8 +310,7 @@ const AppContent = () => {
 
 // Main App component
 function App() {
-  // Setup performance monitoring
-  usePerformanceMonitoring();
+  // Performance monitoring removed
   const [location] = useLocation();
   
   // Set up global error handlers
@@ -366,8 +365,7 @@ function App() {
                             <RefreshProvider>
                             {/* Wrap AppContent with PullToRefresh */}
                             <PullToRefresh onRefresh={handleDataRefresh}>
-                              {/* Add PerformanceMonitor for metrics collection */}
-                              {import.meta.env.DEV ? <PerformanceMonitor /> : null}
+                              {/* Performance monitor overlay removed */}
                               <div className="app-content">
                                 <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen">
                                   <div className="animate-pulse text-center">

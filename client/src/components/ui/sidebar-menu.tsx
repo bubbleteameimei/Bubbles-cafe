@@ -190,7 +190,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   }, [location, onNavigate, sidebar, setLocation, scrollToTop]);
   
   // Function to render the active indicator for menu items
-  const renderActiveIndicator = (path: string) => {
+  const renderActiveIndicator = (_path: string) => {
     // Removed the line indicator to fix visual glitch
     return null;
   };
@@ -442,7 +442,29 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           </SidebarGroup>
         </motion.div>
 
-      {/* Games & Interactive placeholder removed */}
+      {/* Games & Interactive Experiences - Placeholder */}
+      <SidebarGroup className="-mt-4">
+        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+          GAMES & INTERACTIVE
+        </SidebarGroupLabel>
+        <SidebarGroupContent className="-mt-1">
+          <SidebarMenu className="space-y-0">
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={location === '/eden-hollow'}
+                onClick={() => handleNavigation('/eden-hollow')}
+                tooltip="Eden's Hollow - Coming Soon"
+                className={menuItemClass}
+                aria-current={location === '/eden-hollow' ? 'page' : undefined}
+              >
+                {renderActiveIndicator('/eden-hollow')}
+                <Eye className="h-5 w-5" />
+                <span>Eden's Hollow</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
 
       {/* Admin Navigation - Only show if user is admin */}
       {user?.isAdmin && (
