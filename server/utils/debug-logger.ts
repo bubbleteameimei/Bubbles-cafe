@@ -38,14 +38,7 @@ export const initLogs = async () => {
 const debugLogPath = path.join(logsDir, 'debug.log');
 const errorLogPath = path.join(logsDir, 'error.log');
 
-// Console colors for different log levels
-const colors = {
-  debug: '\x1b[36m', // Cyan
-  info: '\x1b[32m',  // Green
-  warn: '\x1b[33m',  // Yellow
-  error: '\x1b[31m', // Red
-  reset: '\x1b[0m'   // Reset
-};
+// Console color constants removed (not used)
 
 function formatLogMessage(level: LogLevel, module: string, message: string, details?: Record<string, unknown>): LogMessage {
   return {

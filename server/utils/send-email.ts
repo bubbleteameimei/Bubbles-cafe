@@ -27,8 +27,7 @@ function getGmailTransporter() {
   });
 }
 
-// This will be initialized when needed, not at import time
-let gmailTransporter: ReturnType<typeof createTransport>;
+// Removed unused cached transporter; a fresh transporter is used per send
 
 interface EmailParams {
   to: string;
@@ -83,7 +82,6 @@ export async function sendNewsletterWelcomeEmail(email: string): Promise<boolean
   const randomId = Math.random().toString(36).substring(2, 15);
   
   const fromEmail = process.env.GMAIL_USER || process.env.GMAIL || 'no-reply@bubblescafe.space';
-  const siteName = 'Bubble\'s Cafe';
   
   // SIMPLIFIED TITLE AS REQUESTED WITH RANDOM ID TO PREVENT CACHING
   const subject = `Welcome to Bubble's Cafe Newsletter [${randomId}]`;
@@ -182,7 +180,7 @@ ID: ${randomId}
   const transporter = getGmailTransporter();
   
   try {
-    const result = await transporter.sendMail({
+    await transporter.sendMail({
       from: {
         name: 'Bubble\'s Cafe',
         address: fromEmail

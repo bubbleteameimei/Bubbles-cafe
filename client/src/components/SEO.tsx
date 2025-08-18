@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 interface SEOProps {
   title?: string;
@@ -63,9 +63,11 @@ export default function SEO({
   breadcrumbs = []
 }: SEOProps) {
   const siteUrl = DEFAULT_SITE_CONFIG.siteUrl;
-  const pageUrl = canonical ? `${siteUrl}${canonical}` : (typeof window !== 'undefined' ? window.location.href : '');
-  const imageUrl = image ? (image.startsWith('http') ? image : `${siteUrl}${image}`) : `${siteUrl}${DEFAULT_SITE_CONFIG.defaultImage}`;
-  const fullTitle = title ? `${title} | ${siteName}` : DEFAULT_SITE_CONFIG.defaultTitle;
+  const pageUrl = useMemo(() => canonical ? `${siteUrl}${canonical}` : (typeof window !== 'undefined' ? window.location.href : ''), [canonical, siteUrl]);
+  const imageUrl = useMemo(() => image ? (image.startsWith('http') ? image : `${siteUrl}${image}`) : `${siteUrl}${DEFAULT_SITE_CONFIG.defaultImage}`, [image, siteUrl]);
+  const fullTitle = useMemo(() => (title ? `${title} | ${siteName}` : DEFAULT_SITE_CONFIG.defaultTitle), [title, siteName]);
+  const keywordsJoined = useMemo(() => keywords.concat(tags).join(', '), [keywords, tags]);
+  const breadcrumbsJoined = useMemo(() => breadcrumbs.map(b => `${b.name}:${b.url}`).join('|'), [breadcrumbs]);
   
   useEffect(() => {
     // Set document title with proper formatting
@@ -110,7 +112,7 @@ export default function SEO({
     
     // Basic meta tags
     setMetaTag('description', description);
-    setMetaTag('keywords', keywords.concat(tags).join(', '));
+    setMetaTag('keywords', keywordsJoined);
     
     // Robots meta tag
     const robotsContent = robots || [
@@ -275,7 +277,6 @@ export default function SEO({
       });
     };
   }, [
-    // Stable core values
     fullTitle,
     description,
     imageUrl,
@@ -292,13 +293,11 @@ export default function SEO({
     robots,
     siteUrl,
     pageUrl,
-    // Derived lists; join to avoid reference changes
-    keywords.join(','),
-    tags.join(','),
-    breadcrumbs.map(b => `${b.name}:${b.url}`).join('|'),
-    category ?? '',
-    String(readingTime ?? ''),
-    String(wordCount ?? '')
+    keywordsJoined,
+    breadcrumbsJoined,
+    category,
+    readingTime,
+    wordCount
   ]);
   
   // This component doesn't render anything visible

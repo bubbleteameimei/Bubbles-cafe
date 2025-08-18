@@ -22,19 +22,19 @@ interface AbsoluteLoadingOverlayProps {
  * that renders nothing, to eliminate all loading screen functionality.
  */
 export default function AbsoluteLoadingOverlay({
-  isLoading,
-  message,
-  zIndex,
-  backdropColor,
-  textColor,
-  disableScroll,
-  showSpinner,
-  spinnerSize,
-  spinnerColor,
-  className,
-  hideAfter,
-  onHide,
-  useCustomLoader
+  isLoading: _isLoading,
+  message: _message,
+  zIndex: _zIndex,
+  backdropColor: _backdropColor,
+  textColor: _textColor,
+  disableScroll: _disableScroll,
+  showSpinner: _showSpinner,
+  spinnerSize: _spinnerSize,
+  spinnerColor: _spinnerColor,
+  className: _className,
+  hideAfter: _hideAfter,
+  onHide: _onHide,
+  useCustomLoader: _useCustomLoader
 }: AbsoluteLoadingOverlayProps) {
   // Don't render anything regardless of isLoading state
   return null;

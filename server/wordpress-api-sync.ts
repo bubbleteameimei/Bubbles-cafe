@@ -18,13 +18,7 @@ interface WordPressPost {
   modified: string;
 }
 
-interface WordPressAuthor {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-  avatar_urls: Record<string, string>;
-}
+// Removed unused WordPressAuthor interface
 
 export class WordPressAPISync {
   private readonly baseUrl = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';

@@ -12,7 +12,7 @@ interface StoryViewProps {
 }
 
 export function StoryView({ slug }: StoryViewProps) {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const { data: story, isLoading, error } = useQuery<Post>({
     queryKey: [`/api/posts/${slug}`],
   });

@@ -20,7 +20,7 @@ export function VirtualScrollArea<T>({
   onScroll
 }: VirtualScrollAreaProps<T>) {
   const mark = useCallback((_label: string) => {}, []);
-  const measure = useCallback((_name: string, _start: string, _end: string) => {}, []);
+  const measure = useCallback((_name: string, _start?: string, _end?: string) => {}, []);
   const [scrollTop, setScrollTop] = useState(0);
   const scrollElementRef = useRef<HTMLDivElement>(null);
 
@@ -46,7 +46,7 @@ export function VirtualScrollArea<T>({
       visibleStartIndex: startIndex,
       visibleEndIndex: endIndex
     };
-  }, [scrollTop, itemHeight, containerHeight, items.length, overscan]);
+  }, [scrollTop, itemHeight, containerHeight, items.length, overscan, mark, measure]);
 
   // Get visible items
   const visibleItems = useMemo(() => {
@@ -54,7 +54,7 @@ export function VirtualScrollArea<T>({
     const sliced = items.slice(visibleRange.startIndex, visibleRange.endIndex + 1);
     measure('slice-items-duration', 'slice-items-start');
     return sliced;
-  }, [items, visibleRange.startIndex, visibleRange.endIndex]);
+  }, [items, visibleRange.startIndex, visibleRange.endIndex, mark, measure]);
 
   // Handle scroll with throttling
   const handleScroll = useCallback(() => {

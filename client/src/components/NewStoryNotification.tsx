@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, createContext } from 'react';
+import React, { useState, useEffect, useContext, createContext, useCallback } from 'react';
 import { Bell, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/button';
@@ -88,10 +88,10 @@ const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
     return undefined;
   }, [isVisible, autoHideDuration, handleDismiss]);
 
-  const handleDismiss = () => {
+  const handleDismiss = useCallback(() => {
     setIsVisible(false);
     if (onDismiss) onDismiss();
-  };
+  }, [onDismiss]);
 
   const handleClick = () => {
     navigate('/stories');
