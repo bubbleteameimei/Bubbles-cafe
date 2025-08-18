@@ -135,7 +135,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const { theme } = useTheme();
   
   // Font size and family adjustments
-  const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
+  const { fontSize, increaseFontSize, decreaseFontSize, MIN_FONT_SIZE, MAX_FONT_SIZE } = useFontSize();
   const { fontFamily, availableFonts, updateFontFamily } = useFontFamily();
   
   // Night mode functionality has been completely removed
@@ -487,7 +487,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     margin: 0 auto;
     padding: 0 0.5rem;
     ${textColor}
-    transition: color 0.3s ease, background-color 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, font-size 0.2s ease, font 0.2s ease, font-family 0.2s ease;
   }
   .story-content p, .story-content .story-paragraph {
     line-height: 1.7;
@@ -748,7 +748,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     width: 100%; 
     margin: 0 auto;
     color: hsl(var(--foreground));
-    transition: color 0.3s ease, background-color 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, font-size 0.2s ease, font 0.2s ease, font-family 0.2s ease;
   }
   
   /* Enhanced WordPress-inspired paragraph styling with proper spacing */
@@ -763,7 +763,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     font-feature-settings: "kern", "liga", "clig", "calt"; 
     max-width: none; 
     font-family: ${availableFonts[fontFamily].family};
-    font-size: 16px; /* Consistent font size */
+    font-size: var(--base-font-size, 16px);
     color: inherit;
     display: block; /* Ensure proper block display */
   }
@@ -816,7 +816,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       margin-bottom: 1.4em !important; 
       line-height: 1.7 !important; 
       font-family: ${availableFonts[fontFamily].family};
-      font-size: 16px;
+      font-size: var(--base-font-size, 16px);
     }
     .story-content p + p {
       margin-top: 1.4em !important;
@@ -1168,19 +1168,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             />
           )}
           
-          {/* Reading progress indicator - always visible for user orientation */}
-          <div 
-            className="fixed left-0 right-0 z-50 top-[58px] sm:top-[58px] md:top-[66px] lg:top-[74px] pointer-events-none"
-            aria-hidden="true"
-          >
-            <div
-              className="h-2 bg-gradient-to-r from-pink-500 to-purple-600"
-              style={{ 
-                width: `${readingProgress}%`, 
-                transition: 'width 0.2s ease-out'
-              }}
-            />
-          </div>
+          {/* Reading progress is rendered globally under the nav via StoryProgressBar */}
           
           {/* Floating pagination has been removed */}
           
@@ -1196,7 +1184,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   variant="outline"
                   size="sm"
                   onClick={decreaseFontSize}
-                  disabled={fontSize <= 12}
+                  disabled={fontSize <= MIN_FONT_SIZE}
                   className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
                   aria-label="Decrease font size"
                 >
@@ -1208,7 +1196,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   variant="outline"
                   size="sm"
                   onClick={increaseFontSize}
-                  disabled={fontSize >= 20}
+                  disabled={fontSize >= MAX_FONT_SIZE}
                   className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
                   aria-label="Increase font size"
                 >
@@ -1231,10 +1219,22 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     <DialogHeader>
                       <DialogTitle>Font Settings</DialogTitle>
                       <DialogDescription>
-                        Change the font style for your reading experience.
+                        Change the font style and size for your reading experience.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium">Text Size</h4>
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="icon" onClick={decreaseFontSize} disabled={fontSize <= MIN_FONT_SIZE}>
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <div className="text-sm w-12 text-center">{fontSize}px</div>
+                          <Button variant="outline" size="icon" onClick={increaseFontSize} disabled={fontSize >= MAX_FONT_SIZE}>
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
                       <div className="space-y-2">
                         <h4 className="text-sm font-medium">Font Style</h4>
                         <div className="grid grid-cols-1 gap-2">
@@ -1356,7 +1356,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       </div>
                     )}
                     <h1
-                      className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
+                      className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-center mb-2 tracking-wider"
                       dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(currentPost.title?.rendered || currentPost.title || 'Story') }}
                     />
                   </div>

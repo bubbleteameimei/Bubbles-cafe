@@ -23,6 +23,7 @@ const StoryProgressBar: React.FC<StoryProgressBarProps> = ({
     restDelta: 0.001
   });
   const width = useTransform(smoothProgress, (p) => `${p}%`);
+  const [topOffset, setTopOffset] = useState<string>('0px');
 
   useEffect(() => {
     const updateProgress = () => {
@@ -58,15 +59,39 @@ const StoryProgressBar: React.FC<StoryProgressBarProps> = ({
     return () => window.removeEventListener("scroll", updateProgress);
   }, []);
 
+  // Track navbar state via CSS variables set by AutoHideNavbar
+  useEffect(() => {
+    const computeTop = () => {
+      const docEl = document.documentElement;
+      const navHidden = docEl.hasAttribute('data-nav-hidden');
+      const offset = getComputedStyle(docEl).getPropertyValue('--progress-top-offset')?.trim();
+      setTopOffset(navHidden ? '0px' : (offset || '0px'));
+    };
+    computeTop();
+    const onResize = () => computeTop();
+    const onScroll = () => computeTop();
+    window.addEventListener('resize', onResize, { passive: true } as any);
+    window.addEventListener('scroll', onScroll, { passive: true } as any);
+    const observer = new MutationObserver(computeTop);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-nav-hidden', 'style'] });
+    return () => {
+      window.removeEventListener('resize', onResize as any);
+      window.removeEventListener('scroll', onScroll as any);
+      observer.disconnect();
+    };
+  }, []);
+
   return (
     <>
       <motion.div
-        className={`fixed top-0 left-0 ${color || "bg-accent"} ${className}`}
+        className={`fixed left-0 ${color || "bg-accent"} ${className}`}
         style={{
           height: `${height}px`,
           width,
           transformOrigin: "left",
-          zIndex: 39
+          zIndex: 39,
+          top: topOffset,
+          right: 0
         }}
       />
       
