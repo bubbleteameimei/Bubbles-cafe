@@ -389,14 +389,7 @@ export default function IndexView() {
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden overflow-y-auto">
       <div className="w-full pb-12 pt-6 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 px-2 sm:px-4">
-          <Button
-            variant="outline"
-            onClick={() => setLocation('/')}
-            className="hover:bg-primary/10"
-          >
-            Back to Home
-          </Button>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 mb-4 px-2 sm:px-4">
           {/* Story index controls: search and filters */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <div className="relative w-full sm:w-72">
@@ -540,7 +533,7 @@ export default function IndexView() {
           </div>
         ) : (
           <div
-            className="grid gap-2 sm:gap-3 md:gap-4 grid-cols-1 md:grid-cols-2"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
           >
             {currentPosts.map((post: Post, index: number) => {
               // Extract all data processing outside the render function
@@ -574,71 +567,55 @@ export default function IndexView() {
                   key={post.id}
                   className="group story-card-container relative"
                 >
-                  <Card className="h-full hover:shadow-lg transition-all duration-300 overflow-hidden border-[1.5px] hover:border-primary/40 relative before:absolute before:inset-0 before:bg-gradient-to-t before:from-primary/5 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500">
-                    {themeCategory && themeInfo && (
-                      <div className="h-1.5 bg-primary w-full"></div>
-                    )}
-                    <CardHeader className="p-2 sm:p-3">
-                      <div className="flex flex-col gap-1 sm:gap-1.5">
-                        <div className="flex justify-between items-start gap-2 sm:gap-3">
-                          <CardTitle
-                            className="text-base sm:text-lg group-hover:text-primary transition-colors cursor-pointer font-castoro story-card-title"
-                            onClick={() => navigateToReader(post.slug || post.id)}
-                          >
-                            {post.title}
-                          </CardTitle>
-                          <div className="text-xs text-muted-foreground space-y-1 whitespace-nowrap">
-                            <div className="flex items-center gap-1 justify-end">
-                              <Calendar className="h-3 w-3" />
-                              <time className="text-[10px] sm:text-xs">{format(new Date(post.createdAt), 'MMM d, yyyy')}</time>
-                            </div>
-                            <div className="flex items-center gap-1 justify-end read-time">
-                              <Clock className="h-3 w-3" />
-                              <span className="text-[10px] sm:text-xs">{getReadingTime(post.content)}</span>
-                            </div>
+                  <Card
+                    onClick={() => navigateToReader(post.slug || post.id)}
+                    className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 hover:bg-card transition duration-200 ease-out hover:-translate-y-0.5 shadow-sm hover:shadow-md ring-1 ring-transparent hover:ring-primary/20 cursor-pointer"
+                  >
+                    <CardHeader className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <CardTitle
+                          className="text-lg font-semibold tracking-tight group-hover:text-primary"
+                        >
+                          {post.title}
+                        </CardTitle>
+                        <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
+                          <div className="flex items-center gap-1 justify-end">
+                            <Calendar className="h-3 w-3" />
+                            <time>{format(new Date(post.createdAt), 'MMM d, yyyy')}</time>
+                          </div>
+                          <div className="flex items-center gap-1 justify-end">
+                            <Clock className="h-3 w-3" />
+                            <span>{getReadingTime(post.content)}</span>
                           </div>
                         </div>
-                        
-                        {themeCategory && themeInfo && (
-                          <Badge 
-                            variant={themeInfo.badgeVariant === "cosmic" ? "outline" : themeInfo.badgeVariant || "outline"}
-                            className="w-fit text-xs font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 group-hover:shadow-sm group-hover:opacity-90 transition-all duration-300"
-                          >
-                            <span className="h-3 w-3 mr-1 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500">
-                              <Book className="h-2.5 w-2.5" />
-                            </span>
+                      </div>
+                      {themeCategory && themeInfo && (
+                        <div className="mt-2">
+                          <Badge className="w-fit text-[11px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1">
+                            <Book className="h-3 w-3" />
                             {displayName}
                           </Badge>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </CardHeader>
-
-                    <CardContent className="px-2 sm:px-3 pt-0 pb-2 flex-grow story-card-content">
-                      <p className="text-sm sm:text-base text-muted-foreground leading-7 mb-2 sm:mb-3 line-clamp-3 font-serif">
+                    <CardContent className="px-4 pt-0 pb-3">
+                      <p className="text-sm text-muted-foreground leading-6 line-clamp-3 font-serif">
                         {excerpt}
                       </p>
-                      <div 
-                        className="flex items-center text-[11px] sm:text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium relative w-fit"
-                        onClick={() => navigateToReader(post.slug || post.id)}
-                      >
-                        <span className="relative inline-block after:absolute after:bottom-0 after:left-0 after:h-[1px] after:bg-primary after:w-0 group-hover:after:w-full after:transition-all after:duration-300 cursor-pointer">Read more</span> 
-                        <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
-                      </div>
                     </CardContent>
-
-                    <CardFooter className="p-1.5 sm:p-2 mt-auto border-t">
+                    <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
                       <div className="w-full flex items-center justify-between">
-                        {/* Make sure the LikeDislike component is always mounted in same order */}
-                        {post && post.id && <LikeDislike key={`like-${post.id}`} postId={post.id} variant="index" />}
+                        {post && post.id && (
+                          <LikeDislike key={`like-${post.id}`} postId={post.id} variant="index" />
+                        )}
                         <Button
-                          variant="secondary"
+                          variant="ghost"
                           size="sm"
-                          onClick={() => navigateToReader(post.slug || post.id)}
-                          className="shadow-sm hover:shadow-md transition-all text-[10px] sm:text-xs text-primary hover:text-primary flex items-center gap-1 h-7 sm:h-8 px-1.5 sm:px-2 overflow-hidden group/btn relative before:absolute before:inset-0 before:bg-primary/5 before:translate-y-full hover:before:translate-y-0 before:transition-transform before:duration-300"
+                          onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
+                          className="text-primary hover:text-primary flex items-center gap-1 h-8 px-2"
                         >
-                          <span className="relative z-10 hidden xs:inline transition-transform group-hover/btn:translate-x-0.5">Read More</span>
-                          <span className="relative z-10 xs:hidden transition-transform group-hover/btn:translate-x-0.5">Read more</span>
-                          <ArrowRight className="relative z-10 h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-300 group-hover/btn:translate-x-0.5" />
+                          Read more
+                          <ArrowRight className="h-4 w-4" />
                         </Button>
                       </div>
                     </CardFooter>
