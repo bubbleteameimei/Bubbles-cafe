@@ -8,6 +8,7 @@ import { Book, ArrowRight, ChevronRight } from "lucide-react";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { getExcerpt } from "@/lib/content-analysis";
+import { sanitizeHtmlContent } from "@/lib/sanitize-content";
 import ApiLoader from "@/components/api-loader";
 
 
@@ -214,7 +215,7 @@ export default function Home() {
                   >
                     <h2 
                       className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-5 text-white group-hover:text-primary transition-colors px-2"
-                      dangerouslySetInnerHTML={{ __html: posts[0]?.title?.rendered || 'Featured Story' }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(posts[0]?.title?.rendered || 'Featured Story') }}
                     />
                     <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 w-full mb-3 sm:mb-4 md:mb-5 line-clamp-2 px-2 md:px-4 leading-relaxed md:leading-relaxed">
                       {posts[0]?.content?.rendered && (
