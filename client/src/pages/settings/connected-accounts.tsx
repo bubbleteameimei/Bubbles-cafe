@@ -3,8 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { SiGoogle, SiGithub, SiDiscord, SiGhost } from 'react-icons/si';
 import { AiOutlineTwitter } from 'react-icons/ai';
+import { signInWithGoogle } from '@/lib/firebase';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function ConnectedAccountsPage() {
+  const { checkAuth } = useAuth();
   const [connections, setConnections] = React.useState({
     google: false,
     twitter: false,
@@ -13,12 +16,44 @@ export default function ConnectedAccountsPage() {
     ghost: false
   });
 
-  const handleConnect = (platform: keyof typeof connections) => {
-    // TODO: Implement actual OAuth connection logic
-    setConnections(prev => ({
-      ...prev,
-      [platform]: !prev[platform]
-    }));
+  const handleConnect = async (platform: keyof typeof connections) => {
+    try {
+      if (platform !== 'google') {
+        alert('Connecting ' + platform + ' is coming soon.');
+        return;
+      }
+      if (connections.google) {
+        alert('Disconnect is not yet available.');
+        return;
+      }
+      const user = await signInWithGoogle();
+      if (!user?.email) {
+        alert('Google sign-in failed: missing email');
+        return;
+      }
+      const resp = await fetch('/api/auth/social-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          providerId: user.uid,
+          provider: 'google',
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL
+        })
+      });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to connect Google account');
+      }
+      setConnections(prev => ({ ...prev, google: true }));
+      await checkAuth();
+      alert('Google account connected.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      alert('Connection failed: ' + msg);
+    }
   };
 
   return (

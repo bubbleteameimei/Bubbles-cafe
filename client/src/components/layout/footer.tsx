@@ -22,15 +22,17 @@ export default function Footer() {
         width: '100vw',
         marginLeft: 'calc(-50vw + 50%)'
       }}
+      role="contentinfo"
+      aria-label="Site footer"
     >
       <div className="w-full flex flex-col items-center justify-center py-4 px-4">
         {/* Copyright text - centered */}
         <div className="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap mb-2">
-          © Bubble's Cafe 2025.&nbsp;All rights reserved.
+          © Bubble's Cafe {new Date().getFullYear()}.&nbsp;All rights reserved.
         </div>
         
         {/* Navigation links - centered */}
-        <div className="flex items-center justify-center">
+        <nav className="flex items-center justify-center" aria-label="Footer navigation">
           <Link 
             href="/privacy" 
             className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 whitespace-nowrap"
@@ -44,7 +46,7 @@ export default function Footer() {
           >
             Contact Me
           </Link>
-        </div>
+        </nav>
       </div>
     </footer>
   );
