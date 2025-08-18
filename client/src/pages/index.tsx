@@ -15,6 +15,7 @@ import { LikeDislike } from "@/components/ui/like-dislike";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 
 
 import { getReadingTime, extractHorrorExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";
@@ -415,78 +416,131 @@ export default function IndexView() {
           </div>
         </div>
 
-        {/* Featured Story */}
-        {featuredStory && (
-          <div className="mb-2">
-            <div className="flex items-center gap-2 mb-3">
-              <Award className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-decorative">Featured Story</h2>
-            </div>
-            <Card className="overflow-hidden border bg-card/60 backdrop-blur-sm">
-              <div className="md:flex">
-                <div className="md:w-2/3 p-3 md:p-4">
-                  <div className="flex flex-col h-full">
-                    <div>
-                      <div className="flex justify-between items-start mb-3">
-                        <CardTitle
-                          className="text-2xl cursor-pointer font-castoro hover:text-primary"
-                          onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}
-                        >
-                          {featuredStory.title}
-                        </CardTitle>
+        {/* Featured + Categories Carousel */}
+        {(featuredStory && currentPosts.length > 0) && (
+          <div className="mb-6">
+            <Carousel
+              opts={{ align: "start", loop: true }}
+              className="w-full"
+            >
+              <CarouselContent>
+                {/* Slide 1: Featured */}
+                <CarouselItem className="pt-1">
+                  <Card className="overflow-hidden border bg-card/60 backdrop-blur-sm">
+                    <div className="md:flex">
+                      <div className="md:w-2/3 p-3 md:p-4">
+                        <div className="flex flex-col h-full">
+                          <div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Award className="h-4 w-4 text-primary" />
+                              <h2 className="text-lg font-decorative">Featured Story</h2>
+                            </div>
+                            <div className="flex justify-between items-start mb-3">
+                              <CardTitle
+                                className="text-2xl cursor-pointer font-castoro hover:text-primary"
+                                onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}
+                              >
+                                {featuredStory.title}
+                              </CardTitle>
+                            </div>
+                            {featuredStory.metadata && typeof featuredStory.metadata === 'object' &&
+                              'themeCategory' in (featuredStory.metadata as Record<string, unknown>) &&
+                              (featuredStory.metadata as Record<string, unknown>).themeCategory ? (
+                                <div className="mb-3">
+                                  <Badge className="text-xs px-2 py-0.5">
+                                    <Star className="h-3 w-3 mr-1" />
+                                    {String((featuredStory.metadata as Record<string, unknown>).themeCategory).replace(/_/g,' ').toLowerCase().replace(/^./, c => c.toUpperCase())}
+                                  </Badge>
+                                </div>
+                              ) : null}
+                            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-4 line-clamp-4 font-serif">
+                              {extractHorrorExcerpt(featuredStory.content, 300)}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap justify-between items-center mt-auto">
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3 md:mb-0">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                <time>{format(new Date(featuredStory.createdAt), 'MMM d, yyyy')}</time>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                <span>{getReadingTime(featuredStory.content)}</span>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}
+                              size="sm"
+                              className="ml-auto"
+                            >
+                              Read Featured Story
+                              <ArrowRight className="h-5 w-5 ml-1" />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                      {featuredStory.metadata && typeof featuredStory.metadata === 'object' &&
-                       'themeCategory' in (featuredStory.metadata as Record<string, unknown>) &&
-                       (featuredStory.metadata as Record<string, unknown>).themeCategory ? (
-                        <div className="mb-3">
-                          <Badge className="text-xs px-2 py-0.5">
-                            <Star className="h-3 w-3 mr-1" />
-                            {String((featuredStory.metadata as Record<string, unknown>).themeCategory).replace(/_/g,' ').toLowerCase().replace(/^./, c => c.toUpperCase())}
-                          </Badge>
-                        </div>
-                      ) : null}
-                      <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-4 line-clamp-4 font-serif">
-                        {extractHorrorExcerpt(featuredStory.content, 300)}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap justify-between items-center mt-auto">
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3 md:mb-0">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          <time>{format(new Date(featuredStory.createdAt), 'MMM d, yyyy')}</time>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>{getReadingTime(featuredStory.content)}</span>
+                      <div className="hidden md:block md:w-1/3 bg-card/80 p-4 border-l">
+                        <div className="h-full flex flex-col justify-between">
+                          <div>
+                            <h3 className="text-lg font-medium mb-2 font-castoro">Why We Featured This</h3>
+                            <p className="text-sm text-muted-foreground">
+                              Selected based on engagement and popularity metrics.
+                            </p>
+                          </div>
+                          <div className="mt-auto flex items-center justify-between">
+                            {featuredStory && <LikeDislike postId={featuredStory.id} variant="index" className="mt-4" />}
+                            <TrendingUp className="h-5 w-5 text-primary/60" />
+                          </div>
                         </div>
                       </div>
-                      <Button
-                        onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}
-                        size="sm"
-                        className="ml-auto"
-                      >
-                        Read Featured Story
-                        <ArrowRight className="h-5 w-5 ml-1" />
-                      </Button>
                     </div>
-                  </div>
-                </div>
-                <div className="hidden md:block md:w-1/3 bg-card/80 p-4 border-l">
-                  <div className="h-full flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-lg font-medium mb-2 font-castoro">Why We Featured This</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Selected based on engagement and popularity metrics.
-                      </p>
+                  </Card>
+                </CarouselItem>
+
+                {/* Slide 2: Newest */}
+                <CarouselItem className="pt-1">
+                  <Card className="border bg-card/80">
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Calendar className="h-4 w-4 text-primary" />
+                        <h2 className="text-lg font-decorative">Newest</h2>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {sortedPosts.slice(0, 4).map((p) => (
+                          <div key={p.id} className="flex flex-col gap-1">
+                            <button className="text-left text-base font-medium hover:text-primary" onClick={() => navigateToReader(p.slug || p.id)}>{p.title}</button>
+                            <div className="text-xs text-muted-foreground">{format(new Date(p.createdAt), 'MMM d, yyyy')} • {getReadingTime(p.content)}</div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div className="mt-auto flex items-center justify-between">
-                      {featuredStory && <LikeDislike postId={featuredStory.id} variant="index" className="mt-4" />}
-                      <TrendingUp className="h-5 w-5 text-primary/60" />
+                  </Card>
+                </CarouselItem>
+
+                {/* Slide 3: Most liked */}
+                <CarouselItem className="pt-1">
+                  <Card className="border bg-card/80">
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Star className="h-4 w-4 text-primary" />
+                        <h2 className="text-lg font-decorative">Most Liked</h2>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[...sortedPosts].sort((a,b) => (b.likesCount||0)-(a.likesCount||0)).slice(0,4).map((p) => (
+                          <div key={p.id} className="flex flex-col gap-1">
+                            <button className="text-left text-base font-medium hover:text-primary" onClick={() => navigateToReader(p.slug || p.id)}>{p.title}</button>
+                            <div className="text-xs text-muted-foreground">❤️ {(p.likesCount||0)} • {getReadingTime(p.content)}</div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
+                  </Card>
+                </CarouselItem>
+
+              </CarouselContent>
+              <CarouselPrevious className="-left-3 md:-left-6" />
+              <CarouselNext className="-right-3 md:-right-6" />
+            </Carousel>
           </div>
         )}
 
