@@ -335,6 +335,7 @@ function App() {
     const shouldHideButton = 
       currentPath === "/" || 
       currentPath === "/index" || 
+      currentPath === "/stories" || 
       currentPath.startsWith("/reader") || 
       currentPath.startsWith("/community-story") || 
       currentPath === "/community";
