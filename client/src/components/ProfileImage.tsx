@@ -57,22 +57,22 @@ export default function ProfileImage() {
   }, [images.length]);
   
   // Go to next image with loop
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (activeIndex < images.length - 1) {
       scrollToIndex(activeIndex + 1);
     } else {
       scrollToIndex(0); // Loop back to the first image
     }
-  };
+  }, [activeIndex, images.length, scrollToIndex]);
 
   // Go to previous image with loop
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     if (activeIndex > 0) {
       scrollToIndex(activeIndex - 1);
     } else {
       scrollToIndex(images.length - 1); // Loop to the last image
     }
-  };
+  }, [activeIndex, images.length, scrollToIndex]);
 
   // Handle touch events for swipe gestures
   const handleTouchStart = (e: React.TouchEvent) => {

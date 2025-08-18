@@ -166,7 +166,7 @@ router.get('/admin/themes',
 
       res.json(data);
     } catch (_error) {
-      postsLogger.error('Error retrieving admin theme list', { error: _error instanceof Error ? _error.message : String(_error) });
+      postsLogger.error('Error retrieving admin theme list', { error: (_error as Error)?.message ?? String(_error) });
       throw createError.internal('Failed to retrieve posts for themes');
     }
   })

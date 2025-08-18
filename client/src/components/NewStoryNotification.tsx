@@ -86,7 +86,7 @@ const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [isVisible, autoHideDuration, onDismiss]);
+  }, [isVisible, autoHideDuration, handleDismiss]);
 
   const handleDismiss = () => {
     setIsVisible(false);
