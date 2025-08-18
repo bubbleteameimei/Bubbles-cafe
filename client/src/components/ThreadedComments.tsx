@@ -24,7 +24,7 @@ interface ThreadedCommentsProps {
   onSubmitComment: (content: string, parentId: number | null) => Promise<void>;
 }
 
-export function ThreadedComments({ comments, postId, onSubmitComment }: ThreadedCommentsProps) {
+export function ThreadedComments({ comments, postId: _postId, onSubmitComment }: ThreadedCommentsProps) {
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState('');
   

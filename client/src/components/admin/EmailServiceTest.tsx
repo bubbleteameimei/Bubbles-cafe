@@ -4,7 +4,7 @@
  * A component for testing email service functionality from the admin panel.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ interface EmailServiceStatus {
 
 export default function EmailServiceTest() {
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
+  // Removed unused 'loading' state
   const [sending, setSending] = useState(false);
   const [statusLoading, setStatusLoading] = useState(true);
   const [status, setStatus] = useState<EmailServiceStatus | null>(null);
@@ -40,7 +40,7 @@ export default function EmailServiceTest() {
   // Fetch email service status on component mount
   useEffect(() => {
     fetchEmailStatus();
-  }, []);
+  }, [fetchEmailStatus]);
 
   // Handle form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -49,7 +49,7 @@ export default function EmailServiceTest() {
   };
 
   // Fetch email service status
-  const fetchEmailStatus = async () => {
+  const fetchEmailStatus = useCallback(async () => {
     try {
       setStatusLoading(true);
       const response = await fetch('/api/email/status');
@@ -70,7 +70,7 @@ export default function EmailServiceTest() {
     } finally {
       setStatusLoading(false);
     }
-  };
+  }, [toast]);
 
   // Send test email
   const sendTestEmail = async (e: React.FormEvent) => {

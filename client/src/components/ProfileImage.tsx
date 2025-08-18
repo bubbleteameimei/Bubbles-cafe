@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 export default function ProfileImage() {
   const [_loadError, setLoadError] = useState(false);
@@ -13,7 +13,7 @@ export default function ProfileImage() {
   }, []);
   
   // Define optimized images with progressive loading strategy
-  const images = [
+  const images = useMemo(() => [
     { 
       src: '/images/optimized/profile-optimized.jpg', 
       alt: 'Profile Image 1',
@@ -22,7 +22,7 @@ export default function ProfileImage() {
       // Proper srcset for responsive loading
       srcset: '/images/optimized/profile-optimized.jpg 600w, /images/IMG_5266.png 900w'
     }
-  ];
+  ], []);
   
   // Use eager loading with preload
   useEffect(() => {
@@ -40,7 +40,7 @@ export default function ProfileImage() {
       // Clean up preload link on unmount
       document.head.removeChild(preloadLink);
     };
-  }, []);
+  }, [images]);
   
   // Scroll to a specific image index with smoother animation
   const scrollToIndex = useCallback((index: number) => {

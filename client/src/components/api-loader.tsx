@@ -22,7 +22,7 @@ interface ApiLoaderProps {
 const ApiLoader: React.FC<ApiLoaderProps> = ({
   isLoading,
   children,
-  debug = false,
+  debug: _debug = false,
   // All other props are ignored
 }) => {
   const { showLoading, hideLoading } = useLoading();
