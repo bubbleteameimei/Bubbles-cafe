@@ -2,9 +2,8 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { type posts } from "@shared/schema";
 
 type Post = typeof posts.$inferSelect;
-import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,8 @@ import {
 } from "lucide-react";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 
 
 import { getReadingTime, extractHorrorExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";
@@ -30,18 +31,24 @@ interface WordPressResponse {
 
 export default function IndexView() {
   const [, setLocation] = useLocation();
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<'newest' | 'oldest' | 'popular' | 'shortest'>("newest");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   
   // Navigation functions
-  const navigateToReader = (index: number) => {
+  const navigateToReader = (slugOrId: string | number) => {
     console.log('[Index] Navigating to reader:', {
-      index
+      slugOrId
     });
 
     try {
       // Clear any existing index first
       sessionStorage.removeItem('selectedStoryIndex');
+      // Save a direct slug for the reader to fetch just one story
+      sessionStorage.setItem('selectedPostSlug', String(slugOrId));
       // Set the new index
-      sessionStorage.setItem('selectedStoryIndex', index.toString());
+      // Kept for backward compatibility
+      // sessionStorage.setItem('selectedStoryIndex', index.toString());
       console.log('[Index] Story index set successfully');
       setLocation('/reader');
     } catch (error) {
@@ -49,7 +56,7 @@ export default function IndexView() {
       // Attempt recovery by clearing storage and using a default
       try {
         sessionStorage.clear();
-        sessionStorage.setItem('selectedStoryIndex', '0');
+        sessionStorage.setItem('selectedPostSlug', String(slugOrId));
         setLocation('/reader');
       } catch (retryError) {
         console.error('[Index] Recovery attempt failed:', retryError);
@@ -131,8 +138,64 @@ export default function IndexView() {
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   
-  // Display all posts instead of paginating
-  const currentPosts = sortedPosts;
+  // Available theme categories present in posts
+  const availableCategories = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of allPosts) {
+      const md = (p.metadata || {}) as Record<string, any>;
+      if (typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
+        set.add(md.themeCategory);
+      }
+    }
+    return Array.from(set);
+  }, [allPosts]);
+
+  // Filter and sort posts for display
+  const filteredPosts = useMemo(() => {
+    let list = [...sortedPosts];
+    // Category filter
+    if (categoryFilter !== 'all') {
+      list = list.filter(p => {
+        const md = (p.metadata || {}) as Record<string, any>;
+        return String(md.themeCategory || '').toLowerCase() === categoryFilter.toLowerCase();
+      });
+    }
+    // Search filter (title + content)
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(p => {
+        const title = String(p.title || '').toLowerCase();
+        const content = String(p.content || '').toLowerCase();
+        return title.includes(q) || content.includes(q);
+      });
+    }
+    // Sorting
+    switch (sort) {
+      case 'oldest':
+        list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        break;
+      case 'popular':
+        list.sort((a, b) => {
+          const aLikes = typeof a.likesCount === 'number' ? a.likesCount : 0;
+          const bLikes = typeof b.likesCount === 'number' ? b.likesCount : 0;
+          const aViews = (a.metadata && (a.metadata as any).pageViews) ? Number((a.metadata as any).pageViews) : 0;
+          const bViews = (b.metadata && (b.metadata as any).pageViews) ? Number((b.metadata as any).pageViews) : 0;
+          return (bLikes * 2 + bViews) - (aLikes * 2 + aViews);
+        });
+        break;
+      case 'shortest':
+        list.sort((a, b) => String(a.content || '').length - String(b.content || '').length);
+        break;
+      case 'newest':
+      default:
+        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+    }
+    return list;
+  }, [sortedPosts, categoryFilter, search, sort]);
+
+  // Use filtered posts for display
+  const currentPosts = filteredPosts;
   
   // Find a featured story using actual metrics - likes, views, and performance data
   // Always call useMemo, even if currentPosts is empty
@@ -325,149 +388,140 @@ export default function IndexView() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden overflow-y-auto">
-      {/* Background gradient removed */}
-      {/* Content container with full width */}
       <div className="w-full pb-12 pt-6 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
-        <motion.div
-          className="flex justify-end items-center mb-1 mt-0 px-4"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 px-2 sm:px-4">
           <Button
             variant="outline"
             onClick={() => setLocation('/')}
-            className="hover:bg-primary/20 transition-colors"
+            className="hover:bg-primary/10"
           >
             Back to Home
           </Button>
-        </motion.div>
-        
+          {/* Story index controls: search and filters */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-72">
+              <Input
+                placeholder="Search stories..."
+                className="pl-3 pr-10"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">⏎</span>
+            </div>
+            <Select value={sort} onValueChange={setSort}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="oldest">Oldest</SelectItem>
+                <SelectItem value="popular">Most popular</SelectItem>
+                <SelectItem value="shortest">Shortest</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         {/* Featured Story */}
         {featuredStory && (
-          <motion.div
-            className="mb-1 sm:mb-2"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <div className="flex items-center gap-1 sm:gap-2 mb-3 sm:mb-4">
-              <Award className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-              <h2 className="text-lg sm:text-xl font-decorative">Featured Story</h2>
+          <div className="mb-2">
+            <div className="flex items-center gap-2 mb-3">
+              <Award className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-decorative">Featured Story</h2>
             </div>
-            
-            <Card className="hover:shadow-xl transition-all duration-500 overflow-hidden border-[1.5px] hover:border-primary/50 bg-card/60 backdrop-blur-sm relative before:absolute before:inset-0 before:bg-gradient-to-t before:from-primary/10 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-700 transform hover:scale-[1.01] transition-transform">
+            <Card className="overflow-hidden border bg-card/60 backdrop-blur-sm">
               <div className="md:flex">
-                <div className="md:w-2/3 p-2 sm:p-3 md:p-4">
+                <div className="md:w-2/3 p-3 md:p-4">
                   <div className="flex flex-col h-full">
                     <div>
-                      <div className="flex justify-between items-start mb-2 sm:mb-3">
+                      <div className="flex justify-between items-start mb-3">
                         <CardTitle
-                          className="text-xl sm:text-2xl group-hover:text-primary transition-colors cursor-pointer font-castoro mb-2 sm:mb-3"
-                          onClick={() => navigateToReader(currentPosts.findIndex(p => p.id === featuredStory.id))}
+                          className="text-2xl cursor-pointer font-castoro hover:text-primary"
+                          onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}
                         >
                           {featuredStory.title}
                         </CardTitle>
                       </div>
-                      
-                      {/* Theme badge for featured story */}
-                      {featuredStory.metadata && typeof featuredStory.metadata === 'object' && 
-                       featuredStory.metadata !== null && 
-                       'themeCategory' in (featuredStory.metadata as Record<string, unknown>) && 
+                      {featuredStory.metadata && typeof featuredStory.metadata === 'object' &&
+                       'themeCategory' in (featuredStory.metadata as Record<string, unknown>) &&
                        (featuredStory.metadata as Record<string, unknown>).themeCategory ? (
-                        <div className="mb-2 sm:mb-3 md:mb-4">
-                          <Badge 
-                            variant="default"
-                            className="text-xs font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 w-fit transform hover:scale-105 transition-all duration-300 cursor-default"
-                          >
-                            <Star className="h-3 w-3 mr-1 animate-pulse" />
-                            {typeof (featuredStory.metadata as Record<string, unknown>).themeCategory === 'string' 
-                              ? ((featuredStory.metadata as Record<string, unknown>).themeCategory as string).charAt(0) + 
-                                ((featuredStory.metadata as Record<string, unknown>).themeCategory as string).slice(1).toLowerCase().replace(/_/g, ' ')
-                              : 'Featured'}
+                        <div className="mb-3">
+                          <Badge className="text-xs px-2 py-0.5">
+                            <Star className="h-3 w-3 mr-1" />
+                            {String((featuredStory.metadata as Record<string, unknown>).themeCategory).replace(/_/g,' ').toLowerCase().replace(/^./, c => c.toUpperCase())}
                           </Badge>
                         </div>
                       ) : null}
-                      
-                      {/* Feature story excerpt with debug logging */}
-                      {(() => {
-                        console.log(`[Featured Excerpt Debug] Processing featured post: ${featuredStory.title} (ID: ${featuredStory.id})`);
-                        console.log(`[Featured Excerpt Debug] Content length: ${featuredStory.content.length} characters`);
-                        const featuredExcerpt = extractHorrorExcerpt(featuredStory.content, 300);
-                        console.log(`[Featured Excerpt Debug] Generated horror excerpt: "${featuredExcerpt.substring(0, 50)}..."`);
-                        return (
-                          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-3 sm:mb-4 md:mb-5 line-clamp-3 sm:line-clamp-4 font-serif">
-                            {featuredExcerpt}
-                          </p>
-                        );
-                      })()}
+                      <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-4 line-clamp-4 font-serif">
+                        {extractHorrorExcerpt(featuredStory.content, 300)}
+                      </p>
                     </div>
-                    
                     <div className="flex flex-wrap justify-between items-center mt-auto">
-                      <div className="flex items-center gap-2 sm:gap-4 text-xs text-muted-foreground mb-3 md:mb-0">
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3 md:mb-0">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          <time className="text-xs sm:text-xs">{format(new Date(featuredStory.createdAt), 'MMM d, yyyy')}</time>
+                          <time>{format(new Date(featuredStory.createdAt), 'MMM d, yyyy')}</time>
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          <span className="text-xs sm:text-xs">{getReadingTime(featuredStory.content)}</span>
+                          <span>{getReadingTime(featuredStory.content)}</span>
                         </div>
                       </div>
-                      
                       <Button
-                        onClick={() => navigateToReader(currentPosts.findIndex(p => p.id === featuredStory.id))}
-                        className="shadow-md hover:shadow-lg transition-all text-xs sm:text-sm h-8 sm:h-9 ml-auto overflow-hidden group/btn relative before:absolute before:inset-0 before:bg-primary/10 before:translate-y-full hover:before:translate-y-0 before:transition-transform before:duration-300"
+                        onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}
                         size="sm"
+                        className="ml-auto"
                       >
-                        <span className="relative z-10 hidden sm:inline transition-transform group-hover/btn:translate-x-0.5">Read Featured Story</span>
-                        <span className="relative z-10 sm:hidden transition-transform group-hover/btn:translate-x-0.5">Read Story</span>
-                        <ArrowRight className="relative z-10 h-5 w-5 sm:h-6 sm:w-6 ml-1 transition-transform duration-300 group-hover/btn:translate-x-1" />
+                        Read Featured Story
+                        <ArrowRight className="h-5 w-5 ml-1" />
                       </Button>
                     </div>
                   </div>
                 </div>
-                
-                <div className="hidden md:block md:w-1/3 bg-card/80 p-3 sm:p-4 border-l">
+                <div className="hidden md:block md:w-1/3 bg-card/80 p-4 border-l">
                   <div className="h-full flex flex-col justify-between">
                     <div>
-                      <h3 className="text-lg font-medium mb-3 font-castoro">Why We Featured This</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        This story was selected based on reader engagement and popularity metrics. 
-                        It represents some of the best content on our platform.
+                      <h3 className="text-lg font-medium mb-2 font-castoro">Why We Featured This</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Selected based on engagement and popularity metrics.
                       </p>
                     </div>
-                    
-                    <div className="mt-auto">
-                      <div className="flex items-center justify-between">
-                        {featuredStory && <LikeDislike postId={featuredStory.id} variant="index" className="mt-4" />}
-                        <TrendingUp className="h-5 w-5 text-primary/60" />
-                      </div>
+                    <div className="mt-auto flex items-center justify-between">
+                      {featuredStory && <LikeDislike postId={featuredStory.id} variant="index" className="mt-4" />}
+                      <TrendingUp className="h-5 w-5 text-primary/60" />
                     </div>
                   </div>
                 </div>
               </div>
             </Card>
-          </motion.div>
+          </div>
         )}
-        
-        {/* Latest Stories Heading - Below Featured Story */}
-        <motion.div
-          className="flex justify-center items-center mb-1 sm:mb-2 mt-1 sm:mt-1"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <h1 className="text-3xl sm:text-3xl md:text-4xl font-decorative whitespace-nowrap">Latest Stories</h1>
-        </motion.div>
+
+        <div className="flex justify-between items-center mb-3 mt-2">
+          <h1 className="text-3xl md:text-4xl font-decorative">Latest Stories</h1>
+          <div className="text-sm text-muted-foreground">{filteredPosts.length} stories</div>
+        </div>
+        {/* Optional category filter if categories exist */}
+        {availableCategories.length > 0 && (
+          <div className="mb-3">
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="All categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                {availableCategories.map(cat => (
+                  <SelectItem key={cat} value={cat}>{cat.replace(/_/g,' ').toLowerCase().replace(/^./, c => c.toUpperCase())}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {/* Stories Grid */}
         {currentPosts.length === 0 ? (
-          <motion.div
+          <div
             className="text-center py-8 sm:py-10 md:py-12 border-2 border-dashed rounded-lg bg-card/50 px-3 sm:px-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.3 }}
           >
             <div className="w-full">
               <Book className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 text-primary/40 mb-3 sm:mb-4 mt-3 sm:mt-4" />
@@ -483,13 +537,10 @@ export default function IndexView() {
                 Refresh
               </Button>
             </div>
-          </motion.div>
+          </div>
         ) : (
-          <motion.div
+          <div
             className="grid gap-2 sm:gap-3 md:gap-4 grid-cols-1 md:grid-cols-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
           >
             {currentPosts.map((post: Post, index: number) => {
               // Extract all data processing outside the render function
@@ -519,13 +570,9 @@ export default function IndexView() {
               }
               
               return (
-                <motion.article
+                <article
                   key={post.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
                   className="group story-card-container relative"
-                  whileHover={{ scale: 1.02 }}
                 >
                   <Card className="h-full hover:shadow-lg transition-all duration-300 overflow-hidden border-[1.5px] hover:border-primary/40 relative before:absolute before:inset-0 before:bg-gradient-to-t before:from-primary/5 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500">
                     {themeCategory && themeInfo && (
@@ -536,7 +583,7 @@ export default function IndexView() {
                         <div className="flex justify-between items-start gap-2 sm:gap-3">
                           <CardTitle
                             className="text-base sm:text-lg group-hover:text-primary transition-colors cursor-pointer font-castoro story-card-title"
-                            onClick={() => navigateToReader(globalIndex)}
+                            onClick={() => navigateToReader(post.slug || post.id)}
                           >
                             {post.title}
                           </CardTitle>
@@ -567,12 +614,12 @@ export default function IndexView() {
                     </CardHeader>
 
                     <CardContent className="px-2 sm:px-3 pt-0 pb-2 flex-grow story-card-content">
-                      <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2 sm:mb-3 line-clamp-3 font-serif">
+                      <p className="text-sm sm:text-base text-muted-foreground leading-7 mb-2 sm:mb-3 line-clamp-3 font-serif">
                         {excerpt}
                       </p>
                       <div 
-                        className="flex items-center text-[10px] sm:text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium relative w-fit"
-                        onClick={() => navigateToReader(globalIndex)}
+                        className="flex items-center text-[11px] sm:text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium relative w-fit"
+                        onClick={() => navigateToReader(post.slug || post.id)}
                       >
                         <span className="relative inline-block after:absolute after:bottom-0 after:left-0 after:h-[1px] after:bg-primary after:w-0 group-hover:after:w-full after:transition-all after:duration-300 cursor-pointer">Read more</span> 
                         <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
@@ -586,7 +633,7 @@ export default function IndexView() {
                         <Button
                           variant="secondary"
                           size="sm"
-                          onClick={() => navigateToReader(globalIndex)}
+                          onClick={() => navigateToReader(post.slug || post.id)}
                           className="shadow-sm hover:shadow-md transition-all text-[10px] sm:text-xs text-primary hover:text-primary flex items-center gap-1 h-7 sm:h-8 px-1.5 sm:px-2 overflow-hidden group/btn relative before:absolute before:inset-0 before:bg-primary/5 before:translate-y-full hover:before:translate-y-0 before:transition-transform before:duration-300"
                         >
                           <span className="relative z-10 hidden xs:inline transition-transform group-hover/btn:translate-x-0.5">Read More</span>
@@ -596,10 +643,10 @@ export default function IndexView() {
                       </div>
                     </CardFooter>
                   </Card>
-                </motion.article>
+                </article>
               );
             })}
-          </motion.div>
+          </div>
         )}
       </div>
     </div>
