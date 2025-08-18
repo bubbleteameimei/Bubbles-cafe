@@ -152,7 +152,7 @@ export const Sidebar = React.forwardRef<
             <span className="absolute inset-0 bg-current opacity-0 hover:opacity-10 active:opacity-20 transition-opacity duration-150 rounded-full" />
           </button>
 
-          <div className="flex h-full w-full flex-col overflow-y-auto overflow-x-hidden sidebar-full-height">{children}</div>
+          <div className="flex h-full w-full flex-col overflow-y-auto overflow-x-hidden sidebar-full-height will-change-transform will-change-scroll-position">{children}</div>
         </SheetContent>
       </Sheet>
     )
