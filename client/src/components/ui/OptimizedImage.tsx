@@ -81,7 +81,7 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
     className,
     containerClassName,
     priority = false,
-    quality = 85,
+    quality: _quality = 85,
     onLoad,
     onError,
     loadingStrategy = 'lazy',

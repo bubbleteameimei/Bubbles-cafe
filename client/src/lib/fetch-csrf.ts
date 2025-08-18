@@ -12,7 +12,7 @@ async function fetchWithCSRF(input: RequestInfo | URL, init?: RequestInit): Prom
       if (!base.credentials) base.credentials = 'include';
       const options = applyCSRFToken(base);
       return originalFetch(input, options);
-    } catch (_e) {
+    } catch {
       // Fall through to original fetch if CSRF instrumentation fails
       return originalFetch(input, init);
     }
