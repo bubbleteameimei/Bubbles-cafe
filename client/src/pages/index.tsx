@@ -3,7 +3,7 @@ import { type posts } from "@shared/schema";
 
 type Post = typeof posts.$inferSelect;
 import { useLocation } from "wouter";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,23 @@ export default function IndexView() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<'newest' | 'oldest' | 'popular' | 'shortest'>("newest");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const slideTitles = ["Featured Story", "Newest", "Most Liked"] as const;
+
+  useEffect(() => {
+    if (!carouselApi) return;
+    const update = () => setActiveSlide(carouselApi.selectedScrollSnap());
+    update();
+    carouselApi.on("select", update);
+    carouselApi.on("reInit", update);
+    return () => {
+      try {
+        (carouselApi as any).off?.("select", update);
+        (carouselApi as any).off?.("reInit", update);
+      } catch {}
+    };
+  }, [carouselApi]);
   
   // Navigation functions
   const navigateToReader = (slugOrId: string | number) => {
@@ -416,130 +433,88 @@ export default function IndexView() {
           </div>
         </div>
 
-        {/* Featured + Categories Carousel */}
+        {/* Featured + Categories Carousel (vertical, sample sizing) */}
         {(featuredStory && currentPosts.length > 0) && (
-          <div className="mb-6">
+          <div className="mb-6 flex flex-col items-center">
+            <h2 className="text-xl font-decorative mb-2">{slideTitles[activeSlide]}</h2>
             <Carousel
               opts={{ align: "start", loop: true }}
-              className="w-full"
+              orientation="vertical"
+              setApi={setCarouselApi}
+              className="w-full max-w-xs"
             >
-              <CarouselContent>
+              <CarouselContent className="-mt-1 h-[200px]">
                 {/* Slide 1: Featured */}
-                <CarouselItem className="pt-1">
-                  <Card className="overflow-hidden border bg-card/60 backdrop-blur-sm">
-                    <div className="md:flex">
-                      <div className="md:w-2/3 p-3 md:p-4">
-                        <div className="flex flex-col h-full">
-                          <div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <Award className="h-4 w-4 text-primary" />
-                              <h2 className="text-lg font-decorative">Featured Story</h2>
-                            </div>
-                            <div className="flex justify-between items-start mb-3">
-                              <CardTitle
-                                className="text-2xl cursor-pointer font-castoro hover:text-primary"
-                                onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}
-                              >
-                                {featuredStory.title}
-                              </CardTitle>
-                            </div>
-                            {featuredStory.metadata && typeof featuredStory.metadata === 'object' &&
-                              'themeCategory' in (featuredStory.metadata as Record<string, unknown>) &&
-                              (featuredStory.metadata as Record<string, unknown>).themeCategory ? (
-                                <div className="mb-3">
-                                  <Badge className="text-xs px-2 py-0.5">
-                                    <Star className="h-3 w-3 mr-1" />
-                                    {String((featuredStory.metadata as Record<string, unknown>).themeCategory).replace(/_/g,' ').toLowerCase().replace(/^./, c => c.toUpperCase())}
-                                  </Badge>
-                                </div>
-                              ) : null}
-                            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-4 line-clamp-4 font-serif">
-                              {extractHorrorExcerpt(featuredStory.content, 300)}
-                            </p>
+                <CarouselItem className="pt-1 md:basis-1/2">
+                  <Card className="overflow-hidden border bg-card/60 backdrop-blur-sm h-[200px]">
+                    <CardContent className="p-3 h-full flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Award className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-medium">Featured</span>
+                        </div>
+                        <button className="text-left text-base font-castoro hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
+                          {featuredStory.title}
+                        </button>
+                        <p className="text-xs text-muted-foreground leading-5 mt-1 line-clamp-2 font-serif">
+                          {extractHorrorExcerpt(featuredStory.content, 140)}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            <time>{format(new Date(featuredStory.createdAt), 'MMM d')}</time>
                           </div>
-                          <div className="flex flex-wrap justify-between items-center mt-auto">
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3 md:mb-0">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                <time>{format(new Date(featuredStory.createdAt), 'MMM d, yyyy')}</time>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                <span>{getReadingTime(featuredStory.content)}</span>
-                              </div>
-                            </div>
-                            <Button
-                              onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}
-                              size="sm"
-                              className="ml-auto"
-                            >
-                              Read Featured Story
-                              <ArrowRight className="h-5 w-5 ml-1" />
-                            </Button>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <span>{getReadingTime(featuredStory.content)}</span>
                           </div>
                         </div>
+                        <Button size="sm" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)} className="h-8 px-3 transition-transform active:scale-95">
+                          Read
+                          <ArrowRight className="h-4 w-4 ml-1" />
+                        </Button>
                       </div>
-                      <div className="hidden md:block md:w-1/3 bg-card/80 p-4 border-l">
-                        <div className="h-full flex flex-col justify-between">
-                          <div>
-                            <h3 className="text-lg font-medium mb-2 font-castoro">Why We Featured This</h3>
-                            <p className="text-sm text-muted-foreground">
-                              Selected based on engagement and popularity metrics.
-                            </p>
-                          </div>
-                          <div className="mt-auto flex items-center justify-between">
-                            {featuredStory && <LikeDislike postId={featuredStory.id} variant="index" className="mt-4" />}
-                            <TrendingUp className="h-5 w-5 text-primary/60" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    </CardContent>
                   </Card>
                 </CarouselItem>
 
                 {/* Slide 2: Newest */}
-                <CarouselItem className="pt-1">
-                  <Card className="border bg-card/80">
-                    <div className="p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Calendar className="h-4 w-4 text-primary" />
-                        <h2 className="text-lg font-decorative">Newest</h2>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CarouselItem className="pt-1 md:basis-1/2">
+                  <Card className="border bg-card/80 h-[200px]">
+                    <CardContent className="p-3 h-full">
+                      <div className="grid grid-cols-1 gap-2">
                         {sortedPosts.slice(0, 4).map((p) => (
-                          <div key={p.id} className="flex flex-col gap-1">
-                            <button className="text-left text-base font-medium hover:text-primary" onClick={() => navigateToReader(p.slug || p.id)}>{p.title}</button>
-                            <div className="text-xs text-muted-foreground">{format(new Date(p.createdAt), 'MMM d, yyyy')} • {getReadingTime(p.content)}</div>
+                          <div key={p.id} className="flex flex-col">
+                            <button className="text-left text-sm font-medium hover:text-primary line-clamp-1" onClick={() => navigateToReader(p.slug || p.id)}>{p.title}</button>
+                            <div className="text-[11px] text-muted-foreground">{format(new Date(p.createdAt), 'MMM d, yyyy')} • {getReadingTime(p.content)}</div>
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </CardContent>
                   </Card>
                 </CarouselItem>
 
                 {/* Slide 3: Most liked */}
-                <CarouselItem className="pt-1">
-                  <Card className="border bg-card/80">
-                    <div className="p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Star className="h-4 w-4 text-primary" />
-                        <h2 className="text-lg font-decorative">Most Liked</h2>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CarouselItem className="pt-1 md:basis-1/2">
+                  <Card className="border bg-card/80 h-[200px]">
+                    <CardContent className="p-3 h-full">
+                      <div className="grid grid-cols-1 gap-2">
                         {[...sortedPosts].sort((a,b) => (b.likesCount||0)-(a.likesCount||0)).slice(0,4).map((p) => (
-                          <div key={p.id} className="flex flex-col gap-1">
-                            <button className="text-left text-base font-medium hover:text-primary" onClick={() => navigateToReader(p.slug || p.id)}>{p.title}</button>
-                            <div className="text-xs text-muted-foreground">❤️ {(p.likesCount||0)} • {getReadingTime(p.content)}</div>
+                          <div key={p.id} className="flex flex-col">
+                            <button className="text-left text-sm font-medium hover:text-primary line-clamp-1" onClick={() => navigateToReader(p.slug || p.id)}>{p.title}</button>
+                            <div className="text-[11px] text-muted-foreground">❤️ {(p.likesCount||0)} • {getReadingTime(p.content)}</div>
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </CardContent>
                   </Card>
                 </CarouselItem>
 
               </CarouselContent>
-              <CarouselPrevious className="-left-3 md:-left-6" />
-              <CarouselNext className="-right-3 md:-right-6" />
+              <CarouselPrevious className="-top-12 left-1/2 -translate-x-1/2 rotate-90 transition-transform active:scale-95" />
+              <CarouselNext className="-bottom-12 left-1/2 -translate-x-1/2 rotate-90 transition-transform active:scale-95" />
             </Carousel>
           </div>
         )}
