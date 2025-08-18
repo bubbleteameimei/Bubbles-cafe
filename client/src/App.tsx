@@ -58,11 +58,11 @@ import StoriesPage from './pages/index';
 import Footer from './components/layout/footer';
 
 // Eager-load all pages for faster route switching
-import ReaderPage from './pages/reader';
-import AboutPage from './pages/about';
-import ContactPage from './pages/contact';
-import PrivacyPage from './pages/privacy';
-import ReportBugPage from './pages/report-bug';
+const ReaderPage = React.lazy(() => import('./pages/reader'));
+const AboutPage = React.lazy(() => import('./pages/about'));
+const ContactPage = React.lazy(() => import('./pages/contact'));
+const PrivacyPage = React.lazy(() => import('./pages/privacy'));
+const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
 
 import AuthPage from './pages/auth';
 import AuthSuccessPage from './pages/auth-success';
@@ -87,24 +87,24 @@ import PreviewSettingsPage from './pages/settings/preview';
 
 // Demo pages - lazy loaded
 // Admin pages - eager loaded
-import AdminPage from './pages/admin';
-import AdminAnalyticsPage from './pages/admin/analytics';
-import AdminAnalyticsDashboardPage from './pages/admin/analytics-dashboard';
-import AdminUsersPage from './pages/admin/users';
-import AdminSettingsPage from './pages/admin/settings';
-import AdminPostsPage from './pages/admin/posts';
-import AdminManagePostsPage from './pages/admin/manage-posts';
-import AdminFeedbackPage from './pages/admin/feedback';
-import AdminFeedbackManagementPage from './pages/admin/FeedbackAdmin';
-import AdminFeedbackReviewPage from './pages/admin/feedback-review';
-import AdminBugReportsPage from './pages/admin/bug-reports';
-import AdminContentModerationPage from './pages/admin/content-moderation';
-import AdminContentPage from './pages/admin/content';
-import AdminDashboardPage from './pages/admin/dashboard';
-import AdminSiteStatisticsPage from './pages/admin/site-statistics';
-import AdminWordPressSyncPage from './pages/admin/WordPressSyncPage';
-import AdminContentManagementPage from './pages/admin/content-management';
-import AdminThemesPage from './pages/admin/themes';
+const AdminPage = React.lazy(() => import('./pages/admin'));
+const AdminAnalyticsPage = React.lazy(() => import('./pages/admin/analytics'));
+const AdminAnalyticsDashboardPage = React.lazy(() => import('./pages/admin/analytics-dashboard'));
+const AdminUsersPage = React.lazy(() => import('./pages/admin/users'));
+const AdminSettingsPage = React.lazy(() => import('./pages/admin/settings'));
+const AdminPostsPage = React.lazy(() => import('./pages/admin/posts'));
+const AdminManagePostsPage = React.lazy(() => import('./pages/admin/manage-posts'));
+const AdminFeedbackPage = React.lazy(() => import('./pages/admin/feedback'));
+const AdminFeedbackManagementPage = React.lazy(() => import('./pages/admin/FeedbackAdmin'));
+const AdminFeedbackReviewPage = React.lazy(() => import('./pages/admin/feedback-review'));
+const AdminBugReportsPage = React.lazy(() => import('./pages/admin/bug-reports'));
+const AdminContentModerationPage = React.lazy(() => import('./pages/admin/content-moderation'));
+const AdminContentPage = React.lazy(() => import('./pages/admin/content'));
+const AdminDashboardPage = React.lazy(() => import('./pages/admin/dashboard'));
+const AdminSiteStatisticsPage = React.lazy(() => import('./pages/admin/site-statistics'));
+const AdminWordPressSyncPage = React.lazy(() => import('./pages/admin/WordPressSyncPage'));
+const AdminContentManagementPage = React.lazy(() => import('./pages/admin/content-management'));
+const AdminThemesPage = React.lazy(() => import('./pages/admin/themes'));
 import ResetPasswordPage from './pages/reset-password';
 
 // Placeholder for discontinued features removed
