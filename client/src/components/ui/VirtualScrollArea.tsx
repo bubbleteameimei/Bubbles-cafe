@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { usePerformanceMonitor } from '@/hooks/use-performance-monitor';
 
 interface VirtualScrollAreaProps<T> {
   items: T[];
@@ -20,7 +19,8 @@ export function VirtualScrollArea<T>({
   className = '',
   onScroll
 }: VirtualScrollAreaProps<T>) {
-  const { mark, measure } = usePerformanceMonitor('VirtualScrollArea');
+  const mark = useCallback((_label: string) => {}, []);
+  const measure = useCallback((_name: string, _start: string, _end: string) => {}, []);
   const [scrollTop, setScrollTop] = useState(0);
   const scrollElementRef = useRef<HTMLDivElement>(null);
 
