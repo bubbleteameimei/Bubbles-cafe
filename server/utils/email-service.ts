@@ -8,7 +8,7 @@ interface EmailOptions {
   html?: string;
 }
 
-type MailPriority = 'high' | 'normal' | 'low';
+// Unused type removed
 
 /**
  * Email service optimized for Gmail that provides methods to send

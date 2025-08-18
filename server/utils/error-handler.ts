@@ -58,7 +58,7 @@ interface ErrorResponse {
 }
 
 // Centralized error handler
-export function handleError(error: Error, req: Request, res: Response, next: NextFunction) {
+export function handleError(error: Error, req: Request, res: Response, _next: NextFunction) {
   let statusCode = 500;
   let message = 'Internal server error';
   let isOperational = false;

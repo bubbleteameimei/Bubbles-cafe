@@ -62,7 +62,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     // Update session storage
     try {
       sessionStorage.removeItem('app_loading');
-    } catch (e) {
+    } catch {
       // Ignore storage errors
     }
     
@@ -98,7 +98,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     try {
       sessionStorage.setItem('app_loading', 'true');
       console.log('[LoadingProvider] Set loading state in session storage');
-    } catch (e) {
+    } catch {
       // Ignore storage errors
     }
     
@@ -113,7 +113,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
       
       try {
         sessionStorage.removeItem('app_loading');
-      } catch (e) {
+      } catch {
         // Ignore storage errors
       }
       
@@ -136,7 +136,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     // Clear storage
     try {
       sessionStorage.removeItem('app_loading');
-    } catch (e) {
+    } catch {
       // Ignore storage errors
     }
   }, []);
