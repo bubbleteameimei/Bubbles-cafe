@@ -174,11 +174,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         onNavigate();
       }
       
-      // 3. Perform navigation and then close mobile sidebar on the next frame for snappy UX
-      setLocation(path);
+      // 3. Close the mobile sidebar immediately for instant feedback
       if (sidebar && sidebar.isMobile) {
-        requestAnimationFrame(() => sidebar.setOpenMobile(false));
+        sidebar.setOpenMobile(false);
       }
+      // 4. Navigate immediately
+      setLocation(path);
       
     } catch (error) {
       console.error("Navigation error:", error);
