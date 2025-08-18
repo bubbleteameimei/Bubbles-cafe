@@ -4,6 +4,7 @@ import { useParams } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { extractHorrorExcerpt } from "@/lib/content-analysis";
+import { sanitizeHtmlContent } from "@/lib/sanitize-content";
 
 function Post() {
   const { slug } = useParams<{ slug: string }>();
@@ -49,14 +50,14 @@ function Post() {
       <Card className="p-6">
         <h1 
           className="text-3xl font-bold mb-4"
-          dangerouslySetInnerHTML={{ __html: post.title.rendered }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.title.rendered) }}
         />
         <p className="mb-4 text-muted-foreground italic">
           "{excerpt}"
         </p>
         <div
           className="prose max-w-none dark:prose-invert"
-          dangerouslySetInnerHTML={{ __html: post.content.rendered }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.content.rendered) }}
         />
       </Card>
     </div>

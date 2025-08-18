@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
+import { sanitizeHtmlContent } from '@/lib/sanitize-content';
 
 interface Post {
   id: number;
@@ -172,7 +173,7 @@ const TrendingStories: React.FC<TrendingStoriesProps> = ({
                     <CardContent className="p-4">
                       <CardTitle 
                         className="mb-2 line-clamp-1"
-                        dangerouslySetInnerHTML={{ __html: story.title.rendered }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(story.title.rendered) }}
                       />
                       <CardDescription className="line-clamp-2 mb-4">
                         {getExcerpt(story.excerpt.rendered)}
