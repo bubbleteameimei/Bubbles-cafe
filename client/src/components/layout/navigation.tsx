@@ -128,17 +128,17 @@ export default function Navigation() {
             variant="ghost"
             size="icon"
             onClick={handleSearchButtonClick}
-            className="h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+            className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
                       transition-all duration-150 active:scale-95 mt-2"
             aria-label="Search"
           >
-            <Search className="h-4 w-4" />
+            <Search className="h-5 w-5" />
           </Button>
           
           {/* Notifications */}
           <NotificationIcon 
             notifications={notifications} 
-            className="h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 
+            className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 
                       transition-all duration-150 active:scale-95 mt-2" 
           />
           
@@ -147,14 +147,14 @@ export default function Navigation() {
             variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+            className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
                       transition-all duration-150 active:scale-95 mt-2"
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {theme === 'dark' ? (
-              <Sun className="h-4 w-4 transition-all" />
+              <Sun className="h-5 w-5 transition-all" />
             ) : (
-              <Moon className="h-4 w-4 transition-all" />
+              <Moon className="h-5 w-5 transition-all" />
             )}
           </Button>
           

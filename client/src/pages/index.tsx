@@ -460,7 +460,7 @@ export default function IndexView() {
                         <span>{getReadingTime(featuredStory.content)}</span>
                       </div>
                     </div>
-                    <Button size="sm" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)} className="h-9 px-3 transition-transform active:scale-95">
+                    <Button size="sm" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)} className="h-9 px-4 transition-transform active:scale-95">
                       Read story
                       <ArrowRight className="h-4 w-4 ml-1" />
                     </Button>
@@ -469,23 +469,6 @@ export default function IndexView() {
               </Card>
             </div>
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Newest list */}
-              <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Calendar className="h-4 w-4 text-primary" />
-                    <h3 className="text-base font-semibold">Newest</h3>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {sortedPosts.slice(0, 4).map((p) => (
-                      <div key={p.id} className="flex flex-col">
-                        <button className="text-left text-sm font-medium hover:text-primary line-clamp-1" onClick={() => navigateToReader(p.slug || p.id)}>{p.title}</button>
-                        <div className="text-[11px] text-muted-foreground">{format(new Date(p.createdAt), 'MMM d, yyyy')} • {getReadingTime(p.content)}</div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
               {/* Most liked list */}
               <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
                 <CardContent className="p-4">
@@ -623,16 +606,21 @@ export default function IndexView() {
                     <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
                       <div className="w-full flex items-center justify-between">
                         {post && post.id && (
-                          <LikeDislike key={`like-${post.id}`} postId={post.id} variant="index" />
+                          <LikeDislike 
+                            key={`like-${post.id}`} 
+                            postId={post.id} 
+                            variant="index"
+                            onLike={() => console.log('Liked on index')}
+                            onUpdate={(likes, dislikes) => console.log('Index stats updated', { likes, dislikes })}
+                          />
                         )}
                         <Button
-                          variant="ghost"
                           size="sm"
                           onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
-                          className="text-primary hover:text-primary flex items-center gap-1 h-8 px-2"
+                          className="h-9 px-4 transition-transform active:scale-95"
                         >
-                          Read more
-                          <ArrowRight className="h-4 w-4" />
+                          Read story
+                          <ArrowRight className="h-4 w-4 ml-1" />
                         </Button>
                       </div>
                     </CardFooter>
