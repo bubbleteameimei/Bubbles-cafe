@@ -164,7 +164,7 @@ export default function Navigation() {
               variant="ghost"
               size="icon"
               onClick={() => setLocation("/auth")}
-              className="h-9 w-9 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+              className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
                         transition-all duration-150 active:scale-95 mt-2"
               aria-label="Sign in"
             >

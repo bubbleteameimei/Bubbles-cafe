@@ -421,7 +421,7 @@ export default function IndexView() {
             </div>
             <Select value={sort} onValueChange={setSort}>
               <SelectTrigger className="w-36">
-                <SelectValue placeholder="Sort by" />
+                <SelectValue placeholder="Sort by (updates story cards)" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="newest">Newest</SelectItem>
