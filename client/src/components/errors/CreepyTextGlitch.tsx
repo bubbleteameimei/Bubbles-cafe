@@ -9,10 +9,12 @@ interface CreepyTextGlitchProps {
 // Extended character pool for glitching - more unsettling symbols
 const GLITCH_CHARS = "!@#$%^&*()_+-={}|[]\\:\"<>?/.,;'~`";
 
-// Website's header fonts
+// Website's header fonts (restored)
 const HEADER_FONTS = [
-  "Inter, ui-sans-serif, system-ui",
-  "'Crimson Text', Georgia, 'Times New Roman', serif"
+  "'Castoro Titling', serif",
+  "'Gilda Display', serif",
+  "'Newsreader', serif",
+  "'Cormorant Garamond', serif"
 ];
 
 export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: CreepyTextGlitchProps) {
@@ -20,6 +22,18 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
   const [blurActive, setBlurActive] = useState(false);
   const originalText = useRef(text);
   const timeoutIds = useRef<NodeJS.Timeout[]>([]);
+  
+  // Ensure required display fonts are available for the glitch header
+  useEffect(() => {
+    const id = 'glitch-fonts-link';
+    if (!document.getElementById(id)) {
+      const link = document.createElement('link');
+      link.id = id;
+      link.rel = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=Castoro+Titling&family=Gilda+Display&family=Newsreader:wght@400;600&family=Cormorant+Garamond:wght@400;600&display=swap';
+      document.head.appendChild(link);
+    }
+  }, []);
   
   // Cleanup function to clear all timeouts
   const clearAllTimeouts = () => {
@@ -115,7 +129,7 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
   // Choose a random header font from the website's fonts
   const getRandomHeaderFont = () => {
     // Default to first font if something goes wrong
-    if (!HEADER_FONTS.length) return "Inter, ui-sans-serif, system-ui";
+    if (!HEADER_FONTS.length) return "'Castoro Titling', serif";
     
     // Randomly select one of the website's header fonts
     const randomIndex = Math.floor(Math.random() * HEADER_FONTS.length);
