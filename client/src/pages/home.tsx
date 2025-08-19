@@ -133,8 +133,15 @@ export default function Home() {
             {/* Minimal spacing */}
             <div className="h-2 sm:h-3 md:h-4 lg:h-5 xl:h-6"></div>
           
-            <div className="space-y-2 sm:space-y-2 md:space-y-3 mb-0 sm:mb-1 md:mb-2 lg:mb-3 flex-grow flex flex-col justify-between">
-              <div>
+            <div className="space-y-2 sm:space-y-2 md:space-y-3 mb-0 sm:mb-1 md:mb-2 lg:mb-3 flex flex-col items-center w-full">
+              <div className="px-4 max-w-2xl">
+                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white leading-relaxed md:leading-relaxed lg:leading-relaxed font-medium">
+                  Every story here is a portal to the unexpected,
+                  the unexplained, and <span className="italic text-red-700">the unsettling<span className="text-red-700 font-bold">.</span></span>
+                </p>
+              </div>
+
+              <div className="w-full">
                 <div className="flex flex-col gap-3 w-full max-w-md mx-auto px-4">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
@@ -194,29 +201,23 @@ export default function Home() {
                   </motion.div>
                 </div>
               </div>
-              <div>
-                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white w-full leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium">
-                  Every story here is a portal to the unexpected,
-                  the unexplained, and <span className="italic text-red-700">the unsettling<span className="text-red-700 font-bold">.</span></span>
-                </p>
-              </div>
               
               <div className="mt-1 sm:mt-2 md:mt-3 lg:mt-4 mb-1 sm:mb-2 md:mb-3 lg:mb-4">
                 <BuyMeCoffeeButton />
               </div>
               
               {posts.length > 0 && (
-                <div className="mt-3 sm:mt-4 md:mt-5 lg:mt-6 text-center space-y-2 sm:space-y-3 md:space-y-4">
+                <div className="mt-4 sm:mt-5 md:mt-6 text-center space-y-2 sm:space-y-3 md:space-y-4 w-full px-4 max-w-3xl mx-auto">
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <div 
                     onClick={() => setLocation('/reader')} 
-                    className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200 w-full p-2 md:p-4 lg:p-6 rounded-lg hover:bg-foreground/5 dark:hover:bg-foreground/10 bg-black/40 backdrop-blur-sm"
+                    className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200 w-full p-3 sm:p-4 md:p-5 rounded-lg hover:bg-foreground/5 dark:hover:bg-foreground/10 bg-black/40 backdrop-blur-sm"
                   >
                     <h2 
-                      className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-5 text-white group-hover:text-primary transition-colors px-2"
+                      className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-3 text-white group-hover:text-primary transition-colors px-1 sm:px-2"
                       dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(posts[0]?.title?.rendered || 'Featured Story') }}
                     />
-                    <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 w-full mb-3 sm:mb-4 md:mb-5 line-clamp-2 px-2 md:px-4 leading-relaxed md:leading-relaxed">
+                    <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 w-full mb-2 sm:mb-3 md:mb-4 line-clamp-2 px-1 sm:px-2 leading-relaxed md:leading-relaxed">
                       {posts[0]?.content?.rendered && (
                         <motion.span
                           initial={{ opacity: 0, y: 10 }}
@@ -231,7 +232,7 @@ export default function Home() {
                       Read full story 
                       <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 group-hover:translate-x-1 transition-transform" />
                     </div>
-                    <div className="text-sm sm:text-base md:text-lg font-medium text-white/70 mt-3 md:mt-4">
+                    <div className="text-sm sm:text-base md:text-lg font-medium text-white/70 mt-2 md:mt-3">
                       {posts[0]?.date ? formatDate(posts[0].date) : ''}
                     </div>
                   </div>
