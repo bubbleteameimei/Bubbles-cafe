@@ -56,12 +56,12 @@ export default function Navigation() {
 
   return (
     <header 
-      className={`relative top-0 z-40 w-screen border-b 
+      className={`relative top-0 z-40 w-full border-b 
                 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
                 transition-all duration-300 ease-in-out 
                 ${scrolled ? 'shadow-md' : ''}`}
       style={{
-        width: "100vw",
+        width: "100%",
         left: 0,
         right: 0,
         margin: 0,
