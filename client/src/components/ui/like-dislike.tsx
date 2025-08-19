@@ -314,7 +314,7 @@ export function LikeDislike({
       {/* Inline Toast Notification */}
       {inlineToast && (
         <div className={`
-          mt-4 px-4 py-2.5 rounded-lg text-center font-sans text-sm font-medium 
+          mt-3 px-3 py-2 rounded-md text-center font-sans text-xs font-medium 
           transform transition-all duration-300 ease-out shadow-sm
           ${isToastVisible 
             ? 'translate-y-0 opacity-100 scale-100' 
