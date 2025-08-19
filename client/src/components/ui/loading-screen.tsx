@@ -20,13 +20,13 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
     document.documentElement.classList.add('disable-scroll');
     document.body.classList.add('loading-active');
     
-    // Immediately force loading the Megrim font to prevent box placeholders
-    preloadFont('Megrim', { 
+    // Immediately force loading the Inter font to prevent fallback flashes
+    preloadFont('Inter', { 
       priority: 'high',
       fontDisplay: 'swap',
       log: true,
-      onLoad: () => console.log("Megrim font loaded successfully"),
-      onError: (err: unknown) => console.error("Failed to load Megrim font:", err)
+      onLoad: () => console.log("Inter font loaded successfully"),
+      onError: (err: unknown) => console.error("Failed to load Inter font:", err)
     });
     
     // Preload other critical assets needed for the loading screen

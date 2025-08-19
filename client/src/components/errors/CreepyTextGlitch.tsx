@@ -11,10 +11,8 @@ const GLITCH_CHARS = "!@#$%^&*()_+-={}|[]\\:\"<>?/.,;'~`";
 
 // Website's header fonts
 const HEADER_FONTS = [
-  "'Castoro Titling', serif", 
-  "'Gilda Display', serif", 
-  "'Newsreader', serif", 
-  "'Cormorant Garamond', serif"
+  "Inter, ui-sans-serif, system-ui",
+  "'Crimson Text', Georgia, 'Times New Roman', serif"
 ];
 
 export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: CreepyTextGlitchProps) {
@@ -117,7 +115,7 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
   // Choose a random header font from the website's fonts
   const getRandomHeaderFont = () => {
     // Default to first font if something goes wrong
-    if (!HEADER_FONTS.length) return "'Castoro Titling', serif";
+    if (!HEADER_FONTS.length) return "Inter, ui-sans-serif, system-ui";
     
     // Randomly select one of the website's header fonts
     const randomIndex = Math.floor(Math.random() * HEADER_FONTS.length);
