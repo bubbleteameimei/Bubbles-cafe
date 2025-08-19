@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"; 
 import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
-import ReaderTooltip from "@/components/reader/ReaderTooltip";
-import TableOfContents from "@/components/reader/TableOfContents";
-import SwipeNavigation from "@/components/reader/SwipeNavigation";
+const ReaderTooltip = lazy(() => import("@/components/reader/ReaderTooltip"));
+const TableOfContents = lazy(() => import("@/components/reader/TableOfContents"));
+const SwipeNavigation = lazy(() => import("@/components/reader/SwipeNavigation").then(m => ({ default: m.default })));
 import "@/styles/reader-fixes.css"; // Import custom reader fixes
 import { 
   Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronRight, BookOpen,
@@ -16,7 +16,7 @@ import {
 import { motion } from "framer-motion";
 import { format } from 'date-fns';
 import { useLocation } from "wouter";
-import { LikeDislike } from "@/components/ui/like-dislike";
+const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 import { useFontSize } from "@/hooks/use-font-size";
 import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
 import { detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/dialog";
 
 // Import comment section directly for now to avoid lazy loading issues
-import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
+const SimpleCommentSection = lazy(() => import("@/components/blog/SimpleCommentSection"));
 
 // WordPress API functions removed - using internal API instead
 
@@ -1042,7 +1042,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           {/* Reading progress bar is rendered at app level under the main nav */}
           
           {/* Reader tooltip for distraction-free mode instructions */}
-          <ReaderTooltip show={showTooltip} />
+          <Suspense fallback={null}>
+            <ReaderTooltip show={showTooltip} />
+          </Suspense>
           {/* CSS for distraction-free mode transitions */}
           <style dangerouslySetInnerHTML={{__html: `
             /* Transitions for UI elements */
@@ -1318,6 +1320,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     </button>
                   </div>
                   <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
+                  <Suspense fallback={<div className="p-4 text-sm text-muted-foreground">Loading table of contents…</div>}>
                   <TableOfContents 
                     currentPostId={currentPost.id} 
                     onClose={() => setContentsDialogOpen(false)} 
@@ -1336,6 +1339,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       }
                     }}
                   />
+                  </Suspense>
                 </DialogContent>
               </Dialog>
             </div>
@@ -1583,6 +1587,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 </div>
               </div>
 
+              <Suspense fallback={<div className="h-10" />}> 
               <SwipeNavigation
                 onPrevious={goToPreviousStory}
                 onNext={goToNextStory}
@@ -1611,6 +1616,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   }}
                 />
               </SwipeNavigation>
+              </Suspense>
               
               {/* Simple pagination at bottom of story content - extremely compact */}
               <div className={`flex items-center justify-center gap-3 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
@@ -1668,13 +1674,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 <div className="flex flex-col items-center justify-center gap-6">
                   {/* Centered Like/Dislike buttons */}
                   <div className={`flex justify-center w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-                    <LikeDislike 
-                      postId={currentPost.id} 
-                      variant="reader" 
-                      className="mt-6" 
-                      onLike={(liked) => console.log('Story liked:', liked)}
-                      onUpdate={(likes, dislikes) => console.log('Stats updated:', { likes, dislikes })}
-                    />
+                    <Suspense fallback={<div className="h-8" />}>
+                      <LikeDislike 
+                        postId={currentPost.id} 
+                        variant="reader" 
+                        className="mt-6" 
+                        onLike={(liked) => console.log('Story liked:', liked)}
+                        onUpdate={(likes, dislikes) => console.log('Stats updated:', { likes, dislikes })}
+                      />
+                    </Suspense>
                   </div>
 
                   <div className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
@@ -1760,7 +1768,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                           </Button>
                         </div>
                       }>
-                        <SimpleCommentSection postId={currentPost.id} />
+                        <Suspense fallback={<div className="text-sm text-muted-foreground">Loading comments…</div>}>
+                          <SimpleCommentSection postId={currentPost.id} />
+                        </Suspense>
                       </ErrorBoundary>
                     </div>
                   </div>
