@@ -433,115 +433,73 @@ export default function IndexView() {
           </div>
         </div>
 
-        {/* Featured + Categories Carousel (vertical, sample sizing) */}
+        {/* Featured row (carousel removed) */}
         {(featuredStory && currentPosts.length > 0) && (
           <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1 flex flex-col items-center">
-              <h2 className="text-xl font-decorative mb-2">{slideTitles[activeSlide]}</h2>
-              <Carousel
-                opts={{ align: "start", loop: true }}
-                orientation="vertical"
-                setApi={setCarouselApi}
-                className="w-full"
-              >
-                <CarouselContent className="-mt-1 h-[200px]">
-                {/* Slide 1: Featured */}
-                <CarouselItem className="pt-1 md:basis-1/2">
-                  <Card className="overflow-hidden border bg-card/60 backdrop-blur-sm h-[200px]">
-                    <CardContent className="p-3 h-full flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Award className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">Featured</span>
-                        </div>
-                        <button className="text-left text-base font-castoro hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
-                          {featuredStory.title}
-                        </button>
-                        <p className="text-xs text-muted-foreground leading-5 mt-1 line-clamp-2 font-serif">
-                          {extractHorrorExcerpt(featuredStory.content, 140)}
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            <time>{format(new Date(featuredStory.createdAt), 'MMM d')}</time>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>{getReadingTime(featuredStory.content)}</span>
-                          </div>
-                        </div>
-                        <Button size="sm" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)} className="h-8 px-3 transition-transform active:scale-95">
-                          Read
-                          <ArrowRight className="h-4 w-4 ml-1" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </CarouselItem>
-
-                {/* Slide 2: Newest */}
-                <CarouselItem className="pt-1 md:basis-1/2">
-                  <Card className="border bg-card/80 h-[200px]">
-                    <CardContent className="p-3 h-full">
-                      <div className="grid grid-cols-1 gap-2">
-                        {sortedPosts.slice(0, 4).map((p) => (
-                          <div key={p.id} className="flex flex-col">
-                            <button className="text-left text-sm font-medium hover:text-primary line-clamp-1" onClick={() => navigateToReader(p.slug || p.id)}>{p.title}</button>
-                            <div className="text-[11px] text-muted-foreground">{format(new Date(p.createdAt), 'MMM d, yyyy')} • {getReadingTime(p.content)}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </CarouselItem>
-
-                {/* Slide 3: Most liked */}
-                <CarouselItem className="pt-1 md:basis-1/2">
-                  <Card className="border bg-card/80 h-[200px]">
-                    <CardContent className="p-3 h-full">
-                      <div className="grid grid-cols-1 gap-2">
-                        {[...sortedPosts].sort((a,b) => (b.likesCount||0)-(a.likesCount||0)).slice(0,4).map((p) => (
-                          <div key={p.id} className="flex flex-col">
-                            <button className="text-left text-sm font-medium hover:text-primary line-clamp-1" onClick={() => navigateToReader(p.slug || p.id)}>{p.title}</button>
-                            <div className="text-[11px] text-muted-foreground">❤️ {(p.likesCount||0)} • {getReadingTime(p.content)}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </CarouselItem>
-
-                </CarouselContent>
-                <CarouselPrevious className="-top-12 left-1/2 -translate-x-1/2 rotate-90 transition-transform active:scale-95" />
-                <CarouselNext className="-bottom-12 left-1/2 -translate-x-1/2 rotate-90 transition-transform active:scale-95" />
-              </Carousel>
-            </div>
-            {/* Right: featured card matching excerpt card size for layout harmony */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-1">
               <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <CardTitle className="text-xl font-castoro">{featuredStory?.title}</CardTitle>
-                    <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
-                      <div className="flex items-center gap-1 justify-end">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Award className="h-4 w-4 text-primary" />
+                    <h2 className="text-lg font-decorative">Featured Story</h2>
+                  </div>
+                  <button className="text-left text-lg font-castoro hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
+                    {featuredStory.title}
+                  </button>
+                  <p className="text-sm text-muted-foreground leading-6 mt-2 line-clamp-3 font-serif">
+                    {extractHorrorExcerpt(featuredStory.content, 220)}
+                  </p>
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        <time>{featuredStory ? format(new Date(featuredStory.createdAt), 'MMM d, yyyy') : ''}</time>
+                        <time>{format(new Date(featuredStory.createdAt), 'MMM d, yyyy')}</time>
                       </div>
-                      <div className="flex items-center gap-1 justify-end">
+                      <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        <span>{featuredStory ? getReadingTime(featuredStory.content) : ''}</span>
+                        <span>{getReadingTime(featuredStory.content)}</span>
                       </div>
                     </div>
-                  </div>
-                  <p className="mt-2 text-sm text-muted-foreground leading-6 line-clamp-3 font-serif">{featuredStory ? extractHorrorExcerpt(featuredStory.content, 220) : ''}</p>
-                  <div className="mt-3 flex items-center justify-between">
-                    {featuredStory && <LikeDislike postId={featuredStory.id} variant="index" />}
-                    <Button size="sm" onClick={() => featuredStory && navigateToReader(featuredStory.slug || featuredStory.id)} className="h-9 px-3 transition-transform active:scale-95">
+                    <Button size="sm" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)} className="h-9 px-3 transition-transform active:scale-95">
                       Read story
                       <ArrowRight className="h-4 w-4 ml-1" />
                     </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Newest list */}
+              <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    <h3 className="text-base font-semibold">Newest</h3>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {sortedPosts.slice(0, 4).map((p) => (
+                      <div key={p.id} className="flex flex-col">
+                        <button className="text-left text-sm font-medium hover:text-primary line-clamp-1" onClick={() => navigateToReader(p.slug || p.id)}>{p.title}</button>
+                        <div className="text-[11px] text-muted-foreground">{format(new Date(p.createdAt), 'MMM d, yyyy')} • {getReadingTime(p.content)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              {/* Most liked list */}
+              <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Star className="h-4 w-4 text-primary" />
+                    <h3 className="text-base font-semibold">Most Liked</h3>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {[...sortedPosts].sort((a,b) => (b.likesCount||0)-(a.likesCount||0)).slice(0,4).map((p) => (
+                      <div key={p.id} className="flex flex-col">
+                        <button className="text-left text-sm font-medium hover:text-primary line-clamp-1" onClick={() => navigateToReader(p.slug || p.id)}>{p.title}</button>
+                        <div className="text-[11px] text-muted-foreground">❤️ {(p.likesCount||0)} • {getReadingTime(p.content)}</div>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
