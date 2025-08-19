@@ -238,11 +238,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-1 pb-1 scroll-smooth"
+      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-1 pb-1 scroll-smooth sidebar-menu-container"
            style={{
              scrollBehavior: 'smooth',
-             scrollbarWidth: 'thin',
-             msOverflowStyle: 'auto',
+             scrollbarWidth: 'none',
+             msOverflowStyle: 'none',
              WebkitOverflowScrolling: 'touch'
            }}>
 

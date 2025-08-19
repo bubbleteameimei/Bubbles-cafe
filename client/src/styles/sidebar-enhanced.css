@@ -1,25 +1,25 @@
 /* Enhanced Sidebar Styles for Smooth Scrolling and Beautiful UI */
 
-/* Use thin scrollbars for discoverability and a11y */
+/* Sidebar menu: allow scroll, hide scrollbar for a cleaner look */
 .sidebar-menu-container {
   scroll-behavior: smooth;
-  scrollbar-width: thin;
-  -ms-overflow-style: auto;
+  scrollbar-width: none;            /* Firefox */
+  -ms-overflow-style: none;         /* IE/Edge */
   -webkit-overflow-scrolling: touch;
 }
 
-.sidebar-menu-container::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+.sidebar-menu-container::-webkit-scrollbar { /* Chrome/Safari */
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .sidebar-menu-container::-webkit-scrollbar-track {
-  background: transparent;
+  display: none;
 }
 
 .sidebar-menu-container::-webkit-scrollbar-thumb {
-  background-color: rgba(125, 125, 125, 0.3);
-  border-radius: 6px;
+  display: none;
 }
 
 /* Hide scrollbar but maintain functionality */
