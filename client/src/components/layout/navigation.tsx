@@ -107,7 +107,7 @@ export default function Navigation() {
             <a
               key={href}
               href={href}
-              className={`px-5 py-2.5 rounded-md text-sm font-medium transition-colors hover:bg-accent/30 mt-2
+              className={`h-12 px-5 inline-flex items-center rounded-md text-sm font-medium transition-colors hover:bg-accent/30 mt-2 border border-transparent
                         ${location === href
                           ? 'text-primary font-semibold bg-accent/40 border border-border/40 shadow-sm' 
                           : 'text-foreground/80 hover:text-foreground'}`}
