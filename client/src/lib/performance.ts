@@ -91,8 +91,7 @@ export class FontOptimizer {
   static preloadFonts() {
     const fonts = [
       'Inter:400,600,700',
-      'Space Mono:400,700',
-      'Megrim:400'
+      'Crimson+Text:400,600,700'
     ];
 
     fonts.forEach(font => {

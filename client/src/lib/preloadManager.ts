@@ -193,9 +193,9 @@ export function preloadImage(url: string, options: PreloadOptions = {}): Promise
  */
 export function preloadFont(url: string, options: PreloadOptions = {}): Promise<void> {
   // For Google Fonts, handle differently by loading a stylesheet
-  if (url.includes('fonts.googleapis.com') || url.startsWith('Megrim') || url.startsWith('Crimson')) {
+  if (url.includes('fonts.googleapis.com') || url.startsWith('Inter') || url.startsWith('Crimson')) {
     // Create a link for Google Fonts
-    const fontName = url.startsWith('Megrim') ? 'Megrim' : 
+    const fontName = url.startsWith('Inter') ? 'Inter' : 
                     url.startsWith('Crimson') ? 'Crimson+Text' : url;
     
     const fontUrl = `https://fonts.googleapis.com/css2?family=${fontName}&display=${options.fontDisplay || 'swap'}`;
