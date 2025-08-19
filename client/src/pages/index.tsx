@@ -3,7 +3,7 @@ import { type posts } from "@shared/schema";
 
 type Post = typeof posts.$inferSelect;
 import { useLocation } from "wouter";
-import { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, lazy, Suspense } from "react";
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import {
   ArrowRight, ChevronRight, Clock, Calendar, Book,
   TrendingUp, Star, Award
 } from "lucide-react";
-import { LikeDislike } from "@/components/ui/like-dislike";
+const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -611,13 +611,15 @@ export default function IndexView() {
                     <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
                       <div className="w-full flex items-center justify-between">
                         {post && post.id && (
-                          <LikeDislike 
-                            key={`like-${post.id}`} 
-                            postId={post.id} 
-                            variant="index"
-                            onLike={() => console.log('Liked on index')}
-                            onUpdate={(likes, dislikes) => console.log('Index stats updated', { likes, dislikes })}
-                          />
+                          <Suspense fallback={<div className="text-xs text-muted-foreground">…</div>}>
+                            <LikeDislike 
+                              key={`like-${post.id}`} 
+                              postId={post.id} 
+                              variant="index"
+                              onLike={() => console.log('Liked on index')}
+                              onUpdate={(likes, dislikes) => console.log('Index stats updated', { likes, dislikes })}
+                            />
+                          </Suspense>
                         )}
                         <Button
                           size="sm"
