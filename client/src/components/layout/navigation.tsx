@@ -70,7 +70,7 @@ export default function Navigation() {
     >
       <div className="w-full flex h-16 items-center justify-between px-4 main-header">
         {/* Left section with menu toggle for all screen sizes */}
-        <div className="flex items-center -mt-1">
+        <div className="flex items-center -mt-1 ml-0">
           {/* Menu toggle for all devices */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>

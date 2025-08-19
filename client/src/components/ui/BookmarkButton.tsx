@@ -192,7 +192,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
       return isBookmarked ? (
         <button
           onClick={handleRemoveBookmark}
-          className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 ${className}`}
+          className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 active:scale-95 animate-none ${className}`}
           aria-label="Remove bookmark"
           disabled={isLoading || deleteMutation.isPending}
         >
@@ -203,7 +203,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
       ) : (
         <button
           onClick={() => createMutation.mutate({ notes: '', tags: [] })}
-          className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 ${className}`}
+          className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${className}`}
           aria-label="Bookmark post"
           disabled={isLoading || createMutation.isPending}
         >
@@ -218,7 +218,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
       return (
         <button
           onClick={handleRemoveBookmark}
-          className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 ${className}`}
+          className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${className}`}
           aria-label="Remove bookmark"
           disabled={isLoading || deleteMutation.isPending}
         >
@@ -233,7 +233,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <button
-            className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 ${className}`}
+            className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${className}`}
             aria-label="Bookmark post"
             disabled={isLoading || createMutation.isPending}
           >
