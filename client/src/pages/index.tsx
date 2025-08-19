@@ -420,7 +420,7 @@ export default function IndexView() {
               <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">⏎</span>
             </div>
             <Select value={sort} onValueChange={setSort}>
-              <SelectTrigger className="w-36">
+              <SelectTrigger className="w-36" aria-label="Sort stories (changes story cards)" title="Sort stories (changes story cards)">
                 <SelectValue placeholder="Sort by (updates story cards)" />
               </SelectTrigger>
               <SelectContent>

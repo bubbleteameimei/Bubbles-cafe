@@ -166,7 +166,7 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
           <div className="text-left w-full">
             <h2 className="text-lg sm:text-xl font-semibold">Oops! Something went wrong</h2>
             <p className="text-sm sm:text-base text-muted-foreground mt-1">{getErrorMessage()}</p>
-            {!isProduction && error && (
+            {error && (
               <details className="mt-3 text-xs">
                 <summary className="cursor-pointer">Technical Details</summary>
                 <pre className="mt-2 text-left overflow-auto max-h-32 bg-muted/40 p-2 rounded">{error.message}</pre>
@@ -185,11 +185,9 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
                 Report Bug
               </Button>
             </div>
-            {!isProduction && (
-              <div className="mt-3 text-xs text-muted-foreground">
-                Error ID: {errorId}
-              </div>
-            )}
+            <div className="mt-3 text-xs text-muted-foreground">
+              Error ID: {errorId}
+            </div>
           </div>
         </div>
       </div>
