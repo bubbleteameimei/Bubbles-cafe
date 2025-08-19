@@ -100,7 +100,7 @@ export const SidebarContent = React.forwardRef<
       data-sidebar="content"
       className={cn(
         "flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden sidebar-content smooth-scroll",
-        "scrollbar-hide px-0 sm:px-1 md:px-2",
+        "px-0 sm:px-1 md:px-2",
         className
       )}
       style={{

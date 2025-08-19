@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta 
       name="viewport" 
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" 
+      content="width=device-width, initial-scale=1, viewport-fit=cover" 
     />
     <title>Bubble's Cafe</title>
     <link rel="icon" type="image/svg+xml" href="/og-image.svg" />
@@ -43,6 +43,7 @@
     <!-- Removed missing Phaser scripts to prevent 404/SRI failures -->
   </head>
   <body class="min-h-screen w-full m-0 p-0 bg-black">
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:bg-primary focus:text-primary-foreground focus:px-3 focus:py-2 focus:rounded-md">Skip to content</a>
     <div id="root" class="min-h-screen w-full min-w-full max-w-full overflow-x-hidden mx-0 p-0"></div>
     <script type="module" src="/src/main.tsx" crossorigin="anonymous"></script>
   </body>

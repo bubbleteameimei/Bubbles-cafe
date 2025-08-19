@@ -196,7 +196,7 @@ const AppContent = () => {
       </aside>
 
       {/* Main Content */}
-      <main className={`min-h-screen flex-1 flex flex-col w-full min-w-full max-w-[100vw] ${location === '/' ? '' : 'bg-background'}`}
+      <main id="main" className={`min-h-screen flex-1 flex flex-col w-full min-w-full max-w-[100vw] ${location === '/' ? '' : 'bg-background'}`}
              style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', overflow: 'hidden' }}>
         <AutoHideNavbar />
         {(location.startsWith('/reader') || location.startsWith('/community-story')) && (

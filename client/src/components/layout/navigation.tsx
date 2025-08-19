@@ -102,18 +102,19 @@ export default function Navigation() {
         </div>
         
         {/* Horizontal Nav - Desktop only - moved more to the right */}
-        <nav className="hidden lg:flex items-center space-x-4 -mt-1 absolute inset-0 justify-center">
-          {navLinks.map(link => (
-            <button 
-              key={link.href}
-              onClick={() => setLocation(link.href)} 
+        <nav aria-label="Main" className="hidden lg:flex items-center space-x-4 -mt-1 absolute inset-0 justify-center">
+          {navLinks.map(({ href, label }) => (
+            <a
+              key={href}
+              href={href}
               className={`px-5 py-2.5 rounded-md text-sm font-medium transition-colors hover:bg-accent/30 mt-2
-                        ${location === link.href 
+                        ${location === href
                           ? 'text-primary font-semibold bg-accent/40 border border-border/40 shadow-sm' 
                           : 'text-foreground/80 hover:text-foreground'}`}
+              aria-current={location === href ? 'page' : undefined}
             >
-              {link.label}
-            </button>
+              {label}
+            </a>
           ))}
         </nav>
         
