@@ -56,21 +56,21 @@ export default function Navigation() {
 
   return (
     <header 
-      className={`relative top-0 z-40 w-full border-b 
+      className={`fixed top-0 z-40 w-screen border-b 
                 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
                 transition-all duration-300 ease-in-out 
                 ${scrolled ? 'shadow-md' : ''}`}
       style={{
-        width: "100%",
+        width: "100vw",
         left: 0,
         right: 0,
         margin: 0,
         padding: 0
       }}
     >
-      <div className="w-full flex h-16 items-center justify-between px-4 main-header">
+      <div className="w-full flex h-16 items-center justify-between px-0 main-header">
         {/* Left section with menu toggle for all screen sizes */}
-        <div className="flex items-center -mt-1 ml-0">
+        <div className="flex items-center -mt-1 pl-2">
           {/* Menu toggle for all devices */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
@@ -101,8 +101,8 @@ export default function Navigation() {
           {/* Empty container to maintain layout spacing */}
         </div>
         
-        {/* Horizontal Nav - Desktop only - moved more to the right */}
-        <nav className="hidden lg:flex items-center space-x-4 -mt-1 absolute inset-0 justify-center">
+        {/* Horizontal Nav - Desktop only, flex-centered (no absolute) */}
+        <nav className="hidden lg:flex flex-1 items-center justify-center space-x-4 -mt-1">
           {navLinks.map(link => (
             <button 
               key={link.href}
