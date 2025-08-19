@@ -1,54 +1,29 @@
 /* Enhanced Sidebar Styles for Smooth Scrolling and Beautiful UI */
 
-/* Completely hide all scrollbars */
+/* Use thin scrollbars for discoverability and a11y */
 .sidebar-menu-container {
   scroll-behavior: smooth;
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
+  scrollbar-width: thin;
+  -ms-overflow-style: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 .sidebar-menu-container::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
+  width: 6px;
+  height: 6px;
 }
 
 .sidebar-menu-container::-webkit-scrollbar-track {
-  display: none !important;
+  background: transparent;
 }
 
 .sidebar-menu-container::-webkit-scrollbar-thumb {
-  display: none !important;
-}
-
-.sidebar-menu-container::-webkit-scrollbar-corner {
-  display: none !important;
+  background-color: rgba(125, 125, 125, 0.3);
+  border-radius: 6px;
 }
 
 /* Hide scrollbar but maintain functionality */
-.scrollbar-hide {
-  -ms-overflow-style: none !important;
-  scrollbar-width: none !important;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-.scrollbar-hide::-webkit-scrollbar-track {
-  display: none !important;
-}
-
-.scrollbar-hide::-webkit-scrollbar-thumb {
-  display: none !important;
-}
-
-.scrollbar-hide::-webkit-scrollbar-corner {
-  display: none !important;
-}
+/* Remove scrollbar-hide pattern to avoid hiding scrollbars */
 
 /* Apply to sidebar content */
 [data-sidebar="content"] {
