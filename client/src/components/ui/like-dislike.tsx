@@ -270,7 +270,7 @@ export function LikeDislike({
       <div className={`flex items-center gap-3 ${variant === 'reader' ? 'justify-center' : 'justify-start'}`}>
         <button
           type="button"
-          onClick={handleLike}
+          onClick={(e) => { e.stopPropagation(); handleLike(); }}
           className={`
             inline-flex items-center gap-2 font-sans font-medium text-sm
             px-4 py-2 rounded-lg border transition-all duration-200
@@ -291,7 +291,7 @@ export function LikeDislike({
 
         <button
           type="button"
-          onClick={handleDislike}
+          onClick={(e) => { e.stopPropagation(); handleDislike(); }}
           className={`
             inline-flex items-center gap-2 font-sans font-medium text-sm
             px-4 py-2 rounded-lg border transition-all duration-200
@@ -333,3 +333,4 @@ export function LikeDislike({
     </div>
   );
 }
+

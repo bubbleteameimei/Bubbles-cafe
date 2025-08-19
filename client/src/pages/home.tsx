@@ -133,14 +133,7 @@ export default function Home() {
             {/* Minimal spacing */}
             <div className="h-2 sm:h-3 md:h-4 lg:h-5 xl:h-6"></div>
           
-            <div className="space-y-2 sm:space-y-3 md:space-y-4 mb-1 sm:mb-2 md:mb-3 lg:mb-4 flex-grow flex flex-col justify-between">
-              <div>
-                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white w-full leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium">
-                  Every story here is a portal to the unexpected,
-                  the unexplained, and <span className="italic text-red-700">the unsettling<span className="text-red-700 font-bold">.</span></span>
-                </p>
-              </div>
-
+            <div className="space-y-2 sm:space-y-2 md:space-y-3 mb-0 sm:mb-1 md:mb-2 lg:mb-3 flex-grow flex flex-col justify-between">
               <div>
                 <div className="flex flex-col gap-3 w-full max-w-md mx-auto px-4">
                   <motion.div
@@ -200,6 +193,12 @@ export default function Home() {
                     </Button>
                   </motion.div>
                 </div>
+              </div>
+              <div>
+                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white w-full leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium">
+                  Every story here is a portal to the unexpected,
+                  the unexplained, and <span className="italic text-red-700">the unsettling<span className="text-red-700 font-bold">.</span></span>
+                </p>
               </div>
               
               <div className="mt-1 sm:mt-2 md:mt-3 lg:mt-4 mb-1 sm:mb-2 md:mb-3 lg:mb-4">
