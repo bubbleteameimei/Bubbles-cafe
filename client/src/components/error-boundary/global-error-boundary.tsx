@@ -157,44 +157,42 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[200px] p-6 text-center">
-      <Alert className="max-w-md">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Oops! Something went wrong</AlertTitle>
-        <AlertDescription className="mt-2">
-          {getErrorMessage()}
-          {!isProduction && error && (
-            <details className="mt-3 text-xs">
-              <summary className="cursor-pointer">Technical Details</summary>
-              <pre className="mt-2 text-left overflow-auto max-h-32 bg-gray-100 p-2 rounded">
-                {error.message}
-              </pre>
-            </details>
-          )}
-        </AlertDescription>
-      </Alert>
-      
-      <div className="flex gap-2 mt-4">
-        <Button onClick={resetError} variant="default">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Try Again
-        </Button>
-        
-        <Button onClick={() => window.location.reload()} variant="outline">
-          Refresh Page
-        </Button>
-        
-        <Button onClick={handleSendReport} variant="ghost" size="sm">
-          <Bug className="w-4 h-4 mr-2" />
-          Report Bug
-        </Button>
-      </div>
-      
-      {!isProduction && (
-        <div className="mt-4 text-xs text-gray-500">
-          Error ID: {errorId}
+    <div className="flex flex-col items-center justify-center min-h-[240px] p-4 sm:p-6 text-center">
+      <div className="w-full max-w-md sm:max-w-lg rounded-xl border border-border/40 bg-card/90 backdrop-blur-md p-4 sm:p-6 shadow-lg">
+        <div className="flex items-start gap-3">
+          <div className="shrink-0 mt-0.5">
+            <AlertTriangle className="h-6 w-6 text-destructive" />
+          </div>
+          <div className="text-left w-full">
+            <h2 className="text-lg sm:text-xl font-semibold">Oops! Something went wrong</h2>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">{getErrorMessage()}</p>
+            {!isProduction && error && (
+              <details className="mt-3 text-xs">
+                <summary className="cursor-pointer">Technical Details</summary>
+                <pre className="mt-2 text-left overflow-auto max-h-32 bg-muted/40 p-2 rounded">{error.message}</pre>
+              </details>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4">
+              <Button onClick={resetError} variant="default" className="w-full">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Try Again
+              </Button>
+              <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
+                Refresh Page
+              </Button>
+              <Button onClick={handleSendReport} variant="ghost" className="w-full">
+                <Bug className="w-4 h-4 mr-2" />
+                Report Bug
+              </Button>
+            </div>
+            {!isProduction && (
+              <div className="mt-3 text-xs text-muted-foreground">
+                Error ID: {errorId}
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
