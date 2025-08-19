@@ -767,10 +767,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   /* Enhanced WordPress-inspired paragraph styling with proper spacing */
   .story-content p, 
   .story-content .story-paragraph {
-    line-height: 1.8; 
-    margin-bottom: 1.6em; 
-    margin-top: 0;
-    text-align: left; 
+    line-height: 1.8 !important;  /* Enhanced line height for better readability */
+    margin-bottom: 2em !important;  /* Increased paragraph spacing for better separation */
+    margin-top: 0 !important;
+    text-align: left; /* Left-align like WordPress default */
     letter-spacing: 0.01em; 
     font-kerning: normal; 
     font-feature-settings: "kern", "liga", "clig", "calt"; 
@@ -778,7 +778,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     font-family: ${availableFonts[fontFamily].family};
     font-size: var(--base-font-size, 16px);
     color: inherit;
-    display: block;
+    display: block; /* Ensure proper block display */
   }
   
   /* Ensure first paragraph doesn't have extra top margin */
@@ -789,8 +789,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   /* Enhanced WordPress-style paragraph spacing between adjacent paragraphs */
   .story-content p + p,
   .story-content .story-paragraph + .story-paragraph {
-    margin-top: 1.6em;
-    margin-bottom: 1.6em;
+    margin-top: 2em !important;
+    margin-bottom: 2em !important;
   }
   
   /* Ensure text content has proper spacing even without explicit paragraph tags */
@@ -826,14 +826,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }
   @media (max-width: 768px) {
     .story-content p, .story-content .story-paragraph {
-      margin-bottom: 1.4em; 
-      line-height: 1.7; 
+      margin-bottom: 1.4em !important; 
+      line-height: 1.7 !important; 
       font-family: ${availableFonts[fontFamily].family};
       font-size: var(--base-font-size, 16px);
     }
     .story-content p + p {
-      margin-top: 1.4em;
-      margin-bottom: 1.4em;
+      margin-top: 1.4em !important;
+      margin-bottom: 1.4em !important;
     }
   }
   .story-content img {
