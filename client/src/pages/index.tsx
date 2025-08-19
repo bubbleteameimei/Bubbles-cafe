@@ -3,7 +3,7 @@ import { type posts } from "@shared/schema";
 
 type Post = typeof posts.$inferSelect;
 import { useLocation } from "wouter";
-import { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,14 +11,13 @@ import {
   ArrowRight, ChevronRight, Clock, Calendar, Book,
   TrendingUp, Star, Award
 } from "lucide-react";
-import { LikeDislike } from "@/components/ui/like-dislike";
+const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 
 
-import { getReadingTime, extractHorrorExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";
+// Defer heavy content analysis utilities to a separate chunk
 import { convertWordPressPost, type WordPressPost, fetchAllWordPressPosts } from "@/services/wordpress";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 
@@ -35,23 +34,49 @@ export default function IndexView() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<'newest' | 'oldest' | 'popular' | 'shortest'>("newest");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
-  const [activeSlide, setActiveSlide] = useState(0);
-  const slideTitles = ["Featured Story", "Newest", "Most Liked"] as const;
+  // Lazy-load heavy analysis utilities to reduce index bundle size
+  type AnalysisModule = typeof import("@/lib/content-analysis");
+  const [analysis, setAnalysis] = useState<{
+    extractHorrorExcerpt: AnalysisModule["extractHorrorExcerpt"];
+    getReadingTime: AnalysisModule["getReadingTime"];
+    THEME_CATEGORIES: AnalysisModule["THEME_CATEGORIES"];
+  } | null>(null);
 
   useEffect(() => {
-    if (!carouselApi) return;
-    const update = () => setActiveSlide(carouselApi.selectedScrollSnap());
-    update();
-    carouselApi.on("select", update);
-    carouselApi.on("reInit", update);
+    let mounted = true;
+    import("@/lib/content-analysis").then((mod) => {
+      if (!mounted) return;
+      setAnalysis({
+        extractHorrorExcerpt: mod.extractHorrorExcerpt,
+        getReadingTime: mod.getReadingTime,
+        THEME_CATEGORIES: mod.THEME_CATEGORIES,
+      });
+    });
     return () => {
-      try {
-        (carouselApi as any).off?.("select", update);
-        (carouselApi as any).off?.("reInit", update);
-      } catch {}
+      mounted = false;
     };
-  }, [carouselApi]);
+  }, []);
+
+  const simpleExcerpt = useCallback((html: string, maxLength = 220) => {
+    const text = String(html || "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (text.length <= maxLength) return text;
+    const truncated = text.substring(0, maxLength);
+    const lastSpace = truncated.lastIndexOf(" ");
+    return (lastSpace > 0 ? truncated.substring(0, lastSpace) : truncated) + "...";
+  }, []);
+
+  const simpleReadTime = useCallback((html: string) => {
+    const words = String(html || "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .split(/\s+/).filter(Boolean).length;
+    return `${Math.max(1, Math.ceil(words / 225))} min`;
+  }, []);
   
   // Navigation functions
   const navigateToReader = (slugOrId: string | number) => {
@@ -232,8 +257,7 @@ export default function IndexView() {
       
       // Check for metadata
       const metadata = post.metadata && typeof post.metadata === 'object' ? post.metadata : {};
-      const views = metadata && 'pageViews' in (metadata as Record<string, unknown>) ? 
-        Number((metadata as Record<string, unknown>).pageViews || 0) : 0;
+      const views = (metadata as any)?.pageViews ? Number((metadata as any).pageViews) : 0;
       
       // Include title ID for validation
       console.log(`Post "${post.title}" (ID: ${post.id}):`, {
@@ -268,110 +292,34 @@ export default function IndexView() {
       
       // Get dislikesCount directly from the post object (from DB)
       const aDislikes = typeof a.dislikesCount === 'number' ? a.dislikesCount : 0;
-      const bDislikes = typeof b.dislikesCount === 'number' ? b.dislikesCount : 0;
+      const bDislikes = typeof b.dislikesCount === 'number' ? bDislikes : 0;
       
       // Secondary metrics: from metadata
       // Get page views from metadata if available
-      const aViews = a.metadata && typeof a.metadata === 'object' && 
-        'pageViews' in (a.metadata as Record<string, unknown>) ?
-        Number((a.metadata as Record<string, unknown>).pageViews || 0) : 0;
-      
-      const bViews = b.metadata && typeof b.metadata === 'object' && 
-        'pageViews' in (b.metadata as Record<string, unknown>) ?
-        Number((b.metadata as Record<string, unknown>).pageViews || 0) : 0;
+      const aViews = (a.metadata as any)?.pageViews ? Number((a.metadata as any).pageViews) : 0;
+      const bViews = (b.metadata as any)?.pageViews ? Number((b.metadata as any).pageViews) : 0;
       
       // Get reading time metrics if available
-      const aReadTime = a.metadata && typeof a.metadata === 'object' && 
-        'averageReadTime' in (a.metadata as Record<string, unknown>) ?
-        Number((a.metadata as Record<string, unknown>).averageReadTime || 0) : 0;
-      
-      const bReadTime = b.metadata && typeof b.metadata === 'object' && 
-        'averageReadTime' in (b.metadata as Record<string, unknown>) ?
-        Number((b.metadata as Record<string, unknown>).averageReadTime || 0) : 0;
+      const aReadTime = (a.metadata as any)?.averageReadTime ? Number((a.metadata as any).averageReadTime) : 0;
+      const bReadTime = (b.metadata as any)?.averageReadTime ? Number((b.metadata as any).averageReadTime) : 0;
       
       // Assign points for having a theme category
-      const aHasTheme = a.metadata && typeof a.metadata === 'object' && 
-        'themeCategory' in (a.metadata as Record<string, unknown>) ? 5 : 0;
+      const aHasTheme = (a.metadata as any)?.themeCategory ? 5 : 0;
+      const bHasTheme = (b.metadata as any)?.themeCategory ? 5 : 0;
       
-      const bHasTheme = b.metadata && typeof b.metadata === 'object' && 
-        'themeCategory' in (b.metadata as Record<string, unknown>) ? 5 : 0;
-      
-      // Calculate engagement score with weighted factors:
-      // - Likes have highest weight (positive engagement)
-      // - Views are important but secondary
-      // - Reading time indicates content quality
-      // - Dislikes have a smaller negative effect (still indicates engagement)
-      // - Recency is now a major factor - multiply by up to 15 points for very recent posts
-      // - Theme is now directly included in the scoring formula
-      const aScore = (aLikes * 3) + 
-                     aViews + 
-                     (aReadTime * 0.5) - 
-                     (aDislikes * 0.5) +
-                     (aRecency * 15) + 
-                     aHasTheme;
-      
-      const bScore = (bLikes * 3) + 
-                     bViews + 
-                     (bReadTime * 0.5) - 
-                     (bDislikes * 0.5) +
-                     (bRecency * 15) + 
-                     bHasTheme;
-      
-      // Comparison for debugging
-      if (a.id === 1 || a.id === 3) {
-        console.log(`\n%cCOMPARISON: "${a.title}" vs other stories`, 'color: red; font-weight: bold');
-        console.log(`Score for "${a.title}" (ID: ${a.id}): ${aScore.toFixed(2)}`, {
-          likes: aLikes,
-          views: aViews,
-          recency: aRecency.toFixed(2),
-          hasTheme: aHasTheme > 0,
-          finalScore: aScore.toFixed(2)
-        });
-      }
+      // Calculate engagement score with weighted factors
+      const aScore = (aLikes * 3) + aViews + (aReadTime * 0.5) - (aDislikes * 0.5) + (aRecency * 15) + aHasTheme;
+      const bScore = (bLikes * 3) + bViews + (bReadTime * 0.5) - (bDislikes * 0.5) + (bRecency * 15) + bHasTheme;
       
       return bScore - aScore; // Sort in descending order
     });
     
-    // Always log the top 5 posts for debugging
-    console.log('\n%c[Index] Top 5 posts by score:', 'color: blue; font-weight: bold');
-    sortedByEngagement.slice(0, 5).forEach((post, index) => {
-      const likes = typeof post.likesCount === 'number' ? post.likesCount : 0;
-      const views = post.metadata && typeof post.metadata === 'object' && 
-        'pageViews' in (post.metadata as Record<string, unknown>) ?
-        Number((post.metadata as Record<string, unknown>).pageViews || 0) : 0;
-        
-      console.log(`#${index + 1}: "${post.title}" (ID: ${post.id}) - ${likes} likes, ${views} views`);
-    });
-    
     // Check if we have at least 5 posts
     if (sortedByEngagement.length >= 5) {
-      // Avoid always using the first post - pick from top 5 stories to add variety
-      // Use a different post ID modulo 5 each day to rotate featured story daily
       const dayOfYear = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
-      const rotationIndex = dayOfYear % 5; // 0-4 based on day of year
-      
-      console.log(`\n%c[Index] Using rotation index ${rotationIndex} based on day of year ${dayOfYear}`, 'color: purple');
-      console.log('%c[Index] Featured story selected:', 'color: green; font-weight: bold', {
-        id: sortedByEngagement[rotationIndex].id,
-        title: sortedByEngagement[rotationIndex].title,
-        likes: sortedByEngagement[rotationIndex].likesCount,
-        views: sortedByEngagement[rotationIndex].metadata && 
-               typeof sortedByEngagement[rotationIndex].metadata === 'object' && 
-               'pageViews' in (sortedByEngagement[rotationIndex].metadata as Record<string, unknown>) ? 
-               (sortedByEngagement[rotationIndex].metadata as Record<string, unknown>).pageViews : 0
-      });
-      console.log('=============================================\n\n');
-      
+      const rotationIndex = dayOfYear % 5;
       return sortedByEngagement[rotationIndex];
     }
-    
-    // If we have fewer than 5 posts, just use the highest ranked one
-    console.log('[Index] Featured story selected (fewer than 5 posts):', {
-      id: sortedByEngagement[0].id,
-      title: sortedByEngagement[0].title
-    });
-    console.log('=============================================\n\n');
-    
     return sortedByEngagement[0];
   }, [currentPosts]);
   
@@ -452,7 +400,7 @@ export default function IndexView() {
                     {featuredStory.title}
                   </button>
                   <p className="text-sm text-muted-foreground leading-6 mt-2 line-clamp-3 font-serif">
-                    {extractHorrorExcerpt(featuredStory.content, 220)}
+                    {(analysis?.extractHorrorExcerpt ?? simpleExcerpt)(featuredStory.content, 220)}
                   </p>
                   <div className="mt-3 flex items-center justify-between">
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -462,7 +410,7 @@ export default function IndexView() {
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        <span>{getReadingTime(featuredStory.content)}</span>
+                        <span>{(analysis?.getReadingTime ?? simpleReadTime)(featuredStory.content)}</span>
                       </div>
                     </div>
                     <Button size="sm" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)} className="h-9 px-4 transition-transform active:scale-95">
@@ -485,7 +433,7 @@ export default function IndexView() {
                     {[...sortedPosts].sort((a,b) => (b.likesCount||0)-(a.likesCount||0)).slice(0,4).map((p) => (
                       <div key={p.id} className="flex flex-col">
                         <button className="text-left text-sm font-medium hover:text-primary line-clamp-1" onClick={() => navigateToReader(p.slug || p.id)}>{p.title}</button>
-                        <div className="text-[11px] text-muted-foreground">❤️ {(p.likesCount||0)} • {getReadingTime(p.content)}</div>
+                        <div className="text-[11px] text-muted-foreground">❤️ {(p.likesCount||0)} • {(analysis?.getReadingTime ?? simpleReadTime)(p.content)}</div>
                       </div>
                     ))}
                   </div>
@@ -545,7 +493,7 @@ export default function IndexView() {
               // Add extra debug logging
               console.log(`[Excerpt Debug] Processing post: ${post.title} (ID: ${post.id})`);
               console.log(`[Excerpt Debug] Content length: ${post.content.length} characters`);
-              const excerpt = extractHorrorExcerpt(post.content);
+              const excerpt = (analysis?.extractHorrorExcerpt ?? simpleExcerpt)(post.content);
               console.log(`[Excerpt Debug] Generated horror excerpt: "${excerpt.substring(0, 50)}..."`);
               
               const globalIndex = index; // Since we're not paginating, index is the global index
@@ -559,7 +507,7 @@ export default function IndexView() {
               }
               
               // Get theme info
-              const themeInfo = themeCategory ? THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] : null;
+              const themeInfo = themeCategory && analysis ? (analysis.THEME_CATEGORIES as any)[themeCategory] : null;
               
               // Format display name
               let displayName = '';
@@ -590,7 +538,7 @@ export default function IndexView() {
                           </div>
                           <div className="flex items-center gap-1 justify-end">
                             <Clock className="h-3 w-3" />
-                            <span>{getReadingTime(post.content)}</span>
+                            <span>{(analysis?.getReadingTime ?? simpleReadTime)(post.content)}</span>
                           </div>
                         </div>
                       </div>
@@ -611,13 +559,15 @@ export default function IndexView() {
                     <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
                       <div className="w-full flex items-center justify-between">
                         {post && post.id && (
-                          <LikeDislike 
-                            key={`like-${post.id}`} 
-                            postId={post.id} 
-                            variant="index"
-                            onLike={() => console.log('Liked on index')}
-                            onUpdate={(likes, dislikes) => console.log('Index stats updated', { likes, dislikes })}
-                          />
+                          <Suspense fallback={<div className="text-xs text-muted-foreground">…</div>}>
+                            <LikeDislike 
+                              key={`like-${post.id}`} 
+                              postId={post.id} 
+                              variant="index"
+                              onLike={() => console.log('Liked on index')}
+                              onUpdate={(likes, dislikes) => console.log('Index stats updated', { likes, dislikes })}
+                            />
+                          </Suspense>
                         )}
                         <Button
                           size="sm"
