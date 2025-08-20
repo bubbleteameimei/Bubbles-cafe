@@ -181,6 +181,12 @@ export function createIntersectionLazyComponent<T extends ComponentType<any>>(
     const containerRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
+      // Fallback for browsers without IntersectionObserver (older Safari/Edge)
+      if (typeof window !== 'undefined' && typeof (window as any).IntersectionObserver === 'undefined') {
+        setShouldLoad(true);
+        return;
+      }
+
       const observer = new IntersectionObserver(
         (entries) => {
           if (entries[0].isIntersecting) {
