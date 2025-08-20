@@ -2703,16 +2703,18 @@ export class DatabaseStorage implements IStorage {
     // Count active users (estimate as 70% of unique visitors)
     const activeUsers = Math.round((Number(result.uniqueVisitors) || 0) * 0.7);
     
-    // Get recent posts as trending posts
-    const trendingPosts = await db.select({
-      id: postsTable.id,
-      title: postsTable.title,
-      slug: postsTable.slug,
-      views: sql`random() * 100`  // Just a placeholder, in a real app this would be the actual view count
-    })
-    .from(postsTable)
-    .orderBy(desc(postsTable.createdAt))
-    .limit(5);
+    // Get recent/trending posts using real analytics data when available
+    const trendingPosts = await db
+      .select({
+        id: postsTable.id,
+        title: postsTable.title,
+        slug: postsTable.slug,
+        views: analytics.pageViews
+      })
+      .from(postsTable)
+      .leftJoin(analytics, eq(analytics.postId, postsTable.id))
+      .orderBy(desc(analytics.pageViews), desc(postsTable.createdAt))
+      .limit(5);
     
     // Count admin users
     const [adminCount] = await db.select({
