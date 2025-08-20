@@ -1,6 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { RefreshCw, Bug, AlertTriangle } from 'lucide-react';
 
 interface ErrorBoundaryState {

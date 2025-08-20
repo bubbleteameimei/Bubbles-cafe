@@ -26,6 +26,7 @@ import { setupCors } from "./cors-setup";
 
 import { config } from './config';
 import { wordpressScheduler } from './wordpress-scheduler';
+import { applyPerformanceMiddleware } from './middleware';
 
 const app = express();
 const isDev = config.isDev;
@@ -218,6 +219,13 @@ async function startServer() {
 
     // Create server instance
     server = createServer(app);
+
+    // Apply performance middleware
+    try {
+      applyPerformanceMiddleware(app, db);
+    } catch (e) {
+      console.warn('Performance middleware setup failed:', e instanceof Error ? e.message : e);
+    }
 
     // Setup routes based on environment
     if (isDev) {
