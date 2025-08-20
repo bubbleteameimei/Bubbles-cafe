@@ -243,16 +243,33 @@ export const registerPaymentRoutes = (app: Express) => {
         });
       }
       
-      // Get user subscription from database (to be implemented)
-      // For now, we'll return a placeholder response
-      
-      return res.status(200).json({ 
-        status: true,
-        data: {
-          hasActiveSubscription: false,
-          subscription: null,
-          nextBillingDate: null
+      // Attempt a lightweight check against recent successful transactions for this user's email
+      const userEmail = req.session.user.email;
+      let hasActiveSubscription = false;
+      let nextBillingDate: string | null = null;
+      let subscription: any = null;
+
+      try {
+        const txList: any = await paystackService.listTransactions({ perPage: 10, page: 1, customer: userEmail, status: 'success' });
+        const recent = (txList?.data || []).find((t: any) => t.customer?.email === userEmail && t.status === 'success');
+        if (recent) {
+          hasActiveSubscription = true;
+          const paidAt = recent.paidAt || recent.paid_at || new Date().toISOString();
+          nextBillingDate = new Date(new Date(paidAt).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+          subscription = {
+            reference: recent.reference,
+            amount: recent.amount,
+            channel: recent.channel,
+            paidAt: paidAt
+          };
         }
+      } catch (_e) {
+        // Non-fatal: default to no active subscription when API not reachable
+      }
+
+      return res.status(200).json({
+        status: true,
+        data: { hasActiveSubscription, subscription, nextBillingDate }
       });
     } catch (error) {
       console.error('Error fetching subscription status:', error);

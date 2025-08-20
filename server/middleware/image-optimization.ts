@@ -9,6 +9,13 @@ import { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
+let sharp: any = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  sharp = require('sharp');
+} catch {
+  sharp = null;
+}
 
 // Define configuration options
 const IMAGE_CACHE_DIR = path.join(process.cwd(), 'public', 'cache'); 
@@ -80,20 +87,26 @@ function getCachePath(filePath: string, params: { width?: number; quality?: numb
   );
 }
 
-// Mock resize function for now (to be implemented with Sharp when needed)
-function mockResizeImage(source: string, target: string, options: any): Promise<void> {
-  // Since we don't have the actual image processing library installed,
-  // we'll just copy the file as-is for now
-  return new Promise((resolve, reject) => {
-    fs.copyFile(source, target, (err) => {
-      if (err) return reject(err);
-      resolve();
-    });
-  });
+async function processImage(source: string, target: string, options: { width?: number; quality?: number; format?: string }): Promise<void> {
+  if (!sharp) {
+    await fs.promises.copyFile(source, target);
+    return;
+  }
+  const { width, quality = 80, format } = options;
+  let pipeline = sharp(source);
+  if (width) pipeline = pipeline.resize({ width, withoutEnlargement: true });
+  if (format === 'webp') {
+    pipeline = pipeline.webp({ quality });
+  } else {
+    const ext = path.extname(source).toLowerCase();
+    if (ext === '.jpg' || ext === '.jpeg') pipeline = pipeline.jpeg({ quality, mozjpeg: true });
+    if (ext === '.png') pipeline = pipeline.png({ quality });
+  }
+  await pipeline.toFile(target);
 }
 
 // Middleware function
-export function imageOptimizationMiddleware(req: Request, res: Response, next: NextFunction) {
+export async function imageOptimizationMiddleware(req: Request, res: Response, next: NextFunction) {
   // Only process GET requests to image files
   if (req.method !== 'GET' || !req.path.match(IMAGE_PATTERN)) {
     return next();
@@ -127,13 +140,8 @@ export function imageOptimizationMiddleware(req: Request, res: Response, next: N
       return res.sendFile(cachePath);
     }
     
-    // If not, we would normally optimize the image here
-    // But since we don't have Sharp installed, we'll add a placeholder for now
-    // In a real implementation, we would resize, format convert, and compress the image
-    console.log(`[Image Optimizer] Would optimize ${filePath} with params:`, params);
-    
-    // For now, just send the original
-    res.sendFile(filePath);
+    await processImage(filePath, cachePath, params);
+    return res.sendFile(cachePath);
   } catch (error) {
     console.error('Error in image optimization middleware:', error);
     next();
