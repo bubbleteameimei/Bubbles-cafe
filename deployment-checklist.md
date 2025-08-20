@@ -15,6 +15,7 @@ Before deploying, make sure your development environment is properly configured 
 
 - [ ] Set environment variables:
   - [ ] `VITE_API_URL`: URL of your Render backend (e.g., `https://your-api.onrender.com`)
+  - [ ] `VITE_SENTRY_DSN` (optional): If using Sentry for error monitoring
 
 - [ ] Verify vercel.json has correct configuration:
   ```json
@@ -39,6 +40,8 @@ Before deploying, make sure your development environment is properly configured 
   - [ ] `DATABASE_URL`: Your Neon PostgreSQL connection string 
   - [ ] `SESSION_SECRET`: Random secure string for session encryption
   - [ ] `PORT`: Usually set to `3001`
+  - [ ] `PAYSTACK_SECRET_KEY`: Required for payments (test or live key)
+  - [ ] `CORS_ORIGIN`: Comma-separated list of allowed origins (e.g., your Vercel domain)
 
 - [ ] Verify render.yaml has correct configuration:
   ```yaml
@@ -87,6 +90,8 @@ Before deploying, make sure your development environment is properly configured 
 - [x] Images use proper formats (WebP where possible)
 - [x] React components are properly code-split
 - [x] Server has compression middleware
+ - [x] Image optimization middleware enabled with Sharp fallback cache
+ - [x] Cache manager tracks hit/miss rate for tuning
 
 ## Deployment Steps
 
