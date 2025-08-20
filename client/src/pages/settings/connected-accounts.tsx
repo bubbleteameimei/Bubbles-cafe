@@ -18,10 +18,7 @@ export default function ConnectedAccountsPage() {
 
   const handleConnect = async (platform: keyof typeof connections) => {
     try {
-      if (platform !== 'google') {
-        alert('Connecting ' + platform + ' is coming soon.');
-        return;
-      }
+      if (platform !== 'google') return;
       if (connections.google) {
         alert('Disconnect is not yet available.');
         return;
@@ -99,10 +96,11 @@ export default function ConnectedAccountsPage() {
               </div>
             </div>
             <Button
-              variant={connections.twitter ? "destructive" : "default"}
-              onClick={() => handleConnect('twitter')}
+              variant="outline"
+              disabled
+              title="Twitter/X integration coming soon"
             >
-              {connections.twitter ? 'Disconnect' : 'Connect'}
+              Coming soon
             </Button>
           </div>
 
@@ -119,10 +117,11 @@ export default function ConnectedAccountsPage() {
               </div>
             </div>
             <Button
-              variant={connections.github ? "destructive" : "default"}
-              onClick={() => handleConnect('github')}
+              variant="outline"
+              disabled
+              title="GitHub integration coming soon"
             >
-              {connections.github ? 'Disconnect' : 'Connect'}
+              Coming soon
             </Button>
           </div>
 
@@ -139,10 +138,11 @@ export default function ConnectedAccountsPage() {
               </div>
             </div>
             <Button
-              variant={connections.discord ? "destructive" : "default"}
-              onClick={() => handleConnect('discord')}
+              variant="outline"
+              disabled
+              title="Discord integration coming soon"
             >
-              {connections.discord ? 'Disconnect' : 'Connect'}
+              Coming soon
             </Button>
           </div>
 
@@ -159,10 +159,11 @@ export default function ConnectedAccountsPage() {
               </div>
             </div>
             <Button
-              variant={connections.ghost ? "destructive" : "default"}
-              onClick={() => handleConnect('ghost')}
+              variant="outline"
+              disabled
+              title="Ghost integration coming soon"
             >
-              {connections.ghost ? 'Disconnect' : 'Connect'}
+              Coming soon
             </Button>
           </div>
         </CardContent>

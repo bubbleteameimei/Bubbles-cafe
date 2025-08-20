@@ -104,8 +104,11 @@ export function imageOptimizationMiddleware(req: Request, res: Response, next: N
     return next();
   }
   
-  // Determine the file path
-  const filePath = path.join(process.cwd(), 'public', req.path);
+  // Determine the file path (use dist/public in production)
+  const publicRoot = process.env.NODE_ENV === 'production'
+    ? path.join(process.cwd(), 'dist', 'public')
+    : path.join(process.cwd(), 'public');
+  const filePath = path.join(publicRoot, req.path);
   
   // Check if the file exists
   if (!fs.existsSync(filePath)) {
