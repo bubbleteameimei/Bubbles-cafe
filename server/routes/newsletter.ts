@@ -3,14 +3,15 @@ import { storage } from '../storage';
 import { insertNewsletterSubscriptionSchema } from '@shared/schema';
 import { z } from 'zod';
 import { sendNewsletterWelcomeEmail } from '../utils/send-email';
+import { validateBody } from '../middleware/input-validation';
 
 const router = Router();
 
 // POST /api/newsletter/subscribe
-router.post('/subscribe', async (req, res) => {
+router.post('/subscribe', validateBody(insertNewsletterSubscriptionSchema), async (req, res) => {
   try {
-    // Validate the request body
-    const validatedData = insertNewsletterSubscriptionSchema.parse(req.body);
+    // Already validated and sanitized by validateBody
+    const validatedData = req.body as z.infer<typeof insertNewsletterSubscriptionSchema>;
     
     // Check if this email already exists in the database
     const existingSubscription = await storage.getNewsletterSubscriptionByEmail(validatedData.email);
@@ -111,12 +112,13 @@ router.get('/subscriptions', async (req, res) => {
 });
 
 // POST /api/newsletter/unsubscribe
-router.post('/unsubscribe', async (req, res) => {
+const unsubscribeSchema = z.object({
+  email: z.string().email('Please enter a valid email address')
+});
+
+router.post('/unsubscribe', validateBody(unsubscribeSchema), async (req, res) => {
   try {
-    // Validate the request body
-    const validatedData = z.object({
-      email: z.string().email('Please enter a valid email address')
-    }).parse(req.body);
+    const validatedData = req.body as z.infer<typeof unsubscribeSchema>;
     
     // Change subscription status to 'unsubscribed'
     const subscription = await storage.updateNewsletterSubscriptionStatus(

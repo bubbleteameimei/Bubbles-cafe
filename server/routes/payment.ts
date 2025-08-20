@@ -8,6 +8,8 @@ import { Express, Request, Response } from 'express';
 import express from 'express';
 import * as paystackService from '../services/paystack';
 import { storage } from '../storage';
+import { z } from 'zod';
+import { validateBody, validateParams } from '../middleware/input-validation';
 
 /**
  * Register payment routes
@@ -32,7 +34,14 @@ export const registerPaymentRoutes = (app: Express) => {
    * Initialize a transaction
    * POST /api/payments/initialize
    */
-  app.post('/api/payments/initialize', async (req: Request, res: Response) => {
+  const initSchema = z.object({
+    amount: z.coerce.number().int().positive('Amount must be a positive integer (lowest currency unit)'),
+    callbackUrl: z.string().url().optional(),
+    reference: z.string().min(1).optional(),
+    metadata: z.record(z.unknown()).optional()
+  });
+
+  app.post('/api/payments/initialize', validateBody(initSchema), async (req: Request, res: Response) => {
     try {
       // Check if user is authenticated
       if (!req.session?.user) {
@@ -41,16 +50,7 @@ export const registerPaymentRoutes = (app: Express) => {
           message: 'User not authenticated'
         });
       }
-
-      const { amount, callbackUrl, reference, metadata } = req.body;
-      
-      // Validate required fields
-      if (!amount) {
-        return res.status(400).json({ 
-          status: false, 
-          message: 'Amount is required'
-        });
-      }
+      const { amount, callbackUrl, reference, metadata } = req.body as z.infer<typeof initSchema>;
       
       // Get user email from session
       const userEmail = req.session.user.email;
@@ -106,16 +106,10 @@ export const registerPaymentRoutes = (app: Express) => {
    * Verify a transaction
    * GET /api/payments/verify/:reference
    */
-  app.get('/api/payments/verify/:reference', async (req: Request, res: Response) => {
+  const verifyParamsSchema = z.object({ reference: z.string().min(1, 'Reference is required') });
+  app.get('/api/payments/verify/:reference', validateParams(verifyParamsSchema), async (req: Request, res: Response) => {
     try {
-      const { reference } = req.params;
-      
-      if (!reference) {
-        return res.status(400).json({ 
-          status: false, 
-          message: 'Transaction reference is required'
-        });
-      }
+      const { reference } = req.params as z.infer<typeof verifyParamsSchema>;
       
       const response: any = await paystackService.verifyTransaction(reference);
       
