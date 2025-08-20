@@ -26,16 +26,31 @@ export function setupCors(app: Express) {
   app.use((req: Request, res: Response, next: NextFunction) => {
     const origin = req.headers.origin;
     
+    console.log(`[CORS] Request from origin: ${origin || 'none'}, NODE_ENV: ${process.env.NODE_ENV}`);
+    
     // Special case: if FRONTEND_URL is set to '*', allow all origins
     if (process.env.FRONTEND_URL === '*') {
       res.setHeader("Access-Control-Allow-Origin", "*");
+      console.log(`[CORS] Allowed all origins (wildcard mode)`);
       // Note: Cannot use credentials with wildcard origin
     } 
     // Allow specific origins and include credentials
     else if (origin && allowedOrigins.includes(origin)) {
       res.setHeader("Access-Control-Allow-Origin", origin);
-      // Allow credentials (only works with specific origins, not wildcard)
       res.setHeader("Access-Control-Allow-Credentials", "true");
+      console.log(`[CORS] Allowed configured origin: ${origin}`);
+    }
+    // Check for Replit domains (works for both dev and prod)
+    else if (origin && (
+      /\.repl\.co$/.test(origin) || 
+      /\.replit\.dev$/.test(origin) ||
+      /\.replit\.app$/.test(origin) ||
+      origin.includes('.replit.') ||
+      origin.includes('repl.co')
+    )) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      console.log(`[CORS] Allowed Replit domain: ${origin}`);
     }
     // If no match but we're not in production, allow the origin anyway for development convenience
     else if (origin && process.env.NODE_ENV !== 'production') {
@@ -43,16 +58,15 @@ export function setupCors(app: Express) {
       res.setHeader("Access-Control-Allow-Credentials", "true");
       console.log(`[CORS] Allowed unlisted origin in development: ${origin}`);
     }
-    // In production, only allow specified origins
+    // In production, be more restrictive but still log what's being blocked
     else if (origin && process.env.NODE_ENV === 'production') {
-      // Allow Replit preview domains in production
-      const isReplit = /\.repl\.co$/.test(origin) || /\.replit\.dev$/.test(origin);
-      if (isReplit) {
-        res.setHeader("Access-Control-Allow-Origin", origin);
-        res.setHeader("Access-Control-Allow-Credentials", "true");
-      } else {
-        console.warn(`[CORS] Blocked unauthorized origin: ${origin}`);
-      }
+      console.warn(`[CORS] Blocked unauthorized origin in production: ${origin}`);
+    }
+    // No origin header (like direct API calls)
+    else if (!origin) {
+      // Allow requests without origin (like direct API calls, mobile apps, etc.)
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      console.log(`[CORS] Allowed request without origin header`);
     }
     
     // Allow specific headers
