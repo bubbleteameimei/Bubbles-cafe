@@ -56,7 +56,7 @@ loadEnvFile();
 // Environment variable validation schema
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.string().transform(Number).default('3002'),
+  PORT: z.string().transform(Number).default('5000'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   SESSION_SECRET: z.string().min(64, 'SESSION_SECRET must be at least 64 characters for production security').default('horror-stories-session-secret-development-only-change-this-in-production-environment'),
   FRONTEND_URL: z.string().url().optional(),
@@ -110,7 +110,7 @@ export const config = {
     credentials: true,
   },
   wordpress: {
-    apiUrl: env.WORDPRESS_API_URL || env.WORDPRESS_API,
+    apiUrl: env.WORDPRESS_API_URL || env.WORDPRESS_API || 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts',
   },
   auth: {
     google: {

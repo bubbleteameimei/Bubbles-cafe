@@ -106,7 +106,7 @@ app.get('/health', (req, res) => {
     const token = crypto.randomBytes(32).toString('hex');
     req.session.csrfToken = token;
   }
-  
+
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
@@ -164,17 +164,17 @@ async function startServer() {
       // Ensure DATABASE_URL is properly set
       serverLogger.info('Setting up database connection...');
       await setupDatabase();
-      
+
       // Check database connection and run migrations
       try {
         serverLogger.info('Running database migrations...');
         await runMigrations();
         serverLogger.info('Database migrations completed');
-        
+
         // Check if posts table has data
         const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
         serverLogger.info('Database connected, tables exist', { postsCount });
-        
+
         // Seed database if no posts exist
         if (postsCount === 0) {
           serverLogger.info('No posts found - seeding database from WordPress API...');
@@ -193,13 +193,13 @@ async function startServer() {
         serverLogger.error('Database setup failed', { 
           error: dbError instanceof Error ? dbError.message : 'Unknown error' 
         });
-        
+
         // Try to create schema as last resort
         serverLogger.info('Attempting to create database schema...');
         try {
           await pushSchema();
           serverLogger.info('Schema created successfully');
-          
+
           // Seed the database
           await seedDatabase();
           serverLogger.info('Database seeded successfully');
@@ -230,10 +230,10 @@ async function startServer() {
     // Setup routes based on environment
     if (isDev) {
       serverLogger.info('Setting up development environment');
-      
+
       // Add global request logging in development
       app.use(requestLogger);
-      
+
       // Register modular routes (replaces legacy monolithic routes)
       const { registerModularRoutes } = await import('./routes');
       registerModularRoutes(app);
@@ -248,7 +248,7 @@ async function startServer() {
       await setupVite(app, server);
     } else {
       serverLogger.info('Setting up production environment');
-      
+
       // Register modular routes (replaces legacy monolithic routes)
       const { registerModularRoutes } = await import('./routes');
       registerModularRoutes(app);
@@ -266,10 +266,10 @@ async function startServer() {
     // Start listening with enhanced error handling and port notification
     return new Promise<void>((resolve, reject) => {
       const startTime = Date.now();
-      
+
       // Log that we're about to start listening
-      console.log(`Attempting to start server on http://${HOST}:${PORT}...`);
-      
+      console.log(`Attempting to start server on http://0.0.0.0:${config.port}...`);
+
       server.listen(PORT, HOST, () => {
         const bootDuration = Date.now() - startTime;
         console.log(`✅ Server started successfully on http://${HOST}:${PORT} in ${bootDuration}ms`);
@@ -288,7 +288,7 @@ async function startServer() {
           console.log('Sent port readiness signal to process');
           serverLogger.debug('Sent port readiness signal');
         }
-        
+
         // Wait for a moment to ensure the server is fully ready
         setTimeout(() => {
           console.log('Server is now fully ready to accept connections');
@@ -343,7 +343,7 @@ process.on('uncaughtException', (error) => {
     error: error.message,
     stack: error.stack
   });
-  
+
   // Give time for the error to be logged before exiting
   setTimeout(() => {
     process.exit(1);
@@ -354,12 +354,12 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason, _promise) => {
   const errorMessage = reason instanceof Error ? reason.message : String(reason);
   const errorStack = reason instanceof Error ? reason.stack : undefined;
-  
+
   serverLogger.error('Unhandled promise rejection', {
     reason: errorMessage,
     stack: errorStack
   });
-  
+
   // In production, we might want to exit the process
   // In development, we can continue but log the error
   if (process.env.NODE_ENV === 'production') {
