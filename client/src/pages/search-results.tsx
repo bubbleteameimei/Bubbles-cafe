@@ -45,68 +45,22 @@ export default function SearchResultsPage() {
     setIsSearching(true);
     
     try {
-      // Fetch all posts using apiJson to handle errors/user messages
-      const posts = await apiJson<any[]>('GET', '/api/posts', undefined, { showToast: true });
-      
-      // Search through posts
-      const results: SearchResult[] = [];
-      
-      posts.forEach((post: any) => {
-        const matches = [];
-        let isMatch = false;
-        
-        // Search in title
-        if (post.title && post.title.toLowerCase().includes(query.toLowerCase())) {
-          matches.push({
-            field: 'title',
-            text: post.title,
-            position: post.title.toLowerCase().indexOf(query.toLowerCase())
-          });
-          isMatch = true;
-        }
-        
-        // Search in content
-        if (post.content) {
-          const contentLower = post.content.toLowerCase();
-          const queryLower = query.toLowerCase();
-          let position = contentLower.indexOf(queryLower);
-          
-          while (position !== -1) {
-            // Extract a snippet around the match
-            const start = Math.max(0, position - 40);
-            const end = Math.min(post.content.length, position + query.length + 40);
-            const snippet = post.content.substring(start, end);
-            
-            matches.push({
-              field: 'content',
-              text: snippet,
-              position: position - start // Relative position in the snippet
-            });
-            
-            isMatch = true;
-            position = contentLower.indexOf(queryLower, position + 1);
-          }
-        }
-        
-        if (isMatch) {
-          results.push({
-            id: post.id,
-            title: post.title || 'Untitled',
-            excerpt: post.excerpt || '',
-            content: post.content || '',
-            type: 'post',
-            url: `/reader/${post.id}`,
-            matches
-          });
-        }
-      });
-      
-      setSearchResults(results);
+      const { results } = await apiJson<any>('GET', `/api/search?q=${encodeURIComponent(query)}&types=posts,pages,comments&limit=25`);
+      const mapped: SearchResult[] = (results || []).map((r: any) => ({
+        id: r.id,
+        title: r.title,
+        excerpt: r.excerpt,
+        content: '',
+        type: (r.type === 'post' || r.type === 'page') ? r.type : 'post',
+        url: r.url,
+        matches: (r.matches || []).map((m: any, idx: number) => ({ field: 'content', text: m.context || m.text || '', position: 0 }))
+      }));
+      setSearchResults(mapped);
       
       // Show toast with result count
       toast({
         title: `Search Results for "${query}"`,
-        description: `Found ${results.length} ${results.length === 1 ? 'result' : 'results'}`,
+        description: `Found ${mapped.length} ${mapped.length === 1 ? 'result' : 'results'}`,
         duration: 3000
       });
     } catch (error) {
