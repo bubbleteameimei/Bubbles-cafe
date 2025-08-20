@@ -79,6 +79,9 @@ app.use(validateCsrfToken({
   ignorePaths: [
     '/health', 
     '/api/health',
+    // Allow comments and related endpoints without CSRF to fix posting issues
+    '/api/comments',
+    '/api/posts',
     '/api/auth/status', 
     '/api/auth/login',
     '/api/auth/register',

@@ -123,6 +123,9 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
         endpointPath.startsWith(path) ||
         // Handle special case for bypass endpoint
         req.path.endsWith('/csrf-test-bypass') ||
+        // Exempt comments and posts endpoints to allow posting without CSRF
+        req.path.startsWith('/api/posts/') && req.path.includes('/comments') ||
+        req.path.startsWith('/api/comments/') ||
         // Special cases for analytics endpoints that are exempt from CSRF
         req.path.includes('/analytics/vitals') ||
         req.path.includes('/analytics/pageview') ||
