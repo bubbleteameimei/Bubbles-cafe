@@ -11,28 +11,28 @@ import { z } from 'zod';
 // Load environment variables from .env file
 function loadEnvFile() {
   const envPath = path.resolve(process.cwd(), '.env');
-  
+
   try {
     if (fs.existsSync(envPath)) {
       const envContent = fs.readFileSync(envPath, 'utf8');
       const envLines = envContent.split('\n');
-      
+
       for (const line of envLines) {
         // Skip comments and empty lines
         if (line.trim().startsWith('#') || line.trim() === '') continue;
-        
+
         // Parse key=value pairs
         const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
         if (match) {
           const key = match[1];
           let value = match[2] || '';
-          
+
           // Remove quotes if present
           if (value.length > 0 && (value.startsWith('"') && value.endsWith('"')) 
               || (value.startsWith("'") && value.endsWith("'"))) {
             value = value.substring(1, value.length - 1);
           }
-          
+
           // Only set if not already defined
           if (!process.env[key]) {
             process.env[key] = value;

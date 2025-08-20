@@ -24,6 +24,11 @@ function sanitizeDatabaseUrl(url?: string): string | undefined {
   return s;
 }
 
+// Set permanent database URL if not already set
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'postgresql://neondb_owner:npg_P6ghCZR2BASQ@ep-young-bread-aeojmse9-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+}
+
 if (process.env.DATABASE_URL) {
   process.env.DATABASE_URL = sanitizeDatabaseUrl(process.env.DATABASE_URL)!;
 }
