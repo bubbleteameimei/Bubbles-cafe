@@ -1,7 +1,9 @@
 {
-  "workflows": {
-    "main": {
-      "command": "npm run dev"
+  "workflows": [
+    {
+      "name": "Start application", 
+      "command": "npm run dev",
+      "wait_for_port": 3002
     }
-  }
+  ]
 }
