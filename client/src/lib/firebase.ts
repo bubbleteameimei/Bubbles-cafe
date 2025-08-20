@@ -12,13 +12,13 @@ import { getAnalytics } from 'firebase/analytics';
 
 // Firebase configuration directly from the provided values
 const firebaseConfig = {
-  apiKey: "AIzaSyB0bg1IpDdq2IDv8M8MGLyvB4XghVSE0WA",
-  authDomain: "bubblescafe-33f80.firebaseapp.com",
-  projectId: "bubblescafe-33f80",
-  storageBucket: "bubblescafe-33f80.appspot.com",
-  messagingSenderId: "329473416186",
-  appId: "1:329473416186:web:8dd43a10f94d3e266c2243",
-  measurementId: "G-4W89K4X8VV"
+  apiKey: "AIzaSyAJ-ZRi3GUVHUaM0p5vbbRB8NoqV4b_VvM",
+  authDomain: "bubbles-cafe.firebaseapp.com",
+  projectId: "bubbles-cafe",
+  storageBucket: "bubbles-cafe.firebasestorage.app",
+  messagingSenderId: "870151001940",
+  appId: "1:870151001940:web:f11d39b75764457a91ac1",
+  measurementId: "G-PSCHGE0V55"
 };
 
 // Log Firebase configuration status for debugging
