@@ -17,6 +17,7 @@ import { optimizeImagesForConnection } from "./utils/image-optimization";
 import { initCSRFProtection } from "@/lib/csrf-token";
 import logger from "./utils/secure-client-logger";
 import './lib/fetch-csrf';
+import { startWebVitals, trackPageView, schedulePerformanceSummary } from '@/lib/metrics';
 
 logger.info("Starting application...");
 
@@ -91,3 +92,11 @@ const renderApp = () => {
 };
 
 renderApp();
+
+// Start analytics + performance monitoring (non-blocking)
+try {
+  trackPageView();
+  schedulePerformanceSummary();
+  // Delay web-vitals a bit to avoid impacting TTI
+  setTimeout(() => { startWebVitals().catch(() => {}); }, 0);
+} catch {}

@@ -129,6 +129,7 @@ import EditStoryPage from './pages/edit-story';
 import FeedbackPage from './pages/feedback';
 import UserFeedbackDashboardPage from './pages/user/feedback-dashboard';
 import GuidelinesPage from './pages/support/guidelines';
+import { trackPageView } from '@/lib/metrics';
 
 // Defer WordPress posts preloading until after initial page render
 // This improves initial load time significantly
@@ -163,6 +164,13 @@ const AppContent = () => {
   useEffect(() => {
     if (!isErrorPage) {
       sessionStorage.setItem('current-location', location);
+    }
+  }, [location, isErrorPage]);
+
+  // Record page views on route changes
+  useEffect(() => {
+    if (!isErrorPage) {
+      trackPageView(location);
     }
   }, [location, isErrorPage]);
   
