@@ -31,6 +31,12 @@ interface WordPressResponse {
 }
 
 import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { createIntersectionLazyComponent } from '@/utils/lazy-loading';
+
+const LazyMostLikedList = createIntersectionLazyComponent(
+  () => import('@/components/home/MostLikedList'),
+  { fallback: <div className="h-24" /> }
+);
 
 export default function IndexView() {
   const [, setLocation] = useLocation();
@@ -477,21 +483,9 @@ export default function IndexView() {
               </Card>
             </div>
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Most liked list */}
               <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Star className="h-4 w-4 text-primary" />
-                    <h3 className="text-base font-semibold">Most Liked</h3>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {[...sortedPosts].sort((a,b) => (b.likesCount||0)-(a.likesCount||0)).slice(0,4).map((p) => (
-                      <div key={p.id} className="flex flex-col">
-                        <button className="text-left text-sm font-medium hover:text-primary line-clamp-1" onClick={() => navigateToReader(p.slug || p.id)}>{p.title}</button>
-                        <div className="text-[11px] text-muted-foreground">❤️ {(p.likesCount||0)} • {getReadingTime(p.content)}</div>
-                      </div>
-                    ))}
-                  </div>
+                  <LazyMostLikedList posts={sortedPosts} onNavigate={navigateToReader} />
                 </CardContent>
               </Card>
             </div>
