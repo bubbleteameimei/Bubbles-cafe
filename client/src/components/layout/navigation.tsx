@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
 import { Menu, Search, Moon, Sun, User } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { SearchBar } from "@/components/SearchBar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,14 +47,7 @@ export default function Navigation() {
     { href: '/about', label: 'About' }
   ];
 
-  // Handle search button click for all devices
-  const handleSearchButtonClick = () => {
-    // Show a search dialog or expand the header to show search
-    const searchPrompt = prompt("Search for keywords:");
-    if (searchPrompt && searchPrompt.trim()) {
-      setLocation(`/search?q=${encodeURIComponent(searchPrompt.trim())}`);
-    }
-  };
+  // Dialog state handled by Radix Dialog; no prompt() usage
 
   return (
     <header 
@@ -124,16 +119,21 @@ export default function Navigation() {
         {/* Right section - Action buttons */}
         <div className="flex items-center space-x-2 -mt-1 ml-auto">
           {/* Search button - shown on all devices */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleSearchButtonClick}
-            className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                      transition-all duration-150 active:scale-95 mt-2"
-            aria-label="Search"
-          >
-            <Search className="h-5 w-5" />
-          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95 mt-2"
+                aria-label="Search"
+              >
+                <Search className="h-5 w-5" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="p-4 sm:p-6">
+              <SearchBar className="w-full" placeholder="Search stories..." />
+            </DialogContent>
+          </Dialog>
           
           {/* Notifications */}
           <NotificationIcon 
