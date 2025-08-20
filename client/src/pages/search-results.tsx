@@ -30,8 +30,9 @@ export default function SearchResultsPage() {
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [didYouMean, setDidYouMean] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState<{ id: number; title: string; url: string }[]>([]);
+  const [suggestions, setSuggestions] = useState<{ id: number | string; title: string; url: string }[]>([]);
   const [showSuggest, setShowSuggest] = useState(false);
+  const [activeIndex, setActiveIndex] = useState<number>(-1);
 
   // Extract search query from URL
   useEffect(() => {
@@ -87,22 +88,19 @@ export default function SearchResultsPage() {
   // Suggestions (typeahead)
   useEffect(() => {
     const q = searchQuery.trim();
-    if (q.length < 2) {
-      setSuggestions([]);
-      setShowSuggest(false);
-      return;
-    }
     const controller = new AbortController();
     const t = setTimeout(async () => {
       try {
-        const resp = await apiJson<any>('GET', `/api/search/suggest?q=${encodeURIComponent(q)}&limit=8`);
+        const url = q.length >= 2 ? `/api/search/suggest?q=${encodeURIComponent(q)}&limit=8` : `/api/search/suggest?limit=8`;
+        const resp = await apiJson<any>('GET', url);
         setSuggestions(resp?.suggestions || []);
         setShowSuggest(true);
+        setActiveIndex(-1);
       } catch {
         setSuggestions([]);
         setShowSuggest(false);
       }
-    }, 180);
+    }, 300);
     return () => { clearTimeout(t); controller.abort(); };
   }, [searchQuery]);
 
@@ -116,20 +114,16 @@ export default function SearchResultsPage() {
   };
 
   // Highlight matched text in a string
-  const highlightText = (text: string, query: string, position: number) => {
-    if (!text || position === undefined) return text;
-    
-    const before = text.substring(0, position);
-    const match = text.substring(position, position + query.length);
-    const after = text.substring(position + query.length);
-    
+  const highlightText = (text: string, query: string) => {
+    if (!text || !query) return text;
+    const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
     return (
       <>
-        {before}
-        <span className="bg-yellow-200 dark:bg-yellow-800 text-black dark:text-white font-medium px-0.5 rounded">
-          {match}
-        </span>
-        {after}
+        {parts.map((part, i) => part.toLowerCase() === query.toLowerCase() ? (
+          <mark key={i} className="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">{part}</mark>
+        ) : (
+          <span key={i}>{part}</span>
+        ))}
       </>
     );
   };
@@ -152,14 +146,30 @@ export default function SearchResultsPage() {
               className="pl-10"
               onFocus={() => { if (suggestions.length > 0) setShowSuggest(true); }}
               onBlur={() => setTimeout(() => setShowSuggest(false), 120)}
+              onKeyDown={(e) => {
+                if (!showSuggest || suggestions.length === 0) return;
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setActiveIndex((prev) => (prev + 1) % suggestions.length);
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setActiveIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
+                } else if (e.key === 'Enter') {
+                  if (activeIndex >= 0 && activeIndex < suggestions.length) {
+                    window.location.href = suggestions[activeIndex].url;
+                  } else if (searchQuery.trim()) {
+                    performSearch(searchQuery, 1);
+                  }
+                }
+              }}
             />
             {showSuggest && suggestions.length > 0 && (
               <div className="absolute z-20 mt-1 w-full bg-background border border-border rounded-md shadow-sm">
                 <ul className="max-h-64 overflow-auto py-1">
-                  {suggestions.map(s => (
+                  {suggestions.map((s, idx) => (
                     <li key={s.id}>
                       <Link href={s.url}>
-                        <a className="block px-3 py-2 text-sm hover:bg-accent/30">{s.title}</a>
+                        <a className={`block px-3 py-2 text-sm hover:bg-accent/30 ${idx === activeIndex ? 'bg-accent/20' : ''}`}>{s.title}</a>
                       </Link>
                     </li>
                   ))}
@@ -198,15 +208,7 @@ export default function SearchResultsPage() {
             <div key={`${result.type}-${result.id}`} className="border rounded-lg p-4 shadow-sm">
               <h2 className="text-xl font-semibold mb-2">
                 <Link href={result.url}>
-                  {result.matches.some(m => m.field === 'title') ? (
-                    highlightText(
-                      result.title,
-                      searchQuery,
-                      result.matches.find(m => m.field === 'title')?.position || 0
-                    )
-                  ) : (
-                    result.title
-                  )}
+                  {highlightText(result.title, searchQuery)}
                 </Link>
               </h2>
               
@@ -217,7 +219,7 @@ export default function SearchResultsPage() {
                   .slice(0, 3) // Limit to 3 matches per result
                   .map((match, idx) => (
                     <div key={idx} className="text-sm text-gray-700 dark:text-gray-300 bg-muted/50 p-2 rounded">
-                      ...{highlightText(match.text, searchQuery, match.position)}...
+                      ...{highlightText(match.context || match.text, searchQuery)}...
                     </div>
                   ))}
               </div>
