@@ -24,6 +24,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -32,6 +33,7 @@ import {
   SidebarMenuSubItem,
   useSidebar
 } from "@/components/ui/sidebar"
+import { SearchBar } from "@/components/SearchBar"
 
 // Code Quality: Break up large components into smaller ones for maintainability.
 export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
@@ -257,10 +259,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           }}
         >
           <SidebarGroup className="space-y-0 -mt-4">
-            <SidebarGroupLabel className="sidebar-group-label-enhanced px-1 text-xs font-bold text-sidebar-foreground/60 uppercase tracking-wider -mb-1 flex items-center gap-2 font-sans">
-              <Compass className="h-4 w-4 sidebar-icon-enhanced" />
-              Navigation
-            </SidebarGroupLabel>
+            <SidebarHeader className="px-1 pb-1">
+              <SearchBar className="w-full" placeholder="Search stories..." />
+            </SidebarHeader>
             <SidebarGroupContent>
               <SidebarMenu className="space-y-0">
                 <SidebarMenuItem>
