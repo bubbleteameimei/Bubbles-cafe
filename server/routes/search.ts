@@ -624,3 +624,47 @@ router.get('/', async (req, res) => {
 });
 
 export default router;
+
+// Lightweight suggestions endpoint for typeahead
+router.get('/suggest', async (req, res) => {
+  try {
+    const { q, limit = '10' } = req.query;
+    if (!q || typeof q !== 'string') {
+      return res.json({ suggestions: [] });
+    }
+    const search = q.trim().toLowerCase();
+    if (search.length < 2) {
+      return res.json({ suggestions: [] });
+    }
+
+    const max = Math.min(Math.max(parseInt(limit as string, 10) || 10, 1), 20);
+
+    // Fetch posts and filter by title first, then content as fallback
+    const allPosts = await db.select().from(posts);
+    const titleMatches = allPosts
+      .filter((p: any) => (p.title || '').toLowerCase().includes(search))
+      .slice(0, max);
+
+    const remaining = Math.max(0, max - titleMatches.length);
+    let contentMatches: any[] = [];
+    if (remaining > 0) {
+      contentMatches = allPosts
+        .filter((p: any) => !(p.title || '').toLowerCase().includes(search))
+        .filter((p: any) => (p.content || '').toLowerCase().includes(search))
+        .slice(0, remaining);
+    }
+
+    const combined = [...titleMatches, ...contentMatches];
+    const suggestions = combined.map((p: any) => ({
+      id: p.id,
+      title: p.title || 'Untitled',
+      type: 'post',
+      url: `/reader/${p.id}`
+    }));
+
+    return res.json({ suggestions });
+  } catch (error) {
+    console.error('[Search] Suggest error:', error);
+    return res.status(500).json({ suggestions: [] });
+  }
+});
