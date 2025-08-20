@@ -243,6 +243,87 @@ export function setupOAuth(app: Express) {
     res.status(401).json({ error: 'Unauthorized' });
   };
 
+  // Return connected OAuth providers for current user
+  app.get('/api/auth/connections', isAuthenticated, (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const metadata = (user?.metadata || {}) as Record<string, any>;
+      const oauth = (metadata.oauth || {}) as Record<string, any>;
+
+      const providers = {
+        google: !!oauth.google,
+        github: !!oauth.github,
+        twitter: !!oauth.twitter || !!oauth['twitter-x'] || !!oauth['x'],
+        discord: !!oauth.discord,
+        ghost: !!oauth.ghost
+      };
+
+      res.json({ providers });
+      return;
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch connections' });
+      return;
+    }
+  });
+
+  // Disconnect a specific OAuth provider from the current account
+  app.post('/api/auth/disconnect', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const { provider } = req.body as { provider?: string };
+
+      if (!provider) {
+        res.status(400).json({ error: 'Missing provider' });
+        return;
+      }
+
+      // Load the most recent user metadata from DB
+      const currentUser = await storage.getUser(user.id);
+      if (!currentUser) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+
+      const currentMetadata = (currentUser.metadata || {}) as Record<string, any>;
+      const currentOauth = (currentMetadata.oauth || {}) as Record<string, any>;
+
+      if (!currentOauth[provider]) {
+        // Nothing to do; return success
+        res.json({ ok: true, disconnected: false });
+        return;
+      }
+
+      // Create updated oauth object without the provider
+      const { [provider]: _removed, ...restOauth } = currentOauth;
+      const updatedMetadata: Record<string, any> = {
+        ...currentMetadata,
+        oauth: Object.keys(restOauth).length > 0 ? restOauth : undefined
+      };
+
+      // Persist using direct DB update to avoid merge side-effects
+      const db = storage.getDb();
+      const users = storage.getUsersTable();
+      const { eq } = storage.getDrizzleOperators();
+
+      const [updatedUser] = await db
+        .update(users)
+        .set({ metadata: updatedMetadata })
+        .where(eq(users.id, user.id))
+        .returning();
+
+      if (!updatedUser) {
+        res.status(500).json({ error: 'Failed to update user' });
+        return;
+      }
+
+      res.json({ ok: true, disconnected: true });
+      return;
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to disconnect provider' });
+      return;
+    }
+  });
+
   // User profile route - GET
   app.get('/api/auth/profile', isAuthenticated, (req: Request, res: Response) => {
     const user = req.user as any;
