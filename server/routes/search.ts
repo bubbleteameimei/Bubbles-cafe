@@ -727,15 +727,18 @@ export default router;
 router.get('/suggest', async (req, res) => {
   try {
     const { q, limit = '10' } = req.query;
-    if (!q || typeof q !== 'string') {
-      return res.json({ suggestions: [] });
-    }
-    const search = q.trim().toLowerCase();
-    if (search.length < 2) {
-      return res.json({ suggestions: [] });
+    const max = Math.min(Math.max(parseInt(limit as string, 10) || 10, 1), 20);
+
+    // If no query or too short, return trending queries as suggestions
+    if (!q || typeof q !== 'string' || q.trim().length < 2) {
+      const sorted = Array.from(trendingQueries.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, max)
+        .map(([term]) => ({ id: term, title: term, type: 'query', url: `/search?q=${encodeURIComponent(term)}` }));
+      return res.json({ suggestions: sorted });
     }
 
-    const max = Math.min(Math.max(parseInt(limit as string, 10) || 10, 1), 20);
+    const search = q.trim().toLowerCase();
 
     // Fetch posts and filter by title first, then content as fallback
     const allPosts = await db.select().from(posts);
