@@ -51,7 +51,16 @@ router.get('/posts/:postId/comments',
 );
 
 // POST /api/posts/:postId/comments - Create new comment (body need not include postId)
-const createCommentBodySchema = insertCommentSchema.omit({ postId: true });
+// Accept additional UX fields and transform them server-side
+const createCommentBodySchema = z.object({
+	content: z.string().min(1).max(2000).trim(),
+	parentId: z.union([z.number().int().positive(), z.null()]).optional(),
+	metadata: z.record(z.unknown()).optional(),
+	author: z.string().min(1).max(50).optional(),
+	needsModeration: z.boolean().optional(),
+	moderationStatus: z.enum(["flagged", "under_review", "none"]).optional()
+}).passthrough();
+
 router.post('/posts/:postId/comments',
 	apiRateLimiter,
 	validateParams(postIdSchema),
@@ -66,11 +75,30 @@ router.post('/posts/:postId/comments',
 				throw createError.badRequest('Comment contains inappropriate content');
 			}
 			
+			// Build metadata, merging client-provided metadata safely
+			const baseMetadata = (req.body.metadata && typeof req.body.metadata === 'object') ? req.body.metadata as Record<string, unknown> : {};
+			const mergedMetadata = {
+				moderated: moderationResult.moderatedText !== req.body.content,
+				originalContent: req.body.content,
+				isAnonymous: !(req as any).user,
+				author: (req.body as any).author || (req as any).user?.username || 'Anonymous',
+				upvotes: 0,
+				downvotes: 0,
+				replyCount: 0,
+				...baseMetadata
+			};
+			
+			const isApproved = (req.body as any).needsModeration === true || (req.body as any).moderationStatus === 'flagged' || (req.body as any).moderationStatus === 'under_review' 
+				? false 
+				: true;
+			
 			const commentData = {
-				...req.body,
+				content: moderationResult.moderatedText || req.body.content,
 				postId: Number(postId),
+				parentId: (req.body as any).parentId ?? null,
 				userId: (req.user as any)?.id || null,
-				content: moderationResult.moderatedText || req.body.content
+				metadata: mergedMetadata,
+				is_approved: isApproved
 			} as any;
 			
 			const newComment = await storage.createComment(commentData);
@@ -91,25 +119,52 @@ router.post('/posts/:postId/comments',
 );
 
 // POST /api/comments/:id/replies - Create reply to comment
+// Accepts either nested metadata.author or top-level author and ensures postId is carried from parent
+const createReplyBodySchema = z.object({
+	content: z.string().min(1).max(2000).trim(),
+	author: z.string().min(1).max(50).optional(),
+	metadata: z.record(z.unknown()).optional()
+}).passthrough();
+
 router.post('/comments/:id/replies',
 	apiRateLimiter,
 	validateParams(commentIdSchema),
-	validateBody(insertCommentReplySchema),
+	validateBody(createReplyBodySchema),
 	asyncHandler(async (req: Request, res: Response) => {
 		const { id } = req.params;
 		
 		try {
+			// Ensure parent comment exists to inherit postId
+			const parent = await storage.getComment(Number(id));
+			if (!parent) {
+				throw createError.notFound('Parent comment not found');
+			}
+			
 			// Moderate reply content
 			const moderationResult = moderateComment(req.body.content);
 			if (moderationResult.isBlocked) {
 				throw createError.badRequest('Reply contains inappropriate content');
 			}
 			
+			const baseMetadata = (req.body.metadata && typeof req.body.metadata === 'object') ? req.body.metadata as Record<string, unknown> : {};
+			const mergedMetadata = {
+				moderated: moderationResult.moderatedText !== req.body.content,
+				originalContent: req.body.content,
+				isAnonymous: !(req as any).user,
+				author: (req.body as any).author || (req as any).user?.username || 'Anonymous',
+				upvotes: 0,
+				downvotes: 0,
+				replyCount: 0,
+				...baseMetadata
+			};
+			
 			const replyData = {
-				...req.body,
+				content: moderationResult.moderatedText || req.body.content,
+				postId: (parent as any).postId ?? null,
 				parentId: Number(id),
 				userId: (req.user as any)?.id || null,
-				content: moderationResult.moderatedText || req.body.content
+				metadata: mergedMetadata,
+				is_approved: true
 			} as any;
 			
 			const newReply = await storage.createCommentReply(replyData);
