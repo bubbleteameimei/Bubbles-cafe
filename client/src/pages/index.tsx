@@ -30,6 +30,8 @@ interface WordPressResponse {
   total?: number;
 }
 
+import { ErrorBoundary } from '@/components/ui/error-boundary';
+
 export default function IndexView() {
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
@@ -405,6 +407,7 @@ export default function IndexView() {
   }
 
   return (
+    <ErrorBoundary>
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden overflow-y-auto">
       <div className="w-full pb-12 pt-6 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 mb-4 px-2 sm:px-4">
@@ -639,5 +642,6 @@ export default function IndexView() {
         )}
       </div>
     </div>
+    </ErrorBoundary>
   );
 }
