@@ -74,18 +74,21 @@ router.post('/comments/:commentId/replies', async (req, res) => {
       return res.status(400).json({ error: 'Invalid comment ID parameter' });
     }
 
+    const userKey = (req as any).user?.id?.toString() || ((req as any).sessionID ? `anon:${(req as any).sessionID}` : 'anon');
+
     const reply = await storage.createCommentReply({
       content,
       postId: null,
       parentId: commentId,
-      userId: req.user?.id || null,
+      userId: (req as any).user?.id || null,
       metadata: {
         author: author || 'Anonymous',
-        isAnonymous: !req.user?.id,
+        isAnonymous: !(req as any).user?.id,
         moderated: false,
         originalContent: content,
         upvotes: 0,
-        downvotes: 0
+        downvotes: 0,
+        ownerKey: userKey
       },
       is_approved: true
     });
