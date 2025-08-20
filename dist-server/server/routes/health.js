@@ -1,0 +1,113 @@
+import { Router } from 'express';
+import { db } from '../db';
+import { createLogger } from '../utils/debug-logger';
+import { posts } from '@shared/schema';
+const logger = createLogger('Health');
+const router = Router();
+// Basic health check
+router.get('/', async (req, res) => {
+    try {
+        const health = {
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+            environment: process.env.NODE_ENV || 'development',
+            version: process.env.npm_package_version || '1.0.0',
+            memory: {
+                used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+                total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+                external: Math.round(process.memoryUsage().external / 1024 / 1024)
+            }
+        };
+        res.json(health);
+    }
+    catch (error) {
+        logger.error('Health check failed', { error });
+        res.status(500).json({
+            status: 'error',
+            message: 'Health check failed',
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+// Detailed health check with database connectivity
+router.get('/detailed', async (req, res) => {
+    try {
+        const startTime = Date.now();
+        // Test database connection using a safe select (drizzle style)
+        let dbStatus = 'unknown';
+        let dbResponseTime = 0;
+        try {
+            const dbStartTime = Date.now();
+            // Perform a lightweight select from a known table
+            await db.select().from(posts).limit(1);
+            dbResponseTime = Date.now() - dbStartTime;
+            dbStatus = 'connected';
+        }
+        catch (_dbError) {
+            dbStatus = 'error';
+        }
+        const totalResponseTime = Date.now() - startTime;
+        const health = {
+            status: dbStatus === 'connected' ? 'ok' : 'degraded',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+            environment: process.env.NODE_ENV || 'development',
+            version: process.env.npm_package_version || '1.0.0',
+            responseTime: totalResponseTime,
+            services: {
+                database: {
+                    status: dbStatus,
+                    responseTime: dbResponseTime
+                }
+            },
+            memory: {
+                used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+                total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+                external: Math.round(process.memoryUsage().external / 1024 / 1024)
+            },
+            system: {
+                platform: process.platform,
+                nodeVersion: process.version,
+                pid: process.pid
+            }
+        };
+        res.json(health);
+    }
+    catch (error) {
+        logger.error('Detailed health check failed', { error });
+        res.status(500).json({
+            status: 'error',
+            message: 'Detailed health check failed',
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+// Readiness check for load balancers
+router.get('/ready', async (req, res) => {
+    try {
+        // Try a quick no-op query to ensure DB layer is initialized
+        await db.select().from(posts).limit(1);
+        res.json({
+            status: 'ready',
+            timestamp: new Date().toISOString()
+        });
+    }
+    catch (error) {
+        logger.error('Readiness check failed', { error });
+        res.status(503).json({
+            status: 'not ready',
+            message: 'Service not ready',
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+// Liveness check for Kubernetes
+router.get('/live', (req, res) => {
+    res.json({
+        status: 'alive',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
+export default router;
