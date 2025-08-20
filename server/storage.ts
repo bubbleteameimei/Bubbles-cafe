@@ -1963,7 +1963,7 @@ export class DatabaseStorage implements IStorage {
           ${comment.parentId ?? null},
           ${comment.userId ?? null},
           ${comment.is_approved !== undefined ? comment.is_approved : true},
-          ${JSON.stringify(commentMetadata)},
+          ${JSON.stringify({ ...commentMetadata, ownerKey: (comment as any)?.metadata?.ownerKey })},
           ${new Date()}
         )
         RETURNING id, content, post_id as "postId", user_id as "userId", 
@@ -2447,6 +2447,8 @@ export class DatabaseStorage implements IStorage {
         downvotes: 0,
         replyCount: 0
       };
+      const baseMeta: any = (reply.metadata || {}) as any;
+      const finalMetadata = { ...metadata, ...baseMeta, ownerKey: baseMeta?.ownerKey };
 
       // Create a direct SQL query to ensure proper column mapping
       const result = await db.execute(sql`
@@ -2457,7 +2459,7 @@ export class DatabaseStorage implements IStorage {
           ${reply.parentId},
           ${reply.userId},
           ${reply.is_approved !== undefined ? reply.is_approved : false},
-          ${JSON.stringify(metadata)},
+          ${JSON.stringify(finalMetadata)},
           ${new Date()}
         )
         RETURNING *;
