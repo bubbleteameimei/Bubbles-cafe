@@ -27,6 +27,8 @@ export default function SearchResultsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState<{ id: number; title: string; url: string }[]>([]);
+  const [showSuggest, setShowSuggest] = useState(false);
 
   // Extract search query from URL
   useEffect(() => {
@@ -76,6 +78,28 @@ export default function SearchResultsPage() {
     }
   };
 
+  // Suggestions (typeahead)
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setSuggestions([]);
+      setShowSuggest(false);
+      return;
+    }
+    const controller = new AbortController();
+    const t = setTimeout(async () => {
+      try {
+        const resp = await apiJson<any>('GET', `/api/search/suggest?q=${encodeURIComponent(q)}&limit=8`);
+        setSuggestions(resp?.suggestions || []);
+        setShowSuggest(true);
+      } catch {
+        setSuggestions([]);
+        setShowSuggest(false);
+      }
+    }, 180);
+    return () => { clearTimeout(t); controller.abort(); };
+  }, [searchQuery]);
+
   // Handle search form submission
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,7 +144,22 @@ export default function SearchResultsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
+              onFocus={() => { if (suggestions.length > 0) setShowSuggest(true); }}
+              onBlur={() => setTimeout(() => setShowSuggest(false), 120)}
             />
+            {showSuggest && suggestions.length > 0 && (
+              <div className="absolute z-20 mt-1 w-full bg-background border border-border rounded-md shadow-sm">
+                <ul className="max-h-64 overflow-auto py-1">
+                  {suggestions.map(s => (
+                    <li key={s.id}>
+                      <Link href={s.url}>
+                        <a className="block px-3 py-2 text-sm hover:bg-accent/30">{s.title}</a>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
           <Button type="submit" disabled={isSearching || !searchQuery.trim()}>
             {isSearching ? (
