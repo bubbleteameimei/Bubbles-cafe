@@ -143,6 +143,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // One-click distraction-free mode - toggle UI visibility with click
   const { isUIHidden, toggleUI, showTooltip } = useReaderUIToggle();
 
+  // Ensure CSRF token is initialized early for comment submissions
+  useEffect(() => {
+    fetchCsrfTokenIfNeeded().catch(() => {});
+  }, []);
+
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
   
