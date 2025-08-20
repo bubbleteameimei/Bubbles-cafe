@@ -243,37 +243,15 @@ export const registerPaymentRoutes = (app: Express) => {
         });
       }
       
-      // Attempt to infer subscription status from recent successful transactions for this user email
-      const userEmail = req.session.user.email;
-      let hasActiveSubscription = false;
-      let nextBillingDate: string | null = null;
-      let subscription: any = null;
-
-      try {
-        const txList: any = await paystackService.listTransactions({ perPage: 10, page: 1, customer: userEmail, status: 'success' });
-        const recent = (txList?.data || []).find((t: any) => t.customer?.email === userEmail && t.status === 'success');
-        if (recent) {
-          hasActiveSubscription = true;
-          // Estimate next billing date as 30 days from last payment when plan info is not available
-          const paidAt = recent.paidAt || recent.paid_at || new Date().toISOString();
-          nextBillingDate = new Date(new Date(paidAt).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-          subscription = {
-            reference: recent.reference,
-            amount: recent.amount,
-            channel: recent.channel,
-            paidAt: paidAt
-          };
-        }
-      } catch (e) {
-        // Non-fatal: if Paystack is not reachable, default to no active subscription
-      }
-
-      return res.status(200).json({
+      // Get user subscription from database (to be implemented)
+      // For now, we'll return a placeholder response
+      
+      return res.status(200).json({ 
         status: true,
         data: {
-          hasActiveSubscription,
-          subscription,
-          nextBillingDate
+          hasActiveSubscription: false,
+          subscription: null,
+          nextBillingDate: null
         }
       });
     } catch (error) {

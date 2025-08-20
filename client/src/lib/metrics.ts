@@ -27,14 +27,13 @@ function sendVitals(metric: any) {
 
 export async function startWebVitals() {
   try {
-    // web-vitals v4 uses on* APIs instead of get*
-    const { onCLS, onFID, onLCP, onFCP, onTTFB } = await import('web-vitals');
+    const webVitals = await import('web-vitals');
     const report: ReportHandler = sendVitals;
-    onCLS(report);
-    onFID(report);
-    onLCP(report);
-    onFCP(report);
-    onTTFB(report);
+    webVitals.getCLS(report);
+    webVitals.getFID(report);
+    webVitals.getLCP(report);
+    webVitals.getFCP(report);
+    webVitals.getTTFB(report);
   } catch (e) {
     // Silently ignore if web-vitals cannot be loaded
   }

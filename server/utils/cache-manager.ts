@@ -19,8 +19,6 @@ export class CacheManager {
   private defaultTTL = 5 * 60 * 1000; // 5 minutes
   private maxSize = 1000;
   private cleanupInterval: NodeJS.Timeout;
-  private hitCount = 0;
-  private missCount = 0;
 
   constructor(options: { defaultTTL?: number; maxSize?: number } = {}) {
     this.defaultTTL = options.defaultTTL || this.defaultTTL;
@@ -62,7 +60,6 @@ export class CacheManager {
       return null;
     }
 
-    this.hitCount++;
     cacheLogger.debug('Cache hit', { key });
     return entry.data;
   }
@@ -164,7 +161,6 @@ export class CacheManager {
 
     // Execute function and cache result
     try {
-      this.missCount++;
       const result = await fn();
       this.set(key, result, options);
       return result;
@@ -233,9 +229,9 @@ export class CacheManager {
 
   // Simple hit rate calculation (would need more sophisticated tracking in production)
   private calculateHitRate(): number {
-    const total = this.hitCount + this.missCount;
-    if (total === 0) return 0;
-    return this.hitCount / total;
+    // This is a simplified implementation
+    // In production, you'd want to track hits/misses separately
+    return 0; // Placeholder
   }
 
   // Shutdown cleanup
