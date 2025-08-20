@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
 import { Menu, Search, Moon, Sun, User } from "lucide-react";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { SearchBar } from "@/components/SearchBar";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,7 +46,8 @@ export default function Navigation() {
     { href: '/about', label: 'About' }
   ];
 
-  // Dialog state handled by Radix Dialog; no prompt() usage
+  const [showInlineSearch, setShowInlineSearch] = useState(false);
+  const [inlineQuery, setInlineQuery] = useState("");
 
   return (
     <header 
@@ -119,21 +119,38 @@ export default function Navigation() {
         {/* Right section - Action buttons */}
         <div className="flex items-center space-x-2 -mt-1 ml-auto">
           {/* Search button - shown on all devices */}
-          <Dialog>
-            <DialogTrigger asChild>
+          <div className="relative">
+            {!showInlineSearch ? (
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95 mt-2"
                 aria-label="Search"
+                onClick={() => setShowInlineSearch(true)}
               >
                 <Search className="h-5 w-5" />
               </Button>
-            </DialogTrigger>
-            <DialogContent className="p-4 sm:p-6">
-              <SearchBar className="w-full" placeholder="Search stories..." />
-            </DialogContent>
-          </Dialog>
+            ) : (
+              <Input
+                autoFocus
+                value={inlineQuery}
+                onChange={(e) => setInlineQuery(e.target.value)}
+                onBlur={() => { if (!inlineQuery) setShowInlineSearch(false); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && inlineQuery.trim()) {
+                    setLocation(`/search?q=${encodeURIComponent(inlineQuery.trim())}`);
+                    setShowInlineSearch(false);
+                    setInlineQuery("");
+                  } else if (e.key === 'Escape') {
+                    setShowInlineSearch(false);
+                    setInlineQuery("");
+                  }
+                }}
+                placeholder="Search stories..."
+                className="h-10 w-56 mt-2 rounded-md"
+              />
+            )}
+          </div>
           
           {/* Notifications */}
           <NotificationIcon 
