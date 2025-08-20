@@ -31,14 +31,16 @@ interface WordPressResponse {
 }
 
 import { ErrorBoundary } from '@/components/ui/error-boundary';
-import { createIntersectionLazyComponent } from '@/utils/lazy-loading';
+import { createLazyComponent, usePreloadComponent } from '@/utils/lazy-loading';
 
-const LazyMostLikedList = createIntersectionLazyComponent(
+const MostLikedList = createLazyComponent(
   () => import('@/components/home/MostLikedList'),
   { fallback: <div className="h-24" /> }
 );
 
 export default function IndexView() {
+  // Preload the MostLikedList immediately after mount for faster first paint
+  usePreloadComponent(() => import('@/components/home/MostLikedList'));
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<'newest' | 'oldest' | 'popular' | 'shortest'>("newest");
@@ -485,7 +487,7 @@ export default function IndexView() {
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
                 <CardContent className="p-4">
-                  <LazyMostLikedList posts={sortedPosts} onNavigate={navigateToReader} />
+                  <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} />
                 </CardContent>
               </Card>
             </div>
