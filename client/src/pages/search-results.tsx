@@ -4,6 +4,8 @@ import { Loader2, Search, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { apiJson } from "@/lib/api";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 interface SearchResult {
   id: number;
@@ -43,9 +45,8 @@ export default function SearchResultsPage() {
     setIsSearching(true);
     
     try {
-      // Fetch all posts
-      const postsResponse = await fetch('/api/posts');
-      const posts = await postsResponse.json();
+      // Fetch all posts using apiJson to handle errors/user messages
+      const posts = await apiJson<any[]>('GET', '/api/posts', undefined, { showToast: true });
       
       // Search through posts
       const results: SearchResult[] = [];
@@ -150,6 +151,7 @@ export default function SearchResultsPage() {
   };
 
   return (
+    <ErrorBoundary>
     <div className="container max-w-4xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Search Results</h1>
       
@@ -239,5 +241,6 @@ export default function SearchResultsPage() {
         </div>
       ) : null}
     </div>
+    </ErrorBoundary>
   );
 }
