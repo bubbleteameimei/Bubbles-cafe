@@ -3,11 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { SiGoogle, SiGithub, SiDiscord, SiGhost } from 'react-icons/si';
 import { AiOutlineTwitter } from 'react-icons/ai';
-import { signInWithGoogle } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function ConnectedAccountsPage() {
   const { checkAuth } = useAuth();
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const [connecting, setConnecting] = React.useState<Record<string, boolean>>({});
   const [connections, setConnections] = React.useState({
     google: false,
     twitter: false,
@@ -16,37 +18,66 @@ export default function ConnectedAccountsPage() {
     ghost: false
   });
 
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const resp = await fetch('/api/auth/connections', { credentials: 'include' });
+        if (!resp.ok) throw new Error('Failed to load connections');
+        const data = await resp.json();
+        if (!cancelled && data?.providers) {
+          setConnections(prev => ({ ...prev, ...data.providers }));
+        }
+      } catch {
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true };
+  }, []);
+
   const handleConnect = async (platform: keyof typeof connections) => {
     try {
       if (platform !== 'google') return;
       if (connections.google) {
-        alert('Disconnect is not yet available.');
+        // Disconnect flow
+        setConnecting(prev => ({ ...prev, [platform]: true }));
+        const resp = await fetch('/api/auth/disconnect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ provider: 'google' })
+        });
+        setConnecting(prev => ({ ...prev, [platform]: false }));
+        if (!resp.ok) throw new Error('Failed to disconnect');
+        setConnections(prev => ({ ...prev, google: false }));
+        await checkAuth();
         return;
       }
+
+      setConnecting(prev => ({ ...prev, [platform]: true }));
+      const { signInWithGoogle } = await import('@/lib/firebase');
       const user = await signInWithGoogle();
-      if (!user?.email) {
-        alert('Google sign-in failed: missing email');
-        return;
-      }
+      if (!user?.email) throw new Error('Google sign-in failed: missing email');
       const resp = await fetch('/api/auth/social-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          providerId: user.uid,
+          providerId: (user as any).uid,
           provider: 'google',
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL
+          email: (user as any).email,
+          displayName: (user as any).displayName,
+          photoURL: (user as any).photoURL
         })
       });
+      setConnecting(prev => ({ ...prev, [platform]: false }));
       if (!resp.ok) {
         const data = await resp.json().catch(() => ({}));
         throw new Error(data.error || 'Failed to connect Google account');
       }
       setConnections(prev => ({ ...prev, google: true }));
       await checkAuth();
-      alert('Google account connected.');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       alert('Connection failed: ' + msg);
@@ -63,6 +94,11 @@ export default function ConnectedAccountsPage() {
           <CardDescription>Link your social accounts for enhanced features</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {loading && (
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <Spinner size="sm" /> Loading connections...
+            </div>
+          )}
           <div className="flex items-center justify-between p-2 hover:bg-accent/50 rounded-lg transition-colors">
             <div className="flex items-center space-x-4">
               <div className="p-2 bg-accent rounded-lg">
@@ -78,8 +114,9 @@ export default function ConnectedAccountsPage() {
             <Button
               variant={connections.google ? "destructive" : "default"}
               onClick={() => handleConnect('google')}
+              disabled={!!connecting.google}
             >
-              {connections.google ? 'Disconnect' : 'Connect'}
+              {connecting.google ? 'Please wait…' : (connections.google ? 'Disconnect' : 'Connect')}
             </Button>
           </div>
 
@@ -95,11 +132,7 @@ export default function ConnectedAccountsPage() {
                 </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              disabled
-              title="Twitter/X integration coming soon"
-            >
+            <Button variant="outline" disabled title="Twitter/X integration coming soon">
               Coming soon
             </Button>
           </div>
@@ -116,11 +149,7 @@ export default function ConnectedAccountsPage() {
                 </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              disabled
-              title="GitHub integration coming soon"
-            >
+            <Button variant="outline" disabled title="GitHub integration coming soon">
               Coming soon
             </Button>
           </div>
@@ -137,11 +166,7 @@ export default function ConnectedAccountsPage() {
                 </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              disabled
-              title="Discord integration coming soon"
-            >
+            <Button variant="outline" disabled title="Discord integration coming soon">
               Coming soon
             </Button>
           </div>
@@ -158,11 +183,7 @@ export default function ConnectedAccountsPage() {
                 </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              disabled
-              title="Ghost integration coming soon"
-            >
+            <Button variant="outline" disabled title="Ghost integration coming soon">
               Coming soon
             </Button>
           </div>

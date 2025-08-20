@@ -374,7 +374,14 @@ function App() {
                             <PullToRefresh onRefresh={handleDataRefresh}>
                               {/* Performance monitor overlay removed */}
                               <div className="app-content">
-                                <React.Suspense fallback={null}>
+                                <React.Suspense fallback={
+                                  <div className="w-full flex items-center justify-center py-12">
+                                    <div className="inline-flex items-center gap-3 text-sm text-muted-foreground">
+                                      <span className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2" aria-label="Loading" />
+                                      Loading…
+                                    </div>
+                                  </div>
+                                }>
                                   <AppContent />
                                 </React.Suspense>
                               </div>
