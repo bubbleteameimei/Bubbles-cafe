@@ -45,26 +45,39 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
   if (csrfToken) return csrfToken;
 
   try {
-    // Use the new secure CSRF token endpoint
-    const response = await fetch('/api/csrf-token', {
-      method: 'GET',
-      credentials: 'include', // Include session cookies
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    // Attempt to get a token directly
+    const getToken = async (): Promise<string | null> => {
+      const resp = await fetch('/api/csrf-token', {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!resp.ok) return null;
+      const data = await resp.json().catch(() => ({}));
+      return data?.csrfToken || null;
+    };
 
-    if (!response.ok) {
-      console.error('Failed to fetch CSRF token, server responded with:', response.status);
-      return null;
-    }
-
-    const data = await response.json();
-    if (data && data.csrfToken) {
-      csrfToken = data.csrfToken;
+    // First try fetching the token
+    let token = await getToken();
+    if (token) {
+      csrfToken = token;
       return csrfToken;
     }
 
+    // If token is missing, ping health to initialize session token, then retry
+    await fetch('/api/health', {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    }).catch(() => {});
+
+    token = await getToken();
+    if (token) {
+      csrfToken = token;
+      return csrfToken;
+    }
+
+    console.error('Failed to obtain CSRF token after retry');
     return null;
   } catch (error) {
     console.error('Error fetching CSRF token:', error);

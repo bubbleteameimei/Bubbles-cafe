@@ -334,6 +334,9 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   
   // Load previously saved draft from localStorage
   useEffect(() => {
+    // Ensure CSRF token is available as soon as the section mounts
+    fetchCsrfTokenIfNeeded().catch(() => {});
+
     const savedDraft = localStorage.getItem(`comment_draft_${postId}`);
     if (savedDraft && savedDraft.trim() !== "") {
       setContent(savedDraft);
