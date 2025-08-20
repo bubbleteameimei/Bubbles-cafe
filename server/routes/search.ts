@@ -15,6 +15,41 @@ type ReportedContent = typeof reportedContent.$inferSelect;
 
 const router = Router();
 
+// Simple in-memory cache and trending tracker (ephemeral)
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const searchCache = new Map<string, { ts: number; data: any }>();
+const trendingQueries = new Map<string, number>();
+
+function makeCacheKey(params: Record<string, unknown>) {
+  return JSON.stringify(params);
+}
+
+function recordTrending(query: string) {
+  try {
+    const key = query.trim().toLowerCase().slice(0, 80);
+    if (!key) return;
+    trendingQueries.set(key, (trendingQueries.get(key) || 0) + 1);
+  } catch {}
+}
+
+function levenshtein(a: string, b: string) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return dp[m][n];
+}
+
 // Search content types interface
 interface SearchOptions {
   includePages: boolean;
@@ -35,7 +70,10 @@ router.get('/', async (req, res) => {
     const { 
       q, 
       types = 'posts,pages,comments,legal,settings', 
-      limit = '20'
+      limit = '20',
+      page = '1',
+      from, // can be number of days or ISO date
+      category
     } = req.query;
 
     if (!q || typeof q !== 'string') {
@@ -61,6 +99,26 @@ router.get('/', async (req, res) => {
       Math.max(parseInt(limit as string, 10) || 20, 1), 
       50
     ); // Between 1 and 50
+    const pageNum = Math.max(parseInt(page as string, 10) || 1, 1);
+
+    // Date filter parsing
+    let fromDate: Date | null = null;
+    if (typeof from === 'string' && from) {
+      const days = parseInt(from, 10);
+      if (!isNaN(days) && days > 0) {
+        fromDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      } else {
+        const d = new Date(from);
+        if (!isNaN(d.getTime())) fromDate = d;
+      }
+    }
+
+    const cacheParams = { q: searchQuery, types: contentTypes, limit: resultLimit, page: pageNum, from: fromDate?.toISOString() || null, category: category || null };
+    const key = makeCacheKey(cacheParams);
+    const cached = searchCache.get(key);
+    if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+      return res.json(cached.data);
+    }
     
     // No admin mode in search
     const isAdmin = false;
@@ -86,9 +144,13 @@ router.get('/', async (req, res) => {
     
     // 1. Search posts (always included)
     if (contentTypes.includes('posts')) {
-      const allPosts = await db.select().from(posts);
+      let allPosts = await db.select().from(posts);
+      if (category && typeof category === 'string') {
+        const cat = category.toLowerCase();
+        allPosts = allPosts.filter((p: any) => (p.themeCategory || '').toLowerCase() === cat);
+      }
       
-      const postResults = allPosts
+      let postResults = allPosts
         .filter((post: Post) => {
           const title = post.title?.toLowerCase() || '';
           const content = post.content?.toLowerCase() || '';
@@ -143,7 +205,7 @@ router.get('/', async (req, res) => {
             excerpt = plainContent.substring(0, 150) + '...';
           }
           
-          return {
+          const result = {
             id: post.id,
             title: post.title,
             excerpt,
@@ -152,7 +214,12 @@ router.get('/', async (req, res) => {
             matches,
             createdAt: post.createdAt
           };
+          return result;
         });
+
+      if (fromDate) {
+        postResults = postResults.filter((r: any) => new Date(r.createdAt || 0) >= fromDate!);
+      }
         
       results = [...results, ...postResults];
     }
@@ -165,7 +232,10 @@ router.get('/', async (req, res) => {
         const allPosts = await db.select().from(posts);
         
         // Filter posts that seem like pages
-        const pagePosts = allPosts.filter((post: Post) => post.isSecret === true);
+        let pagePosts = allPosts.filter((post: Post) => post.isSecret === true);
+        if (fromDate) {
+          pagePosts = pagePosts.filter((p: any) => new Date(p.createdAt || 0) >= fromDate!);
+        }
         
         const pageResults = pagePosts
           .filter((post: Post) => {
@@ -239,9 +309,9 @@ router.get('/', async (req, res) => {
     // 3. Search comments if requested
     if (searchOptions.includeComments) {
       try {
-        const allComments = await db.select().from(comments);
+        let allComments = await db.select().from(comments);
         
-        const commentResults = allComments
+        let commentResults = allComments
           .filter((comment: Comment) => {
             const content = comment.content?.toLowerCase() || '';
             
@@ -271,7 +341,7 @@ router.get('/', async (req, res) => {
             // Get summary
             let excerpt = plainContent.substring(0, 150) + '...';
             
-            return {
+            const result = {
               id: comment.id,
               title: `Comment on post #${comment.postId}`,
               excerpt,
@@ -282,7 +352,11 @@ router.get('/', async (req, res) => {
               postId: comment.postId,
               userId: comment.userId
             };
+            return result;
           });
+        if (fromDate) {
+          commentResults = commentResults.filter((r: any) => new Date(r.createdAt || 0) >= fromDate!);
+        }
           
         results = [...results, ...commentResults];
       } catch (err) {
@@ -604,18 +678,42 @@ router.get('/', async (req, res) => {
       return dateB - dateA;
     });
     
-    // Limit results
-    results = results.slice(0, searchOptions.limit);
+    // Pagination
+    const total = results.length;
+    const totalPages = Math.max(Math.ceil(total / resultLimit), 1);
+    const start = (pageNum - 1) * resultLimit;
+    const paged = results.slice(start, start + resultLimit);
 
-    console.log(`[Search] Found ${results.length} results for "${searchQuery}"`);
-    return res.json({ 
-      results,
+    recordTrending(searchQuery);
+
+    console.log(`[Search] Found ${total} results for "${searchQuery}" (page ${pageNum}/${totalPages})`);
+
+    let didYouMean: string | undefined;
+    if (total === 0 && trendingQueries.size > 0) {
+      let best: { q: string; d: number } | null = null;
+      for (const [qstr] of trendingQueries) {
+        const d = levenshtein(searchQuery, qstr);
+        if (d <= 2 && (!best || d < best.d)) best = { q: qstr, d };
+      }
+      if (best) didYouMean = best.q;
+    }
+
+    const payload = { 
+      results: paged,
       meta: {
         query: searchQuery,
-        total: results.length,
-        types: contentTypes
-      } 
-    });
+        total,
+        page: pageNum,
+        pages: totalPages,
+        limit: resultLimit,
+        types: contentTypes,
+        from: fromDate?.toISOString() || null,
+        category: category || null,
+        didYouMean: didYouMean || null
+      }
+    };
+    searchCache.set(key, { ts: Date.now(), data: payload });
+    return res.json(payload);
     
   } catch (error) {
     console.error('Search error:', error);

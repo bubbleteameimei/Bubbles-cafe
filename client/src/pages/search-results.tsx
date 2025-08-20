@@ -27,6 +27,9 @@ export default function SearchResultsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [didYouMean, setDidYouMean] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<{ id: number; title: string; url: string }[]>([]);
   const [showSuggest, setShowSuggest] = useState(false);
 
@@ -41,13 +44,13 @@ export default function SearchResultsPage() {
   }, [location]);
 
   // Perform search across all content
-  const performSearch = async (query: string) => {
+  const performSearch = async (query: string, pageNum = 1) => {
     if (!query.trim()) return;
     
     setIsSearching(true);
     
     try {
-      const { results } = await apiJson<any>('GET', `/api/search?q=${encodeURIComponent(query)}&types=posts,pages,comments&limit=25`);
+      const { results, meta } = await apiJson<any>('GET', `/api/search?q=${encodeURIComponent(query)}&types=posts,pages,comments&limit=10&page=${pageNum}`);
       const mapped: SearchResult[] = (results || []).map((r: any) => ({
         id: r.id,
         title: r.title,
@@ -58,11 +61,14 @@ export default function SearchResultsPage() {
         matches: (r.matches || []).map((m: any, idx: number) => ({ field: 'content', text: m.context || m.text || '', position: 0 }))
       }));
       setSearchResults(mapped);
+      setPage(meta?.page || 1);
+      setPages(meta?.pages || 1);
+      setDidYouMean(meta?.didYouMean || null);
       
       // Show toast with result count
       toast({
         title: `Search Results for "${query}"`,
-        description: `Found ${mapped.length} ${mapped.length === 1 ? 'result' : 'results'}`,
+        description: meta?.total !== undefined ? `${meta.total} total results` : `Found ${mapped.length} ${mapped.length === 1 ? 'result' : 'results'}`,
         duration: 3000
       });
     } catch (error) {
@@ -105,7 +111,7 @@ export default function SearchResultsPage() {
     e.preventDefault();
     if (searchQuery.trim()) {
       window.history.pushState(null, '', `/search?q=${encodeURIComponent(searchQuery)}`);
-      performSearch(searchQuery);
+      performSearch(searchQuery, 1);
     }
   };
 
@@ -174,6 +180,13 @@ export default function SearchResultsPage() {
         </div>
       </form>
       
+      {/* Did you mean */}
+      {didYouMean && (
+        <div className="mb-4 text-sm">
+          Did you mean: <Link href={`/search?q=${encodeURIComponent(didYouMean)}`} className="text-primary underline">{didYouMean}</Link>?
+        </div>
+      )}
+
       {/* Search results */}
       {isSearching ? (
         <div className="flex justify-center py-12">
@@ -233,6 +246,15 @@ export default function SearchResultsPage() {
           </p>
         </div>
       ) : null}
+
+      {/* Pagination */}
+      {pages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-8">
+          <Button variant="outline" disabled={page <= 1} onClick={() => performSearch(searchQuery, page - 1)}>Prev</Button>
+          <span className="text-sm">Page {page} of {pages}</span>
+          <Button variant="outline" disabled={page >= pages} onClick={() => performSearch(searchQuery, page + 1)}>Next</Button>
+        </div>
+      )}
     </div>
     </ErrorBoundary>
   );
