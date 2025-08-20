@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiJson } from "@/lib/api";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 interface SearchResult {
   id: number;
@@ -33,6 +34,9 @@ export default function SearchResultsPage() {
   const [suggestions, setSuggestions] = useState<{ id: number | string; title: string; url: string }[]>([]);
   const [showSuggest, setShowSuggest] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
+  const [category, setCategory] = useState<string>("all");
+  const [from, setFrom] = useState<string>("all");
+  const [recent, setRecent] = useState<string[]>([]);
 
   // Extract search query from URL
   useEffect(() => {
@@ -51,7 +55,14 @@ export default function SearchResultsPage() {
     setIsSearching(true);
     
     try {
-      const { results, meta } = await apiJson<any>('GET', `/api/search?q=${encodeURIComponent(query)}&types=posts,pages,comments&limit=10&page=${pageNum}`);
+      const qs = new URLSearchParams();
+      qs.set('q', query);
+      qs.set('types', 'posts,pages,comments');
+      qs.set('limit', '10');
+      qs.set('page', String(pageNum));
+      if (from !== 'all') qs.set('from', from);
+      if (category !== 'all') qs.set('category', category);
+      const { results, meta } = await apiJson<any>('GET', `/api/search?${qs.toString()}`);
       const mapped: SearchResult[] = (results || []).map((r: any) => ({
         id: r.id,
         title: r.title,
@@ -104,12 +115,29 @@ export default function SearchResultsPage() {
     return () => { clearTimeout(t); controller.abort(); };
   }, [searchQuery]);
 
+  // Load/save recent searches
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('recent-searches');
+      if (raw) setRecent(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  const pushRecent = (q: string) => {
+    try {
+      const arr = [q, ...recent.filter(r => r !== q)].slice(0, 8);
+      setRecent(arr);
+      localStorage.setItem('recent-searches', JSON.stringify(arr));
+    } catch {}
+  };
+
   // Handle search form submission
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       window.history.pushState(null, '', `/search?q=${encodeURIComponent(searchQuery)}`);
       performSearch(searchQuery, 1);
+      pushRecent(searchQuery.trim());
     }
   };
 
@@ -134,8 +162,8 @@ export default function SearchResultsPage() {
       <h1 className="text-2xl font-bold mb-6">Search Results</h1>
       
       {/* Search form */}
-      <form onSubmit={handleSearchSubmit} className="mb-8">
-        <div className="flex gap-2">
+      <form onSubmit={handleSearchSubmit} className="mb-4">
+        <div className="flex flex-col gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
             <Input
@@ -177,18 +205,52 @@ export default function SearchResultsPage() {
               </div>
             )}
           </div>
-          <Button type="submit" disabled={isSearching || !searchQuery.trim()}>
-            {isSearching ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Searching...
-              </>
-            ) : (
-              "Search"
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Category" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                <SelectItem value="gothic">Gothic</SelectItem>
+                <SelectItem value="dark-academia">Dark Academia</SelectItem>
+                <SelectItem value="supernatural">Supernatural</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={from} onValueChange={setFrom}>
+              <SelectTrigger className="w-[160px]"><SelectValue placeholder="Any time" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Any time</SelectItem>
+                <SelectItem value="7">Past 7 days</SelectItem>
+                <SelectItem value="30">Past 30 days</SelectItem>
+                <SelectItem value="365">Past year</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button type="submit" disabled={isSearching || !searchQuery.trim()}>
+              {isSearching ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Searching...
+                </>
+              ) : (
+                "Search"
+              )}
+            </Button>
+          </div>
         </div>
       </form>
+
+      {/* Recent searches */}
+      {recent.length > 0 && (
+        <div className="mb-6 text-sm">
+          <div className="mb-2 text-foreground/70">Recent searches:</div>
+          <div className="flex flex-wrap gap-2">
+            {recent.map(r => (
+              <Button key={r} variant="outline" size="sm" onClick={() => { setSearchQuery(r); performSearch(r, 1); }}>
+                {r}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* Did you mean */}
       {didYouMean && (
