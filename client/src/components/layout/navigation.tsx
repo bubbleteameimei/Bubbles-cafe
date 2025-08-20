@@ -119,38 +119,15 @@ export default function Navigation() {
         {/* Right section - Action buttons */}
         <div className="flex items-center space-x-2 -mt-1 ml-auto">
           {/* Search button - shown on all devices */}
-          <div className="relative">
-            {!showInlineSearch ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95 mt-2"
-                aria-label="Search"
-                onClick={() => setShowInlineSearch(true)}
-              >
-                <Search className="h-5 w-5" />
-              </Button>
-            ) : (
-              <Input
-                autoFocus
-                value={inlineQuery}
-                onChange={(e) => setInlineQuery(e.target.value)}
-                onBlur={() => { if (!inlineQuery) setShowInlineSearch(false); }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && inlineQuery.trim()) {
-                    setLocation(`/search?q=${encodeURIComponent(inlineQuery.trim())}`);
-                    setShowInlineSearch(false);
-                    setInlineQuery("");
-                  } else if (e.key === 'Escape') {
-                    setShowInlineSearch(false);
-                    setInlineQuery("");
-                  }
-                }}
-                placeholder="Search stories..."
-                className="h-10 w-56 mt-2 rounded-md"
-              />
-            )}
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95 mt-2"
+            aria-label="Search"
+            onClick={() => setLocation('/search')}
+          >
+            <Search className="h-5 w-5" />
+          </Button>
           
           {/* Notifications */}
           <NotificationIcon 
