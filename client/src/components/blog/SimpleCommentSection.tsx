@@ -61,6 +61,7 @@ interface Comment {
   approved?: boolean;
   is_approved?: boolean;
   parentId: number | null;
+  isOwner?: boolean;
 }
 
 interface CommentSectionProps {
@@ -332,6 +333,59 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   // Smart moderation preview with review flag
   const { isFlagged, moderated, isUnderReview } = checkModeration(content);
   
+  // Local edit state per comment id
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState<string>("");
+
+  const editMutation = useMutation({
+    mutationFn: async ({ commentId, newContent }: { commentId: number; newContent: string }) => {
+      await fetchCsrfTokenIfNeeded();
+      const res = await fetch(`/api/comments/${commentId}`, applyCSRFToken({
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content: newContent.trim() })
+      }));
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(t || `Failed to update comment (HTTP ${res.status})`);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+      setEditingCommentId(null);
+      setEditContent("");
+      toast({ title: "Updated", description: "Comment updated successfully." });
+    },
+    onError: (e: Error) => {
+      toast({ title: "Update failed", description: e.message, variant: "destructive" });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (commentId: number) => {
+      await fetchCsrfTokenIfNeeded();
+      const res = await fetch(`/api/comments/${commentId}`, applyCSRFToken({
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include"
+      }));
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(t || `Failed to delete comment (HTTP ${res.status})`);
+      }
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+      toast({ title: "Deleted", description: "Comment deleted." });
+    },
+    onError: (e: Error) => {
+      toast({ title: "Delete failed", description: e.message, variant: "destructive" });
+    }
+  });
+
   // Load previously saved draft from localStorage
   useEffect(() => {
     // Ensure CSRF token is available as soon as the section mounts
@@ -1019,9 +1073,19 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                       exit={{ opacity: 0.9, height: 0 }}
                       transition={{ duration: 0.1 }}
                     >
-                      <p className="text-xs text-card-foreground leading-relaxed mb-1">
-                        {parseMentions(comment.content)}
-                      </p>
+                      {editingCommentId === comment.id ? (
+                        <div className="mb-1">
+                          <Textarea
+                            value={editContent}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditContent(e.target.value)}
+                            className="text-xs bg-background/80 min-h-[60px]"
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-xs text-card-foreground leading-relaxed mb-1">
+                          {parseMentions(comment.content)}
+                        </p>
+                      )}
                       
                       {comment.metadata.moderated && (
                         <div className="mb-1 px-1.5 py-0.5 bg-amber-500/10 rounded-sm text-[9px] border border-amber-500/20">
@@ -1044,6 +1108,48 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                             <Reply className="h-2.5 w-2.5 mr-0.5" />
                             <span>Reply</span>
                           </button>
+                          {comment.isOwner && (
+                            <>
+                              {editingCommentId === comment.id ? (
+                                <>
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      if (!editContent.trim()) {
+                                        toast({ title: "Missing content", description: "Please enter some text.", variant: "destructive" });
+                                        return;
+                                      }
+                                      editMutation.mutate({ commentId: comment.id, newContent: editContent });
+                                    }}
+                                    className="inline-flex items-center text-[10px] text-primary hover:opacity-80 ml-2"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setEditingCommentId(null); setEditContent(""); }}
+                                    className="inline-flex items-center text-[10px] text-muted-foreground hover:text-foreground ml-2"
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setEditingCommentId(comment.id); setEditContent(comment.content); }}
+                                    className="inline-flex items-center text-[10px] text-muted-foreground hover:text-foreground ml-2"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); if (confirm('Delete this comment?')) deleteMutation.mutate(comment.id); }}
+                                    className="inline-flex items-center text-[10px] text-destructive hover:opacity-80 ml-2"
+                                  >
+                                    Delete
+                                  </button>
+                                </>
+                              )}
+                            </>
+                          )}
                         </div>
                         <div>
                           {flaggedComments.includes(comment.id) ? (
