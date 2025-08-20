@@ -25,6 +25,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
+  SidebarInput,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -33,7 +34,6 @@ import {
   SidebarMenuSubItem,
   useSidebar
 } from "@/components/ui/sidebar"
-import { SearchBar } from "@/components/SearchBar"
 
 // Code Quality: Break up large components into smaller ones for maintainability.
 export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
@@ -259,8 +259,18 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           }}
         >
           <SidebarGroup className="space-y-0 -mt-4">
-            <SidebarHeader className="px-1 pb-1">
-              <SearchBar className="w-full" placeholder="Search stories..." />
+            <SidebarHeader className="px-2 pt-1 pb-2">
+              <SidebarInput
+                placeholder="Search stories..."
+                value={(() => { /* keep state local without re-renders elsewhere */ return (SidebarNavigation as any)._searchQuery || "" })()}
+                onChange={(e) => { (SidebarNavigation as any)._searchQuery = e.target.value; }}
+                onKeyDown={(e) => {
+                  const q = ((SidebarNavigation as any)._searchQuery || "").trim();
+                  if (e.key === 'Enter' && q) {
+                    setLocation(`/search?q=${encodeURIComponent(q)}`);
+                  }
+                }}
+              />
             </SidebarHeader>
             <SidebarGroupContent>
               <SidebarMenu className="space-y-0">
