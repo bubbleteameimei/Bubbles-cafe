@@ -85,13 +85,14 @@ function ReplyForm({ commentId, postId, onCancel }: ReplyFormProps) {
   const replyMutation = useMutation({
     mutationFn: async () => {
       await fetchCsrfTokenIfNeeded();
-      const response = await fetch(`/api/comments/${commentId}/replies`, applyCSRFToken({
+      const response = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           content: content.trim(),
-          author: name.trim()
+          author: name.trim(),
+          parentId: commentId
         })
       }));
 
