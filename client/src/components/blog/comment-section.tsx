@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -214,6 +214,19 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
   const [editContent, setEditContent] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Client-side moderation hints
+  const flaggedWords = useMemo(() => [
+    'spam','scam','hate','abuse','slur','idiot','dumb','stupid'
+  ], []);
+  const moderation = useMemo(() => {
+    const text = (content || '').toLowerCase();
+    const hits = flaggedWords.filter(w => text.includes(w));
+    return {
+      isFlagged: hits.length > 0,
+      hits
+    };
+  }, [content, flaggedWords]);
 
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
     queryKey: [`/api/posts/${postId}/comments`],
@@ -236,7 +249,9 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
         credentials: "include",
         body: JSON.stringify({
           content: content.trim(),
-          author: name.trim()
+          author: name.trim(),
+          needsModeration: moderation.isFlagged,
+          moderationStatus: moderation.isFlagged ? 'flagged' : 'none'
         })
       }));
 
@@ -251,11 +266,19 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
       setName("");
       setContent("");
-      toast({
-        title: "Comment Posted!",
-        description: "Thank you for sharing your thoughts!",
-        variant: "default"
-      });
+      if (moderation.isFlagged) {
+        toast({
+          title: "Comment under review",
+          description: "Your comment will be reviewed before it appears to everyone.",
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Comment Posted!",
+          description: "Thank you for sharing your thoughts!",
+          variant: "default"
+        });
+      }
     },
     onError: (error: Error) => {
       console.error('Comment posting error:', error);
@@ -432,6 +455,17 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
         <Card className="mb-10 p-5 shadow-sm bg-card/50 backdrop-blur-sm border-border/50">
           <form onSubmit={handleSubmit} className="space-y-4">
             <h4 className="text-base font-medium text-card-foreground mb-2">Join the conversation</h4>
+            {moderation.isFlagged && (
+              <div className="text-xs rounded-md p-2 bg-amber-100 text-amber-900 border border-amber-300">
+                Your comment contains language that may require moderation
+                {moderation.hits.length ? (
+                  <>
+                    : <span className="font-semibold"> {moderation.hits.join(', ')} </span>
+                  </>
+                ) : null}
+                . It may not appear immediately.
+              </div>
+            )}
             <Input
               placeholder="Your name"
               value={name}
@@ -492,6 +526,9 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
                         {formatTime(comment.createdAt)}
                       </p>
                     </div>
+                    {!comment.approved && (
+                      <Badge variant="secondary" className="ml-2 text-[10px]">Pending review</Badge>
+                    )}
                   </div>
                   
                   <Badge variant="outline" className="text-[10px] px-2 bg-background/50">
