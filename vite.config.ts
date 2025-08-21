@@ -22,6 +22,14 @@ export default defineConfig(({ mode }) => ({
 	},
 	server: {
 		allowedHosts: true,
+		// Proxy API requests to the mock server during client-only development
+		proxy: {
+			"/api": {
+				target: "http://localhost:4000",
+				changeOrigin: true,
+				ws: false,
+			},
+		},
 	},
 	root: path.resolve(__dirname, "client"),
 	build: {
