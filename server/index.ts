@@ -74,26 +74,22 @@ app.use(session({
 app.use(setCsrfToken(!isDev)); // Secure cookies in production
 app.use(csrfTokenToLocals);
 
-// Apply CSRF validation after routes that don't need it
+// Apply CSRF validation after routes that don't need it (restrict exemptions)
 app.use(validateCsrfToken({
   ignorePaths: [
-    '/health', 
+    '/health',
     '/api/health',
-    // Allow comments and related endpoints without CSRF to fix posting issues
-    '/api/comments',
-    '/api/posts',
-    '/api/auth/status', 
+    '/api/auth/status',
     '/api/auth/login',
     '/api/auth/register',
-    '/api/auth/forgot-password', // Allow password reset requests without CSRF protection
-    '/api/auth/reset-password', // Allow password reset without CSRF protection
-    '/api/auth/verify-reset-token', // Allow token verification without CSRF protection
-    '/api/analytics/vitals', // Performance metrics endpoint
-    '/api/analytics/performance', // Additional performance payload endpoint
-    '/api/wordpress/sync/status', // WordPress sync status check
-    '/api/reader/bookmarks', // Allow anonymous bookmarks without CSRF protection
-    '/api/errors', // Client error reporting should be CSRF-exempt
-    '/api/payments/webhook' // Paystack webhook must be CSRF-exempt
+    '/api/auth/forgot-password',
+    '/api/auth/reset-password',
+    '/api/auth/verify-reset-token',
+    '/api/analytics/vitals',
+    '/api/analytics/performance',
+    '/api/wordpress/sync/status',
+    '/api/errors',
+    '/api/payments/webhook'
   ]
 }));
 
@@ -125,7 +121,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
       fontSrc: ["'self'", "fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
       connectSrc: ["'self'", "https:"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],

@@ -1,11 +1,13 @@
 import { Router } from 'express';
+import { requireAuth, requireAdmin } from '../middlewares/auth';
+import { apiRateLimiter } from '../middlewares/rate-limiter';
 import { storage } from '../storage';
 import { z } from 'zod';
 
 const router = Router();
 
 // Get all reported content
-router.get('/reported-content', async (req, res) => {
+router.get('/reported-content', requireAuth, requireAdmin, apiRateLimiter, async (req, res) => {
   try {
     const reportedContent = await storage.getReportedContent();
     return res.json(reportedContent);
@@ -16,7 +18,7 @@ router.get('/reported-content', async (req, res) => {
 });
 
 // Update reported content status
-router.patch('/reported-content/:id', async (req, res) => {
+router.patch('/reported-content/:id', requireAuth, requireAdmin, apiRateLimiter, async (req, res) => {
   try {
     const schema = z.object({
       status: z.enum(['approved', 'rejected'])
@@ -40,7 +42,7 @@ router.patch('/reported-content/:id', async (req, res) => {
 });
 
 // Report new content
-router.post('/report', async (req, res) => {
+router.post('/report', apiRateLimiter, async (req, res) => {
   try {
     const schema = z.object({
       contentType: z.string(),
@@ -59,7 +61,7 @@ router.post('/report', async (req, res) => {
 });
 
 // Add reply to a comment
-router.post('/comments/:commentId/replies', async (req, res) => {
+router.post('/comments/:commentId/replies', requireAuth, apiRateLimiter, async (req, res) => {
   try {
     const schema = z.object({
       content: z.string().min(1, "Reply content is required"),
