@@ -41,6 +41,7 @@ interface Comment {
   approved: boolean;
   parentId: number | null;
   replies?: Comment[];
+  isOwner?: boolean;
 }
 
 interface CommentSectionProps {
@@ -208,6 +209,8 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
   const [name, setName] = useState("");
   const [content, setContent] = useState("");
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -263,13 +266,64 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
     }
   });
 
+  const editMutation = useMutation({
+    mutationFn: async ({ commentId, newContent }: { commentId: number; newContent: string }) => {
+      await fetchCsrfTokenIfNeeded();
+      const res = await fetch(`/api/comments/${commentId}`, applyCSRFToken({
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content: newContent.trim() })
+      }));
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(t || `Failed to update comment (HTTP ${res.status})`);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+      setEditingCommentId(null);
+      setEditContent("");
+      toast({ title: "Updated", description: "Comment updated successfully." });
+    },
+    onError: (e: Error) => {
+      toast({ title: "Update failed", description: e.message, variant: "destructive" });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (commentId: number) => {
+      await fetchCsrfTokenIfNeeded();
+      const res = await fetch(`/api/comments/${commentId}`, applyCSRFToken({
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include"
+      }));
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(t || `Failed to delete comment (HTTP ${res.status})`);
+      }
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+      toast({ title: "Deleted", description: "Comment deleted." });
+    },
+    onError: (e: Error) => {
+      toast({ title: "Delete failed", description: e.message, variant: "destructive" });
+    }
+  });
+
   const handleUpvote = async (commentId: number) => {
     try {
-      const response = await fetch(`/api/comments/${commentId}/vote`, {
+      await fetchCsrfTokenIfNeeded();
+      const response = await fetch(`/api/comments/${commentId}/vote`, applyCSRFToken({
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ isUpvote: true })
-      });
+      }));
       
       if (!response.ok) {
         throw new Error("Failed to upvote comment");
@@ -288,11 +342,13 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
   
   const handleDownvote = async (commentId: number) => {
     try {
-      const response = await fetch(`/api/comments/${commentId}/vote`, {
+      await fetchCsrfTokenIfNeeded();
+      const response = await fetch(`/api/comments/${commentId}/vote`, applyCSRFToken({
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ isUpvote: false })
-      });
+      }));
       
       if (!response.ok) {
         throw new Error("Failed to downvote comment");
@@ -444,9 +500,19 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
                 </div>
                 
                 <div className="px-4 py-3">
-                  <p className="text-sm text-card-foreground leading-relaxed">
-                    {comment.content}
-                  </p>
+                  {editingCommentId === comment.id ? (
+                    <div className="mb-2">
+                      <Textarea
+                        value={editContent}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditContent(e.target.value)}
+                        className="text-sm bg-background/80 min-h-[80px]"
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-sm text-card-foreground leading-relaxed">
+                      {comment.content}
+                    </p>
+                  )}
                   
                   <div className="mt-4 flex items-center justify-between">
                     <CommentReactionButtons 
@@ -464,6 +530,51 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
                       <Reply className="h-3.5 w-3.5" />
                       Reply
                     </Button>
+                    {comment.isOwner && (
+                      <div className="flex items-center gap-2">
+                        {editingCommentId === comment.id ? (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (!editContent.trim()) {
+                                  toast({ title: "Missing content", description: "Please enter some text.", variant: "destructive" });
+                                  return;
+                                }
+                                editMutation.mutate({ commentId: comment.id, newContent: editContent });
+                              }}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => { setEditingCommentId(null); setEditContent(""); }}
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => { setEditingCommentId(comment.id); setEditContent(comment.content); }}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => { if (confirm('Delete this comment?')) deleteMutation.mutate(comment.id); }}
+                            >
+                              Delete
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                   
                   {repliesByParentId[comment.id] && repliesByParentId[comment.id].length > 0 && (
