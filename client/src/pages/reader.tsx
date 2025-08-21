@@ -545,8 +545,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         const styleTag = document.createElement('style');
         styleTag.id = 'reader-dynamic-styles';
         
-        // Use the complete storyStyles instead of the simplified version
-        styleTag.textContent = storyStyles;
+        // Generate styles at runtime to avoid TDZ and ensure safe font fallback
+        styleTag.textContent = generateStoryContentStyles();
         
         document.head.appendChild(styleTag);
       } catch (error) {
