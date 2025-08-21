@@ -149,7 +149,10 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
           }
         })
       });
-      alert('Error report sent. Thank you!');
+      try {
+        const evt = new CustomEvent('show-toast', { detail: { title: 'Report sent', description: 'Thank you for your feedback.' } });
+        window.dispatchEvent(evt);
+      } catch {}
     } catch (err) {
       console.warn('Failed to send error report:', err);
     }
