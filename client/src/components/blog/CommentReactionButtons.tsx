@@ -7,6 +7,7 @@ import {
   Share2 
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 
 interface CommentReactionButtonsProps {
   comment: {
@@ -35,6 +36,7 @@ export default function CommentReactionButtons({
   showLabels = false,
   size = "default"
 }: CommentReactionButtonsProps) {
+  const { toast } = useToast();
   const [isUpvoted, setIsUpvoted] = useState(false);
   const [isDownvoted, setIsDownvoted] = useState(false);
   const [localUpvotes, setLocalUpvotes] = useState(
@@ -84,16 +86,28 @@ export default function CommentReactionButtons({
     onDownvote(comment.id);
   };
   
-  const handleReport = () => {
-    // This could open a modal or navigate to a report form
-    console.log("Report comment", comment.id);
-    alert("Thank you for flagging this comment. Our moderators will review it.");
+  const handleReport = async () => {
+    try {
+      const res = await fetch(`/api/comments/${comment.id}/flag`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ reason: 'inappropriate content' })
+      });
+      if (!res.ok) throw new Error('Failed to flag');
+      toast({ title: 'Reported', description: 'Thanks for the report. Our team will review it.' });
+    } catch {
+      toast({ title: 'Report failed', description: 'Please try again later.', variant: 'destructive' });
+    }
   };
   
-  const handleShare = () => {
-    // Implement share functionality - for now just copy to clipboard
-    navigator.clipboard.writeText(window.location.href + `#comment-${comment.id}`);
-    alert("Link to comment copied to clipboard!");
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href + `#comment-${comment.id}`);
+      toast({ title: 'Copied', description: 'Comment link copied to clipboard.' });
+    } catch {
+      toast({ title: 'Copy failed', description: 'Could not copy link.', variant: 'destructive' });
+    }
   };
   
   const buttonSize = size === "sm" ? "sm" : "default";
