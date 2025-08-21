@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/dialog";
 
 // Import comment section directly for now to avoid lazy loading issues
-const SimpleCommentSection = lazy(() => import("@/components/blog/SimpleCommentSection"));
+// const SimpleCommentSection = lazy(() => import("@/components/blog/SimpleCommentSection"));
 
 // WordPress API functions removed - using internal API instead
 
