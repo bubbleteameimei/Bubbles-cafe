@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { applyCSRFToken, fetchCsrfTokenIfNeeded } from "@/lib/csrf-token";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import CommentReactionButtons from "@/components/blog/CommentReactionButtons";
 
@@ -82,16 +83,16 @@ function ReplyForm({ commentId, postId, onCancel }: ReplyFormProps) {
 
   const replyMutation = useMutation({
     mutationFn: async () => {
-      console.log(`Posting reply to comment ${commentId} with content: "${content.trim()}" by "${name.trim()}"`);
-      
-      const response = await fetch(`/api/comments/${commentId}/replies`, {
+      await fetchCsrfTokenIfNeeded();
+      const response = await fetch(`/api/comments/${commentId}/replies`, applyCSRFToken({
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           content: content.trim(),
           author: name.trim()
         })
-      });
+      }));
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -224,14 +225,16 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/posts/${postId}/comments`, {
+      await fetchCsrfTokenIfNeeded();
+      const response = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           content: content.trim(),
           author: name.trim()
         })
-      });
+      }));
 
       if (!response.ok) {
         const errorData = await response.json();

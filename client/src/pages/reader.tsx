@@ -492,6 +492,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Create a function to generate the styles
   const generateStoryContentStyles = () => {
+    // Guard for missing DOM or fonts
+    if (typeof document === 'undefined') return '';
+    const fontInfo = availableFonts?.[fontFamily];
+    const safeFont = fontInfo?.family || 'system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
     // Use our fixed constants for better text readability
     const textColor = theme === 'dark' 
       ? `color: ${DARK_TEXT_COLOR};` 
@@ -500,7 +504,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     // Return the main styles with better text contrast for readability
     return `
   .story-content {
-    font-family: ${availableFonts[fontFamily].family};
+    font-family: ${safeFont};
     width: 100%;
     margin: 0 auto;
     padding: 0 0.5rem;
@@ -510,7 +514,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   .story-content p, .story-content .story-paragraph {
     line-height: 1.7;
     margin-bottom: 1.7em;
-    font-family: ${availableFonts[fontFamily].family};
+    font-family: ${safeFont};
   }
   @media (max-width: 768px) {
     .story-content p, .story-content .story-paragraph {
@@ -527,6 +531,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     const applyStyles = () => {
       try {
         console.log('[Reader] Injecting content styles with font family:', fontFamily);
+        if (typeof document === 'undefined') return;
+        const fontInfo = availableFonts?.[fontFamily];
+        if (!fontInfo?.family) return; // wait until fonts are ready
         
         // Remove any existing style tag first
         const existingTag = document.getElementById('reader-dynamic-styles');
