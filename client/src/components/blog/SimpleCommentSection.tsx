@@ -1,2 +1,1 @@
-import CommentSection from "./comment-section";
-export default CommentSection;
+export { default } from './comment-section';
