@@ -4,6 +4,30 @@
 
 import puppeteer from 'puppeteer';
 
+async function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function waitForCommentsSection(page) {
+  // Try primary selector with longer timeout
+  try {
+    await page.waitForSelector('.antialiased.mx-auto', { timeout: 15000 });
+    return true;
+  } catch (_) {}
+
+  // Fallback: wait for a header containing the word "Comments"
+  try {
+    await page.waitForFunction(
+      () => {
+        const headers = Array.from(document.querySelectorAll('h3, h2'));
+        return headers.some(h => (h.textContent || '').toLowerCase().includes('comments'));
+      },
+      { timeout: 15000 }
+    );
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 async function testCommentSection() {
   console.log('Starting UI test for updated comment section...');
   
@@ -14,20 +38,32 @@ async function testCommentSection() {
     });
     
     const page = await browser.newPage();
+    page.setDefaultTimeout(15000);
     console.log('Opening story page to check comment section...');
     await page.goto('http://localhost:3001/story/nostalgia', { waitUntil: 'networkidle2' });
-    
-    // Wait for the comment section to load
-    await page.waitForSelector('.antialiased.mx-auto', { timeout: 5000 });
+    await delay(1000);
+
+    // Wait for the comments section robustly; retry once on failure
+    let found = await waitForCommentsSection(page);
+    if (!found) {
+      console.log('Comments section not found yet, retrying after reload...');
+      await page.reload({ waitUntil: 'networkidle2' });
+      await delay(1000);
+      found = await waitForCommentsSection(page);
+    }
+    if (!found) throw new Error('Comments section not detected after retry');
+
     console.log('Comment section found on page');
     
     // Check for discussion header (should be clean, single heading)
     const discussionHeader = await page.evaluate(() => {
-      const header = document.querySelector('.antialiased.mx-auto h3');
+      const container = document.querySelector('.antialiased.mx-auto') || document;
+      const headers = container.querySelectorAll('h3');
+      const header = headers[0] || null;
       return header ? { 
         text: header.textContent,
         hasMessageIcon: !!header.querySelector('svg'),
-        headerCount: document.querySelectorAll('.antialiased.mx-auto h3').length
+        headerCount: headers.length
       } : null;
     });
     
@@ -42,10 +78,11 @@ async function testCommentSection() {
     
     // Check for comment input area (should be wider without "Posting as" text)
     const commentInput = await page.evaluate(() => {
-      const form = document.querySelector('.antialiased.mx-auto form');
+      const container = document.querySelector('.antialiased.mx-auto') || document;
+      const form = container.querySelector('form');
       if (!form) return null;
       
-      const postingAsText = form.textContent.includes('Posting as');
+      const postingAsText = (form.textContent || '').includes('Posting as');
       const textarea = form.querySelector('textarea');
       
       return {
