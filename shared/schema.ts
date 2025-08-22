@@ -534,7 +534,8 @@ export const insertCommentReplySchema = createInsertSchema(commentReplies)
       moderated: z.boolean().default(false),
       originalContent: z.string(),
       upvotes: z.number().default(0),
-      downvotes: z.number().default(0)
+      downvotes: z.number().default(0),
+      ownerKey: z.string().optional()
     })
   });
 
