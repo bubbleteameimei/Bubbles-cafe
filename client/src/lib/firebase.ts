@@ -2,7 +2,6 @@ import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
   GoogleAuthProvider, 
-  OAuthProvider,
   signInWithPopup, 
   signOut,
   User,
@@ -59,7 +58,19 @@ export { app, auth };
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-// Apple auth removed
+/**
+ * Sign in with Google using Firebase Authentication
+ * @returns User data from Google authentication
+ */
+export const signInWithGoogle = async () => {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
+  } catch (error) {
+    console.error('Error signing in with Google:', error);
+    throw error;
+  }
+};
 
 /**
  * Sign out the currently authenticated user
