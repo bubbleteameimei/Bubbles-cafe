@@ -103,6 +103,18 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
     } catch {}
   }, [postId]);
 
+  // CSRF-aware fetch with single retry on 401/403
+  async function csrfFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+    await fetchCsrfTokenIfNeeded().catch(() => {});
+    const attempt = async () => fetch(input, applyCSRFToken({ ...init, credentials: 'include' }));
+    let res = await attempt();
+    if (res.status === 401 || res.status === 403) {
+      await fetchCsrfTokenIfNeeded().catch(() => {});
+      res = await attempt();
+    }
+    return res;
+  }
+
   const { data: comments = [], isLoading, error } = useQuery<Comment[]>({
     queryKey: [`/api/posts/${postId}/comments`],
     queryFn: async () => {
@@ -133,6 +145,44 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
     return map;
   }, [comments]);
 
+  // Render nested replies up to a reasonable depth (preserve current look)
+  const renderNestedReplies = (parentId: number, depth: number): JSX.Element | null => {
+    const children = repliesByParentId[parentId];
+    if (!children || children.length === 0 || depth > 3) return null;
+    return (
+      <div className="mt-3 space-y-4 pl-4 border-l-2 border-muted/30">
+        {children.map((reply) => (
+          <div key={reply.id} className="relative">
+            <div className="absolute -left-[25px] top-2 h-2 w-2 rounded-full bg-primary/60"></div>
+            <div className="flex gap-3">
+              <Avatar className="h-6 w-6 flex-shrink-0">
+                <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                  {(reply.metadata.author || "A")[0].toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 bg-muted/10 rounded-lg p-3 border border-border/30">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                  <strong className="text-xs sm:text-sm font-medium">{reply.metadata.author || "Anonymous"}</strong>
+                  <span className="text-[10px] text-muted-foreground">{formatTime(reply.createdAt)}</span>
+                </div>
+                <p className="text-xs sm:text-sm text-card-foreground mt-2 leading-relaxed whitespace-pre-line">{reply.content}</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => vote(reply.id, true)}>
+                    +{reply.metadata?.votes?.upvotes ?? reply.metadata?.upvotes ?? 0}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => vote(reply.id, false)}>
+                    -{reply.metadata?.votes?.downvotes ?? reply.metadata?.downvotes ?? 0}
+                  </Button>
+                </div>
+                {renderNestedReplies(reply.id, depth + 1)}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const sortedRootComments = useMemo(() => {
     const list = [...rootComments];
     if (sortOrder === "active") {
@@ -148,17 +198,16 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
       const author = isAuthenticated && user ? user.username : "Anonymous";
       await fetchCsrfTokenIfNeeded();
       const { isFlagged, isUnderReview } = checkModeration(content);
-      const res = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
+      const res = await csrfFetch(`/api/posts/${postId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           content: content.trim(),
           author,
           needsModeration: isFlagged || isUnderReview,
           moderationStatus: isFlagged ? "flagged" : isUnderReview ? "under_review" : "none"
         })
-      }));
+      });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
@@ -194,12 +243,11 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
     mutationFn: async ({ parentId, reply }: { parentId: number; reply: string }) => {
       await fetchCsrfTokenIfNeeded();
       const author = isAuthenticated && user ? user.username : "Anonymous";
-      const res = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
+      const res = await csrfFetch(`/api/posts/${postId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ content: reply.trim(), author, parentId })
-      }));
+      });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
@@ -209,12 +257,11 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
   const editMutation = useMutation({
     mutationFn: async ({ commentId, newContent }: { commentId: number; newContent: string }) => {
       await fetchCsrfTokenIfNeeded();
-      const res = await fetch(`/api/comments/${commentId}`, applyCSRFToken({
+      const res = await csrfFetch(`/api/comments/${commentId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ content: newContent.trim() })
-      }));
+      });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
@@ -229,7 +276,10 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
   const deleteMutation = useMutation({
     mutationFn: async (commentId: number) => {
       await fetchCsrfTokenIfNeeded();
-      const res = await fetch(`/api/comments/${commentId}`, applyCSRFToken({ method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include" }));
+      const res = await csrfFetch(`/api/comments/${commentId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" }
+      });
       if (!res.ok) throw new Error(await res.text());
       return true;
     },
@@ -242,12 +292,11 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
   const vote = async (commentId: number, isUpvote: boolean) => {
     try {
       await fetchCsrfTokenIfNeeded();
-      const res = await fetch(`/api/comments/${commentId}/vote`, applyCSRFToken({
+      const res = await csrfFetch(`/api/comments/${commentId}/vote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ isUpvote })
-      }));
+      });
       if (!res.ok) throw new Error("Vote failed");
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
     } catch (e) {
@@ -258,12 +307,11 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
   const flagMutation = useMutation({
     mutationFn: async ({ commentId, reason }: { commentId: number; reason?: string }) => {
       await fetchCsrfTokenIfNeeded();
-      const res = await fetch(`/api/comments/${commentId}/flag`, applyCSRFToken({
+      const res = await csrfFetch(`/api/comments/${commentId}/flag`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ reason: reason || "inappropriate content" })
-      }));
+      });
       if (!res.ok) throw new Error(await res.text());
       return true;
     },
@@ -350,6 +398,14 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
                 onChange={(e) => setContent(e.target.value)}
                 className="min-h-[90px] bg-background/80"
               />
+              {/* Moderation hint below the textarea (keeps current look minimal) */}
+              <div className="mt-1 flex items-center gap-2">
+                {checkModeration(content).isFlagged ? (
+                  <Badge variant="destructive" className="text-[10px]">Contains flagged words; may be held for review</Badge>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Be respectful. Comments may be held for review.</span>
+                )}
+              </div>
               <div className="mt-2 flex items-center justify-end">
                 <Button
                   onClick={() => createMutation.mutate()}
@@ -569,6 +625,7 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
                                       -{reply.metadata?.votes?.downvotes ?? reply.metadata?.downvotes ?? 0}
                                     </Button>
                                   </div>
+                                  {renderNestedReplies(reply.id, 1)}
                                 </div>
                               </div>
                             </div>
