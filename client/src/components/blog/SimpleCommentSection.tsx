@@ -79,6 +79,9 @@ function formatTime(dateStr: string | Date): string {
 
 export default function SimpleCommentSection({ postId }: SimpleCommentSectionProps) {
   const { user, isAuthenticated } = useAuth();
+  const getBearer = () => {
+    try { return localStorage.getItem('auth_token') || null; } catch { return null; }
+  };
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -205,9 +208,10 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
       const author = name?.trim().length ? name.trim() : (isAuthenticated && user ? user.username : "Anonymous");
       await fetchCsrfTokenIfNeeded();
       const { isFlagged, isUnderReview } = checkModeration(content);
+      const token = getBearer();
       const res = await csrfFetch(`/api/posts/${postId}/comments`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({
           content: content.trim(),
           author,
@@ -250,9 +254,10 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
     mutationFn: async ({ parentId, reply }: { parentId: number; reply: string }) => {
       await fetchCsrfTokenIfNeeded();
       const author = name?.trim().length ? name.trim() : (isAuthenticated && user ? user.username : "Anonymous");
+      const token = getBearer();
       const res = await csrfFetch(`/api/posts/${postId}/comments`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ content: reply.trim(), author, parentId })
       });
       if (!res.ok) throw new Error(await res.text());
@@ -264,9 +269,10 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
   const editMutation = useMutation({
     mutationFn: async ({ commentId, newContent }: { commentId: number; newContent: string }) => {
       await fetchCsrfTokenIfNeeded();
+      const token = getBearer();
       const res = await csrfFetch(`/api/comments/${commentId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ content: newContent.trim() })
       });
       if (!res.ok) throw new Error(await res.text());
@@ -283,9 +289,10 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
   const deleteMutation = useMutation({
     mutationFn: async (commentId: number) => {
       await fetchCsrfTokenIfNeeded();
+      const token = getBearer();
       const res = await csrfFetch(`/api/comments/${commentId}`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) }
       });
       if (!res.ok) throw new Error(await res.text());
       return true;
@@ -299,9 +306,10 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
   const vote = async (commentId: number, isUpvote: boolean) => {
     try {
       await fetchCsrfTokenIfNeeded();
+      const token = getBearer();
       const res = await csrfFetch(`/api/comments/${commentId}/vote`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ isUpvote })
       });
       if (!res.ok) throw new Error("Vote failed");
@@ -314,9 +322,10 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
   const flagMutation = useMutation({
     mutationFn: async ({ commentId, reason }: { commentId: number; reason?: string }) => {
       await fetchCsrfTokenIfNeeded();
+      const token = getBearer();
       const res = await csrfFetch(`/api/comments/${commentId}/flag`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ reason: reason || "inappropriate content" })
       });
       if (!res.ok) throw new Error(await res.text());

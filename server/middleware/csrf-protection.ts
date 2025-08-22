@@ -100,6 +100,12 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
       return next();
     }
 
+    // Alternative to CSRF: if Authorization Bearer token is present, skip CSRF validation
+    const authHeader = req.headers['authorization'] || req.headers['Authorization' as any];
+    if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      return next();
+    }
+
     // Skip validation for ignored paths
     // Get the path without the leading '/api' prefix since our routes are mounted at '/api'
     const apiPath = req.path;
