@@ -34,6 +34,7 @@ import ScrollEffectsProvider from './components/ScrollEffectsProvider';
 // Import our performance monitoring component
 // Performance monitor overlay removed
 import StoryProgressBar from './components/StoryProgressBar';
+import SEO from '@/components/SEO';
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
 // Removed unused imports: FullscreenButton, SearchBar
@@ -151,6 +152,9 @@ const AppContent = () => {
   const [location] = useLocation();
   const locationStr = location.toString();
 
+  // Basic SEO: set canonical and defaults site-wide
+  const canonical = locationStr || '/';
+
   // Check if current route is an error page
   const isErrorPage = 
     locationStr.includes('/errors/403') || 
@@ -189,128 +193,109 @@ const AppContent = () => {
       </ErrorBoundary>
     );
   }
-  
-  // For all other pages, render with normal layout
-  return (
-    <div className="relative min-h-screen flex flex-col w-full">
-      {/* Desktop Sidebar - optimized for larger screens - Now hidden */}
-      <aside className="hidden">
-        <div className="h-full w-full">
-          <div className="h-[56px] md:h-[64px] lg:h-[72px] px-4 md:px-6 flex items-center border-b border-border bg-background">
-            {/* Title removed as requested */}
-          </div>
-          <SidebarNavigation onNavigate={() => {}} />
-        </div>
-      </aside>
 
-      {/* Main Content */}
-      <main id="main" className={`min-h-screen flex-1 flex flex-col w-full min-w-full max-w-[100vw] ${location === '/' ? '' : 'bg-background'}`}
-             style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', overflow: 'hidden' }}>
-        <AutoHideNavbar />
-        {(location.startsWith('/reader') || location.startsWith('/community-story')) && (
-          <div className="w-full z-30">
-            <StoryProgressBar height={3} showPercentage={false} />
-          </div>
-        )}
-        <div className={`w-full min-w-full max-w-full 
-                        lg:pt-6 
-                        flex-1 
-                        ${location === '/' ? '' : 'bg-background'} 
-                        m-0 p-0 px-0 mx-0`}
-             style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: 'var(--navbar-height, 56px)' }}>
-          <Switch>
-            {/* Main Pages */}
-            <Route path="/" component={HomePage} />
-            <Route path="/stories" component={StoriesPage} />
-            <Route path="/reader" component={ReaderPage} />
-            <Route path="/about" component={AboutPage} />
-            <Route path="/contact" component={ContactPage} />
-            <Route path="/privacy" component={PrivacyPage} />
-            <Route path="/report-bug" component={ReportBugPage} />
-            
-            {/* Authentication */}
-            <Route path="/auth" component={AuthPage} />
-            <Route path="/auth-success" component={AuthSuccessPage} />
-            <Route path="/reset-password" component={ResetPasswordPage} />
-            
-            {/* User Pages */}
-            <Route path="/profile" component={ProfilePage} />
-            <Route path="/bookmarks" component={BookmarksPage} />
-            <Route path="/notifications" component={NotificationsPage} />
-            <Route path="/recommendations" component={RecommendationsPage} />
-            
-            {/* Settings Pages */}
-            <Route path="/settings/profile" component={ProfileSettingsPage} />
-            <Route path="/settings/connected-accounts" component={ConnectedAccountsPage} />
-            <Route path="/settings/fonts" component={FontSettingsPage} />
-            <Route path="/settings/accessibility" component={AccessibilitySettingsPage} />
-            <Route path="/settings/notifications" component={NotificationSettingsPage} />
-            <Route path="/settings/privacy" component={PrivacySettingsPage} />
-            <Route path="/settings/cookie-management" component={CookieManagementPage} />
-            <Route path="/settings/quick-settings" component={QuickSettingsPage} />
-            <Route path="/settings/preview" component={PreviewSettingsPage} />
-            
-            {/* Community Pages */}
-            <Route path="/community" component={CommunityPage} />
-            <Route path="/submit-story" component={SubmitStoryPage} />
-            <Route path="/edit-story" component={EditStoryPage} />
-            <Route path="/feedback" component={FeedbackPage} />
-            <Route path="/user/feedback-dashboard" component={UserFeedbackDashboardPage} />
-            <Route path="/support/guidelines" component={GuidelinesPage} />
-            
-            {/* Legal Pages */}
-            <Route path="/legal/copyright" component={CopyrightPage} />
-            <Route path="/legal/terms" component={TermsPage} />
-            <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
-            
-            {/* Admin Pages */}
-            <Route path="/admin" component={AdminPage} />
-            <Route path="/admin/dashboard" component={AdminDashboardPage} />
-            <Route path="/admin/analytics" component={AdminAnalyticsPage} />
-            <Route path="/admin/analytics-dashboard" component={AdminAnalyticsDashboardPage} />
-            <Route path="/admin/users" component={AdminUsersPage} />
-            <Route path="/admin/settings" component={AdminSettingsPage} />
-            <Route path="/admin/posts" component={AdminPostsPage} />
-            <Route path="/admin/manage-posts" component={AdminManagePostsPage} />
-            <Route path="/admin/content" component={AdminContentPage} />
-            <Route path="/admin/content-management" component={AdminContentManagementPage} />
-            <Route path="/admin/content-moderation" component={AdminContentModerationPage} />
-            <Route path="/admin/feedback" component={AdminFeedbackPage} />
-            <Route path="/admin/feedback-management" component={AdminFeedbackManagementPage} />
-            <Route path="/admin/feedback-review" component={AdminFeedbackReviewPage} />
-            <Route path="/admin/bug-reports" component={AdminBugReportsPage} />
-            <Route path="/admin/site-statistics" component={AdminSiteStatisticsPage} />
-            <Route path="/admin/wordpress-sync" component={AdminWordPressSyncPage} />
-            <Route path="/admin/themes" component={AdminThemesPage} />
-            
-            {/* Dynamic Routes */}
-            <Route path="/search" component={SearchResultsPage} />
-            <Route path="/community-story/:slug">
-              {(params) => <ReaderPage params={params} isCommunityContent={true} />}
-            </Route>
-            <Route path="/reader/:slug">
-              {(params) => <ReaderPage params={params} isCommunityContent={false} />}
-            </Route>
-            <Route path="/story/:slug">
-              {(params) => <ReaderPage params={params} isCommunityContent={false} />}
-            </Route>
-            
-            {/* Error Pages */}
-            <Route path="/errors/403" component={Error403Page} />
-            <Route path="/errors/404" component={Error404Page} />
-            <Route path="/errors/429" component={Error429Page} />
-            <Route path="/errors/500" component={Error500Page} />
-            <Route path="/errors/503" component={Error503Page} />
-            <Route path="/errors/504" component={Error504Page} />
-            
-            {/* Catch All */}
-            <Route path="*" component={Error404Page} />
-          </Switch>
-        </div>
-        {/* Add Footer */}
-        <Footer />
-      </main>
-    </div>
+  return (
+    <ErrorBoundary>
+      {/* Global SEO defaults; pages can override with their own SEO if desired */}
+      <SEO title={undefined} canonical={canonical} />
+      {/* Skip to content: hidden until focused, not intrusive */}
+      <a href="#main-content" className="skip-link">Skip to content</a>
+      <div
+        className={`min-h-screen w-full min-w-full max-w-full overflow-x-hidden bg-background text-foreground 
+          m-0 p-0 px-0 mx-0`}
+         style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: 'var(--navbar-height, 56px)' }}>
+        <Switch>
+          {/* Main Pages */}
+          <Route path="/" component={HomePage} />
+          <Route path="/stories" component={StoriesPage} />
+          <Route path="/reader" component={ReaderPage} />
+          <Route path="/about" component={AboutPage} />
+          <Route path="/contact" component={ContactPage} />
+          <Route path="/privacy" component={PrivacyPage} />
+          <Route path="/report-bug" component={ReportBugPage} />
+          
+          {/* Authentication */}
+          <Route path="/auth" component={AuthPage} />
+          <Route path="/auth-success" component={AuthSuccessPage} />
+          <Route path="/reset-password" component={ResetPasswordPage} />
+          
+          {/* User Pages */}
+          <Route path="/profile" component={ProfilePage} />
+          <Route path="/bookmarks" component={BookmarksPage} />
+          <Route path="/notifications" component={NotificationsPage} />
+          <Route path="/recommendations" component={RecommendationsPage} />
+          
+          {/* Settings Pages */}
+          <Route path="/settings/profile" component={ProfileSettingsPage} />
+          <Route path="/settings/connected-accounts" component={ConnectedAccountsPage} />
+          <Route path="/settings/fonts" component={FontSettingsPage} />
+          <Route path="/settings/accessibility" component={AccessibilitySettingsPage} />
+          <Route path="/settings/notifications" component={NotificationSettingsPage} />
+          <Route path="/settings/privacy" component={PrivacySettingsPage} />
+          <Route path="/settings/cookie-management" component={CookieManagementPage} />
+          <Route path="/settings/quick-settings" component={QuickSettingsPage} />
+          <Route path="/settings/preview" component={PreviewSettingsPage} />
+          
+          {/* Community Pages */}
+          <Route path="/community" component={CommunityPage} />
+          <Route path="/submit-story" component={SubmitStoryPage} />
+          <Route path="/edit-story" component={EditStoryPage} />
+          <Route path="/feedback" component={FeedbackPage} />
+          <Route path="/user/feedback-dashboard" component={UserFeedbackDashboardPage} />
+          <Route path="/support/guidelines" component={GuidelinesPage} />
+          
+          {/* Legal Pages */}
+          <Route path="/legal/copyright" component={CopyrightPage} />
+          <Route path="/legal/terms" component={TermsPage} />
+          <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
+          
+          {/* Admin Pages */}
+          <Route path="/admin" component={AdminPage} />
+          <Route path="/admin/dashboard" component={AdminDashboardPage} />
+          <Route path="/admin/analytics" component={AdminAnalyticsPage} />
+          <Route path="/admin/analytics-dashboard" component={AdminAnalyticsDashboardPage} />
+          <Route path="/admin/users" component={AdminUsersPage} />
+          <Route path="/admin/settings" component={AdminSettingsPage} />
+          <Route path="/admin/posts" component={AdminPostsPage} />
+          <Route path="/admin/manage-posts" component={AdminManagePostsPage} />
+          <Route path="/admin/content" component={AdminContentPage} />
+          <Route path="/admin/content-management" component={AdminContentManagementPage} />
+          <Route path="/admin/content-moderation" component={AdminContentModerationPage} />
+          <Route path="/admin/feedback" component={AdminFeedbackPage} />
+          <Route path="/admin/feedback-management" component={AdminFeedbackManagementPage} />
+          <Route path="/admin/feedback-review" component={AdminFeedbackReviewPage} />
+          <Route path="/admin/bug-reports" component={AdminBugReportsPage} />
+          <Route path="/admin/site-statistics" component={AdminSiteStatisticsPage} />
+          <Route path="/admin/wordpress-sync" component={AdminWordPressSyncPage} />
+          <Route path="/admin/themes" component={AdminThemesPage} />
+          
+          {/* Dynamic Routes */}
+          <Route path="/search" component={SearchResultsPage} />
+          <Route path="/community-story/:slug">
+            {(params) => <ReaderPage params={params} isCommunityContent={true} />}
+          </Route>
+          <Route path="/reader/:slug">
+            {(params) => <ReaderPage params={params} isCommunityContent={false} />}
+          </Route>
+          <Route path="/story/:slug">
+            {(params) => <ReaderPage params={params} isCommunityContent={false} />}
+          </Route>
+          
+          {/* Error Pages */}
+          <Route path="/errors/403" component={Error403Page} />
+          <Route path="/errors/404" component={Error404Page} />
+          <Route path="/errors/429" component={Error429Page} />
+          <Route path="/errors/500" component={Error500Page} />
+          <Route path="/errors/503" component={Error503Page} />
+          <Route path="/errors/504" component={Error504Page} />
+          
+          {/* Catch All */}
+          <Route path="*" component={Error404Page} />
+        </Switch>
+        {/* Anchor target for skip link */}
+        <div id="main-content" />
+      </div>
+    </ErrorBoundary>
   );
 };
 

@@ -29,6 +29,29 @@ body {
   border: 0;
 }
 
+/* Accessible skip link - hidden until focused */
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.skip-link:focus {
+  position: fixed;
+  left: 16px;
+  top: 12px;
+  width: auto;
+  height: auto;
+  padding: 8px 12px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  z-index: 10000;
+}
+
 /* Background animation for subtle zoom effect */
 @keyframes subtleZoom {
   0% {
