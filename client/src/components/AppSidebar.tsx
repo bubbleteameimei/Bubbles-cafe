@@ -73,10 +73,10 @@ export function AppSidebar() {
 
   return (
     <Sidebar
-      collapsible={isMobile ? "offcanvas" : "icon"}
+      collapsible={deviceType === 'mobile' ? "offcanvas" : deviceType === 'tablet' ? "offcanvas" : "icon"}
       className={`flex flex-col h-screen bg-[hsl(var(--sidebar-background))] text-[hsl(var(--sidebar-foreground))]
                 dark:bg-[hsl(var(--background))] dark:border-r dark:border-gray-800
-                transition-all duration-300 ease-in-out ${!open && !isMobile ? 'sidebar-collapsed' : ''}`}
+                transition-all duration-300 ease-in-out ${!open && deviceType !== 'mobile' && deviceType !== 'tablet' ? 'sidebar-collapsed' : ''}`}
     >
       <SidebarContent>
         {/* Enhanced fixed header with conditional shadow on scroll */}
@@ -90,7 +90,7 @@ export function AppSidebar() {
           <h2 className="text-lg lg:text-xl xl:text-2xl font-semibold text-[hsl(var(--sidebar-foreground))]">
             Stories
           </h2>
-          {isMobile && (
+          {(deviceType === 'mobile' || deviceType === 'tablet') && (
             <Button
               variant="ghost"
               size="icon"
@@ -112,8 +112,8 @@ export function AppSidebar() {
           </div>
         </div>
         
-        {/* Mobile menu trigger button - visible when sidebar is closed on mobile */}
-        {isMobile && !openMobile && (
+        {/* Mobile/Tablet menu trigger button - visible when sidebar is closed on mobile/tablet */}
+        {(deviceType === 'mobile' || deviceType === 'tablet') && !openMobile && (
           <Button
             variant="secondary"
             size="icon"
