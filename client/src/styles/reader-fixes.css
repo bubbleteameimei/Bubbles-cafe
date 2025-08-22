@@ -13,7 +13,19 @@
 
 /* Reader page layout fixes */
 .reader-page {
-  padding-top: calc(var(--navbar-height, 56px) + 4rem);
+  padding-top: var(--navbar-height, 56px);
+}
+
+/* Reader controls styling */
+.reader-controls {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dark .reader-controls {
+  background: rgba(0, 0, 0, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Story content styling */
