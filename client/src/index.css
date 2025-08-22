@@ -81,17 +81,17 @@ body {
     background-color: hsl(var(--muted)) !important;
     opacity: 0.3 !important;
   }
-  
+
   /* Prevent black box flash during page transitions */
   * {
     transition: background-color 0.1s ease;
   }
-  
+
   /* Ensure smooth loading transitions */
   .loading-active {
     background-color: hsl(var(--background)) !important;
   }
-  
+
   html, body, #root {
     margin: 0;
     padding: 0;
@@ -112,17 +112,17 @@ body {
     -webkit-overflow-scrolling: touch;
     /* Removed scroll-behavior: smooth to prevent unwanted auto-scrolling */
   }
-  
+
   /* Fix for bottom page scrolling issues */
   body {
     overscroll-behavior-y: auto !important;
     touch-action: pan-y !important;
   }
-  
+
   img {
     @apply max-w-full h-auto;
   }
-  
+
   /* Container fixes for width issues */
   .app-container, .layout-container, .main-container, .content-container, main, 
   [class*="container"], [class*="layout"], [class*="wrapper"] {
@@ -130,12 +130,12 @@ body {
     max-width: 100%;
     box-sizing: border-box;
   }
-  
+
   /* Ensure footer stays at bottom properly with flex */
   main, .main-content {
     flex: 1 0 auto; /* Take available space, don't shrink */
   }
-  
+
   /* Fix for transparent backgrounds in form elements */
   input, textarea, select, .input-field, .textarea-field, .select-field, [type="text"], [type="email"], [type="password"], [type="search"], 
   .form-control, .form-input, .search-input, [class*="input"], [class*="field"], [class*="form-control"] {
@@ -175,14 +175,52 @@ body {
   ::-webkit-scrollbar {
     width: 8px;
   }
-  
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   ::-webkit-scrollbar-thumb {
     background-color: rgba(125, 125, 125, 0.3);
     border-radius: 20px;
+  }
+
+  /* Optimize for touch interactions */
+  @media (hover: none) and (pointer: coarse) {
+    button, 
+    a[role="button"],
+    .interactive-element,
+    .touch-target {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      min-height: 44px; /* Apple's recommended minimum touch target size */
+      min-width: 44px;
+    }
+  }
+
+  /* Specific optimizations for landscape mode */
+  @media (orientation: landscape) and (hover: none) and (pointer: coarse) {
+    /* Ensure sidebar trigger button is always accessible in landscape */
+    .fixed.bottom-6.left-6 {
+      touch-action: manipulation !important;
+      pointer-events: auto !important;
+      z-index: 9999 !important;
+    }
+
+    /* Prevent touch interference with buttons */
+    button {
+      touch-action: manipulation !important;
+      -webkit-touch-callout: none !important;
+      -webkit-user-select: none !important;
+      user-select: none !important;
+    }
+
+    /* Ensure menu buttons work in landscape */
+    [data-sidebar] button {
+      touch-action: manipulation !important;
+      min-height: 48px !important;
+      min-width: 48px !important;
+    }
   }
 }
 
