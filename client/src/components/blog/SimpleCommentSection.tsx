@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import CommentReactionButtons from "@/components/blog/CommentReactionButtons";
 import { useToast } from "@/hooks/use-toast";
 import { applyCSRFToken, fetchCsrfTokenIfNeeded } from "@/lib/csrf-token";
 import { Badge } from "@/components/ui/badge";
@@ -81,6 +83,7 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
   const queryClient = useQueryClient();
 
   const [content, setContent] = useState("");
+  const [name, setName] = useState<string>("");
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState<string>("");
@@ -199,7 +202,7 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const author = isAuthenticated && user ? user.username : "Anonymous";
+      const author = name?.trim().length ? name.trim() : (isAuthenticated && user ? user.username : "Anonymous");
       await fetchCsrfTokenIfNeeded();
       const { isFlagged, isUnderReview } = checkModeration(content);
       const res = await csrfFetch(`/api/posts/${postId}/comments`, {
@@ -228,7 +231,7 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
         is_approved: true,
         edited: false,
         editedAt: null,
-        metadata: { author: isAuthenticated && user ? user.username : "Anonymous", upvotes: 0, downvotes: 0, replyCount: 0, moderated: false, originalContent: content, isAnonymous: !isAuthenticated, ownerKey: "optimistic" }
+        metadata: { author: name?.trim().length ? name.trim() : (isAuthenticated && user ? user.username : "Anonymous"), upvotes: 0, downvotes: 0, replyCount: 0, moderated: false, originalContent: content, isAnonymous: !isAuthenticated, ownerKey: "optimistic" }
       } as unknown as Comment;
       queryClient.setQueryData<Comment[]>([`/api/posts/${postId}/comments`], [optimistic, ...previous]);
       return { previous } as { previous: Comment[] };
@@ -246,7 +249,7 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
   const replyMutation = useMutation({
     mutationFn: async ({ parentId, reply }: { parentId: number; reply: string }) => {
       await fetchCsrfTokenIfNeeded();
-      const author = isAuthenticated && user ? user.username : "Anonymous";
+      const author = name?.trim().length ? name.trim() : (isAuthenticated && user ? user.username : "Anonymous");
       const res = await csrfFetch(`/api/posts/${postId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -396,6 +399,13 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
+              <Input
+                placeholder="Your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={50}
+                className="mb-2 bg-background/80"
+              />
               <Textarea
                 placeholder="Share your thoughts..."
                 value={content}
@@ -537,12 +547,14 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
 
                     <div className="mt-3 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => vote(comment.id, true)}>
-                          +{comment.metadata?.votes?.upvotes ?? comment.metadata?.upvotes ?? 0}
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => vote(comment.id, false)}>
-                          -{comment.metadata?.votes?.downvotes ?? comment.metadata?.downvotes ?? 0}
-                        </Button>
+                        <CommentReactionButtons
+                          comment={{
+                            id: comment.id,
+                            metadata: { votes: { upvotes: comment.metadata?.votes?.upvotes ?? comment.metadata?.upvotes ?? 0, downvotes: comment.metadata?.votes?.downvotes ?? comment.metadata?.downvotes ?? 0 } }
+                          }}
+                          onUpvote={(id) => vote(id, true)}
+                          onDownvote={(id) => vote(id, false)}
+                        />
                         <Separator orientation="vertical" className="h-4" />
                         <Button variant="ghost" size="sm" className="gap-1 text-sm hover:bg-primary/5" onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}>
                           <Reply className="h-3.5 w-3.5" /> Reply
@@ -645,12 +657,12 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
                                   </div>
                                   <p className="text-xs sm:text-sm text-card-foreground mt-2 leading-relaxed whitespace-pre-line">{reply.content}</p>
                                   <div className="mt-2 flex items-center gap-2">
-                                    <Button variant="ghost" size="sm" onClick={() => vote(reply.id, true)}>
-                                      +{reply.metadata?.votes?.upvotes ?? reply.metadata?.upvotes ?? 0}
-                                    </Button>
-                                    <Button variant="ghost" size="sm" onClick={() => vote(reply.id, false)}>
-                                      -{reply.metadata?.votes?.downvotes ?? reply.metadata?.downvotes ?? 0}
-                                    </Button>
+                                    <CommentReactionButtons
+                                      comment={{ id: reply.id, metadata: { votes: { upvotes: reply.metadata?.votes?.upvotes ?? reply.metadata?.upvotes ?? 0, downvotes: reply.metadata?.votes?.downvotes ?? reply.metadata?.downvotes ?? 0 } } }}
+                                      onUpvote={(id) => vote(id, true)}
+                                      onDownvote={(id) => vote(id, false)}
+                                      size="sm"
+                                    />
                                   </div>
                                   {renderNestedReplies(reply.id, 1)}
                                 </div>
