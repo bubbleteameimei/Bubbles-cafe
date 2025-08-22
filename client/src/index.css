@@ -198,28 +198,63 @@ body {
     }
   }
 
-  /* Specific optimizations for landscape mode */
-  @media (orientation: landscape) and (hover: none) and (pointer: coarse) {
-    /* Ensure sidebar trigger button is always accessible in landscape */
-    .fixed.bottom-6.left-6 {
-      touch-action: manipulation !important;
-      pointer-events: auto !important;
-      z-index: 9999 !important;
-    }
-
-    /* Prevent touch interference with buttons */
-    button {
+  /* Specific optimizations for landscape mode and all touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    /* Ensure all buttons are accessible on touch devices */
+    button, 
+    a[role="button"],
+    .interactive-element,
+    .touch-target,
+    [data-sidebar] button,
+    nav button,
+    .sidebar-menu-button,
+    .notification-button {
       touch-action: manipulation !important;
       -webkit-touch-callout: none !important;
       -webkit-user-select: none !important;
       user-select: none !important;
+      pointer-events: auto !important;
+      min-height: 44px !important;
+      min-width: 44px !important;
+      position: relative !important;
+      z-index: 1 !important;
     }
 
-    /* Ensure menu buttons work in landscape */
-    [data-sidebar] button {
+    /* Ensure sidebar trigger button is always accessible */
+    .fixed.bottom-6.left-6 {
       touch-action: manipulation !important;
-      min-height: 48px !important;
-      min-width: 48px !important;
+      pointer-events: auto !important;
+      z-index: 99999 !important;
+      isolation: isolate !important;
+    }
+
+    /* Fix navigation buttons specifically */
+    nav button,
+    .main-nav button,
+    .primary-nav button {
+      isolation: isolate !important;
+      position: relative !important;
+      z-index: 10 !important;
+    }
+
+    /* Prevent event capture on non-interactive elements */
+    .sidebar-menu-container,
+    .sidebar-content,
+    main,
+    .page-container {
+      pointer-events: auto !important;
+      touch-action: pan-y !important;
+    }
+
+    /* Ensure interactive elements work in landscape */
+    @media (orientation: landscape) {
+      button, 
+      a[role="button"],
+      .interactive-element {
+        min-height: 48px !important;
+        min-width: 48px !important;
+        padding: 8px !important;
+      }
     }
   }
 }
