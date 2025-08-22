@@ -23,6 +23,16 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
+function isLikelyAssetRequest(urlPath: string): boolean {
+  try {
+    const pathname = new URL(urlPath, 'http://internal').pathname;
+    // Treat paths with a file extension as asset requests, ignore Vite internal paths
+    return /\.[a-zA-Z0-9]+$/.test(pathname) && !pathname.startsWith('/@');
+  } catch {
+    return false;
+  }
+}
+
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true as const,
@@ -54,6 +64,12 @@ export async function setupVite(app: Express, server: Server) {
     const url = req.originalUrl;
 
     try {
+      // Do not SPA-fallback for likely asset requests: return 404
+      if (isLikelyAssetRequest(url)) {
+        res.status(404).end('Not Found');
+        return;
+      }
+
       const clientTemplate = path.resolve(
         __dirname,
         "..",
@@ -88,7 +104,12 @@ export function serveStatic(app: Express) {
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
+  app.use("*", (req, res) => {
+    const url = req.originalUrl;
+    if (isLikelyAssetRequest(url)) {
+      res.status(404).end('Not Found');
+      return;
+    }
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
