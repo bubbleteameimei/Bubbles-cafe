@@ -95,6 +95,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       console.log('[Auth] Login successful:', data);
       setUser(data);
+      try {
+        if (data?.token) localStorage.setItem('auth_token', data.token);
+      } catch {}
       return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
@@ -131,6 +134,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       console.log('[Auth] Registration successful:', responseData);
       setUser(responseData);
+      try {
+        if (responseData?.token) localStorage.setItem('auth_token', responseData.token);
+      } catch {}
       return responseData;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
@@ -156,6 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       setUser(null);
+      try { localStorage.removeItem('auth_token'); } catch {}
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
