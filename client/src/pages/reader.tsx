@@ -1064,30 +1064,123 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     <ErrorBoundary>
       {/* Reader container */}
       <div className="w-full min-w-full max-w-full overflow-x-hidden">
-         {/* Top actions, title, etc. */}
-        <div className="relative min-h-screen bg-background reader-page overflow-visible pt-12 sm:pt-12 lg:pt-16 pb-8 flex flex-col"
-          /* Added enhanced background-related styling directly here */
+        {/* Main reader page container */}
+        <div className="relative min-h-screen bg-background reader-page overflow-visible pt-16 pb-8 flex flex-col"
           data-reader-page="true" 
           data-distraction-free={isUIHidden ? "true" : "false"}>
           
-          {/* Reader page has no background image, just clean default background */}
-          
-          {/* Reading progress bar is rendered at app level under the main nav */}
+          {/* Reading Progress Bar - Fixed at top */}
+          <div 
+            style={{ 
+              position: 'fixed',
+              top: 'var(--navbar-height, 56px)',
+              left: '0px',
+              right: '0px',
+              width: '100%',
+              height: '3px',
+              backgroundColor: 'rgba(0, 0, 0, 0.1)',
+              zIndex: 999,
+              pointerEvents: 'none'
+            }}
+          >
+            <div 
+              style={{ 
+                height: '100%',
+                width: `${readingProgress}%`,
+                background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
+                transition: 'width 0.1s ease-out',
+                boxShadow: readingProgress > 5 ? '0 0 10px rgba(59, 130, 246, 0.7)' : 'none'
+              }}
+            />
+          </div>
           
           {/* Reader tooltip for distraction-free mode instructions */}
           <Suspense fallback={null}>
             <ReaderTooltip show={showTooltip} />
           </Suspense>
-          {/* CSS for distraction-free mode transitions */}
-          <style dangerouslySetInnerHTML={{__html: `
-            /* Transitions for UI elements */
-            /* Keep the UI elements accessible but subtle in distraction-free mode */
-            .ui-fade-element {
-              transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-              will-change: opacity, visibility;
-            }
-            .ui-hidden {
-              opacity: 0.15; /* Barely visible but still accessible */
+          {/* Reader Controls Container */}
+          <div className={`ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} sticky top-16 z-40 bg-background/80 backdrop-blur-sm border-b border-border/50`}>
+            <div className="container mx-auto px-4 py-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                {/* Left side controls */}
+                <div className="flex items-center gap-2">
+                  {/* Font size controls */}
+                  <div className="flex items-center gap-1 border border-border/50 rounded-md bg-background/50 p-1">
+                    <button
+                      onClick={decreaseFontSize}
+                      className="p-1 hover:bg-muted rounded text-sm font-medium transition-colors"
+                      aria-label="Decrease font size"
+                    >
+                      A⁻
+                    </button>
+                    <span className="px-2 text-xs text-muted-foreground min-w-[3rem] text-center">
+                      {fontSize}px
+                    </span>
+                    <button
+                      onClick={increaseFontSize}
+                      className="p-1 hover:bg-muted rounded text-sm font-medium transition-colors"
+                      aria-label="Increase font size"
+                    >
+                      A⁺
+                    </button>
+                  </div>
+                  
+                  {/* Font family controls */}
+                  <div className="flex items-center gap-1 border border-border/50 rounded-md bg-background/50 p-1">
+                    <button
+                      onClick={() => setFontFamily(fontFamily === 'serif' ? 'sans-serif' : 'serif')}
+                      className="px-2 py-1 hover:bg-muted rounded text-xs font-medium transition-colors"
+                      aria-label={`Switch to ${fontFamily === 'serif' ? 'sans-serif' : 'serif'} font`}
+                    >
+                      {fontFamily === 'serif' ? 'Sans' : 'Serif'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right side controls */}
+                <div className="flex items-center gap-2">
+                  {/* Table of Contents Button */}
+                  <button
+                    onClick={() => setShowTOC(!showTOC)}
+                    className="p-2 hover:bg-muted rounded-md transition-colors border border-border/50 bg-background/50"
+                    aria-label="Toggle Table of Contents"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    </svg>
+                  </button>
+                  
+                  {/* Bookmark Button */}
+                  <button
+                    onClick={() => {/* Add bookmark functionality */}}
+                    className="p-2 hover:bg-muted rounded-md transition-colors border border-border/50 bg-background/50"
+                    aria-label="Bookmark this story"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                  </button>
+                  
+                  {/* Theme Toggle */}
+                  <button
+                    onClick={toggleTheme}
+                    className="p-2 hover:bg-muted rounded-md transition-colors border border-border/50 bg-background/50"
+                    aria-label="Toggle theme"
+                  >
+                    {theme === 'dark' ? (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div> */
               pointer-events: auto; /* Keep interactive */
             }
             /* Show on hover for better UX */
