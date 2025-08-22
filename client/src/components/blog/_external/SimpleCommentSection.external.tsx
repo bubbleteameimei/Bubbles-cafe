@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { fetchCsrfTokenIfNeeded, applyCSRFToken } from "@/lib/csrf-token";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, subYears, subMonths } from "date-fns";
 import { Card } from "@/components/ui/card";
@@ -153,42 +154,22 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
     mutationFn: async () => {
       // Use authenticated user's username if available, otherwise use "Anonymous"
       const replyAuthor = isAuthenticated && user ? user.username : "Anonymous";
+      await fetchCsrfTokenIfNeeded();
       
-      // Get CSRF token from cookie
-      const cookies = document.cookie.split('; ');
-      const csrfCookie = cookies.find(cookie => cookie.startsWith('XSRF-TOKEN='));
-      const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : '';
-      
-      // Using the endpoint that matches server routes for replies
-      const response = await fetch(`/api/comments/${commentId}/replies`, {
+      // Post reply via /api/posts/:postId/comments with parentId
+      const response = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken
-        },
-        credentials: "include", // Important for CSRF token
-        body: JSON.stringify({
-          content: content.trim(),
-          author: replyAuthor,
-          userId: user?.id || null,
-          commentId: commentId,
-          parentId: commentId, // Ensure we set the parentId properly
-          metadata: {
-            author: replyAuthor,
-            isAnonymous: !isAuthenticated,
-            moderated: false,
-            originalContent: content.trim(),
-            replyCount: 0
-          }
-        })
-      });
-
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content: content.trim(), author: replyAuthor, parentId: commentId })
+      }));
+      
       if (!response.ok) {
         const errorData = await response.text();
         console.error('Error response:', errorData);
         throw new Error('Failed to post reply: ' + errorData);
       }
-
+      
       return response.json();
     },
     onSuccess: () => {
@@ -427,7 +408,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
     queryKey: [`/api/posts/${postId}/comments`],
     queryFn: async () => {
-      const response = await fetch(`/api/posts/${postId}/comments`);
+      const response = await fetch(`/api/posts/${postId}/comments`, { credentials: "include" });
       if (!response.ok) {
         throw new Error('Failed to fetch comments');
       }
@@ -440,30 +421,23 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     mutationFn: async () => {
       // Use authenticated user's username if available, otherwise use "Anonymous"
       const commentAuthor = isAuthenticated && user ? user.username : "Anonymous";
-      
-      // Get CSRF token from cookie
-      const cookies = document.cookie.split('; ');
-      const csrfCookie = cookies.find(cookie => cookie.startsWith('XSRF-TOKEN='));
-      const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : '';
+      await fetchCsrfTokenIfNeeded();
       
       // Check if the content needs moderation
       const { isFlagged, isUnderReview } = checkModeration(content);
       
-      // Using the correct endpoint format that matches server routes
-      const response = await fetch(`/api/posts/${postId}/comments`, {
+      // Using our CSRF wrapper for posting
+      const response = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken
-        },
-        credentials: "include", // Important for CSRF token
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           content: content.trim(),
           author: commentAuthor,
           needsModeration: isFlagged || isUnderReview,
           moderationStatus: isFlagged ? 'flagged' : (isUnderReview ? 'under_review' : 'none'),
         })
-      });
+      }));
 
       if (!response.ok) {
         const errorData = await response.text();
@@ -532,20 +506,14 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     if (!commentToFlag) return;
     
     try {
-      // Get CSRF token from cookie
-      const cookies = document.cookie.split('; ');
-      const csrfCookie = cookies.find(cookie => cookie.startsWith('XSRF-TOKEN='));
-      const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : '';
+      await fetchCsrfTokenIfNeeded();
       
-      const response = await fetch(`/api/comments/${commentToFlag}/flag`, {
+      const response = await fetch(`/api/comments/${commentToFlag}/flag`, applyCSRFToken({
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ reason: "inappropriate content" })
-      });
+      }));
       
       if (!response.ok) {
         throw new Error("Failed to flag comment");
