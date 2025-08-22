@@ -193,6 +193,10 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
     return list;
   }, [rootComments, repliesByParentId, sortOrder]);
 
+  // Performance: render root comments in chunks
+  const [visibleRootCount, setVisibleRootCount] = useState<number>(20);
+  const visibleRootComments = useMemo(() => sortedRootComments.slice(0, visibleRootCount), [sortedRootComments, visibleRootCount]);
+
   const createMutation = useMutation({
     mutationFn: async () => {
       const author = isAuthenticated && user ? user.username : "Anonymous";
@@ -450,7 +454,7 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
         </Card>
       ) : (
         <div className="space-y-5">
-          {sortedRootComments.map((comment) => (
+          {visibleRootComments.map((comment) => (
             <div key={comment.id} className="space-y-3">
               <Card className="shadow-sm border-border/50 overflow-hidden">
                 <div
@@ -638,6 +642,13 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
               </Card>
             </div>
           ))}
+          {sortedRootComments.length > visibleRootCount && (
+            <div className="flex justify-center pt-2">
+              <Button variant="outline" size="sm" onClick={() => setVisibleRootCount((c) => c + 20)}>
+                Load more comments ({sortedRootComments.length - visibleRootCount} more)
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
