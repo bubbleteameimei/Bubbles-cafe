@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/dialog";
 
 // Import comment section directly for now to avoid lazy loading issues
-import SimpleCommentSection from "@/components/blog/_external/SimpleCommentSection.external";
+import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
 // WordPress API functions removed - using internal API instead
 
