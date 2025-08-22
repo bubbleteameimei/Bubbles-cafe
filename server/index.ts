@@ -241,6 +241,9 @@ async function startServer() {
       registerWordPressSyncRoutes(app);
       registerPaymentRoutes(app);
 
+      // Unknown API endpoints should return 404 JSON (avoid SPA fallback)
+      app.use('/api/*', (_req, res) => res.status(404).json({ error: 'Not found' }));
+
       // Start WordPress scheduler
       wordpressScheduler.start();
 
@@ -255,6 +258,9 @@ async function startServer() {
       registerBookmarkRoutes(app);
       registerWordPressSyncRoutes(app);
       registerPaymentRoutes(app);
+
+      // Unknown API endpoints should return 404 JSON (avoid SPA fallback)
+      app.use('/api/*', (_req, res) => res.status(404).json({ error: 'Not found' }));
 
       // Start WordPress scheduler
       wordpressScheduler.start();

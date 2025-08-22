@@ -18,6 +18,7 @@ import { handleError } from '../utils/error-handler';
 import healthRoutes from './health';
 import { getCsrfToken } from '../middleware/csrf-protection';
 import { z } from 'zod';
+import seoRoutes from './seo';
 
 const routesLogger = createSecureLogger('RoutesIndex');
 
@@ -27,6 +28,10 @@ export function registerModularRoutes(app: Express) {
     app.use('/health', healthRoutes);
     app.use('/api/health', healthRoutes);
     routesLogger.info('Health check routes registered');
+
+    // SEO routes (robots.txt, sitemap.xml)
+    app.use('/', seoRoutes);
+    routesLogger.info('SEO routes registered');
 
     // SECURITY FIX: Secure CSRF token endpoint
     app.get('/api/csrf-token', getCsrfToken);
