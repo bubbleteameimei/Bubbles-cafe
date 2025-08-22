@@ -151,6 +151,27 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
   
+  // Reading progress calculation
+  useEffect(() => {
+    const calculateReadingProgress = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+      setReadingProgress(Math.min(Math.max(progress, 0), 100));
+    };
+
+    const handleScroll = () => {
+      requestAnimationFrame(calculateReadingProgress);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    calculateReadingProgress(); // Initial calculation
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+  
   // Auto save slug for navigation memory
   const [autoSaveSlug, setAutoSaveSlug] = useState<string>("");
   

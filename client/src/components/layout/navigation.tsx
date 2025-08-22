@@ -18,7 +18,11 @@ import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/contexts/notification-context";
 import { useTheme } from "@/components/theme-provider";
 
-export default function Navigation() {
+interface NavigationProps {
+  readingProgress?: number;
+}
+
+export default function Navigation({ readingProgress = 0 }: NavigationProps) {
   const [location, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
@@ -26,6 +30,9 @@ export default function Navigation() {
   const { theme, setTheme } = useTheme();
 
   const [scrolled, setScrolled] = useState(false);
+  
+  // Check if we're on reader page to show progress bar
+  const isReaderPage = location === '/reader' || location.startsWith('/reader/') || location.startsWith('/community-story/');
 
   // Effect to detect scroll position for conditional styling
   useEffect(() => {
@@ -51,12 +58,13 @@ export default function Navigation() {
 
   return (
     <header 
-      className={`relative top-0 z-40 w-full border-b 
+      className={`relative top-0 z-40 border-b 
                 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
                 transition-all duration-300 ease-in-out 
                 ${scrolled ? 'shadow-md' : ''}`}
       style={{
-        width: "100%",
+        width: '100vw',
+        marginLeft: 'calc(-50vw + 50%)',
         left: 0,
         right: 0,
         margin: 0,
@@ -209,6 +217,16 @@ export default function Navigation() {
           )}
         </div>
       </div>
+      
+      {/* Reading Progress Bar - only show on reader pages */}
+      {isReaderPage && (
+        <div className="w-full h-1 bg-muted relative overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-pink-500 to-purple-600 transition-all duration-300 ease-out"
+            style={{ width: `${Math.min(Math.max(readingProgress, 0), 100)}%` }}
+          />
+        </div>
+      )}
     </header>
   );
 }
