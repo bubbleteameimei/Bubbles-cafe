@@ -1,44 +1,62 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import CommentReactionButtons from "@/components/blog/CommentReactionButtons";
 import { useToast } from "@/hooks/use-toast";
-import { applyCSRFToken, fetchCsrfTokenIfNeeded } from "@/lib/csrf-token";
-import { Badge } from "@/components/ui/badge";
+import { fetchCsrfTokenIfNeeded, applyCSRFToken } from "@/lib/csrf-token";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { format, subYears, subMonths } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Loader2,
-  MessageSquare,
-  Reply,
-  Calendar,
+import { 
   ChevronDown,
   ChevronUp,
-  Minimize2,
   Expand,
-  AlertCircle
+  Loader2, 
+  MessageSquare, 
+  Minimize2,
+  Reply, 
+  Save,
+  Calendar,
+  MessageCircle,
+  SendHorizontal,
+  AlertCircle,
+  Check,
+  ShieldAlert,
+  Flag,
+  X,
+  Ghost,
+  Skull
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-let useAuth: any;
-try {
-  useAuth = require("@/hooks/use-auth").useAuth;
-} catch {
-  useAuth = () => ({ user: null, isAuthenticated: false });
-}
-
+// Interfaces
 interface CommentMetadata {
+  author: string;
+  isAnonymous: boolean;
   moderated: boolean;
   originalContent: string;
-  isAnonymous: boolean;
-  author: string;
-  upvotes: number;
-  downvotes: number;
   replyCount: number;
-  votes?: { upvotes: number; downvotes: number };
-  ownerKey?: string;
 }
 
 interface Comment {
@@ -46,655 +64,1067 @@ interface Comment {
   content: string;
   createdAt: Date | string;
   metadata: CommentMetadata;
-  is_approved?: boolean;
+  // Support both field names during API transition
   approved?: boolean;
+  is_approved?: boolean;
   parentId: number | null;
-  replies?: Comment[];
-  isOwner?: boolean;
-  edited?: boolean;
-  editedAt?: Date | string | null;
-  postId?: number | null;
-  userId?: number | null;
 }
 
-interface SimpleCommentSectionProps {
+interface CommentSectionProps {
   postId: number;
+  title?: string;
 }
 
-function checkModeration(text: string): { isFlagged: boolean; isUnderReview: boolean } {
-  const t = (text || "").toLowerCase();
-  const flaggedWords = ["spam", "scam", "hate", "abuse"];
-  const isFlagged = flaggedWords.some((w) => t.includes(w));
-  return { isFlagged, isUnderReview: isFlagged };
+interface ReplyFormProps {
+  commentId: number;
+  postId: number;
+  onCancel: () => void;
+  authorToMention?: string;
 }
 
-function formatTime(dateStr: string | Date): string {
-  try {
-    const d = typeof dateStr === "string" ? new Date(dateStr) : dateStr;
-    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  } catch {
-    return "";
+// Enhanced moderation check with immediate flagging
+const checkModeration = (text: string): { isFlagged: boolean, moderated: string, isUnderReview: boolean } => {
+  if (!text) return { isFlagged: false, moderated: "", isUnderReview: false };
+  
+  // List of words/patterns that trigger moderation
+  const flaggedPatterns = [
+    /\b(hate|stupid|idiot|dumb|moron)\b/gi,
+    /\b(sh[i*]t|f[u*]ck|a[s*][s*]|b[i*]tch)\b/gi,
+    /\b(damn|hell|crap)\b/gi
+  ];
+  
+  // Words that trigger review
+  const reviewPatterns = [
+    /\b(kill|violent|disgusting|vile|appalling|nasty|horrible|garbage|sucks|pathetic)\b/gi,
+    /\b(scam|fraud|fake|lying|spam|trash|worst|terrible|lazy|awful)\b/gi,
+    /\b(useless|worthless|waste|ugly|offensive|sexist|racist|bigot)\b/gi
+  ];
+  
+  let moderated = text;
+  let isFlagged = false;
+  let isUnderReview = false;
+  
+  // Check for immediate moderation patterns
+  flaggedPatterns.forEach(pattern => {
+    if (pattern.test(text)) {
+      isFlagged = true;
+      moderated = moderated.replace(pattern, match => '*'.repeat(match.length));
+    }
+  });
+  
+  // Check for patterns that require review
+  if (!isFlagged) {
+    reviewPatterns.forEach(pattern => {
+      if (pattern.test(text)) {
+        isUnderReview = true;
+      }
+    });
   }
-}
+  
+  return { isFlagged, moderated, isUnderReview };
+};
 
-export default function SimpleCommentSection({ postId }: SimpleCommentSectionProps) {
-  const { user, isAuthenticated } = useAuth();
-  const getBearer = () => {
-    try { return localStorage.getItem('auth_token') || null; } catch { return null; }
-  };
+// Simple reply form component
+function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormProps) {
+  const [content, setContent] = useState(authorToMention ? `@${authorToMention} ` : "");
+  const [previewMode, setPreviewMode] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Get authentication state
+  const { user, isAuthenticated } = useAuth();
+  
+  // Apply moderation check with review flag
+  const { isFlagged, moderated, isUnderReview } = checkModeration(content);
 
-  const [content, setContent] = useState("");
-  const [name, setName] = useState<string>("");
-  const [replyingTo, setReplyingTo] = useState<number | null>(null);
-  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
-  const [editContent, setEditContent] = useState<string>("");
-  const [sortOrder, setSortOrder] = useState<"recent" | "active">("active");
-  const [collapsedComments, setCollapsedComments] = useState<number[]>([]);
-  const [autoCollapsing, setAutoCollapsing] = useState(false);
-  const [flaggedComments, setFlaggedComments] = useState<number[]>([]);
-
+  // Focus the textarea when the form appears and position cursor at the end
   useEffect(() => {
-    fetchCsrfTokenIfNeeded().catch(() => {});
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+      
+      // Position cursor at the end of the text
+      const length = textareaRef.current.value.length;
+      textareaRef.current.selectionStart = length;
+      textareaRef.current.selectionEnd = length;
+    }
   }, []);
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("flaggedComments_" + postId);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) setFlaggedComments(parsed);
-      }
-    } catch {}
-  }, [postId]);
-
-  // CSRF-aware fetch with single retry on 401/403
-  async function csrfFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
-    await fetchCsrfTokenIfNeeded().catch(() => {});
-    const attempt = async () => fetch(input, applyCSRFToken({ ...init, credentials: 'include' }));
-    let res = await attempt();
-    if (res.status === 401 || res.status === 403) {
-      await fetchCsrfTokenIfNeeded().catch(() => {});
-      res = await attempt();
-    }
-    return res;
-  }
-
-  const { data: comments = [], isLoading, error } = useQuery<Comment[]>({
-    queryKey: [`/api/posts/${postId}/comments`],
-    queryFn: async () => {
-      const res = await fetch(`/api/posts/${postId}/comments`, { credentials: "include" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      return Array.isArray(data) ? data : data?.comments || [];
-    },
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    staleTime: 15_000
-  });
-
-  const rootComments = useMemo(
-    () => (comments || []).filter((c) => c.parentId === null).filter((c) => (c.approved ?? c.is_approved) !== false),
-    [comments]
-  );
-
-  const repliesByParentId = useMemo(() => {
-    const map: Record<number, Comment[]> = {};
-    (comments || [])
-      .filter((c) => c.parentId !== null)
-      .forEach((r) => {
-        const pid = r.parentId!;
-        if (!map[pid]) map[pid] = [];
-        map[pid].push(r);
-      });
-    return map;
-  }, [comments]);
-
-  // Render nested replies up to a reasonable depth (preserve current look)
-  const renderNestedReplies = (parentId: number, depth: number): JSX.Element | null => {
-    const children = repliesByParentId[parentId];
-    if (!children || children.length === 0 || depth > 3) return null;
-    return (
-      <div className="mt-3 space-y-4 pl-4 border-l-2 border-muted/30">
-        {children.map((reply) => (
-          <div key={reply.id} className="relative">
-            <div className="absolute -left-[25px] top-2 h-2 w-2 rounded-full bg-primary/60"></div>
-            <div className="flex gap-3">
-              <Avatar className="h-6 w-6 flex-shrink-0">
-                <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                  {(reply.metadata.author || "A")[0].toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 bg-muted/10 rounded-lg p-3 border border-border/30">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                  <strong className="text-xs sm:text-sm font-medium">{reply.metadata.author || "Anonymous"}</strong>
-                  <span className="text-[10px] text-muted-foreground">{formatTime(reply.createdAt)}</span>
-                </div>
-                <p className="text-xs sm:text-sm text-card-foreground mt-2 leading-relaxed whitespace-pre-line">{reply.content}</p>
-                <div className="mt-2 flex items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => vote(reply.id, true)}>
-                    +{reply.metadata?.votes?.upvotes ?? reply.metadata?.upvotes ?? 0}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => vote(reply.id, false)}>
-                    -{reply.metadata?.votes?.downvotes ?? reply.metadata?.downvotes ?? 0}
-                  </Button>
-                </div>
-                {renderNestedReplies(reply.id, depth + 1)}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const sortedRootComments = useMemo(() => {
-    const list = [...rootComments];
-    if (sortOrder === "active") {
-      list.sort((a, b) => (repliesByParentId[b.id]?.length || 0) - (repliesByParentId[a.id]?.length || 0));
-    } else {
-      list.sort((a, b) => new Date(b.createdAt as any).getTime() - new Date(a.createdAt as any).getTime());
-    }
-    return list;
-  }, [rootComments, repliesByParentId, sortOrder]);
-
-  // Performance: render root comments in chunks
-  const [visibleRootCount, setVisibleRootCount] = useState<number>(20);
-  const visibleRootComments = useMemo(() => sortedRootComments.slice(0, visibleRootCount), [sortedRootComments, visibleRootCount]);
-
-  const createMutation = useMutation({
+  const replyMutation = useMutation({
     mutationFn: async () => {
-      const author = name?.trim().length ? name.trim() : (isAuthenticated && user ? user.username : "Anonymous");
+      // Use authenticated user's username if available, otherwise use "Anonymous"
+      const replyAuthor = isAuthenticated && user ? user.username : "Anonymous";
       await fetchCsrfTokenIfNeeded();
-      const { isFlagged, isUnderReview } = checkModeration(content);
+      
+      // Post reply via /api/posts/:postId/comments with parentId
       const token = getBearer();
-      const res = await csrfFetch(`/api/posts/${postId}/comments`, {
+      const response = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({
-          content: content.trim(),
-          author,
-          needsModeration: isFlagged || isUnderReview,
-          moderationStatus: isFlagged ? "flagged" : isUnderReview ? "under_review" : "none"
-        })
-      });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
-    },
-    onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: [`/api/posts/${postId}/comments`] });
-      const previous = queryClient.getQueryData<Comment[]>([`/api/posts/${postId}/comments`]) || [];
-      const optimistic: Comment = {
-        id: Date.now(),
-        content,
-        postId: Number(postId),
-        userId: null,
-        createdAt: new Date(),
-        parentId: null,
-        is_approved: true,
-        edited: false,
-        editedAt: null,
-        metadata: { author: name?.trim().length ? name.trim() : (isAuthenticated && user ? user.username : "Anonymous"), upvotes: 0, downvotes: 0, replyCount: 0, moderated: false, originalContent: content, isAnonymous: !isAuthenticated, ownerKey: "optimistic" }
-      } as unknown as Comment;
-      queryClient.setQueryData<Comment[]>([`/api/posts/${postId}/comments`], [optimistic, ...previous]);
-      return { previous } as { previous: Comment[] };
-    },
-    onError: (_e, _v, ctx) => {
-      if (ctx?.previous) queryClient.setQueryData([`/api/posts/${postId}/comments`], ctx.previous);
-      toast({ title: "Failed to post comment", description: "Please try again.", variant: "destructive" });
+        credentials: "include",
+        body: JSON.stringify({ content: content.trim(), author: replyAuthor, parentId: commentId })
+      }));
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Error response:', errorData);
+        throw new Error('Failed to post reply: ' + errorData);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
       setContent("");
+      onCancel();
+      toast({
+        title: "Reply posted",
+        description: "Your reply has been added to the discussion.",
+        variant: "default"
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to post reply. Please try again.",
+        variant: "destructive"
+      });
     }
   });
 
-  const replyMutation = useMutation({
-    mutationFn: async ({ parentId, reply }: { parentId: number; reply: string }) => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Only validate content is provided
+    if (!content.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please provide a message",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    replyMutation.mutate();
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="border-l border-primary/30 pl-2 mt-0.5 bg-muted/5 rounded-md overflow-hidden">
+      <div className="space-y-0.5 p-1">
+        <div className="flex items-center gap-1 mb-0.5">
+          <Reply className="h-2.5 w-2.5 text-primary/70" />
+          <span className="text-[10px] font-medium">Reply to this comment</span>
+        </div>
+        
+        <div className="flex gap-1">
+          <Textarea
+            ref={textareaRef}
+            placeholder="Write your reply..."
+            value={content}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+              setContent(e.target.value);
+              if (isFlagged && !previewMode) {
+                setPreviewMode(true);
+              }
+            }}
+            className="min-h-[35px] text-[10px] bg-background/80 py-1 flex-grow"
+            required
+          />
+          
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onCancel}
+            className="h-6 px-1.5 text-[10px] self-start"
+          >
+            Cancel
+          </Button>
+        </div>
+        
+        {/* Moderation preview for reply */}
+        {isFlagged && content.trim() !== "" && (
+          <motion.div 
+            className="px-1.5 py-1 bg-amber-500/10 rounded-sm text-[9px] border border-amber-500/20"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+              <AlertCircle className="h-2.5 w-2.5" />
+              <span className="font-medium">Preview with moderation:</span>
+            </div>
+            <p className="mt-0.5 text-xs ml-3.5">{moderated}</p>
+          </motion.div>
+        )}
+        
+        {/* Under review notice for reply */}
+        {isUnderReview && !isFlagged && content.trim() !== "" && (
+          <motion.div 
+            className="px-1.5 py-1 bg-blue-500/10 rounded-sm text-[9px] border border-blue-500/20"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+              <ShieldAlert className="h-2.5 w-2.5" />
+              <span className="font-medium">This reply may be placed under review</span>
+            </div>
+            <p className="mt-0.5 text-[9px] ml-3.5 text-muted-foreground">
+              Your reply contains content that might need moderator approval.
+            </p>
+          </motion.div>
+        )}
+        
+        <div className="flex justify-end">
+          <Button
+            type="submit"
+            size="sm"
+            disabled={replyMutation.isPending}
+            className="h-5 text-[10px] px-1.5 py-0"
+          >
+            {replyMutation.isPending ? (
+              <>
+                <Loader2 className="mr-1 h-2.5 w-2.5 animate-spin" />
+                <span>Posting</span>
+              </>
+            ) : (
+              <>
+                <SendHorizontal className="mr-1 h-2.5 w-2.5" />
+                <span>Reply</span>
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+// Helper to check approval status, handling both field names
+const isCommentApproved = (comment: Comment): boolean => {
+  // Check both field names due to API transition
+  return comment.approved === true || comment.is_approved === true;
+};
+
+// Main component
+export default function SimpleCommentSection({ postId, title }: CommentSectionProps) {
+  const [content, setContent] = useState("");
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [previewMode, setPreviewMode] = useState(false);
+  const [flagDialogOpen, setFlagDialogOpen] = useState(false);
+  const [commentToFlag, setCommentToFlag] = useState<number | null>(null);
+  const [flaggedComments, setFlaggedComments] = useState<number[]>([]);
+  const [collapsedComments, setCollapsedComments] = useState<number[]>([]);
+  const [sortOrder, setSortOrder] = useState<'recent' | 'active'>('active');
+  const [autoCollapsing, setAutoCollapsing] = useState(false);
+  const [autoCollapseTimeoutId, setAutoCollapseTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [unknownMessageVisible, setUnknownMessageVisible] = useState(true);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const mainSectionRef = useRef<HTMLDivElement>(null);
+  
+  // Get authentication state
+  const { user, isAuthenticated, isAuthReady } = useAuth();
+  
+  // Smart moderation preview with review flag
+  const { isFlagged, moderated, isUnderReview } = checkModeration(content);
+  
+  // Upvote functionality has been removed
+  
+  // Load previously saved draft from localStorage
+  useEffect(() => {
+    const savedDraft = localStorage.getItem(`comment_draft_${postId}`);
+    if (savedDraft && savedDraft.trim() !== "") {
+      setContent(savedDraft);
+      toast({
+        title: "Draft restored",
+        description: "Your previous comment draft has been restored.",
+        variant: "default"
+      });
+    }
+    
+    // Set up interval to save draft while typing
+    const saveDraftInterval = setInterval(() => {
+      if (content.trim() !== "") {
+        localStorage.setItem(`comment_draft_${postId}`, content);
+      }
+    }, 3000); // Save every 3 seconds if there's content
+    
+    return () => clearInterval(saveDraftInterval);
+  }, [postId, content, toast]);
+  
+  // Setup auto-collapse on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      // Don't auto-collapse if user has manually collapsed/expanded
+      if (collapsedComments.length > 0) return;
+      
+      if (mainSectionRef.current) {
+        const rect = mainSectionRef.current.getBoundingClientRect();
+        // If the comment section is scrolled out of view (plus a buffer)
+        if (rect.top < -300) {
+          if (!autoCollapsing && !autoCollapseTimeoutId) {
+            const timeoutId = setTimeout(() => {
+              setAutoCollapsing(true);
+              toast({
+                title: "Comments minimized",
+                description: "Comments have been collapsed for a cleaner reading experience.",
+                variant: "default"
+              });
+            }, 1500);
+            setAutoCollapseTimeoutId(timeoutId);
+          }
+        } else {
+          // Cancel auto-collapse when scrolling back
+          if (autoCollapseTimeoutId) {
+            clearTimeout(autoCollapseTimeoutId);
+            setAutoCollapseTimeoutId(null);
+          }
+          setAutoCollapsing(false);
+        }
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [autoCollapsing, autoCollapseTimeoutId, collapsedComments.length, toast]);
+  
+  // Load previously flagged comments from localStorage
+  useEffect(() => {
+    const storedFlaggedComments = localStorage.getItem('flaggedComments_' + postId);
+    if (storedFlaggedComments) {
+      try {
+        const parsedComments = JSON.parse(storedFlaggedComments);
+        if (Array.isArray(parsedComments)) {
+          setFlaggedComments(parsedComments);
+        }
+      } catch (e) {
+        console.error('Error parsing flagged comments from localStorage', e);
+      }
+    }
+  }, [postId]);
+
+  // Fetch comments
+  const { data: comments = [], isLoading } = useQuery<Comment[]>({
+    queryKey: [`/api/posts/${postId}/comments`],
+    queryFn: async () => {
+      const response = await fetch(`/api/posts/${postId}/comments`, { credentials: "include" });
+      if (!response.ok) {
+        throw new Error('Failed to fetch comments');
+      }
+      return response.json();
+    }
+  });
+
+  // Post new comment
+  const mutation = useMutation({
+    mutationFn: async () => {
+      // Use authenticated user's username if available, otherwise use "Anonymous"
+      const commentAuthor = isAuthenticated && user ? user.username : "Anonymous";
       await fetchCsrfTokenIfNeeded();
-      const author = name?.trim().length ? name.trim() : (isAuthenticated && user ? user.username : "Anonymous");
+      
+      // Check if the content needs moderation
+      const { isFlagged, isUnderReview } = checkModeration(content);
+      
+      // Using our CSRF wrapper for posting
       const token = getBearer();
-      const res = await csrfFetch(`/api/posts/${postId}/comments`, {
+      const response = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ content: reply.trim(), author, parentId })
-      });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] })
-  });
+        credentials: "include",
+        body: JSON.stringify({
+          content: content.trim(),
+          author: commentAuthor,
+          needsModeration: isFlagged || isUnderReview,
+          moderationStatus: isFlagged ? 'flagged' : (isUnderReview ? 'under_review' : 'none'),
+        })
+      }));
 
-  const editMutation = useMutation({
-    mutationFn: async ({ commentId, newContent }: { commentId: number; newContent: string }) => {
-      await fetchCsrfTokenIfNeeded();
-      const token = getBearer();
-      const res = await csrfFetch(`/api/comments/${commentId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ content: newContent.trim() })
-      });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Error response:', errorData);
+        throw new Error('Failed to post comment: ' + errorData);
+      }
+
+      return {
+        data: await response.json(),
+        moderationStatus: isFlagged ? 'flagged' : (isUnderReview ? 'under_review' : 'none')
+      };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      console.log('Comment posted successfully:', result.data);
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
-      setEditingCommentId(null);
-      setEditContent("");
-      toast({ title: "Updated", description: "Comment updated." });
+      
+      // Clear localStorage draft
+      localStorage.removeItem(`comment_draft_${postId}`);
+      setContent("");
+      
+      // Show appropriate toast based on moderation status
+      if (result.moderationStatus === 'flagged' || result.moderationStatus === 'under_review') {
+        toast({
+          title: "Comment under review",
+          description: "Your comment contains words that need review by our team. We'll review it shortly.",
+          variant: "default",
+          duration: 7000
+        });
+      } else {
+        toast({
+          title: "Comment posted",
+          description: "Thank you for joining the conversation!",
+          variant: "default"
+        });
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to post comment. Please try again.",
+        variant: "destructive"
+      });
     }
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (commentId: number) => {
-      await fetchCsrfTokenIfNeeded();
-      const token = getBearer();
-      const res = await csrfFetch(`/api/comments/${commentId}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-      });
-      if (!res.ok) throw new Error(await res.text());
-      return true;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
-      toast({ title: "Deleted", description: "Comment deleted." });
-    }
-  });
 
-  const vote = async (commentId: number, isUpvote: boolean) => {
+  
+  // Handle opening the flag dialog
+  const openFlagDialog = (commentId: number) => {
+    // Check if comment has already been flagged
+    if (flaggedComments.includes(commentId)) {
+      toast({
+        title: "Already reported",
+        description: "You have already reported this comment. Thank you for helping keep our community safe.",
+        variant: "default"
+      });
+      return;
+    }
+    
+    setCommentToFlag(commentId);
+    setFlagDialogOpen(true);
+  };
+  
+  // Handle flag confirmation from dialog
+  const confirmFlagComment = async () => {
+    if (!commentToFlag) return;
+    
     try {
       await fetchCsrfTokenIfNeeded();
       const token = getBearer();
-      const res = await csrfFetch(`/api/comments/${commentId}/vote`, {
+      const response = await fetch(`/api/comments/${commentToFlag}/flag`, applyCSRFToken({
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ isUpvote })
-      });
-      if (!res.ok) throw new Error("Vote failed");
-      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
-    } catch (e) {
-      toast({ title: "Error", description: (e as Error)?.message || "Failed to vote.", variant: "destructive" });
-    }
-  };
-
-  const flagMutation = useMutation({
-    mutationFn: async ({ commentId, reason }: { commentId: number; reason?: string }) => {
-      await fetchCsrfTokenIfNeeded();
-      const token = getBearer();
-      const res = await csrfFetch(`/api/comments/${commentId}/flag`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ reason: reason || "inappropriate content" })
-      });
-      if (!res.ok) throw new Error(await res.text());
-      return true;
-    },
-    onSuccess: (_data, vars) => {
-      setFlaggedComments((prev) => {
-        const next = prev.includes(vars.commentId) ? prev : [...prev, vars.commentId];
-        try { localStorage.setItem("flaggedComments_" + postId, JSON.stringify(next)); } catch {}
-        return next;
-      });
-      toast({ title: "Reported", description: "Thanks for reporting this comment." });
-    }
-  });
-
-  const toggleCollapse = (id: number) => {
-    setCollapsedComments((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  };
-
-  const mainRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const onScroll = () => {
-      if (autoCollapsing || collapsedComments.length > 0) return;
-      const el = mainRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      if (rect.top > window.innerHeight * 1.2) {
-        setAutoCollapsing(true);
+        credentials: "include",
+        body: JSON.stringify({ reason: "inappropriate content" })
+      }));
+      
+      if (!response.ok) {
+        throw new Error("Failed to flag comment");
       }
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [autoCollapsing, collapsedComments.length]);
+      
+      // Add comment to flagged list to prevent multiple reports
+      setFlaggedComments(prev => [...prev, commentToFlag]);
+      
+      // Save flagged comments to localStorage to persist between sessions
+      localStorage.setItem('flaggedComments_' + postId, JSON.stringify([...flaggedComments, commentToFlag]));
+      
+      toast({
+        title: "Comment reported",
+        description: "Thank you for flagging this comment. Our moderators will review it.",
+        variant: "default"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to report comment. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setFlagDialogOpen(false);
+      setCommentToFlag(null);
+    }
+  };
+
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Only validate content is provided
+    if (!content.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please provide a message",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Execute mutation to submit comment
+    mutation.mutate();
+  };
+
+  // Get root comments and group replies, filtering for approved comments only
+  const rootComments = comments
+    .filter(comment => comment.parentId === null)
+    .filter(comment => isCommentApproved(comment));
+  
+  const repliesByParentId = comments
+    .filter(comment => comment.parentId !== null)
+    .filter(comment => isCommentApproved(comment))
+    .reduce((groups: Record<number, Comment[]>, reply) => {
+      if (reply.parentId) {
+        if (!groups[reply.parentId]) {
+          groups[reply.parentId] = [];
+        }
+        groups[reply.parentId].push(reply);
+      }
+      return groups;
+    }, {});
+
+  // Format date
+  const formatDate = (dateStr: string | Date): string => {
+    const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+    return format(date, 'MMM d');
+  };
+  
+  // Dynamic sorting based on activity
+  const sortedRootComments = useMemo(() => {
+    let sorted = [...rootComments];
+    
+    if (sortOrder === 'active') {
+      // Sort by most active discussions (most replies)
+      sorted = sorted.sort((a, b) => {
+        const aReplies = repliesByParentId[a.id]?.length || 0;
+        const bReplies = repliesByParentId[b.id]?.length || 0;
+        return bReplies - aReplies; // Higher reply count first
+      });
+    } else {
+      // Default: sort by recent
+      sorted = sorted.sort((a, b) => {
+        const aDate = new Date(a.createdAt);
+        const bDate = new Date(b.createdAt);
+        return bDate.getTime() - aDate.getTime(); // Most recent first
+      });
+    }
+    
+    return sorted;
+  }, [rootComments, repliesByParentId, sortOrder]);
+  
+  // Calculate if comment thread is from over a year ago (for chained comments visual)
+  const isOldThread = (comment: Comment): boolean => {
+    const commentDate = new Date(comment.createdAt);
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    return commentDate < oneYearAgo;
+  };
+  
+  // Random eerie messages that appear occasionally in threads
+  const unknownMessages = [
+    "I've seen what waits in the darkness. It's been watching us all along.",
+    "The words hide more than they reveal. Read between the lines.",
+    "They come at night when you're alone. Listen for the whispers.",
+    "Every story has a hidden truth. Some are better left untold.",
+    "Time is just a circle. We've been here before, and we'll be here again.",
+    "The shadows aren't empty. They're filled with forgotten memories.",
+    "Some readers never leave this place. Their stories continue without them.",
+    "I can still hear the voices from the other side of the page.",
+    "The author knows more than they're telling. Trust nothing.",
+    "What you're reading now is changing you in ways you can't perceive."
+  ];
+  
+  // Function to determine if we should show an unknown message - now much less frequent (10%)
+  // Memoized should show message to avoid continuous re-calc on render
+  const shouldShowMessage = useMemo(() => {
+    // Reduced to only 15% chance
+    return Math.random() < 0.15;
+  }, []);
+
+  // Reset message visibility when navigating between pages
+  useEffect(() => {
+    setUnknownMessageVisible(true);
+    
+    // Force disappear after max 15 seconds as a fallback
+    const maxTimeout = setTimeout(() => {
+      setUnknownMessageVisible(false);
+    }, 15000);
+    
+    return () => clearTimeout(maxTimeout);
+  }, [postId]);
+  
+  // Get a random unknown message
+  const getRandomUnknownMessage = (): string => {
+    const randomIndex = Math.floor(Math.random() * unknownMessages.length);
+    return unknownMessages[randomIndex];
+  };
+  
+  // Generate random old date for unknown messages
+  const getRandomOldDate = (): Date => {
+    // Random date between 2-5 years ago
+    const yearsAgo = 2 + Math.floor(Math.random() * 3);
+    const monthsAgo = Math.floor(Math.random() * 11);
+    return subYears(subMonths(new Date(), monthsAgo), yearsAgo);
+  };
+  
+
+  
+  // Handle toggling comment collapse
+  const toggleCollapse = (commentId: number) => {
+    setCollapsedComments(prev => 
+      prev.includes(commentId) 
+        ? prev.filter(id => id !== commentId) 
+        : [...prev, commentId]
+    );
+  };
+  
+  // Parse and highlight @mentions in text
+  const parseMentions = (text: string): React.ReactNode => {
+    if (!text) return "";
+    
+    // Regular expression to match @mentions
+    const mentionRegex = /@(\w+)/g;
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+    
+    // Find all mentions in the text
+    while ((match = mentionRegex.exec(text)) !== null) {
+      // Add the text before the mention
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+      
+      // Add the mention with highlighting
+      const username = match[1];
+      parts.push(
+        <span key={`mention-${match.index}`} className="text-primary font-medium">
+          @{username}
+        </span>
+      );
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add any remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+    
+    return parts.length > 0 ? <>{parts}</> : text;
+  };
 
   return (
-    <div className="antialiased mx-auto" ref={mainRef}>
+    <div className="antialiased mx-auto" ref={mainSectionRef}>
       <div className="border-t border-border/30 pt-4 pb-1.5">
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-base font-medium">Comments ({rootComments.length})</h3>
+          
+          {/* Comment controls: sorting and collapse toggle */}
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-6 px-1.5 text-[10px]"
-              onClick={() => setSortOrder((s) => (s === "active" ? "recent" : "active"))}
+            <Select 
+              value={sortOrder} 
+              onValueChange={(value: 'recent' | 'active') => setSortOrder(value)}
             >
-              Sort: {sortOrder === "active" ? "Most Active" : "Most Recent"}
-            </Button>
+              <SelectTrigger className="h-6 text-[10px] w-[95px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent" className="text-xs">Most Recent</SelectItem>
+                <SelectItem value="active" className="text-xs">Most Active</SelectItem>
+              </SelectContent>
+            </Select>
+            
             <Button
               variant="outline"
               size="sm"
-              className="h-6 px-1.5 text-[10px]"
               onClick={() => {
                 if (collapsedComments.length > 0 || autoCollapsing) {
+                  // Expand all
                   setCollapsedComments([]);
                   setAutoCollapsing(false);
                 } else {
-                  setCollapsedComments(rootComments.map((c) => c.id));
+                  // Collapse all
+                  setCollapsedComments(rootComments.map(c => c.id));
                 }
               }}
+              className="h-6 px-1.5 text-[10px]"
             >
               {collapsedComments.length > 0 || autoCollapsing ? (
-                <>
-                  <Expand className="h-3 w-3 mr-1" /> Expand All
-                </>
+                <><Expand className="h-3 w-3 mr-1" /> Expand All</>
               ) : (
-                <>
-                  <Minimize2 className="h-3 w-3 mr-1" /> Collapse All
-                </>
+                <><Minimize2 className="h-3 w-3 mr-1" /> Collapse All</>
               )}
             </Button>
           </div>
         </div>
-
-        <Card className="mb-6 p-4 bg-card/50 backdrop-blur-sm border-border/50">
-          <div className="flex items-start gap-3">
-            <Avatar className="rounded-full w-8 h-8 border">
-              <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                {(isAuthenticated && user?.username ? user.username[0] : "A").toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <Input
-                placeholder="Your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                maxLength={50}
-                className="mb-2 bg-background/80"
-              />
-              <Textarea
-                placeholder="Share your thoughts..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="min-h-[90px] bg-background/80"
-              />
-              {/* Moderation hint below the textarea (keeps current look minimal) */}
-              <div className="mt-1 flex items-center gap-2">
-                {checkModeration(content).isFlagged ? (
-                  <Badge variant="destructive" className="text-[10px]">Contains flagged words; may be held for review</Badge>
-                ) : (
-                  <span className="text-xs text-muted-foreground">Be respectful. Comments may be held for review.</span>
-                )}
-              </div>
-              {/* Moderation preview box when flagged content is detected */}
-              {(() => {
-                const { isFlagged, isUnderReview, moderated } = checkModeration(content as any);
-                if (!content.trim() || (!isFlagged && !isUnderReview)) return null;
-                return (
-                  <div className="mt-2 rounded-md border border-amber-300/50 bg-amber-50/60 dark:bg-amber-900/10 p-2">
-                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
-                      <AlertCircle className="h-3.5 w-3.5" />
-                      <span className="text-xs font-medium">Your comment may be moderated for review</span>
-                    </div>
-                    <div className="mt-1 ml-5 space-y-1">
-                      <p className="text-xs text-amber-800/90 dark:text-amber-200/90">
-                        Contains potentially inappropriate language. You can edit it before posting.
-                      </p>
-                      {moderated && (
-                        <p className="text-xs text-amber-900/90 dark:text-amber-100/90">
-                          Moderated preview: {moderated}
-                        </p>
+        {/* Comment form - ultra sleek design */}
+        <Card className="mb-2 p-2 shadow-sm bg-gradient-to-b from-card/80 to-card/50 border-border/30 overflow-hidden hover:shadow-md transition-shadow">
+          <form onSubmit={handleSubmit} className="space-y-1">
+            <div className="grid grid-cols-1 gap-1">
+              <motion.div 
+                className="flex flex-col"
+                initial={{ opacity: 0.9 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="flex">
+                  <Textarea
+                    placeholder="Share your thoughts..."
+                    value={content}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                      setContent(e.target.value);
+                      if (isFlagged && !previewMode) {
+                        setPreviewMode(true);
+                      }
+                    }}
+                    className="h-7 text-xs bg-background/80 min-h-[45px] flex-grow"
+                    required
+                  />
+                  <div className="flex flex-col">
+                    <Button 
+                      type="submit" 
+                      disabled={mutation.isPending}
+                      size="sm"
+                      className="h-[45px] w-7 ml-1 p-0 flex items-center justify-center"
+                    >
+                      {mutation.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <SendHorizontal className="h-3 w-3" />
                       )}
-                    </div>
+                    </Button>
                   </div>
-                );
-              })()}
-              <div className="mt-2 flex items-center justify-end">
-                <Button
-                  onClick={() => createMutation.mutate()}
-                  disabled={createMutation.isPending || content.trim().length === 0}
-                  className="shadow-sm"
-                >
-                  {createMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Posting...
-                    </>
-                  ) : (
-                    "Post Comment"
-                  )}
-                </Button>
-              </div>
+                </div>
+                
+                {/* Moderation preview */}
+                {isFlagged && content.trim() !== "" && (
+                  <motion.div 
+                    className="mt-1 px-1.5 py-1 bg-amber-500/10 rounded-sm text-[9px] border border-amber-500/20"
+                    initial={{ opacity: 0.9, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    transition={{ duration: 0.1 }}
+                  >
+                    <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                      <AlertCircle className="h-2.5 w-2.5" />
+                      <span className="font-medium">Preview with automatic moderation:</span>
+                    </div>
+                    <p className="mt-0.5 text-xs ml-3.5">{moderated}</p>
+                  </motion.div>
+                )}
+                
+                {/* Under review notice */}
+                {isUnderReview && !isFlagged && content.trim() !== "" && (
+                  <motion.div 
+                    className="mt-1 px-1.5 py-1 bg-blue-500/10 rounded-sm text-[9px] border border-blue-500/20"
+                    initial={{ opacity: 0.9, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    transition={{ duration: 0.1 }}
+                  >
+                    <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                      <ShieldAlert className="h-2.5 w-2.5" />
+                      <span className="font-medium">This comment may be placed under review</span>
+                    </div>
+                    <p className="mt-0.5 text-[9px] ml-3.5 text-muted-foreground">
+                      Your comment contains content that might need moderator approval before being displayed to all users.
+                    </p>
+                  </motion.div>
+                )}
+              </motion.div>
             </div>
-          </div>
+          </form>
         </Card>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
-      ) : error ? (
-        <Card className="p-6 text-center bg-card/50">
-          <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground mb-3">Failed to load comments. Please try again.</p>
-          <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] })}>
-            Try Again
-          </Button>
-        </Card>
-      ) : rootComments.length === 0 ? (
-        <Card className="p-8 text-center bg-card/50">
-          <div className="flex flex-col items-center">
-            <div className="rounded-full bg-muted/50 p-4 mb-4">
-              <MessageSquare className="h-10 w-10 text-muted-foreground" />
+      {/* Unknown message from the void - appears randomly and auto-disappears after a delay */}
+      {shouldShowMessage && unknownMessageVisible && (
+        <AnimatePresence>
+          <motion.div 
+            className="mb-4 border-l-[3px] border-l-destructive/40 bg-destructive/5 rounded-sm overflow-hidden shadow-md"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 10 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            key="unknown-message"
+            // Auto-remove after random time between 8-12 seconds
+            onAnimationComplete={() => {
+              const randomDelay = 8000 + Math.random() * 4000;
+              setTimeout(() => {
+                setUnknownMessageVisible(false);
+              }, randomDelay);
+            }}
+          >
+            <div className="px-3 py-2">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Ghost className="h-3.5 w-3.5 text-destructive/70" />
+                <span className="text-[10px] font-medium text-destructive/70">Unknown User</span>
+                <Badge variant="outline" className="ml-1 text-[8px] px-1 py-0 h-3 border-destructive/30 bg-destructive/5 text-destructive/70">
+                  lost
+                </Badge>
+                <span className="text-[8px] text-muted-foreground/60 ml-auto flex items-center">
+                  <Calendar className="h-2.5 w-2.5 mr-0.5 text-muted-foreground/40" />
+                  {formatDate(getRandomOldDate())}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground italic leading-relaxed opacity-90">
+                "{getRandomUnknownMessage()}"
+              </p>
+              <div className="flex justify-end mt-1">
+                <span className="text-[9px] text-destructive/50 flex items-center">
+                  <Skull className="h-2.5 w-2.5 mr-0.5" />
+                  Message from the archive
+                </span>
+              </div>
             </div>
-            <h4 className="text-lg font-medium text-card-foreground mb-2">No comments yet</h4>
-            <p className="text-muted-foreground mb-2">Be the first to share your thoughts.</p>
+          </motion.div>
+        </AnimatePresence>
+      )}
+      
+      {/* Comments list */}
+      <div className="space-y-1">
+        {isLoading ? (
+          <div className="flex justify-center py-2">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
           </div>
-        </Card>
-      ) : (
-        <div className="space-y-5">
-          {visibleRootComments.map((comment) => (
-            <div key={comment.id} className="space-y-3">
-              <Card className="shadow-sm border-border/50 overflow-hidden">
-                <div
-                  className="bg-muted/30 px-4 py-2 flex items-center justify-between border-b border-border/30 cursor-pointer"
+        ) : sortedRootComments.length > 0 ? (
+          sortedRootComments.map(comment => (
+            <motion.div 
+              key={comment.id} 
+              className="space-y-1"
+              initial={{ opacity: 0.9, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Card className={cn(
+                "shadow-sm hover:shadow-md transition-all border-border/30 overflow-hidden",
+                comment.metadata.moderated ? "border-amber-500/30" : "hover:border-primary/30",
+                isOldThread(comment) ? "border-l-primary/30 border-l-[3px]" : ""
+              )}>
+                {/* Comment header - ultra compact and collapsible */}
+                <div 
+                  className={cn(
+                    "px-2.5 py-1 flex items-center justify-between border-b border-border/10 bg-muted/10 cursor-pointer",
+                    "hover:bg-muted/20 transition-colors"
+                  )}
                   onClick={() => toggleCollapse(comment.id)}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={!collapsedComments.includes(comment.id) && !autoCollapsing}
                 >
-                  <div className="flex items-center gap-2">
-                    <Avatar className="rounded-full w-7 h-7 border-2 border-background">
-                      <AvatarFallback className="text-sm bg-primary/10 text-primary">
-                        {(comment.metadata.author || "A")[0].toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <strong className="text-sm font-medium text-card-foreground">{comment.metadata.author || "Anonymous"}</strong>
-                      <p className="text-xs text-muted-foreground">{formatTime(comment.createdAt)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-[10px] px-2 bg-background/50">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {new Date(comment.createdAt as any).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                    </Badge>
-                    {collapsedComments.includes(comment.id) || autoCollapsing ? (
-                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/80" />
-                    ) : (
-                      <ChevronUp className="h-3.5 w-3.5 text-muted-foreground/80" />
+                  <div className="flex items-center">
+                    <span className="font-medium text-xs">{comment.metadata.author || "Anonymous"}</span>
+                    {repliesByParentId[comment.id]?.length > 0 && (
+                      <Badge variant="outline" className="ml-2 text-[9px] px-1 py-0 h-3.5 border-muted-foreground/30">
+                        {repliesByParentId[comment.id].length} {repliesByParentId[comment.id].length === 1 ? 'reply' : 'replies'}
+                      </Badge>
                     )}
+                    {comment.metadata.moderated && (
+                      <div className="ml-2 flex items-center text-[9px] text-amber-500">
+                        <AlertCircle className="h-2.5 w-2.5 mr-0.5" />
+                        <span>Moderated</span>
+                      </div>
+                    )}
+                    {isOldThread(comment) && (
+                      <Badge variant="outline" className="ml-2 text-[9px] px-1 py-0 h-3.5 bg-primary/5 text-primary border-primary/20">
+                        Resurrected
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] text-muted-foreground flex items-center">
+                      <Calendar className="h-2.5 w-2.5 mr-0.5" />
+                      {formatDate(comment.createdAt)}
+                    </span>
+                    {collapsedComments.includes(comment.id) || autoCollapsing ? 
+                      <ChevronDown className="h-3 w-3 text-muted-foreground/70" /> : 
+                      <ChevronUp className="h-3 w-3 text-muted-foreground/70" />
+                    }
                   </div>
                 </div>
-
-                {!(collapsedComments.includes(comment.id) || autoCollapsing) && (
-                  <div className="px-4 py-3">
-                    {editingCommentId === comment.id ? (
-                      <div className="mb-2">
-                        <Textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} className="text-sm bg-background/80 min-h-[80px]" />
-                        <div className="mt-2 flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              if (!editContent.trim()) {
-                                toast({ title: "Missing content", description: "Please enter some text.", variant: "destructive" });
-                                return;
-                              }
-                              editMutation.mutate({ commentId: comment.id, newContent: editContent });
-                            }}
-                          >
-                            Save
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => { setEditingCommentId(null); setEditContent(""); }}>
-                            Cancel
-                          </Button>
+                
+                {/* Comment body - ultra compact and collapsible */}
+                <AnimatePresence>
+                  {(!(collapsedComments.includes(comment.id) || autoCollapsing)) && (
+                    <motion.div 
+                      className="px-2.5 py-1"
+                      initial={{ opacity: 0.9, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0.9, height: 0 }}
+                      transition={{ duration: 0.1 }}
+                    >
+                      <p className="text-xs text-card-foreground leading-relaxed mb-1">
+                        {parseMentions(comment.content)}
+                      </p>
+                      
+                      {comment.metadata.moderated && (
+                        <div className="mb-1 px-1.5 py-0.5 bg-amber-500/10 rounded-sm text-[9px] border border-amber-500/20">
+                          <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                            <AlertCircle className="h-2.5 w-2.5" />
+                            <span className="font-medium">This comment was automatically moderated</span>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-card-foreground leading-relaxed whitespace-pre-line">{comment.content}</p>
-                    )}
-
-                    <div className="mt-3 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <CommentReactionButtons
-                          comment={{
-                            id: comment.id,
-                            metadata: { votes: { upvotes: comment.metadata?.votes?.upvotes ?? comment.metadata?.upvotes ?? 0, downvotes: comment.metadata?.votes?.downvotes ?? comment.metadata?.downvotes ?? 0 } }
-                          }}
-                          onUpvote={(id) => vote(id, true)}
-                          onDownvote={(id) => vote(id, false)}
-                        />
-                        <Separator orientation="vertical" className="h-4" />
-                        <Button variant="ghost" size="sm" className="gap-1 text-sm hover:bg-primary/5" onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}>
-                          <Reply className="h-3.5 w-3.5" /> Reply
-                        </Button>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={flaggedComments.includes(comment.id)}
-                          onClick={() => flagMutation.mutate({ commentId: comment.id })}
-                        >
-                          {flaggedComments.includes(comment.id) ? "Reported" : "Report"}
-                        </Button>
-                        {comment.isOwner && (
-                          <>
-                            {editingCommentId === comment.id ? null : (
-                              <Button variant="ghost" size="sm" onClick={() => { setEditingCommentId(comment.id); setEditContent(comment.content); }}>
-                                Edit
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                if (confirm("Delete this comment?")) deleteMutation.mutate(comment.id);
-                              }}
+                      )}
+                      
+                      <div className="flex items-center justify-between mt-1">
+                        <div className="flex items-center gap-1.5">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent triggering collapse
+                              setReplyingTo(replyingTo === comment.id ? null : comment.id);
+                            }}
+                            className="inline-flex items-center text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            <Reply className="h-2.5 w-2.5 mr-0.5" />
+                            <span>Reply</span>
+                          </button>
+                        </div>
+                        <div>
+                          {flaggedComments.includes(comment.id) ? (
+                            <span 
+                              className="inline-flex items-center text-[9px] text-muted-foreground/70"
+                              title="You've reported this comment"
                             >
-                              Delete
-                            </Button>
-                          </>
-                        )}
+                              <span className="mr-1 opacity-70">Reported</span>
+                              <Flag className="h-2.5 w-2.5 fill-destructive/10 text-destructive/50" />
+                            </span>
+                          ) : (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent triggering collapse
+                                openFlagDialog(comment.id);
+                              }}
+                              className="inline-flex items-center text-[9px] text-muted-foreground hover:text-destructive transition-colors group"
+                              title="Report this comment"
+                            >
+                              <span className="opacity-0 group-hover:opacity-100 transition-opacity mr-1">Flag</span>
+                              <Flag className="h-2.5 w-2.5 group-hover:fill-destructive/10" />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-
-                    {replyingTo === comment.id && (
-                      <div className="space-y-2 ml-8 mt-3 border-l-2 border-primary/10 pl-4">
-                        <div className="flex gap-3">
-                          <Avatar className="w-6 h-6 flex-shrink-0">
-                            <AvatarFallback className="text-xs bg-primary/10 text-primary">{(isAuthenticated && user?.username ? user.username[0] : "Y").toUpperCase()}</AvatarFallback>
-                          </Avatar>
-                          <form
-                            className="flex-1"
-                            onSubmit={(e) => {
-                              e.preventDefault();
-                              const form = e.currentTarget as HTMLFormElement;
-                              const fd = new FormData(form);
-                              const text = String(fd.get("reply") || "");
-                              if (!text.trim()) return;
-                              replyMutation.mutate({ parentId: comment.id, reply: text });
-                              form.reset();
-                              setReplyingTo(null);
-                            }}
-                          >
-                            <Card className="p-3 bg-muted/10 border-border/50">
-                              <Textarea name="reply" placeholder="Write your reply..." className="min-h-[80px] bg-background/80" />
-                              <div className="mt-2 flex gap-2 justify-end">
-                                <Button type="button" variant="outline" size="sm" onClick={() => setReplyingTo(null)}>
-                                  Cancel
-                                </Button>
-                                <Button type="submit" size="sm" disabled={replyMutation.isPending}>
-                                  {replyMutation.isPending ? (
-                                    <>
-                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Posting...
-                                    </>
-                                  ) : (
-                                    "Post Reply"
-                                  )}
-                                </Button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Card>
+              
+              {/* Show reply form if replying to this comment */}
+              <AnimatePresence>
+                {replyingTo === comment.id && (
+                  <motion.div
+                    initial={{ opacity: 0.9, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="ml-4"
+                  >
+                    <ReplyForm 
+                      commentId={comment.id} 
+                      postId={postId}
+                      onCancel={() => setReplyingTo(null)}
+                      authorToMention={comment.metadata.author}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              {/* Replies to this comment */}
+              {repliesByParentId[comment.id] && repliesByParentId[comment.id].length > 0 && (
+                <div className="ml-4 space-y-1">
+                  {repliesByParentId[comment.id].map(reply => (
+                    <motion.div
+                      key={reply.id}
+                      initial={{ opacity: 0.9, x: -2 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <Card className={cn(
+                        "shadow-xs hover:shadow-sm transition-all border-border/30 overflow-hidden",
+                        reply.metadata.moderated ? "border-amber-500/30" : "hover:border-primary/20"
+                      )}>
+                        {/* Reply header - ultra compact */}
+                        <div className="px-2 py-0.5 flex items-center justify-between border-b border-border/10 bg-muted/5">
+                          <div className="flex items-center">
+                            <span className="font-medium text-[10px]">{reply.metadata.author || "Anonymous"}</span>
+                            {reply.metadata.moderated && (
+                              <div className="ml-2 flex items-center text-[8px] text-amber-500">
+                                <AlertCircle className="h-2 w-2 mr-0.5" />
+                                <span>Moderated</span>
                               </div>
-                            </Card>
-                          </form>
-                        </div>
-                      </div>
-                    )}
-
-                    {repliesByParentId[comment.id] && repliesByParentId[comment.id].length > 0 && (
-                      <>
-                        <div className="flex items-center gap-2 mt-6 mb-4">
-                          <Separator className="flex-grow" />
-                          <span className="text-xs uppercase font-semibold tracking-wider text-muted-foreground bg-muted/30 px-2 py-1 rounded">
-                            Replies ({repliesByParentId[comment.id].length})
+                            )}
+                          </div>
+                          <span className="text-[8px] text-muted-foreground flex items-center">
+                            <Calendar className="h-2 w-2 mr-0.5" />
+                            {formatDate(reply.createdAt)}
                           </span>
-                          <Separator className="flex-grow" />
                         </div>
-                        <div className="space-y-4 pl-4 border-l-2 border-muted/30">
-                          {repliesByParentId[comment.id].map((reply) => (
-                            <div key={reply.id} className="relative">
-                              <div className="absolute -left-[25px] top-2 h-2 w-2 rounded-full bg-primary/60"></div>
-                              <div className="flex gap-3">
-                                <Avatar className="h-6 w-6 flex-shrink-0">
-                                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                                    {(reply.metadata.author || "A")[0].toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 bg-muted/10 rounded-lg p-3 border border-border/30">
-                                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                                    <strong className="text-xs sm:text-sm font-medium">{reply.metadata.author || "Anonymous"}</strong>
-                                    <span className="text-[10px] text-muted-foreground">{formatTime(reply.createdAt)}</span>
-                                  </div>
-                                  <p className="text-xs sm:text-sm text-card-foreground mt-2 leading-relaxed whitespace-pre-line">{reply.content}</p>
-                                  <div className="mt-2 flex items-center gap-2">
-                                    <CommentReactionButtons
-                                      comment={{ id: reply.id, metadata: { votes: { upvotes: reply.metadata?.votes?.upvotes ?? reply.metadata?.upvotes ?? 0, downvotes: reply.metadata?.votes?.downvotes ?? reply.metadata?.downvotes ?? 0 } } }}
-                                      onUpvote={(id) => vote(id, true)}
-                                      onDownvote={(id) => vote(id, false)}
-                                      size="sm"
-                                    />
-                                  </div>
-                                  {renderNestedReplies(reply.id, 1)}
-                                </div>
+                        
+                        {/* Reply body - ultra compact */}
+                        <div className="px-2 py-1">
+                          <p className="text-[10px] text-card-foreground leading-relaxed mb-1">
+                            {parseMentions(reply.content)}
+                          </p>
+                          
+                          {reply.metadata.moderated && (
+                            <div className="mb-1 px-1 py-0.5 bg-amber-500/10 rounded-sm text-[8px] border border-amber-500/20">
+                              <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                                <AlertCircle className="h-2 w-2" />
+                                <span className="font-medium">This reply was automatically moderated</span>
                               </div>
                             </div>
-                          ))}
+                          )}
+                          
+                          <div className="flex items-center justify-between mt-1">
+                            <div></div>
+                            {flaggedComments.includes(reply.id) ? (
+                              <span 
+                                className="inline-flex items-center text-[8px] text-muted-foreground/70"
+                                title="You've reported this reply"
+                              >
+                                <Flag className="h-2 w-2 fill-destructive/10 text-destructive/50" />
+                              </span>
+                            ) : (
+                              <button 
+                                onClick={() => openFlagDialog(reply.id)}
+                                className="inline-flex items-center text-[8px] text-muted-foreground hover:text-destructive transition-colors group"
+                                title="Report this reply"
+                              >
+                                <Flag className="h-2 w-2 group-hover:fill-destructive/10" />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </Card>
-            </div>
-          ))}
-          {sortedRootComments.length > visibleRootCount && (
-            <div className="flex justify-center pt-2">
-              <Button variant="outline" size="sm" onClick={() => setVisibleRootCount((c) => c + 20)}>
-                Load more comments ({sortedRootComments.length - visibleRootCount} more)
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          ))
+        ) : (
+          <div className="text-center py-3">
+            <p className="text-xs text-muted-foreground">No comments yet. Be the first to share your thoughts!</p>
+          </div>
+        )}
+      </div>
+      
+      {/* Confirmation dialog for flagging comments */}
+      <AlertDialog open={flagDialogOpen} onOpenChange={setFlagDialogOpen}>
+        <AlertDialogContent className="max-w-[350px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base">Report this comment?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs">
+              Are you sure you want to report this comment? This will notify our moderation team to review it for inappropriate content.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex gap-1.5">
+            <AlertDialogCancel className="text-[11px] h-7">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmFlagComment}
+              className="text-[11px] h-7 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              <Flag className="h-3 w-3 mr-1.5" />
+              Report Comment
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
