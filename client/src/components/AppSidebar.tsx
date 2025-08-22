@@ -23,15 +23,19 @@ export function AppSidebar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   
-  // Effect to detect and update device type based on screen width
+  // Effect to detect and update device type based on screen width and touch capability
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
+      const height = window.innerHeight;
+      const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      
       if (width < 640) {
         setDeviceType('mobile');
       } else if (width >= 640 && width < 1024) {
         setDeviceType('tablet');
-      } else if (width >= 1024 && width < 1280) {
+      } else if (width >= 1024 && width < 1440) {
+        // Laptops can be touchscreen, so we need to consider touch capability
         setDeviceType('laptop');
       } else {
         setDeviceType('desktop');
@@ -73,10 +77,10 @@ export function AppSidebar() {
 
   return (
     <Sidebar
-      collapsible={deviceType === 'mobile' ? "offcanvas" : deviceType === 'tablet' ? "offcanvas" : "icon"}
+      collapsible={deviceType === 'mobile' || deviceType === 'tablet' || deviceType === 'laptop' ? "offcanvas" : "icon"}
       className={`flex flex-col h-screen bg-[hsl(var(--sidebar-background))] text-[hsl(var(--sidebar-foreground))]
                 dark:bg-[hsl(var(--background))] dark:border-r dark:border-gray-800
-                transition-all duration-300 ease-in-out ${!open && deviceType !== 'mobile' && deviceType !== 'tablet' ? 'sidebar-collapsed' : ''}`}
+                transition-all duration-300 ease-in-out ${!open && deviceType === 'desktop' ? 'sidebar-collapsed' : ''}`}
     >
       <SidebarContent>
         {/* Enhanced fixed header with conditional shadow on scroll */}
@@ -90,7 +94,7 @@ export function AppSidebar() {
           <h2 className="text-lg lg:text-xl xl:text-2xl font-semibold text-[hsl(var(--sidebar-foreground))]">
             Stories
           </h2>
-          {(deviceType === 'mobile' || deviceType === 'tablet') && (
+          {(deviceType === 'mobile' || deviceType === 'tablet' || deviceType === 'laptop') && (
             <Button
               variant="ghost"
               size="icon"
@@ -112,8 +116,8 @@ export function AppSidebar() {
           </div>
         </div>
         
-        {/* Mobile/Tablet menu trigger button - visible when sidebar is closed on mobile/tablet */}
-        {(deviceType === 'mobile' || deviceType === 'tablet') && !openMobile && (
+        {/* Mobile/Tablet/Laptop menu trigger button - visible when sidebar is closed */}
+        {(deviceType === 'mobile' || deviceType === 'tablet' || deviceType === 'laptop') && !openMobile && (
           <Button
             variant="secondary"
             size="icon"
