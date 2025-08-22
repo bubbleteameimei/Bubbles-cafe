@@ -70,8 +70,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   
   // Add swipe to close functionality with improved reliability
   React.useEffect(() => {
-    // Only add touch events if mobile/tablet/laptop and sidebar is open
-    if ((!sidebar?.isMobile && window.innerWidth <= 1440) || !sidebar?.openMobile) return;
+    // Only add touch events if sidebar is open
+    if (!sidebar?.openMobile) return;
     
     // Keep track of the starting position and movement
     let startX = 0;
@@ -174,8 +174,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         onNavigate();
       }
       
-      // 3. Close the mobile/tablet/laptop sidebar immediately for instant feedback
-      if (sidebar && (sidebar.isMobile || window.innerWidth <= 1440)) {
+      // 3. Close the sidebar immediately for instant feedback
+      if (sidebar) {
         sidebar.setOpenMobile(false);
       }
       // 4. Navigate immediately
