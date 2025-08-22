@@ -18,6 +18,7 @@ interface SearchResult {
   matches: {
     field: string;
     text: string;
+    context?: string;
     position: number;
   }[];
 }

@@ -89,8 +89,7 @@ router.post('/comments/:commentId/replies', requireAuth, apiRateLimiter, async (
         moderated: false,
         originalContent: content,
         upvotes: 0,
-        downvotes: 0,
-        ownerKey: userKey
+        downvotes: 0
       },
       is_approved: true
     });
