@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge"; 
+import { Badge } from "@/components/ui/badge";
 import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
 const ReaderTooltip = lazy(() => import("@/components/reader/ReaderTooltip"));
 const TableOfContents = lazy(() => import("@/components/reader/TableOfContents"));
 const SwipeNavigation = lazy(() => import("@/components/reader/SwipeNavigation").then(m => ({ default: m.default })));
 import "@/styles/reader-fixes.css"; // Import custom reader fixes
-import { 
+import {
   Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronRight, BookOpen,
-  Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
+  Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle,
   Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog,
   BookText, Trash, X
 } from "lucide-react";
@@ -56,11 +56,11 @@ const sanitizeHtmlContent = (html: string): string => {
     // Create a temporary div to parse HTML safely
     const temp = document.createElement('div');
     temp.innerHTML = html;
-    
+
     // Remove script tags and other dangerous elements
     const dangerousElements = temp.querySelectorAll('script, object, embed, iframe, form, input, button');
     dangerousElements.forEach(element => element.remove());
-    
+
     // Remove dangerous attributes from all elements
     const allElements = temp.querySelectorAll('*');
     allElements.forEach(element => {
@@ -75,7 +75,7 @@ const sanitizeHtmlContent = (html: string): string => {
           element.removeAttribute(attr);
         }
       });
-      
+
       // Also check href and src attributes for dangerous protocols
       const href = element.getAttribute('href');
       const src = element.getAttribute('src');
@@ -86,7 +86,7 @@ const sanitizeHtmlContent = (html: string): string => {
         element.removeAttribute('src');
       }
     });
-    
+
     let sanitized = temp.innerHTML;
 
     // Convert plain-text line breaks into paragraphs if content lacks block tags
@@ -126,20 +126,20 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   // Add authentication hook to check user role for admin actions
   const { user, logout } = useAuth();
   const isAdmin = user?.isAdmin === true;
-  
+
   // Theme is now managed by the useTheme hook
-  const { theme } = useTheme();
-  
+  const { theme, toggleTheme } = useTheme(); // Added toggleTheme
+
   // Font size and family adjustments
   const { fontSize, increaseFontSize, decreaseFontSize, MIN_FONT_SIZE, MAX_FONT_SIZE } = useFontSize();
   const { fontFamily, availableFonts, updateFontFamily } = useFontFamily();
-  
+
   // Night mode functionality has been completely removed
-  
+
   // One-click distraction-free mode - toggle UI visibility with click
   const { isUIHidden, toggleUI, showTooltip } = useReaderUIToggle();
 
@@ -150,7 +150,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
-  
+
   // Reading progress calculation
   useEffect(() => {
     const calculateReadingProgress = () => {
@@ -171,36 +171,37 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
-  
+
   // Auto save slug for navigation memory
   const [autoSaveSlug, setAutoSaveSlug] = useState<string>("");
-  
+
   // Fixed constants for better text readability (replacing auto-contrast)
   const DARK_TEXT_COLOR = 'rgba(255, 255, 255, 0.95)';
   const LIGHT_TEXT_COLOR = 'rgba(0, 0, 0, 0.95)';
-  
+
   // State for dialog controls
   const [fontDialogOpen, setFontDialogOpen] = useState(false);
   const [contentsDialogOpen, setContentsDialogOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  
+  const [showTOC, setShowTOC] = useState(false); // State for Table of Contents visibility
+
   // Detect if this is a refresh using Performance API
   const isRefreshRef = useRef<boolean>(
     typeof window !== 'undefined' &&
-    window.performance && 
+    window.performance &&
     ((window.performance.navigation?.type === 1) || // Old API
      (performance.getEntriesByType('navigation').some(
        nav => (nav as PerformanceNavigationTiming).type === 'reload'
      )))
   );
-  
+
   // Safe dialog close function (currently unused but available for future use)
-  
+
   // Reading progress tracking with scroll-based calculation
   useEffect(() => {
     let ticking = false;
     let animationFrameId: number | null = null;
-    
+
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
@@ -223,10 +224,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     };
 
     window.addEventListener('scroll', throttledHandleScroll, { passive: true });
-    
+
     // Initial calculation
     handleScroll();
-    
+
     return () => {
       window.removeEventListener('scroll', throttledHandleScroll);
       if (animationFrameId) {
@@ -234,17 +235,17 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       }
     };
   }, []);
-  
+
   // Horror easter egg - track rapid navigation
   const [showHorrorMessage, setShowHorrorMessage] = useState(false);
   const [horrorMessageText, setHorrorMessageText] = useState("Are you avoiding something?");
   const skipCountRef = useRef(0);
   const lastNavigationTimeRef = useRef(Date.now());
-  
+
   // Create a ref for the content container to attach swipe events
   const contentRef = useRef<HTMLDivElement>(null);
   // Removed positionRestoredRef as we no longer save reading position
-  
+
   // Delete Post Mutation for admin actions
   const deleteMutation = useMutation({
     mutationFn: async (postId: number) => {
@@ -252,15 +253,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       await fetchCsrfTokenIfNeeded();
       const response = await fetch(`/api/posts/${postId}`, applyCSRFToken({
         method: 'DELETE',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json'
         },
         credentials: 'include'
       }));
-      
+
       // Read response data
       const data = await response.json();
-      
+
       if (!response.ok) {
         console.error(`[Reader] Delete failed with status: ${response.status}`, data);
         if (response.status === 401) {
@@ -269,47 +270,47 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           throw new Error(data.message || 'Failed to delete post');
         }
       }
-      
+
       return data;
     },
     onSuccess: () => {
       // Invalidate all related queries to ensure cache is properly cleared
       console.log('[Reader] Invalidating all related query caches');
-      
+
       // Invalidate community posts list
       queryClient.invalidateQueries({ queryKey: ['/api/posts/community'] });
-      
+
       // Invalidate all posts endpoint
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-      
+
       // Invalidate specific post endpoints
       if (currentPost?.id) {
         console.log(`[Reader] Invalidating specific post cache for ID: ${currentPost.id}`);
-        queryClient.invalidateQueries({ 
+        queryClient.invalidateQueries({
           queryKey: ['/api/posts', currentPost.id.toString()]
         });
       }
-      
+
       // Also invalidate the specific post query based on the slug
       if (routeSlug) {
         console.log('[Reader] Invalidating specific post cache for slug:', routeSlug);
-        queryClient.invalidateQueries({ 
-          queryKey: ["wordpress", "posts", "reader", routeSlug] 
+        queryClient.invalidateQueries({
+          queryKey: ["wordpress", "posts", "reader", routeSlug]
         });
-        queryClient.invalidateQueries({ 
-          queryKey: ['/api/posts', routeSlug] 
+        queryClient.invalidateQueries({
+          queryKey: ['/api/posts', routeSlug]
         });
       }
-      
+
       setShowDeleteDialog(false);
-      
+
       toast({
         title: 'Story Deleted',
         description: isAdmin && user?.id !== currentPost?.authorId
           ? 'Community story has been deleted by admin.'
           : 'Your story has been deleted successfully.',
       });
-      
+
       // Force navigation back to the community page after deletion
       console.log('[Reader] Navigating back to community page');
       // Immediate navigation to prevent page from trying to load deleted content
@@ -326,7 +327,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   });
 
   console.log('[Reader] Component mounted with slug:', routeSlug); // Debug log
-  
+
   // Clear any cached data to ensure fresh fetch after sample story removal
   useEffect(() => {
     console.log('[Reader] Clearing query cache to ensure fresh data');
@@ -339,7 +340,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     try {
       const directSlug = sessionStorage.getItem('selectedPostSlug');
       if (directSlug) {
-        sessionStorage.removeItem('selectedStoryIndex');
+        sessionStorage.removeItem('selectedPostSlug');
         console.log('[Reader] Using direct slug/id from sessionStorage:', directSlug);
         // We'll resolve to index after fetching posts
         return 0;
@@ -375,7 +376,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           const response = await fetch(endpoint);
           if (!response.ok) throw new Error(`Failed to fetch ${isCommunityContent ? 'community' : ''} post`);
           const post = await response.json();
-          
+
           // Convert post to a format compatible with both WordPress and internal posts
           const normalizedPost = {
             ...post,
@@ -390,7 +391,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           };
           return { posts: [normalizedPost] };
         }
-        
+
         // Otherwise, fetch all posts for browsing by paging through results
         let page = 1;
         const limit = 500;
@@ -469,13 +470,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         title: currentPost.title?.rendered || currentPost.title || 'Story',
         date: currentPost.date
       } : 'No post found');
-      
+
       // Now that we have the post data, update our slug for auto-saving
       if (currentPost) {
         const newSlug = routeSlug || (currentPost.slug || `post-${currentPost.id}`);
         console.log('[Reader] Setting auto-save slug:', newSlug);
         setAutoSaveSlug(newSlug);
-        
+
         // Check if we've reloaded but the post has been deleted
         if (routeSlug && currentPost.id && currentIndex === 0) {
           // Verify the post exists by making a direct check using the improved endpoint
@@ -518,10 +519,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     const fontInfo = availableFonts?.[fontFamily];
     const safeFont = fontInfo?.family || 'system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
     // Use our fixed constants for better text readability
-    const textColor = theme === 'dark' 
-      ? `color: ${DARK_TEXT_COLOR};` 
+    const textColor = theme === 'dark'
+      ? `color: ${DARK_TEXT_COLOR};`
       : `color: ${LIGHT_TEXT_COLOR};`;
-    
+
     // Return the main styles with better text contrast for readability
     return `
   .story-content {
@@ -548,27 +549,27 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Apply styles effect with debouncing and proper cleanup
   useEffect(() => {
     let timeoutId: number | null = null;
-    
+
     const applyStyles = () => {
       try {
         console.log('[Reader] Injecting content styles with font family:', fontFamily);
         if (typeof document === 'undefined') return;
         const fontInfo = availableFonts?.[fontFamily];
         if (!fontInfo?.family) return; // wait until fonts are ready
-        
+
         // Remove any existing style tag first
         const existingTag = document.getElementById('reader-dynamic-styles');
         if (existingTag) {
           existingTag.remove();
         }
-        
+
         // Create new style tag
         const styleTag = document.createElement('style');
         styleTag.id = 'reader-dynamic-styles';
-        
+
         // Generate styles at runtime to avoid TDZ and ensure safe font fallback
         styleTag.textContent = generateStoryContentStyles();
-        
+
         document.head.appendChild(styleTag);
       } catch (error) {
         console.error('[Reader] Error injecting styles:', error);
@@ -582,7 +583,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
     // Debounce style updates to prevent rapid re-renders
     timeoutId = window.setTimeout(applyStyles, 100);
-    
+
     return () => {
       if (timeoutId) {
         clearTimeout(timeoutId);
@@ -594,11 +595,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       }
     };
   }, [fontFamily, fontSize, availableFonts, theme]);
-  
+
   // This duplicate has been removed - reading progress tracking is handled above
 
 
-  
+
   // Add a useEffect hook to handle deleted posts detection on component mount
   useEffect(() => {
     // Only run this check if we're looking at a specific post by slug
@@ -628,7 +629,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   if (invalidIndex) {
     return (
       <div className="relative min-h-[200px]">
-        <ApiLoader 
+        <ApiLoader
           isLoading={true}
           message="Adjusting story position..."
           minimumLoadTime={300}
@@ -649,7 +650,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   if (isLoading) {
     return (
       <div className="relative min-h-[200px]">
-        <ApiLoader 
+        <ApiLoader
           isLoading={true}
           message="Loading story..."
           minimumLoadTime={800}
@@ -725,16 +726,16 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     console.error('[Reader] Error formatting date:', error);
     formattedDate = 'Publication date unavailable';
   }
-  
+
   // Use theme from post or detect from content
   const postThemeCategory = currentPost.themeCategory;
   // Get icon from direct property or metadata
-  const postThemeIcon = currentPost.themeIcon || 
+  const postThemeIcon = currentPost.themeIcon ||
                        (currentPost.metadata && (currentPost.metadata as any).themeIcon);
-  
+
   // Detect themes from content as fallback if no theme is assigned
-  const detectedThemes = postThemeCategory 
-    ? [postThemeCategory] 
+  const detectedThemes = postThemeCategory
+    ? [postThemeCategory]
     : detectThemes(currentPost.content?.rendered || currentPost.content || '');
 
   const handleSocialShare = (platform: string, url: string) => {
@@ -749,8 +750,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const shareStory = async () => {
     const displayTitle = currentPost.title?.rendered || currentPost.title || 'Story';
     console.log('[Reader] Attempting native share:', displayTitle);
-    const shareText = isCommunityContent 
-      ? "Check out this community story on Bubble's Café!" 
+    const shareText = isCommunityContent
+      ? "Check out this community story on Bubble's Café!"
       : "Check out this story on Bubble's Café!";
     const shareData = {
       title: displayTitle,
@@ -791,46 +792,46 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const storyStyles = `
   .story-content {
     font-family: ${availableFonts[fontFamily].family};
-    width: 100%; 
+    width: 100%;
     margin: 0 auto;
     color: hsl(var(--foreground));
     transition: color 0.3s ease, background-color 0.3s ease, font-size 0.2s ease, font 0.2s ease, font-family 0.2s ease;
   }
-  
+
   /* Enhanced WordPress-inspired paragraph styling with proper spacing */
-  .story-content p, 
+  .story-content p,
   .story-content .story-paragraph {
     line-height: 1.8 !important;  /* Enhanced line height for better readability */
     margin-bottom: 2em !important;  /* Increased paragraph spacing for better separation */
     margin-top: 0 !important;
     text-align: left; /* Left-align like WordPress default */
-    letter-spacing: 0.01em; 
-    font-kerning: normal; 
-    font-feature-settings: "kern", "liga", "clig", "calt"; 
-    max-width: none; 
+    letter-spacing: 0.01em;
+    font-kerning: normal;
+    font-feature-settings: "kern", "liga", "clig", "calt";
+    max-width: none;
     font-family: ${availableFonts[fontFamily].family};
     font-size: var(--base-font-size, 16px);
     color: inherit;
     display: block; /* Ensure proper block display */
   }
-  
+
   /* Ensure first paragraph doesn't have extra top margin */
   .story-content p:first-of-type {
     margin-top: 0 !important;
   }
-  
+
   /* Enhanced WordPress-style paragraph spacing between adjacent paragraphs */
   .story-content p + p,
   .story-content .story-paragraph + .story-paragraph {
     margin-top: 2em !important;
     margin-bottom: 2em !important;
   }
-  
+
   /* Ensure text content has proper spacing even without explicit paragraph tags */
   .story-content > * {
     margin-bottom: 1.5em;
   }
-  
+
   .story-content > *:last-child {
     margin-bottom: 0;
   }
@@ -859,8 +860,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }
   @media (max-width: 768px) {
     .story-content p, .story-content .story-paragraph {
-      margin-bottom: 1.4em !important; 
-      line-height: 1.7 !important; 
+      margin-bottom: 1.4em !important;
+      line-height: 1.7 !important;
       font-family: ${availableFonts[fontFamily].family};
       font-size: var(--base-font-size, 16px);
     }
@@ -975,20 +976,20 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const checkRapidNavigation = () => {
     const now = Date.now();
     const timeSinceLastNavigation = now - lastNavigationTimeRef.current;
-    
+
     // Check if rapid navigation (less than 1.5 seconds between skips)
     if (timeSinceLastNavigation < 1500) {
       skipCountRef.current += 1;
-      
+
       // After 3 rapid skips, show the horror Easter egg
       if (skipCountRef.current >= 3 && !showHorrorMessage) {
         console.log('[Reader] Horror Easter egg triggered after rapid navigation');
-        
+
         // Highly threatening message for maximum creepiness with subtle psychological impact
         const message = "I SEE YOU SKIPPING!!!";
         setHorrorMessageText(message);
         setShowHorrorMessage(true);
-        
+
         // Show toast with extremely creepy text using maximum intensity
         // The CreepyTextGlitch component has been enhanced for a rapid, unnerving effect
         toast({
@@ -997,7 +998,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           variant: "destructive",
           duration: 9000, // Extended duration for more psychological impact
         });
-        
+
         // Reset after showing - match the extended toast duration
         setTimeout(() => {
           setShowHorrorMessage(false);
@@ -1008,7 +1009,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       // If navigation is slow, gradually reduce the skip count
       skipCountRef.current = Math.max(0, skipCountRef.current - 1);
     }
-    
+
     // Update last navigation time
     lastNavigationTimeRef.current = now;
   };
@@ -1022,13 +1023,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       do {
         randomIndex = Math.floor(Math.random() * posts.length);
       } while (randomIndex === currentIndex);
-      
+
       checkRapidNavigation();
       setCurrentIndex(randomIndex);
       window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
     }
   };
-  
+
   // Function to navigate to previous story
   const goToPreviousStory = () => {
     // Only execute logic if we have posts and we're not at the first one
@@ -1039,7 +1040,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
     }
   };
-  
+
   // Function to navigate to next story
   const goToNextStory = () => {
     // Only execute logic if we have posts and we're not at the last one
@@ -1050,7 +1051,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
     }
   };
-  
+
   // Check if we're at first or last story
   const isFirstStory = currentIndex === 0;
   const isLastStory = currentIndex === posts.length - 1;
@@ -1059,19 +1060,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // This avoids hook execution order issues by keeping related logic in a single component
 
   // The theme and toggleTheme functions are already declared at the top of the component
-  
+
   return (
     <ErrorBoundary>
       {/* Reader container */}
       <div className="w-full min-w-full max-w-full overflow-x-hidden">
         {/* Main reader page container */}
         <div className="relative min-h-screen bg-background reader-page overflow-visible pt-16 pb-8 flex flex-col"
-          data-reader-page="true" 
+          data-reader-page="true"
           data-distraction-free={isUIHidden ? "true" : "false"}>
-          
+
           {/* Reading Progress Bar - Fixed at top */}
-          <div 
-            style={{ 
+          <div
+            style={{
               position: 'fixed',
               top: 'var(--navbar-height, 56px)',
               left: '0px',
@@ -1083,8 +1084,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               pointerEvents: 'none'
             }}
           >
-            <div 
-              style={{ 
+            <div
+              style={{
                 height: '100%',
                 width: `${readingProgress}%`,
                 background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
@@ -1093,56 +1094,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               }}
             />
           </div>
-          
+
           {/* Reader tooltip for distraction-free mode instructions */}
           <Suspense fallback={null}>
             <ReaderTooltip show={showTooltip} />
           </Suspense>
-
-          {/* Horror message modal */}
-          {showHorrorMessage && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[1000] flex flex-col items-center justify-center backdrop-blur-md"
-              // Removed onClick handler to prevent closing by clicking outside
-            >
-              <div className="w-full max-w-3xl px-6 text-center">
-                <div className="mb-6">
-                  <CreepyTextGlitch 
-                    text={horrorMessageText} 
-                    className="text-4xl font-bold"
-                    intensityFactor={8}
-                  />
-                </div>
-                <div className="mt-4">
-                  <Button
-                    variant="outline"
-                    className="border-[#ff0000]/60 bg-background/70 hover:bg-background/80 backdrop-blur-sm text-foreground w-full py-6"
-                    onClick={() => setShowHorrorMessage(false)}
-                  >
-                    <span className="mx-auto text-lg font-medium">I understand, I'm sorry</span>
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-          
-          {/* Overlay to prevent interaction with the page when horror message is shown */}
-          {showHorrorMessage && (
-            <div 
-              className="fixed inset-0 z-[999]"
-              style={{ pointerEvents: 'all' }}
-              aria-hidden="true"
-            />
-          )}
-          
-          {/* Reading progress is rendered globally under the nav via StoryProgressBar */}
-          
-          {/* Floating pagination has been removed */}
-          
-          {/* Navigation buttons removed as requested */}
           {/* Reader Controls Container */}
           <div className={`ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} sticky top-16 z-40 bg-background/80 backdrop-blur-sm border-b border-border/50`}>
             <div className="container mx-auto px-4 py-2">
@@ -1171,7 +1127,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       A⁺
                     </button>
                   </div>
-                  
+
                   {/* Font family controls */}
                   <Dialog open={fontDialogOpen} onOpenChange={setFontDialogOpen}>
                     <DialogTrigger asChild>
@@ -1191,8 +1147,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                           <button
                             key={key}
                             className={`p-3 text-left rounded border transition-colors ${
-                              fontFamily === key 
-                                ? 'bg-primary text-primary-foreground border-primary' 
+                              fontFamily === key
+                                ? 'bg-primary text-primary-foreground border-primary'
                                 : 'hover:bg-muted border-border'
                             }`}
                             onClick={() => {
@@ -1224,7 +1180,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     <DialogContent className="max-w-md" aria-labelledby="toc-dialog-title">
                       <div className="flex items-center justify-between">
                         <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
-                        <button 
+                        <button
                           onClick={() => setContentsDialogOpen(false)}
                           className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors"
                           aria-label="Close"
@@ -1233,9 +1189,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         </button>
                       </div>
                       <Suspense fallback={<div className="p-4 text-sm text-muted-foreground">Loading…</div>}>
-                        <TableOfContents 
-                          currentPostId={currentPost.id} 
-                          onClose={() => setContentsDialogOpen(false)} 
+                        <TableOfContents
+                          currentPostId={currentPost.id}
+                          onClose={() => setContentsDialogOpen(false)}
                           posts={(posts as any[]).map(p => ({
                             id: p.id,
                             title: (p.title?.rendered || p.title || 'Untitled') as string,
@@ -1253,10 +1209,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       </Suspense>
                     </DialogContent>
                   </Dialog>
-                  
+
                   {/* Bookmark Button */}
-                  <BookmarkButton 
-                    postId={currentPost.id} 
+                  <BookmarkButton
+                    postId={currentPost.id}
                     variant="reader"
                     showText={false}
                     className="p-2 hover:bg-muted rounded-md transition-colors border border-border/50 bg-background/50"
@@ -1268,7 +1224,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
           {/* Full width immersive reading experience */}
           <div className={`pt-0 pb-0 bg-background mt-0 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
-          
+
             <article
                 key={currentPost.id}
                 className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
@@ -1277,17 +1233,17 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   <div className="relative flex flex-col items-center max-w-4xl">
                     {isCommunityContent && (
                       <div className="flex items-center gap-2 mb-3">
-                        <Badge 
-                          variant="secondary" 
+                        <Badge
+                          variant="secondary"
                           className="bg-primary/10 text-foreground border-primary/20"
                         >
                           Community Story
                         </Badge>
                         {/* Show delete button for admins or post authors */}
                         {(isAdmin || (isCommunityContent && user?.id === currentPost?.authorId)) && isCommunityContent && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="h-7 px-2 border-red-200 bg-red-50 hover:bg-red-100 text-red-600"
                             onClick={() => setShowDeleteDialog(true)}
                           >
@@ -1302,20 +1258,20 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(currentPost.title?.rendered || currentPost.title || 'Story') }}
                     />
                   </div>
-                  
+
                   {/* Story Delete Dialog */}
                   <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                     <DialogContent className="max-w-md">
                       <DialogHeader>
                         <DialogTitle className="flex items-center text-xl">
                           <Trash className="h-5 w-5 mr-2 text-red-500" />
-                          {isAdmin && user?.id !== currentPost?.authorId ? 
-                            "Delete Community Story" : 
+                          {isAdmin && user?.id !== currentPost?.authorId ?
+                            "Delete Community Story" :
                             "Delete Your Story"}
                         </DialogTitle>
                         <DialogDescription className="pt-2 text-sm">
-                          {isAdmin && user?.id !== currentPost?.authorId ? 
-                            "As an admin, you are about to delete a user-submitted community story. This action cannot be undone." : 
+                          {isAdmin && user?.id !== currentPost?.authorId ?
+                            "As an admin, you are about to delete a user-submitted community story. This action cannot be undone." :
                             "You are about to delete your community story. This action cannot be undone."}
                         </DialogDescription>
                       </DialogHeader>
@@ -1331,8 +1287,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
                           Cancel
                         </Button>
-                        <Button 
-                          variant="destructive" 
+                        <Button
+                          variant="destructive"
                           onClick={() => deleteMutation.mutate(currentPost.id)}
                           disabled={deleteMutation.isPending}
                         >
@@ -1351,9 +1307,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                             // Get the primary theme (first one as it's sorted by relevance)
                             const primaryTheme = detectedThemes[0];
                             // Safely get the theme information with fallback
-                            const themeInfo = primaryTheme && 
-                              Object.prototype.hasOwnProperty.call(THEME_CATEGORIES, primaryTheme) 
-                                ? THEME_CATEGORIES[primaryTheme as keyof typeof THEME_CATEGORIES] 
+                            const themeInfo = primaryTheme &&
+                              Object.prototype.hasOwnProperty.call(THEME_CATEGORIES, primaryTheme)
+                                ? THEME_CATEGORIES[primaryTheme as keyof typeof THEME_CATEGORIES]
                                 : {
                                     icon: 'Ghost',
                                     badgeVariant: 'default',
@@ -1361,7 +1317,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                                     description: 'Horror Fiction',
                                     visualEffects: []
                                   };
-                          
+
                           const ThemeIcon = (() => {
                             // First check if we have a custom icon from the post
                             if (postThemeIcon) {
@@ -1374,70 +1330,70 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                                 case 'dna': return Dna;
                                 case 'ghost': return Ghost;
                                 case 'footprints': return Footprints;
-                                case 'cloud-rain': 
+                                case 'cloud-rain':
                                 case 'cloudrain': return CloudRain;
                                 case 'castle': return Castle;
                                 case 'bug': return Bug;
                                 case 'radiation': return Radiation;
                                 case 'umbrella': return Umbrella;
-                                case 'userminus2': 
+                                case 'userminus2':
                                 case 'user-minus2': return UserMinus2;
                                 case 'anchor': return Anchor;
-                                case 'alerttriangle': 
+                                case 'alerttriangle':
                                 case 'alert-triangle': return AlertTriangle;
                                 case 'building': return Building;
                                 case 'worm': return Worm;
                                 case 'cloud': return Cloud;
-                                case 'cloudfog': 
+                                case 'cloudfog':
                                 case 'cloud-fog': return CloudFog;
                                 default: return Ghost; // Default fallback
                               }
                             }
-                            
+
                             // If no custom icon, fall back to the theme definition
                             // Ensure themeInfo and themeInfo.icon exist before using them
                             if (!themeInfo || !themeInfo.icon) {
                               return Ghost; // Default fallback if themeInfo or icon is missing
                             }
-                            
+
                             switch(themeInfo.icon) {
-                              case 'skull': 
+                              case 'skull':
                               case 'Skull': return Skull;
-                              case 'brain': 
+                              case 'brain':
                               case 'Brain': return Brain;
-                              case 'pill': 
+                              case 'pill':
                               case 'Pill': return Pill;
-                              case 'cpu': 
+                              case 'cpu':
                               case 'Cpu': return Cpu;
-                              case 'dna': 
+                              case 'dna':
                               case 'Dna': return Dna;
-                              case 'ghost': 
+                              case 'ghost':
                               case 'Ghost': return Ghost;
-                              case 'cross': 
+                              case 'cross':
                               case 'Cross': return Cross;
-                              case 'car': 
+                              case 'car':
                               case 'Car': return ChevronRight; // Temporary fallback for Car icon
-                              case 'footprints': 
+                              case 'footprints':
                               case 'Footprints': return Footprints;
-                              case 'cloudrain': 
-                              case 'cloud-rain': 
+                              case 'cloudrain':
+                              case 'cloud-rain':
                               case 'CloudRain': return CloudRain;
-                              case 'castle': 
+                              case 'castle':
                               case 'Castle': return Castle;
-                              case 'utensils': 
+                              case 'utensils':
                               case 'Utensils': return BookOpen; // Temporary fallback for Utensils icon
-                              case 'bug': 
+                              case 'bug':
                               case 'Bug': return Bug;
-                              case 'knife': 
+                              case 'knife':
                               case 'Knife': return Ghost; // Temporary fallback for Knife icon
-                              case 'scan': 
+                              case 'scan':
                               case 'Scan': return Cpu; // Temporary fallback for Scan icon
                               case 'AlertTriangle': return AlertTriangle;
                               case 'Copy': return RefreshCcw; // Temporary fallback for Copy icon
                               default: return Bug;
                             }
                           })();
-                          
+
                           return (
                             <>
                               <ThemeIcon className="h-4 w-4 text-primary/80" />
@@ -1464,8 +1420,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       size="default"
                       onClick={goToPreviousStory}
                       className={`px-4 py-2 min-w-[100px] transition-all duration-200 ${
-                        isFirstStory 
-                          ? 'opacity-50 cursor-not-allowed' 
+                        isFirstStory
+                          ? 'opacity-50 cursor-not-allowed'
                           : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg'
                       }`}
                       disabled={posts.length <= 1 || isFirstStory}
@@ -1473,7 +1429,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       <ChevronRight className="h-4 w-4 mr-2 rotate-180" />
                       Previous
                     </Button>
-                    
+
                     {/* Random Story Button */}
                     <Button
                       variant="secondary"
@@ -1486,15 +1442,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       <Shuffle className="h-4 w-4 mr-2" />
                       Random
                     </Button>
-                    
+
                     {/* Next Button */}
                     <Button
                       variant={isLastStory ? "outline" : "default"}
                       size="default"
                       onClick={goToNextStory}
                       className={`px-4 py-2 min-w-[100px] transition-all duration-200 ${
-                        isLastStory 
-                          ? 'opacity-50 cursor-not-allowed' 
+                        isLastStory
+                          ? 'opacity-50 cursor-not-allowed'
                           : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg'
                       }`}
                       disabled={posts.length <= 1 || isLastStory}
@@ -1506,7 +1462,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 </div>
               </div>
 
-              <Suspense fallback={<div className="h-10" />}> 
+              <Suspense fallback={<div className="h-10" />}>
               <SwipeNavigation
                 onPrevious={goToPreviousStory}
                 onNext={goToNextStory}
@@ -1536,18 +1492,18 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 />
               </SwipeNavigation>
               </Suspense>
-              
+
               {/* Simple pagination at bottom of story content - extremely compact */}
               <div className={`flex items-center justify-center gap-3 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                 <div className="flex items-center gap-3 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1.5 px-3 shadow-md">
                   {/* Previous story button */}
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={goToPreviousStory}
                     className={`h-8 w-8 rounded-full group relative transition-all duration-200 ${
-                      isFirstStory 
-                        ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
+                      isFirstStory
+                        ? 'opacity-30 cursor-not-allowed text-muted-foreground'
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
                     }`}
                     aria-label="Previous story"
@@ -1560,20 +1516,20 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       Previous Story
                     </span>
                   </Button>
-                  
+
                   {/* Story counter */}
                   <div className="px-2 text-xs text-muted-foreground font-medium">
                     {currentIndex + 1} of {posts.length}
                   </div>
-                  
+
                   {/* Next story button */}
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={goToNextStory}
                     className={`h-8 w-8 rounded-full group relative transition-all duration-200 ${
-                      isLastStory 
-                        ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
+                      isLastStory
+                        ? 'opacity-30 cursor-not-allowed text-muted-foreground'
                         : 'text-slate-700 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
                     }`}
                     aria-label="Next story"
@@ -1594,10 +1550,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   {/* Centered Like/Dislike buttons */}
                   <div className={`flex justify-center w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                     <Suspense fallback={<div className="h-8" />}>
-                      <LikeDislike 
-                        postId={currentPost.id} 
-                        variant="reader" 
-                        className="mt-6" 
+                      <LikeDislike
+                        postId={currentPost.id}
+                        variant="reader"
+                        className="mt-6"
                         onLike={(liked) => console.log('Story liked:', liked)}
                         onUpdate={(likes, dislikes) => console.log('Stats updated:', { likes, dislikes })}
                       />
@@ -1646,7 +1602,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       </ErrorBoundary>
                     </div>
                   </div>
-                  
+
                   {/* Support My Writing Section */}
                   <div className={`mt-8 flex justify-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                     <SupportWritingCard className="w-full max-w-sm" />
@@ -1654,7 +1610,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 </div>
 
                 {/* Comment Section with improved aesthetic styling - no fading */}
-                <div className="mt-10 pt-6 border-t border-border/30">
+                <div className="mt-10 pt-6 border-t border-border/50">
                   <div className="bg-background/50 backdrop-blur-md p-6 rounded-xl border border-border/20 shadow-lg">
                     <div className="flex flex-col gap-2 mb-6">
                       <h3 className="text-2xl font-medium tracking-tight flex items-center gap-2">
@@ -1667,7 +1623,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         Join the conversation and share your thoughts about this story.
                       </p>
                     </div>
-                    
+
                     <div className="relative">
                       <div className="absolute -left-4 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/5 via-primary/20 to-primary/5 rounded-full"></div>
                       <ErrorBoundary fallback={
