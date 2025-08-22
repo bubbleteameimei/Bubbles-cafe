@@ -88,7 +88,7 @@ router.post(
 		// Determine author name
 		const inferredAuthor = body.author && body.author.trim().length > 0
 			? body.author.trim()
-			: ((req as any).user?.username || ((req as any).user?.id ? 'User' : 'Anonymous'));
+			: ((req as any).user?.username || ((req as any).user?.id ? 'User' : 'Guest'));
 
 		const insert = {
 			content: contentToSave,

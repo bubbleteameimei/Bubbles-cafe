@@ -1947,7 +1947,7 @@ export class DatabaseStorage implements IStorage {
         moderated: false,
         originalContent: comment.content,
         isAnonymous: !comment.userId,
-        author: (typeof baseMeta.author === 'string') ? baseMeta.author : (comment.userId ? 'User' : 'Anonymous'),
+        author: (typeof baseMeta.author === 'string') ? baseMeta.author : (comment.userId ? 'User' : 'Guest'),
         upvotes: 0,
         downvotes: 0,
         replyCount: 0,
@@ -2442,7 +2442,7 @@ export class DatabaseStorage implements IStorage {
         moderated: false,
         originalContent: reply.content,
         isAnonymous: !reply.userId,
-        author: reply.metadata?.author || 'Anonymous',
+        author: reply.metadata?.author || 'Guest',
         upvotes: 0,
         downvotes: 0,
         replyCount: 0
