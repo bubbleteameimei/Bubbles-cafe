@@ -157,10 +157,9 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
       await fetchCsrfTokenIfNeeded();
       
       // Post reply via /api/posts/:postId/comments with parentId
-      const token = getBearer();
       const response = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ content: content.trim(), author: replyAuthor, parentId: commentId })
       }));
@@ -428,10 +427,9 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
       const { isFlagged, isUnderReview } = checkModeration(content);
       
       // Using our CSRF wrapper for posting
-      const token = getBearer();
       const response = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           content: content.trim(),
@@ -509,10 +507,9 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     
     try {
       await fetchCsrfTokenIfNeeded();
-      const token = getBearer();
       const response = await fetch(`/api/comments/${commentToFlag}/flag`, applyCSRFToken({
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ reason: "inappropriate content" })
       }));
