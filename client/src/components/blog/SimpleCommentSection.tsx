@@ -412,7 +412,7 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
               </div>
               {/* Moderation preview box when flagged content is detected */}
               {(() => {
-                const { isFlagged, isUnderReview } = checkModeration(content);
+                const { isFlagged, isUnderReview, moderated } = checkModeration(content as any);
                 if (!content.trim() || (!isFlagged && !isUnderReview)) return null;
                 return (
                   <div className="mt-2 rounded-md border border-amber-300/50 bg-amber-50/60 dark:bg-amber-900/10 p-2">
@@ -420,9 +420,16 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
                       <AlertCircle className="h-3.5 w-3.5" />
                       <span className="text-xs font-medium">Your comment may be moderated for review</span>
                     </div>
-                    <p className="mt-1 ml-5 text-xs text-amber-800/90 dark:text-amber-200/90">
-                      Contains potentially inappropriate language. You can edit it before posting.
-                    </p>
+                    <div className="mt-1 ml-5 space-y-1">
+                      <p className="text-xs text-amber-800/90 dark:text-amber-200/90">
+                        Contains potentially inappropriate language. You can edit it before posting.
+                      </p>
+                      {moderated && (
+                        <p className="text-xs text-amber-900/90 dark:text-amber-100/90">
+                          Moderated preview: {moderated}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 );
               })()}
