@@ -1044,7 +1044,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       {/* Reader container */}
       <div className="w-full min-w-full max-w-full overflow-x-hidden">
          {/* Top actions, title, etc. */}
-        <div className="relative min-h-screen bg-background reader-page overflow-visible pt-16 sm:pt-16 md:pt-18 lg:pt-20 pb-8 flex flex-col"
+        <div className="relative min-h-screen bg-background reader-page overflow-visible pt-12 sm:pt-12 lg:pt-16 pb-8 flex flex-col"
           /* Added enhanced background-related styling directly here */
           data-reader-page="true" 
           data-distraction-free={isUIHidden ? "true" : "false"}>
@@ -1212,7 +1212,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   size="sm"
                   onClick={decreaseFontSize}
                   disabled={fontSize <= MIN_FONT_SIZE}
-                  className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
+                  className="h-9 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
                   aria-label="Decrease font size"
                 >
                   <Minus className="h-4 w-4 mr-1" />
@@ -1224,7 +1224,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   size="sm"
                   onClick={increaseFontSize}
                   disabled={fontSize >= MAX_FONT_SIZE}
-                  className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
+                  className="h-9 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
                   aria-label="Increase font size"
                 >
                   A+
@@ -1237,31 +1237,20 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 ml-2"
+                      className="h-9 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 ml-2"
                     >
-                      <span className="text-xs uppercase">FONT</span>
+                      <span className="text-sm uppercase">FONT</span>
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-full">
                     <DialogHeader>
                       <DialogTitle>Font Settings</DialogTitle>
                       <DialogDescription>
-                        Change the font style and size for your reading experience.
+                        Change the font style for your reading experience.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium">Text Size</h4>
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="icon" onClick={decreaseFontSize} disabled={fontSize <= MIN_FONT_SIZE}>
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <div className="text-sm w-12 text-center">{fontSize}px</div>
-                          <Button variant="outline" size="icon" onClick={increaseFontSize} disabled={fontSize >= MAX_FONT_SIZE}>
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
+                      {/* Removed font size controls from modal to avoid size changes here */}
                       <div className="space-y-2">
                         <h4 className="text-sm font-medium">Font Style</h4>
                         <div className="grid grid-cols-1 gap-2">
@@ -1298,7 +1287,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 postId={currentPost.id} 
                 variant="reader"
                 showText={false}
-                className="h-8 w-8 rounded-full bg-background hover:bg-background/80 mx-2"
+                className="h-9 w-9 rounded-full bg-background hover:bg-background/80 mx-2"
               />
 
               {/* Text-to-speech functionality removed */}
@@ -1309,10 +1298,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   <Button
                     variant="default"
                     size="sm"
-                    className="h-8 px-3 bg-primary hover:bg-primary/90 text-white shadow-lg flex items-center gap-1.5 min-w-0 max-w-[120px] overflow-hidden transition-all duration-200 hover:scale-105 rounded-md"
+                    className="h-9 px-3 bg-primary hover:bg-primary/90 text-white shadow-lg flex items-center gap-1.5 min-w-0 max-w-[120px] overflow-hidden transition-all duration-200 hover:scale-105 rounded-md"
                   >
                     <BookText className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate text-xs font-semibold tracking-wide">TOC</span>
+                    <span className="truncate text-sm font-semibold tracking-wide">TOC</span>
                   </Button>
                 </DialogTrigger>
                 {/* Wrap the TableOfContents component to ensure DialogContent has proper aria attributes */}
@@ -1385,7 +1374,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       </div>
                     )}
                     <h1
-                      className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-center mb-2 tracking-wider"
+                      className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-2 tracking-tight"
                       dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(currentPost.title?.rendered || currentPost.title || 'Story') }}
                     />
                   </div>
