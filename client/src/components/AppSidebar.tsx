@@ -85,13 +85,28 @@ export function AppSidebar() {
           <Button
             variant="secondary"
             size="icon"
-            onClick={() => setOpenMobile(true)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setOpenMobile(true);
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setOpenMobile(true);
+            }}
             className="fixed bottom-6 left-6 h-12 w-12 rounded-full shadow-lg
                       bg-primary text-primary-foreground 
-                      z-50 transition-all duration-300 ease-in-out transform hover:scale-105"
+                      z-[9999] transition-all duration-300 ease-in-out transform hover:scale-105
+                      touch-manipulation select-none"
+            style={{ 
+              touchAction: 'manipulation',
+              WebkitTouchCallout: 'none',
+              WebkitUserSelect: 'none'
+            }}
             aria-label="Open menu"
           >
-            <Menu className="h-6 w-6" />
+            <Menu className="h-6 w-6 pointer-events-none" />
           </Button>
         )}
       </SidebarContent>

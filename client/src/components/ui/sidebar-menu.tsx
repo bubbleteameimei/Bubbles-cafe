@@ -81,9 +81,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     let isScrolling = false;
     
     const handleTouchStart = (e: TouchEvent) => {
-      // Check if the touch started on a scrollable element
+      // Check if the touch started on a button or interactive element
       const target = e.target as HTMLElement;
+      const isButton = target.closest('button, a, [role="button"], .interactive-element');
       const scrollContainer = target.closest('.sidebar-menu-container');
+      
+      // Don't interfere with button clicks or interactive elements
+      if (isButton) {
+        return;
+      }
       
       if (scrollContainer) {
         // Allow normal scrolling if touching a scrollable area
@@ -100,6 +106,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     
     const handleTouchMove = (e: TouchEvent) => {
       if (!touchStartX || isScrolling) return;
+      
+      // Check if we're touching an interactive element
+      const target = e.target as HTMLElement;
+      const isButton = target.closest('button, a, [role="button"], .interactive-element');
+      
+      // Don't interfere with button interactions
+      if (isButton) {
+        return;
+      }
       
       // Get current position
       moveX = e.touches[0].clientX;
