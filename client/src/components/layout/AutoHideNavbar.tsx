@@ -24,6 +24,7 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
   const lastY = React.useRef(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [navbarHeight, setNavbarHeight] = useState<number>(56);
+  const [readingProgress, setReadingProgress] = useState(0);
 
   // Helper to update CSS variables for progress positioning
   const updateCssVars = (isHidden: boolean, heightPx: number) => {
@@ -38,14 +39,26 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
     // Only enable auto-hide on reader pages
     const path = window.location.pathname;
     const enableAutoHide = path.startsWith('/reader') || path.startsWith('/community-story');
+    const isReaderPage = path.startsWith('/reader') || path.startsWith('/community-story');
+    
     const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      
+      // Calculate reading progress for reader pages
+      if (isReaderPage) {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+        setReadingProgress(Math.min(Math.max(progress, 0), 100));
+      }
+      
       if (!enableAutoHide) {
         setHidden(false);
-        setIsScrolled(window.scrollY > 20);
-        lastY.current = window.scrollY;
+        setIsScrolled(scrollPosition > 20);
+        lastY.current = scrollPosition;
         return;
       }
-      const scrollPosition = window.scrollY;
+      
       if (scrollPosition > 20) {
         setIsScrolled(true);
       } else {
@@ -123,7 +136,7 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
     <div ref={containerRef} className={`navbar-container transition-transform duration-300 fixed top-0 left-0 right-0 z-40 w-full ${hidden ? '-translate-y-full' : 'translate-y-0'}`}
       style={{ width: "100%", margin: 0, padding: 0 }}>
       <div className={`${isScrolled ? 'lg:bg-background/90 lg:backdrop-blur-md lg:shadow-md' : 'lg:bg-transparent'}`}>
-        <Navigation />
+        <Navigation readingProgress={readingProgress} />
       </div>
     </div>
   );

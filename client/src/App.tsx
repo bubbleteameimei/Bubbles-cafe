@@ -33,7 +33,6 @@ import { FeedbackButton } from './components/feedback/FeedbackButton';
 import ScrollEffectsProvider from './components/ScrollEffectsProvider';
 // Import our performance monitoring component
 // Performance monitor overlay removed
-import StoryProgressBar from './components/StoryProgressBar';
 import SEO from '@/components/SEO';
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
@@ -206,12 +205,6 @@ const AppContent = () => {
          style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: 'var(--navbar-height, 56px)' }}>
         {/* Main navigation bar */}
         <AutoHideNavbar />
-        {/* Reader progress bar on reader routes */}
-        {(locationStr.startsWith('/reader') || locationStr.startsWith('/community-story')) && (
-          <div className="w-full z-30">
-            <StoryProgressBar height={3} showPercentage={false} />
-          </div>
-        )}
         <Switch>
           {/* Main Pages */}
           <Route path="/" component={HomePage} />
