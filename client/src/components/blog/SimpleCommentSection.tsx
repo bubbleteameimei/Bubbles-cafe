@@ -49,6 +49,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 // Interfaces
 interface CommentMetadata {
@@ -152,8 +153,8 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
 
   const replyMutation = useMutation({
     mutationFn: async () => {
-      // Use authenticated user's username if available, otherwise use "Anonymous"
-      const replyAuthor = isAuthenticated && user ? user.username : "Anonymous";
+      // Use authenticated user's username if available, otherwise let the server handle author assignment
+      const replyAuthor = isAuthenticated && user ? user.username : undefined;
       await fetchCsrfTokenIfNeeded();
       
       // Post reply via /api/posts/:postId/comments with parentId
@@ -215,7 +216,12 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
           <span className="text-[10px] font-medium">Reply to this comment</span>
         </div>
         
-        <div className="flex gap-1">
+        <div className="flex gap-3">
+          <Avatar className="w-6 h-6 flex-shrink-0">
+            <AvatarFallback className="text-xs bg-primary/10 text-primary">
+              {user?.username ? user.username[0].toUpperCase() : 'G'}
+            </AvatarFallback>
+          </Avatar>
           <Textarea
             ref={textareaRef}
             placeholder="Write your reply..."
@@ -419,8 +425,8 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   // Post new comment
   const mutation = useMutation({
     mutationFn: async () => {
-      // Use authenticated user's username if available, otherwise use "Anonymous"
-      const commentAuthor = isAuthenticated && user ? user.username : "Anonymous";
+      // Use authenticated user's username if available, otherwise let the server handle author assignment
+      const commentAuthor = isAuthenticated && user ? user.username : undefined;
       await fetchCsrfTokenIfNeeded();
       
       // Check if the content needs moderation
@@ -906,7 +912,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                   aria-expanded={!collapsedComments.includes(comment.id) && !autoCollapsing}
                 >
                   <div className="flex items-center">
-                    <span className="font-medium text-xs">{comment.metadata.author || "Anonymous"}</span>
+                    <span className="font-medium text-xs">{comment.metadata.author || "Guest"}</span>
                     {repliesByParentId[comment.id]?.length > 0 && (
                       <Badge variant="outline" className="ml-2 text-[9px] px-1 py-0 h-3.5 border-muted-foreground/30">
                         {repliesByParentId[comment.id].length} {repliesByParentId[comment.id].length === 1 ? 'reply' : 'replies'}
@@ -1038,7 +1044,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                         {/* Reply header - ultra compact */}
                         <div className="px-2 py-0.5 flex items-center justify-between border-b border-border/10 bg-muted/5">
                           <div className="flex items-center">
-                            <span className="font-medium text-[10px]">{reply.metadata.author || "Anonymous"}</span>
+                            <span className="font-medium text-[10px]">{reply.metadata.author || "Guest"}</span>
                             {reply.metadata.moderated && (
                               <div className="ml-2 flex items-center text-[8px] text-amber-500">
                                 <AlertCircle className="h-2 w-2 mr-0.5" />
