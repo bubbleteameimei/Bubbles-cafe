@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { signInWithGoogle, signInWithApple } from '@/lib/firebase';
-import { SiGoogle, SiApple } from 'react-icons/si';
+import { signInWithGoogle } from '@/lib/firebase';
+import { SiGoogle } from 'react-icons/si';
 import { Loader2 } from 'lucide-react';
 import './SocialLoginButtons.css';
 import { User } from 'firebase/auth';
@@ -22,7 +22,6 @@ interface SocialLoginButtonsProps {
 
 export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginButtonsProps) {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isAppleLoading, setIsAppleLoading] = useState(false);
 
   const processFirebaseUser = async (user: User, provider: string) => {
     const token = await user.getIdToken();
@@ -56,33 +55,13 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
     }
   };
 
-  const handleAppleSignIn = async () => {
-    setIsAppleLoading(true);
-    try {
-      const userCredential = await signInWithApple();
-      if (userCredential) {
-        const userData = await processFirebaseUser(userCredential, 'apple');
-        onSuccess(userData);
-      }
-    } catch (error) {
-      console.error('Apple sign-in error:', error);
-      if (error instanceof Error) {
-        onError(error);
-      } else {
-        onError(new Error('Failed to sign in with Apple'));
-      }
-    } finally {
-      setIsAppleLoading(false);
-    }
-  };
-
   return (
     <div className="social-auth-buttons">
       <Button
         variant="outline"
         className="social-button google-button"
         onClick={handleGoogleSignIn}
-        disabled={isGoogleLoading || isAppleLoading}
+        disabled={isGoogleLoading}
       >
         {isGoogleLoading ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -92,19 +71,7 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
         Google
       </Button>
       
-      <Button
-        variant="outline"
-        className="social-button apple-button"
-        onClick={handleAppleSignIn}
-        disabled={isGoogleLoading || isAppleLoading}
-      >
-        {isAppleLoading ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <SiApple className="mr-2 h-4 w-4" />
-        )}
-        Apple
-      </Button>
+      {/* Apple auth removed */}
     </div>
   );
 }
