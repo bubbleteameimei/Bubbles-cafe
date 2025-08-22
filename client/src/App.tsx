@@ -204,6 +204,14 @@ const AppContent = () => {
         className={`min-h-screen w-full min-w-full max-w-full overflow-x-hidden bg-background text-foreground 
           m-0 p-0 px-0 mx-0`}
          style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: 'var(--navbar-height, 56px)' }}>
+        {/* Main navigation bar */}
+        <AutoHideNavbar />
+        {/* Reader progress bar on reader routes */}
+        {(locationStr.startsWith('/reader') || locationStr.startsWith('/community-story')) && (
+          <div className="w-full z-30">
+            <StoryProgressBar height={3} showPercentage={false} />
+          </div>
+        )}
         <Switch>
           {/* Main Pages */}
           <Route path="/" component={HomePage} />
@@ -292,6 +300,8 @@ const AppContent = () => {
           {/* Catch All */}
           <Route path="*" component={Error404Page} />
         </Switch>
+        {/* Footer at page bottom */}
+        <Footer />
         {/* Anchor target for skip link */}
         <div id="main-content" />
       </div>
