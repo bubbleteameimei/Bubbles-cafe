@@ -10,15 +10,15 @@ import {
 } from 'firebase/auth';
 import { getAnalytics } from 'firebase/analytics';
 
-// Firebase configuration directly from the provided values
+// Pull Firebase configuration from environment variables (Vite prefix required)
 const firebaseConfig = {
-  apiKey: "AIzaSyAJ-ZRi3GUVHUaM0p5vbbRB8NoqV4b_VvM",
-  authDomain: "bubbles-cafe.firebaseapp.com",
-  projectId: "bubbles-cafe",
-  storageBucket: "bubbles-cafe.firebasestorage.app",
-  messagingSenderId: "870151001940",
-  appId: "1:870151001940:web:f11d39b75764457a91ac1",
-  measurementId: "G-PSCHGE0V55"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || undefined,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || undefined,
 };
 
 // Log Firebase configuration status for debugging

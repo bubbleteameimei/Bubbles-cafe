@@ -17,6 +17,7 @@ import {
 import { AuthButton } from "@/components/auth/auth-button";
 import { ForgotPasswordDialog } from "@/components/auth/forgot-password";
 import "./auth.css";
+import SocialLoginButtons from "@/components/auth/SocialLoginButtons";
 
 export default function AuthPage() {
   const [isSignIn, setIsSignIn] = useState(true);
@@ -246,6 +247,51 @@ export default function AuthPage() {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
+  // Handle successful social authentication
+  const handleSocialLoginSuccess = async (socialUser: any) => {
+    try {
+      // Send social user data to backend to create / login user and establish session
+      const response = await fetch('/api/auth/social-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          socialId: socialUser.id,
+          email: socialUser.email,
+          username: socialUser.name,
+          provider: socialUser.provider,
+          photoURL: socialUser.photoURL,
+          token: socialUser.token
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message || 'Social authentication failed');
+      }
+
+      toast({
+        title: 'Success',
+        description: 'You have been logged in successfully'
+      });
+
+      // Redirect after a slight delay so the toast is visible
+      setTimeout(() => {
+        setLocation('/');
+      }, 300);
+    } catch (err: any) {
+      console.error('[Auth] Social login error:', err);
+      toast({
+        title: 'Social Authentication Error',
+        description: err?.message || 'Unable to login with social account',
+        variant: 'destructive'
+      });
+    }
+  };
+
   return (
     <div className="auth-container">
       <div className="login-wrap">
@@ -354,7 +400,17 @@ export default function AuthPage() {
                   />
                 </div>
                 
-                {/* Social Login Buttons removed */}
+                {/* Social Login Buttons */}
+                <div className="mt-4">
+                  <SocialLoginButtons 
+                    onSuccess={handleSocialLoginSuccess}
+                    onError={(err: Error) => toast({
+                      title: 'Social Authentication Error',
+                      description: err.message,
+                      variant: 'destructive'
+                    })}
+                  />
+                </div>
 
                 <div className="tiny-disclaimer">
                   By continuing, you agree to our <a href="/legal/terms" className="policy-link">Terms of Service</a> and <a href="/privacy" className="policy-link">Privacy Policy</a>. This site uses cookies for authentication and analytics.
@@ -576,7 +632,17 @@ export default function AuthPage() {
                   />
                 </div>
                 
-                {/* Social Login Buttons removed */}
+                {/* Social Login Buttons */}
+                <div className="mt-4">
+                  <SocialLoginButtons 
+                    onSuccess={handleSocialLoginSuccess}
+                    onError={(err: Error) => toast({
+                      title: 'Social Authentication Error',
+                      description: err.message,
+                      variant: 'destructive'
+                    })}
+                  />
+                </div>
 
                 <div className="tiny-disclaimer">
                   By continuing, you agree to our <a href="/legal/terms" className="policy-link">Terms of Service</a> and <a href="/privacy" className="policy-link">Privacy Policy</a>. This site uses cookies for authentication and analytics.
