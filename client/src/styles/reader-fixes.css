@@ -17,7 +17,7 @@
 .reader-container.story-content {
   padding-left: 5rem !important; /* Moderate padding on both sides */
   padding-right: 5rem !important;
-  padding-top: 4rem !important; /* Added top padding to prevent navbar overlap */
+  padding-top: 0 !important; /* Remove extra gap under nav; rely on page padding */
   max-width: 100% !important; /* Ensure full width is used */
   box-sizing: border-box !important; /* Include padding in width calculation */
   margin-left: auto !important;
@@ -28,7 +28,7 @@
 /* CRITICAL: Fix for black text on black background in dark mode */
 html.dark .reader-container.story-content {
   color: rgba(255, 255, 255, 0.95) !important; /* Match DARK_TEXT_COLOR constant in reader.tsx */
-  background-color: rgba(18, 18, 18, 0.95) !important; /* Dark background for better contrast */
+  background-color: transparent !important; /* Remove grey box; use page background */
 }
 
 /* Light mode text color override (for consistency) */
@@ -189,13 +189,13 @@ html.dark .reader-container.story-content blockquote {
   .reader-container.story-content {
     padding-left: 2.5rem !important; /* Reduced but still good padding on mobile */
     padding-right: 2.5rem !important;
-    padding-top: 3.5rem !important; /* Increased top padding to fix spacing with navigation */
+    padding-top: 0 !important; /* Remove extra gap under nav on mobile */
   }
   
   /* Improve spacing between nav and content on tablets */
   .navbar-container + div .reader-controls-container {
-    margin-top: 1.25rem !important;
-    padding-bottom: 0.75rem !important;
+    margin-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
   }
   
   /* Improve font controls layout on tablets */
