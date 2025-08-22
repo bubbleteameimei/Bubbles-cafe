@@ -79,10 +79,18 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     let moveX = 0;
     let moveY = 0;
     let isScrolling = false;
+    let isSidebarTouch = false;
     
     const handleTouchStart = (e: TouchEvent) => {
-      // Check if the touch started on a button or interactive element
       const target = e.target as HTMLElement;
+      
+      // Only handle touches that start within the sidebar container
+      const sidebarContainer = target.closest('[data-sidebar="sidebar"], .sidebar-menu-container');
+      if (!sidebarContainer) {
+        return; // Don't interfere with touches outside sidebar
+      }
+      
+      // Check if the touch started on a button or interactive element
       const isButton = target.closest('button, a, [role="button"], .interactive-element');
       const scrollContainer = target.closest('.sidebar-menu-container');
       
@@ -94,6 +102,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       if (scrollContainer) {
         // Allow normal scrolling if touching a scrollable area
         isScrolling = true;
+        isSidebarTouch = true;
         return;
       }
       
@@ -102,10 +111,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       startY = e.touches[0].clientY;
       setTouchStartX(startX);
       isScrolling = false;
+      isSidebarTouch = true;
     };
     
     const handleTouchMove = (e: TouchEvent) => {
-      if (!touchStartX || isScrolling) return;
+      if (!touchStartX || isScrolling || !isSidebarTouch) return;
       
       // Check if we're touching an interactive element
       const target = e.target as HTMLElement;
@@ -137,6 +147,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         }
         
         setTouchStartX(null); // Reset touch start
+        isSidebarTouch = false;
       }
     };
     
@@ -147,20 +158,25 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       moveX = 0;
       moveY = 0;
       isScrolling = false;
+      isSidebarTouch = false;
       setTouchStartX(null);
     };
     
     // Add event listeners with passive: true for better performance
-    document.addEventListener("touchstart", handleTouchStart, { passive: true });
-    document.addEventListener("touchmove", handleTouchMove, { passive: true });
-    document.addEventListener("touchend", handleTouchEnd, { passive: true });
-    
-    // Cleanup function
-    return () => {
-      document.removeEventListener("touchstart", handleTouchStart);
-      document.removeEventListener("touchmove", handleTouchMove);
-      document.removeEventListener("touchend", handleTouchEnd);
-    };
+    // Only listen on the sidebar container to avoid interfering with other elements
+    const sidebarElement = document.querySelector('[data-sidebar="sidebar"]');
+    if (sidebarElement) {
+      sidebarElement.addEventListener("touchstart", handleTouchStart, { passive: true });
+      sidebarElement.addEventListener("touchmove", handleTouchMove, { passive: true });
+      sidebarElement.addEventListener("touchend", handleTouchEnd, { passive: true });
+      
+      // Cleanup function
+      return () => {
+        sidebarElement.removeEventListener("touchstart", handleTouchStart);
+        sidebarElement.removeEventListener("touchmove", handleTouchMove);
+        sidebarElement.removeEventListener("touchend", handleTouchEnd);
+      };
+    }
   }, [sidebar, touchStartX]); // Dependencies include sidebar and touchStartX
 
   // Simplified navigation - no state needed for instant switching

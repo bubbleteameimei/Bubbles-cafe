@@ -90,6 +90,10 @@ export function AppSidebar() {
               e.stopPropagation();
               setOpenMobile(true);
             }}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             onTouchEnd={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -97,12 +101,14 @@ export function AppSidebar() {
             }}
             className="fixed bottom-6 left-6 h-12 w-12 rounded-full shadow-lg
                       bg-primary text-primary-foreground 
-                      z-[9999] transition-all duration-300 ease-in-out transform hover:scale-105
-                      touch-manipulation select-none"
+                      z-[99999] transition-all duration-300 ease-in-out transform hover:scale-105
+                      touch-manipulation select-none interactive-element"
             style={{ 
               touchAction: 'manipulation',
               WebkitTouchCallout: 'none',
-              WebkitUserSelect: 'none'
+              WebkitUserSelect: 'none',
+              pointerEvents: 'auto',
+              isolation: 'isolate'
             }}
             aria-label="Open menu"
           >
