@@ -69,6 +69,7 @@ interface Comment {
   approved?: boolean;
   is_approved?: boolean;
   parentId: number | null;
+  isOwner?: boolean;
 }
 
 interface CommentSectionProps {
@@ -325,6 +326,8 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   const [autoCollapsing, setAutoCollapsing] = useState(false);
   const [autoCollapseTimeoutId, setAutoCollapseTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [unknownMessageVisible, setUnknownMessageVisible] = useState(true);
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const mainSectionRef = useRef<HTMLDivElement>(null);
@@ -489,8 +492,57 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     }
   });
 
+  // Edit comment mutation
+  const editMutation = useMutation({
+    mutationFn: async ({ commentId, newContent }: { commentId: number; newContent: string }) => {
+      await fetchCsrfTokenIfNeeded();
+      const res = await fetch(`/api/comments/${commentId}`, applyCSRFToken({
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content: newContent.trim() })
+      }));
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(t || `Failed to update comment (HTTP ${res.status})`);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+      setEditingCommentId(null);
+      setEditContent("");
+      toast({ title: "Updated", description: "Comment updated successfully." });
+    },
+    onError: (e: Error) => {
+      toast({ title: "Update failed", description: e.message, variant: "destructive" });
+    }
+  });
 
-  
+  // Delete comment mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (commentId: number) => {
+      await fetchCsrfTokenIfNeeded();
+      const res = await fetch(`/api/comments/${commentId}`, applyCSRFToken({
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include"
+      }));
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(t || `Failed to delete comment (HTTP ${res.status})`);
+      }
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+      toast({ title: "Deleted", description: "Comment deleted." });
+    },
+    onError: (e: Error) => {
+      toast({ title: "Delete failed", description: e.message, variant: "destructive" });
+    }
+  });
+
   // Handle opening the flag dialog
   const openFlagDialog = (commentId: number) => {
     // Check if comment has already been flagged
@@ -952,9 +1004,43 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                       exit={{ opacity: 0.9, height: 0 }}
                       transition={{ duration: 0.1 }}
                     >
-                      <p className="text-xs text-card-foreground leading-relaxed mb-1">
-                        {parseMentions(comment.content)}
-                      </p>
+                      {editingCommentId === comment.id ? (
+                        <div className="mb-1">
+                          <Textarea
+                            value={editContent}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditContent(e.target.value)}
+                            className="text-xs bg-background/80 min-h-[60px]"
+                          />
+                          <div className="mt-1 flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (!editContent.trim()) {
+                                  toast({ title: "Missing content", description: "Please enter some text.", variant: "destructive" });
+                                  return;
+                                }
+                                editMutation.mutate({ commentId: comment.id, newContent: editContent });
+                              }}
+                              className="h-6 px-2 text-[10px]"
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => { setEditingCommentId(null); setEditContent(""); }}
+                              className="h-6 px-2 text-[10px]"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-card-foreground leading-relaxed mb-1">
+                          {parseMentions(comment.content)}
+                        </p>
+                      )}
                       
                       {comment.metadata.moderated && (
                         <div className="mb-1 px-1.5 py-0.5 bg-amber-500/10 rounded-sm text-[9px] border border-amber-500/20">
@@ -978,7 +1064,23 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                             <span>Reply</span>
                           </button>
                         </div>
-                        <div>
+                        <div className="flex items-center gap-1.5">
+                          {comment.isOwner && editingCommentId !== comment.id && (
+                            <>
+                              <button
+                                onClick={() => { setEditingCommentId(comment.id); setEditContent(comment.content); }}
+                                className="inline-flex items-center text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => { if (confirm('Delete this comment?')) deleteMutation.mutate(comment.id); }}
+                                className="inline-flex items-center text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
                           {flaggedComments.includes(comment.id) ? (
                             <span 
                               className="inline-flex items-center text-[9px] text-muted-foreground/70"
@@ -1060,9 +1162,43 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                         
                         {/* Reply body - ultra compact */}
                         <div className="px-2 py-1">
-                          <p className="text-[10px] text-card-foreground leading-relaxed mb-1">
-                            {parseMentions(reply.content)}
-                          </p>
+                          {editingCommentId === reply.id ? (
+                            <div className="mb-1">
+                              <Textarea
+                                value={editContent}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditContent(e.target.value)}
+                                className="text-[10px] bg-background/80 min-h-[45px]"
+                              />
+                              <div className="mt-1 flex gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    if (!editContent.trim()) {
+                                      toast({ title: "Missing content", description: "Please enter some text.", variant: "destructive" });
+                                      return;
+                                    }
+                                    editMutation.mutate({ commentId: reply.id, newContent: editContent });
+                                  }}
+                                  className="h-6 px-2 text-[10px]"
+                                >
+                                  Save
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => { setEditingCommentId(null); setEditContent(""); }}
+                                  className="h-6 px-2 text-[10px]"
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-card-foreground leading-relaxed mb-1">
+                              {parseMentions(reply.content)}
+                            </p>
+                          )}
                           
                           {reply.metadata.moderated && (
                             <div className="mb-1 px-1 py-0.5 bg-amber-500/10 rounded-sm text-[8px] border border-amber-500/20">
@@ -1075,22 +1211,40 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                           
                           <div className="flex items-center justify-between mt-1">
                             <div></div>
-                            {flaggedComments.includes(reply.id) ? (
-                              <span 
-                                className="inline-flex items-center text-[8px] text-muted-foreground/70"
-                                title="You've reported this reply"
-                              >
-                                <Flag className="h-2 w-2 fill-destructive/10 text-destructive/50" />
-                              </span>
-                            ) : (
-                              <button 
-                                onClick={() => openFlagDialog(reply.id)}
-                                className="inline-flex items-center text-[8px] text-muted-foreground hover:text-destructive transition-colors group"
-                                title="Report this reply"
-                              >
-                                <Flag className="h-2 w-2 group-hover:fill-destructive/10" />
-                              </button>
-                            )}
+                            <div className="flex items-center gap-1.5">
+                              {reply.isOwner && editingCommentId !== reply.id && (
+                                <>
+                                  <button
+                                    onClick={() => { setEditingCommentId(reply.id); setEditContent(reply.content); }}
+                                    className="inline-flex items-center text-[9px] text-muted-foreground hover:text-primary transition-colors"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => { if (confirm('Delete this reply?')) deleteMutation.mutate(reply.id); }}
+                                    className="inline-flex items-center text-[9px] text-muted-foreground hover:text-destructive transition-colors"
+                                  >
+                                    Delete
+                                  </button>
+                                </>
+                              )}
+                              {flaggedComments.includes(reply.id) ? (
+                                <span 
+                                  className="inline-flex items-center text-[8px] text-muted-foreground/70"
+                                  title="You've reported this reply"
+                                >
+                                  <Flag className="h-2 w-2 fill-destructive/10 text-destructive/50" />
+                                </span>
+                              ) : (
+                                <button 
+                                  onClick={() => openFlagDialog(reply.id)}
+                                  className="inline-flex items-center text-[8px] text-muted-foreground hover:text-destructive transition-colors group"
+                                  title="Report this reply"
+                                >
+                                  <Flag className="h-2 w-2 group-hover:fill-destructive/10" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </Card>
