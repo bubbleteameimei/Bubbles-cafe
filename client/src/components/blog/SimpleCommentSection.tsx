@@ -410,6 +410,22 @@ export default function SimpleCommentSection({ postId }: SimpleCommentSectionPro
                   <span className="text-xs text-muted-foreground">Be respectful. Comments may be held for review.</span>
                 )}
               </div>
+              {/* Moderation preview box when flagged content is detected */}
+              {(() => {
+                const { isFlagged, isUnderReview } = checkModeration(content);
+                if (!content.trim() || (!isFlagged && !isUnderReview)) return null;
+                return (
+                  <div className="mt-2 rounded-md border border-amber-300/50 bg-amber-50/60 dark:bg-amber-900/10 p-2">
+                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+                      <AlertCircle className="h-3.5 w-3.5" />
+                      <span className="text-xs font-medium">Your comment may be moderated for review</span>
+                    </div>
+                    <p className="mt-1 ml-5 text-xs text-amber-800/90 dark:text-amber-200/90">
+                      Contains potentially inappropriate language. You can edit it before posting.
+                    </p>
+                  </div>
+                );
+              })()}
               <div className="mt-2 flex items-center justify-end">
                 <Button
                   onClick={() => createMutation.mutate()}
