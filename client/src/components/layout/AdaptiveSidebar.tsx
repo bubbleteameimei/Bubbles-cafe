@@ -48,7 +48,7 @@ const AdaptiveSidebar: React.FC<AdaptiveSidebarProps> = ({ className = "" }): JS
       animate={isOpen ? "open" : "closed"}
       variants={sidebarVariants}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      className={`fixed top-0 left-0 h-screen bg-background border-r border-border overflow-hidden z-40 ${className}`}
+      className={`fixed top-0 left-0 h-screen bg-background border-r border-border overflow-x-hidden overflow-y-auto z-40 ${className}`}
     >
       <div className="flex items-center justify-between p-4">
         <motion.div
@@ -68,7 +68,7 @@ const AdaptiveSidebar: React.FC<AdaptiveSidebarProps> = ({ className = "" }): JS
         </Button>
       </div>
 
-      <nav className="mt-6">
+      <nav className="mt-6 overflow-y-auto pr-2 max-h-[calc(100vh-4rem)]">
         <ul className="space-y-2">
           <NavItem
             isOpen={isOpen}
