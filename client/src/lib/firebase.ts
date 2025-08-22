@@ -59,38 +59,7 @@ export { app, auth };
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-// Configure Apple provider
-const appleProvider = new OAuthProvider('apple.com');
-appleProvider.addScope('email');
-appleProvider.addScope('name');
-
-/**
- * Sign in with Google using Firebase Authentication
- * @returns User data from Google authentication
- */
-export const signInWithGoogle = async () => {
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
-  } catch (error) {
-    console.error('Error signing in with Google:', error);
-    throw error;
-  }
-};
-
-/**
- * Sign in with Apple using Firebase Authentication
- * @returns User data from Apple authentication
- */
-export const signInWithApple = async () => {
-  try {
-    const result = await signInWithPopup(auth, appleProvider);
-    return result.user;
-  } catch (error) {
-    console.error('Error signing in with Apple:', error);
-    throw error;
-  }
-};
+// Apple auth removed
 
 /**
  * Sign out the currently authenticated user
