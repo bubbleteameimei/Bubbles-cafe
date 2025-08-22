@@ -1314,159 +1314,140 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           {/* Floating pagination has been removed */}
           
           {/* Navigation buttons removed as requested */}
-          {/* Full width immersive reading experience */}
-
-          <div className={`pt-0 pb-0 bg-background mt-0 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
-            {/* Static font size controls in a prominent position - reduced mobile spacing */}
-            <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 py-0.5 sm:py-2 border-b border-border/30 mb-0 sm:mb-1 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              {/* Font controls using the standard Button component */}
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={decreaseFontSize}
-                  disabled={fontSize <= MIN_FONT_SIZE}
-                  className="h-9 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
-                  aria-label="Decrease font size"
-                >
-                  <Minus className="h-4 w-4 mr-1" />
-                  A-
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={increaseFontSize}
-                  disabled={fontSize >= MAX_FONT_SIZE}
-                  className="h-9 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
-                  aria-label="Increase font size"
-                >
-                  A+
-                  <Plus className="h-4 w-4 ml-1" />
-                </Button>
-                
-                {/* Font Dialog with controlled open state */}
-                <Dialog open={fontDialogOpen} onOpenChange={setFontDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-9 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 ml-2"
+          {/* Reader Controls Container */}
+          <div className={`ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} sticky top-16 z-40 bg-background/80 backdrop-blur-sm border-b border-border/50`}>
+            <div className="container mx-auto px-4 py-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                {/* Left side controls */}
+                <div className="flex items-center gap-2">
+                  {/* Font size controls */}
+                  <div className="flex items-center gap-1 border border-border/50 rounded-md bg-background/50 p-1">
+                    <button
+                      onClick={decreaseFontSize}
+                      disabled={fontSize <= MIN_FONT_SIZE}
+                      className="p-1 hover:bg-muted rounded text-sm font-medium transition-colors disabled:opacity-50"
+                      aria-label="Decrease font size"
                     >
-                      <span className="text-sm uppercase">FONT</span>
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-full">
-                    <DialogHeader>
-                      <DialogTitle>Font Settings</DialogTitle>
-                      <DialogDescription>
-                        Change the font style for your reading experience.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      {/* Removed font size controls from modal to avoid size changes here */}
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium">Font Style</h4>
-                        <div className="grid grid-cols-1 gap-2">
-                          {Object.entries(availableFonts).map(([key, info]) => (
-                            <Button
-                              key={key}
-                              variant={fontFamily === key ? "default" : "outline"}
-                              className="justify-start h-auto py-3"
-                              onClick={() => {
-                                updateFontFamily(key as FontFamilyKey);
-                                setFontDialogOpen(false); // Close the dialog after changing font
-                              }}
-                            >
-                              <div className="flex flex-col items-start">
-                                <span style={{ fontFamily: info.family }}>{info.name}</span>
-                                <span className="text-xs text-muted-foreground">{info.type}</span>
-                              </div>
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-              {/* Narration button */}
-              <div className="flex-grow"></div>
-
-              {/* Theme toggle button removed as requested */}
-
-              {/* Integrated BookmarkButton in top controls */}
-              <BookmarkButton 
-                postId={currentPost.id} 
-                variant="reader"
-                showText={false}
-                className="h-9 w-9 rounded-full bg-background hover:bg-background/80 mx-2"
-              />
-
-              {/* Text-to-speech functionality removed */}
-
-              {/* Contents Dialog with controlled open state - non-fullscreen with close button */}
-              <Dialog open={contentsDialogOpen} onOpenChange={setContentsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="h-9 px-3 bg-primary hover:bg-primary/90 text-white shadow-lg flex items-center gap-1.5 min-w-0 max-w-[120px] overflow-hidden transition-all duration-200 hover:scale-105 rounded-md"
-                  >
-                    <BookText className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate text-sm font-semibold tracking-wide">TOC</span>
-                  </Button>
-                </DialogTrigger>
-                {/* Wrap the TableOfContents component to ensure DialogContent has proper aria attributes */}
-                <DialogContent 
-                  className="max-w-md" 
-                  aria-labelledby="toc-dialog-title" 
-                  aria-describedby="toc-dialog-description"
-                >
-                  <div className="flex items-center justify-between">
-                    <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
-                    <button 
-                      onClick={() => setContentsDialogOpen(false)}
-                      className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                      aria-label="Close dialog"
+                      A⁻
+                    </button>
+                    <span className="px-2 text-xs text-muted-foreground min-w-[3rem] text-center">
+                      {fontSize}px
+                    </span>
+                    <button
+                      onClick={increaseFontSize}
+                      disabled={fontSize >= MAX_FONT_SIZE}
+                      className="p-1 hover:bg-muted rounded text-sm font-medium transition-colors disabled:opacity-50"
+                      aria-label="Increase font size"
                     >
-                      <X className="h-4 w-4" />
+                      A⁺
                     </button>
                   </div>
-                  <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
-                  <Suspense fallback={<div className="p-4 text-sm text-muted-foreground">Loading table of contents…</div>}>
-                  <TableOfContents 
-                    currentPostId={currentPost.id} 
-                    onClose={() => setContentsDialogOpen(false)} 
-                    posts={(posts as any[]).map(p => ({
-                      id: p.id,
-                      title: (p.title?.rendered || p.title || 'Untitled') as string,
-                      slug: (p.slug || `post-${p.id}`) as string,
-                      date: (p.date || p.createdAt || new Date().toISOString()) as string
-                    }))}
-                    onSelect={(post) => {
-                      // Find the index of the selected post within the current list and switch
-                      const idx = posts.findIndex(p => p.id === post.id);
-                      if (idx >= 0) {
-                        setCurrentIndex(idx);
-                        window.scrollTo({ top: 0, behavior: 'auto' });
-                      }
-                    }}
+                  
+                  {/* Font family controls */}
+                  <Dialog open={fontDialogOpen} onOpenChange={setFontDialogOpen}>
+                    <DialogTrigger asChild>
+                      <button className="px-3 py-1 hover:bg-muted rounded text-xs font-medium transition-colors border border-border/50 bg-background/50">
+                        {availableFonts[fontFamily]?.name || 'Font'}
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Font Settings</DialogTitle>
+                        <DialogDescription>
+                          Choose your preferred reading font.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-2 py-4">
+                        {Object.entries(availableFonts).map(([key, info]) => (
+                          <button
+                            key={key}
+                            className={`p-3 text-left rounded border transition-colors ${
+                              fontFamily === key 
+                                ? 'bg-primary text-primary-foreground border-primary' 
+                                : 'hover:bg-muted border-border'
+                            }`}
+                            onClick={() => {
+                              updateFontFamily(key as FontFamilyKey);
+                              setFontDialogOpen(false);
+                            }}
+                          >
+                            <div style={{ fontFamily: info.family }}>
+                              <div className="font-medium">{info.name}</div>
+                              <div className="text-xs opacity-70">{info.type}</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                {/* Right side controls */}
+                <div className="flex items-center gap-2">
+                  {/* Table of Contents Button */}
+                  <Dialog open={contentsDialogOpen} onOpenChange={setContentsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <button className="p-2 hover:bg-muted rounded-md transition-colors border border-border/50 bg-background/50 flex items-center gap-1.5">
+                        <BookOpen className="w-4 h-4" />
+                        <span className="text-xs font-medium">TOC</span>
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md" aria-labelledby="toc-dialog-title">
+                      <div className="flex items-center justify-between">
+                        <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
+                        <button 
+                          onClick={() => setContentsDialogOpen(false)}
+                          className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors"
+                          aria-label="Close"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <Suspense fallback={<div className="p-4 text-sm text-muted-foreground">Loading…</div>}>
+                        <TableOfContents 
+                          currentPostId={currentPost.id} 
+                          onClose={() => setContentsDialogOpen(false)} 
+                          posts={(posts as any[]).map(p => ({
+                            id: p.id,
+                            title: (p.title?.rendered || p.title || 'Untitled') as string,
+                            slug: (p.slug || `post-${p.id}`) as string,
+                            date: (p.date || p.createdAt || new Date().toISOString()) as string
+                          }))}
+                          onSelect={(post) => {
+                            const idx = posts.findIndex(p => p.id === post.id);
+                            if (idx >= 0) {
+                              setCurrentIndex(idx);
+                              window.scrollTo({ top: 0, behavior: 'auto' });
+                            }
+                          }}
+                        />
+                      </Suspense>
+                    </DialogContent>
+                  </Dialog>
+                  
+                  {/* Bookmark Button */}
+                  <BookmarkButton 
+                    postId={currentPost.id} 
+                    variant="reader"
+                    showText={false}
+                    className="p-2 hover:bg-muted rounded-md transition-colors border border-border/50 bg-background/50"
                   />
-                  </Suspense>
-                </DialogContent>
-              </Dialog>
+                </div>
+              </div>
             </div>
+          </div>
+
+          {/* Full width immersive reading experience */}
+          <div className={`pt-0 pb-0 bg-background mt-0 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
           
             <article
                 key={currentPost.id}
                 className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
               >
-                <div className="flex flex-col items-center mb-2 mt-0">
-                  <div className="relative flex flex-col items-center">
+                <div className="flex flex-col items-center mb-4 mt-2">
+                  <div className="relative flex flex-col items-center max-w-4xl">
                     {isCommunityContent && (
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-2 mb-3">
                         <Badge 
                           variant="secondary" 
                           className="bg-primary/10 text-foreground border-primary/20"
@@ -1488,7 +1469,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       </div>
                     )}
                     <h1
-                      className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-2 tracking-tight"
+                      className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-3 tracking-tight leading-tight"
                       dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(currentPost.title?.rendered || currentPost.title || 'Story') }}
                     />
                   </div>
@@ -1646,57 +1627,51 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     <time className="font-medium whitespace-nowrap text-xs sm:text-sm">{formattedDate}</time>
                   </div>
 
-                  {/* Navigation Buttons - reduced vertical spacing */}
-                  <div className={`flex items-center justify-center mt-0.5 sm:mt-2 gap-2 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                  {/* Navigation Buttons */}
+                  <div className={`flex items-center justify-center mt-3 gap-3 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                     {/* Previous Button */}
                     <Button
                       variant={isFirstStory ? "outline" : "default"}
-                      size="sm"
+                      size="default"
                       onClick={goToPreviousStory}
-                      className={`h-8 px-2 w-24 transition-all duration-200 ${
+                      className={`px-4 py-2 min-w-[100px] transition-all duration-200 ${
                         isFirstStory 
-                          ? 'bg-muted/50 border-muted-foreground/20 text-muted-foreground cursor-not-allowed opacity-50' 
-                          : 'bg-slate-600 hover:bg-slate-700 text-white border-slate-600 hover:border-slate-700 shadow-md hover:shadow-lg'
+                          ? 'opacity-50 cursor-not-allowed' 
+                          : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg'
                       }`}
                       disabled={posts.length <= 1 || isFirstStory}
-                      title={isFirstStory ? "This is the first story" : "Go to previous story"}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-1">
-                        <path d="m15 18-6-6 6-6"/>
-                      </svg>
+                      <ChevronRight className="h-4 w-4 mr-2 rotate-180" />
                       Previous
                     </Button>
                     
-                    {/* Random Story Button (smaller without text) */}
+                    {/* Random Story Button */}
                     <Button
                       variant="secondary"
-                      size="sm"
+                      size="default"
                       onClick={goToRandomStory}
-                      className={`h-8 w-8 px-0 rounded-full bg-primary/10 hover:bg-primary/20 border-none disabled:opacity-70 disabled:bg-gray-100/50 transition-all duration-200 hover:scale-105`}
+                      className="px-4 py-2 bg-secondary hover:bg-secondary/80 transition-all duration-200 hover:scale-105"
                       disabled={posts.length <= 1}
-                      aria-label="Random Story"
-                      title={posts.length <= 1 ? "Need more stories to use random" : "Go to a random story"}
+                      title="Random story"
                     >
-                      <Shuffle className="h-4 w-4" />
+                      <Shuffle className="h-4 w-4 mr-2" />
+                      Random
                     </Button>
                     
                     {/* Next Button */}
                     <Button
                       variant={isLastStory ? "outline" : "default"}
-                      size="sm"
+                      size="default"
                       onClick={goToNextStory}
-                      className={`h-8 px-2 w-24 transition-all duration-200 ${
+                      className={`px-4 py-2 min-w-[100px] transition-all duration-200 ${
                         isLastStory 
-                          ? 'bg-muted/50 border-muted-foreground/20 text-muted-foreground cursor-not-allowed opacity-50' 
-                          : 'bg-slate-700 hover:bg-slate-800 text-white border-slate-700 hover:border-slate-800 shadow-md hover:shadow-lg'
+                          ? 'opacity-50 cursor-not-allowed' 
+                          : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg'
                       }`}
                       disabled={posts.length <= 1 || isLastStory}
-                      title={isLastStory ? "This is the last story" : "Go to next story"}
                     >
                       Next
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 ml-1">
-                        <path d="m9 18 6-6-6-6"/>
-                      </svg>
+                      <ChevronRight className="h-4 w-4 ml-2" />
                     </Button>
                   </div>
                 </div>
