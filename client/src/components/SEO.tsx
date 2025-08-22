@@ -32,7 +32,8 @@ const DEFAULT_SITE_CONFIG = {
   siteName: 'Bubbles Cafe',
   defaultTitle: 'Bubbles Cafe - Immersive Horror Storytelling Platform',
   defaultDescription: 'Discover spine-chilling horror stories, immersive fiction, and creative writing. Join our community of storytellers and readers.',
-  defaultImage: '/images/og-default.jpg',
+  // Prefer PNG for social previews; fall back to existing SVG if PNG missing
+  defaultImage: '/images/IMG_5266.png',
   siteUrl: typeof window !== 'undefined' ? window.location.origin : '',
   locale: 'en_US',
   twitterSite: '@bubblescafe',
@@ -138,20 +139,6 @@ export default function SEO({
     setMetaTag('og:site_name', siteName, true);
     setMetaTag('og:locale', locale, true);
     
-    // Article-specific Open Graph tags
-    if (type === 'article') {
-      if (author) setMetaTag('article:author', author, true);
-      if (published) setMetaTag('article:published_time', published, true);
-      if (modified) setMetaTag('article:modified_time', modified, true);
-      if (category) setMetaTag('article:section', category, true);
-      tags.forEach(tag => {
-        const meta = document.createElement('meta');
-        meta.setAttribute('property', 'article:tag');
-        meta.setAttribute('content', tag);
-        document.head.appendChild(meta);
-      });
-    }
-    
     // Twitter Card tags
     setMetaTag('twitter:card', type === 'article' ? 'summary_large_image' : 'summary');
     setMetaTag('twitter:title', title || DEFAULT_SITE_CONFIG.defaultTitle);
@@ -181,11 +168,11 @@ export default function SEO({
     setLinkTag('preconnect', 'https://fonts.googleapis.com');
     setLinkTag('preconnect', 'https://fonts.gstatic.com', { crossorigin: 'anonymous' });
     
-    // Favicon and app icons
-    setLinkTag('icon', '/favicon.ico', { sizes: 'any' });
-    setLinkTag('icon', '/favicon.svg', { type: 'image/svg+xml' });
-    setLinkTag('apple-touch-icon', '/apple-touch-icon.png');
-    // Manifest removed
+    // Favicon and app icons (use available assets)
+    setLinkTag('icon', '/og-image.svg', { type: 'image/svg+xml' });
+    // Optional raster favicon if added later:
+    // setLinkTag('icon', '/favicon.ico', { sizes: 'any' });
+    // setLinkTag('apple-touch-icon', '/apple-touch-icon.png');
     
     // Generate and set JSON-LD structured data
     const generateStructuredData = () => {
@@ -207,13 +194,12 @@ export default function SEO({
           url: siteUrl,
           logo: {
             '@type': 'ImageObject',
-            url: `${siteUrl}/images/logo.png`,
+            url: `${siteUrl}/og-image.svg`,
             alt: `${siteName} Logo`
           }
         }
       };
 
-      // Add article-specific schema
       if (type === 'article' && author) {
         Object.assign(baseSchema, {
           author: {
@@ -230,7 +216,6 @@ export default function SEO({
         });
       }
 
-      // Add breadcrumb schema
       if (breadcrumbs.length > 0) {
         const breadcrumbSchema = {
           '@context': 'https://schema.org',
@@ -249,7 +234,6 @@ export default function SEO({
       return baseSchema;
     };
 
-    // Set JSON-LD structured data
     let jsonLdScript = document.querySelector('script[type="application/ld+json"]');
     if (!jsonLdScript) {
       jsonLdScript = document.createElement('script');
@@ -260,15 +244,11 @@ export default function SEO({
     const structuredData = generateStructuredData();
     jsonLdScript.textContent = JSON.stringify(structuredData, null, 2);
     
-    // Performance hints
     if (type === 'article' && readingTime && readingTime > 5) {
-      // For long articles, hint that users might want to save for later
       setMetaTag('article:reading_time', `${readingTime} minutes`);
     }
     
-    // Cleanup function to remove custom tags when component unmounts
     return () => {
-      // Remove custom JSON-LD scripts
       const scripts = document.querySelectorAll('script[type="application/ld+json"]');
       scripts.forEach(script => {
         if (script.textContent?.includes('"@context":"https://schema.org"')) {
@@ -299,8 +279,7 @@ export default function SEO({
     readingTime,
     wordCount
   ]);
-  
-  // This component doesn't render anything visible
+
   return null;
 }
 
