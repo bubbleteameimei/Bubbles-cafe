@@ -673,30 +673,35 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Horror easter egg function
   const checkRapidNavigation = () => {
     const now = Date.now();
-    const timeDiff = now - lastNavigationTimeRef.current;
+    const timeSinceLastNavigation = now - lastNavigationTimeRef.current;
     
-    if (timeDiff < 5000) { // If navigating within 5 seconds
-      skipCountRef.current++;
+    // Check if rapid navigation (less than 1.5 seconds between skips)
+    if (timeSinceLastNavigation < 1500) {
+      skipCountRef.current += 1;
       
-      if (skipCountRef.current >= 3) {
-        // Show horror message
-        const horrorMessages = [
-          "Stop skipping the stories... they don't like being ignored.",
-          "The words are watching you...",
-          "Why won't you stay and read?",
-          "Each story you skip leaves a mark...",
-          "They're calling your name...",
-          "Are you avoiding something?",
-          "The stories grow restless when ignored...",
-          "What are you running from?",
-          "The cursor blinks... waiting... always waiting...",
-          "You can't escape the unread words..."
-        ];
+      // After 3 rapid skips, show the horror Easter egg
+      if (skipCountRef.current >= 3 && !showHorrorMessage) {
+        console.log('[Reader] Horror Easter egg triggered after rapid navigation');
         
-        const randomMessage = horrorMessages[Math.floor(Math.random() * horrorMessages.length)];
-        setHorrorMessageText(randomMessage);
+        // Highly threatening message for maximum creepiness with subtle psychological impact
+        const message = "I SEE YOU SKIPPING!!!";
+        setHorrorMessageText(message);
         setShowHorrorMessage(true);
-        skipCountRef.current = 0; // Reset
+        
+        // Show toast with extremely creepy text using maximum intensity
+        // The CreepyTextGlitch component has been enhanced for a rapid, unnerving effect
+        toast({
+          title: "NOTICE",
+          description: <CreepyTextGlitch text={message} intensityFactor={8} />, // Maximum intensity
+          variant: "destructive",
+          duration: 9000, // Extended duration for more psychological impact
+        });
+        
+        // Reset after showing - match the extended toast duration
+        setTimeout(() => {
+          setShowHorrorMessage(false);
+          skipCountRef.current = 0;
+        }, 9000); // Extended to match the 9000ms toast duration
       }
     } else {
       // If navigation is slow, gradually reduce the skip count
@@ -958,7 +963,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
       <div className={`pt-0 pb-0 bg-background mt-0 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
         {/* Static font size controls in a prominent position - reduced mobile spacing */}
-        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 py-0.5 sm:py-2 border-b border-border/30 mb-0 sm:mb-1 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 py-0.5 sm:py-1 border-b border-border/30 mb-0 sm:mb-1 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -966,7 +971,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               size="sm"
               onClick={decreaseFontSize}
               disabled={fontSize <= 12}
-              className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
+              className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 transition-all duration-300 hover:scale-105"
               aria-label="Decrease font size"
             >
               <Minus className="h-4 w-4 mr-1" />
@@ -978,7 +983,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               size="sm"
               onClick={increaseFontSize}
               disabled={fontSize >= 20}
-              className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
+              className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 transition-all duration-300 hover:scale-105"
               aria-label="Increase font size"
             >
               A+
@@ -1305,82 +1310,138 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </div>
             </SwipeNavigation>
             
+            {/* Simple pagination at bottom of story content - extremely compact */}
+            <div className={`flex items-center justify-center gap-3 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+              <div className="flex items-center gap-3 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1.5 px-3 shadow-md">
+                {/* Previous story button */}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={goToPreviousStory}
+                  className="h-8 w-8 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
+                  aria-label="Previous story"
+                  disabled={posts.length <= 1 || isFirstStory}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                    <path d="m15 18-6-6 6-6"/>
+                  </svg>
+                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                    Previous Story
+                  </span>
+                </Button>
+                
+                {/* Story counter */}
+                <div className="px-2 text-xs text-muted-foreground font-medium">
+                  {currentIndex + 1} of {posts.length}
+                </div>
+                
+                {/* Next story button */}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={goToNextStory}
+                  className="h-8 w-8 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
+                  aria-label="Next story"
+                  disabled={posts.length <= 1 || isLastStory}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                    <path d="m9 18 6-6-6-6"/>
+                  </svg>
+                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                    Next Story
+                  </span>
+                </Button>
+              </div>
+            </div>
+
+            <div className="mt-2 pt-3 border-t border-border/50">
+              <div className="flex flex-col items-center justify-center gap-6">
+                {/* Centered Like/Dislike buttons */}
+                <div className={`flex justify-center w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                  <LikeDislike postId={currentPost.id} />
+                </div>
+
+                <div className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                  <p className="text-sm text-muted-foreground font-medium">✨ Loved the story? Share it or follow for more! ✨</p>
+                  <div className="flex items-center gap-3">
+                    {/* Native Share Button */}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({
+                            title: currentPost.title?.rendered || currentPost.title || 'Story',
+                            url: window.location.href
+                          });
+                        } else {
+                          navigator.clipboard.writeText(window.location.href);
+                          toast({
+                            title: "Link Copied",
+                            description: "Story link copied to clipboard!"
+                          });
+                        }
+                      }}
+                      className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      <span className="sr-only">Share</span>
+                    </Button>
+
+                    {/* Social Icons */}
+                    <div className="flex gap-3">
+                      {/* Twitter */}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          const tweetText = `Check out this story: ${currentPost.title?.rendered || currentPost.title || 'Story'} ${window.location.href}`;
+                          window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`, '_blank');
+                        }}
+                        className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                      >
+                        <FaTwitter className="h-4 w-4" />
+                        <span className="sr-only">Follow on Twitter</span>
+                      </Button>
+                      
+                      {/* WordPress */}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          const wpUrl = `https://wordpress.com/wp-admin/press-this.php?u=${encodeURIComponent(window.location.href)}&t=${encodeURIComponent(currentPost.title?.rendered || currentPost.title || 'Story')}`;
+                          window.open(wpUrl, '_blank');
+                        }}
+                        className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                      >
+                        <FaWordpress className="h-4 w-4" />
+                        <span className="sr-only">Follow on WordPress</span>
+                      </Button>
+                      
+                      {/* Instagram */}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          navigator.clipboard.writeText(window.location.href);
+                          toast({
+                            title: "Link Copied",
+                            description: "Story link copied to clipboard for Instagram sharing!"
+                          });
+                        }}
+                        className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                      >
+                        <FaInstagram className="h-4 w-4" />
+                        <span className="sr-only">Follow on Instagram</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             {/* Social sharing and support section  */}
             <div className={`social-support-section mt-8 pt-6 border-t border-border ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              {/* Social media sharing */}
-              <div className="flex items-center justify-center gap-3 mb-6">
-                <span className="text-sm text-muted-foreground mr-2">Share:</span>
-                
-                {/* Twitter */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
-                  onClick={() => {
-                    const tweetText = `Check out this story: ${currentPost.title?.rendered || currentPost.title || 'Story'} ${window.location.href}`;
-                    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`, '_blank');
-                  }}
-                >
-                  <FaTwitter className="h-4 w-4 text-blue-500" />
-                </Button>
-                
-                {/* WordPress */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
-                  onClick={() => {
-                    const wpUrl = `https://wordpress.com/wp-admin/press-this.php?u=${encodeURIComponent(window.location.href)}&t=${encodeURIComponent(currentPost.title?.rendered || currentPost.title || 'Story')}`;
-                    window.open(wpUrl, '_blank');
-                  }}
-                >
-                  <FaWordpress className="h-4 w-4 text-blue-600" />
-                </Button>
-                
-                {/* Instagram (link copy) */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 hover:bg-pink-100 dark:hover:bg-pink-900"
-                  onClick={() => {
-                    navigator.clipboard.writeText(window.location.href);
-                    toast({
-                      title: "Link Copied",
-                      description: "Story link copied to clipboard for Instagram sharing!"
-                    });
-                  }}
-                >
-                  <FaInstagram className="h-4 w-4 text-pink-500" />
-                </Button>
-                
-                {/* Generic Share */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({
-                        title: currentPost.title?.rendered || currentPost.title || 'Story',
-                        url: window.location.href
-                      });
-                    } else {
-                      navigator.clipboard.writeText(window.location.href);
-                      toast({
-                        title: "Link Copied",
-                        description: "Story link copied to clipboard!"
-                      });
-                    }
-                  }}
-                >
-                  <Share2 className="h-4 w-4 text-gray-500" />
-                </Button>
-              </div>
-              
-              {/* Like/Dislike component */}
-              <div className="flex justify-center mb-6">
-                <LikeDislike postId={currentPost.id} />
-              </div>
               
               {/* Support writing card */}
               <SupportWritingCard />

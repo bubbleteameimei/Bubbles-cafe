@@ -268,6 +268,7 @@
   line-height: 1.8;
   letter-spacing: 0.01em;
   overflow-x: hidden;
+  transition: font-size 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth font size transition */
 }
 
 /* Responsive adjustments - optimized for different devices */
