@@ -1,326 +1,462 @@
-/* Reader page fixes and enhancements */
+/* Reader Page Styling */
 
-/* UI fade transitions for distraction-free mode */
-.ui-fade-element {
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: opacity, visibility;
-}
-
-.ui-hidden {
-  opacity: 0.15;
-  pointer-events: auto; /* Keep accessible */
-}
-
-/* Reader page layout fixes */
-.reader-page {
-  padding-top: var(--navbar-height, 56px);
-}
-
-/* Reader controls styling */
-.reader-controls {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.dark .reader-controls {
-  background: rgba(0, 0, 0, 0.95);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Story content styling */
-.reader-container.story-content {
-  padding: 2rem;
-  max-width: 65ch;
+/* Main content container - optimized width like literary publications */
+.story-container {
+  max-width: 680px; /* Optimal width for reading (equivalent to ~75-80ch) */
   margin: 0 auto;
-  line-height: 1.7;
-  box-sizing: border-box;
+  padding: 0 1.5rem;
+  font-family: 'Cormorant Garamond', serif;
+  /* No additional padding needed here since we added it to body */
+  overflow-x: hidden; /* Prevent horizontal overflow */
+  width: 100%; /* Ensure full width within parent */
 }
 
+/* Typography improvements using literary website standards */
+.story-content {
+  font-family: 'Cormorant Garamond', serif;
+  line-height: 1.6; /* Match About page spacing */
+  letter-spacing: 0.01em; /* Slightly increased for better text flow */
+  color: var(--foreground);
+  max-width: 70ch; /* Use character width measurement instead of pixels */
+  margin: 0 auto;
+  font-size: var(--base-font-size, 16px); /* Use the base font size variable with fallback */
+  transition: font-size 0.2s ease; /* Smooth transition when font size changes */
+  width: 100%; /* Ensure full width */
+  box-sizing: border-box; /* Include padding in width calculation */
+  overflow-wrap: break-word; /* Prevent text overflow by breaking words */
+  word-wrap: break-word; /* Fallback for older browsers */
+}
+
+.story-content p {
+  font-family: 'Cormorant Garamond', serif;
+  margin-bottom: 0.4em; /* Even more drastically reduced paragraph spacing */
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: auto;
+  font-kerning: normal; /* Improved kerning for better character spacing */
+  font-feature-settings: "kern", "liga", "clig", "calt"; /* Typography enhancements */
+  font-size: var(--base-font-size, 16px); /* Use the base font size variable with fallback */
+  transition: font-size 0.2s ease; /* Smooth transition when font size changes */
+}
+
+.story-content p + p {
+  margin-top: 0.3em; /* Even more drastically reduced spacing between paragraphs */
+}
+
+.story-content h1, 
+.story-content h2, 
+.story-content h3 {
+  font-weight: 700;
+  line-height: 1.2;
+  margin-top: 1.75em;
+  margin-bottom: 0.75em;
+  letter-spacing: -0.015em; /* Tighter tracking for headings */
+}
+
+.story-content h1 {
+  font-family: 'Castoro Titling', serif;
+  font-size: 2em; /* Slightly larger for better hierarchy */
+  letter-spacing: -0.02em; /* Tighter tracking for main headings */
+  margin-bottom: 1em;
+  text-transform: uppercase;
+}
+
+.story-content h2 {
+  font-family: 'Gilda Display', serif;
+  font-size: 1.6em;
+  position: relative; /* For subtle styling */
+  margin-top: 2em;
+}
+
+.story-content h2::after {
+  content: "";
+  position: absolute;
+  bottom: -0.3em;
+  left: 0;
+  width: 2.5em;
+  height: 2px;
+  background-color: var(--border);
+  opacity: 0.6;
+}
+
+.story-content h3 {
+  font-family: 'Gilda Display', serif;
+  font-size: 1.3em;
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+
+/* Links */
+.story-content a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition: color 0.2s ease;
+}
+
+.story-content a:hover {
+  color: var(--primary-foreground);
+}
+
+/* Italics for emphasized text */
+.story-content em {
+  font-family: 'Dancing Script', cursive;
+  font-size: 1.05em;
+}
+
+/* Blockquotes - literary style */
+.story-content blockquote {
+  border-left: 2px solid var(--primary);
+  padding: 0.8em 0 0.8em 1.5em;
+  margin: 2em 0;
+  font-style: italic;
+  position: relative;
+  color: var(--muted-foreground);
+  background-color: var(--background);
+  border-radius: 0.25rem;
+  quotes: """ """;
+}
+
+.story-content blockquote::before {
+  content: open-quote;
+  position: absolute;
+  left: -0.5em;
+  top: -0.4em;
+  font-size: 3em;
+  color: var(--primary);
+  opacity: 0.15;
+  font-family: 'Dancing Script', cursive;
+}
+
+.story-content blockquote p {
+  margin-bottom: 0.8em;
+  font-family: 'Dancing Script', cursive;
+}
+
+.story-content blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* Lists */
+.story-content ul,
+.story-content ol {
+  margin: 1em 0;
+  padding-left: 1.5em;
+}
+
+.story-content li {
+  margin-bottom: 0.5em;
+}
+
+/* Images */
+.story-content img {
+  max-width: 100%;
+  height: auto;
+  margin: 1.5em auto;
+  border-radius: 0.5rem;
+  display: block;
+}
+
+/* Code blocks */
+.story-content pre,
+.story-content code {
+  font-family: monospace;
+  font-size: 0.9em;
+  background: var(--muted);
+  border-radius: 0.25rem;
+  padding: 0.2em 0.4em;
+}
+
+.story-content pre {
+  padding: 1em;
+  overflow-x: auto;
+  margin: 1.5em 0;
+}
+
+/* Tables */
+.story-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+}
+
+.story-content th,
+.story-content td {
+  padding: 0.5em;
+  border: 1px solid var(--border);
+}
+
+.story-content th {
+  background: var(--muted);
+  font-weight: 600;
+}
+
+/* Dark mode styling has been removed */
+
+/* Reading controls */
+.reading-controls {
+  position: sticky;
+  top: 4rem; /* Adjusted to account for the fixed header */
+  z-index: 10;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.font-size-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--background);
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Navigation buttons */
+.navigation-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+/* Social sharing and support section */
+.social-support-section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+
+.social-links {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.support-card {
+  background-color: var(--card);
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  margin: 2rem auto;
+  max-width: 24rem;
+  text-align: center;
+}
+
+/* Base styles for all screen sizes */
+.story-container {
+  width: 100%;
+  box-sizing: border-box;
+  margin-left: auto;
+  margin-right: auto;
+  overflow-x: hidden;
+  padding: 0 1.5rem;
+}
+
+.story-content {
+  width: 100%;
+  max-width: 65ch;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 1.125rem;
+  line-height: 1.8;
+  letter-spacing: 0.01em;
+  overflow-x: hidden;
+}
+
+/* Responsive adjustments - optimized for different devices */
 @media (max-width: 768px) {
-  .reader-container.story-content {
-    padding: 1rem;
+  .story-container {
+    padding: 0 1rem;
+  }
+  
+  .story-content {
+    font-size: 1rem;
+    padding: 0 0.5rem;
+  }
+  
+  .story-content p {
+    margin-bottom: 0.4em; /* Even more drastically reduced spacing, consistent with desktop */
+    text-align: left; /* Left-aligned for easier mobile reading */
+    hyphens: none; /* Disable hyphenation on mobile for clarity */
+    max-width: 100%; /* Ensure text doesn't overflow */
+    overflow-wrap: break-word;
+  }
+  
+  .story-content h1 {
+    font-size: 1.6em;
     max-width: 100%;
   }
   
-  .reader-page {
-    padding-top: calc(var(--navbar-height, 56px) + 2rem);
+  .story-content h2 {
+    font-size: 1.4em;
+    max-width: 100%;
+  }
+  
+  .story-content h3 {
+    font-size: 1.2em;
+    max-width: 100%;
+  }
+  
+  .navigation-buttons {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+  }
+  
+  /* Ensure all content stays within viewport */
+  .reader-interface, 
+  .reader-page,
+  .reader-container {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 }
 
-/* Text color fixes */
-html.dark .reader-container.story-content {
-  color: rgba(255, 255, 255, 0.95);
+/* Optimizations for medium screens like tablets */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .story-container,
+  .story-content {
+    max-width: 650px; /* Slightly smaller than desktop */
+  }
+  
+  .story-content {
+    line-height: 1.85;
+  }
 }
 
-html:not(.dark) .reader-container.story-content {
-  color: rgba(0, 0, 0, 0.95);
+/* Navigation button styling - specifically for top nav */
+.nav-button-prev.at-boundary,
+.nav-button-next.at-boundary,
+.nav-button-random.at-boundary {
+  opacity: 0.3 !important; /* Use !important to override the Button component's default styles */
 }
 
-/* Navigation button styling */
-.reader-nav-button {
-  display: inline-flex;
+/* Floating navigation adjustments */
+.floating-navigation {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100; /* Ensure it's above other elements */
+  transition: transform 0.5s ease, opacity 0.5s ease;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.floating-navigation-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--background);
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+
+.floating-navigation-enter {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.floating-navigation-exit {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.nav-info {
+  font-size: 0.9rem;
+  color: var(--muted-foreground);
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.nav-button {
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem 1.5rem;
-  border: 1px solid hsl(var(--border));
-  border-radius: 0.5rem;
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  color: var(--foreground);
   font-size: 0.875rem;
-  font-weight: 500;
-  text-decoration: none;
-  transition: all 0.2s ease-in-out;
-  gap: 0.5rem;
+  transition: all 0.2s ease;
 }
 
-.reader-nav-button:hover {
-  background: hsl(var(--muted));
-  border-color: hsl(var(--border));
+.nav-button:hover:not(.disabled) {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
   transform: translateY(-1px);
 }
 
-.reader-nav-button:disabled {
+.nav-button.disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
 }
 
-/* Table of Contents styling */
-.table-of-contents {
-  position: sticky;
-  top: 8rem;
-  max-height: calc(100vh - 10rem);
-  overflow-y: auto;
-  background: hsl(var(--background));
-  border: 1px solid hsl(var(--border));
-  border-radius: 0.5rem;
-  padding: 1rem;
-  margin-left: 1rem;
+.random-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  padding: 0;
 }
 
-@media (max-width: 1024px) {
-  .table-of-contents {
-    position: fixed;
-    top: 4rem;
-    right: 1rem;
-    width: 16rem;
-    z-index: 50;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  }
+/* Adjust padding to account for floating navigation */
+.reader-interface {
+  padding-bottom: 6rem; /* Extra space for the floating navigation */
 }
 
-/* Apply padding to paragraphs as well for extra measure */
-.reader-container.story-content p, 
-.reader-container.story-content .story-paragraph {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  max-width: 100% !important; /* Ensure paragraphs don't exceed container */
-}
-
-/* CRITICAL: Ensure paragraphs also get the text color override for dark mode */
-html.dark .reader-container.story-content p,
-html.dark .reader-container.story-content .story-paragraph {
-  color: rgba(255, 255, 255, 0.95) !important;
-}
-
-/* Light mode text color override for paragraphs */
-html:not(.dark) .reader-container.story-content p,
-html:not(.dark) .reader-container.story-content .story-paragraph {
-  color: rgba(0, 0, 0, 0.95) !important;
-}
-
-/* Ensure links in story content are visible in dark mode */
-html.dark .reader-container.story-content a {
-  color: #6ebeff !important; /* Bright blue for dark mode */
-}
-
-/* Ensure links in story content are visible in light mode */
-html:not(.dark) .reader-container.story-content a {
-  color: #0066cc !important; /* Darker blue for light mode */
-}
-
-/* Improve title visibility in dark mode */
-html.dark .reader-page h1 {
-  color: rgba(255, 255, 255, 0.98) !important;
-  font-weight: 700 !important;
-}
-
-/* Improve close button contrast in dark mode */
-html.dark [aria-label="Close"] {
-  color: rgba(255, 255, 255, 0.9) !important;
-  background-color: rgba(50, 50, 50, 0.8) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  transition: all 0.2s ease !important;
-}
-
-html.dark [aria-label="Close"]:hover {
-  color: white !important;
-  background-color: rgba(80, 80, 80, 0.9) !important;
-  border: 1px solid rgba(255, 255, 255, 0.4) !important;
-}
-
-/* Improve Table of Contents dialog in dark mode */
-html.dark [aria-labelledby="toc-dialog-title"] {
-  background-color: rgba(30, 30, 30, 0.98) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-}
-
-html.dark [aria-labelledby="toc-dialog-title"] [aria-describedby="toc-dialog-description"] {
-  color: rgba(255, 255, 255, 0.85) !important;
-}
-
-/* Improve search input styling in dark mode */
-html.dark [aria-labelledby="toc-dialog-title"] input[type="search"] {
-  background-color: rgba(25, 25, 25, 0.8) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-}
-
-html.dark [aria-labelledby="toc-dialog-title"] input[type="search"]:focus {
-  background-color: rgba(30, 30, 30, 0.95) !important;
-  border-color: rgba(255, 255, 255, 0.35) !important;
-  outline: none !important;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15) !important;
-}
-
-/* Improve story items in the list for better visibility */
-html.dark [aria-labelledby="toc-dialog-title"] .rounded-md {
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
-}
-
-html.dark [aria-labelledby="toc-dialog-title"] .rounded-md:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  border-color: rgba(255, 255, 255, 0.15) !important;
-}
-
-/* Improve Table of Contents dialog buttons in dark mode */
-html.dark [aria-labelledby="toc-dialog-title"] button {
-  transition: all 0.15s ease-in-out !important;
-}
-
-html.dark [aria-labelledby="toc-dialog-title"] button[variant="outline"],
-html.dark [aria-labelledby="toc-dialog-title"] .flex.gap-2 > button:first-child {
-  background-color: rgba(50, 50, 50, 0.9) !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
-}
-
-html.dark [aria-labelledby="toc-dialog-title"] button[variant="outline"]:hover,
-html.dark [aria-labelledby="toc-dialog-title"] .flex.gap-2 > button:first-child:hover {
-  background-color: rgba(70, 70, 70, 0.95) !important;
-  border-color: rgba(255, 255, 255, 0.4) !important;
-  transform: translateY(-1px) !important;
-}
-
-html.dark [aria-labelledby="toc-dialog-title"] button[variant="secondary"],
-html.dark [aria-labelledby="toc-dialog-title"] .flex.gap-2 > button:last-child {
-  background-color: rgba(60, 60, 60, 0.9) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
-}
-
-html.dark [aria-labelledby="toc-dialog-title"] button[variant="secondary"]:hover,
-html.dark [aria-labelledby="toc-dialog-title"] .flex.gap-2 > button:last-child:hover {
-  background-color: rgba(80, 80, 80, 0.95) !important;
-  transform: translateY(-1px) !important;
-}
-
-/* Additional styling for other text elements in dark mode */
-html.dark .reader-container.story-content ul li,
-html.dark .reader-container.story-content ol li,
-html.dark .reader-container.story-content blockquote,
-html.dark .reader-container.story-content code,
-html.dark .reader-container.story-content pre {
-  color: rgba(255, 255, 255, 0.95) !important;
-}
-
-/* Special styling for blockquotes in dark mode */
-html.dark .reader-container.story-content blockquote {
-  border-left: 3px solid rgba(255, 255, 255, 0.2) !important;
-  background-color: rgba(255, 255, 255, 0.05) !important;
-  padding: 0.5rem 1rem !important;
-  margin: 1.5rem 0 !important;
-}
-
-/* Adding additional padding to any div inside the content area */
-.reader-container.story-content div {
-  max-width: 100% !important;
-}
-
-/* Ensure padding stays comfortable but responsive on tablets */
-@media (max-width: 1024px) {
-  .reader-container.story-content {
-    padding-left: 4rem !important; /* Moderate padding on medium screens */
-    padding-right: 4rem !important;
-    padding-top: 4rem !important; /* Maintain top padding for navbar clearance */
-  }
-}
-
-/* Ensure padding stays sufficient but responsive on mobile */
-@media (max-width: 768px) {
-  .reader-container.story-content {
-    padding-left: 2.5rem !important; /* Reduced but still good padding on mobile */
-    padding-right: 2.5rem !important;
-    padding-top: 0 !important; /* Remove extra gap under nav on mobile */
+@media (max-width: 640px) {
+  .reader-interface {
+    padding-bottom: 5rem;
   }
   
-  /* Improve spacing between nav and content on tablets */
-  .navbar-container + div .reader-controls-container {
-    margin-top: 0.5rem !important;
-    padding-bottom: 0.5rem !important;
+  .floating-navigation-inner {
+    padding: 0.5rem 0.75rem;
   }
   
-  /* Improve font controls layout on tablets */
-  .font-control-tooltip {
-    max-width: 90% !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
+  .nav-buttons {
+    gap: 0.5rem;
+  }
+  
+  .nav-button {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.8rem;
   }
 }
 
-/* Extra small screens */
-@media (max-width: 480px) {
-  .reader-container.story-content {
-    padding-left: 1.5rem !important;
-    padding-right: 1.5rem !important;
-    padding-top: 2.5rem !important; /* Increased top padding to fix spacing with navigation */
+/* Print styles */
+@media print {
+  .reading-controls,
+  .navigation-buttons,
+  .social-support-section,
+  .floating-navigation {
+    display: none;
   }
   
-  /* Make font control buttons more compact on mobile */
-  .reader-container button {
-    padding-left: 0.25rem !important;
-    padding-right: 0.25rem !important;
-    height: 1.75rem !important;
-    font-size: 0.75rem !important;
-    min-height: 0 !important;
+  .story-content {
+    font-size: 12pt;
+    line-height: 1.5;
   }
   
-  /* Make gap between buttons smaller */
-  .reader-container .flex.items-center.gap-2 {
-    gap: 0.25rem !important;
-  }
-  
-  /* Reduce vertical space between element groups */
-  .reader-container h1 {
-    margin-top: 0.75rem !important;
-    margin-bottom: 0.75rem !important;
-  }
-  
-  /* Fix spacing with navbar on small screens */
-  .navbar-container + div .reader-controls-container {
-    margin-top: 1rem !important;
-  }
-  
-  /* Fix tooltip alignment on mobile */
-  .font-control-tooltip {
-    left: 50% !important; 
-    transform: translateX(-50%) !important;
-    width: 90% !important;
-    max-width: 280px !important;
-    margin-top: 5px !important;
-    position: absolute !important;
-    text-align: center !important;
+  .story-content a {
+    text-decoration: none;
+    color: #000;
   }
 }

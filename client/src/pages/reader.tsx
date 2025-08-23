@@ -144,9 +144,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [contentsDialogOpen, setContentsDialogOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
-  // State for MistControl
-  const [mistIntensity, setMistIntensity] = useState<'subtle' | 'medium' | 'intense'>('subtle');
-  
   // Detect if this is a refresh using Performance API
   const isRefreshRef = useRef<boolean>(
     typeof window !== 'undefined' &&
@@ -613,660 +610,788 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   }, [routeSlug, isLoading, postsData?.posts, setLocation, toast]);
 
-  // Navigation with horror easter egg
-  const navigateToPost = (index: number) => {
-    if (!postsData?.posts) return;
-    
-    const totalPosts = postsData.posts.length;
-    if (index < 0 || index >= totalPosts) return;
-    
-    // Check if user is rapidly skipping through content (horror easter egg)
-    const now = Date.now();
-    const timeSinceLastNavigation = now - lastNavigationTimeRef.current;
-    
-    if (timeSinceLastNavigation < 2000) { // Less than 2 seconds
-      skipCountRef.current++;
-      
-      if (skipCountRef.current >= 5) {
-        const horrorMessages = [
-          "The stories are watching you skip them...",
-          "Why won't you stay and read?",
-          "Each skipped story dies a little inside.",
-          "They're calling your name from the pages you ignore.",
-          "The words you don't read become whispers in the dark.",
-          "Are you afraid of what the stories might tell you?",
-          "The abandoned tales grow restless...",
-          "Stop. Read. Listen. Before it's too late.",
-          "The cursor blinks... waiting... always waiting...",
-          "You can't escape the words you've left behind."
-        ];
-        
-        const randomMessage = horrorMessages[Math.floor(Math.random() * horrorMessages.length)];
-        setHorrorMessageText(randomMessage);
-        setShowHorrorMessage(true);
-        
-        setTimeout(() => setShowHorrorMessage(false), 5000);
-        skipCountRef.current = 0; // Reset counter after showing message
-      }
-    } else {
-      skipCountRef.current = 0; // Reset if user slows down
-    }
-    
-    lastNavigationTimeRef.current = now;
-    
-    setCurrentIndex(index);
-    sessionStorage.setItem('selectedStoryIndex', index.toString());
-    
-    // Smooth scroll to top for better UX
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const nextPost = () => {
-    if (!postsData?.posts) return;
-    const nextIndex = (currentIndex + 1) % postsData.posts.length;
-    navigateToPost(nextIndex);
-  };
-
-  const prevPost = () => {
-    if (!postsData?.posts) return;
-    const prevIndex = currentIndex === 0 ? postsData.posts.length - 1 : currentIndex - 1;
-    navigateToPost(prevIndex);
-  };
-
-  const randomPost = () => {
-    if (!postsData?.posts) return;
-    const totalPosts = postsData.posts.length;
-    if (totalPosts <= 1) return;
-    
-    let randomIndex;
-    do {
-      randomIndex = Math.floor(Math.random() * totalPosts);
-    } while (randomIndex === currentIndex);
-    
-    navigateToPost(randomIndex);
-  };
-
-  const refreshPosts = () => {
-    console.log('[Reader] Manual refresh requested');
-    queryClient.invalidateQueries({ queryKey: ["posts"] });
-    // Force a hard refresh of all WordPress content
-    queryClient.removeQueries({ queryKey: ["wordpress"] });
-    
-    toast({
-      title: 'Refreshing Stories',
-      description: 'Checking for new content...'
-    });
-  };
-
-  // Calculate current post with safety checks
-  const currentPost = postsData?.posts?.[currentIndex] || null;
-  
-  // Apply theme detection to current post
-  const detectedThemes = currentPost ? detectThemes(currentPost.content?.rendered || currentPost.content || '') : [];
-
-  // Extract first few sentences for the excerpt
-  const getExcerpt = (content: string, maxLength: number = 250): string => {
-    if (!content) return '';
-    
-    // Remove HTML tags
-    const textContent = content.replace(/<[^>]*>/g, '');
-    
-    if (textContent.length <= maxLength) {
-      return textContent;
-    }
-    
-    // Try to break at sentence boundary
-    const truncated = textContent.substring(0, maxLength);
-    const lastSentenceEnd = Math.max(
-      truncated.lastIndexOf('.'),
-      truncated.lastIndexOf('!'),
-      truncated.lastIndexOf('?')
-    );
-    
-    if (lastSentenceEnd > maxLength * 0.6) {
-      return textContent.substring(0, lastSentenceEnd + 1);
-    }
-    
-    // Otherwise break at word boundary
-    const lastSpace = truncated.lastIndexOf(' ');
-    return textContent.substring(0, lastSpace) + '...';
-  };
-
-  // Share functionality
-  const handleShare = async () => {
-    if (!currentPost) return;
-    
-    const shareUrl = `${window.location.origin}/reader/${currentPost.slug || currentPost.id}`;
-    const shareTitle = currentPost.title?.rendered || currentPost.title || 'Check out this story';
-    const shareText = getExcerpt(currentPost.content?.rendered || currentPost.content || '', 100);
-    
-    if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
-      try {
-        await navigator.share({
-          title: shareTitle,
-          text: shareText,
-          url: shareUrl,
-        });
-      } catch (error) {
-        console.error('Error sharing:', error);
-        fallbackShare(shareUrl, shareTitle);
-      }
-    } else {
-      fallbackShare(shareUrl, shareTitle);
-    }
-  };
-
-  const fallbackShare = (url: string, title: string) => {
-    navigator.clipboard?.writeText(url);
-    toast({
-      title: 'Link Copied',
-      description: 'Story link copied to clipboard!'
-    });
-  };
-
-  // Handle UI click - toggle UI visibility
-  const handleUIClick = (e: React.MouseEvent) => {
-    // Only toggle if we clicked on a non-interactive element
-    const target = e.target as HTMLElement;
-    const isInteractive = target.closest('button, a, input, select, textarea, [role="button"], .no-ui-toggle');
-    
-    if (!isInteractive) {
-      toggleUI();
-    }
-  };
-
-  // Loading state with themed styling
+  // Let's make sure we have posts data and current post before rendering
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen">
         <ApiLoader isLoading={true} />
       </div>
     );
   }
 
-  // Error state with fallback
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold text-destructive">Unable to Load Stories</h2>
+          <h2 className="text-2xl font-bold text-red-600">Error Loading Stories</h2>
           <p className="text-muted-foreground">
             {error instanceof Error ? error.message : 'An unexpected error occurred'}
           </p>
-          <Button onClick={refreshPosts} variant="outline">
-            <RefreshCcw className="mr-2 h-4 w-4" />
-            Try Again
-          </Button>
         </div>
       </div>
     );
   }
 
-  // No posts state
-  if (!postsData?.posts || postsData.posts.length === 0) {
+  // Extract posts from data structure
+  const posts = postsData?.posts || [];
+  
+  // Ensure currentIndex is valid
+  const validCurrentIndex = Math.max(0, Math.min(currentIndex, posts.length - 1));
+  
+  if (posts.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-4">
           <h2 className="text-2xl font-bold">No Stories Available</h2>
           <p className="text-muted-foreground">Check back later for new content!</p>
-          <Button onClick={refreshPosts} variant="outline">
-            <RefreshCcw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
         </div>
       </div>
     );
   }
 
-  const totalPosts = postsData.posts.length;
+  // Get current post
+  const currentPost = posts[validCurrentIndex];
+  
+  // Story theme icon override (check metadata for themeIcon)
+  const postThemeIcon = (currentPost?.metadata as any)?.themeIcon;
 
+  // If post doesn't exist, show error
+  if (!currentPost) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold">Story Not Found</h2>
+          <p className="text-muted-foreground">The requested story could not be found.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Apply theme detection to current post
+  const detectedThemes = detectThemes(currentPost.content?.rendered || currentPost.content || '');
+
+  // Horror easter egg function
+  const checkRapidNavigation = () => {
+    const now = Date.now();
+    const timeDiff = now - lastNavigationTimeRef.current;
+    
+    if (timeDiff < 5000) { // If navigating within 5 seconds
+      skipCountRef.current++;
+      
+      if (skipCountRef.current >= 3) {
+        // Show horror message
+        const horrorMessages = [
+          "Stop skipping the stories... they don't like being ignored.",
+          "The words are watching you...",
+          "Why won't you stay and read?",
+          "Each story you skip leaves a mark...",
+          "They're calling your name...",
+          "Are you avoiding something?",
+          "The stories grow restless when ignored...",
+          "What are you running from?",
+          "The cursor blinks... waiting... always waiting...",
+          "You can't escape the unread words..."
+        ];
+        
+        const randomMessage = horrorMessages[Math.floor(Math.random() * horrorMessages.length)];
+        setHorrorMessageText(randomMessage);
+        setShowHorrorMessage(true);
+        skipCountRef.current = 0; // Reset
+      }
+    } else {
+      // If navigation is slow, gradually reduce the skip count
+      skipCountRef.current = Math.max(0, skipCountRef.current - 1);
+    }
+    
+    // Update last navigation time
+    lastNavigationTimeRef.current = now;
+  };
+
+  // These navigation function declarations need to be hoisted to avoid errors with hooks
+  // Do not use early returns that might mess with React's hooks execution order
+  const goToRandomStory = () => {
+    // Only execute logic if we have more than one story
+    if (posts && posts.length > 1) {
+      let randomIndex;
+      do {
+        randomIndex = Math.floor(Math.random() * posts.length);
+      } while (randomIndex === currentIndex);
+      
+      checkRapidNavigation();
+      setCurrentIndex(randomIndex);
+      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+    }
+  };
+  
+  // Function to navigate to previous story
+  const goToPreviousStory = () => {
+    // Only execute logic if we have posts and we're not at the first one
+    if (posts && posts.length > 1 && currentIndex > 0) {
+      const newIndex = currentIndex - 1;
+      checkRapidNavigation();
+      setCurrentIndex(newIndex);
+      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+    }
+  };
+  
+  // Function to navigate to next story
+  const goToNextStory = () => {
+    // Only execute logic if we have posts and we're not at the last one
+    if (posts && posts.length > 1 && currentIndex < posts.length - 1) {
+      const newIndex = currentIndex + 1;
+      checkRapidNavigation();
+      setCurrentIndex(newIndex);
+      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+    }
+  };
+  
+  // Check if we're at first or last story
+  const isFirstStory = currentIndex === 0;
+  const isLastStory = currentIndex === posts.length - 1;
+
+  // We've moved the swipe navigation logic to a dedicated component
+  // This avoids hook execution order issues by keeping related logic in a single component
+
+  // The theme and toggleTheme functions are already declared at the top of the component
+  
   return (
-    <ErrorBoundary>
+    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-16 sm:pt-16 md:pt-18 lg:pt-20 pb-8 flex flex-col"
+      /* Added enhanced background-related styling directly here */
+      data-reader-page="true" 
+      data-distraction-free={isUIHidden ? "true" : "false"}>
+      
+      {/* Reader page has no background image, just clean default background */}
+      
+      {/* Reading Progress Bar - Always visible at the very top */}
       <div 
-        className="min-h-screen relative transition-all duration-300 ease-in-out"
-        onClick={handleUIClick}
-        ref={contentRef}
         style={{ 
-          fontSize: `${fontSize}px`,
-          fontFamily: availableFonts[fontFamily].family,
+          position: 'fixed',
+          top: '0px',
+          left: '0px',
+          right: '0px',
+          width: '100%',
+          height: '3px',
+          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+          zIndex: 999999,
+          pointerEvents: 'none'
         }}
       >
-        {/* Mist Effect - Always visible but can be controlled */}
-        <MistEffect />
+        <div 
+          style={{ 
+            height: '100%',
+            width: `${readingProgress}%`,
+            background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
+            transition: 'width 0.1s ease-out',
+            boxShadow: readingProgress > 5 ? '0 0 10px rgba(59, 130, 246, 0.7)' : 'none'
+          }}
+        />
+      </div>
+      
+      {/* Reader tooltip for distraction-free mode instructions */}
+      <ReaderTooltip show={showTooltip} />
+      {/* CSS for distraction-free mode transitions */}
+      <style dangerouslySetInnerHTML={{__html: `
+        /* Transitions for UI elements */
+        /* Keep the UI elements accessible but subtle in distraction-free mode */
+        .ui-fade-element {
+          transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          will-change: opacity, visibility;
+        }
+        .ui-hidden {
+          opacity: 0.15; /* Barely visible but still accessible */
+          pointer-events: auto; /* Keep interactive */
+        }
+        /* Show on hover for better UX */
+        .ui-hidden:hover {
+          opacity: 0.9;
+          transition: opacity 0.2s ease;
+        }
+        .story-content {
+          transition: width 0.8s ease-in-out;
+        }
+        .distraction-free-active .story-content {
+          width: 100%;
+        }
+        
+        /* Only target the navigation header and not the controls in distraction-free mode */
+        .reader-page[data-distraction-free="true"] header.main-header {
+          opacity: 0;
+          visibility: hidden;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          pointer-events: none; /* Prevent interaction with hidden header */
+          transform: translateY(-100%);
+          will-change: opacity, transform, visibility;
+        }
+        
+        /* Tiny indicator for mobile when in distraction-free mode */
+        .reader-page[data-distraction-free="true"]::after {
+          content: "↑ Tap to exit";
+          position: fixed;
+          top: 5px;
+          left: 50%;
+          transform: translateX(-50%);
+          background-color: var(--background);
+          color: var(--muted-foreground);
+          font-size: 0.65rem;
+          padding: 1px 6px;
+          border-radius: 4px;
+          opacity: 0.6;
+          pointer-events: none;
+          z-index: 30;
+          border: 1px solid var(--border);
+          box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+        }
+        
+        /* Ensure better mobile compatibility */
+        @media (max-width: 640px) {
+          .reader-page[data-distraction-free="true"]::after {
+            font-size: 0.6rem;
+            padding: 1px 5px;
+            top: 3px;
+          }
+        }
+        
+        /* Only show pointer cursor on story content */
+        .reader-page .story-content {
+          cursor: pointer;
+        }
+        
+        /* Set default cursor for everything */
+        .reader-page {
+          cursor: default;
+        }
+        
+        /* Set pointer cursor only for interactive elements */
+        .reader-page button,
+        .reader-page a,
+        .reader-page [role="button"],
+        .reader-page input[type="button"],
+        .reader-page input[type="submit"] {
+          cursor: pointer;
+        }
+        
+        /* Keep the story content cursor as pointer to indicate clickable for distraction-free mode */
+        .reader-page .story-content {
+          cursor: pointer;
+        }
+        
+        /* Make interactive elements inside story content use pointer cursor */
+        .reader-page .story-content button,
+        .reader-page .story-content a,
+        .reader-page .story-content [role="button"] {
+          cursor: pointer;
+        }
+        
+        .main-header {
+          transition: opacity 0.4s ease, visibility 0.4s ease;
+          will-change: opacity, visibility;
+        }
+      `}} />
 
-        {/* Fixed Progress Bar */}
-        <div className={`fixed top-0 left-0 right-0 z-50 transition-opacity duration-300 ${isUIHidden ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-          <div className="h-1 bg-muted">
-            <div 
-              className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300 ease-out"
-              style={{ width: `${readingProgress}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Horror Message Easter Egg */}
-        <AnimatePresence>
-          {showHorrorMessage && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
-            >
-              <div className="bg-red-950 border border-red-800 p-8 rounded-lg max-w-md mx-4">
+      {/* Horror message modal */}
+      {showHorrorMessage && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md"
+          // Removed onClick handler to prevent closing by clicking outside
+        >
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 300, 
+              damping: 30 
+            }}
+            className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-full text-center border border-[#ff0000]/80"
+          >
+            <div className="absolute inset-0 rounded-lg bg-[#ff0000]/10 animate-pulse" />
+            <div className="relative z-10">
+              <div className="mb-6">
                 <CreepyTextGlitch 
-                  text={horrorMessageText}
-                  className="text-red-100 text-center text-lg font-medium"
+                  text={horrorMessageText} 
+                  className="text-4xl font-bold"
+                  intensityFactor={8} // Maximum intensity for an extremely disturbing effect
                 />
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Main Navigation - Top Controls */}
-        <motion.div 
-          className={`fixed top-4 left-4 right-4 z-40 transition-all duration-300 ${isUIHidden ? 'opacity-0 pointer-events-none translate-y-[-100%]' : 'opacity-100 translate-y-0'}`}
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: isUIHidden ? 0 : 1, y: isUIHidden ? -20 : 0 }}
-        >
-          <div className="flex items-center justify-between gap-2 bg-background/90 backdrop-blur-sm rounded-lg p-2 border shadow-lg">
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setLocation('/')}
-                title="Home"
-                className="no-ui-toggle"
-              >
-                <Home className="h-4 w-4" />
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setLocation('/community')}
-                title="Community"
-                className="no-ui-toggle"
-              >
-                <BookText className="h-4 w-4" />
-              </Button>
-
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={refreshPosts}
-                title="Refresh Stories"
-                className="no-ui-toggle"
-              >
-                <RefreshCcw className="h-4 w-4" />
-              </Button>
+              {/* The button is wrapped in a div with no animations to keep it stable */}
+              <div className="mt-4">
+                <Button
+                  variant="outline"
+                  className="border-[#ff0000]/60 bg-background hover:bg-background/90 text-foreground w-full py-6"
+                  onClick={() => setShowHorrorMessage(false)}
+                >
+                  <span className="mx-auto text-lg font-medium">I understand, I'm sorry</span>
+                </Button>
+              </div>
             </div>
+          </motion.div>
+        </motion.div>
+      )}
+      
+      {/* Overlay to prevent interaction with the page when horror message is shown */}
+      {showHorrorMessage && (
+        <div 
+          className="fixed inset-0 z-[999]" 
+          style={{ pointerEvents: 'all' }}
+          aria-hidden="true"
+          /* This div blocks all interactions with the page behind it */
+        />
+      )}
+      
+      {/* Reading progress indicator - always visible for user orientation */}
+      <div 
+        className="fixed top-0 left-0 z-50 h-1 bg-primary/70"
+        style={{ 
+          width: `${readingProgress}%`, 
+          transition: 'width 0.2s ease-out'
+        }}
+        aria-hidden="true"
+      />
+      
+      {/* Floating pagination has been removed */}
+      
+      {/* Navigation buttons removed as requested */}
+      {/* Full width immersive reading experience */}
 
-            <div className="flex items-center gap-1">
-              <span className="text-sm text-muted-foreground px-2">
-                {currentIndex + 1} / {totalPosts}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Font Controls Dialog */}
-              <Dialog open={fontDialogOpen} onOpenChange={setFontDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    title="Font Settings"
-                    className="no-ui-toggle"
-                  >
-                    <BookOpen className="h-4 w-4" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent aria-labelledby="font-dialog-title" aria-describedby="font-dialog-description">
-                  <DialogHeader>
-                    <DialogTitle id="font-dialog-title">Reading Settings</DialogTitle>
-                    <DialogDescription id="font-dialog-description">
-                      Adjust font size and family for better reading experience
-                    </DialogDescription>
-                  </DialogHeader>
-                  
-                  <div className="space-y-6">
-                    <div className="space-y-3">
-                      <label className="text-sm font-medium">Font Size</label>
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={decreaseFontSize}
-                          disabled={fontSize <= 12}
+      <div className={`pt-0 pb-0 bg-background mt-0 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
+        {/* Static font size controls in a prominent position - reduced mobile spacing */}
+        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 py-0.5 sm:py-2 border-b border-border/30 mb-0 sm:mb-1 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+          {/* Font controls using the standard Button component */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={decreaseFontSize}
+              disabled={fontSize <= 12}
+              className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
+              aria-label="Decrease font size"
+            >
+              <Minus className="h-4 w-4 mr-1" />
+              A-
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={increaseFontSize}
+              disabled={fontSize >= 20}
+              className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
+              aria-label="Increase font size"
+            >
+              A+
+              <Plus className="h-4 w-4 ml-1" />
+            </Button>
+            
+            {/* Font Dialog with controlled open state */}
+            <Dialog open={fontDialogOpen} onOpenChange={setFontDialogOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 ml-2"
+                >
+                  <span className="text-xs uppercase">FONT</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-full">
+                <DialogHeader>
+                  <DialogTitle>Font Settings</DialogTitle>
+                  <DialogDescription>
+                    Change the font style for your reading experience.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Font Style</h4>
+                    <div className="grid grid-cols-1 gap-2">
+                      {Object.entries(availableFonts).map(([key, info]) => (
+                        <Button
+                          key={key}
+                          variant={fontFamily === key ? "default" : "outline"}
+                          className="justify-start h-auto py-3"
+                          onClick={() => {
+                            updateFontFamily(key as FontFamilyKey);
+                            setFontDialogOpen(false); // Close the dialog after changing font
+                          }}
                         >
-                          <Minus className="h-4 w-4" />
+                          <div className="flex flex-col items-start">
+                            <span style={{ fontFamily: info.family }}>{info.name}</span>
+                            <span className="text-xs text-muted-foreground">{info.type}</span>
+                          </div>
                         </Button>
-                        <span className="min-w-[3rem] text-center text-sm">{fontSize}px</span>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={increaseFontSize}
-                          disabled={fontSize >= 28}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <label className="text-sm font-medium">Font Family</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {Object.entries(availableFonts).map(([key, font]) => (
-                          <Button
-                            key={key}
-                            variant={fontFamily === key ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => updateFontFamily(key as FontFamilyKey)}
-                            className="text-left justify-start"
-                            style={{ fontFamily: font.family }}
-                          >
-                            {font.name}
-                          </Button>
-                        ))}
-                      </div>
+                      ))}
                     </div>
                   </div>
-
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="outline">Close</Button>
-                    </DialogClose>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
-              {/* Table of Contents Dialog */}
-              <Dialog open={contentsDialogOpen} onOpenChange={setContentsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    title="Table of Contents"
-                    className="no-ui-toggle"
-                  >
-                    <Menu className="h-4 w-4" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-md" aria-labelledby="toc-dialog-title" aria-describedby="toc-dialog-description">
-                  <DialogHeader>
-                    <DialogTitle id="toc-dialog-title">Story Navigation</DialogTitle>
-                    <DialogDescription id="toc-dialog-description">
-                      Jump to any story in the collection
-                    </DialogDescription>
-                  </DialogHeader>
-                  
-                  <TableOfContents 
-                    currentPostId={currentPost?.id || 0}
-                    onClose={() => setContentsDialogOpen(false)}
-                    posts={postsData.posts}
-                    onSelect={(post) => {
-                      const index = postsData.posts.findIndex(p => p.id === post.id);
-                      if (index >= 0) {
-                        navigateToPost(index);
-                      }
-                      setContentsDialogOpen(false);
-                    }}
-                  />
-
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="outline">Close</Button>
-                    </DialogClose>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
-              <ThemeToggleButton />
-              
-              <MistControl 
-                intensity={mistIntensity}
-                onChange={setMistIntensity}
-              />
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Story Navigation - Bottom Controls */}
-        <motion.div 
-          className={`fixed bottom-4 left-4 right-4 z-40 transition-all duration-300 ${isUIHidden ? 'opacity-0 pointer-events-none translate-y-[100%]' : 'opacity-100 translate-y-0'}`}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: isUIHidden ? 0 : 1, y: isUIHidden ? 20 : 0 }}
-        >
-          <div className="flex items-center justify-between gap-2 bg-background/90 backdrop-blur-sm rounded-lg p-2 border shadow-lg">
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={prevPost}
-                title="Previous Story"
-                className="no-ui-toggle"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={randomPost}
-                title="Random Story"
-                className="no-ui-toggle"
-              >
-                <Shuffle className="h-4 w-4" />
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={nextPost}
-                title="Next Story"
-                className="no-ui-toggle"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {currentPost && (
-                <>
-                  <BookmarkButton 
-                    postId={currentPost.id} 
-                    className="no-ui-toggle"
-                  />
-                  
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={handleShare}
-                    title="Share Story"
-                    className="no-ui-toggle"
-                  >
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-                  
-                  {/* Delete button for admin or post author */}
-                  {isAuthenticated && currentPost && (isAdmin || user?.id === currentPost.authorId) && (
-                    <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title="Delete Story"
-                          className="no-ui-toggle text-destructive hover:text-destructive"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent aria-labelledby="delete-dialog-title" aria-describedby="delete-dialog-description">
-                        <DialogHeader>
-                          <DialogTitle id="delete-dialog-title">Delete Story</DialogTitle>
-                          <DialogDescription id="delete-dialog-description">
-                            Are you sure you want to delete "{currentPost.title?.rendered || currentPost.title || 'this story'}"? This action cannot be undone.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter className="gap-2">
-                          <DialogClose asChild>
-                            <Button variant="outline">Cancel</Button>
-                          </DialogClose>
-                          <Button
-                            variant="destructive"
-                            onClick={() => deleteMutation.mutate(currentPost.id)}
-                            disabled={deleteMutation.isPending}
-                          >
-                            {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Reader Tooltip */}
-        <ReaderTooltip 
-          show={showTooltip && !isUIHidden}
-        />
-
-        {/* Swipe Navigation */}
-        <SwipeNavigation 
-          onNext={nextPost}
-          onPrevious={prevPost}
-        >
-          <div ref={contentRef} className="w-full h-full" />
-        </SwipeNavigation>
-
-        {/* Main Content */}
-        <main className="relative">
-          {currentPost && (
-            <article className="max-w-4xl mx-auto px-4 py-8 pt-20 pb-24">
-              {/* Story Header */}
-              <header className="mb-8 space-y-4">
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {detectedThemes.slice(0, 3).map((theme, index) => {
-                    const themeConfig = THEME_CATEGORIES[theme as ThemeCategory];
-                    if (!themeConfig) return null;
-                    
-                    const IconComponent = themeConfig.icon;
-                    return (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                        <IconComponent className="h-3 w-3" />
-                        {themeConfig.name}
-                      </Badge>
-                    );
-                  })}
                 </div>
-                
-                <h1 className="text-3xl md:text-4xl font-bold leading-tight">
-                  {currentPost.title?.rendered || currentPost.title || 'Untitled Story'}
-                </h1>
-                
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  {currentPost.date && (
-                    <time dateTime={currentPost.date}>
-                      {format(new Date(currentPost.date), 'MMMM d, yyyy')}
-                    </time>
-                  )}
-                  {currentPost.readingTimeMinutes && (
-                    <span>{currentPost.readingTimeMinutes} min read</span>
-                  )}
-                </div>
-              </header>
+              </DialogContent>
+            </Dialog>
+          </div>
 
-              {/* Story Content */}
-              <div 
-                className="story-content prose prose-lg dark:prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ 
-                  __html: sanitizeHtmlContent(currentPost.content?.rendered || currentPost.content || '') 
-                }}
+          {/* Narration button */}
+          <div className="flex-grow"></div>
+
+          {/* Theme toggle button removed as requested */}
+
+          {/* Integrated BookmarkButton in top controls */}
+          <BookmarkButton 
+            postId={currentPost.id} 
+            variant="reader"
+            showText={false}
+            className="h-8 w-8 rounded-full bg-background hover:bg-background/80 mx-2"
+          />
+
+          {/* Text-to-speech functionality removed */}
+
+          {/* Contents Dialog with controlled open state - non-fullscreen with close button */}
+          <Dialog open={contentsDialogOpen} onOpenChange={setContentsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="default"
+                size="sm"
+                className="h-8 px-3 bg-primary hover:bg-primary/90 text-white shadow-lg flex items-center gap-1.5 min-w-0 max-w-[120px] overflow-hidden transition-all duration-200 hover:scale-105 rounded-md"
+              >
+                <BookText className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate text-xs font-semibold tracking-wide">TOC</span>
+              </Button>
+            </DialogTrigger>
+            {/* Wrap the TableOfContents component to ensure DialogContent has proper aria attributes */}
+            <DialogContent 
+              className="max-w-md" 
+              aria-labelledby="toc-dialog-title" 
+              aria-describedby="toc-dialog-description"
+            >
+              <div className="flex items-center justify-between">
+                <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
+                <DialogClose asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Close</span>
+                  </Button>
+                </DialogClose>
+              </div>
+              <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
+              <TableOfContents 
+                currentPostId={currentPost.id} 
+                onClose={() => setContentsDialogOpen(false)} 
               />
-
-              {/* Story Footer */}
-              <footer className="mt-12 pt-8 border-t space-y-6">
-                {/* Like/Dislike Controls */}
-                {currentPost.id && (
-                  <div className="flex items-center gap-4">
-                    <LikeDislike 
-                      postId={currentPost.id}
-                    />
+            </DialogContent>
+          </Dialog>
+        </div>
+      
+        <article
+            key={currentPost.id}
+            className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
+          >
+            <div className="flex flex-col items-center mb-2 mt-0">
+              <div className="relative flex flex-col items-center">
+                {isCommunityContent && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge 
+                      variant="secondary" 
+                      className="bg-primary/10 text-foreground border-primary/20"
+                    >
+                      Community Story
+                    </Badge>
+                    {/* Show delete button for admins or post authors */}
+                    {(isAdmin || (isCommunityContent && user?.id === currentPost?.authorId)) && isCommunityContent && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-7 px-2 border-red-200 bg-red-50 hover:bg-red-100 text-red-600"
+                        onClick={() => setShowDeleteDialog(true)}
+                      >
+                        <Trash className="h-3.5 w-3.5 mr-1" />
+                        <span className="text-xs">Delete</span>
+                      </Button>
+                    )}
                   </div>
                 )}
-
-                {/* Social Share Buttons */}
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium">Share:</span>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        const url = `${window.location.origin}/reader/${currentPost.slug || currentPost.id}`;
-                        const text = `Check out this story: ${currentPost.title?.rendered || currentPost.title}`;
-                        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
-                      }}
-                      className="text-blue-500 hover:text-blue-600"
-                    >
-                      <FaTwitter className="h-4 w-4" />
-                    </Button>
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        const url = `${window.location.origin}/reader/${currentPost.slug || currentPost.id}`;
-                        window.open(`https://www.instagram.com/`, '_blank');
-                      }}
-                      className="text-pink-500 hover:text-pink-600"
-                    >
-                      <FaInstagram className="h-4 w-4" />
-                    </Button>
+                <h1
+                  className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(currentPost.title?.rendered || currentPost.title || 'Story') }}
+                />
+              </div>
+              
+              {/* Story Delete Dialog */}
+              <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center text-xl">
+                      <Trash className="h-5 w-5 mr-2 text-red-500" />
+                      {isAdmin && user?.id !== currentPost?.authorId ? 
+                        "Delete Community Story" : 
+                        "Delete Your Story"}
+                    </DialogTitle>
+                    <DialogDescription className="pt-2 text-sm">
+                      {isAdmin && user?.id !== currentPost?.authorId ? 
+                        "As an admin, you are about to delete a user-submitted community story. This action cannot be undone." : 
+                        "You are about to delete your community story. This action cannot be undone."}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex items-center justify-between border p-3 rounded-md bg-muted/50 mt-2">
+                    <div className="font-medium truncate pr-2">
+                      {currentPost.title?.rendered || currentPost.title || 'Story'}
+                    </div>
+                    <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+                      Community
+                    </Badge>
                   </div>
-                </div>
+                  <DialogFooter className="gap-2 sm:gap-0 mt-4">
+                    <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => deleteMutation.mutate(currentPost.id)}
+                      disabled={deleteMutation.isPending}
+                    >
+                      {deleteMutation.isPending ? 'Deleting...' : 'Delete Story'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
-                {/* Support Writing Card */}
-                <SupportWritingCard />
+              <div className="flex flex-col items-center gap-1">
+                <div className={`flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-primary/10 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                  {/* Story theme icon - show primary theme if available, otherwise default to generic */}
+                  {detectedThemes.length > 0 ? (
+                    <div className="flex items-center gap-1.5">
+                      {(() => {
+                        // Get the primary theme (first one as it's sorted by relevance)
+                        const primaryTheme = detectedThemes[0];
+                        // Safely get the theme information with fallback
+                        const themeInfo = primaryTheme && 
+                          Object.prototype.hasOwnProperty.call(THEME_CATEGORIES, primaryTheme) 
+                            ? THEME_CATEGORIES[primaryTheme as keyof typeof THEME_CATEGORIES] 
+                            : {
+                                icon: 'Ghost',
+                                badgeVariant: 'default',
+                                keywords: [],
+                                description: 'Horror Fiction',
+                                visualEffects: []
+                              };
+                        
+                        const ThemeIcon = (() => {
+                          // First check if we have a custom icon from the post
+                          if (postThemeIcon) {
+                            // Try to find the icon in our import list
+                            switch(postThemeIcon.toLowerCase()) {
+                              case 'skull': return Skull;
+                              case 'brain': return Brain;
+                              case 'pill': return Pill;
+                              case 'cpu': return Cpu;
+                              case 'dna': return Dna;
+                              case 'ghost': return Ghost;
+                              case 'footprints': return Footprints;
+                              case 'cloud-rain': 
+                              case 'cloudrain': return CloudRain;
+                              case 'castle': return Castle;
+                              case 'bug': return Bug;
+                              case 'radiation': return Radiation;
+                              case 'umbrella': return Umbrella;
+                              case 'userminus2': 
+                              case 'user-minus2': return UserMinus2;
+                              case 'anchor': return Anchor;
+                              case 'alerttriangle': 
+                              case 'alert-triangle': return AlertTriangle;
+                              case 'building': return Building;
+                              case 'worm': return Worm;
+                              case 'cloud': return Cloud;
+                              case 'cloudfog': 
+                              case 'cloud-fog': return CloudFog;
+                              default: return Ghost; // Default fallback
+                            }
+                          }
+                          
+                          // If no custom icon, fall back to the theme definition
+                          // Ensure themeInfo and themeInfo.icon exist before using them
+                          if (!themeInfo || !themeInfo.icon) {
+                            return Ghost; // Default fallback if themeInfo or icon is missing
+                          }
+                          
+                          switch(themeInfo.icon) {
+                            case 'skull': 
+                            case 'Skull': return Skull;
+                            case 'brain': 
+                            case 'Brain': return Brain;
+                            case 'pill': 
+                            case 'Pill': return Pill;
+                            case 'cpu': 
+                            case 'Cpu': return Cpu;
+                            case 'dna': 
+                            case 'Dna': return Dna;
+                            case 'ghost': 
+                            case 'Ghost': return Ghost;
+                            case 'cross': 
+                            case 'Cross': return Cross;
+                            case 'car': 
+                            case 'Car': return ChevronRight; // Temporary fallback for Car icon
+                            case 'footprints': 
+                            case 'Footprints': return Footprints;
+                            case 'cloudrain': 
+                            case 'CloudRain': return CloudRain;
+                            case 'castle': 
+                            case 'Castle': return Castle;
+                            case 'bug': 
+                            case 'Bug': return Bug;
+                            case 'radiation': 
+                            case 'Radiation': return Radiation;
+                            case 'umbrella': 
+                            case 'Umbrella': return Umbrella;
+                            case 'userminus2': 
+                            case 'UserMinus2': return UserMinus2;
+                            case 'anchor': 
+                            case 'Anchor': return Anchor;
+                            case 'alerttriangle': 
+                            case 'AlertTriangle': return AlertTriangle;
+                            case 'building': 
+                            case 'Building': return Building;
+                            case 'worm': 
+                            case 'Worm': return Worm;
+                            case 'cloud': 
+                            case 'Cloud': return Cloud;
+                            case 'cloudfog': 
+                            case 'CloudFog': return CloudFog;
+                            default: return Ghost; // Default fallback
+                          }
+                        })();
 
-                {/* Navigation to Next/Previous Story */}
-                <div className="flex justify-between items-center pt-6">
-                  <Button
-                    variant="outline"
-                    onClick={prevPost}
-                    disabled={!postsData?.posts || postsData.posts.length <= 1}
-                  >
-                    <ChevronLeft className="mr-2 h-4 w-4" />
-                    Previous Story
-                  </Button>
+                        return (
+                          <>
+                            <ThemeIcon className="h-4 w-4 text-primary" />
+                            <span className="text-xs">{primaryTheme}</span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <Ghost className="h-4 w-4 text-primary" />
+                      <span className="text-xs">Horror Fiction</span>
+                    </div>
+                  )}
                   
-                  <Button
-                    variant="outline"
-                    onClick={nextPost}
-                    disabled={!postsData?.posts || postsData.posts.length <= 1}
-                  >
-                    Next Story
-                    <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
+                  {/* Date indicator */}
+                  <span className="text-xs">
+                    {currentPost.date ? format(new Date(currentPost.date), 'MMM d, yyyy') : 'No date'}
+                  </span>
+                  
+                  {/* Estimated reading time */}
+                  <span className="text-xs">
+                    {currentPost.readingTimeMinutes || '~5'} min read
+                  </span>
                 </div>
-              </footer>
+              </div>
+            </div>
 
-              {/* Comments Section */}
-              {currentPost.id && (
-                <section className="mt-12 pt-8 border-t">
-                  <h3 className="text-xl font-semibold mb-6">Comments</h3>
-                  <SimpleCommentSection 
-                    postId={currentPost.id}
-                  />
-                </section>
-              )}
-            </article>
-          )}
-        </main>
+            {/* Content needs to be wrapped in a SwipeNavigation component */}
+            <SwipeNavigation
+              onPrevious={goToPreviousStory}
+              onNext={goToNextStory}
+              disabled={showHorrorMessage || posts.length <= 1}
+            >
+              <div className="story-container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
+                <div 
+                  className="story-content cursor-pointer text-justify"
+                  dangerouslySetInnerHTML={{ 
+                    __html: sanitizeHtmlContent(currentPost.content?.rendered || currentPost.content || 'No content available.') 
+                  }}
+                  onClick={toggleUI}
+                  style={{ fontSize: `${fontSize}px` }}
+                />
+              </div>
+            </SwipeNavigation>
+            
+            {/* Social sharing and support section  */}
+            <div className={`social-support-section mt-8 pt-6 border-t border-border ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+              {/* Social media sharing */}
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <span className="text-sm text-muted-foreground mr-2">Share:</span>
+                
+                {/* Twitter */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
+                  onClick={() => {
+                    const tweetText = `Check out this story: ${currentPost.title?.rendered || currentPost.title || 'Story'} ${window.location.href}`;
+                    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`, '_blank');
+                  }}
+                >
+                  <FaTwitter className="h-4 w-4 text-blue-500" />
+                </Button>
+                
+                {/* WordPress */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
+                  onClick={() => {
+                    const wpUrl = `https://wordpress.com/wp-admin/press-this.php?u=${encodeURIComponent(window.location.href)}&t=${encodeURIComponent(currentPost.title?.rendered || currentPost.title || 'Story')}`;
+                    window.open(wpUrl, '_blank');
+                  }}
+                >
+                  <FaWordpress className="h-4 w-4 text-blue-600" />
+                </Button>
+                
+                {/* Instagram (link copy) */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-pink-100 dark:hover:bg-pink-900"
+                  onClick={() => {
+                    navigator.clipboard.writeText(window.location.href);
+                    toast({
+                      title: "Link Copied",
+                      description: "Story link copied to clipboard for Instagram sharing!"
+                    });
+                  }}
+                >
+                  <FaInstagram className="h-4 w-4 text-pink-500" />
+                </Button>
+                
+                {/* Generic Share */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({
+                        title: currentPost.title?.rendered || currentPost.title || 'Story',
+                        url: window.location.href
+                      });
+                    } else {
+                      navigator.clipboard.writeText(window.location.href);
+                      toast({
+                        title: "Link Copied",
+                        description: "Story link copied to clipboard!"
+                      });
+                    }
+                  }}
+                >
+                  <Share2 className="h-4 w-4 text-gray-500" />
+                </Button>
+              </div>
+              
+              {/* Like/Dislike component */}
+              <div className="flex justify-center mb-6">
+                <LikeDislike postId={currentPost.id} />
+              </div>
+              
+              {/* Support writing card */}
+              <SupportWritingCard />
+            </div>
+
+            {/* Comment section */}
+            <div className={`mt-8 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+              <SimpleCommentSection postId={currentPost.id} />
+            </div>
+        </article>
       </div>
-    </ErrorBoundary>
+    </div>
   );
 }
