@@ -13,18 +13,20 @@
 
 /* Typography improvements using literary website standards */
 .story-content {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--reader-font-family, 'Cormorant Garamond', serif);
   line-height: 1.6; /* Match About page spacing */
   letter-spacing: 0.01em; /* Slightly increased for better text flow */
   color: var(--foreground);
   max-width: 70ch; /* Use character width measurement instead of pixels */
   margin: 0 auto;
   font-size: var(--base-font-size, 16px); /* Use the base font size variable with fallback */
-  transition: font-size 0.2s ease; /* Smooth transition when font size changes */
+  transition: font-family 0.15s ease-in-out, font-size 0.15s ease-in-out; /* Smooth transition when font size changes */
   width: 100%; /* Ensure full width */
   box-sizing: border-box; /* Include padding in width calculation */
   overflow-wrap: break-word; /* Prevent text overflow by breaking words */
   word-wrap: break-word; /* Fallback for older browsers */
+  font-display: swap;
+  font-synthesis: none;
 }
 
 .story-content p {
@@ -43,8 +45,8 @@
   margin-top: 0.3em; /* Even more drastically reduced spacing between paragraphs */
 }
 
-.story-content h1, 
-.story-content h2, 
+.story-content h1,
+.story-content h2,
 .story-content h3 {
   font-weight: 700;
   line-height: 1.2;
@@ -276,12 +278,12 @@
   .story-container {
     padding: 0 1rem;
   }
-  
+
   .story-content {
     font-size: 1rem;
     padding: 0 0.5rem;
   }
-  
+
   .story-content p {
     margin-bottom: 0.4em; /* Even more drastically reduced spacing, consistent with desktop */
     text-align: left; /* Left-aligned for easier mobile reading */
@@ -289,31 +291,31 @@
     max-width: 100%; /* Ensure text doesn't overflow */
     overflow-wrap: break-word;
   }
-  
+
   .story-content h1 {
     font-size: 1.6em;
     max-width: 100%;
   }
-  
+
   .story-content h2 {
     font-size: 1.4em;
     max-width: 100%;
   }
-  
+
   .story-content h3 {
     font-size: 1.2em;
     max-width: 100%;
   }
-  
+
   .navigation-buttons {
     flex-direction: column;
     align-items: center;
     gap: 0.75rem;
     width: 100%;
   }
-  
+
   /* Ensure all content stays within viewport */
-  .reader-interface, 
+  .reader-interface,
   .reader-page,
   .reader-container {
     width: 100%;
@@ -328,7 +330,7 @@
   .story-content {
     max-width: 650px; /* Slightly smaller than desktop */
   }
-  
+
   .story-content {
     line-height: 1.85;
   }
@@ -427,15 +429,15 @@
   .reader-interface {
     padding-bottom: 5rem;
   }
-  
+
   .floating-navigation-inner {
     padding: 0.5rem 0.75rem;
   }
-  
+
   .nav-buttons {
     gap: 0.5rem;
   }
-  
+
   .nav-button {
     padding: 0.4rem 0.5rem;
     font-size: 0.8rem;
@@ -450,14 +452,26 @@
   .floating-navigation {
     display: none;
   }
-  
+
   .story-content {
     font-size: 12pt;
     line-height: 1.5;
   }
-  
+
   .story-content a {
     text-decoration: none;
     color: #000;
   }
+}
+
+.story-content p,
+.story-content .story-paragraph {
+  font-family: inherit;
+  transition: inherit;
+}
+
+/* Prevent font flash during changes */
+.story-content * {
+  font-family: inherit;
+  transition: font-family 0.15s ease-in-out, font-size 0.15s ease-in-out;
 }

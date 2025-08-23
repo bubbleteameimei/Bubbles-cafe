@@ -142,7 +142,7 @@ export default function Home() {
               </div>
 
               <div className="w-full">
-                <div className="flex flex-col gap-4 w-full max-w-md mx-auto px-4">
+                <div className="flex flex-col gap-3 w-full max-w-md mx-auto px-4">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -202,12 +202,12 @@ export default function Home() {
                 </div>
               </div>
               
-              <div className="mt-2 sm:mt-3 md:mt-4 lg:mt-5 mb-3 sm:mb-4 md:mb-5 lg:mb-6">
+              <div className="mt-3">
                 <BuyMeCoffeeButton />
               </div>
               
               {posts.length > 0 && (
-                <div className="mt-4 sm:mt-5 md:mt-6 text-center space-y-2 sm:space-y-3 md:space-y-4 w-full px-4 max-w-3xl mx-auto">
+                <div className="mt-3 text-center space-y-2 sm:space-y-3 md:space-y-4 w-full px-4 max-w-3xl mx-auto">
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <div 
                     onClick={() => setLocation('/reader')} 
