@@ -45,6 +45,21 @@ export default function Home() {
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  // Ensure images within hero are lazily loaded
+  useEffect(() => {
+    const root = heroRef.current;
+    if (!root) return;
+    const imgs = root.querySelectorAll<HTMLImageElement>('img');
+    imgs.forEach((img) => {
+      if (!img.hasAttribute('loading')) {
+        img.setAttribute('loading', 'lazy');
+      }
+      if (!img.hasAttribute('decoding')) {
+        img.setAttribute('decoding', 'async');
+      }
+    });
+  }, [inView]);
   
   const { data: postsResponse, isLoading, error } = useQuery({
     queryKey: ["pages", "home", "latest-post"],
@@ -254,22 +269,21 @@ export default function Home() {
               </motion.div>
 
               {/* Social proof: readers this week (approximate via engagement) */}
-              {false && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={inView ? { opacity: 1, y: 0 } : undefined}
-                  transition={{ duration: 0.35, delay: 0.34, ease: 'easeOut' }}
-                  className="mt-2 text-white/70 text-sm sm:text-base"
-                >
-                  {(typeof (engagement as any)?.activeUsers === 'number' || typeof (engagement as any)?.pageViews === 'number') && (
-                    <span>
-                      {typeof (engagement as any)?.activeUsers === 'number'
-                        ? Number((engagement as any).activeUsers)
-                        : Number((engagement as any)?.pageViews || 0)} readers this week
-                    </span>
-                  )}
-                </motion.div>
-              )}
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={inView ? { opacity: 1, y: 0 } : undefined}
+                transition={{ duration: 0.35, delay: 0.34, ease: 'easeOut' }}
+                className="mt-2 text-white/70 text-sm sm:text-base"
+              >
+                {(() => {
+                  const e: any = engagement;
+                  const value = typeof e?.activeUsers === 'number' ? e.activeUsers : (typeof e?.pageViews === 'number' ? e.pageViews : null);
+                  if (typeof value === 'number' && value > 0) {
+                    return <span>{value.toLocaleString()} readers this week</span>;
+                  }
+                  return null;
+                })()}
+              </motion.div>
               
               {posts.length > 0 && (
                 <div className="mt-8 sm:mt-10 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
