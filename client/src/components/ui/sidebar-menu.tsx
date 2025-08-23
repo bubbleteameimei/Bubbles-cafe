@@ -223,11 +223,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   // Enhanced menu item class with modern UX principles
   const menuItemClass = cn(
     "sidebar-menu-button-enhanced",
-    "group relative flex items-center gap-2 px-2 py-1 rounded-md text-sm font-medium",
+    "group relative flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium",
     "text-sidebar-foreground/80 hover:text-sidebar-foreground",
     "transition-all duration-200 ease-out",
     "hover:bg-sidebar-accent hover:shadow-sm",
-    "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-sidebar-accent",
+    "focus-visible:outline-none focus-visible:ring-0 focus:bg-sidebar-accent",
     "data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/10 data-[active=true]:to-primary/5",
     "data-[active=true]:text-primary data-[active=true]:shadow-sm",
     "whitespace-nowrap overflow-hidden",
@@ -235,7 +235,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   );
   
   // Enhanced submenu styling - increased clickable area to the RIGHT and faster animations
-  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-accent-foreground))] focus:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-100 ease-out text-sm font-medium py-1.5 px-2 pr-12 whitespace-nowrap overflow-hidden min-h-[36px] flex items-center -mb-1 rounded-sm hover:bg-[hsl(var(--sidebar-accent))] focus:bg-[hsl(var(--sidebar-accent))]";
+  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-100 ease-out text-sm font-medium py-2 px-3 pr-12 whitespace-nowrap overflow-hidden min-h-[36px] flex items-center -mb-1 rounded-sm hover:bg-[hsl(var(--sidebar-accent))] focus-visible:outline-none focus:bg-[hsl(var(--sidebar-accent))]";
 
 
 
@@ -264,7 +264,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-1 pb-1 scroll-smooth sidebar-menu-container"
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-2 pb-2 scroll-smooth sidebar-menu-container focus:outline-none"
            style={{
              scrollBehavior: 'smooth',
              scrollbarWidth: 'none',

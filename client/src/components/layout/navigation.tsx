@@ -53,7 +53,7 @@ export default function Navigation() {
 
   return (
     <header 
-      className={`w-screen relative top-0 z-40 bg-background overflow-x-clip ${scrolled ? 'shadow-md' : ''}`}
+      className={`w-screen relative top-0 z-40 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 overflow-x-clip ${scrolled ? 'shadow-md' : ''}`}
       style={{ position: 'relative', left: 0, right: 0, margin: 0, padding: 0, width: '100vw', marginLeft: 'calc(-50vw + 50%)' }}
     >
       <div className="w-full flex h-16 items-center justify-between px-0 main-header border-b border-border/50">
@@ -75,7 +75,7 @@ export default function Navigation() {
             </SheetTrigger>
             <SheetContent 
               side="left" 
-              className="p-0 w-[280px] max-w-[85vw]"
+              className="p-0 w-[280px] max-w-[85vw] h-full"
             >
               {/* Sidebar navigation for all screen sizes */}
               <div className="border-b border-border/30"></div>

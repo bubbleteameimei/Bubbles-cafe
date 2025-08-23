@@ -277,7 +277,7 @@ export default function Home() {
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <div 
                     onClick={() => setLocation('/reader')} 
-                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl bg-gradient-to-b from-white/5 to-white/0 dark:from-white/10 dark:to-white/0 backdrop-blur-sm border border-white/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6)] hover:border-primary/30"
+                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl bg-white/5 dark:bg-white/10 backdrop-blur-md border border-white/15 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.55)] hover:border-white/30"
                   >
                     <h2 
                       className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 text-white group-hover:text-primary transition-colors px-2 sm:px-3"
