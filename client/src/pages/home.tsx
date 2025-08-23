@@ -122,27 +122,27 @@ export default function Home() {
           <div className="relative w-full h-2 sm:h-3 md:h-4 lg:h-3" aria-hidden="true"></div>
           
           {/* Content container with proper z-index to appear above background - full width */}
-          <div className="relative z-10 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-8 md:pb-10 lg:pb-12 text-center w-full min-h-screen">
+          <div className="relative z-10 flex flex-col items-center justify-start pt-12 sm:pt-16 md:pt-20 lg:pt-24 pb-6 sm:pb-8 md:pb-10 lg:pb-12 text-center w-full min-h-screen">
             <div className="relative">
-              <h1 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-white flex flex-col items-center">
+              <h1 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-6 sm:mb-8 md:mb-10 tracking-wider text-white flex flex-col items-center">
                 <span>BUBBLES</span>
                 <span className="mt-1 md:mt-2 text-red-700 relative">CAFE</span>
               </h1>
             </div>
           
-            {/* Minimal spacing */}
-            <div className="h-2 sm:h-3 md:h-4 lg:h-5 xl:h-6"></div>
+            {/* Increased spacing */}
+            <div className="h-8 sm:h-10 md:h-12 lg:h-14 xl:h-16"></div>
           
             <div className="space-y-2 sm:space-y-2 md:space-y-3 mb-0 sm:mb-1 md:mb-2 lg:mb-3 flex flex-col items-center w-full">
               <div className="px-4 max-w-2xl">
-                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white leading-relaxed md:leading-relaxed lg:leading-relaxed font-medium">
+                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white leading-relaxed md:leading-relaxed lg:leading-relaxed font-normal" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                   Every story here is a portal to the unexpected,
                   the unexplained, and <span className="italic text-red-700">the unsettling<span className="text-red-700 font-bold">.</span></span>
                 </p>
               </div>
 
               <div className="w-full">
-                <div className="flex flex-col gap-3 w-full max-w-md mx-auto px-4">
+                <div className="flex flex-col gap-4 w-full max-w-md mx-auto px-4">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -202,7 +202,7 @@ export default function Home() {
                 </div>
               </div>
               
-              <div className="mt-1 sm:mt-2 md:mt-3 lg:mt-4 mb-1 sm:mb-2 md:mb-3 lg:mb-4">
+              <div className="mt-2 sm:mt-3 md:mt-4 lg:mt-5 mb-3 sm:mb-4 md:mb-5 lg:mb-6">
                 <BuyMeCoffeeButton />
               </div>
               
