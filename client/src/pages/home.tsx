@@ -5,12 +5,12 @@ import { format } from 'date-fns';
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Book, ArrowRight, ChevronRight, Eye } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { getExcerpt } from "@/lib/content-analysis";
 import { sanitizeHtmlContent } from "@/lib/sanitize-content";
 import ApiLoader from "@/components/api-loader";
-
 
 
 export default function Home() {
@@ -270,30 +270,42 @@ export default function Home() {
                   </motion.div>
                 </div>
               </motion.div>
-              {/* Monthly social proof below CTAs */}
+              {/* Monthly social proof: right-aligned above CTAs */}
               <motion.div
                 initial={{ opacity: 0, y: 6 }}
                 animate={inView ? { opacity: 1, y: 0 } : undefined}
-                transition={{ duration: 0.35, delay: 0.3, ease: 'easeOut' }}
-                className="mt-3 sm:mt-4"
+                transition={{ duration: 0.35, delay: 0.28, ease: 'easeOut' }}
+                className="w-full max-w-2xl mx-auto px-4"
               >
-                {(() => {
-                  const e: any = engagement;
-                  const rt: any = readingTime;
-                  const arr = Array.isArray(rt?.monthlyData) ? rt.monthlyData : [];
-                  const last = arr.length > 0 ? arr[arr.length - 1] : null;
-                  let value = (typeof last?.storyViews === 'number' && last.storyViews > 0)
-                    ? last.storyViews
-                    : (typeof e?.pageViews === 'number' && e.pageViews > 0)
-                      ? e.pageViews
-                      : (typeof e?.activeUsers === 'number' ? e.activeUsers : 0);
-                  return (
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/40 backdrop-blur-sm px-3 py-1.5 text-white text-sm sm:text-base shadow-sm">
-                      <Eye className="h-4 w-4 text-primary" aria-hidden="true" />
-                      {Number(value).toLocaleString()} readers this month
-                    </span>
-                  );
-                })()}
+                <div className="flex justify-end pr-1 sm:pr-2 mb-2">
+                  {(() => {
+                    const e: any = engagement;
+                    const rt: any = readingTime;
+                    const arr = Array.isArray(rt?.monthlyData) ? rt.monthlyData : [];
+                    const last = arr.length > 0 ? arr[arr.length - 1] : null;
+                    const value = (typeof last?.storyViews === 'number' && last.storyViews > 0)
+                      ? last.storyViews
+                      : (typeof e?.pageViews === 'number' && e.pageViews > 0)
+                        ? e.pageViews
+                        : (typeof e?.activeUsers === 'number' ? e.activeUsers : 0);
+                    const formatted = Number(value).toLocaleString();
+                    return (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/8 px-2.5 py-1 text-white/90 text-xs sm:text-sm shadow-sm cursor-default">
+                              <Eye className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                              {formatted}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="left" align="end">
+                            <span>{formatted} readers this month</span>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  })()}
+                </div>
               </motion.div>
               
               {posts.length > 0 && (
