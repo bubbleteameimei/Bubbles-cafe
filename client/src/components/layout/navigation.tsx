@@ -53,10 +53,10 @@ export default function Navigation() {
 
   return (
     <header 
-      className={`relative top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300 ease-in-out ${scrolled ? 'shadow-md' : ''}`}
+      className={`relative top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300 ease-in-out ${scrolled ? 'shadow-md' : ''}`}
       style={{ width: '100%', margin: 0, padding: 0 }}
     >
-      <div className="w-full flex h-16 items-center justify-between px-2 sm:px-4 main-header">
+      <div className="w-full flex h-16 items-center justify-between px-0 main-header border-b border-border/50">
         {/* Left section with menu toggle for all screen sizes */}
         <div className="flex items-center -mt-1 ml-0">
           {/* Menu toggle for all devices */}
@@ -90,14 +90,14 @@ export default function Navigation() {
         </div>
         
         {/* Horizontal Nav - Desktop only - moved more to the right */}
-        <nav aria-label="Main" className="hidden lg:flex items-center space-x-2 -mt-1 absolute inset-0 justify-center">
+        <nav aria-label="Main" className="hidden lg:flex items-center space-x-3 -mt-1 absolute inset-0 justify-center">
           {navLinks.map(({ href, label }) => (
             <a
               key={href}
               href={href}
-              className={`h-12 px-5 inline-flex items-center rounded-md text-sm font-medium transition-colors hover:bg-accent/30 mt-2 border border-transparent
+              className={`relative h-12 px-4 inline-flex items-center rounded-md text-sm font-medium transition-colors hover:bg-accent/30 mt-2 border border-transparent
                         ${location === href
-                          ? 'text-primary font-semibold bg-accent/40 border border-border/40 shadow-sm' 
+                          ? 'text-primary font-semibold bg-accent/40 border border-border/40 shadow-sm after:absolute after:left-3 after:right-3 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary' 
                           : 'text-foreground/80 hover:text-foreground'}`}
               aria-current={location === href ? 'page' : undefined}
             >
@@ -110,24 +110,37 @@ export default function Navigation() {
         <div className="flex-1 lg:flex"></div>
         
         {/* Right section - Action buttons */}
-        <div className="flex items-center space-x-2 -mt-1 ml-auto pr-2">
-          {/* Search button - shown on all devices */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95 mt-2"
-            aria-label="Search"
-            onClick={() => setLocation('/search')}
-          >
-            <Search className="h-5 w-5" />
-          </Button>
+        <div className="flex items-center space-x-2 -mt-1 ml-auto pr-0">
+          {/* Inline desktop search */}
+          <div className="hidden lg:flex items-center transition-all duration-200 ease-out w-28 focus-within:w-56 mr-2">
+            <Input
+              value={inlineQuery}
+              onChange={(e) => setInlineQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const q = encodeURIComponent(inlineQuery.trim());
+                  setLocation(q ? `/search?q=${q}` : '/search');
+                }
+              }}
+              placeholder="Search..."
+              className="h-9 text-sm bg-background/70 border-border/40"
+            />
+          </div>
           
           {/* Notifications */}
-          <NotificationIcon 
-            notifications={notifications} 
-            className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 
-                      transition-all duration-150 active:scale-95 mt-2" 
-          />
+          <div className="relative">
+            {Array.isArray(notifications) && notifications.some((n) => !n.read) && (
+              <span className="absolute -top-0.5 -right-0.5 inline-flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+              </span>
+            )}
+            <NotificationIcon 
+              notifications={notifications} 
+              className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 
+                        transition-all duration-150 active:scale-95 mt-2" 
+            />
+          </div>
           
           {/* Theme toggle */}
           <Button
