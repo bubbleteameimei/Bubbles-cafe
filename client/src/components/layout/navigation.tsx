@@ -85,8 +85,8 @@ export default function Navigation() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/60 touch-manipulation
-                          transition-all duration-200 ease-in-out active:scale-95 mt-2"
+                className="h-12 w-12 rounded-md border border-transparent text-foreground/80 hover:text-foreground hover:bg-accent/60 touch-manipulation
+                          transition-all duration-200 ease-in-out active:scale-95 mt-2 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
                 aria-label="Open menu"
                 style={{ WebkitTapHighlightColor: 'transparent' }}
                 onClick={() => setIsOpen((v) => !v)}
