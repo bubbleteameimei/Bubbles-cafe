@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Book, ArrowRight, ChevronRight } from "lucide-react";
+import { Book, ArrowRight, ChevronRight, Eye } from "lucide-react";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { getExcerpt } from "@/lib/content-analysis";
@@ -76,6 +76,18 @@ export default function Home() {
     queryFn: async () => {
       const res = await fetch('/api/analytics/engagement');
       if (!res.ok) throw new Error('Failed to load engagement');
+      return res.json();
+    },
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Reading time analytics for monthly views
+  const { data: readingTime } = useQuery({
+    queryKey: ["analytics", "reading-time"],
+    queryFn: async () => {
+      const res = await fetch('/api/analytics/reading-time');
+      if (!res.ok) throw new Error('Failed to load reading-time');
       return res.json();
     },
     staleTime: 60 * 1000,
@@ -200,9 +212,9 @@ export default function Home() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={inView ? { opacity: 1, y: 0 } : undefined}
                 transition={{ duration: 0.4, delay: 0.22, ease: 'easeOut' }}
-                className="w-full"
+                className="w-full mt-6 sm:mt-8"
               >
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-0.5 sm:gap-1 w-full max-w-2xl mx-auto px-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-px sm:gap-px w-full max-w-2xl mx-auto px-4">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -258,28 +270,25 @@ export default function Home() {
                   </motion.div>
                 </div>
               </motion.div>
-              
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={inView ? { opacity: 1, y: 0 } : undefined}
-                transition={{ duration: 0.4, delay: 0.28, ease: 'easeOut' }}
-                className="mt-6 sm:mt-8"
-              >
-                <BuyMeCoffeeButton />
-              </motion.div>
-
-              {/* Social proof: readers this week (approximate via engagement) */}
+              {/* Monthly social proof below CTAs */}
               <motion.div
                 initial={{ opacity: 0, y: 6 }}
                 animate={inView ? { opacity: 1, y: 0 } : undefined}
-                transition={{ duration: 0.35, delay: 0.34, ease: 'easeOut' }}
-                className="mt-2 text-white/70 text-sm sm:text-base"
+                transition={{ duration: 0.35, delay: 0.3, ease: 'easeOut' }}
+                className="mt-3 sm:mt-4"
               >
                 {(() => {
-                  const e: any = engagement;
-                  const value = typeof e?.activeUsers === 'number' ? e.activeUsers : (typeof e?.pageViews === 'number' ? e.pageViews : null);
+                  const rt: any = readingTime;
+                  const arr = Array.isArray(rt?.monthlyData) ? rt.monthlyData : [];
+                  const last = arr.length > 0 ? arr[arr.length - 1] : null;
+                  const value = typeof last?.storyViews === 'number' ? last.storyViews : null;
                   if (typeof value === 'number' && value > 0) {
-                    return <span>{value.toLocaleString()} readers this week</span>;
+                    return (
+                      <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-white/85 text-sm">
+                        <Eye className="h-4 w-4 text-primary" aria-hidden="true" />
+                        {value.toLocaleString()} readers this month
+                      </span>
+                    );
                   }
                   return null;
                 })()}
