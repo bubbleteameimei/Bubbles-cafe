@@ -142,7 +142,7 @@ export default function Home() {
               </div>
 
               <div className="w-full">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full max-w-2xl mx-auto px-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2 w-full max-w-2xl mx-auto px-4">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
