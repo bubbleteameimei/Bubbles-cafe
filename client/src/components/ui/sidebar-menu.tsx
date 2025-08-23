@@ -70,114 +70,109 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   
   // Add swipe to close functionality with improved reliability
   React.useEffect(() => {
+    // Always compute a cleanup to satisfy noImplicitReturns
+    let cleanup: (() => void) | undefined
+
     // Only add touch events if sidebar is open
-    if (!sidebar?.openMobile) return;
-    
-    // Keep track of the starting position and movement
-    let startX = 0;
-    let startY = 0;
-    let moveX = 0;
-    let moveY = 0;
-    let isScrolling = false;
-    let isSidebarTouch = false;
-    
-    const handleTouchStart = (e: TouchEvent) => {
-      const target = e.target as HTMLElement;
-      
-      // Only handle touches that start within the sidebar container
-      const sidebarContainer = target.closest('[data-sidebar="sidebar"], .sidebar-menu-container');
-      if (!sidebarContainer) {
-        return; // Don't interfere with touches outside sidebar
-      }
-      
-      // Check if the touch started on a button or interactive element
-      const isButton = target.closest('button, a, [role="button"], .interactive-element');
-      const scrollContainer = target.closest('.sidebar-menu-container');
-      
-      // Don't interfere with button clicks or interactive elements
-      if (isButton) {
-        return;
-      }
-      
-      if (scrollContainer) {
-        // Allow normal scrolling if touching a scrollable area
-        isScrolling = true;
-        isSidebarTouch = true;
-        return;
-      }
-      
-      // Store both X and Y coordinates to detect diagonal swipes
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      setTouchStartX(startX);
-      isScrolling = false;
-      isSidebarTouch = true;
-    };
-    
-    const handleTouchMove = (e: TouchEvent) => {
-      if (!touchStartX || isScrolling || !isSidebarTouch) return;
-      
-      // Check if we're touching an interactive element
-      const target = e.target as HTMLElement;
-      const isButton = target.closest('button, a, [role="button"], .interactive-element');
-      
-      // Don't interfere with button interactions
-      if (isButton) {
-        return;
-      }
-      
-      // Get current position
-      moveX = e.touches[0].clientX;
-      moveY = e.touches[0].clientY;
-      
-      // Calculate horizontal and vertical difference
-      const touchDiffX = startX - moveX;
-      const touchDiffY = Math.abs(startY - moveY);
-      
-      // Only trigger close if swipe is primarily horizontal (not diagonal)
-      // This prevents accidental closes when scrolling the menu
-      if (touchDiffX > 50 && touchDiffY < 40) {
-        // Close the sidebar both ways to ensure it properly closes
-        sidebar.setOpenMobile(false);
-        
-        // Force the sheet to close by finding and clicking its close button
-        const closeButton = document.querySelector('[data-sidebar="sidebar"] button') as HTMLButtonElement;
-        if (closeButton) {
-          closeButton.click();
+    if (sidebar?.openMobile) {
+      // Keep track of the starting position and movement
+      let startX = 0
+      let startY = 0
+      let moveX = 0
+      let moveY = 0
+      let isScrolling = false
+      let isSidebarTouch = false
+
+      const handleTouchStart = (e: Event) => {
+        const te = e as TouchEvent
+        const target = te.target as HTMLElement
+        // Only handle touches that start within the sidebar container
+        const sidebarContainer = target.closest('[data-sidebar="sidebar"], .sidebar-menu-container')
+        if (!sidebarContainer) {
+          return // Don't interfere with touches outside sidebar
         }
-        
-        setTouchStartX(null); // Reset touch start
-        isSidebarTouch = false;
+        // Check if the touch started on a button or interactive element
+        const isButton = target.closest('button, a, [role="button"], .interactive-element')
+        const scrollContainer = target.closest('.sidebar-menu-container')
+        // Don't interfere with button clicks or interactive elements
+        if (isButton) {
+          return
+        }
+        if (scrollContainer) {
+          // Allow normal scrolling if touching a scrollable area
+          isScrolling = true
+          isSidebarTouch = true
+          return
+        }
+        // Store both X and Y coordinates to detect diagonal swipes
+        startX = te.touches[0].clientX
+        startY = te.touches[0].clientY
+        setTouchStartX(startX)
+        isScrolling = false
+        isSidebarTouch = true
       }
-    };
-    
-    const handleTouchEnd = () => {
-      // Reset all touch values
-      startX = 0;
-      startY = 0;
-      moveX = 0;
-      moveY = 0;
-      isScrolling = false;
-      isSidebarTouch = false;
-      setTouchStartX(null);
-    };
-    
-    // Add event listeners with passive: true for better performance
-    // Only listen on the sidebar container to avoid interfering with other elements
-    const sidebarElement = document.querySelector('[data-sidebar="sidebar"]');
-    if (sidebarElement) {
-      sidebarElement.addEventListener("touchstart", handleTouchStart, { passive: true });
-      sidebarElement.addEventListener("touchmove", handleTouchMove, { passive: true });
-      sidebarElement.addEventListener("touchend", handleTouchEnd, { passive: true });
-      
-      // Cleanup function
-      return () => {
-        sidebarElement.removeEventListener("touchstart", handleTouchStart);
-        sidebarElement.removeEventListener("touchmove", handleTouchMove);
-        sidebarElement.removeEventListener("touchend", handleTouchEnd);
-      };
+
+      const handleTouchMove = (e: Event) => {
+        if (!touchStartX || isScrolling || !isSidebarTouch) return
+        const te = e as TouchEvent
+        // Check if we're touching an interactive element
+        const target = te.target as HTMLElement
+        const isButton = target.closest('button, a, [role="button"], .interactive-element')
+        // Don't interfere with button interactions
+        if (isButton) {
+          return
+        }
+        // Get current position
+        moveX = te.touches[0].clientX
+        moveY = te.touches[0].clientY
+        // Calculate horizontal and vertical difference
+        const touchDiffX = startX - moveX
+        const touchDiffY = Math.abs(startY - moveY)
+        // Only trigger close if swipe is primarily horizontal (not diagonal)
+        // This prevents accidental closes when scrolling the menu
+        if (touchDiffX > 50 && touchDiffY < 40) {
+          // Close the sidebar both ways to ensure it properly closes
+          sidebar.setOpenMobile(false)
+          // Force the sheet to close by finding and clicking its close button
+          const closeButton = document.querySelector('[data-sidebar="sidebar"] button') as HTMLButtonElement
+          if (closeButton) {
+            closeButton.click()
+          }
+          setTouchStartX(null) // Reset touch start
+          isSidebarTouch = false
+        }
+      }
+
+      const handleTouchEnd = (_e: Event) => {
+        // Reset all touch values
+        startX = 0
+        startY = 0
+        moveX = 0
+        moveY = 0
+        isScrolling = false
+        isSidebarTouch = false
+        setTouchStartX(null)
+      }
+
+      // Add event listeners with passive: true for better performance
+      // Only listen on the sidebar container to avoid interfering with other elements
+      const sidebarElement = document.querySelector('[data-sidebar="sidebar"]') as HTMLElement | null
+      if (sidebarElement) {
+        const se = sidebarElement as HTMLElement
+        se.addEventListener('touchstart', handleTouchStart as EventListener, { passive: true })
+        se.addEventListener('touchmove', handleTouchMove as EventListener, { passive: true })
+        se.addEventListener('touchend', handleTouchEnd as EventListener, { passive: true })
+
+        cleanup = () => {
+          se.removeEventListener('touchstart', handleTouchStart as EventListener)
+          se.removeEventListener('touchmove', handleTouchMove as EventListener)
+          se.removeEventListener('touchend', handleTouchEnd as EventListener)
+        }
+      }
     }
-  }, [sidebar, touchStartX]); // Dependencies include sidebar and touchStartX
+
+    return cleanup
+  }, [sidebar, touchStartX]) // Dependencies include sidebar and touchStartX
 
   // Simplified navigation - no state needed for instant switching
   
