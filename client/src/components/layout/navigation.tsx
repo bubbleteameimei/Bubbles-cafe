@@ -53,8 +53,8 @@ export default function Navigation() {
 
   return (
     <header 
-      className={`relative top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300 ease-in-out ${scrolled ? 'shadow-md' : ''}`}
-      style={{ width: '100%', margin: 0, padding: 0 }}
+      className={`w-screen relative top-0 z-40 bg-background overflow-x-clip ${scrolled ? 'shadow-md' : ''}`}
+      style={{ position: 'relative', left: 0, right: 0, margin: 0, padding: 0, width: '100vw', marginLeft: 'calc(-50vw + 50%)' }}
     >
       <div className="w-full flex h-16 items-center justify-between px-0 main-header border-b border-border/50">
         {/* Left section with menu toggle for all screen sizes */}
@@ -110,7 +110,17 @@ export default function Navigation() {
         <div className="flex-1 lg:flex"></div>
         
         {/* Right section - Action buttons */}
-        <div className="flex items-center space-x-2 -mt-1 ml-auto pr-0">
+        <div className="flex items-center space-x-2 -mt-1 ml-auto pr-2">
+          {/* Search icon button - restored */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95 mt-2"
+            aria-label="Search"
+            onClick={() => setLocation('/search')}
+          >
+            <Search className="h-5 w-5" />
+          </Button>
           {/* Inline desktop search */}
           <div className="hidden lg:flex items-center transition-all duration-200 ease-out w-28 focus-within:w-56 mr-2">
             <Input
