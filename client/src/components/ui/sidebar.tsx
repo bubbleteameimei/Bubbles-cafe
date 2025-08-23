@@ -133,7 +133,7 @@ export const Sidebar = React.forwardRef<
         <SheetContent
           data-sidebar="sidebar"
           data-mobile="true"
-          className="relative w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground"
+          className="relative h-full w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -289,7 +289,7 @@ export const SidebarInput = React.forwardRef<
       ref={ref}
       data-sidebar="input"
       className={cn(
-        "h-8 w-full bg-background shadow-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+        "h-8 w-full bg-background shadow-none focus-visible:outline-none",
         className
       )}
       {...props}
@@ -508,7 +508,7 @@ export const SidebarMenuButton = React.forwardRef<
         tabIndex={0}
         className={cn(
           sidebarMenuButtonVariants({ variant, size }),
-          "touch-manipulation relative active:scale-[0.98] active:opacity-90 transition-all duration-150 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+          "touch-manipulation relative active:scale-[0.98] active:opacity-90 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
           className
         )}
         style={{ WebkitTapHighlightColor: 'transparent' }}
@@ -561,7 +561,7 @@ export const SidebarMenuAction = React.forwardRef<
       aria-label={ariaLabel || "Menu action"}
       tabIndex={0}
       className={cn(
-        "absolute right-1 top-1.5 flex aspect-square w-6 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none transition-all duration-150 ease-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0 active:scale-95 active:opacity-90 touch-manipulation",
+        "absolute right-1 top-1.5 flex aspect-square w-6 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none transition-all duration-150 ease-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0",
         // Increases the hit area of the button on mobile.
         "after:absolute after:-inset-3 after:md:hidden",
         "peer-data-[size=sm]/menu-button:top-1",
