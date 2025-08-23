@@ -270,43 +270,7 @@ export default function Home() {
                   </motion.div>
                 </div>
               </motion.div>
-              {/* Monthly social proof: right-aligned above CTAs */}
-              <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={inView ? { opacity: 1, y: 0 } : undefined}
-                transition={{ duration: 0.35, delay: 0.28, ease: 'easeOut' }}
-                className="w-full max-w-2xl mx-auto px-4"
-              >
-                <div className="flex justify-end pr-1 sm:pr-2 mb-2">
-                  {(() => {
-                    const e: any = engagement;
-                    const rt: any = readingTime;
-                    const arr = Array.isArray(rt?.monthlyData) ? rt.monthlyData : [];
-                    const last = arr.length > 0 ? arr[arr.length - 1] : null;
-                    const value = (typeof last?.storyViews === 'number' && last.storyViews > 0)
-                      ? last.storyViews
-                      : (typeof e?.pageViews === 'number' && e.pageViews > 0)
-                        ? e.pageViews
-                        : (typeof e?.activeUsers === 'number' ? e.activeUsers : 0);
-                    const formatted = Number(value).toLocaleString();
-                    return (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/8 px-2.5 py-1 text-white/90 text-xs sm:text-sm shadow-sm cursor-default">
-                              <Eye className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-                              {formatted}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="left" align="end">
-                            <span>{formatted} readers this month</span>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    );
-                  })()}
-                </div>
-              </motion.div>
+              {/* Monthly readers pill removed by request */}
               
               {posts.length > 0 && (
                 <div className="mt-8 sm:mt-10 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">

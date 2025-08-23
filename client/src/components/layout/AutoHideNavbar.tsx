@@ -20,7 +20,7 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 }) => {
   const [currentPath, setCurrentPath] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
-  const [hidden, setHidden] = useState(false);
+  const [hidden] = useState(false);
   const lastY = React.useRef(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [navbarHeight, setNavbarHeight] = useState<number>(56);
@@ -34,55 +34,14 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
     root.toggleAttribute('data-nav-hidden', isHidden);
   };
 
-  // Track scroll position for desktop and laptop enhancements
+  // Track scroll state only for styling (no auto-hide)
   useEffect(() => {
-    // Only enable auto-hide on reader pages
-    const path = window.location.pathname;
-    const enableAutoHide = path.startsWith('/reader') || path.startsWith('/community-story');
-    const isReaderPage = path.startsWith('/reader') || path.startsWith('/community-story');
-    
     const handleScroll = () => {
-      const scrollPosition = window.scrollY;
-      
-      // Calculate reading progress for reader pages
-      if (isReaderPage) {
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-        const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
-        setReadingProgress(Math.min(Math.max(progress, 0), 100));
-      }
-      
-      if (!enableAutoHide) {
-        setHidden(false);
-        setIsScrolled(scrollPosition > 20);
-        lastY.current = scrollPosition;
-        return;
-      }
-      
-      if (scrollPosition > 20) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-
-      // Hide nav on downward scroll, show on upward
-      const delta = scrollPosition - lastY.current;
-      const threshold = 8; // small threshold to avoid jitter
-      if (delta > threshold) {
-        setHidden(true);
-      } else if (delta < -threshold) {
-        setHidden(false);
-      }
-      lastY.current = scrollPosition;
+      setIsScrolled(window.scrollY > 20);
     };
-
-    // Initial check
     handleScroll();
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
+    window.addEventListener('scroll', handleScroll, { passive: true } as any);
+    return () => window.removeEventListener('scroll', handleScroll as any);
   }, []);
 
   // Measure navbar height and keep CSS variables in sync
@@ -136,7 +95,7 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
     <div ref={containerRef} className={`navbar-container transition-transform duration-300 fixed top-0 left-0 right-0 z-40 w-full ${hidden ? '-translate-y-full' : 'translate-y-0'}`}
       style={{ width: "100%", margin: 0, padding: 0 }}>
       <div className={`${isScrolled ? 'lg:bg-background/90 lg:backdrop-blur-md lg:shadow-md' : 'lg:bg-transparent'}`}>
-        <Navigation readingProgress={readingProgress} />
+        <Navigation />
       </div>
     </div>
   );
