@@ -212,9 +212,9 @@ export default function Home() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={inView ? { opacity: 1, y: 0 } : undefined}
                 transition={{ duration: 0.4, delay: 0.22, ease: 'easeOut' }}
-                className="w-full mt-6 sm:mt-8"
+                className="w-full mt-8 sm:mt-10"
               >
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-px sm:gap-px w-full max-w-2xl mx-auto px-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-0 w-full max-w-2xl mx-auto px-4">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -278,19 +278,21 @@ export default function Home() {
                 className="mt-3 sm:mt-4"
               >
                 {(() => {
+                  const e: any = engagement;
                   const rt: any = readingTime;
                   const arr = Array.isArray(rt?.monthlyData) ? rt.monthlyData : [];
                   const last = arr.length > 0 ? arr[arr.length - 1] : null;
-                  const value = typeof last?.storyViews === 'number' ? last.storyViews : null;
-                  if (typeof value === 'number' && value > 0) {
-                    return (
-                      <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-white/85 text-sm">
-                        <Eye className="h-4 w-4 text-primary" aria-hidden="true" />
-                        {value.toLocaleString()} readers this month
-                      </span>
-                    );
-                  }
-                  return null;
+                  let value = (typeof last?.storyViews === 'number' && last.storyViews > 0)
+                    ? last.storyViews
+                    : (typeof e?.pageViews === 'number' && e.pageViews > 0)
+                      ? e.pageViews
+                      : (typeof e?.activeUsers === 'number' ? e.activeUsers : 0);
+                  return (
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/40 backdrop-blur-sm px-3 py-1.5 text-white text-sm sm:text-base shadow-sm">
+                      <Eye className="h-4 w-4 text-primary" aria-hidden="true" />
+                      {Number(value).toLocaleString()} readers this month
+                    </span>
+                  );
                 })()}
               </motion.div>
               
