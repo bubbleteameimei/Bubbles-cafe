@@ -122,7 +122,7 @@ export default function Home() {
           <div className="relative w-full h-2 sm:h-3 md:h-4 lg:h-3" aria-hidden="true"></div>
           
           {/* Content container with proper z-index to appear above background - full width */}
-          <div className="relative z-10 flex flex-col items-center justify-start pt-12 sm:pt-16 md:pt-20 lg:pt-24 pb-6 sm:pb-8 md:pb-10 lg:pb-12 text-center w-full min-h-screen">
+          <div className="relative z-10 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start pt-16 sm:pt-20 md:pt-24 lg:pt-28 pb-10 sm:pb-12 md:pb-16 lg:pb-20 text-center w-full min-h-screen">
             <div className="relative">
               <h1 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-6 sm:mb-8 md:mb-10 tracking-wider text-white flex flex-col items-center">
                 <span>BUBBLES</span>
@@ -131,10 +131,10 @@ export default function Home() {
             </div>
           
             {/* Increased spacing */}
-            <div className="h-8 sm:h-10 md:h-12 lg:h-14 xl:h-16"></div>
+            <div className="h-6 sm:h-8 md:h-10 lg:h-12 xl:h-14"></div>
           
-            <div className="space-y-2 sm:space-y-2 md:space-y-3 mb-0 sm:mb-1 md:mb-2 lg:mb-3 flex flex-col items-center w-full">
-              <div className="px-4 max-w-2xl">
+            <div className="space-y-6 sm:space-y-8 md:space-y-10 mb-0 flex flex-col items-center w-full">
+              <div className="px-4 max-w-2xl mx-auto">
                 <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white leading-relaxed md:leading-relaxed lg:leading-relaxed font-normal" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                   Every story here is a portal to the unexpected,
                   the unexplained, and <span className="italic text-red-700">the unsettling<span className="text-red-700 font-bold">.</span></span>
@@ -142,7 +142,7 @@ export default function Home() {
               </div>
 
               <div className="w-full">
-                <div className="flex flex-col gap-3 w-full max-w-md mx-auto px-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full max-w-2xl mx-auto px-4">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -151,7 +151,7 @@ export default function Home() {
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
-                      className="group relative w-[90%] h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-4 mx-auto"
+                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-5"
                     >
                       <span className="text-center mr-2">Browse Stories</span>
                       <motion.div
@@ -182,7 +182,7 @@ export default function Home() {
                         ? setLocation('/reader')  // Always navigate to the reader page
                         : setLocation('/reader')  // Fallback to /reader if no posts
                       }
-                      className="group relative w-[90%] h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-4 mx-auto"
+                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-5"
                     >
                       <span className="text-center mr-2">Start Reading</span>
                       <motion.div
@@ -202,22 +202,22 @@ export default function Home() {
                 </div>
               </div>
               
-              <div className="mt-3">
+              <div className="mt-6 sm:mt-8">
                 <BuyMeCoffeeButton />
               </div>
               
               {posts.length > 0 && (
-                <div className="mt-3 text-center space-y-2 sm:space-y-3 md:space-y-4 w-full px-4 max-w-3xl mx-auto">
+                <div className="mt-8 sm:mt-10 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <div 
                     onClick={() => setLocation('/reader')} 
-                    className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200 w-full p-3 sm:p-4 md:p-5 rounded-lg hover:bg-foreground/5 dark:hover:bg-foreground/10 bg-black/40 backdrop-blur-sm"
+                    className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200 w-full p-5 sm:p-6 md:p-8 rounded-xl hover:bg-foreground/5 dark:hover:bg-foreground/10 bg-black/40 backdrop-blur-sm border border-white/10"
                   >
                     <h2 
-                      className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-3 text-white group-hover:text-primary transition-colors px-1 sm:px-2"
+                      className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 text-white group-hover:text-primary transition-colors px-2 sm:px-3"
                       dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(posts[0]?.title?.rendered || 'Featured Story') }}
                     />
-                    <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 w-full mb-2 sm:mb-3 md:mb-4 line-clamp-2 px-1 sm:px-2 leading-relaxed md:leading-relaxed">
+                    <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 w-full mb-4 sm:mb-5 md:mb-6 line-clamp-2 px-2 sm:px-3 leading-relaxed md:leading-relaxed">
                       {posts[0]?.content?.rendered && (
                         <motion.span
                           initial={{ opacity: 0, y: 10 }}
@@ -228,11 +228,11 @@ export default function Home() {
                         </motion.span>
                       )}
                     </div>
-                    <div className="flex items-center justify-center text-sm sm:text-base md:text-lg lg:text-xl text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium">
+                    <div className="flex items-center justify-center text-sm sm:text-base md:text-lg lg:text-xl text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium mt-1 md:mt-2">
                       Read full story 
                       <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 group-hover:translate-x-1 transition-transform" />
                     </div>
-                    <div className="text-sm sm:text-base md:text-lg font-medium text-white/70 mt-2 md:mt-3">
+                    <div className="text-sm sm:text-base md:text-lg font-medium text-white/70 mt-3 md:mt-4">
                       {posts[0]?.date ? formatDate(posts[0].date) : ''}
                     </div>
                   </div>
