@@ -536,53 +536,28 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }`;
   };
 
-  // Apply styles effect with debouncing and proper cleanup
+  // Apply font styles using CSS variables for smooth transitions
   useEffect(() => {
-    let timeoutId: number | null = null;
-    
-    const applyStyles = () => {
-      try {
-        console.log('[Reader] Injecting content styles with font family:', fontFamily);
-        
-        // Remove any existing style tag first
-        const existingTag = document.getElementById('reader-dynamic-styles');
-        if (existingTag) {
-          existingTag.remove();
+    try {
+      console.log('[Reader] Updating font styles with CSS variables:', { fontFamily, fontSize });
+      
+      // Set CSS variables on the document root for smooth transitions
+      const root = document.documentElement;
+      root.style.setProperty('--reader-font-family', availableFonts[fontFamily].family);
+      root.style.setProperty('--reader-font-size', `${fontSize}px`);
+      
+      // Apply to story content elements directly for immediate effect
+      const storyElements = document.querySelectorAll('.story-content, .story-content p, .story-content .story-paragraph');
+      storyElements.forEach(element => {
+        if (element instanceof HTMLElement) {
+          element.style.fontFamily = availableFonts[fontFamily].family;
+          element.style.fontSize = `${fontSize}px`;
         }
-        
-        // Create new style tag
-        const styleTag = document.createElement('style');
-        styleTag.id = 'reader-dynamic-styles';
-        
-        // Get fresh styles every time by calling the function
-        const currentStyles = generateStoryContentStyles();
-        styleTag.textContent = currentStyles || '';
-        
-        document.head.appendChild(styleTag);
-      } catch (error) {
-        console.error('[Reader] Error injecting styles:', error);
-        // Add fallback inline styles to the content container if style injection fails
-        const contentContainer = document.querySelector('.story-content');
-        if (contentContainer) {
-          contentContainer.setAttribute('style', `font-family: ${availableFonts[fontFamily].family}; font-size: ${fontSize}px;`);
-        }
-      }
-    };
-
-    // Debounce style updates to prevent rapid re-renders
-    timeoutId = window.setTimeout(applyStyles, 100);
-    
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      // Clean up styles when component unmounts
-      const existingTag = document.getElementById('reader-dynamic-styles');
-      if (existingTag) {
-        existingTag.remove();
-      }
-    };
-  }, [fontFamily, fontSize, availableFonts, theme]);
+      });
+    } catch (error) {
+      console.error('[Reader] Error applying font styles:', error);
+    }
+  }, [fontFamily, fontSize, availableFonts]);
   
   // This duplicate has been removed - reading progress tracking is handled above
 
@@ -962,8 +937,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       {/* Full width immersive reading experience */}
 
       <div className={`pt-0 pb-0 bg-background mt-0 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
-        {/* Static font size controls in a prominent position - reduced mobile spacing */}
-        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 py-0.5 sm:py-1 border-b border-border/30 mb-0 sm:mb-1 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+        {/* Static font size controls in a prominent position - minimal spacing */}
+        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 mb-1 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -1045,7 +1020,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             postId={currentPost.id} 
             variant="reader"
             showText={false}
-            className="h-8 w-8 rounded-full bg-background hover:bg-background/80 mx-2"
+            className="h-8 w-8 rounded-full bg-background hover:bg-background/80 mx-2 cursor-pointer"
           />
 
           {/* Text-to-speech functionality removed */}
@@ -1090,6 +1065,42 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             key={currentPost.id}
             className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
           >
+            {/* Navigation buttons above story content */}
+            <div className={`flex justify-center items-center gap-4 py-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={goToPreviousStory}
+                disabled={posts.length <= 1 || isFirstStory}
+                className="h-9 px-4 bg-background/80 hover:bg-background/60 border-border/50 disabled:opacity-30"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={goToRandomStory}
+                disabled={posts.length <= 1}
+                className="h-9 px-4 bg-background/80 hover:bg-background/60 border-border/50 disabled:opacity-30"
+              >
+                <Shuffle className="h-4 w-4 mr-1" />
+                Random
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={goToNextStory}
+                disabled={posts.length <= 1 || isLastStory}
+                className="h-9 px-4 bg-background/80 hover:bg-background/60 border-border/50 disabled:opacity-30"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+
             <div className="flex flex-col items-center mb-2 mt-0">
               <div className="relative flex flex-col items-center">
                 {isCommunityContent && (
@@ -1161,9 +1172,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
               <div className="flex flex-col items-center gap-1">
                 <div className={`flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-primary/10 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-                  {/* Story theme icon - show primary theme if available, otherwise default to generic */}
+                  {/* Story theme category with icon */}
                   {detectedThemes.length > 0 ? (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded-md border border-primary/20">
                       {(() => {
                         // Get the primary theme (first one as it's sorted by relevance)
                         const primaryTheme = detectedThemes[0];
@@ -1267,25 +1278,29 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         return (
                           <>
                             <ThemeIcon className="h-4 w-4 text-primary" />
-                            <span className="text-xs">{primaryTheme}</span>
+                            <span className="text-xs font-medium">{primaryTheme}</span>
                           </>
                         );
                       })()}
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded-md border border-primary/20">
                       <Ghost className="h-4 w-4 text-primary" />
-                      <span className="text-xs">Horror Fiction</span>
+                      <span className="text-xs font-medium">Horror Fiction</span>
                     </div>
                   )}
                   
+                  <span className="text-muted-foreground">•</span>
+                  
                   {/* Date indicator */}
-                  <span className="text-xs">
+                  <span className="text-xs px-2 py-1 bg-muted/50 rounded-md">
                     {currentPost.date ? format(new Date(currentPost.date), 'MMM d, yyyy') : 'No date'}
                   </span>
                   
+                  <span className="text-muted-foreground">•</span>
+                  
                   {/* Estimated reading time */}
-                  <span className="text-xs">
+                  <span className="text-xs px-2 py-1 bg-accent/50 rounded-md">
                     {currentPost.readingTimeMinutes || '~5'} min read
                   </span>
                 </div>
@@ -1310,29 +1325,29 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </div>
             </SwipeNavigation>
             
-            {/* Simple pagination at bottom of story content - extremely compact */}
-            <div className={`flex items-center justify-center gap-3 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <div className="flex items-center gap-3 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1.5 px-3 shadow-md">
+            {/* Simple pagination at bottom of story content - compact and tighter */}
+            <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1 px-2 shadow-md">
                 {/* Previous story button */}
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   onClick={goToPreviousStory}
-                  className="h-8 w-8 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
+                  className="h-6 w-6 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
                   aria-label="Previous story"
                   disabled={posts.length <= 1 || isFirstStory}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
                     <path d="m15 18-6-6 6-6"/>
                   </svg>
-                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-                    Previous Story
+                  <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                    Previous
                   </span>
                 </Button>
                 
                 {/* Story counter */}
-                <div className="px-2 text-xs text-muted-foreground font-medium">
-                  {currentIndex + 1} of {posts.length}
+                <div className="px-1.5 text-xs text-muted-foreground font-medium">
+                  {currentIndex + 1}/{posts.length}
                 </div>
                 
                 {/* Next story button */}
@@ -1340,15 +1355,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   variant="ghost" 
                   size="icon" 
                   onClick={goToNextStory}
-                  className="h-8 w-8 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
+                  className="h-6 w-6 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
                   aria-label="Next story"
                   disabled={posts.length <= 1 || isLastStory}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
                     <path d="m9 18 6-6-6-6"/>
                   </svg>
-                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-                    Next Story
+                  <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                    Next
                   </span>
                 </Button>
               </div>
