@@ -18,11 +18,7 @@ import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/contexts/notification-context";
 import { useTheme } from "@/components/theme-provider";
 
-interface NavigationProps {
-  readingProgress?: number;
-}
-
-export default function Navigation({ readingProgress = 0 }: NavigationProps) {
+export default function Navigation() {
   const [location, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
@@ -31,8 +27,7 @@ export default function Navigation({ readingProgress = 0 }: NavigationProps) {
 
   const [scrolled, setScrolled] = useState(false);
   
-  // Check if we're on reader page to show progress bar
-  const isReaderPage = location === '/reader' || location.startsWith('/reader/') || location.startsWith('/community-story/');
+  // Reader progress removed
 
   // Effect to detect scroll position for conditional styling
   useEffect(() => {
@@ -58,20 +53,10 @@ export default function Navigation({ readingProgress = 0 }: NavigationProps) {
 
   return (
     <header 
-      className={`relative top-0 z-40 border-b 
-                bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
-                transition-all duration-300 ease-in-out 
-                ${scrolled ? 'shadow-md' : ''}`}
-      style={{
-        width: '100vw',
-        marginLeft: 'calc(-50vw + 50%)',
-        left: 0,
-        right: 0,
-        margin: 0,
-        padding: 0
-      }}
+      className={`relative top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300 ease-in-out ${scrolled ? 'shadow-md' : ''}`}
+      style={{ width: '100%', margin: 0, padding: 0 }}
     >
-      <div className="w-full flex h-16 items-center justify-between px-4 main-header">
+      <div className="w-full flex h-16 items-center justify-between px-2 sm:px-4 main-header">
         {/* Left section with menu toggle for all screen sizes */}
         <div className="flex items-center -mt-1 ml-0">
           {/* Menu toggle for all devices */}
@@ -105,7 +90,7 @@ export default function Navigation({ readingProgress = 0 }: NavigationProps) {
         </div>
         
         {/* Horizontal Nav - Desktop only - moved more to the right */}
-        <nav aria-label="Main" className="hidden lg:flex items-center space-x-4 -mt-1 absolute inset-0 justify-center">
+        <nav aria-label="Main" className="hidden lg:flex items-center space-x-2 -mt-1 absolute inset-0 justify-center">
           {navLinks.map(({ href, label }) => (
             <a
               key={href}
@@ -125,7 +110,7 @@ export default function Navigation({ readingProgress = 0 }: NavigationProps) {
         <div className="flex-1 lg:flex"></div>
         
         {/* Right section - Action buttons */}
-        <div className="flex items-center space-x-2 -mt-1 ml-auto">
+        <div className="flex items-center space-x-2 -mt-1 ml-auto pr-2">
           {/* Search button - shown on all devices */}
           <Button
             variant="ghost"
@@ -218,15 +203,7 @@ export default function Navigation({ readingProgress = 0 }: NavigationProps) {
         </div>
       </div>
       
-      {/* Reading Progress Bar - only show on reader pages */}
-      {isReaderPage && (
-        <div className="w-full h-1 bg-muted relative overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-pink-500 to-purple-600 transition-all duration-300 ease-out"
-            style={{ width: `${Math.min(Math.max(readingProgress, 0), 100)}%` }}
-          />
-        </div>
-      )}
+      {/* Reading progress removed per request */}
     </header>
   );
 }
