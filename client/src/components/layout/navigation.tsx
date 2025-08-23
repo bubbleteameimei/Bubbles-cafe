@@ -39,6 +39,18 @@ export default function Navigation() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Keep sidebar open on desktop unless explicitly toggled
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 1024 && isOpen) {
+        // Ensure overlay doesn't close it; keep open
+        setIsOpen(true);
+      }
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [isOpen]);
+
   // Navigation links for the nav bar
   const navLinks = [
     { href: '/', label: 'Home' },
@@ -60,7 +72,15 @@ export default function Navigation() {
         {/* Left section with menu toggle for all screen sizes */}
         <div className="flex items-center -mt-1 ml-2 sm:ml-3">
           {/* Menu toggle for all devices */}
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <Sheet open={isOpen} onOpenChange={(next) => {
+            // On desktop, only the button should close the sheet
+            if (window.innerWidth >= 1024) {
+              // If next is false due to overlay/escape, ignore
+              const activelyToggling = (document.activeElement && (document.activeElement as HTMLElement).closest('[aria-label="Open menu"]'));
+              if (!next && !activelyToggling) return;
+            }
+            setIsOpen(next);
+          }}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
@@ -69,6 +89,7 @@ export default function Navigation() {
                           transition-all duration-200 ease-in-out active:scale-95 mt-2"
                 aria-label="Open menu"
                 style={{ WebkitTapHighlightColor: 'transparent' }}
+                onClick={() => setIsOpen((v) => !v)}
               >
                 <Menu className="h-6 w-6" />
               </Button>
