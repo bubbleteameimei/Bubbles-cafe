@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { format } from 'date-fns';
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Book, ArrowRight, ChevronRight } from "lucide-react";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
@@ -15,6 +15,8 @@ import ApiLoader from "@/components/api-loader";
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  const heroRef = useRef<HTMLDivElement | null>(null);
+  const [inView, setInView] = useState(false);
   
   // Basic setup for homepage without background images
   useEffect(() => {
@@ -26,6 +28,23 @@ export default function Home() {
       document.body.style.backgroundColor = "";
     };
   }, []);
+
+  // Defer non-critical animations until hero is in viewport
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { root: null, rootMargin: '0px', threshold: 0.2 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   
   const { data: postsResponse, isLoading, error } = useQuery({
     queryKey: ["pages", "home", "latest-post"],
@@ -33,6 +52,18 @@ export default function Home() {
       return fetchWordPressPosts({ page: 1, perPage: 1 });
     },
     staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Lightweight engagement fetch for social proof
+  const { data: engagement } = useQuery({
+    queryKey: ["analytics", "engagement"],
+    queryFn: async () => {
+      const res = await fetch('/api/analytics/engagement');
+      if (!res.ok) throw new Error('Failed to load engagement');
+      return res.json();
+    },
+    staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
   });
   
@@ -52,7 +83,7 @@ export default function Home() {
   const posts = postsResponse?.posts || [];
   
   return (
-    <>
+    <div>
       <ApiLoader isLoading={isLoading} />
       
       {error ? (
@@ -122,27 +153,41 @@ export default function Home() {
           <div className="relative w-full h-2 sm:h-3 md:h-4 lg:h-3" aria-hidden="true"></div>
           
           {/* Content container with proper z-index to appear above background - full width */}
-          <div className="relative z-10 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start pt-16 sm:pt-20 md:pt-24 lg:pt-28 pb-10 sm:pb-12 md:pb-16 lg:pb-20 text-center w-full min-h-screen">
+          <div ref={heroRef} className="relative z-10 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start pt-16 sm:pt-20 md:pt-24 lg:pt-28 pb-10 sm:pb-12 md:pb-16 lg:pb-20 text-center w-full min-h-screen">
             <div className="relative">
-              <h1 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-6 sm:mb-8 md:mb-10 tracking-wider text-white flex flex-col items-center">
+              <motion.h1
+                initial={{ opacity: 0, y: 12 }}
+                animate={inView ? { opacity: 1, y: 0 } : undefined}
+                transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
+                className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-6 sm:mb-8 md:mb-10 tracking-wider text-white flex flex-col items-center"
+              >
                 <span>BUBBLES</span>
                 <span className="mt-1 md:mt-2 text-red-700 relative">CAFE</span>
-              </h1>
+              </motion.h1>
             </div>
           
             {/* Increased spacing */}
             <div className="h-6 sm:h-8 md:h-10 lg:h-12 xl:h-14"></div>
           
-            <div className="space-y-6 sm:space-y-8 md:space-y-10 mb-0 flex flex-col items-center w-full">
-              <div className="px-4 max-w-2xl mx-auto">
-                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white leading-relaxed md:leading-relaxed lg:leading-relaxed font-normal" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                  Every story here is a portal to the unexpected,
-                  the unexplained, and <span className="italic text-red-700">the unsettling<span className="text-red-700 font-bold">.</span></span>
-                </p>
-              </div>
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={inView ? { opacity: 1, y: 0 } : undefined}
+              transition={{ duration: 0.4, delay: 0.16, ease: 'easeOut' }}
+              className="px-4 max-w-2xl mx-auto"
+            >
+              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white/90 leading-[1.7] font-normal" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                Every story here is a portal to the unexpected,
+                the unexplained, and <span className="italic text-red-700">the unsettling<span className="text-red-700 font-bold">.</span></span>
+              </p>
+            </motion.div>
 
-              <div className="w-full">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2 w-full max-w-2xl mx-auto px-4">
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={inView ? { opacity: 1, y: 0 } : undefined}
+                transition={{ duration: 0.4, delay: 0.22, ease: 'easeOut' }}
+                className="w-full"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-0.5 sm:gap-1 w-full max-w-2xl mx-auto px-4">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -151,16 +196,17 @@ export default function Home() {
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-5"
+                      aria-label="Browse horror stories"
+                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       <span className="text-center mr-2">Browse Stories</span>
                       <motion.div
-                        animate={{ 
-                          rotate: [0, 15, -8, 5, 0],
-                          scale: [1, 1.1, 0.95, 1.05, 1]
-                        }}
+                        animate={inView ? {
+                          rotate: [0, 10, -6, 4, 0],
+                          scale: [1, 1.06, 0.98, 1.03, 1]
+                        } : undefined}
                         transition={{ 
-                          duration: 4,
+                          duration: 3.6,
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
@@ -178,19 +224,15 @@ export default function Home() {
                     <Button
                       size="lg"
                       variant="secondary"
-                      onClick={() => posts && posts.length > 0 
-                        ? setLocation('/reader')  // Always navigate to the reader page
-                        : setLocation('/reader')  // Fallback to /reader if no posts
-                      }
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-5"
+                      onClick={() => setLocation('/reader')}
+                      aria-label="Start reading now"
+                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       <span className="text-center mr-2">Start Reading</span>
                       <motion.div
-                        animate={{ 
-                          x: [0, 6, 0]
-                        }}
+                        animate={inView ? { x: [0, 4, 0] } : undefined}
                         transition={{ 
-                          duration: 1.2,
+                          duration: 1.1,
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
@@ -200,11 +242,34 @@ export default function Home() {
                     </Button>
                   </motion.div>
                 </div>
-              </div>
+              </motion.div>
               
-              <div className="mt-6 sm:mt-8">
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={inView ? { opacity: 1, y: 0 } : undefined}
+                transition={{ duration: 0.4, delay: 0.28, ease: 'easeOut' }}
+                className="mt-6 sm:mt-8"
+              >
                 <BuyMeCoffeeButton />
-              </div>
+              </motion.div>
+
+              {/* Social proof: readers this week (approximate via engagement) */}
+              {false && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={inView ? { opacity: 1, y: 0 } : undefined}
+                  transition={{ duration: 0.35, delay: 0.34, ease: 'easeOut' }}
+                  className="mt-2 text-white/70 text-sm sm:text-base"
+                >
+                  {(typeof (engagement as any)?.activeUsers === 'number' || typeof (engagement as any)?.pageViews === 'number') && (
+                    <span>
+                      {typeof (engagement as any)?.activeUsers === 'number'
+                        ? Number((engagement as any).activeUsers)
+                        : Number((engagement as any)?.pageViews || 0)} readers this week
+                    </span>
+                  )}
+                </motion.div>
+              )}
               
               {posts.length > 0 && (
                 <div className="mt-8 sm:mt-10 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
@@ -240,8 +305,7 @@ export default function Home() {
               )}
             </div>
           </div>
-        </div>
-      )}
-    </>
+        )}
+    </div>
   );
 }
