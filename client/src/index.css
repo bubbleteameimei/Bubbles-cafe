@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Megrim:wght@400&display=swap');
 @import './styles/responsive.css';
 @import "./styles/sidebar-enhanced.css";
 
@@ -349,4 +350,39 @@ div[data-reader-page="true"] .container,
 :root {
   --bg-overlay-dark: linear-gradient(to bottom, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0.01) 50%, rgba(0,0,0,0.03) 100%);
   --bg-overlay-light: linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.2) 100%);
+}
+
+/* New loading screen implementation */
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: hsl(var(--background)); /* Use background color from theme */
+  z-index: 9999; /* Ensure it's on top */
+  font-family: 'Megrim', cursive; /* Apply Megrim font */
+  font-size: 4rem; /* Larger font size */
+  color: hsl(var(--foreground)); /* Use foreground color from theme */
+  letter-spacing: 0.5em; /* Spacing between letters */
+  text-transform: uppercase; /* Uppercase text */
+  overflow: hidden; /* Hide anything that might overflow */
+}
+
+/* Animation for each letter to fade in and slightly scale up */
+.loading-screen span {
+  display: inline-block;
+  opacity: 0;
+  animation: letter-fade-in 1.5s forwards;
+  animation-delay: calc(0.1s * var(--i)); /* Dynamic delay based on position */
+}
+
+@keyframes letter-fade-in {
+  to {
+    opacity: 1;
+    transform: scale(1.05); /* Slight scale up for effect */
+  }
 }
