@@ -221,18 +221,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   };
 
   // Enhanced menu item class with modern UX principles
-  const menuItemClass = cn(
-    "sidebar-menu-button-enhanced",
-    "group relative flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium",
-    "text-sidebar-foreground/80 hover:text-sidebar-foreground",
-    "transition-all duration-200 ease-out",
-    "hover:bg-sidebar-accent hover:shadow-sm",
-    "focus-visible:outline-none focus-visible:ring-0 focus:bg-sidebar-accent",
-    "data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/10 data-[active=true]:to-primary/5",
-    "data-[active=true]:text-primary data-[active=true]:shadow-sm",
-    "whitespace-nowrap overflow-hidden",
-    "font-sans"
-  );
+  const menuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6 whitespace-nowrap py-0.5 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0";
   
   // Enhanced submenu styling - increased clickable area to the RIGHT and faster animations
   const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-100 ease-out text-sm font-medium py-2 px-3 pr-12 whitespace-nowrap overflow-hidden min-h-[36px] flex items-center -mb-1 rounded-sm hover:bg-[hsl(var(--sidebar-accent))] focus-visible:outline-none focus:bg-[hsl(var(--sidebar-accent))]";
@@ -250,7 +239,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         duration: 0.3, 
         ease: [0.25, 0.46, 0.45, 0.94]
       }}
-      className="flex flex-col h-full sidebar-menu-container relative overflow-hidden"
+      className="flex flex-col space-y-0 p-1 pt-0 pb-0 h-full overflow-y-auto scrollbar-hide"
       role="navigation"
       aria-label="Main navigation"
       style={{
@@ -258,11 +247,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         scrollbarColor: 'rgba(156, 163, 175, 0.3) transparent'
       }}
     >
-      {/* Gradient overlay for visual depth - Fixed positioning */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background to-transparent z-2 opacity-60" />
-      </div>
-
       {/* Scrollable content area */}
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-2 pb-24 sm:pb-28 [padding-bottom:env(safe-area-inset-bottom)] scroll-smooth sidebar-menu-container focus:outline-none focus-visible:outline-none"
            style={{
