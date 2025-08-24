@@ -937,8 +937,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       {/* Full width immersive reading experience */}
 
       <div className={`pt-0 pb-0 bg-background mt-0 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
-        {/* Static font size controls in a prominent position - minimal spacing */}
-        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 mb-1 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+        {/* Font controls/TOC should be extremely close to main nav: remove extra margins/padding */}
+        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -1065,41 +1065,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             key={currentPost.id}
             className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
           >
-            {/* Navigation buttons above story content */}
-            <div className={`flex justify-center items-center gap-4 py-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goToPreviousStory}
-                disabled={posts.length <= 1 || isFirstStory}
-                className="h-9 px-4 bg-background/80 hover:bg-background/60 border-border/50 disabled:opacity-30"
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Previous
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goToRandomStory}
-                disabled={posts.length <= 1}
-                className="h-9 px-4 bg-background/80 hover:bg-background/60 border-border/50 disabled:opacity-30"
-              >
-                <Shuffle className="h-4 w-4 mr-1" />
-                Random
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goToNextStory}
-                disabled={posts.length <= 1 || isLastStory}
-                className="h-9 px-4 bg-background/80 hover:bg-background/60 border-border/50 disabled:opacity-30"
-              >
-                Next
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
+            {/* Navigation buttons above story content removed; now placed under time-to-read */}
 
             <div className="flex flex-col items-center mb-2 mt-0">
               <div className="relative flex flex-col items-center">
