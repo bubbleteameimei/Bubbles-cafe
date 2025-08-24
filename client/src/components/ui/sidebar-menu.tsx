@@ -250,7 +250,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         duration: 0.3, 
         ease: [0.25, 0.46, 0.45, 0.94]
       }}
-      className="flex flex-col h-full sidebar-menu-container relative overflow-hidden"
+      className="flex flex-col h-full sidebar-menu-container relative"
       role="navigation"
       aria-label="Main navigation"
       style={{
