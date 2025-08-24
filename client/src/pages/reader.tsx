@@ -1271,31 +1271,40 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   </span>
                 </div>
 
-                {/* Reader controls under time-to-read */}
-                <div className={`w-full mt-8 sm:mt-10 ${isUIHidden ? 'ui-hidden' : ''}`}>
-                  <div className="flex flex-wrap items-center justify-center gap-2">
-                    <button
-                      onClick={goToPreviousStory}
-                      className="px-4 py-2 rounded-md bg-muted text-foreground hover:bg-muted/80 transition-colors border border-border/50"
-                      disabled={showHorrorMessage || posts.length <= 1}
-                    >
-                      Previous
-                    </button>
-                    <button
-                      onClick={goToNextStory}
-                      className="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                      disabled={showHorrorMessage || posts.length <= 1}
-                    >
-                      Next
-                    </button>
-                    <button
-                      onClick={goToRandomStory}
-                      className="px-4 py-2 rounded-md bg-accent text-foreground hover:bg-accent/80 transition-colors border border-border/50"
-                      disabled={showHorrorMessage || posts.length <= 1}
-                    >
-                      Random
-                    </button>
-                  </div>
+                {/* Original navigation controls moved here under time-to-read */}
+                <div className={`flex justify-center items-center gap-4 py-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToPreviousStory}
+                    disabled={posts.length <= 1 || isFirstStory}
+                    className="h-9 px-4 bg-background/80 hover:bg-background/60 border-border/50 disabled:opacity-30"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Previous
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToRandomStory}
+                    disabled={posts.length <= 1}
+                    className="h-9 px-4 bg-background/80 hover:bg-background/60 border-border/50 disabled:opacity-30"
+                  >
+                    <Shuffle className="h-4 w-4 mr-1" />
+                    Random
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToNextStory}
+                    disabled={posts.length <= 1 || isLastStory}
+                    className="h-9 px-4 bg-background/80 hover:bg-background/60 border-border/50 disabled:opacity-30"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
                 </div>
               </div>
             </div>
