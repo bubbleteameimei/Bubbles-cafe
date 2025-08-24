@@ -1304,6 +1304,33 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     {currentPost.readingTimeMinutes || '~5'} min read
                   </span>
                 </div>
+
+                {/* Reader controls under time-to-read */}
+                <div className={`w-full mt-8 sm:mt-10 ${isUIHidden ? 'ui-hidden' : ''}`}>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      onClick={goToPreviousStory}
+                      className="px-4 py-2 rounded-md bg-muted text-foreground hover:bg-muted/80 transition-colors border border-border/50"
+                      disabled={showHorrorMessage || posts.length <= 1}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={goToNextStory}
+                      className="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                      disabled={showHorrorMessage || posts.length <= 1}
+                    >
+                      Next
+                    </button>
+                    <button
+                      onClick={goToRandomStory}
+                      className="px-4 py-2 rounded-md bg-accent text-foreground hover:bg-accent/80 transition-colors border border-border/50"
+                      disabled={showHorrorMessage || posts.length <= 1}
+                    >
+                      Random
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
