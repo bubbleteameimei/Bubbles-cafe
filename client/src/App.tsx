@@ -64,24 +64,24 @@ const ContactPage = React.lazy(() => import('./pages/contact'));
 const PrivacyPage = React.lazy(() => import('./pages/privacy'));
 const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
 
-import AuthPage from './pages/auth';
-import AuthSuccessPage from './pages/auth-success';
-import ProfilePage from './pages/profile';
-import BookmarksPage from './pages/bookmarks';
-import SearchResultsPage from './pages/search-results';
-import NotificationsPage from './pages/notifications';
-import RecommendationsPage from './pages/recommendations';
+const AuthPage = React.lazy(() => import('./pages/auth'));
+const AuthSuccessPage = React.lazy(() => import('./pages/auth-success'));
+const ProfilePage = React.lazy(() => import('./pages/profile'));
+const BookmarksPage = React.lazy(() => import('./pages/bookmarks'));
+const SearchResultsPage = React.lazy(() => import('./pages/search-results'));
+const NotificationsPage = React.lazy(() => import('./pages/notifications'));
+const RecommendationsPage = React.lazy(() => import('./pages/recommendations'));
 
-// Settings pages - eager loaded
-import ProfileSettingsPage from './pages/settings/profile';
-import ConnectedAccountsPage from './pages/settings/connected-accounts';
-import FontSettingsPage from './pages/settings/fonts';
-import AccessibilitySettingsPage from './pages/settings/accessibility';
-import NotificationSettingsPage from './pages/settings/notifications';
-import PrivacySettingsPage from './pages/settings/privacy';
-import CookieManagementPage from './pages/settings/cookie-management';
-import QuickSettingsPage from './pages/settings/quick-settings';
-import PreviewSettingsPage from './pages/settings/preview';
+// Settings pages - lazy loaded to reduce initial bundle
+const ProfileSettingsPage = React.lazy(() => import('./pages/settings/profile'));
+const ConnectedAccountsPage = React.lazy(() => import('./pages/settings/connected-accounts'));
+const FontSettingsPage = React.lazy(() => import('./pages/settings/fonts'));
+const AccessibilitySettingsPage = React.lazy(() => import('./pages/settings/accessibility'));
+const NotificationSettingsPage = React.lazy(() => import('./pages/settings/notifications'));
+const PrivacySettingsPage = React.lazy(() => import('./pages/settings/privacy'));
+const CookieManagementPage = React.lazy(() => import('./pages/settings/cookie-management'));
+const QuickSettingsPage = React.lazy(() => import('./pages/settings/quick-settings'));
+const PreviewSettingsPage = React.lazy(() => import('./pages/settings/preview'));
 
 
 
@@ -105,7 +105,7 @@ const AdminSiteStatisticsPage = React.lazy(() => import('./pages/admin/site-stat
 const AdminWordPressSyncPage = React.lazy(() => import('./pages/admin/WordPressSyncPage'));
 const AdminContentManagementPage = React.lazy(() => import('./pages/admin/content-management'));
 const AdminThemesPage = React.lazy(() => import('./pages/admin/themes'));
-import ResetPasswordPage from './pages/reset-password';
+const ResetPasswordPage = React.lazy(() => import('./pages/reset-password'));
 
 // Placeholder for discontinued features removed
 
@@ -123,12 +123,13 @@ import TermsPage from './pages/legal/terms';
 import CookiePolicyPage from './pages/legal/cookie-policy';
 
 // Community Pages - eager loaded
-import CommunityPage from './pages/community';
-import SubmitStoryPage from './pages/submit-story';
-import EditStoryPage from './pages/edit-story';
-import FeedbackPage from './pages/feedback';
-import UserFeedbackDashboardPage from './pages/user/feedback-dashboard';
-import GuidelinesPage from './pages/support/guidelines';
+const CommunityPage = React.lazy(() => import('./pages/community'));
+const SubmitStoryPage = React.lazy(() => import('./pages/submit-story'));
+const EditStoryPage = React.lazy(() => import('./pages/edit-story'));
+const FeedbackPage = React.lazy(() => import('./pages/feedback'));
+const UserFeedbackDashboardPage = React.lazy(() => import('./pages/user/feedback-dashboard'));
+const GuidelinesPage = React.lazy(() => import('./pages/support/guidelines'));
+
 import { trackPageView } from '@/lib/metrics';
 
 // Defer WordPress posts preloading until after initial page render

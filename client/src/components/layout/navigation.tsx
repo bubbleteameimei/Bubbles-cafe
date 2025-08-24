@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -60,6 +60,34 @@ export default function Navigation() {
     { href: '/about', label: 'About' }
   ];
 
+  // Prefetch route chunks on hover/focus for faster navigations
+  const prefetchRoute = (href: string) => {
+    try {
+      switch (href) {
+        case '/stories':
+          void import('../../pages/index');
+          break;
+        case '/reader':
+          void import('../../pages/reader');
+          break;
+        case '/community':
+          void import('../../pages/community');
+          break;
+        case '/about':
+          void import('../../pages/about');
+          break;
+        case '/contact':
+          void import('../../pages/contact');
+          break;
+        case '/search':
+          void import('../../pages/search-results');
+          break;
+        default:
+          break;
+      }
+    } catch {}
+  };
+
   const [showInlineSearch, setShowInlineSearch] = useState(false);
   const [inlineQuery, setInlineQuery] = useState("");
 
@@ -113,7 +141,7 @@ export default function Navigation() {
         {/* Horizontal Nav - Desktop only - moved more to the right */}
         <nav aria-label="Main" className="hidden lg:flex items-center space-x-3 -mt-1 absolute inset-0 justify-center">
           {navLinks.map(({ href, label }) => (
-            <a
+            <Link
               key={href}
               href={href}
               className={`relative h-12 px-4 inline-flex items-center rounded-md text-sm font-medium transition-colors hover:bg-accent/30 mt-2 border border-transparent
@@ -121,9 +149,11 @@ export default function Navigation() {
                           ? 'text-primary font-semibold bg-accent/40 border border-border/40 shadow-sm after:absolute after:left-3 after:right-3 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary' 
                           : 'text-foreground/80 hover:text-foreground'}`}
               aria-current={location === href ? 'page' : undefined}
+              onMouseEnter={() => prefetchRoute(href)}
+              onFocus={() => prefetchRoute(href)}
             >
               {label}
-            </a>
+            </Link>
           ))}
         </nav>
         
@@ -138,6 +168,8 @@ export default function Navigation() {
             size="icon"
             className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95 mt-2"
             aria-label="Search"
+            onMouseEnter={() => prefetchRoute('/search')}
+            onFocus={() => prefetchRoute('/search')}
             onClick={() => setLocation('/search')}
           >
             <Search className="h-5 w-5" />
@@ -217,6 +249,10 @@ export default function Navigation() {
                         src={user.avatar} 
                         alt={`${user.username}'s avatar`}
                         className="h-full w-full object-cover" 
+                        width={36}
+                        height={36}
+                        decoding="async"
+                        referrerPolicy="no-referrer"
                       />
                     </div>
                   ) : (
