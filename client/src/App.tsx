@@ -11,7 +11,6 @@ import { CookieConsentProvider } from './hooks/use-cookie-consent';
 import { GlobalErrorBoundary, setupGlobalErrorHandlers } from './components/error-boundary/global-error-boundary';
 import { ErrorBoundary } from './components/ErrorBoundary';
 // Performance monitoring removed
-import { SidebarProvider } from './components/ui/sidebar';
 import ScrollToTopButton from './components/ScrollToTopButton';
 // Import our enhanced page transition component
 // EnhancedPageTransition removed to fix loading animation conflicts
@@ -352,7 +351,6 @@ function App() {
         <AuthProvider>
           <CookieConsentProvider>
             <ThemeProvider>
-              <SidebarProvider>
                 <NotificationProvider>
                   <SilentPingProvider>
                     <MusicProvider>
@@ -392,7 +390,6 @@ function App() {
                     </MusicProvider>
                   </SilentPingProvider>
                 </NotificationProvider>
-              </SidebarProvider>
             </ThemeProvider>
           </CookieConsentProvider>
         </AuthProvider>
