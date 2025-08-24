@@ -20,8 +20,13 @@ function sanitizeDatabaseUrl(url?: string): string | undefined {
         return s;
 }
 
-// Hardcoded database URL as requested
-const HARDCODED_DATABASE_URL = 'postgresql://neondb_owner:npg_P6ghCZR2BASQ@ep-young-bread-aeojmse9-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+// Resolve database URL from environment with sanitization
+const DATABASE_URL = sanitizeDatabaseUrl(process.env.DATABASE_URL);
+
+if (!DATABASE_URL) {
+        console.error('DATABASE_URL is not set. Please configure your environment.');
+        throw new Error('DATABASE_URL is required');
+}
 
 // Configure WebSocket for Neon serverless with enhanced error handling
 try {
@@ -37,7 +42,7 @@ let db: ReturnType<typeof drizzle>;
 
 try {
         pool = new Pool({ 
-                connectionString: HARDCODED_DATABASE_URL,
+                connectionString: DATABASE_URL,
                 max: 10, // Maximum number of connections
                 idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
                 connectionTimeoutMillis: 10000, // Connection timeout of 10 seconds
