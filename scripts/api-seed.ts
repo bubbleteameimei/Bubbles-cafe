@@ -73,7 +73,7 @@ function cleanContent(content: string): string {
 // Get or create admin user
 async function getOrCreateAdminUser() {
   try {
-    const hashedPassword = await bcrypt.hash("powerPUFF7", 12);
+    const hashedPassword = await bcrypt.hash("admin123", 12);
     console.log("🔍 Checking for admin user with email: vandalison@gmail.com");
 
     // Check if admin user exists

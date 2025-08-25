@@ -12,7 +12,7 @@ let db: any;
 
 async function getOrCreateAdminUser() {
   try {
-    const hashedPassword = await bcrypt.hash("powerPUFF7", 12);
+    const hashedPassword = await bcrypt.hash("admin123", 12);
     console.log("Creating admin user with email: vantalison@gmail.com");
 
     // First check if admin user exists - explicit column selection to avoid errors with non-existent columns
