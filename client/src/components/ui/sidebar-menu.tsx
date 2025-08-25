@@ -991,10 +991,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      </div>
-
-      {/* Footer Buttons - Fixed at bottom outside scrollable area */}
-      <div className="shrink-0 border-t border-[hsl(var(--sidebar-border))] pt-3 px-2">
+      {/* Footer Buttons */}
+      <div className="mt-auto mb-0 border-t border-[hsl(var(--sidebar-border))] pt-3">
         {!user ? (
           <Button
             variant="default"
@@ -1026,7 +1024,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           whileHover={{ scale: 1.02, translateX: 2 }}
           whileTap={{ scale: 0.98 }}
           className={cn(
-            "mt-2 mb-2 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
+            "mt-2 mb-0 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
             location === '/report-bug'
               ? "text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-accent))]"
               : "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-primary))] hover:bg-[hsl(var(--sidebar-accent))]"
@@ -1037,6 +1035,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           <Bug className="h-4 w-4" aria-hidden="true" />
           <span className="uppercase tracking-wider font-medium">Report Bug</span>
         </motion.button>
+      </div>
       </div>
     </motion.div>
   );
