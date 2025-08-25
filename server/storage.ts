@@ -149,6 +149,12 @@ import connectPgSimple from "connect-pg-simple";
 import { createLogger } from "./utils/debug-logger";
 
 const storageLogger = createLogger('Storage');
+// Redirect all console usage in this module to structured logger
+const console = {
+  log: (...args: any[]) => storageLogger.debug(args.map(String).join(' ')),
+  warn: (...args: any[]) => storageLogger.warn(args.map(String).join(' ')),
+  error: (...args: any[]) => storageLogger.error(args.map(String).join(' '))
+};
 
 // Initialize connect-pg-simple class for session storage usage inside DatabaseStorage
 const PgSession = connectPgSimple(session);
