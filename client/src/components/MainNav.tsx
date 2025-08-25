@@ -69,7 +69,8 @@ export default function MainNav() {
               size="icon"
               onClick={() => sidebar.setOpenMobile(true)}
               className="lg:hidden h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                        transition-all duration-200 ease-in-out transform active:scale-95"
+                        transition-all duration-200 ease-in-out transform active:scale-95
+                        focus:outline-none focus:ring-0 focus-visible:ring-0"
               aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
@@ -86,7 +87,7 @@ export default function MainNav() {
           </Link>
         </div>
         
-        {/* Center section - Empty on all screens, removed search input */}
+        {/* Center section - Empty on all screens */}
         <div className="flex-1 mx-4"></div>
         
         {/* Right section - Action buttons */}
@@ -96,7 +97,8 @@ export default function MainNav() {
             variant="ghost"
             size="icon"
             className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                      transition-all duration-200 ease-in-out"
+                      transition-all duration-200 ease-in-out
+                      focus:outline-none focus:ring-0 focus-visible:ring-0"
             aria-label="Search"
           >
             <Search className="h-5 w-5" />
@@ -108,7 +110,8 @@ export default function MainNav() {
             size="icon"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                      transition-all duration-200 ease-in-out"
+                      transition-all duration-200 ease-in-out
+                      focus:outline-none focus:ring-0 focus-visible:ring-0"
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {theme === 'dark' ? (
@@ -124,7 +127,8 @@ export default function MainNav() {
               variant="ghost"
               size="icon"
               className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                        transition-all duration-200 ease-in-out"
+                        transition-all duration-200 ease-in-out
+                        focus:outline-none focus:ring-0 focus-visible:ring-0"
               aria-label="Notifications"
             >
               <Bell className="h-5 w-5" />
@@ -136,7 +140,8 @@ export default function MainNav() {
             variant="ghost"
             size="icon"
             className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                      transition-all duration-200 ease-in-out"
+                      transition-all duration-200 ease-in-out
+                      focus:outline-none focus:ring-0 focus-visible:ring-0"
             aria-label="Account"
           >
             {user ? (
@@ -154,7 +159,8 @@ export default function MainNav() {
               variant="ghost"
               size="icon"
               className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                        transition-all duration-200 ease-in-out"
+                        transition-all duration-200 ease-in-out
+                        focus:outline-none focus:ring-0 focus-visible:ring-0"
               aria-label="Settings"
             >
               <Settings className="h-5 w-5" />
