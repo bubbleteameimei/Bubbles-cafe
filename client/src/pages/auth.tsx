@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Eye, 
-  EyeOff, 
-  CheckCircle2, 
+import {
+  Eye,
+  EyeOff,
+  CheckCircle2,
   XCircle,
   ShieldCheck,
   ShieldAlert,
@@ -32,7 +32,7 @@ export default function AuthPage() {
   const [, setLocation] = useLocation();
   const { login, registerMutation } = useAuth();
   const { toast } = useToast();
-  
+
   // Password validation states
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [passwordsMatch, setPasswordsMatch] = useState<boolean | null>(null);
@@ -43,7 +43,7 @@ export default function AuthPage() {
     hasNumber: false,
     hasSpecial: false
   });
-  
+
   // Check password strength and validations whenever password changes
   useEffect(() => {
     if (password) {
@@ -55,9 +55,9 @@ export default function AuthPage() {
         hasNumber: /[0-9]/.test(password),
         hasSpecial: /[^A-Za-z0-9]/.test(password)
       };
-      
+
       setValidations(newValidations);
-      
+
       // Calculate password strength (0-4)
       const strength = Object.values(newValidations).filter(Boolean).length;
       setPasswordStrength(strength);
@@ -73,7 +73,7 @@ export default function AuthPage() {
       setPasswordStrength(0);
     }
   }, [password]);
-  
+
   // Check if passwords match whenever either password field changes
   useEffect(() => {
     if (confirmPassword) {
@@ -88,12 +88,12 @@ export default function AuthPage() {
     if (isLoading || registerMutation.isPending) {
       return; // Prevent multiple submissions
     }
-    
+
     setIsLoading(true);
 
     try {
       // Enhanced logging for debugging
-      console.log("[Auth] Attempting authentication via form submit", { 
+      console.log("[Auth] Attempting authentication via form submit", {
         mode: isSignIn ? "sign-in" : "sign-up",
         hasEmail: !!email,
         hasPassword: !!password,
@@ -106,31 +106,31 @@ export default function AuthPage() {
         if (!email || !password) {
           throw new Error("Please enter both email and password");
         }
-        
+
         if (email.trim() === '') {
           throw new Error("Email cannot be empty");
         }
-        
+
         if (password.length < 6) {
           throw new Error("Password must be at least 6 characters long");
         }
-        
+
         console.log("[Auth] Validations passed, submitting login request");
         // Use the direct login method
         const result = await login(email, password, rememberMe);
-        
+
         if (!result) {
           throw new Error("Login failed - no user data received");
         }
-        
+
         console.log("[Auth] Login successful, redirecting", { userId: result.id });
-        
+
         // Show success notification
         toast({
           title: "Success",
           description: "You have been logged in successfully",
         });
-        
+
         // Give a slight delay before redirecting to allow the toast to be seen
         setTimeout(() => {
           setLocation("/");
@@ -140,48 +140,48 @@ export default function AuthPage() {
         if (!username || !email || !password || !confirmPassword) {
           throw new Error("All fields are required");
         }
-        
+
         if (username.trim() === '') {
           throw new Error("Username cannot be empty");
         }
-        
+
         if (email.trim() === '') {
           throw new Error("Email cannot be empty");
         }
-        
+
         if (password.length < 6) {
           throw new Error("Password must be at least 6 characters long");
         }
-        
+
         // Password match validation
         if (password !== confirmPassword) {
           throw new Error("Passwords do not match");
         }
-        
+
         // Password strength validation
         if (passwordStrength < 3) {
           throw new Error("Password is too weak. Please include at least uppercase letters, numbers, or special characters.");
         }
-        
+
         console.log("[Auth] Validations passed, submitting registration request");
-        const result = await registerMutation.mutateAsync({ 
-          username, 
-          email, 
-          password 
+        const result = await registerMutation.mutateAsync({
+          username,
+          email,
+          password
         });
-        
+
         if (!result) {
           throw new Error("Registration failed - no user data received");
         }
-        
+
         console.log("[Auth] Registration successful, redirecting", { userId: result.id });
-        
+
         // Show success notification
         toast({
           title: "Account Created",
           description: "Your account has been created successfully",
         });
-        
+
         // Give a slight delay before redirecting to allow the toast to be seen
         setTimeout(() => {
           setLocation("/");
@@ -189,7 +189,7 @@ export default function AuthPage() {
       }
     } catch (err: any) {
       console.error("[Auth] Authentication error:", err);
-      
+
       // Enhanced error reporting
       const errorMessage = err?.message || "Authentication failed";
       console.error("[Auth] Error details:", {
@@ -198,7 +198,7 @@ export default function AuthPage() {
         isNetworkError: err?.name === 'NetworkError',
         isAPIError: err?.isAPIError
       });
-      
+
       toast({
         title: "Authentication Error",
         description: errorMessage,
@@ -212,27 +212,27 @@ export default function AuthPage() {
   // Get password strength indicator
   const getPasswordStrengthLabel = () => {
     if (!password) return null;
-    
+
     if (passwordStrength <= 1) return "Weak";
     if (passwordStrength === 2) return "Fair";
     if (passwordStrength === 3) return "Good";
     return "Strong";
   };
-  
+
   // Get password strength color class
   const getPasswordStrengthClass = () => {
     if (!password) return "";
-    
+
     if (passwordStrength <= 1) return "bg-red-500";
     if (passwordStrength === 2) return "bg-yellow-500";
     if (passwordStrength === 3) return "bg-blue-500";
     return "bg-green-500";
   };
-  
+
   // Get password strength icon
   const getPasswordStrengthIcon = () => {
     if (!password) return null;
-    
+
     if (passwordStrength <= 1) return <ShieldAlert className="h-4 w-4 text-red-500" />;
     if (passwordStrength === 2) return <ShieldQuestion className="h-4 w-4 text-yellow-500" />;
     if (passwordStrength === 3) return <ShieldCheck className="h-4 w-4 text-blue-500" />;
@@ -242,7 +242,7 @@ export default function AuthPage() {
   const togglePassword = () => {
     setShowPassword(!showPassword);
   };
-  
+
   const toggleConfirmPassword = () => {
     setShowConfirmPassword(!showConfirmPassword);
   };
@@ -297,14 +297,14 @@ export default function AuthPage() {
       <div className="login-wrap">
         <div className="login-html">
           <div className="tab-selector">
-            <button 
+            <button
               type="button"
               className={`tab-btn ${isSignIn ? "active" : ""}`}
               onClick={() => setIsSignIn(true)}
             >
               SIGN IN
             </button>
-            <button 
+            <button
               type="button"
               className={`tab-btn ${!isSignIn ? "active" : ""}`}
               onClick={() => setIsSignIn(false)}
@@ -317,9 +317,9 @@ export default function AuthPage() {
             <form onSubmit={handleSubmit} noValidate>
               <div style={{ display: isSignIn ? "block" : "none" }}>
                 {/* Sign in form with email/password + social login options */}
-                
+
                 <div className="mb-4 space-y-2">
-                  <SocialLoginButtons 
+                  <SocialLoginButtons
                     onSuccess={handleSocialLoginSuccess}
                     onError={(err: Error) => toast({
                       title: 'Social Authentication Error',
@@ -337,9 +337,9 @@ export default function AuthPage() {
                 {/* Email Field */}
                 <div className="group">
                   <Label htmlFor="email" className="auth-label">Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
+                  <Input
+                    id="email"
+                    type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
@@ -358,8 +358,8 @@ export default function AuthPage() {
                 <div className="group">
                   <Label htmlFor="pass" className="auth-label">Password</Label>
                   <div className="relative">
-                    <Input 
-                      id="pass" 
+                    <Input
+                      id="pass"
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -373,7 +373,7 @@ export default function AuthPage() {
                         }
                       }}
                     />
-                    <button 
+                    <button
                       type="button"
                       onClick={togglePassword}
                       className="password-toggle-btn"
@@ -392,9 +392,9 @@ export default function AuthPage() {
                 <div className="flex items-center justify-between mb-6 mt-4">
                   <div className="flex items-center">
                     <label htmlFor="remember-me" className="flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        id="remember-me" 
+                      <input
+                        type="checkbox"
+                        id="remember-me"
                         className="peer sr-only"
                         checked={rememberMe}
                         onChange={(e) => setRememberMe(e.target.checked)}
@@ -415,7 +415,7 @@ export default function AuthPage() {
                     isSignIn={true}
                   />
                 </div>
-                
+
                 <div className="tiny-disclaimer">
                   By continuing, you agree to our <a href="/legal/terms" className="policy-link">Terms of Service</a> and <a href="/privacy" className="policy-link">Privacy Policy</a>. This site uses cookies for authentication and analytics.
                 </div>
@@ -437,7 +437,7 @@ export default function AuthPage() {
                 {/* Sign up form with email/password + social login options */}
 
                 <div className="mb-4 space-y-2">
-                  <SocialLoginButtons 
+                  <SocialLoginButtons
                     onSuccess={handleSocialLoginSuccess}
                     onError={(err: Error) => toast({
                       title: 'Social Authentication Error',
@@ -455,9 +455,9 @@ export default function AuthPage() {
                 {/* Username Field */}
                 <div className="group">
                   <Label htmlFor="user" className="auth-label">Username</Label>
-                  <Input 
-                    id="user" 
-                    type="text" 
+                  <Input
+                    id="user"
+                    type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Choose a username"
@@ -475,9 +475,9 @@ export default function AuthPage() {
                 {/* Email Field */}
                 <div className="group">
                   <Label htmlFor="email-signup" className="auth-label">Email</Label>
-                  <Input 
-                    id="email-signup" 
-                    type="email" 
+                  <Input
+                    id="email-signup"
+                    type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
@@ -496,8 +496,8 @@ export default function AuthPage() {
                 <div className="group">
                   <Label htmlFor="pass-signup" className="auth-label">Password</Label>
                   <div className="relative">
-                    <Input 
-                      id="pass-signup" 
+                    <Input
+                      id="pass-signup"
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -511,7 +511,7 @@ export default function AuthPage() {
                         }
                       }}
                     />
-                    <button 
+                    <button
                       type="button"
                       onClick={togglePassword}
                       className="password-toggle-btn"
@@ -534,11 +534,11 @@ export default function AuthPage() {
                           <span className="ml-1">Password strength: <strong>{getPasswordStrengthLabel()}</strong></span>
                         </span>
                       </div>
-                      
+
                       {/* Password strength bar */}
                       <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full ${getPasswordStrengthClass()}`} 
+                        <div
+                          className={`h-full ${getPasswordStrengthClass()}`}
                           style={{ width: `${(passwordStrength / 5) * 100}%` }}
                           role="progressbar"
                           aria-valuenow={passwordStrength}
@@ -582,18 +582,18 @@ export default function AuthPage() {
                 <div className="group">
                   <Label htmlFor="confirm-password" className="auth-label">Confirm Password</Label>
                   <div className="relative">
-                    <Input 
-                      id="confirm-password" 
+                    <Input
+                      id="confirm-password"
                       type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm your password"
                       className={`auth-input pr-10 ${
-                        confirmPassword 
-                          ? (passwordsMatch === true 
-                              ? 'border-green-500' 
-                              : passwordsMatch === false 
-                                ? 'border-red-500' 
+                        confirmPassword
+                          ? (passwordsMatch === true
+                              ? 'border-green-500'
+                              : passwordsMatch === false
+                                ? 'border-red-500'
                                 : '')
                           : ''
                       }`}
@@ -605,7 +605,7 @@ export default function AuthPage() {
                         }
                       }}
                     />
-                    <button 
+                    <button
                       type="button"
                       onClick={toggleConfirmPassword}
                       className="password-toggle-btn"
@@ -618,7 +618,7 @@ export default function AuthPage() {
                       )}
                     </button>
                   </div>
-                  
+
                   {/* Password Matching Indicator */}
                   {confirmPassword && (
                     <div className="mt-2" aria-live="polite">
@@ -651,7 +651,7 @@ export default function AuthPage() {
                     isSignIn={false}
                   />
                 </div>
-                
+
                 <div className="tiny-disclaimer">
                   By continuing, you agree to our <a href="/legal/terms" className="policy-link">Terms of Service</a> and <a href="/privacy" className="policy-link">Privacy Policy</a>. This site uses cookies for authentication and analytics.
                 </div>
