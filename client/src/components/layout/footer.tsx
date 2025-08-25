@@ -11,7 +11,7 @@ export default function Footer() {
   
   return (
     <footer 
-      className="w-screen border-t border-primary/20 bg-background/95 mt-8"
+      className="w-screen border-t border-primary/20 bg-background/15 backdrop-blur-sm mt-8"
       style={{
         position: "relative",
         left: 0,
@@ -35,14 +35,14 @@ export default function Footer() {
         <nav className="flex items-center justify-center" aria-label="Footer navigation">
           <Link 
             href="/privacy" 
-            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 whitespace-nowrap"
+            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 whitespace-nowrap underline decoration-gray-400 hover:decoration-primary underline-offset-2"
           >
             Privacy Policy
           </Link>
           <span className="text-primary/40 text-sm mx-1">•</span>
           <Link 
             href="/contact" 
-            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 whitespace-nowrap"
+            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 whitespace-nowrap underline decoration-gray-400 hover:decoration-primary underline-offset-2"
           >
             Contact Me
           </Link>

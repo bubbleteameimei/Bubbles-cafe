@@ -93,7 +93,7 @@ export default function Navigation() {
 
   return (
     <header 
-      className={`w-screen relative top-0 z-40 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 overflow-x-clip ${scrolled ? 'shadow-md' : ''}`}
+      className={`w-screen relative top-0 z-40 bg-background/20 backdrop-blur supports-[backdrop-filter]:bg-background/15 overflow-x-clip ${scrolled ? 'shadow-md' : ''}`}
       style={{ position: 'relative', left: 0, right: 0, margin: 0, padding: 0, width: '100vw', marginLeft: 'calc(-50vw + 50%)' }}
     >
       <div className="w-full flex h-16 items-center justify-between px-0 main-header border-b border-border/50">
