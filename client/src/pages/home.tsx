@@ -173,14 +173,24 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        <div className="relative min-h-screen overflow-x-hidden flex flex-col home-page">
-          {/* We are using the CSS-based background image instead of this div (see index.css body.body-home::before) */}
+        <div 
+          className="relative min-h-screen overflow-x-hidden flex flex-col home-page"
+          style={{
+            backgroundImage: 'url("/homepage-bg.jpeg")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            backgroundAttachment: 'fixed'
+          }}
+        >
+          {/* Background overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/40 z-0"></div>
             
           {/* Invisible barrier to prevent scrolling under header */}
           <div className="relative w-full h-2 sm:h-3 md:h-4 lg:h-3" aria-hidden="true"></div>
           
           {/* Content container with proper z-index to appear above background - full width */}
-          <div ref={heroRef} className="relative z-10 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start pt-16 sm:pt-20 md:pt-24 lg:pt-28 pb-10 sm:pb-12 md:pb-16 lg:pb-20 text-center w-full min-h-screen">
+          <div ref={heroRef} className="relative z-20 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start pt-16 sm:pt-20 md:pt-24 lg:pt-28 pb-10 sm:pb-12 md:pb-16 lg:pb-20 text-center w-full min-h-screen">
             <div className="relative">
               <motion.h1
                 initial={{ opacity: 0, y: 12 }}
