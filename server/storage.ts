@@ -472,7 +472,7 @@ export class DatabaseStorage implements IStorage {
       this.sessionStore = new PgSession({
         pool: compatiblePool as any,
         createTableIfMissing: true,
-        tableName: 'session',
+        tableName: 'express_sessions',
         schemaName: 'public',
         ttl: 86400, // 1 day
         pruneSessionInterval: 60 * 15, // Prune expired sessions every 15 minutes
@@ -2301,17 +2301,20 @@ export class DatabaseStorage implements IStorage {
 
   private async updatePostCounts(postId: number): Promise<void> {
     try {
-      const counts = await this.getPostLikeCounts(postId);
-      
-      // Use raw SQL to avoid column name issues
+      // Atomically recompute counts from post_likes table to avoid races
       await db.execute(sql`
-        UPDATE posts 
-        SET likes_count = ${counts.likesCount}, 
-            dislikes_count = ${counts.dislikesCount}
-        WHERE id = ${postId}
+        UPDATE posts p
+        SET 
+          likes_count = (
+            SELECT COUNT(*)::int FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = true
+          ),
+          dislikes_count = (
+            SELECT COUNT(*)::int FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = false
+          )
+        WHERE p.id = ${postId}
       `);
 
-      console.log(`[Storage] Updated post ${postId} counts:`, counts);
+      console.log(`[Storage] Updated post ${postId} counts atomically`);
     } catch (error) {
       console.error(`[Storage] Error updating post counts for ${postId}:`, error);
       throw error;

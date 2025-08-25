@@ -8,6 +8,7 @@ import { authRateLimiter, sensitiveOperationsRateLimiter } from '../middlewares/
 import passport from "passport";
 import * as bcrypt from 'bcryptjs';
 import { storage } from "../storage";
+import { z as zod } from 'zod';
 
 const authLogger = createSecureLogger('AuthRoutes');
 const router = Router();
@@ -104,6 +105,57 @@ router.post('/login',
       });
     })(req, res, next);
     return;
+  })
+);
+
+// POST /api/auth/social-login - Consolidated here; minimal logging
+router.post('/social-login',
+  authRateLimiter,
+  validateBody(zod.object({
+    provider: zod.string().min(1),
+    email: zod.string().email().transform(s => s.toLowerCase().trim()),
+    socialId: zod.string().min(1),
+    username: zod.string().optional(),
+    photoURL: zod.string().optional(),
+    token: zod.string().optional()
+  })),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { provider, email, socialId } = req.body;
+    let { username, photoURL } = req.body as any;
+    try {
+      let user = await storage.getUserByEmail(email);
+      if (!user) {
+        const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+        const password_hash = await bcrypt.hash(randomPassword, 12);
+        user = await storage.createUser({
+          username: username || email.split('@')[0],
+          email,
+          password_hash,
+          isAdmin: false,
+          metadata: {
+            email,
+            socialId,
+            provider,
+            lastLogin: new Date().toISOString(),
+            displayName: username || null,
+            photoURL: photoURL || null
+          }
+        });
+      } else {
+        const existing = user.metadata || {};
+        await storage.updateUser(user.id, {
+          metadata: { ...existing, socialId, provider, lastLogin: new Date().toISOString(), displayName: username || (existing as any).displayName || null, photoURL: photoURL || (existing as any).photoURL || null }
+        });
+      }
+      const { password_hash, ...safeUser } = user;
+      req.login(safeUser as any, (err) => {
+        if (err) return res.status(500).json({ message: 'Session error' });
+        return res.json(safeUser);
+      });
+    } catch (e) {
+      authLogger.error('Social login error', { provider, error: e instanceof Error ? e.message : String(e) });
+      throw createError.internal('Social login failed');
+    }
   })
 );
 

@@ -1,6 +1,7 @@
 import { Request, Response, Express, NextFunction } from 'express';
 import { IStorage } from '../storage';
 import { InsertUserPrivacySettings } from '../../shared/schema';
+import { z } from 'zod';
 
 // Authentication middleware
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
@@ -20,7 +21,7 @@ export function registerPrivacySettingsRoutes(app: Express, storage: IStorage) {
    */
   app.get('/api/user/privacy-settings', isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const userId = req.session?.user?.id;
+      const userId = (req as any).user?.id;
 
       if (!userId) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -54,15 +55,27 @@ export function registerPrivacySettingsRoutes(app: Express, storage: IStorage) {
    * PATCH /api/user/privacy-settings
    * Updates the privacy settings for the authenticated user
    */
+  const updateSchema = z.object({
+    profileVisible: z.boolean().optional(),
+    shareReadingHistory: z.boolean().optional(),
+    anonymousCommenting: z.boolean().optional(),
+    twoFactorAuthEnabled: z.boolean().optional(),
+    loginNotifications: z.boolean().optional()
+  });
+
   app.patch('/api/user/privacy-settings', isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const userId = req.session?.user?.id;
+      const userId = (req as any).user?.id;
 
       if (!userId) {
         return res.status(401).json({ error: 'User not authenticated' });
       }
 
-      const updateData = req.body;
+      const parse = updateSchema.safeParse(req.body);
+      if (!parse.success) {
+        return res.status(400).json({ error: 'Invalid fields in request', details: parse.error.flatten() });
+      }
+      const updateData = parse.data;
       
       // Validate that we're only updating privacy fields
       const validKeys = ['profileVisible', 'shareReadingHistory', 'anonymousCommenting', 

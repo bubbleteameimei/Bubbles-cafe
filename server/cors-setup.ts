@@ -21,6 +21,11 @@ export function setupCors(app: Express) {
     "http://localhost:5173",
     "http://localhost:5174"
   ].filter(Boolean); // Filter out undefined values
+  
+  // Replit preview allowlist patterns
+  const isReplitOrigin = (o?: string) => !!o && (
+    /\.repl\.co$/.test(o) || /\.replit\.dev$/.test(o) || /\.replit\.app$/.test(o) || o.includes('.replit.') || o.includes('repl.co')
+  );
 
   // CORS middleware
   app.use((req: Request, res: Response, next: NextFunction) => {
@@ -28,27 +33,15 @@ export function setupCors(app: Express) {
     
     console.log(`[CORS] Request from origin: ${origin || 'none'}, NODE_ENV: ${process.env.NODE_ENV}`);
     
-    // Special case: if FRONTEND_URL is set to '*', allow all origins
-    if (process.env.FRONTEND_URL === '*') {
-      res.setHeader("Access-Control-Allow-Origin", "*");
-      console.log(`[CORS] Allowed all origins (wildcard mode)`);
-      // Note: Cannot use credentials with wildcard origin
-    } 
     // Allow specific origins and include credentials
-    else if (origin && allowedOrigins.includes(origin)) {
-      res.setHeader("Access-Control-Allow-Origin", origin);
+    if (origin && allowedOrigins.includes(origin as string)) {
+      res.setHeader("Access-Control-Allow-Origin", origin as string);
       res.setHeader("Access-Control-Allow-Credentials", "true");
       console.log(`[CORS] Allowed configured origin: ${origin}`);
     }
     // Check for Replit domains (works for both dev and prod)
-    else if (origin && (
-      /\.repl\.co$/.test(origin) || 
-      /\.replit\.dev$/.test(origin) ||
-      /\.replit\.app$/.test(origin) ||
-      origin.includes('.replit.') ||
-      origin.includes('repl.co')
-    )) {
-      res.setHeader("Access-Control-Allow-Origin", origin);
+    else if (isReplitOrigin(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin as string);
       res.setHeader("Access-Control-Allow-Credentials", "true");
       console.log(`[CORS] Allowed Replit domain: ${origin}`);
     }
@@ -64,7 +57,7 @@ export function setupCors(app: Express) {
     }
     // No origin header (like direct API calls)
     else if (!origin) {
-      // Allow requests without origin (like direct API calls, mobile apps, etc.)
+      // No credentials for wildcard; do not set credentials when origin is absent
       res.setHeader("Access-Control-Allow-Origin", "*");
       console.log(`[CORS] Allowed request without origin header`);
     }
