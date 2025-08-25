@@ -79,6 +79,18 @@
   outline-offset: 2px;
 }
 
+/* Remove focus rings from sidebar and navigation elements */
+.sidebar-menu-button-enhanced:focus,
+.sidebar-menu-button-enhanced:focus-visible,
+[data-sidebar] button:focus,
+[data-sidebar] button:focus-visible,
+nav button:focus,
+nav button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  ring: none !important;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

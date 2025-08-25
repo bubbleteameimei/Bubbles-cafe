@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import {
   Home, Book, Users, Settings, HelpCircle, FileText, ChevronDown,
@@ -44,7 +43,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [adminOpen, setAdminOpen] = React.useState(false);
   const [touchStartX, setTouchStartX] = React.useState<number | null>(null);
   const sidebar = useSidebar();
-  
+
   // Reference to the menu container for better scroll management
   const menuContainerRef = React.useRef<HTMLDivElement>(null);
 
@@ -61,13 +60,13 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       const container = menuContainerRef.current;
       const elementRect = element.getBoundingClientRect();
       const containerRect = container.getBoundingClientRect();
-      
+
       if (elementRect.bottom > containerRect.bottom) {
         element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     }
   }, []);
-  
+
   // Add swipe to close functionality with improved reliability
   React.useEffect(() => {
     // Always compute a cleanup to satisfy noImplicitReturns
@@ -175,7 +174,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   }, [sidebar, touchStartX]) // Dependencies include sidebar and touchStartX
 
   // Simplified navigation - no state needed for instant switching
-  
+
   const handleNavigation = React.useCallback((path: string) => {
     // Prevent duplicate navigation
     if (location === path) {
@@ -187,33 +186,33 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       scrollToTop();
       return;
     }
-    
+
     try {
       // 1. Reset UI state (all menus closed)
       setDisplayOpen(false);
       setAccountOpen(false);
       setSupportOpen(false);
       setAdminOpen(false);
-      
+
       // 2. If callback provided, call it
       if (onNavigate) {
         onNavigate();
       }
-      
+
       // 3. Close the sidebar immediately for instant feedback
       if (sidebar) {
         sidebar.setOpenMobile(false);
       }
       // 4. Navigate immediately
       setLocation(path);
-      
+
     } catch (error) {
       console.error("Navigation error:", error);
       // Fallback to direct location navigation as last resort
       window.location.href = path;
     }
   }, [location, onNavigate, sidebar, setLocation, scrollToTop]);
-  
+
   // Function to render the active indicator for menu items
   const renderActiveIndicator = (_path: string) => {
     // Removed the line indicator to fix visual glitch
@@ -261,15 +260,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     "text-sidebar-foreground/80 hover:text-sidebar-foreground",
     "transition-all duration-200 ease-out",
     "hover:bg-sidebar-accent hover:shadow-sm",
-    "focus-visible:outline-none focus-visible:ring-0 focus:bg-sidebar-accent",
+    "focus:outline-none focus:ring-0 focus-visible:ring-0",
     "data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/10 data-[active=true]:to-primary/5",
     "data-[active=true]:text-primary data-[active=true]:shadow-sm",
     "whitespace-nowrap overflow-hidden",
     "font-sans"
   );
-  
+
   // Enhanced submenu styling - increased clickable area to the RIGHT and faster animations
-  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-100 ease-out text-sm font-medium py-2 px-3 pr-12 whitespace-nowrap overflow-hidden min-h-[36px] flex items-center -mb-1 rounded-sm hover:bg-[hsl(var(--sidebar-accent))] focus-visible:outline-none focus:bg-[hsl(var(--sidebar-accent))]";
+  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-100 ease-out text-sm font-medium py-2 px-3 pr-12 whitespace-nowrap overflow-hidden min-h-[36px] flex items-center -mb-1 rounded-sm hover:bg-[hsl(var(--sidebar-accent))] focus:bg-[hsl(var(--sidebar-accent))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:font-medium transition-all duration-150 ease-out text-sm font-medium py-1.5 px-2 whitespace-nowrap overflow-hidden min-h-[36px] flex items-center -mb-1 rounded-sm border-l-2 border-transparent hover:border-l-primary/20 focus:outline-none focus:ring-0 focus-visible:ring-0";
 
 
 
@@ -605,7 +604,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           <span>Content Management</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
-                      
+
                       {/* Theme Management */}
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton
@@ -742,7 +741,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         <span>Reading Preferences</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
-                    
+
 
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
@@ -755,7 +754,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         <span>Quick Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
-                    
+
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/settings/preview'}
@@ -853,7 +852,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         <span>Privacy & Security</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
-                    
+
                     {/* Data export menu item removed */}
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton

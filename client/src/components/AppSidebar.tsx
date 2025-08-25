@@ -47,7 +47,7 @@ export function AppSidebar() {
       collapsible="offcanvas"
       className={`flex flex-col h-screen bg-[hsl(var(--sidebar-background))] text-[hsl(var(--sidebar-foreground))]
                 dark:bg-[hsl(var(--background))] dark:border-r dark:border-gray-800
-                transition-all duration-300 ease-in-out`}
+                transition-all duration-300 ease-in-out overflow-visible`}
     >
       <SidebarContent>
         {/* Enhanced fixed header with conditional shadow on scroll */}
@@ -66,7 +66,8 @@ export function AppSidebar() {
             onClick={handleToggle}
             className="ml-auto h-8 w-8 text-[hsl(var(--sidebar-foreground))] 
                       hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]
-                      transition-all duration-200 ease-in-out transform active:scale-95"
+                      transition-all duration-200 ease-in-out transform active:scale-95
+                      focus:outline-none focus:ring-0 focus-visible:ring-0"
             aria-label="Close sidebar"
           >
             <X className="h-4 w-4" />
@@ -74,7 +75,7 @@ export function AppSidebar() {
         </div>
 
         {/* Scrollable content area with improved padding for different device sizes */}
-        <div className="flex-1 overflow-y-auto custom-sidebar-scroll">
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
           <div className="p-2 sm:p-3 md:p-4 lg:p-5 xl:p-6">
             <SidebarNavigation onNavigate={handleToggle} />
           </div>
@@ -102,7 +103,8 @@ export function AppSidebar() {
             className="fixed bottom-6 left-6 h-12 w-12 rounded-full shadow-lg
                       bg-primary text-primary-foreground 
                       z-[99999] transition-all duration-300 ease-in-out transform hover:scale-105
-                      touch-manipulation select-none interactive-element"
+                      touch-manipulation select-none interactive-element
+                      focus:outline-none focus:ring-0 focus-visible:ring-0"
             style={{ 
               touchAction: 'manipulation',
               WebkitTouchCallout: 'none',
