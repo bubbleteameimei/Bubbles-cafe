@@ -123,7 +123,7 @@ body {
   }
 
   /* Container fixes for width issues */
-  .app-container, .layout-container, .main-container, .content-container, main, 
+  .app-container, .layout-container, .main-container, .content-container, main,
   [class*="container"], [class*="layout"], [class*="wrapper"] {
     width: 100%;
     max-width: 100%;
@@ -136,7 +136,7 @@ body {
   }
 
   /* Fix for transparent backgrounds in form elements */
-  input, textarea, select, .input-field, .textarea-field, .select-field, [type="text"], [type="email"], [type="password"], [type="search"], 
+  input, textarea, select, .input-field, .textarea-field, .select-field, [type="text"], [type="email"], [type="password"], [type="search"],
   .form-control, .form-input, .search-input, [class*="input"], [class*="field"], [class*="form-control"] {
     @apply bg-background; /* Force solid background */
     background-color: hsl(var(--background)) !important;
@@ -171,22 +171,30 @@ body {
   }
 
   /* Minimal scrollbar style */
+  /* Consolidated scrollbar styling */
   ::-webkit-scrollbar {
-    width: 8px;
+    width: 8px; /* Width of the scrollbar */
+    height: 8px; /* Height of the scrollbar for horizontal scrolling */
   }
 
   ::-webkit-scrollbar-track {
-    background: transparent;
+    background: transparent; /* Transparent track */
   }
 
   ::-webkit-scrollbar-thumb {
-    background-color: rgba(125, 125, 125, 0.3);
-    border-radius: 20px;
+    background-color: rgba(125, 125, 125, 0.3); /* Semi-transparent thumb color */
+    border-radius: 20px; /* Rounded corners for the thumb */
+    border: 2px solid transparent; /* Transparent border to allow track color to show through */
+    background-clip: content-box; /* Clip the background to the content box */
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent; /* Transparent scrollbar corner */
   }
 
   /* Optimize for touch interactions */
   @media (hover: none) and (pointer: coarse) {
-    button, 
+    button,
     a[role="button"],
     .interactive-element,
     .touch-target {
@@ -200,7 +208,7 @@ body {
   /* Specific optimizations for landscape mode and all touch devices */
   @media (hover: none) and (pointer: coarse) {
     /* Ensure all buttons are accessible on touch devices */
-    button, 
+    button,
     a[role="button"],
     .interactive-element,
     .touch-target,
@@ -247,7 +255,7 @@ body {
 
     /* Ensure interactive elements work in landscape */
     @media (orientation: landscape) {
-      button, 
+      button,
       a[role="button"],
       .interactive-element {
         min-height: 48px !important;
@@ -258,17 +266,12 @@ body {
   }
 }
 
-/* Reader container responsive styles controlled by reader-fixes.css */
-@layer components {
-  /* Reader container styles moved to reader-fixes.css for better isolation */
-}
-
 /* Container fixes to prevent overflow and remove black borders */
-.container, 
-main, 
-section, 
-article, 
-div[class*="layout"], 
+.container,
+main,
+section,
+article,
+div[class*="layout"],
 div[class*="container"] {
   @apply max-w-full overflow-hidden;
   width: 100% !important;
@@ -284,16 +287,16 @@ div[class*="container"] {
 
 /* Homepage container needs to be transparent */
 .home-page .container,
-.home-page main, 
-.home-page section, 
-.home-page article, 
-.home-page div[class*="layout"], 
+.home-page main,
+.home-page section,
+.home-page article,
+.home-page div[class*="layout"],
 .home-page div[class*="container"],
 body.body-home .container,
-body.body-home main, 
-body.body-home section, 
-body.body-home article, 
-body.body-home div[class*="layout"], 
+body.body-home main,
+body.body-home section,
+body.body-home article,
+body.body-home div[class*="layout"],
 body.body-home div[class*="container"] {
   background-color: transparent !important;
 }
@@ -332,7 +335,7 @@ body.body-home div[class*="container"] {
 
 /* Additional fix for reader page spacing - Container only, not story content */
 body:has(main:has([data-reader-page])) .container,
-.reader-page .container, 
+.reader-page .container,
 div[data-reader-page="true"] .container,
 [data-page="reader"] .container {
   padding-top: 0 !important;
@@ -345,7 +348,7 @@ div[data-reader-page="true"] .container,
 }
 
 /* Define variables for background images and overlays */
-:root {
+::root {
   --bg-overlay-dark: linear-gradient(to bottom, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0.01) 50%, rgba(0,0,0,0.03) 100%);
   --bg-overlay-light: linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.2) 100%);
 }
