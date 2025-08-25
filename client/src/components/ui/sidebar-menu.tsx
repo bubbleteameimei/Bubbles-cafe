@@ -220,6 +220,40 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     return null;
   };
 
+  // Prefetch route chunks on hover/focus for faster navigations
+  const prefetchRoute = React.useCallback((href: string) => {
+    try {
+      switch (href) {
+        case '/':
+          void import('../../pages/home');
+          break;
+        case '/stories':
+          void import('../../pages/index');
+          break;
+        case '/reader':
+          void import('../../pages/reader');
+          break;
+        case '/community':
+          void import('../../pages/community');
+          break;
+        case '/about':
+          void import('../../pages/about');
+          break;
+        case '/bookmarks':
+          void import('../../pages/bookmarks');
+          break;
+        case '/profile':
+          void import('../../pages/profile');
+          break;
+        case '/search':
+          void import('../../pages/search-results');
+          break;
+        default:
+          break;
+      }
+    } catch {}
+  }, []);
+
   // Enhanced menu item class with modern UX principles
   const menuItemClass = cn(
     "sidebar-menu-button-enhanced",
@@ -305,6 +339,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     <SidebarMenuButton
                       isActive={location === '/'}
                       onClick={() => handleNavigation('/')}
+                      onMouseEnter={() => prefetchRoute('/')}
+                      onFocus={() => prefetchRoute('/')}
                       tooltip="Home"
                       className={menuItemClass}
                       aria-current={location === '/' ? 'page' : undefined}
@@ -339,6 +375,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     <SidebarMenuButton
                       isActive={location === '/stories'}
                       onClick={() => handleNavigation('/stories')}
+                      onMouseEnter={() => prefetchRoute('/stories')}
+                      onFocus={() => prefetchRoute('/stories')}
                       tooltip="Story Index"
                       className={menuItemClass}
                       aria-current={location === '/stories' ? 'page' : undefined}
@@ -374,6 +412,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     <SidebarMenuButton
                       isActive={location === '/reader'}
                       onClick={() => handleNavigation('/reader')}
+                      onMouseEnter={() => prefetchRoute('/reader')}
+                      onFocus={() => prefetchRoute('/reader')}
                       tooltip="Interactive Reader"
                       className={menuItemClass}
                       aria-current={location === '/reader' ? 'page' : undefined}
@@ -409,6 +449,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     <SidebarMenuButton
                       isActive={location === '/community'}
                       onClick={() => handleNavigation('/community')}
+                      onMouseEnter={() => prefetchRoute('/community')}
+                      onFocus={() => prefetchRoute('/community')}
                       tooltip="Community Hub"
                       className={menuItemClass}
                       aria-current={location === '/community' ? 'page' : undefined}
@@ -444,6 +486,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     <SidebarMenuButton
                       isActive={location === '/bookmarks'}
                       onClick={() => handleNavigation('/bookmarks')}
+                      onMouseEnter={() => prefetchRoute('/bookmarks')}
+                      onFocus={() => prefetchRoute('/bookmarks')}
                       tooltip="Saved Stories"
                       className={menuItemClass}
                       aria-current={location === '/bookmarks' ? 'page' : undefined}
