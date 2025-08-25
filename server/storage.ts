@@ -150,16 +150,10 @@ import { createLogger } from "./utils/debug-logger";
 
 const storageLogger = createLogger('Storage');
 
-// Create session store
+// Initialize connect-pg-simple class for session storage usage inside DatabaseStorage
 const PgSession = connectPgSimple(session);
-export const sessionStore = new PgSession({
-  pool: pool,
-  tableName: 'sessions',
-  createTableIfMissing: true,
-  ttl: 24 * 60 * 60, // 24 hours
-  pruneSessionInterval: 60 * 60, // Prune expired sessions every hour
-  schemaName: 'public'
-});
+
+// Note: the single authoritative session store is initialized inside DatabaseStorage constructor below
 
 export interface PostFilters {
   search?: string;
