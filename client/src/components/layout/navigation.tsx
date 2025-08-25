@@ -239,18 +239,18 @@ export default function Navigation() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                  className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
                             transition-all duration-150 active:scale-95 p-0 overflow-hidden mt-2"
                   aria-label="Account menu"
                 >
                   {user.avatar ? (
-                    <div className="h-full w-full overflow-hidden rounded-full">
+                    <div className="h-8 w-8 overflow-hidden rounded-full">
                       <img 
                         src={user.avatar} 
                         alt={`${user.username}'s avatar`}
                         className="h-full w-full object-cover" 
-                        width={36}
-                        height={36}
+                        width={32}
+                        height={32}
                         decoding="async"
                         referrerPolicy="no-referrer"
                       />
