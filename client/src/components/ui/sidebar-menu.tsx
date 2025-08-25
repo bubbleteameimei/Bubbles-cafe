@@ -291,13 +291,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         scrollbarColor: 'rgba(156, 163, 175, 0.3) transparent'
       }}
     >
-      {/* Gradient overlay for visual depth - Fixed positioning */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background to-transparent z-2 opacity-60" />
-      </div>
+      {/* Removed gradient overlay that was interfering with bottom buttons */}
 
       {/* Scrollable content area */}
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-2 pb-24 sm:pb-28 [padding-bottom:env(safe-area-inset-bottom)] scroll-smooth sidebar-menu-container focus:outline-none focus-visible:outline-none"
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-2 pb-6 scroll-smooth sidebar-menu-container focus:outline-none focus-visible:outline-none"
            style={{
              scrollBehavior: 'smooth',
              scrollbarWidth: 'thin',
