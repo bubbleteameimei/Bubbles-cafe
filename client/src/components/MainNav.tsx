@@ -12,14 +12,13 @@ export default function MainNav() {
   const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [deviceType, setDeviceType] = useState<'mobile' | 'tablet' | 'laptop' | 'desktop'>('desktop');
-  const [showSearch, setShowSearch] = useState(false); // State to manage search visibility
-
+  
   // Effect to detect scroll position for conditional styling
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
     };
-
+    
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -38,13 +37,13 @@ export default function MainNav() {
         setDeviceType('desktop');
       }
     };
-
+    
     // Initial call
     handleResize();
-
+    
     // Setup resize listener
     window.addEventListener('resize', handleResize);
-
+    
     // Cleanup on component unmount
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -52,10 +51,10 @@ export default function MainNav() {
   }, []);
 
   return (
-    <header
+    <header 
       className={`sticky top-0 z-40 w-full border-b
                 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
-                transition-all duration-300 ease-in-out
+                transition-all duration-300 ease-in-out 
                 dark:border-gray-800
                 ${scrolled ? 'shadow-sm' : ''}`}
       data-device-type={deviceType}
@@ -77,7 +76,7 @@ export default function MainNav() {
               <Menu className="h-5 w-5" />
             </Button>
           )}
-
+          
           {/* Logo/Home link - Always visible */}
           <Link href="/">
             <a className="flex items-center space-x-2 text-lg font-semibold tracking-tight text-foreground/90 hover:text-foreground transition-colors duration-200">
@@ -87,26 +86,24 @@ export default function MainNav() {
             </a>
           </Link>
         </div>
-
+        
         {/* Center section - Empty on all screens */}
         <div className="flex-1 mx-4"></div>
-
+        
         {/* Right section - Action buttons */}
         <div className="flex items-center space-x-1 sm:space-x-2">
-          {/* Search Button for all screen sizes */}
+          {/* Search icon on all devices */}
           <Button
             variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setShowSearch(!showSearch);
-            }}
-            aria-label="Toggle search"
+            size="icon"
+            className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                      transition-all duration-200 ease-in-out
+                      focus:outline-none focus:ring-0 focus-visible:ring-0"
+            aria-label="Search"
           >
-            <Search className="h-4 w-4" />
+            <Search className="h-5 w-5" />
           </Button>
-
+          
           {/* Theme toggle - visible on all screen sizes */}
           <Button
             variant="ghost"
@@ -123,7 +120,7 @@ export default function MainNav() {
               <Moon className="h-5 w-5 rotate-0 scale-100 transition-all duration-300 ease-in-out" />
             )}
           </Button>
-
+          
           {/* Notification icon - hidden on mobile */}
           {deviceType !== 'mobile' && (
             <Button
@@ -137,7 +134,7 @@ export default function MainNav() {
               <Bell className="h-5 w-5" />
             </Button>
           )}
-
+          
           {/* User account button */}
           <Button
             variant="ghost"
@@ -155,7 +152,7 @@ export default function MainNav() {
               <User className="h-5 w-5" />
             )}
           </Button>
-
+          
           {/* Settings button - only visible on larger screens */}
           {deviceType === 'desktop' && (
             <Button
