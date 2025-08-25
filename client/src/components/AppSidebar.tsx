@@ -16,7 +16,7 @@ export function AppSidebar() {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
     };
-    
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -80,7 +80,7 @@ export function AppSidebar() {
             <SidebarNavigation onNavigate={handleToggle} />
           </div>
         </div>
-        
+
         {/* Menu trigger button - visible when sidebar is closed */}
         {!openMobile && (
           <Button
