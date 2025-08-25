@@ -106,16 +106,15 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
       return next();
     }
 
-    // Loosen validation for common auth and profile endpoints to reduce friction
-    const laxEndpoints = [
+    // Allowlist only specific endpoints to bypass CSRF header
+    const allowlist = new Set<string>([
       '/api/auth/login',
       '/api/auth/register',
       '/api/auth/forgot-password',
       '/api/auth/reset-password',
-      '/api/auth/social-login',
-      '/api/user/privacy-settings'
-    ];
-    if (laxEndpoints.some(p => req.path === p)) {
+      '/api/auth/social-login'
+    ]);
+    if (allowlist.has(req.path)) {
       return next();
     }
 
@@ -180,8 +179,13 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
     // Get token from request
     const requestToken = getTokenFromRequest(req);
     if (!requestToken) {
-      // Permit first write when session just minted a token to improve UX; client will add header next try
-      return next();
+      console.warn(`CSRF validation failed: Token missing from request for ${req.method} ${req.path}`);
+      return res.status(403).json({
+        error: 'CSRF token is missing from request',
+        code: 'CSRF_TOKEN_MISSING',
+        path: req.path,
+        method: req.method
+      });
     }
 
     // Validate token
