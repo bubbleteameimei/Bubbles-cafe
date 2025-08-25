@@ -224,7 +224,7 @@ export default function Home() {
                 transition={{ duration: 0.4, delay: 0.22, ease: 'easeOut' }}
                 className="w-full mt-8 sm:mt-10"
               >
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5 w-full max-w-2xl mx-auto px-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5 w-full max-w-xl mx-auto px-4">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -285,12 +285,27 @@ export default function Home() {
               {posts.length > 0 && (
                 <div className="mt-8 sm:mt-10 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
-                  <div 
+                  <motion.div 
                     onClick={() => setLocation('/reader')} 
-                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl bg-white/5 dark:bg-white/10 backdrop-blur-md border border-white/15 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.55)] hover:border-white/30"
+                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl bg-white/5 dark:bg-white/10 backdrop-blur-md border border-white/15 transition-all duration-300"
+                    whileHover={{ 
+                      y: -8, 
+                      scale: 1.02,
+                      boxShadow: "0 20px 40px -12px rgba(0,0,0,0.7)",
+                      borderColor: "rgba(255,255,255,0.4)"
+                    }}
+                    whileTap={{ 
+                      scale: 0.98,
+                      y: -4
+                    }}
+                    transition={{ 
+                      type: "spring", 
+                      stiffness: 300, 
+                      damping: 20 
+                    }}
                   >
                     <h2 
-                      className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 text-white group-hover:text-primary transition-colors px-2 sm:px-3"
+                      className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 text-white px-2 sm:px-3"
                       dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(posts[0]?.title?.rendered || 'Featured Story') }}
                     />
                     <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 w-full mb-4 sm:mb-5 md:mb-6 line-clamp-2 px-2 sm:px-3 leading-relaxed md:leading-relaxed">
@@ -311,7 +326,7 @@ export default function Home() {
                     <div className="text-sm sm:text-base md:text-lg font-medium text-white/70 mt-3 md:mt-4">
                       {posts[0]?.date ? formatDate(posts[0].date) : ''}
                     </div>
-                  </div>
+                  </motion.div>
                 </div>
               )}
             </div>
