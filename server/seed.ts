@@ -78,10 +78,17 @@ function cleanContent(content: string): string {
 
 async function parseWordPressXML() {
   try {
-    const xmlContent = await fs.readFile(
-      path.join(process.cwd(), "attached_assets", "bubblescafe.wordpress.2025-02-04.000.xml"),
-      "utf-8"
-    );
+    const xmlPath = path.join(process.cwd(), "attached_assets", "bubblescafe.wordpress.2025-02-04.000.xml");
+    
+    // Check if file exists first
+    try {
+      await fs.access(xmlPath);
+    } catch (error) {
+      console.log("WordPress XML file not found, skipping XML seeding.");
+      return { posts: [], admin: await getOrCreateAdminUser() };
+    }
+    
+    const xmlContent = await fs.readFile(xmlPath, "utf-8");
 
     const parser = new XMLParser({
       ignoreAttributes: false,
@@ -190,7 +197,8 @@ export async function seedDatabase() {
     const connection = await initializeDatabaseConnection();
     db = connection.db;
     
-    const postsCreated = await parseWordPressXML();
+    const result = await parseWordPressXML();
+    const postsCreated = typeof result === 'number' ? result : 0;
     console.log(`Database seeded successfully with ${postsCreated} posts!`);
     return postsCreated;
   } catch (error) {
