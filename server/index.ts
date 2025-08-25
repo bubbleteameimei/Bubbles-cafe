@@ -49,6 +49,9 @@ app.use(compression());
 // Configure CORS for cross-domain requests when deployed on Vercel/Render
 setupCors(app);
 
+// When serving frontend on Vercel, accept that origin explicitly via env FRONTEND_URL
+// and ensure credentials are allowed by CORS; trust proxy already enabled above
+
 // Session already handles cookies for us
 // No additional cookie parser needed for CSRF protection
 
