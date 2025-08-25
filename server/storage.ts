@@ -478,6 +478,17 @@ export class DatabaseStorage implements IStorage {
         pruneSessionInterval: 60 * 15, // Prune expired sessions every 15 minutes
         errorLog: (err: Error) => console.error('[SessionStore] Error:', err)
       });
+
+      // Ensure primary key exists only once; guard against duplicate creation
+      (async () => {
+        try {
+          await (compatiblePool as any).query(
+            `ALTER TABLE IF EXISTS public."express_sessions" ADD CONSTRAINT IF NOT EXISTS express_sessions_pkey PRIMARY KEY (sid)`
+          );
+        } catch (e) {
+          console.warn('[SessionStore] PK ensure failed (may already exist):', (e as Error).message);
+        }
+      })();
       
       console.log('[Storage] Session store initialized successfully');
       

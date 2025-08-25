@@ -6,18 +6,18 @@ import * as schema from "@shared/schema";
 
 // Normalize and sanitize potentially malformed DATABASE_URL values
 function sanitizeDatabaseUrl(url?: string): string | undefined {
-        if (!url) return url;
-        let s = url;
-        // Remove whitespace/newlines
-        s = s.replace(/\s+/g, '');
-        // Fix common protocol typos
-        s = s.replace(/^postgresal:\/\//i, 'postgresql://');
-        s = s.replace(/^postgres:\/\//i, 'postgresql://');
-        // Fix broken "pooler" subdomain splits like "pool-er"
-        s = s.replace(/-pool-er/gi, '-pooler');
-        // Fix split words like re-quire
-        s = s.replace(/re-?quire/gi, 'require');
-        return s;
+  if (!url) return url;
+  let s = url.trim();
+  s = s.replace(/\s+/g, '');
+  s = s.replace(/^postgresal:\/\//i, 'postgresql://');
+  s = s.replace(/^postgres:\/\//i, 'postgresql://');
+  s = s.replace(/-pool-er/gi, '-pooler');
+  // Ensure sslmode=require is preserved if present or needed
+  if (!/sslmode=/i.test(s)) {
+    const hasQuery = s.includes('?');
+    s = s + (hasQuery ? '&' : '?') + 'sslmode=require';
+  }
+  return s;
 }
 
 // Resolve database URL from environment with sanitization
@@ -43,9 +43,9 @@ let db: ReturnType<typeof drizzle>;
 try {
         pool = new Pool({ 
                 connectionString: DATABASE_URL,
-                max: 10, // Maximum number of connections
-                idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
-                connectionTimeoutMillis: 10000, // Connection timeout of 10 seconds
+                max: 10,
+                idleTimeoutMillis: 30000,
+                connectionTimeoutMillis: 10000,
         });
 
         // Test the connection
