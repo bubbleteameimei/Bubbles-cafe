@@ -27,8 +27,13 @@ import { setupCors } from "./cors-setup";
 import { config } from './config';
 import { wordpressScheduler } from './wordpress-scheduler';
 import { applyPerformanceMiddleware } from './middleware';
+import { globalRateLimiter } from "./middlewares/rate-limiter";
 
 const app = express();
+// Trust proxy for correct secure cookies and client IPs when behind a proxy/CDN
+app.set('trust proxy', 1);
+// Remove Express signature header
+app.disable('x-powered-by');
 const isDev = config.isDev;
 const PORT = config.port;
 const HOST = '0.0.0.0';
@@ -97,6 +102,9 @@ app.use(validateCsrfToken({
 app.use((req, _res, next) => next());
 setupAuth(app);
 setupOAuth(app);
+
+// Apply a global API rate limiter after auth so authenticated users get higher limits
+app.use('/api', globalRateLimiter);
 
 // Add health check endpoint with CSRF token initialization
 app.get('/health', (req, res) => {
