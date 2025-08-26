@@ -21,7 +21,6 @@ import './styles/fullwidth-fix.css';
 // Using EnhancedPageTransition for smooth page transitions
 // Removed unused imports: Button, Menu
 // Import SidebarNavigation directly from sidebar-menu
-import { SidebarNavigation } from './components/ui/sidebar-menu';
 // Import WordPress API preload function for enhanced reliability
 import { preloadWordPressPosts } from './lib/wordpress-api';
 // Import WordPress sync service

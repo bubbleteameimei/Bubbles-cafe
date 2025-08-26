@@ -1,30 +1,23 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { fetchCsrfTokenIfNeeded, applyCSRFToken } from "@/lib/csrf-token";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, subYears, subMonths } from "date-fns";
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { 
   ChevronDown,
   ChevronUp,
   Expand,
   Loader2, 
-  MessageSquare, 
   Minimize2,
-  Reply, 
-  Save,
+  Reply,
   Calendar,
-  MessageCircle,
   SendHorizontal,
   AlertCircle,
-  Check,
   ShieldAlert,
   Flag,
-  X,
   Ghost,
   Skull
 } from "lucide-react";

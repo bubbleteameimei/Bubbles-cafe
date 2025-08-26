@@ -8,29 +8,23 @@ import TableOfContents from "@/components/reader/TableOfContents";
 import SwipeNavigation from "@/components/reader/SwipeNavigation";
 import "@/styles/reader-fixes.css"; // Import custom reader fixes
 import { 
-  Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronLeft, ChevronRight, BookOpen,
+  Share2, Minus, Plus, Shuffle, ChevronLeft, ChevronRight,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
-  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog,
-  Menu, BookText, Home, Trash, X
+  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog, BookText, Trash, X
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { format } from 'date-fns';
 import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { useFontSize } from "@/hooks/use-font-size";
 import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
 import { detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
-import type { ThemeCategory } from "@/shared/types";
 // Import social icons directly since lazy loading was causing issues
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
-import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
 import ApiLoader from "@/components/api-loader";
-import { ErrorBoundary } from "@/components/ui/error-boundary";
-import MistEffect from "@/components/effects/MistEffect";
-import { MistControl } from "@/components/ui/mist-control";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import { useToast } from "@/hooks/use-toast";
 // Import our reader-specific gentle scroll memory hook
@@ -52,7 +46,6 @@ import {
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
 // Import the WordPress API functions with error handling
-import { fetchWordPressPosts } from "@/lib/wordpress-api";
 
 // Native HTML sanitization function (avoiding DOMPurify dependency conflicts)
 const sanitizeHtmlContent = (html: string): string => {
