@@ -130,7 +130,7 @@ const useGlobalGentleReturn = ({
               localStorage.removeItem(key);
             }
           }
-        } catch (err) {
+        } catch (_err) {
           // If a specific entry is corrupt, just remove it
           localStorage.removeItem(key);
         }

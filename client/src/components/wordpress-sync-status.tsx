@@ -10,8 +10,7 @@ import {
   ClockIcon,
   DatabaseIcon,
   HistoryIcon,
-  BadgeInfoIcon,
-  BookOpenIcon
+  BadgeInfoIcon
 } from 'lucide-react';
 import { forceSyncNow } from '../lib/wordpress-sync';
 import { useAuth } from '../hooks/use-auth';
@@ -223,7 +222,7 @@ export function WordPressSyncStatus() {
           <span className="ml-auto">{formatTime(stats.lastSync)}</span>
         </div>
         <div className="flex items-center gap-1">
-          <BookOpenIcon className="h-3 w-3 text-gray-500" />
+          <DatabaseIcon className="h-3 w-3 text-gray-500" />
           <span className="text-gray-700 dark:text-gray-300">Posts:</span>
           <span className="ml-auto">{stats.postsCount}</span>
         </div>

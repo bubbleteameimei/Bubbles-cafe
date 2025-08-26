@@ -55,7 +55,7 @@ const floatingChipVariants = {
 };
 
 // Mini cookie component for animations
-const MiniCookie = ({ index }: { index: number }) => {
+const MiniCookie = ({ index: _index }: { index: number }) => {
   return (
     <motion.div
       custom={index}
@@ -93,10 +93,10 @@ const MiniCookie = ({ index }: { index: number }) => {
 export function CookieConsent() {
   const { 
     showConsentBanner, 
-    cookiePreferences,
+    cookiePreferences: _cookiePreferences,
     acceptAll, 
     acceptEssentialOnly,
-    updatePreferences,
+    updatePreferences: _updatePreferences,
     isPreferencesModalOpen,
     openPreferencesModal,
     closePreferencesModal
@@ -303,12 +303,7 @@ interface CookiePreferencesModalProps {
 }
 
 function CookiePreferencesModal({ open, onOpenChange }: CookiePreferencesModalProps) {
-  const { 
-    cookiePreferences, 
-    acceptAll, 
-    acceptEssentialOnly,
-    updatePreferences
-  } = useCookieConsent();
+  const { cookiePreferences, toggleCategory: _toggleCategory, updatePreferences, acceptAll } = useCookieConsent();
 
   // Local state to track changes before saving
   const [localPreferences, setLocalPreferences] = useState(cookiePreferences);
