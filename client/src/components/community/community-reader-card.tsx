@@ -73,7 +73,7 @@ interface CommunityReaderCardProps {
 }
 
 export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit }: CommunityReaderCardProps) {
-  const [location, navigate] = useLocation();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   

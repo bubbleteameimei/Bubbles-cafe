@@ -83,7 +83,7 @@ export function StoryRecommendations({
   onBookmark
 }: StoryRecommendationsProps) {
   // Get recommended stories
-  const { data: recommendations, isLoading, error } = useQuery({
+  const { data: recommendations, isLoading, error: _error } = useQuery({
     queryKey: ['/api/posts/recommendations', currentPostId, themeCategories],
     queryFn: async () => {
       // If the API endpoint doesn't exist yet, fall back to getting all posts and filtering
@@ -91,7 +91,7 @@ export function StoryRecommendations({
         const response = await fetch(`/api/posts/recommendations?postId=${currentPostId}&categories=${themeCategories.join(',')}&limit=${maxRecommendations}`);
         if (!response.ok) throw new Error('API endpoint not available');
         return await response.json();
-      } catch (error) {
+      } catch (_error) {
         // Fallback: fetch all posts and filter client-side
         const allPosts = await fetch('/api/posts').then(res => res.json());
         
@@ -134,7 +134,7 @@ export function StoryRecommendations({
   };
   
   // If there's an error, use DirectRecommendations component as a fallback
-  if (error) {
+  if (_error) {
     return (
       <div className="py-6">
         <div className="flex items-center justify-between mb-4">

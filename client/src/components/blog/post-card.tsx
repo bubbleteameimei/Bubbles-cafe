@@ -86,7 +86,7 @@ const getEngagingExcerpt = (content: string): string => {
   // Enhanced scoring system for horror and engagement
   const scoredParagraphs = paragraphs.map((p, index) => {
     let score = 0;
-    const text = p.toLowerCase();
+    const _text = p.toLowerCase();
 
     // Horror elements (higher weight)
     if (/(blood|scream|death|corpse|kill|dead|demon|ghost|monster|evil|darkness|shadow|terror|horror)\b/i.test(p)) score += 6;

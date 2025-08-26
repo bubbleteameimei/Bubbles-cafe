@@ -68,15 +68,15 @@ export function PieChartComponent({
                 dataKey="value"
                 paddingAngle={2}
               >
-                {data.map((entry, index) => (
+                {data.map((_entry, index) => (
                   <Cell 
                     key={`cell-${index}`} 
-                    fill={entry.color || defaultColors[index % defaultColors.length]} 
+                    fill={_entry.color || defaultColors[index % defaultColors.length]} 
                   />
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: any, name: any, entry: any) => {
+                formatter={(value: any, name: any, _entry: any) => {
                   const percent = total > 0 ? (((value as number) / total) * 100).toFixed(1) : '0.0';
                   return [showPercentage ? `${value} (${percent}%)` : value, String(name)];
                 }}
@@ -105,7 +105,7 @@ export function PieChartComponent({
 
 // Helper function to render custom label
 const renderCustomizedLabel = (total: number, showPercentage: boolean) => 
-  ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value, name, index }: any) => {
+  ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value, _name, _index }: any) => {
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.6;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);

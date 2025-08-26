@@ -43,7 +43,7 @@ interface SimplePostEditorProps {
   onClose?: () => void;
 }
 
-export default function SimplePostEditor({ postId, onClose }: SimplePostEditorProps) {
+export default function SimplePostEditor({ postId, onClose: _onClose }: SimplePostEditorProps) {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<string>('write');
@@ -143,15 +143,6 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
     submitPost(data);
   };
 
-  // Handle cancel
-  const handleCancel = () => {
-    if (onClose) {
-      onClose();
-    } else {
-      navigate('/community');
-    }
-  };
-
   // Calculate word count and character count
   const wordCount = form.watch('content')?.trim().split(/\s+/).filter(Boolean).length || 0;
   const charCount = form.watch('content')?.length || 0;
@@ -160,7 +151,7 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   
   // Apply formatting to selected text - simplified to only bold and italic
-  const applyFormatting = (formatType: 'bold' | 'italic') => {
+  const applyFormatting = React.useCallback((formatType: 'bold' | 'italic') => {
     const textarea = textareaRef.current;
     if (!textarea) return;
     
@@ -198,44 +189,24 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
       (formatType === 'italic' && selectedText.startsWith('*') && selectedText.endsWith('*') && 
         (!selectedText.startsWith('**') && !selectedText.endsWith('**')));
     
-    if (isAlreadyFormatted) {
+    // Toggle formatting markers
+    const markers = formatType === 'bold' ? '**' : '*';
+    const isBold = markers === '**';
+    
+    let updatedText = selectedText;
+    if ((isBold && selectedText.startsWith('**') && selectedText.endsWith('**')) ||
+        (!isBold && selectedText.startsWith('*') && selectedText.endsWith('*') && !(selectedText.startsWith('**') && selectedText.endsWith('**')))) {
       // Remove formatting
-      if (formatType === 'bold') {
-        const unformattedText = selectedText.substring(2, selectedText.length - 2);
-        newText = currentContent.substring(0, start) + unformattedText + currentContent.substring(end);
-        
-        // Update cursor position to account for removed formatting
-        setTimeout(() => {
-          textarea.focus();
-          textarea.setSelectionRange(start, start + unformattedText.length);
-        }, 10);
-      } else {
-        const unformattedText = selectedText.substring(1, selectedText.length - 1);
-        newText = currentContent.substring(0, start) + unformattedText + currentContent.substring(end);
-        
-        setTimeout(() => {
-          textarea.focus();
-          textarea.setSelectionRange(start, start + unformattedText.length);
-        }, 10);
-      }
+      updatedText = selectedText.substring(isBold ? 2 : 1, selectedText.length - (isBold ? 2 : 1));
     } else {
       // Apply formatting
-      const markers = formatType === 'bold' ? '**' : '*';
-      newText = currentContent.substring(0, start) + 
-                `${markers}${selectedText}${markers}` + 
-                currentContent.substring(end);
-      
-      // Focus back on textarea and keep the text selected with formatting
-      setTimeout(() => {
-        textarea.focus();
-        const markersLength = markers.length;
-        textarea.setSelectionRange(start + markersLength, end + markersLength);
-      }, 10);
+      updatedText = `${markers}${selectedText}${markers}`;
     }
     
-    // Update form with new text
+    // Apply the change to the content
+    newText = currentContent.substring(0, start) + updatedText + currentContent.substring(end);
     form.setValue('content', newText);
-  };
+  }, [form]);
   
   // Add keyboard shortcuts for text formatting (simplified to bold and italic only)
   useEffect(() => {
@@ -263,7 +234,7 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [applyFormatting]);
 
   return (
     <div className="space-y-6">

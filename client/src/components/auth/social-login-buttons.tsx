@@ -6,6 +6,6 @@ interface SocialLoginButtonsProps {
   isSignIn?: boolean;
 }
 
-export function SocialLoginButtons({ onSuccess, isSignIn = true }: SocialLoginButtonsProps) {
+export function SocialLoginButtons({ onSuccess: _onSuccess, isSignIn: _isSignIn = true }: SocialLoginButtonsProps) {
   return null; // Return nothing - social login functionality has been removed
 }

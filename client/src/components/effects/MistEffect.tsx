@@ -59,7 +59,7 @@ export function MistEffect({
   const baseOpacity = intensity === 'subtle' ? 0.1 : intensity === 'medium' ? 0.2 : 0.3;
   
   // The opacity range for animations
-  const [minOpacity, maxOpacity] = getOpacityRange();
+  const [_minOpacity, _maxOpacity] = getOpacityRange();
 
   return (
     <div className={`relative ${className}`}>

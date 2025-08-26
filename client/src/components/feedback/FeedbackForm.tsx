@@ -54,7 +54,7 @@ export function FeedbackForm() {
   useEffect(() => {
     setCurrentPage(window.location.pathname);
     form.setValue('page', window.location.pathname);
-  }, []);
+  }, [form]);
 
   // Handle form submission
   const onSubmit = async (data: FeedbackFormValues) => {
