@@ -8,7 +8,7 @@ interface ThemeToggleProps {
 /**
  * @deprecated Use ThemeToggleButton directly instead
  */
-export function ThemeToggle({ variant = 'default', className = '' }: ThemeToggleProps) {
+export function ThemeToggle({ variant: _variant = 'default', className = '' }: ThemeToggleProps) {
   // This is a legacy component that now just wraps ThemeToggleButton
   // for backwards compatibility. Use ThemeToggleButton directly in new code.
   return (

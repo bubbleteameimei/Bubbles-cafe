@@ -88,7 +88,7 @@ export default function ResetPasswordPage() {
     };
     
     verifyToken();
-  }, []);
+  }, [toast, navigate]);
 
   const validateForm = (): boolean => {
     try {
