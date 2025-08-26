@@ -41,17 +41,6 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
     timeoutIds.current = [];
   };
   
-  // Initialize and cleanup glitch effect
-  useEffect(() => {
-    originalText.current = text;
-    setDisplayText(text);
-    scheduleRandomGlitches();
-    
-    return () => {
-      clearAllTimeouts();
-    };
-  }, [text, intensityFactor, scheduleRandomGlitches]);
-  
   // Schedule random, chaotic glitches
   const scheduleRandomGlitches = useCallback(() => {
     clearAllTimeouts();
@@ -116,6 +105,17 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
     // Start the chaotic cycle
     scheduleNext();
   }, [intensityFactor]);
+
+  // Initialize and cleanup glitch effect
+  useEffect(() => {
+    originalText.current = text;
+    setDisplayText(text);
+    scheduleRandomGlitches();
+    
+    return () => {
+      clearAllTimeouts();
+    };
+  }, [text, intensityFactor, scheduleRandomGlitches]);
   
   // Generate randomized blur effect
   const getBlurStyle = () => {

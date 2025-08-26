@@ -143,6 +143,12 @@ export default function SimplePostEditor({ postId, onClose: _onClose }: SimplePo
     submitPost(data);
   };
 
+  // Handle cancel action
+  const handleCancel = () => {
+    // Navigate back to community page
+    navigate('/community');
+  };
+
   // Calculate word count and character count
   const wordCount = form.watch('content')?.trim().split(/\s+/).filter(Boolean).length || 0;
   const charCount = form.watch('content')?.length || 0;
