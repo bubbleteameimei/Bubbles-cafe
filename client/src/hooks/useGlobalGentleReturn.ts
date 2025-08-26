@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 interface GentleReturnOptions {
@@ -62,7 +62,7 @@ const useGlobalGentleReturn = ({
   }, [enabled]);
   
   // Save current position to localStorage
-  const savePosition = () => {
+  const savePosition = useCallback(() => {
     if (!enabled || typeof window === 'undefined') return;
     
     try {
@@ -105,10 +105,10 @@ const useGlobalGentleReturn = ({
     } catch (error) {
       console.error('[GentleReturn] Error saving position:', error);
     }
-  };
+  }, [enabled, location]);
   
   // Clean up old position data to prevent localStorage from filling up
-  const cleanupOldPositions = () => {
+  const cleanupOldPositions = useCallback(() => {
     if (!enabled || typeof window === 'undefined') return;
     
     try {
@@ -138,7 +138,7 @@ const useGlobalGentleReturn = ({
     } catch (error) {
       console.error('[GentleReturn] Error cleaning up old positions:', error);
     }
-  };
+  }, [enabled, maxAgeMs]);
   
   // Restore position when the component mounts
   useEffect(() => {
@@ -269,7 +269,7 @@ const useGlobalGentleReturn = ({
     return () => {
       clearInterval(cleanupInterval);
     };
-  }, [enabled, maxAgeMs]);
+  }, [enabled, maxAgeMs, cleanupOldPositions]);
   
   return {
     savePosition,

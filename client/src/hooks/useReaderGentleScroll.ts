@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ReaderGentleScrollOptions {
@@ -60,7 +60,7 @@ const useReaderGentleScroll = ({
   }, [enabled, slug]);
   
   // Save current position to localStorage
-  const savePosition = () => {
+  const savePosition = useCallback(() => {
     if (!enabled || typeof window === 'undefined' || !slug) return;
     
     try {
@@ -103,10 +103,10 @@ const useReaderGentleScroll = ({
     } catch (error) {
       console.error('[ReaderGentleScroll] Error saving position:', error);
     }
-  };
+  }, [enabled, slug]);
   
   // Clean up old position data to prevent localStorage from filling up
-  const cleanupOldPositions = () => {
+  const cleanupOldPositions = useCallback(() => {
     if (!enabled || typeof window === 'undefined') return;
     
     try {
@@ -136,7 +136,7 @@ const useReaderGentleScroll = ({
     } catch (error) {
       console.error('[ReaderGentleScroll] Error cleaning up old positions:', error);
     }
-  };
+  }, [enabled, maxAgeMs]);
   
   // Restore position when the component mounts
   useEffect(() => {
@@ -273,7 +273,7 @@ const useReaderGentleScroll = ({
     return () => {
       clearInterval(cleanupInterval);
     };
-  }, [enabled, maxAgeMs]);
+  }, [enabled, maxAgeMs, cleanupOldPositions]);
   
   return {
     savePosition,

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { v4 as uuidv4 } from 'uuid';
@@ -165,7 +165,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => clearInterval(interval);
   }, [notifications, addNotification]);
 
-  const addNotification = (notification: Omit<Notification, 'id' | 'date' | 'read'>) => {
+  const addNotification = useCallback((notification: Omit<Notification, 'id' | 'date' | 'read'>) => {
     const newNotification: Notification = {
       ...notification,
       id: uuidv4(),
@@ -180,7 +180,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (notification.type !== 'cursed') {
       showNotificationToast(newNotification);
     }
-  };
+  }, [showNotificationToast]);
 
   const markAsRead = (id: string) => {
     setNotifications(prev =>
