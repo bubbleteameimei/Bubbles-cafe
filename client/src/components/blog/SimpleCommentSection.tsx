@@ -307,7 +307,7 @@ const isCommentApproved = (comment: Comment): boolean => {
 };
 
 // Main component
-export default function SimpleCommentSection({ postId, _title }: CommentSectionProps) {
+export default function SimpleCommentSection({ postId, title }: CommentSectionProps) {
   const [content, setContent] = useState("");
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
