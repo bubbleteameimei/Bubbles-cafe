@@ -93,7 +93,7 @@ export default function ContactForm() {
       }
       
       // Extract showEmail and customSubject from the data before sending
-      const { showEmail, customSubject, ...restData } = data;
+      const { showEmail, customSubject: _customSubject, ...restData } = data;
       
       // Prepare the data to send
       const contactData = {

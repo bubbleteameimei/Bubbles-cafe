@@ -117,6 +117,17 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
     };
   }, [text, intensityFactor, scheduleRandomGlitches]);
   
+  // Initialize and cleanup glitch effect
+  useEffect(() => {
+    originalText.current = text;
+    setDisplayText(text);
+    scheduleRandomGlitches();
+    
+    return () => {
+      clearAllTimeouts();
+    };
+  }, [text, intensityFactor, scheduleRandomGlitches]);
+  
   // Generate randomized blur effect
   const getBlurStyle = () => {
     if (blurActive) {

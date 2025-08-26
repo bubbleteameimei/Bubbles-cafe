@@ -28,7 +28,7 @@ const useReaderGentleScroll = ({
   autoSave = true,
   showToast = true,
   maxAgeMs = 7 * 24 * 60 * 60 * 1000, // 7 days default
-  highlightTarget = 'p',
+  highlightTarget: _highlightTarget = 'p',
   autoSaveInterval = 2000,
   slug = ''
 }: ReaderGentleScrollOptions = {}) => {
@@ -128,7 +128,7 @@ const useReaderGentleScroll = ({
               localStorage.removeItem(key);
             }
           }
-        } catch (err) {
+        } catch (_err) {
           // If a specific entry is corrupt, just remove it
           localStorage.removeItem(key);
         }

@@ -57,10 +57,8 @@ const DialogContent = React.forwardRef<
     };
   }, []);
   
-  // Check if aria attributes are already provided
+  // Compute aria attributes for potential future use (removed unused flags to satisfy lint)
   const hasAriaLabel = Boolean(props['aria-label']);
-  const hasAriaLabelledby = Boolean(props['aria-labelledby']);
-  const hasAriaDescribedby = Boolean(props['aria-describedby']);
   
   // Use React.Children.toArray to get a flat, searchable array
   const childrenArray = React.Children.toArray(children);

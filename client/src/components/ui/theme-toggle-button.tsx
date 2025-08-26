@@ -8,7 +8,7 @@ interface ThemeToggleButtonProps {
 }
 
 export function ThemeToggleButton({ className = "", noOutline = false }: ThemeToggleButtonProps) {
-  const { toggleTheme, theme } = useTheme();
+  const { toggleTheme } = useTheme();
 
   return (
     <Button

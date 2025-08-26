@@ -37,7 +37,7 @@ export function FeedbackForm() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [currentPage, setCurrentPage] = useState('');
+  // Removed unused currentPage state; we set page directly in form
 
   // Initialize form with default values
   const form = useForm<FeedbackFormValues>({
@@ -52,7 +52,6 @@ export function FeedbackForm() {
 
   // Set current page on component mount
   useEffect(() => {
-    setCurrentPage(window.location.pathname);
     form.setValue('page', window.location.pathname);
   }, [form]);
 

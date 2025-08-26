@@ -69,7 +69,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
         duration: 10000,
       });
     }
-  }, []);
+  }, [toast]);
 
   const start = () => {
     setIsActive(true);

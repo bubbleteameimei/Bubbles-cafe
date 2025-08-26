@@ -20,17 +20,6 @@ export function SimpleGlitchText({ text, className = "", lineGlitch = true }: Si
     timeoutIds.current = [];
   };
   
-  // Initialize and cleanup glitch effect
-  useEffect(() => {
-    originalText.current = text;
-    setDisplayText(text);
-    scheduleGlitches();
-    
-    return () => {
-      clearAllTimeouts();
-    };
-  }, [text, lineGlitch, scheduleGlitches]);
-  
   // Schedule occasional glitches throughout the text
   const scheduleGlitches = useCallback(() => {
     clearAllTimeouts();
@@ -130,6 +119,17 @@ export function SimpleGlitchText({ text, className = "", lineGlitch = true }: Si
     // Start scheduling glitches
     scheduleNext();
   }, [lineGlitch]);
+  
+  // Initialize and cleanup glitch effect
+  useEffect(() => {
+    originalText.current = text;
+    setDisplayText(text);
+    scheduleGlitches();
+    
+    return () => {
+      clearAllTimeouts();
+    };
+  }, [text, lineGlitch, scheduleGlitches]);
   
   return (
     <span 

@@ -155,7 +155,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
   });
 
   // Update bookmark position (called when scrolling or changing pages)
-  const updatePositionMutation = useMutation({
+  const _updatePositionMutation = useMutation({
     mutationFn: async (position: string) => {
       return apiRequest(`${apiBasePath}/${postId}`, {
         method: 'PATCH',

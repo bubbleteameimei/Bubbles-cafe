@@ -35,8 +35,8 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
     markAsRead, 
     markAllAsRead, 
     clearNotifications,
-    addNotification,
-    lastNotificationOpen,
+    addNotification: _addNotification,
+    lastNotificationOpen: _lastNotificationOpen,
     setLastNotificationOpen
   } = useNotifications();
   
