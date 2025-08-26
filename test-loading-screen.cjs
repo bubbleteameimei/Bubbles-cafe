@@ -17,7 +17,7 @@ async function testLoadingScreen() {
     
     // Navigate to the homepage
     console.log("Navigating to the homepage...");
-    await page.goto('http://localhost:3001/', {
+    await page.goto('http://localhost:3002/', {
       waitUntil: 'networkidle2',
       timeout: 30000
     });
