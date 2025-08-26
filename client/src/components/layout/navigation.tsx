@@ -97,7 +97,7 @@ export default function Navigation() {
     } catch {}
   };
 
-  const [showInlineSearch, setShowInlineSearch] = useState(false);
+  // inline search visibility removed
   const [inlineQuery, setInlineQuery] = useState("");
 
   return (
