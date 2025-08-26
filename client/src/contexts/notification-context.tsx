@@ -88,6 +88,64 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [notifications]);
 
+  const { toast } = useToast();
+  
+  const showNotificationToast = useCallback((notification: Notification) => {
+    // Only show toast for unread notifications
+    if (notification.read) return;
+    
+    // Special handling for cursed notifications with more intense effects
+    if (notification.type === 'cursed') {
+      toast({
+        title: (
+          <CreepyTextGlitch text={notification.title} />
+        ),
+        description: notification.message,
+        duration: 10000, // Longer duration for cursed notifications
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Regular toast for other notifications
+    toast({
+      title: notification.title,
+      description: notification.message,
+      duration: 5000,
+    });
+  }, [toast]);
+
+  const addNotification = useCallback((notification: Omit<Notification, 'id' | 'date' | 'read'>) => {
+    const newNotification: Notification = {
+      ...notification,
+      id: uuidv4(),
+      date: new Date(),
+      read: false,
+    };
+    
+    setNotifications(prev => [newNotification, ...prev]);
+    
+    // Also show a toast notification unless it's a cursed notification
+    // (we want that one to be a surprise when they open the menu)
+    if (notification.type !== 'cursed') {
+      showNotificationToast(newNotification);
+    }
+  }, [showNotificationToast]);
+
+  const markAsRead = useCallback((id: string) => {
+    setNotifications(prev =>
+      prev.map(n => (n.id === id ? { ...n, read: true } : n))
+    );
+  }, []);
+
+  const markAllAsRead = useCallback(() => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  }, []);
+
+  const clearNotifications = useCallback(() => {
+    setNotifications([]);
+  }, []);
+
   // Add special cursed notification for users who ignore notifications
   const hasAddedCursedRef = useRef(false);
   useEffect(() => {
@@ -164,106 +222,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     
     return () => clearInterval(interval);
   }, [notifications, addNotification]);
-
-  const addNotification = useCallback((notification: Omit<Notification, 'id' | 'date' | 'read'>) => {
-    const newNotification: Notification = {
-      ...notification,
-      id: uuidv4(),
-      date: new Date(),
-      read: false,
-    };
-    
-    setNotifications(prev => [newNotification, ...prev]);
-    
-    // Also show a toast notification unless it's a cursed notification
-    // (we want that one to be a surprise when they open the menu)
-    if (notification.type !== 'cursed') {
-      showNotificationToast(newNotification);
-    }
-  }, [showNotificationToast]);
-
-  const markAsRead = useCallback((id: string) => {
-    setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, read: true } : n))
-    );
-  }, []);
-
-  const markAllAsRead = useCallback(() => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  }, []);
-
-  const clearNotifications = useCallback(() => {
-    setNotifications([]);
-  }, []);
-
-  const { toast } = useToast();
-  
-  const showNotificationToast = useCallback((notification: Notification) => {
-    // Only show toast for unread notifications
-    if (notification.read) return;
-    
-    // Special handling for cursed notifications with more intense effects
-    if (notification.type === 'cursed') {
-      // Play a subtle sound effect if available in the browser
-      try {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(100, audioContext.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.5);
-        
-        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.start();
-        setTimeout(() => oscillator.stop(), 500);
-      } catch {
-        console.log('Browser does not support Web Audio API');
-      }
-      
-      toast({
-        title: (
-          <div className="flex items-center">
-            <CreepyTextGlitch 
-              text="Why are you ignoring me?" 
-              intensityFactor={10} 
-              permanent={true} 
-            />
-          </div>
-        ),
-        description: (
-          <span className="text-red-400">
-            I'll be watching your notifications more closely now...
-          </span>
-        ),
-        variant: 'destructive',
-        duration: 2000
-      });
-      return;
-    }
-    
-    toast({
-      title: notification.title,
-      description: notification.message,
-      action: notification.link ? (
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => {
-            window.location.href = notification.link as string;
-            markAsRead(notification.id);
-          }}
-        >
-          Read Now
-        </Button>
-      ) : undefined
-    });
-  }, [toast, markAsRead]);
 
   const value = {
     notifications,
