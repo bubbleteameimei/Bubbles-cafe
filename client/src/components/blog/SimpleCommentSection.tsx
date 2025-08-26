@@ -307,7 +307,7 @@ const isCommentApproved = (comment: Comment): boolean => {
 };
 
 // Main component
-export default function SimpleCommentSection({ postId, title }: CommentSectionProps) {
+export default function SimpleCommentSection({ postId, _title }: CommentSectionProps) {
   const [content, setContent] = useState("");
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
@@ -326,7 +326,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   const mainSectionRef = useRef<HTMLDivElement>(null);
   
   // Get authentication state
-  const { user, isAuthenticated, isAuthReady } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   
   // Smart moderation preview with review flag
   const { isFlagged, moderated, isUnderReview } = checkModeration(content);
@@ -580,7 +580,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         description: "Thank you for flagging this comment. Our moderators will review it.",
         variant: "default"
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to report comment. Please try again.",

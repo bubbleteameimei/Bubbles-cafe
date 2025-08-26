@@ -188,7 +188,7 @@ export function AdminFeedbackDashboard() {
         description: "Feedback status has been updated successfully.",
       });
     },
-    onError: (error) => {
+    onError: (_error) => {
       toast({
         title: "Update Failed",
         description: "Failed to update feedback status.",
@@ -212,7 +212,7 @@ export function AdminFeedbackDashboard() {
     if (filteredFeedback && filteredFeedback.length > 0 && !selectedFeedback) {
       setSelectedFeedback(filteredFeedback[0]);
     }
-  }, [filteredFeedback]);
+  }, [filteredFeedback, selectedFeedback]);
 
   // Loading state
   if (isLoading) {

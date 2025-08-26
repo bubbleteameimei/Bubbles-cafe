@@ -94,7 +94,7 @@ export default function TableOfContents({ currentPostId, onClose, posts: provide
     try {
       const date = new Date(dateString);
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    } catch (e) {
+    } catch {
       return dateString;
     }
   };

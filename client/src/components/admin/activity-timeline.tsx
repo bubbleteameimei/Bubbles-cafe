@@ -85,7 +85,7 @@ const formatActivityDetails = (details?: string): React.ReactNode => {
         </div>
       );
     }
-  } catch (e) {
+  } catch {
     // Not JSON, just return as string
   }
   

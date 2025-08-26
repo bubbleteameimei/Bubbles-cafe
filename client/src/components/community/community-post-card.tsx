@@ -52,8 +52,8 @@ interface CommunityPostCardProps {
   currentUser?: User | null;
 }
 
-export function CommunityPostCard({ post, isAuthenticated, currentUser }: CommunityPostCardProps) {
-  const [location, navigate] = useLocation();
+export function CommunityPostCard({ post, isAuthenticated, currentUser: _currentUser }: CommunityPostCardProps) {
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   

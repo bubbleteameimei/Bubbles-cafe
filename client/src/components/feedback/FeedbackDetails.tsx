@@ -77,7 +77,7 @@ export function FeedbackDetails({
   );
   const [status, setStatus] = useState(feedback.status);
   const [isSending, setIsSending] = useState(false);
-  const [selectedSuggestion, setSelectedSuggestion] = useState<ResponseSuggestion | null>(
+  const [_selectedSuggestion, setSelectedSuggestion] = useState<ResponseSuggestion | null>(
     responseSuggestion || null
   );
   
@@ -141,7 +141,7 @@ export function FeedbackDetails({
       const dateString = dateInput instanceof Date ? dateInput.toISOString() : String(dateInput);
       const date = new Date(dateString);
       return format(date, 'MMM d, yyyy h:mm a');
-    } catch (e) {
+    } catch {
       return String(dateInput);
     }
   };

@@ -46,7 +46,7 @@ const renderCustomizedLabel = ({
   innerRadius,
   outerRadius,
   percent,
-  name,
+  _name,
 }: any) => {
   const RADIAN = Math.PI / 180
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5

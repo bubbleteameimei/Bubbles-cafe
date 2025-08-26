@@ -99,7 +99,7 @@ export function TrendLineChart({
                 }
               />
               <Tooltip
-                formatter={(value: any, name: any, entry: any) => [value as number, String(name)]}
+                formatter={(value: any, name: any, _entry: any) => [value as number, String(name)]}
                 labelFormatter={(label: any) => String(label)}
               />
               <Legend 
