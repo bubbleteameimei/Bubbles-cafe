@@ -1,9 +1,6 @@
 
 // Skeleton component that returns absolutely nothing
-function Skeleton({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+function Skeleton(_props: React.HTMLAttributes<HTMLDivElement>) {
   // Return null - completely removing all skeleton placeholders
   return null;
 }

@@ -49,7 +49,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
   const apiBasePath = user ? '/api/bookmarks' : '/api/reader/bookmarks';
   
   // Query to check if post is already bookmarked
-  const { data: bookmark, isLoading, error: bookmarkError } = useQuery({
+  const { data: bookmark, isLoading } = useQuery({
     queryKey: [apiBasePath, postId],
     queryFn: async () => {
       // If not in reader mode and not logged in, don't fetch
