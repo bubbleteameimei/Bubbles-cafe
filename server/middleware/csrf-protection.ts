@@ -112,7 +112,8 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
       '/api/auth/register',
       '/api/auth/forgot-password',
       '/api/auth/reset-password',
-      '/api/auth/social-login'
+      '/api/auth/social-login',
+      '/api/user/privacy-settings'
     ]);
     if (allowlist.has(req.path)) {
       return next();
@@ -190,45 +191,4 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
 
     // Validate token
     if (requestToken !== req.session.csrfToken) {
-      console.warn(`CSRF validation failed: Token mismatch for ${req.method} ${req.path}`);
-      console.warn(`Expected: ${req.session.csrfToken}, Got: ${requestToken}`);
-      return res.status(403).json({
-        error: 'CSRF token validation failed',
-        code: 'CSRF_TOKEN_MISMATCH',
-        path: req.path,
-        method: req.method
-      });
-    }
-
-    next();
-  };
-}
-
-/**
- * SECURITY FIX: New secure endpoint to retrieve CSRF token
- * This endpoint requires a valid session and returns the token in the response body
- * instead of exposing it via cookies
- */
-export function getCsrfToken(req: Request, res: Response): void {
-  // Ensure user has a valid session
-  if (!req.session || !req.session.csrfToken) {
-    res.status(401).json({
-      error: 'No valid session found',
-      code: 'SESSION_REQUIRED'
-    });
-    return;
-  }
-
-  // Return the token in the response body (not as a cookie)
-  res.json({
-    csrfToken: req.session.csrfToken,
-    timestamp: new Date().toISOString()
-  });
-}
-
-// Add type definitions
-declare module 'express-session' {
-  interface SessionData {
-    csrfToken?: string;
-  }
-}
+      console.warn(`

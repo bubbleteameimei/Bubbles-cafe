@@ -28,7 +28,6 @@ import { setupCors } from "./cors-setup";
 import { config } from './config';
 import { wordpressScheduler } from './wordpress-scheduler';
 import { applyPerformanceMiddleware } from './middleware';
-import { browserCache, etagCache } from './middlewares/browser-cache';
 import { globalRateLimiter } from "./middlewares/rate-limiter";
 import { apiCache } from './middlewares/api-cache';
 import { browserCache, etagCache } from './middlewares/browser-cache';
@@ -124,7 +123,6 @@ app.use('/api', globalRateLimiter);
 if (config.cache.api) {
   app.use('/api', apiCache(config.cache.ttlMs));
 }
-
 // Add health check endpoint with CSRF token initialization
 app.get('/health', (req, res) => {
   // Ensure a CSRF token is set in session only
