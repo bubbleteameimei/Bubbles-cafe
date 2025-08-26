@@ -18,11 +18,11 @@ import {
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { 
-  LayoutDashboard, 
-  LineChart, 
-  RefreshCcw, 
-  Settings, 
-  BarChartIcon 
+  LayoutDashboard,
+  LineChart,
+  BarChartIcon,
+  RefreshCcw,
+  Settings 
 } from 'lucide-react'
 import { format } from 'date-fns'
 

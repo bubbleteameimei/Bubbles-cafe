@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Book, ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronRight, Book } from "lucide-react";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { getExcerpt } from "@/lib/content-analysis";
 import { sanitizeHtmlContent } from "@/lib/sanitize-content";
@@ -69,7 +69,7 @@ export default function Home() {
   });
 
   // Lightweight engagement fetch for social proof
-  const { data: engagement } = useQuery({
+  useQuery({
     queryKey: ["analytics", "engagement"],
     queryFn: async () => {
       const res = await fetch('/api/analytics/engagement');

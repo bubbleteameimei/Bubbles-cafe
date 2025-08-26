@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 // Removed unused responsive widths constant
 
 export function AppSidebar() {
-  const { toggleSidebar, isMobile, openMobile, setOpenMobile, open } = useSidebar();
+  const { toggleSidebar, openMobile, setOpenMobile } = useSidebar();
   const [scrolled, setScrolled] = useState(false);
   // Effect to detect scroll position for conditional styling
   useEffect(() => {
