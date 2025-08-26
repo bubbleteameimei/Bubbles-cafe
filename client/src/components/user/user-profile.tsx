@@ -70,7 +70,7 @@ export function UserProfile() {
   const updateProfileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
       console.log('[Profile] Updating profile with data:', data);
-      const { email, ...otherData } = data;
+      const { email: _email, ...otherData } = data;
       
       // Send a regular JSON update
       console.log('[Profile] Using JSON update for profile data');
