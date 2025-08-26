@@ -25,7 +25,7 @@ export interface NotificationIconProps {
 
 export function NotificationIcon({ className, onClick, noOutline }: NotificationIconProps) {
   const [open, setOpen] = useState(false);
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState('all');
   const [showCursedMessage, setShowCursedMessage] = useState(false);
   

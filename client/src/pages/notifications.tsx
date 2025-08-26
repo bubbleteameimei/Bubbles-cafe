@@ -10,14 +10,13 @@ import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 
 export default function NotificationsPage() {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const { 
     notifications, 
     unreadCount, 
     markAsRead, 
     markAllAsRead, 
-    clearNotifications,
-    addNotification
+    clearNotifications
   } = useNotifications();
   const [activeTab, setActiveTab] = useState('all');
 

@@ -37,7 +37,7 @@ export function setupAuth(app: Express) {
 				authLogger.warn('User not found during deserialization', { userId: id });
 				return done(new Error('User not found'));
 			}
-			const { password_hash, ...safeUser } = user;
+			const { password_hash: _ignore, ...safeUser } = user;
 			done(null, safeUser);
 		} catch (error) {
 			authLogger.error('Error during deserialization', { userId: id, error: error instanceof Error ? error.message : 'Unknown error' });

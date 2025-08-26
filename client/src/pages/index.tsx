@@ -45,16 +45,18 @@ export default function IndexView() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<'newest' | 'oldest' | 'popular' | 'shortest'>("newest");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
-  const [activeSlide, setActiveSlide] = useState(0);
-  const slideTitles = ["Featured Story", "Newest", "Most Liked"] as const;
+  const [carouselApi] = useState<CarouselApi | null>(null);
 
   useEffect(() => {
     if (!carouselApi) return;
-    const update = () => setActiveSlide(carouselApi.selectedScrollSnap());
+    const update = () => {
+      try {
+        (carouselApi as any).selectedScrollSnap?.();
+      } catch {}
+    };
     update();
-    carouselApi.on("select", update);
-    carouselApi.on("reInit", update);
+    (carouselApi as any).on?.("select", update);
+    (carouselApi as any).on?.("reInit", update);
     return () => {
       try {
         (carouselApi as any).off?.("select", update);
