@@ -254,7 +254,7 @@ const useGlobalGentleReturn = ({
       // Save on unmount
       savePosition();
     };
-  }, [location, enabled, autoSave, autoSaveInterval]);
+  }, [location, enabled, autoSave, autoSaveInterval, savePosition]);
   
   // Clean up old entries once in a while
   useEffect(() => {

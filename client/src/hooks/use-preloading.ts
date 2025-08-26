@@ -37,7 +37,7 @@ export function usePreloading() {
   /**
    * Preload specific assets
    */
-  const preloadAssets = useCallback(async (assets: string[]) => {
+  const preloadAssets = useCallback(async (assets: readonly string[]) => {
     if (!assets.length) return;
     
     setIsLoading(true);

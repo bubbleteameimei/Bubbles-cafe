@@ -258,7 +258,7 @@ const useReaderGentleScroll = ({
       // Save on unmount
       savePosition();
     };
-  }, [slug, enabled, autoSave, autoSaveInterval]);
+  }, [slug, enabled, autoSave, autoSaveInterval, savePosition]);
   
   // Clean up old entries once in a while
   useEffect(() => {

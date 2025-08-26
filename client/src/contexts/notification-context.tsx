@@ -113,7 +113,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }
       }
     }
-  }, [unreadCount, lastNotificationOpen]);
+  }, [unreadCount, lastNotificationOpen, notifications, addNotification]);
 
   // Reset the cursed flag when notifications are read
   useEffect(() => {
@@ -163,7 +163,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const interval = setInterval(checkForNewStories, 5 * 60 * 1000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [notifications, addNotification]);
 
   const addNotification = (notification: Omit<Notification, 'id' | 'date' | 'read'>) => {
     const newNotification: Notification = {

@@ -100,6 +100,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const savedPositions = useRef<Record<string, number>>({});
   const loopTimerId = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fadeIntervalId = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Capture initial volume to avoid adding `volume` to init effect deps
+  const initialVolumeRef = useRef(volume);
 
   // Storage in localStorage to persist across sessions
   const STORAGE_KEY = 'music-player-state';
@@ -135,6 +137,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           // Restore volume if available
           if (typeof parsed.volume === 'number') {
             setVolumeState(parsed.volume);
+            initialVolumeRef.current = parsed.volume;
           }
           
           console.log('[Music] Loaded saved playback positions', savedPositions.current);
@@ -152,7 +155,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     
     // Configure audio elements
     [primary, secondary].forEach(audio => {
-      audio.volume = volume;
+      audio.volume = initialVolumeRef.current;
       audio.preload = 'auto';
       audio.loop = true; // Enable looping for background music
     });
@@ -160,17 +163,21 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     setPrimaryAudio(primary);
     setSecondaryAudio(secondary);
     
+    // Capture timer refs for cleanup to satisfy lint rule
+    const timeoutIdAtMount = loopTimerId.current;
+    const intervalIdAtMount = fadeIntervalId.current;
+    
     // Clean up on unmount
     return () => {
       primary.pause();
       secondary.pause();
       primary.src = '';
       secondary.src = '';
-      if (loopTimerId.current) {
-        window.clearTimeout(loopTimerId.current as any);
+      if (timeoutIdAtMount) {
+        window.clearTimeout(timeoutIdAtMount as any);
       }
-      if (fadeIntervalId.current) {
-        window.clearInterval(fadeIntervalId.current as any);
+      if (intervalIdAtMount) {
+        window.clearInterval(intervalIdAtMount as any);
       }
     };
   }, []); // Empty dependency array - only run once
