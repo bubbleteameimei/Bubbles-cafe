@@ -82,6 +82,15 @@ export default function Navigation() {
         case '/search':
           void import('../../pages/search-results');
           break;
+        case '/auth':
+          void import('../../pages/auth');
+          break;
+        case '/profile':
+          void import('../../pages/profile');
+          break;
+        case '/bookmarks':
+          void import('../../pages/bookmarks');
+          break;
         default:
           break;
       }
@@ -226,6 +235,8 @@ export default function Navigation() {
             <Button
               variant="ghost"
               size="icon"
+              onMouseEnter={() => prefetchRoute('/auth')}
+              onFocus={() => prefetchRoute('/auth')}
               onClick={() => setLocation("/auth")}
               className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
                         transition-all duration-150 active:scale-95 mt-2"
@@ -242,6 +253,14 @@ export default function Navigation() {
                   className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
                             transition-all duration-150 active:scale-95 p-0 overflow-hidden mt-2"
                   aria-label="Account menu"
+                  onMouseEnter={() => {
+                    prefetchRoute('/profile');
+                    prefetchRoute('/bookmarks');
+                  }}
+                  onFocus={() => {
+                    prefetchRoute('/profile');
+                    prefetchRoute('/bookmarks');
+                  }}
                 >
                   {user.avatar ? (
                     <div className="h-8 w-8 overflow-hidden rounded-full">

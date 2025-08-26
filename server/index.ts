@@ -15,6 +15,7 @@ import { setupAuth } from "./auth";
 import { setupOAuth } from "./oauth";
 import { storage } from "./storage";
 import { createLogger, requestLogger } from "./utils/debug-logger";
+import { requestIdMiddleware } from "./utils/request-id";
 
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
 import { registerEmailServiceRoutes } from "./routes/email-service"; // Email service routes
@@ -42,6 +43,8 @@ const HOST = '0.0.0.0';
 let server: ReturnType<typeof createServer>;
 
 // Configure basic middleware
+// Set a unique request id for tracing before anything else
+app.use(requestIdMiddleware);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(compression());
