@@ -51,8 +51,8 @@ import { PullToRefresh } from './components/ui/pull-to-refresh';
 import { RefreshProvider } from './contexts/refresh-context';
 
 // Import essential pages directly
-import HomePage from './pages/home';
-import StoriesPage from './pages/index';
+const HomePage = React.lazy(() => import('./pages/home'));
+const StoriesPage = React.lazy(() => import('./pages/index'));
 // Import footer component
 import Footer from './components/layout/footer';
 
