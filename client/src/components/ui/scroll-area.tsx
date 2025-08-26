@@ -3,20 +3,6 @@ import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
 
 import { cn } from "@/lib/utils"
 
-// Define error handler for ResizeObserver errors
-const handleScrollError = (error: Error | ErrorEvent) => {
-  // Only log ResizeObserver errors in development
-  if (import.meta.env.DEV && error.message && error.message.includes('ResizeObserver')) {
-    console.warn('Suppressed ResizeObserver error:', error.message);
-    
-    // Handle ErrorEvent vs. Error differently
-    if ('preventDefault' in error) {
-      error.preventDefault();
-    }
-    return true;
-  }
-  return false;
-};
 
 // Add error event listener to catch and handle ResizeObserver errors
 if (typeof window !== 'undefined') {

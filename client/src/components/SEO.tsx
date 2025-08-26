@@ -277,7 +277,12 @@ export default function SEO({
     breadcrumbsJoined,
     category,
     readingTime,
-    wordCount
+    wordCount,
+    title,
+    canonical,
+    keywords,
+    tags,
+    breadcrumbs
   ]);
 
   return null;

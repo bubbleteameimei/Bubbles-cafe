@@ -107,7 +107,6 @@ class APICache {
 
   // Get cache stats
   getStats() {
-    const now = Date.now();
     let expiredCount = 0;
     let staleCount = 0;
 
@@ -299,7 +298,7 @@ export function useCachedFetch<T>(
       .finally(() => {
         setLoading(false);
       });
-  }, [url, JSON.stringify(options)]);
+  }, [url, options]);
 
   return { data, loading, error };
 }

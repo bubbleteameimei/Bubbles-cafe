@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 
 interface CreepyTextGlitchProps {
   text: string;
@@ -50,10 +50,10 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
     return () => {
       clearAllTimeouts();
     };
-  }, [text, intensityFactor]);
+  }, [text, intensityFactor, scheduleRandomGlitches]);
   
   // Schedule random, chaotic glitches
-  const scheduleRandomGlitches = () => {
+  const scheduleRandomGlitches = useCallback(() => {
     clearAllTimeouts();
     
     // Completely random character replacement for chaotic effect
@@ -115,7 +115,7 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
     
     // Start the chaotic cycle
     scheduleNext();
-  };
+  }, [intensityFactor]);
   
   // Generate randomized blur effect
   const getBlurStyle = () => {

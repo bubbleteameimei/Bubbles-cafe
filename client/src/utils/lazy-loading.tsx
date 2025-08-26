@@ -202,7 +202,7 @@ export function createIntersectionLazyComponent<T extends ComponentType<any>>(
       }
 
       return () => observer.disconnect();
-    }, [rootMargin, threshold]);
+    }, []);
 
     if (!shouldLoad) {
       return (

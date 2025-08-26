@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 
 interface SimpleGlitchTextProps {
   text: string;
@@ -29,10 +29,10 @@ export function SimpleGlitchText({ text, className = "", lineGlitch = true }: Si
     return () => {
       clearAllTimeouts();
     };
-  }, [text, lineGlitch]);
+  }, [text, lineGlitch, scheduleGlitches]);
   
   // Schedule occasional glitches throughout the text
-  const scheduleGlitches = () => {
+  const scheduleGlitches = useCallback(() => {
     clearAllTimeouts();
     
     // Split text by words/sentences for line-by-line glitching, or by characters for individual glitches
@@ -120,42 +120,21 @@ export function SimpleGlitchText({ text, className = "", lineGlitch = true }: Si
       const nextGlitchDelay = 50 + Math.random() * 550;
       
       const timeout = setTimeout(() => {
-        // Determine number of segments to glitch in this cycle
-        const glitchIntensity = Math.random();
-        let glitchCount;
-        
-        if (glitchIntensity > 0.85) {
-          // High intensity: glitch multiple segments
-          glitchCount = Math.floor(Math.random() * 3) + 2;
-        } else if (glitchIntensity > 0.6) {
-          // Medium intensity: glitch 1-2 segments
-          glitchCount = Math.floor(Math.random() * 2) + 1;
-        } else {
-          // Normal intensity: glitch 1 segment
-          glitchCount = 1;
-        }
-        
-        for (let i = 0; i < glitchCount; i++) {
-          glitchSegment();
-        }
-        
-        scheduleNext(); // Continue the cycle
+        glitchSegment();
+        scheduleNext();
       }, nextGlitchDelay);
       
       timeoutIds.current.push(timeout);
     };
     
-    // Start the cycle
+    // Start scheduling glitches
     scheduleNext();
-  };
+  }, [lineGlitch]);
   
   return (
-    <span className={`glitch-text inline-block ${className}`} 
-      style={{
-        textShadow: '0.03em 0 1px rgba(255,0,0,0.4), -0.03em 0 1px rgba(0,0,255,0.4)',
-        position: 'relative',
-        display: 'inline-block'
-      }}
+    <span 
+      className={className}
+      aria-live="polite"
     >
       {displayText}
     </span>
