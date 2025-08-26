@@ -91,7 +91,7 @@ export function StoryRecommendations({
         const response = await fetch(`/api/posts/recommendations?postId=${currentPostId}&categories=${themeCategories.join(',')}&limit=${maxRecommendations}`);
         if (!response.ok) throw new Error('API endpoint not available');
         return await response.json();
-      } catch (_error) {
+      } catch (_err) {
         // Fallback: fetch all posts and filter client-side
         const allPosts = await fetch('/api/posts').then(res => res.json());
         

@@ -183,12 +183,6 @@ export default function SimplePostEditor({ postId, onClose: _onClose }: SimplePo
       return;
     }
     
-    // Check if text is already formatted
-    const isAlreadyFormatted = 
-      (formatType === 'bold' && selectedText.startsWith('**') && selectedText.endsWith('**')) || 
-      (formatType === 'italic' && selectedText.startsWith('*') && selectedText.endsWith('*') && 
-        (!selectedText.startsWith('**') && !selectedText.endsWith('**')));
-    
     // Toggle formatting markers
     const markers = formatType === 'bold' ? '**' : '*';
     const isBold = markers === '**';
@@ -508,7 +502,17 @@ export default function SimplePostEditor({ postId, onClose: _onClose }: SimplePo
             
             {/* Submit buttons */}
             <div className="flex justify-end gap-4 pt-4">
-              <Button variant="outline" type="button" onClick={handleCancel}>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => {
+                  if (typeof _onClose === 'function') {
+                    _onClose();
+                  } else {
+                    navigate('/community');
+                  }
+                }}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={isPending}>
