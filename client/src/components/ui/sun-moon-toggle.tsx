@@ -5,7 +5,7 @@ interface SunMoonToggleProps {
   className?: string;
 }
 
-export function SunMoonToggle({ className = "" }: SunMoonToggleProps) {
+export function SunMoonToggle({ className: _className = "" }: SunMoonToggleProps) {
   // Return null since this component is no longer used
   return null;
 }

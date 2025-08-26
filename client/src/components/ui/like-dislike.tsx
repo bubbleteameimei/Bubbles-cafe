@@ -105,7 +105,7 @@ export function LikeDislike({
   className,
   variant = 'index'
 }: LikeDislikeProps) {
-  const { toast } = useToast();
+  const { toast: _toast } = useToast();
   const [liked, setLiked] = useState(userLikeStatus === 'like');
   const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
   const [stats, setStats] = useState<Stats>(() => getOrCreateStats(postId));

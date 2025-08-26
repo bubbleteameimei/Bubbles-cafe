@@ -155,13 +155,15 @@ export default function IndexView() {
   const hasAllPosts = allPostsQuery.data && allPostsQuery.data.length > 0;
   const hasPaginatedPosts = data?.pages && data.pages.length > 0 && data.pages[0]?.posts?.length > 0;
   
-  // Initialize posts array - will be populated below if data is available
-  let allPosts: Post[] = [];
-  if (hasAllPosts) {
-    allPosts = allPostsQuery.data;
-  } else if (hasPaginatedPosts) {
-    allPosts = data.pages.flatMap(page => page.posts);
-  }
+  // Initialize posts array with memoization for stable reference in dependencies
+  const allPosts: Post[] = useMemo(() => {
+    if (hasAllPosts) {
+      return allPostsQuery.data as Post[];
+    } else if (hasPaginatedPosts) {
+      return data!.pages.flatMap(page => page.posts) as Post[];
+    }
+    return [] as Post[];
+  }, [hasAllPosts, hasPaginatedPosts, allPostsQuery.data, data]);
   
   // Always initialize these variables, even if they're empty
   const sortedPosts = [...allPosts].sort((a: Post, b: Post) => 

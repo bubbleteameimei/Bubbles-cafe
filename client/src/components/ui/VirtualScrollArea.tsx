@@ -235,7 +235,7 @@ export function DynamicVirtualScrollArea<T>({
   const {
     visibleRange,
     itemPositions,
-    scrollTop,
+    scrollTop: _scrollTop,
     setScrollTop,
     updateItemHeight
   } = useDynamicVirtualScroll(items, estimatedItemHeight, containerHeight);

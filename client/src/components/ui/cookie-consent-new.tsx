@@ -11,10 +11,10 @@ import { CookieCategory } from '@/lib/cookie-manager';
 export function CookieConsent() {
   const { 
     showConsentBanner, 
-    cookiePreferences,
+    cookiePreferences: _cookiePreferences,
     acceptAll, 
     acceptEssentialOnly,
-    updatePreferences,
+    updatePreferences: _updatePreferences,
     isPreferencesModalOpen,
     openPreferencesModal,
     closePreferencesModal
@@ -161,7 +161,7 @@ interface CookiePreferencesModalProps {
 }
 
 function CookiePreferencesModal({ open, onOpenChange }: CookiePreferencesModalProps) {
-  const { cookiePreferences, toggleCategory, updatePreferences, acceptAll } = useCookieConsent();
+  const { cookiePreferences, toggleCategory: _toggleCategory, updatePreferences, acceptAll } = useCookieConsent();
   
   // Make a local copy of preferences for the modal
   const [localPreferences, setLocalPreferences] = useState<Record<string, boolean>>({});
