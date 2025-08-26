@@ -250,7 +250,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       currentActiveAudio.pause();
       setIsPlaying(false);
     }
-  }, [activeAudio, primaryAudio, secondaryAudio, currentTrack]);
+  }, [activeAudio, primaryAudio, secondaryAudio, currentTrack, persistState]);
 
   // Memoized stop function
   const stop = useCallback(() => {
@@ -262,7 +262,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     });
     setIsPlaying(false);
     setCurrentTrack(null);
-  }, [primaryAudio, secondaryAudio]);
+  }, [primaryAudio, secondaryAudio, setIsPlaying, setCurrentTrack]);
 
   // Crossfade helper function
   const crossfade = useCallback(async (fromAudio: HTMLAudioElement, toAudio: HTMLAudioElement) => {
