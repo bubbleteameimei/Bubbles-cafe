@@ -28,6 +28,7 @@ import { setupCors } from "./cors-setup";
 import { config } from './config';
 import { wordpressScheduler } from './wordpress-scheduler';
 import { applyPerformanceMiddleware } from './middleware';
+import { browserCache, etagCache } from './middlewares/browser-cache';
 import { globalRateLimiter } from "./middlewares/rate-limiter";
 
 const app = express();
@@ -279,6 +280,10 @@ async function startServer() {
       // Start WordPress scheduler
       wordpressScheduler.start();
 
+      // Add strong browser caching headers and ETag in production
+      app.use(browserCache());
+      app.use(etagCache());
+
       serveStatic(app);
     }
 
@@ -350,6 +355,15 @@ startServer().catch(error => {
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
   serverLogger.info('SIGTERM received, initiating graceful shutdown');
+  server?.close(() => {
+    serverLogger.info('Server closed successfully');
+    process.exit(0);
+  });
+});
+
+// Handle Ctrl+C in local/dev gracefully
+process.on('SIGINT', () => {
+  serverLogger.info('SIGINT received, initiating graceful shutdown');
   server?.close(() => {
     serverLogger.info('Server closed successfully');
     process.exit(0);
