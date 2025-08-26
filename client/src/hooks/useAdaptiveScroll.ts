@@ -14,9 +14,7 @@ export interface AdaptiveScrollOptions {
  * but does not modify the default scrolling experience in any way.
  */
 const useAdaptiveScroll = ({
-  enabled = true,
-  sensitivity = 1.0, // Standard sensitivity (no amplification)
-  showIndicator = false // Visual indicators disabled
+  enabled = true
 }: AdaptiveScrollOptions = {}) => {
   // Current scroll type (kept for API compatibility)
   const [scrollType, setScrollType] = useState<'normal' | 'fast' | 'slow'>('normal');
