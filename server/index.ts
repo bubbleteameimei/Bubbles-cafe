@@ -30,6 +30,8 @@ import { wordpressScheduler } from './wordpress-scheduler';
 import { applyPerformanceMiddleware } from './middleware';
 import { browserCache, etagCache } from './middlewares/browser-cache';
 import { globalRateLimiter } from "./middlewares/rate-limiter";
+import { apiCache } from './middlewares/api-cache';
+import { browserCache, etagCache } from './middlewares/browser-cache';
 
 const app = express();
 // Trust proxy for correct secure cookies and client IPs when behind a proxy/CDN
@@ -49,6 +51,11 @@ app.use(requestIdMiddleware);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(compression());
+
+// Enable request logging only in development (configurable)
+if (config.isDev && config.dev.requestLogging) {
+  app.use(requestLogger);
+}
 
 // Configure CORS for cross-domain requests when deployed on Vercel/Render
 setupCors(app);
@@ -113,6 +120,11 @@ setupOAuth(app);
 // Apply a global API rate limiter after auth so authenticated users get higher limits
 app.use('/api', globalRateLimiter);
 
+// Conditional API response caching for GET requests
+if (config.cache.api) {
+  app.use('/api', apiCache(config.cache.ttlMs));
+}
+
 // Add health check endpoint with CSRF token initialization
 app.get('/health', (req, res) => {
   // Ensure a CSRF token is set in session only
@@ -146,6 +158,12 @@ app.use(helmet({
     }
   }
 }));
+
+// Conditional browser caching and ETag
+if (config.cache.browser) {
+  app.use(etagCache());
+  app.use(browserCache());
+}
 
 // Create a server logger
 const serverLogger = createLogger('Server');

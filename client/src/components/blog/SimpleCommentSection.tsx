@@ -307,7 +307,7 @@ const isCommentApproved = (comment: Comment): boolean => {
 };
 
 // Main component
-export default function SimpleCommentSection({ postId }: CommentSectionProps) {
+export default function SimpleCommentSection({ postId, title }: CommentSectionProps) {
   const [content, setContent] = useState("");
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
@@ -315,11 +315,16 @@ export default function SimpleCommentSection({ postId }: CommentSectionProps) {
   const [commentToFlag, setCommentToFlag] = useState<number | null>(null);
   const [flaggedComments, setFlaggedComments] = useState<number[]>([]);
   const [collapsedComments, setCollapsedComments] = useState<number[]>([]);
-  const [sortOrder, setSortOrder] = useState<'recent' | 'active'>('active');
+  const [sortOrder, setSortOrder] = useState<'recent' | 'active'>(
+    'active'
+  );
   const [autoCollapsing, setAutoCollapsing] = useState(false);
-  const [autoCollapseTimeoutId, setAutoCollapseTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [autoCollapseTimeoutId, setAutoCollapseTimeoutId] =
+    useState<NodeJS.Timeout | null>(null);
   const [unknownMessageVisible, setUnknownMessageVisible] = useState(true);
-  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(
+    null
+  );
   const [editContent, setEditContent] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();

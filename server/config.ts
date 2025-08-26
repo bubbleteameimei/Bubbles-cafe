@@ -68,6 +68,10 @@ const envSchema = z.object({
   SENDGRID_API_KEY: z.string().optional(),
   MAILERSEND_API_KEY: z.string().optional(),
   VITE_ENABLE_ERROR_REPORTING: z.string().optional(),
+  ENABLE_API_CACHE: z.string().optional(),
+  ENABLE_BROWSER_CACHE: z.string().optional(),
+  DEV_REQUEST_LOGGING: z.string().optional(),
+  API_CACHE_TTL_MS: z.string().optional(),
 });
 
 // Validate environment variables
@@ -131,6 +135,14 @@ export const config = {
   },
   features: {
     errorReporting: env.VITE_ENABLE_ERROR_REPORTING === 'true',
+  },
+  cache: {
+    api: (env.ENABLE_API_CACHE ?? (env.NODE_ENV === 'production' ? 'true' : 'false')) === 'true',
+    browser: (env.ENABLE_BROWSER_CACHE ?? (env.NODE_ENV === 'production' ? 'true' : 'false')) === 'true',
+    ttlMs: env.API_CACHE_TTL_MS ? Number(env.API_CACHE_TTL_MS) : 5 * 60 * 1000,
+  },
+  dev: {
+    requestLogging: (env.DEV_REQUEST_LOGGING ?? (env.NODE_ENV === 'development' ? 'true' : 'false')) === 'true',
   },
 } as const;
 
