@@ -182,23 +182,23 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [showNotificationToast]);
 
-  const markAsRead = (id: string) => {
+  const markAsRead = useCallback((id: string) => {
     setNotifications(prev =>
       prev.map(n => (n.id === id ? { ...n, read: true } : n))
     );
-  };
+  }, []);
 
-  const markAllAsRead = () => {
+  const markAllAsRead = useCallback(() => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
+  }, []);
 
-  const clearNotifications = () => {
+  const clearNotifications = useCallback(() => {
     setNotifications([]);
-  };
+  }, []);
 
   const { toast } = useToast();
   
-  const showNotificationToast = (notification: Notification) => {
+  const showNotificationToast = useCallback((notification: Notification) => {
     // Only show toast for unread notifications
     if (notification.read) return;
     
@@ -222,7 +222,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         
         oscillator.start();
         setTimeout(() => oscillator.stop(), 500);
-      } catch (e) {
+      } catch {
         console.log('Browser does not support Web Audio API');
       }
       
@@ -263,7 +263,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         </Button>
       ) : undefined
     });
-  };
+  }, [toast, markAsRead]);
 
   const value = {
     notifications,

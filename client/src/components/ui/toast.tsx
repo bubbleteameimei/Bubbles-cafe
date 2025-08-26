@@ -44,13 +44,14 @@ const Toast = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
     VariantProps<typeof toastVariants>
 >(({ className, variant, ...props }, ref) => {
+  const { onOpenChange } = props;
   // Add automatic dismissal after 5 seconds
   React.useEffect(() => {
     const timer = setTimeout(() => {
-      props.onOpenChange?.(false);
+      onOpenChange?.(false);
     }, 5000);
     return () => clearTimeout(timer);
-  }, [props.onOpenChange]);
+  }, [onOpenChange]);
 
   return (
     <ToastPrimitives.Root

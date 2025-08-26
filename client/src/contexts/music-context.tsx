@@ -236,7 +236,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [primaryAudio, secondaryAudio, currentTrack, isPlaying, activeAudio, currentContext, contextAudioMap]);
+  }, [primaryAudio, secondaryAudio, currentTrack, isPlaying, activeAudio, currentContext, contextAudioMap, crossfade]);
 
   // Memoized pause function
   const pause = useCallback(() => {
