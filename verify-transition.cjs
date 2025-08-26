@@ -75,6 +75,7 @@ async function verifyPageTransition() {
     }
     
     // Check if LoadingScreen CSS exists
+    const loadingScreenCssPath = path.join(process.cwd(), 'client/src/styles/loading-screen.css');
     if (fs.existsSync(loadingScreenCssPath)) {
       console.log('✅ Found LoadingScreen CSS file');
     } else {

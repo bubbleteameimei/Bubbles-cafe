@@ -2,7 +2,7 @@
  * Simple script to send port readiness signal to Replit
  */
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT || 3002);
 
 if (process.send) {
   console.log(`⏱️ Signaling port ${PORT} readiness to Replit...`);
