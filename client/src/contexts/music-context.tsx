@@ -188,6 +188,46 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     if (secondaryAudio) secondaryAudio.volume = volume;
   }, [volume, primaryAudio, secondaryAudio]);
 
+  // Crossfade helper function
+  const crossfade = useCallback(async (fromAudio: HTMLAudioElement, toAudio: HTMLAudioElement) => {
+    return new Promise<void>((resolve) => {
+      const duration = 1000; // 1 second crossfade
+      const steps = 20;
+      const stepDuration = duration / steps;
+      let step = 0;
+
+      const interval = setInterval(() => {
+        step++;
+        const progress = step / steps;
+        
+        fromAudio.volume = volume * (1 - progress);
+        toAudio.volume = volume * progress;
+
+        if (step >= steps) {
+          clearInterval(interval);
+          fromAudio.pause();
+          fromAudio.volume = volume;
+          resolve();
+        }
+      }, stepDuration);
+
+      fadeIntervalId.current = interval;
+    });
+  }, [volume]);
+
+  // Persist state to localStorage
+  const persistState = useCallback(() => {
+    try {
+      const state = {
+        positions: savedPositions.current,
+        volume
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (error) {
+      console.error('[Music] Error persisting state:', error);
+    }
+  }, [volume]);
+
   // Memoized play function
   const play = useCallback(async (track?: string, context?: PlaybackContext) => {
     if (!primaryAudio || !secondaryAudio) return;
@@ -263,46 +303,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     setIsPlaying(false);
     setCurrentTrack(null);
   }, [primaryAudio, secondaryAudio, setIsPlaying, setCurrentTrack]);
-
-  // Crossfade helper function
-  const crossfade = useCallback(async (fromAudio: HTMLAudioElement, toAudio: HTMLAudioElement) => {
-    return new Promise<void>((resolve) => {
-      const duration = 1000; // 1 second crossfade
-      const steps = 20;
-      const stepDuration = duration / steps;
-      let step = 0;
-
-      const interval = setInterval(() => {
-        step++;
-        const progress = step / steps;
-        
-        fromAudio.volume = volume * (1 - progress);
-        toAudio.volume = volume * progress;
-
-        if (step >= steps) {
-          clearInterval(interval);
-          fromAudio.pause();
-          fromAudio.volume = volume;
-          resolve();
-        }
-      }, stepDuration);
-
-      fadeIntervalId.current = interval;
-    });
-  }, [volume]);
-
-  // Persist state to localStorage
-  const persistState = useCallback(() => {
-    try {
-      const state = {
-        positions: savedPositions.current,
-        volume
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (error) {
-      console.error('[Music] Error persisting state:', error);
-    }
-  }, [volume]);
 
   // Memoized toggle function
   const togglePlayPause = useCallback(() => {
