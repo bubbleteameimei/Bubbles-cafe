@@ -1,6 +1,6 @@
 import { Request, Response, Router } from "express";
 import { createSecureLogger } from '../utils/secure-logger';
-import { validateBody, validateQuery, validateParams, commonSchemas } from '../middleware/input-validation';
+import { validateBody, validateParams, commonSchemas } from '../middleware/input-validation';
 import { asyncHandler, createError } from '../utils/error-handler';
 import { storage } from "../storage";
 import { z } from "zod";

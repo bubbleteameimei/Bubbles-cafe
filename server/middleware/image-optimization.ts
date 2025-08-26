@@ -11,7 +11,7 @@ import fs from 'fs';
 import crypto from 'crypto';
 let sharp: any = null;
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+   
   sharp = require('sharp');
 } catch {
   sharp = null;
