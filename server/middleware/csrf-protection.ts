@@ -43,6 +43,30 @@ export function getTokenFromRequest(req: Request): string | null {
 }
 
 /**
+ * Get CSRF token from session for API endpoint
+ */
+export function getCsrfToken(req: Request, res: Response) {
+  // Ensure we have a session
+  if (!req.session) {
+    return res.status(500).json({
+      error: 'Session not available',
+      code: 'SESSION_UNAVAILABLE'
+    });
+  }
+
+  // Generate token if it doesn't exist
+  if (!req.session.csrfToken) {
+    req.session.csrfToken = generateToken();
+  }
+
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    csrfToken: req.session.csrfToken
+  });
+}
+
+/**
  * Set CSRF token in the session ONLY (no cookie exposure)
  * SECURITY FIX: Tokens are no longer exposed via cookies
  */
@@ -191,4 +215,16 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
 
     // Validate token
     if (requestToken !== req.session.csrfToken) {
-      console.warn(`
+      console.warn(`CSRF validation failed: Token mismatch for ${req.method} ${req.path}`);
+      return res.status(403).json({
+        error: 'CSRF token validation failed',
+        code: 'CSRF_TOKEN_INVALID',
+        path: req.path,
+        method: req.method
+      });
+    }
+
+    // Token is valid
+    next();
+  };
+}
