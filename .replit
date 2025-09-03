@@ -67,3 +67,5 @@ args = "npx tsx scripts/ensure-session-table.ts"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
+
+[agent]
