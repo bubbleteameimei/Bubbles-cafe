@@ -6,7 +6,7 @@ import { z } from "zod";
 import { userRegistrationSchema, userLoginSchema } from "@shared/schema";
 import { authRateLimiter, sensitiveOperationsRateLimiter } from '../middlewares/rate-limiter';
 import passport from "passport";
-import * as bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs';
 import { storage } from "../storage";
 import { z as zod } from 'zod';
 
@@ -97,7 +97,7 @@ router.post('/login',
           authLogger.debug('Extended session set for remember me');
         }
         
-    		res.json({
+                res.json({
           success: true,
           user,
           message: 'Login successful'

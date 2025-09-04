@@ -62,7 +62,7 @@ import type { CommentMetadata } from "@shared/schema";
 import { db } from "./db";
 import pkg from 'pg';
 import { createHash } from 'crypto';
-import * as bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs';
 const { Pool } = pkg;
 
 // Helper function to safely create Date objects
