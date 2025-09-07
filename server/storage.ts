@@ -178,7 +178,7 @@ export interface IStorage {
   getUsersTable(): any;
   getDrizzleOperators(): any;
   clearCache(key: string): Promise<boolean>;
-  
+
   // Users
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -190,7 +190,7 @@ export interface IStorage {
   getUserComments(userId: number): Promise<Comment[]>;
   getUserReadingHistory(userId: number): Promise<ReadingProgress[]>;
   getUserActivity(userId: number): Promise<ActivityLog[]>;
-  
+
   // Password Reset
   createResetToken(tokenData: InsertResetToken): Promise<ResetToken>;
   getResetTokenByToken(token: string): Promise<ResetToken | undefined>;
@@ -228,7 +228,7 @@ export interface IStorage {
   // Reading Progress
   getProgress(postId: number): Promise<ReadingProgress | undefined>;
   updateProgress(progress: InsertProgress): Promise<ReadingProgress>;
-  
+
   // Recommendation methods
   getPersonalizedRecommendations(userId: number, preferredThemes?: string[], limit?: number): Promise<Post[]>;
 
@@ -248,7 +248,7 @@ export interface IStorage {
   updatePostLike(postId: number, userId: number, isLike: boolean): Promise<void>;
   createPostLike(postId: number, userId: number, isLike: boolean): Promise<void>;
   getPostLikeCounts(postId: number): Promise<{ likesCount: number; dislikesCount: number }>;
-  
+
   // Session-based reaction (for anonymous users)
   updatePostReaction(postId: number, data: { isLike: boolean; sessionId?: string }): Promise<boolean>;
   getPostReactions(postId: number): Promise<{ likes: number; dislikes: number }>;
@@ -295,7 +295,7 @@ export interface IStorage {
 
   // Analytics
   updateAnalytics(postId: number, data: Partial<Analytics>): Promise<Analytics>;
-  
+
   // Admin Stats
   getPostCount(): Promise<number>;
   getUserCount(): Promise<number>;
@@ -313,7 +313,7 @@ export interface IStorage {
     newUsers: number;
     adminCount: number;
   }>;
-  
+
 
   // Analytics methods
   getAnalyticsSummary(): Promise<{ 
@@ -347,7 +347,7 @@ export interface IStorage {
     totalLikes: number;
     recentActivity: ActivityLog[];
   }>;
-  
+
   // Bookmark methods
   createBookmark(bookmark: InsertBookmark): Promise<Bookmark>;
   getBookmark(userId: number, postId: number): Promise<Bookmark | undefined>;
@@ -355,25 +355,25 @@ export interface IStorage {
   updateBookmark(userId: number, postId: number, data: Partial<InsertBookmark>): Promise<Bookmark>;
   deleteBookmark(userId: number, postId: number): Promise<void>;
   getBookmarksByTag(userId: number, tag: string): Promise<(Bookmark & { post: Post })[]>;
-  
+
   // User Feedback methods
   submitFeedback(feedback: InsertUserFeedback): Promise<UserFeedback>;
   getFeedback(id: number): Promise<UserFeedback | undefined>;
   getAllFeedback(limit?: number, status?: string): Promise<UserFeedback[]>;
   updateFeedbackStatus(id: number, status: string): Promise<UserFeedback>;
   getUserFeedback(userId: number): Promise<UserFeedback[]>;
-  
+
   // User Privacy Settings methods
   getUserPrivacySettings(userId: number): Promise<UserPrivacySettings | undefined>;
   createUserPrivacySettings(userId: number, settings: InsertUserPrivacySettings): Promise<UserPrivacySettings>;
   updateUserPrivacySettings(userId: number, settings: Partial<InsertUserPrivacySettings>): Promise<UserPrivacySettings>;
-  
+
 
 }
 
 export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
-  
+
   // Helper method to determine if the database is available
   isDbConnected(): boolean {
     try {
@@ -382,7 +382,7 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
-  
+
   // Helper method for safely executing database operations with fallback options and retries
   async safeDbOperation<T>(
     operation: () => Promise<T>, 
@@ -411,7 +411,7 @@ export class DatabaseStorage implements IStorage {
   getDrizzleOperators() {
     return { eq, sql, and, or, not, like, desc, asc };
   }
-  
+
   // Cache management
   async clearCache(key: string): Promise<boolean> {
     try {
@@ -437,7 +437,7 @@ export class DatabaseStorage implements IStorage {
           let retries = 0;
           const maxRetries = 3;
           const backoffDelay = (attempt: number) => Math.min(100 * Math.pow(2, attempt), 3000);
-          
+
           const executeQuery = async () => {
             let client = null;
             try {
@@ -452,14 +452,14 @@ export class DatabaseStorage implements IStorage {
                 error.message.includes('server closed') ||
                 error.message.includes('endpoint is disabled')
               );
-                
+
               if (isConnectionError && retries < maxRetries) {
                 retries++;
                 console.warn(`[Storage] Session store query attempt ${retries} failed, retrying in ${backoffDelay(retries)}ms...`);
                 await new Promise(resolve => setTimeout(resolve, backoffDelay(retries)));
                 return executeQuery(); // Recursive retry with exponential backoff
               }
-              
+
               // Can't recover, rethrow
               throw error;
             } finally {
@@ -468,7 +468,7 @@ export class DatabaseStorage implements IStorage {
               }
             }
           };
-          
+
           return executeQuery();
         }
       };
@@ -485,24 +485,43 @@ export class DatabaseStorage implements IStorage {
         errorLog: (err: Error) => console.error('[SessionStore] Error:', err)
       });
 
-      // Ensure primary key exists only once; guard against duplicate creation
-      (async () => {
-        try {
-          await (compatiblePool as any).query(
-            `ALTER TABLE IF EXISTS public."express_sessions" ADD CONSTRAINT IF NOT EXISTS express_sessions_pkey PRIMARY KEY (sid)`
-          );
-        } catch (e) {
-          console.warn('[SessionStore] PK ensure failed (may already exist):', (e as Error).message);
+      // Create session table with proper error handling
+      await compatiblePool.query(`
+        CREATE TABLE IF NOT EXISTS "session" (
+          "sid" varchar NOT NULL COLLATE "default",
+          "sess" json NOT NULL,
+          "expire" timestamp(6) NOT NULL
+        )
+        WITH (OIDS=FALSE);
+      `);
+
+      // Only add primary key if it doesn't exist
+      try {
+        await compatiblePool.query(`
+          ALTER TABLE "session" 
+          ADD CONSTRAINT "session_pkey" 
+          PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
+        `);
+      } catch (error: any) {
+        // Ignore error if constraint already exists
+        if (!error.message.includes('already exists')) {
+          throw error;
         }
-      })();
-      
+      }
+
+      // Create index if it doesn't exist
+      await compatiblePool.query(`
+        CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
+      `);
+
+
       console.log('[Storage] Session store initialized successfully');
-      
+
       // Register error handler for session store
       this.sessionStore.on('error', (error: Error) => {
         console.error('[SessionStore] Runtime error:', error);
       });
-      
+
     } catch (error) {
       console.error('[Storage] Failed to initialize session store:', error);
       // Provide a memory fallback for the session store to prevent app crashes
@@ -527,7 +546,7 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(eq(users.id, id))
       .limit(1);
-      
+
       // Add an empty metadata field since it doesn't exist in the DB yet
       return {
         ...user,
@@ -565,7 +584,7 @@ export class DatabaseStorage implements IStorage {
           .from(users)
           .where(eq(users.username, username))
           .limit(1);
-          
+
           if (!user) return undefined;
 
           // Add an empty metadata field since it doesn't exist in the DB yet
@@ -594,7 +613,7 @@ export class DatabaseStorage implements IStorage {
         // Normalize the email address to ensure case-insensitive matching
         const normalizedEmail = email.trim().toLowerCase();
         console.log('[Storage] Looking up user by email:', normalizedEmail);
-        
+
         try {
           // Now include metadata column since it exists in the database
           // Use LOWER() for case-insensitive comparison
@@ -610,13 +629,13 @@ export class DatabaseStorage implements IStorage {
           .from(users)
           .where(sql`LOWER(${users.email}) = ${normalizedEmail}`)
           .limit(1);
-          
+
           if (user) {
             console.log('[Storage] User found by email:', normalizedEmail);
           } else {
             console.log('[Storage] No user found with email:', normalizedEmail);
           }
-          
+
           return user;
         } catch (error) {
           console.error("Error in getUserByEmail:", error);
@@ -625,11 +644,11 @@ export class DatabaseStorage implements IStorage {
             "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", metadata, created_at as \"createdAt\" FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1",
             [email.trim()]
           );
-          
+
           if (result.rows.length > 0) {
             console.log('[Storage] User found by email (fallback method):', email);
           }
-          
+
           return result.rows[0] || undefined;
         }
       },
@@ -643,7 +662,7 @@ export class DatabaseStorage implements IStorage {
       // Normalize the email address for case-insensitive matching
       const normalizedEmail = email.trim().toLowerCase();
       console.log('[Storage] Looking up admin by email:', normalizedEmail);
-      
+
       // Now include metadata column since it exists in the database
       const adminUsers = await db.select({
         id: users.id,
@@ -659,7 +678,7 @@ export class DatabaseStorage implements IStorage {
         sql`LOWER(${users.email}) = ${normalizedEmail}`,
         eq(users.isAdmin, true)
       ));
-      
+
       console.log('[Storage] Found', adminUsers.length, 'admin users with email:', normalizedEmail);
       return adminUsers;
     } catch (error) {
@@ -685,7 +704,7 @@ export class DatabaseStorage implements IStorage {
       const [result] = await db.select({
         count: count(users.id)
       }).from(users);
-      
+
       return result.count || 0;
     } catch (error) {
       console.error("Error in getUsersCount:", error);
@@ -704,14 +723,14 @@ export class DatabaseStorage implements IStorage {
   async getUserCount(): Promise<number> {
     return this.getUsersCount();
   }
-  
+
   async getPostCount(): Promise<number> {
     try {
       // Use count to get total number of posts
       const [result] = await db.select({
         count: count(postsTable.id)
       }).from(postsTable);
-      
+
       return result.count || 0;
     } catch (error) {
       console.error("Error in getPostCount:", error);
@@ -725,7 +744,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
   }
-  
+
   async getPostsCount(): Promise<{
     total: number;
     published: number;
@@ -736,7 +755,7 @@ export class DatabaseStorage implements IStorage {
       const [totalResult] = await db.select({
         count: count(postsTable.id)
       }).from(postsTable);
-      
+
       // Queries to count specific post types
       // Note: We use the SQL function for JSON access as it's more reliable with different databases
       const [publishedResult] = await db.select({
@@ -744,13 +763,13 @@ export class DatabaseStorage implements IStorage {
       })
       .from(postsTable)
       .where(sql`(metadata->>'status')::text = 'publish'`);
-      
+
       const [communityResult] = await db.select({
         count: count(postsTable.id)
       })
       .from(postsTable)
       .where(sql`(metadata->>'isCommunityPost')::boolean = true`);
-      
+
       return {
         total: totalResult.count || 0,
         published: publishedResult.count || 0,
@@ -766,14 +785,14 @@ export class DatabaseStorage implements IStorage {
       };
     }
   }
-  
+
   async getCommentCount(): Promise<number> {
     try {
       // Use count to get total number of comments
       const [result] = await db.select({
         count: count(comments.id)
       }).from(comments);
-      
+
       return result.count || 0;
     } catch (error) {
       console.error("Error in getCommentCount:", error);
@@ -787,7 +806,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
   }
-  
+
   async getCommentsCount(): Promise<{
     total: number;
     pending: number;
@@ -798,21 +817,21 @@ export class DatabaseStorage implements IStorage {
       const [totalResult] = await db.select({
         count: count(comments.id)
       }).from(comments);
-      
+
       // Count pending comments (use SQL string for JSON access)
       const [pendingResult] = await db.select({
         count: count(comments.id)
       })
       .from(comments)
       .where(sql`(metadata->>'status')::text = 'pending'`);
-      
+
       // Count flagged comments
       const [flaggedResult] = await db.select({
         count: count(comments.id)
       })
       .from(comments)
       .where(sql`(metadata->>'status')::text = 'flagged'`);
-      
+
       return {
         total: totalResult.count || 0,
         pending: pendingResult.count || 0,
@@ -828,14 +847,14 @@ export class DatabaseStorage implements IStorage {
       };
     }
   }
-  
+
   async getBookmarkCount(): Promise<number> {
     try {
       // Use count to get total number of bookmarks
       const [result] = await db.select({
         count: count(bookmarks.id)
       }).from(bookmarks);
-      
+
       return result.count || 0;
     } catch (error) {
       console.error("Error in getBookmarkCount:", error);
@@ -849,7 +868,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
   }
-  
+
   async getTrendingPosts(limit: number = 5): Promise<any[]> {
     try {
       // Get posts with the most views/likes
@@ -869,7 +888,7 @@ export class DatabaseStorage implements IStorage {
         ORDER BY (COUNT(pl.id) + COUNT(b.id) + COALESCE((SELECT COUNT(*) FROM analytics WHERE post_id = p.id), 0)) DESC
         LIMIT ${limit}
       `);
-      
+
       // Process and format the results
       return (Array.isArray(trendingPosts) ? trendingPosts : (trendingPosts as any).rows || [])
         .map((post: any) => ({
@@ -894,7 +913,7 @@ export class DatabaseStorage implements IStorage {
         .from(postsTable)
         .orderBy(desc(postsTable.createdAt))
         .limit(limit);
-        
+
         return recentPosts.map(post => ({
           id: post.id,
           title: post.title,
@@ -910,7 +929,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
   }
-  
+
   async getAdminStats(): Promise<{
     totalViews: number;
     uniqueVisitors: number;
@@ -923,35 +942,35 @@ export class DatabaseStorage implements IStorage {
     try {
       // Get analytics data
       const analyticsData = await this.getSiteAnalytics();
-      
+
       // Get count of admin users
       const [adminResult] = await db.select({
         count: count(users.id)
       })
       .from(users)
       .where(eq(users.isAdmin, true));
-      
+
       // Get count of users created in the last 7 days
       const lastWeek = new Date();
       lastWeek.setDate(lastWeek.getDate() - 7);
-      
+
       const [newUsersResult] = await db.select({
         count: count(users.id)
       })
       .from(users)
       .where(gt(users.createdAt, lastWeek));
-      
+
       // Get count of active users (with logins in the last 30 days)
       const lastMonth = new Date();
       lastMonth.setDate(lastMonth.getDate() - 30);
-      
+
       const [activeUsersResult] = await db.select({
         count: count(users.id)
       })
       .from(users)
       // Approximate active users as those created within last 30 days (no lastLogin column)
       .where(gt(users.createdAt, lastMonth));
-      
+
       return {
         totalViews: analyticsData.totalViews,
         uniqueVisitors: analyticsData.uniqueVisitors,
@@ -975,7 +994,7 @@ export class DatabaseStorage implements IStorage {
       };
     }
   }
-  
+
   // Alias for getRecentActivityLogs to match the interface name
   async getRecentActivity(limit: number): Promise<ActivityLog[]> {
     return this.getRecentActivityLogs(limit);
@@ -1023,79 +1042,79 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Failed to create user');
     }
   }
-  
+
   async updateUser(id: number, userData: Partial<User>): Promise<User> {
     try {
       console.log('[Storage] Updating user:', id);
       console.log('[Storage] Update data received:', JSON.stringify(userData, null, 2));
-      
+
       // Get the current user first to properly handle metadata
       const currentUser = await this.getUser(id);
       if (!currentUser) {
         throw new Error("User not found");
       }
-      
+
       // Special handling for password updates (needed for reset password functionality)
       const updateData: Record<string, any> = {};
-      
+
       // Special case for password_hash which needs direct assignment
       if (userData.password_hash) {
         updateData.password_hash = userData.password_hash;
       }
-      
+
       // Special handling for metadata to ensure proper merging
       if (userData.metadata) {
         // Get existing metadata (default to empty object if null)
         const existingMetadata = currentUser.metadata || {};
         console.log('[Storage] Existing metadata:', JSON.stringify(existingMetadata, null, 2));
         console.log('[Storage] New metadata:', JSON.stringify(userData.metadata, null, 2));
-        
+
         // Ensure both metadata objects are actual objects before merging
         const existingMetadataObj = typeof existingMetadata === 'object' ? (existingMetadata as Record<string, unknown>) : {};
         const newMetadataObj = typeof userData.metadata === 'object' ? (userData.metadata as Record<string, unknown>) : {};
-        
+
         // Deep merge the existing metadata with the new metadata
         updateData.metadata = {
           ...existingMetadataObj,
           ...newMetadataObj
         } as Record<string, unknown>;
-        
+
         // Make sure nested properties are correctly merged
         const existingOauth = (existingMetadataObj as any)?.oauth;
         const newOauth = (newMetadataObj as any)?.oauth;
         if (existingOauth || newOauth) {
           (updateData.metadata as any).oauth = { ...(existingOauth || {}), ...(newOauth || {}) };
         }
-        
+
         console.log('[Storage] Merged metadata:', JSON.stringify(updateData.metadata, null, 2));
       }
-      
+
       // Process other fields
       for (const [key, value] of Object.entries(userData)) {
         // Skip these fields
         if (['id', 'createdAt', 'email', 'password_hash', 'metadata'].includes(key)) continue;
-        
+
         // For all other fields, add them to update data
         updateData[key] = value;
       }
-      
+
       // Only proceed if we have fields to update
       if (Object.keys(updateData).length === 0) {
         throw new Error("No valid fields to update");
       }
-      
+
       console.log('[Storage] Final update data to send to DB:', JSON.stringify(updateData, null, 2));
-      
+
       // Update the user with valid fields
       const [updatedUser] = await db.update(users)
         .set(updateData)
         .where(eq(users.id, id))
         .returning();
-      
+
       if (!updatedUser) {
         throw new Error("User not found after update");
       }
-      
+
       console.log('[Storage] User updated successfully:', id);
       return updatedUser;
     } catch (error) {
@@ -1148,7 +1167,7 @@ export class DatabaseStorage implements IStorage {
   async createResetToken(tokenData: InsertResetToken): Promise<ResetToken> {
     try {
       console.log('[Storage] Creating reset token for user:', tokenData.userId);
-      
+
       // Insert the reset token
       const [newToken] = await db.insert(resetTokens)
         .values({
@@ -1156,7 +1175,7 @@ export class DatabaseStorage implements IStorage {
           createdAt: new Date()
         })
         .returning();
-      
+
       console.log('[Storage] Reset token created successfully');
       return newToken;
     } catch (error) {
@@ -1168,7 +1187,7 @@ export class DatabaseStorage implements IStorage {
   async getResetTokenByToken(token: string): Promise<ResetToken | undefined> {
     try {
       console.log('[Storage] Looking up reset token:', token.substring(0, 6) + '...');
-      
+
       // Find the token that's not expired and not used
       const [resetToken] = await db.select()
         .from(resetTokens)
@@ -1178,13 +1197,13 @@ export class DatabaseStorage implements IStorage {
           gt(resetTokens.expiresAt, new Date())
         ))
         .limit(1);
-      
+
       if (resetToken) {
         console.log('[Storage] Reset token found for user:', resetToken.userId);
       } else {
         console.log('[Storage] Reset token not found or expired');
       }
-      
+
       return resetToken;
     } catch (error) {
       console.error("Error in getResetTokenByToken:", error);
@@ -1195,12 +1214,12 @@ export class DatabaseStorage implements IStorage {
   async markResetTokenAsUsed(token: string): Promise<void> {
     try {
       console.log('[Storage] Marking reset token as used:', token.substring(0, 6) + '...');
-      
+
       // Update the token to mark it as used
       await db.update(resetTokens)
         .set({ used: true })
         .where(eq(resetTokens.token, token));
-      
+
       console.log('[Storage] Reset token marked as used successfully');
     } catch (error) {
       console.error("Error in markResetTokenAsUsed:", error);
@@ -1226,13 +1245,13 @@ export class DatabaseStorage implements IStorage {
       async () => {
         console.log(`[Storage] Fetching posts - page: ${page}, limit: ${limit}, filters:`, filters);
         const offset = (page - 1) * limit;
-  
+
         try {
           console.log("[Storage] Fetching posts with page:", page, "limit:", limit, "filters:", JSON.stringify(filters));
-          
+
           // Build WHERE conditions based on filters
           const whereConditions: any[] = [];
-          
+
           // Filter for community posts - exclude admin posts
           if (filters.isCommunityPost === true) {
             // For community posts, explicitly exclude admin posts
@@ -1241,7 +1260,7 @@ export class DatabaseStorage implements IStorage {
               sql`"isAdminPost" IS NULL`
             ));
           }
-          
+
           // Filter for admin posts specifically
           if (filters.isAdminPost === true) {
             whereConditions.push(eq(postsTable.isAdminPost, true));
@@ -1251,7 +1270,7 @@ export class DatabaseStorage implements IStorage {
               sql`"isAdminPost" IS NULL`
             ));
           }
-          
+
           // Author filter
           if (filters.authorId) {
             whereConditions.push(eq(postsTable.authorId, filters.authorId));
@@ -1259,7 +1278,7 @@ export class DatabaseStorage implements IStorage {
 
           // Query to get posts with proper filtering
           console.log("[Storage] Executing optimized Drizzle query with filters:", filters);
-          
+
           const baseQuery = db.select({
             id: postsTable.id,
             title: postsTable.title,
@@ -1275,26 +1294,26 @@ export class DatabaseStorage implements IStorage {
             isAdminPost: postsTable.isAdminPost
           })
           .from(postsTable);
-          
+
           // Apply WHERE conditions if any
           const query: any = whereConditions.length > 0 ? (baseQuery as any).where(and(...whereConditions)) : baseQuery;
-          
+
           const rawPosts = await query
             .orderBy(desc(postsTable.createdAt))
             .limit(limit + 1)
             .offset(offset);
-          
+
           console.log("[Storage] SQL query returned", rawPosts.length, "posts");
-          
+
           // Check if there are more posts
           const hasMore = rawPosts.length > limit;
           const paginatedPosts = rawPosts.slice(0, limit);
-          
+
           // Transform posts with reliable field access
           const transformedPosts = paginatedPosts.map((post: any): Post => {
             // Extract metadata for fields that might be stored there
             const metadata: Record<string, any> = (post.metadata as any) || {};
-            
+
             // Get values with fallbacks - prioritize database columns over metadata
             return {
               id: Number(post.id),
@@ -1314,7 +1333,7 @@ export class DatabaseStorage implements IStorage {
               dislikesCount: (typeof (metadata as any).dislikes === 'number' ? (metadata as any).dislikes : 0)
             } as Post;
           });
-          
+
           // Apply text search filter if specified (post-transform filtering)
           let filteredPosts = transformedPosts;
           if (filters.search) {
@@ -1325,16 +1344,16 @@ export class DatabaseStorage implements IStorage {
               (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm))
             );
           }
-          
+
           // Apply category filter if specified
           if (filters.category) {
             filteredPosts = filteredPosts.filter((post: Post) => 
               post.themeCategory === filters.category
             );
           }
-          
+
           console.log(`[Storage] Transformed ${filteredPosts.length} posts, hasMore: ${hasMore}`);
-          
+
           return { posts: filteredPosts, hasMore };
         } catch (error) {
           console.error("[Storage] Error executing getPosts query:", error);
@@ -1346,7 +1365,7 @@ export class DatabaseStorage implements IStorage {
     ).catch(error => {
       // If the safeDbOperation throws an error, we have a fallback within a fallback
       console.error("Error in getPosts even with safeDbOperation:", error);
-      
+
       // Try an even more basic approach with raw SQL if possible
       return this.getFallbackPosts(page, limit, filters);
     });
@@ -1361,7 +1380,7 @@ export class DatabaseStorage implements IStorage {
     try {
       console.warn(`[Storage] Using fallback query for getPosts - page: ${page}, limit: ${limit}`);
       const offset = (page - 1) * limit;
-      
+
       // Fallback query without problematic columns
       // Use jsonb metadata field directly when available 
       // This is the most reliable approach as it doesn't depend on columns that might not exist
@@ -1387,30 +1406,30 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(postsTable.createdAt))
       .limit(limit + 1)
       .offset(offset);
-      
+
       // Now apply the filtering based on metadata fields
       let filteredPosts = simplePosts;
-      
+
       if (filters.isCommunityPost !== undefined || filters.category) {
         filteredPosts = simplePosts.filter((post: any) => {
           const metadata: Record<string, any> = (post.metadata as any) || {};
-          
+
           // Check for community post flag in metadata
           if (filters.isCommunityPost !== undefined) {
             const isCommunityPost = metadata.isCommunityPost === true;
             if (isCommunityPost !== filters.isCommunityPost) return false;
           }
-          
+
           // Filter by category if specified
           if (filters.category) {
             const themeCategory = (metadata as any).themeCategory;
             if (themeCategory !== filters.category) return false;
           }
-          
+
           return true;
         });
       }
-      
+
       // If isAdminPost filter is set, apply it separately
       // Now using the isAdminPost column directly from the schema
       if (filters.isAdminPost !== undefined) {
@@ -1419,9 +1438,9 @@ export class DatabaseStorage implements IStorage {
           const result = await db.execute(sql`
             SELECT id FROM posts WHERE "isAdminPost" = ${filters.isAdminPost}
           `);
-          
+
           const adminPostIds = result.rows.map((row: any) => Number(row.id));
-          
+
           // Further filter the posts to those matching the admin post filter
           if (adminPostIds.length > 0) {
             filteredPosts = filteredPosts.filter(post => adminPostIds.includes(post.id));
@@ -1441,7 +1460,7 @@ export class DatabaseStorage implements IStorage {
           });
         }
       }
-      
+
       // Exclude WordPress content if requested (for community sections)
       if (filters.excludeWordPressContent === true) {
         filteredPosts = filteredPosts.filter((post: any) => {
@@ -1449,12 +1468,12 @@ export class DatabaseStorage implements IStorage {
           // Exclude posts that have WordPress source or are admin posts
           const isWordPressImport = (metadata as any).wordpressId || (metadata as any).source === 'wordpress';
           const isAdminPost = (metadata as any).isAdminPost === true;
-          
+
           // Exclude if it's a WordPress import OR an admin post
           return !isWordPressImport && !isAdminPost;
         });
       }
-      
+
       // Apply text search filter if specified
       if (filters.search) {
         const searchTerm = filters.search.toLowerCase();
@@ -1464,13 +1483,13 @@ export class DatabaseStorage implements IStorage {
           (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm))
         );
       }
-      
+
       // Check if there are more posts
       const hasMore = filteredPosts.length > limit;
       const paginatedPosts = filteredPosts.slice(0, limit);
-      
+
       console.log(`[Storage] Found ${paginatedPosts.length} posts using fallback query, hasMore: ${hasMore}`);
-      
+
       return {
         posts: paginatedPosts.map((post: any) => ({
           ...post,
@@ -1528,9 +1547,9 @@ export class DatabaseStorage implements IStorage {
             .from(postsTable)
             .where(eq(postsTable.slug, slug))
             .limit(1);
-  
+
           if (!post) return undefined;
-  
+
           return {
             id: Number(post.id),
             title: String(post.title),
@@ -1550,13 +1569,13 @@ export class DatabaseStorage implements IStorage {
           } as Post;
         } catch (queryError: any) {
           console.log("Initial getPost query failed, trying fallback.", queryError.message);
-          
+
           // If standard query fails, fall back to SQL for schema flexibility
           if (queryError.message && (
               queryError.message.includes("column") || 
               queryError.message.includes("does not exist"))) {
             console.log("Using fallback SQL query for getPost.");
-            
+
             // Fallback to raw SQL query that only selects columns we know exist
             const result = await db.execute(sql`
               SELECT 
@@ -1568,12 +1587,12 @@ export class DatabaseStorage implements IStorage {
               WHERE slug = ${slug}
               LIMIT 1
             `);
-            
+
             const rows = result.rows;
             if (!rows || rows.length === 0) return undefined;
-            
+
             const post = rows[0];
-            
+
             return {
               id: Number(post.id),
               title: String(post.title),
@@ -1628,7 +1647,7 @@ export class DatabaseStorage implements IStorage {
         isSecret: post.isSecret,
         themeCategory: post.themeCategory
       });
-      
+
       // Extract specific fields that we know exist in the database
       // This avoids issues with missing columns
       const basePost = {
@@ -1644,7 +1663,7 @@ export class DatabaseStorage implements IStorage {
         themeCategory: post.themeCategory || (post.metadata as any)?.themeCategory || null,
         matureContent: false // Default value for mature_content
       };
-      
+
       // Use raw SQL to avoid schema mismatches, only including fields that actually exist
       const result = await db.execute(sql`
         INSERT INTO posts (
@@ -1676,7 +1695,7 @@ export class DatabaseStorage implements IStorage {
         )
         RETURNING *;
       `);
-      
+
       const newPost = result.rows[0];
 
       console.log('Storage: Post created successfully:', {
@@ -1906,9 +1925,9 @@ export class DatabaseStorage implements IStorage {
       if (existingPost) {
         return true;
       }
-      
+
       console.log(`[Storage] Post ${postId} doesn't exist, creating placeholder for WordPress post`);
-      
+
       // Create a placeholder post for WordPress posts that don't exist in our DB yet
       const [placeholderPost] = await db.insert(postsTable)
         .values({
@@ -1924,7 +1943,7 @@ export class DatabaseStorage implements IStorage {
           }
         })
         .returning();
-      
+
       console.log(`[Storage] Created placeholder post with ID ${placeholderPost.id}`);
       return true;
     } catch (error) {
@@ -1940,13 +1959,13 @@ export class DatabaseStorage implements IStorage {
         isAnonymous: !comment.userId,
         hasParentId: !!comment.parentId
       });
-      
+
       // Ensure the post exists before creating a comment on it
       const postId = Number(comment.postId);
       if (!Number.isFinite(postId)) {
         throw new Error('Invalid post ID: Post ID must be a number');
       }
-      
+
       const postExists = await this.ensurePostExists(postId);
       if (!postExists) {
         throw new Error(`Cannot create comment: Post with ID ${postId} does not exist and could not be created`);
@@ -1981,7 +2000,7 @@ export class DatabaseStorage implements IStorage {
                   is_approved as "approved", parent_id as "parentId", 
                   metadata, created_at as "createdAt", edited, edited_at as "editedAt";
       `);
-      
+
       const newComment = result.rows[0];
       if (!newComment) {
         throw new Error('Failed to create comment: No data returned');
@@ -2121,7 +2140,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Check if this email is already subscribed
       const existingSubscription = await this.getNewsletterSubscriptionByEmail(subscription.email);
-      
+
       if (existingSubscription) {
         if (existingSubscription.status === 'unsubscribed') {
           // If they were previously unsubscribed, update their status to active
@@ -2130,7 +2149,7 @@ export class DatabaseStorage implements IStorage {
         // Return the existing subscription if already active
         return existingSubscription;
       }
-      
+
       // Create new subscription
       const [newSubscription] = await db
         .insert(newsletterSubscriptions)
@@ -2142,7 +2161,7 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date()
         })
         .returning();
-      
+
       return newSubscription;
     } catch (error) {
       console.error("Error in createNewsletterSubscription:", error);
@@ -2157,7 +2176,7 @@ export class DatabaseStorage implements IStorage {
         .from(newsletterSubscriptions)
         .where(eq(newsletterSubscriptions.email, email))
         .limit(1);
-      
+
       return subscription;
     } catch (error) {
       console.error("Error in getNewsletterSubscriptionByEmail:", error);
@@ -2175,7 +2194,7 @@ export class DatabaseStorage implements IStorage {
         })
         .where(eq(newsletterSubscriptions.email, email))
         .returning();
-      
+
       return updatedSubscription;
     } catch (error) {
       console.error("Error in updateNewsletterSubscriptionStatus:", error);
@@ -2189,7 +2208,7 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(newsletterSubscriptions)
         .orderBy(desc(newsletterSubscriptions.createdAt));
-      
+
       return subscriptions;
     } catch (error) {
       console.error("Error in getNewsletterSubscriptions:", error);
@@ -2265,7 +2284,7 @@ export class DatabaseStorage implements IStorage {
   async getPostLikeCounts(postId: number): Promise<{ likesCount: number; dislikesCount: number }> {
     try {
       console.log(`[Storage] Getting like counts for post ${postId}`);
-      
+
       // Calculate counts directly from the post_likes table for accuracy
       const likesResult = await db.select({
         count: count()
@@ -2275,7 +2294,7 @@ export class DatabaseStorage implements IStorage {
         eq(postLikes.postId, postId),
         eq(postLikes.isLike, true)
       ));
-      
+
       const dislikesResult = await db.select({
         count: count()
       })
@@ -2284,10 +2303,10 @@ export class DatabaseStorage implements IStorage {
         eq(postLikes.postId, postId),
         eq(postLikes.isLike, false)
       ));
-      
+
       const likesCount = Number(likesResult[0]?.count || 0);
       const dislikesCount = Number(dislikesResult[0]?.count || 0);
-      
+
       // Get current values from the posts table for logging comparison
       const [currentValues] = await db.select({
         likesCount: postsTable.likesCount,
@@ -2296,7 +2315,7 @@ export class DatabaseStorage implements IStorage {
       .from(postsTable)
       .where(eq(postsTable.id, postId))
       .limit(1);
-      
+
       // Log both calculated and stored values to identify discrepancies
       if (currentValues) {
         console.log(`[Storage] Post ${postId} current stored counts:`, {
@@ -2304,10 +2323,10 @@ export class DatabaseStorage implements IStorage {
           dislikesCount: Number(currentValues.dislikesCount || 0)
         });
       }
-      
+
       const counts = { likesCount, dislikesCount };
       console.log(`[Storage] Post ${postId} calculated counts:`, counts);
-      
+
       return counts;
     } catch (error) {
       console.error(`[Storage] Error getting like counts for post ${postId}:`, error);
@@ -2337,7 +2356,7 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
-  
+
   // Add missing methods needed by the IStorage interface
   async getPostReactions(postId: number): Promise<{likes: number, dislikes: number}> {
     const counts = await this.getPostLikeCounts(postId);
@@ -2347,19 +2366,19 @@ export class DatabaseStorage implements IStorage {
       dislikes: counts.dislikesCount
     };
   }
-  
+
   async updatePostReaction(postId: number, data: { isLike: boolean; sessionId?: string }): Promise<boolean> {
     try {
       // Generate a consistent userId from sessionId for anonymous users
       const userId = data.sessionId ? 
         parseInt(createHash('md5').update(data.sessionId).digest('hex').substring(0, 8), 16) : 
         -1; // Use -1 for anonymous reactions
-      
+
       const isLike = data.isLike;
-      
+
       // Check if user already reacted
       const existingLike = await this.getPostLike(postId, userId);
-      
+
       if (existingLike) {
         if (existingLike.isLike === isLike) {
           // Remove if clicking the same button again
@@ -2372,17 +2391,17 @@ export class DatabaseStorage implements IStorage {
         // Create new reaction
         await this.createPostLike(postId, userId, isLike);
       }
-      
+
       // Update post counts in the database
       await this.updatePostCounts(postId);
-      
+
       return true;
     } catch (error) {
       console.error(`[Storage] Error updating post reaction for post ${postId}:`, error);
       throw error;
     }
   }
-  
+
   // Legacy stub removed; use the enhanced implementation further below
   // async getPersonalizedRecommendations(_userId: number): Promise<Post[]> { return []; }
 
@@ -2715,10 +2734,10 @@ export class DatabaseStorage implements IStorage {
       avgReadTime: avg(analytics.averageReadTime)
     })
       .from(analytics);
-      
+
     // Count active users (estimate as 70% of unique visitors)
     const activeUsers = Math.round((Number(result.uniqueVisitors) || 0) * 0.7);
-    
+
     // Get recent/trending posts using real analytics data when available
     const trendingPosts = await db
       .select({
@@ -2731,7 +2750,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(analytics, eq(analytics.postId, postsTable.id))
       .orderBy(desc(analytics.pageViews), desc(postsTable.createdAt))
       .limit(5);
-    
+
     // Count admin users
     const [adminCount] = await db.select({
       count: count(users.id)
@@ -2746,10 +2765,10 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error accessing admin count:", error);
     }
-    
+
     // Calculate new users within the last week (estimate as 10% of unique visitors)
     const newUsers = Math.round((Number(result.uniqueVisitors) || 0) * 0.1);
-    
+
     return {
       totalViews: Number(result.totalViews) || 0,
       uniqueVisitors: Number(result.uniqueVisitors) || 0,
@@ -2856,7 +2875,7 @@ export class DatabaseStorage implements IStorage {
   async getAnalyticsSummary() {
     try {
       console.log('[Storage] Fetching analytics summary');
-      
+
       // Use column names from the analytics table
       const analyticsResult = await db
         .select({
@@ -2894,7 +2913,7 @@ export class DatabaseStorage implements IStorage {
       };
     } catch (error) {
       console.error('[Storage] Error fetching analytics summary:', error);
-      
+
       // Return default values on error so the UI doesn't break
       return {
         totalViews: 0,
@@ -2908,26 +2927,26 @@ export class DatabaseStorage implements IStorage {
   async getDeviceDistribution() {
     try {
       console.log('[Storage] Fetching device distribution');
-      
+
       // Use the JSON device_stats field instead of device_type
       const analyticsData = await db
         .select({
           deviceStats: analytics.deviceStats
         })
         .from(analytics);
-      
+
       // Initialize default distribution
       const distribution = {
         desktop: 0,
         mobile: 0,
         tablet: 0
       };
-      
+
       // If there's no data, return default distribution
       if (analyticsData.length === 0) {
         return distribution;
       }
-      
+
       // Process device stats data
       let totalDevices = 0;
       let deviceCounts = {
@@ -2935,7 +2954,7 @@ export class DatabaseStorage implements IStorage {
         mobile: 0,
         tablet: 0
       };
-      
+
       // Aggregate device counts from all analytics records
       analyticsData.forEach(record => {
         const stats = record.deviceStats as any;
@@ -2945,16 +2964,16 @@ export class DatabaseStorage implements IStorage {
           if (stats.tablet) deviceCounts.tablet += Number(stats.tablet) || 0;
         }
       });
-      
+
       // Calculate total devices
       totalDevices = deviceCounts.desktop + deviceCounts.mobile + deviceCounts.tablet;
       if (totalDevices === 0) totalDevices = 1; // Avoid division by zero
-      
+
       // Calculate proportions
       distribution.desktop = deviceCounts.desktop / totalDevices;
       distribution.mobile = deviceCounts.mobile / totalDevices;
       distribution.tablet = deviceCounts.tablet / totalDevices;
-      
+
       return distribution;
     } catch (error) {
       console.error('[Storage] Error fetching device distribution:', error);
@@ -2990,12 +3009,12 @@ export class DatabaseStorage implements IStorage {
   async getUserComments(userId: number): Promise<Comment[]> {
     try {
       console.log(`[Storage] Fetching comments for user: ${userId}`);
-      
+
       const userComments = await db.select()
         .from(comments)
         .where(eq(comments.userId, userId))
         .orderBy(desc(comments.createdAt));
-      
+
       console.log(`[Storage] Found ${userComments.length} comments for user: ${userId}`);
       return userComments;
     } catch (error) {
@@ -3003,7 +3022,7 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
-  
+
   /**
    * Get user's reading history
    * Used for user data export functionality
@@ -3011,12 +3030,12 @@ export class DatabaseStorage implements IStorage {
   async getUserReadingHistory(userId: number): Promise<ReadingProgress[]> {
     try {
       console.log(`[Storage] Fetching reading history for user: ${userId}`);
-      
+
       const readingHistory = await db.select()
         .from(readingProgress)
         .where(eq(readingProgress.userId, userId))
         .orderBy(desc(readingProgress.lastReadAt));
-      
+
       console.log(`[Storage] Found ${readingHistory.length} reading history entries for user: ${userId}`);
       return readingHistory;
     } catch (error) {
@@ -3024,7 +3043,7 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
-  
+
   /**
    * Get user's activity log
    * Used for user data export functionality
@@ -3032,13 +3051,13 @@ export class DatabaseStorage implements IStorage {
   async getUserActivity(userId: number): Promise<ActivityLog[]> {
     try {
       console.log(`[Storage] Fetching activity logs for user: ${userId}`);
-      
+
       const userLogs = await db.select()
         .from(activityLogs)
         .where(eq(activityLogs.userId, userId))
         .orderBy(desc(activityLogs.createdAt))
         .limit(100); // Limit to reasonable amount
-      
+
       console.log(`[Storage] Found ${userLogs.length} activity logs for user: ${userId}`);
       return userLogs;
     } catch (error) {
@@ -3046,7 +3065,7 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
-  
+
   async getUserTotalLikes(userId: number): Promise<number> {
     try {
       console.log(`[Storage] Calculating total likes for user: ${userId}`);
@@ -3144,9 +3163,9 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Failed to fetch admin information");
     }
   }
-  
+
   // New methods for real metrics analysis
-  
+
   async getPerformanceMetricsByType(metricType: string): Promise<PerformanceMetric[]> {
     try {
       // For metricType, we can check partial matches (e.g., 'interaction' will match 'interaction_click', 'interaction_scroll', etc.)
@@ -3160,7 +3179,7 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
-  
+
   async getUniqueUserCount(): Promise<number> {
     try {
       // This is a simple approximation by counting unique identifiers from the last 30 days
@@ -3175,14 +3194,14 @@ export class DatabaseStorage implements IStorage {
           eq(performanceMetrics.metricName, 'pageview')
         )
       );
-      
+
       return result[0]?.count || 0;
     } catch (error) {
       console.error('[Storage] Error getting unique user count:', error);
       return 0;
     }
   }
-  
+
   async getActiveUserCount(): Promise<number> {
     try {
       // Count users with activity in the last 7 days
@@ -3196,14 +3215,14 @@ export class DatabaseStorage implements IStorage {
           eq(performanceMetrics.metricName, 'pageview')
         )
       );
-      
+
       return result[0]?.count || 0;
     } catch (error) {
       console.error('[Storage] Error getting active user count:', error);
       return 0;
     }
   }
-  
+
   async getReturningUserCount(): Promise<number> {
     try {
       // Count identifiers that appear multiple times within the last 30 days
@@ -3219,7 +3238,7 @@ export class DatabaseStorage implements IStorage {
           HAVING COUNT(*) > 1
         ) as returning_visitors
       `);
-      
+
       return Number(result.rows[0]?.count) || 0;
     } catch (error) {
       console.error('[Storage] Error getting returning user count:', error);
@@ -3231,14 +3250,14 @@ export class DatabaseStorage implements IStorage {
   async createBookmark(bookmark: InsertBookmark): Promise<Bookmark> {
     try {
       console.log(`[Storage] Creating bookmark for user ${bookmark.userId} and post ${bookmark.postId}`);
-      
+
       // Check if bookmark already exists
       const existingBookmark = await this.getBookmark(bookmark.userId, bookmark.postId);
       if (existingBookmark) {
         console.log(`[Storage] Bookmark already exists, updating instead`);
         return this.updateBookmark(bookmark.userId, bookmark.postId, bookmark);
       }
-      
+
       // Create new bookmark
       const [newBookmark] = await db.insert(bookmarks)
         .values({
@@ -3246,7 +3265,7 @@ export class DatabaseStorage implements IStorage {
           createdAt: new Date()
         })
         .returning();
-      
+
       console.log(`[Storage] Bookmark created successfully with ID: ${newBookmark.id}`);
       return newBookmark;
     } catch (error) {
@@ -3269,7 +3288,7 @@ export class DatabaseStorage implements IStorage {
           eq(bookmarks.postId, postId)
         ))
         .limit(1);
-      
+
       return bookmark;
     } catch (error) {
       console.error("Error in getBookmark:", error);
@@ -3284,20 +3303,20 @@ export class DatabaseStorage implements IStorage {
         .from(bookmarks)
         .where(eq(bookmarks.userId, userId))
         .orderBy(desc(bookmarks.createdAt));
-      
+
       // If no bookmarks, return empty array
       if (!userBookmarks.length) {
         return [];
       }
-      
+
       // Get all post IDs from the bookmarks
       const postIds = userBookmarks.map(bookmark => bookmark.postId);
-      
+
       // Fetch all posts in a single query
       const bookmarkedPosts = await db.select()
         .from(postsTable)
         .where(inArray(postsTable.id, postIds));
-      
+
       // Create a map of post IDs to posts for quick lookups
       const postsMap = new Map<number, Post>();
       bookmarkedPosts.forEach(post => {
@@ -3306,7 +3325,7 @@ export class DatabaseStorage implements IStorage {
           createdAt: safeCreateDate(post.createdAt)
         });
       });
-      
+
       // Combine bookmarks with their corresponding posts
       return userBookmarks.map(bookmark => ({
         ...bookmark,
@@ -3323,7 +3342,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Remove user and post IDs from the update data as those are used for the where clause
       const { userId: _, postId: __, ...updateData } = data;
-      
+
       const [updatedBookmark] = await db.update(bookmarks)
         .set(updateData)
         .where(and(
@@ -3331,11 +3350,11 @@ export class DatabaseStorage implements IStorage {
           eq(bookmarks.postId, postId)
         ))
         .returning();
-      
+
       if (!updatedBookmark) {
         throw new Error("Bookmark not found");
       }
-      
+
       return updatedBookmark;
     } catch (error) {
       console.error("Error in updateBookmark:", error);
@@ -3354,7 +3373,7 @@ export class DatabaseStorage implements IStorage {
           eq(bookmarks.postId, postId)
         ))
         .returning();
-      
+
       if (!result.length) {
         throw new Error("Bookmark not found");
       }
@@ -3377,20 +3396,20 @@ export class DatabaseStorage implements IStorage {
           sql`${bookmarks.tags} @> ARRAY[${tag}]` // PostgreSQL array contains operator
         ))
         .orderBy(desc(bookmarks.createdAt));
-      
+
       // If no bookmarks with this tag, return empty array
       if (!userBookmarks.length) {
         return [];
       }
-      
+
       // Get all post IDs from the bookmarks
       const postIds = userBookmarks.map(bookmark => bookmark.postId);
-      
+
       // Fetch all posts in a single query
       const bookmarkedPosts = await db.select()
         .from(postsTable)
         .where(inArray(postsTable.id, postIds));
-      
+
       // Create a map of post IDs to posts for quick lookups
       const postsMap = new Map<number, Post>();
       bookmarkedPosts.forEach(post => {
@@ -3399,7 +3418,7 @@ export class DatabaseStorage implements IStorage {
           createdAt: safeCreateDate(post.createdAt)
         });
       });
-      
+
       // Combine bookmarks with their corresponding posts
       return userBookmarks.map(bookmark => ({
         ...bookmark,
@@ -3416,13 +3435,13 @@ export class DatabaseStorage implements IStorage {
   async submitFeedback(feedback: InsertUserFeedback): Promise<UserFeedback> {
     try {
       console.log('[Storage] Submitting user feedback:', feedback.type);
-      
+
       // Extract extended fields that aren't directly in the schema
       const browser = feedback.browser || "unknown";
       const operatingSystem = feedback.operatingSystem || "unknown";
       const screenResolution = feedback.screenResolution || "unknown";
       const userAgent = feedback.userAgent || "unknown";
-      
+
       // Create metadata object
       const metadataObject = {
         browser,
@@ -3430,7 +3449,7 @@ export class DatabaseStorage implements IStorage {
         screenResolution,
         userAgent
       };
-      
+
       // Prepare the data for insertion
       const insertData = {
         type: feedback.type,
@@ -3447,12 +3466,12 @@ export class DatabaseStorage implements IStorage {
         metadata: metadataObject,
         createdAt: new Date()
       };
-      
+
       // Insert the feedback
       const [newFeedback] = await db.insert(userFeedback)
         .values(insertData)
         .returning();
-      
+
       console.log('[Storage] Feedback submitted successfully, ID:', newFeedback.id);
       return newFeedback;
     } catch (error) {
@@ -3468,7 +3487,7 @@ export class DatabaseStorage implements IStorage {
         .from(userFeedback)
         .where(eq(userFeedback.id, id))
         .limit(1);
-      
+
       return results.length > 0 ? results[0] : undefined;
     } catch (error) {
       console.error('[Storage] Error fetching feedback:', error);
@@ -3479,7 +3498,7 @@ export class DatabaseStorage implements IStorage {
   async getAllFeedback(limit: number = 50, status: string = 'all'): Promise<UserFeedback[]> {
     try {
       let feedbackList: UserFeedback[] = [];
-      
+
       if (status === 'all') {
         feedbackList = await db.select()
           .from(userFeedback)
@@ -3492,7 +3511,7 @@ export class DatabaseStorage implements IStorage {
           .orderBy(desc(userFeedback.createdAt))
           .limit(limit);
       }
-      
+
       return feedbackList;
     } catch (error) {
       console.error('[Storage] Error fetching all feedback:', error);
@@ -3503,16 +3522,16 @@ export class DatabaseStorage implements IStorage {
   async updateFeedbackStatus(id: number, status: string): Promise<UserFeedback> {
     try {
       console.log(`[Storage] Updating feedback ID ${id} status to ${status}`);
-      
+
       const results = await db.update(userFeedback)
         .set({ status })
         .where(eq(userFeedback.id, id))
         .returning();
-      
+
       if (results.length === 0) {
         throw new Error("Feedback not found");
       }
-      
+
       return results[0];
     } catch (error) {
       console.error('[Storage] Error updating feedback status:', error);
@@ -3523,13 +3542,13 @@ export class DatabaseStorage implements IStorage {
   async getUserFeedback(userId: number): Promise<UserFeedback[]> {
     try {
       console.log(`[Storage] Retrieving feedback for user ID: ${userId}`);
-      
+
       // Using the most efficient query pattern available
       const feedbackList = await db.select()
         .from(userFeedback)
         .where(eq(userFeedback.userId, userId))
         .orderBy(desc(userFeedback.createdAt));
-      
+
       console.log(`[Storage] Found ${feedbackList.length} feedback items for user ${userId}`);
       return feedbackList;
     } catch (error) {
@@ -3543,18 +3562,18 @@ export class DatabaseStorage implements IStorage {
   async getUserPrivacySettings(userId: number): Promise<UserPrivacySettings | undefined> {
     try {
       console.log(`[Storage] Retrieving privacy settings for user ID: ${userId}`);
-      
+
       const [settings] = await db.select()
         .from(userPrivacySettings)
         .where(eq(userPrivacySettings.userId, userId))
         .limit(1);
-      
+
       if (settings) {
         console.log(`[Storage] Found privacy settings for user ${userId}`);
       } else {
         console.log(`[Storage] No privacy settings found for user ${userId}`);
       }
-      
+
       return settings;
     } catch (error) {
       console.error(`[Storage] Error retrieving user privacy settings:`, error);
@@ -3565,14 +3584,14 @@ export class DatabaseStorage implements IStorage {
   async createUserPrivacySettings(userId: number, settings: InsertUserPrivacySettings): Promise<UserPrivacySettings> {
     try {
       console.log(`[Storage] Creating privacy settings for user ID: ${userId}`);
-      
+
       // First check if settings already exist
       const existingSettings = await this.getUserPrivacySettings(userId);
       if (existingSettings) {
         console.log(`[Storage] Privacy settings already exist for user ${userId}, updating instead`);
         return await this.updateUserPrivacySettings(userId, settings);
       }
-      
+
       // Create default settings with user override
       const defaultSettings: InsertUserPrivacySettings = {
         userId: userId,
@@ -3582,7 +3601,7 @@ export class DatabaseStorage implements IStorage {
         twoFactorAuthEnabled: settings.twoFactorAuthEnabled ?? false,
         loginNotifications: settings.loginNotifications ?? true
       };
-      
+
       // Insert the settings
       const [newSettings] = await db.insert(userPrivacySettings)
         .values({
@@ -3590,7 +3609,7 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date()
         })
         .returning();
-      
+
       console.log(`[Storage] Privacy settings created successfully for user ${userId}`);
       return newSettings;
     } catch (error) {
@@ -3602,18 +3621,18 @@ export class DatabaseStorage implements IStorage {
   async updateUserPrivacySettings(userId: number, settings: Partial<InsertUserPrivacySettings>): Promise<UserPrivacySettings> {
     try {
       console.log(`[Storage] Updating privacy settings for user ID: ${userId}`);
-      
+
       // Make sure we're not trying to update the userId
       const { userId: _, ...updateData } = settings;
-      
+
       // Get existing settings to ensure they exist
       const existingSettings = await this.getUserPrivacySettings(userId);
-      
+
       if (!existingSettings) {
         console.log(`[Storage] No existing privacy settings for user ${userId}, creating new settings`);
         return await this.createUserPrivacySettings(userId, settings as InsertUserPrivacySettings);
       }
-      
+
       // Update the settings
       const [updatedSettings] = await db.update(userPrivacySettings)
         .set({
@@ -3622,11 +3641,11 @@ export class DatabaseStorage implements IStorage {
         })
         .where(eq(userPrivacySettings.userId, userId))
         .returning();
-      
+
       if (!updatedSettings) {
         throw new Error('Failed to update privacy settings');
       }
-      
+
       console.log(`[Storage] Privacy settings updated successfully for user ${userId}`);
       return updatedSettings;
     } catch (error) {
@@ -3662,30 +3681,30 @@ class MemStorage {
   async getCommentsByPostId(postId: number): Promise<Comment[]> {
     return this.comments.filter((comment: Comment) => comment.postId === postId);
   }
-  
+
   async getCommentById(id: number): Promise<Comment | undefined> {
     return this.comments.find((comment: Comment) => comment.id === id);
   }
-  
+
   // Stub implementations for required methods to satisfy the interface
   // These can be expanded as needed
-  
+
   async getUserByEmail(email: string): Promise<User | undefined> {
     return this.users.find((user: User) => user.email === email);
   }
-  
+
   async addPostView(postId: number): Promise<boolean> {
     return true; // Just pretend it succeeded
   }
-  
+
   async getPostViews(postId: number): Promise<number> {
     return Math.floor(Math.random() * 100); // Return a random view count
   }
-  
+
   async createPostReaction(postId: number, userId: number, type: string): Promise<boolean> {
     return true;
   }
-  
+
   async createBookmark(bookmark: InsertBookmark): Promise<Bookmark> {
     const newBookmark: Bookmark = {
       id: this.nextBookmarkId++,
@@ -3699,26 +3718,26 @@ class MemStorage {
     this.bookmarks.push(newBookmark);
     return newBookmark;
   }
-  
+
   async getBookmarksByUserId(userId: number): Promise<Bookmark[]> {
     return this.bookmarks.filter((bookmark: Bookmark) => bookmark.userId === userId);
   }
-  
+
   async deleteBookmark(userId: number, postId: number): Promise<void> {
     const index = this.bookmarks.findIndex(bookmark => bookmark.userId === userId && bookmark.postId === postId);
     if (index !== -1) {
       this.bookmarks.splice(index, 1);
     }
   }
-  
+
   async getPostBookmarks(postId: number): Promise<number> {
     return this.bookmarks.filter(bookmark => bookmark.postId === postId).length;
   }
-  
+
   async getUserPostBookmark(userId: number, postId: number): Promise<Bookmark | undefined> {
     return this.bookmarks.find((bookmark: Bookmark) => bookmark.userId === userId && bookmark.postId === postId);
   }
-  
+
   async createUserFeedback(feedback: UserFeedback): Promise<UserFeedback> {
     const newFeedback: UserFeedback = {
       ...feedback,
@@ -3728,11 +3747,11 @@ class MemStorage {
     this.userFeedback.push(newFeedback);
     return newFeedback;
   }
-  
+
   async getUserFeedback(userId: number): Promise<UserFeedback[]> {
     return this.userFeedback.filter((f: UserFeedback) => f.userId === userId);
   }
-  
+
   // Other required methods with minimal implementations
   async createComment(comment: InsertComment): Promise<Comment> {
     const newComment: Comment = {
@@ -3747,19 +3766,19 @@ class MemStorage {
     this.comments.push(newComment);
     return newComment;
   }
-  
+
   // Methods for fallback endpoints
   async getRecentPosts(): Promise<Post[]> {
     try {
       console.log(`[Storage] Fetching recent posts`);
-      
+
       const recentPosts = await db.select()
         .from(postsTable)
         .orderBy(desc(postsTable.createdAt))
         .limit(10);
-      
+
       console.log(`[Storage] Found ${recentPosts.length} recent posts`);
-      
+
       return recentPosts.map((post: any) => ({
         ...post,
         createdAt: safeCreateDate(post.createdAt)
@@ -3769,20 +3788,20 @@ class MemStorage {
       throw new Error('Failed to fetch recent posts');
     }
   }
-  
+
   async getRecommendedPosts(postId: number | null, limit: number): Promise<Post[]> {
     try {
       console.log(`[Storage] Fetching recommended posts for post ID: ${postId}, limit: ${limit}`);
-      
+
       // If postId is provided, we could get related posts by category, tags, etc.
       // For now, we'll just return recent posts
       const recommendedPosts = await db.select()
         .from(postsTable)
         .orderBy(desc(postsTable.createdAt))
         .limit(limit);
-      
+
       console.log(`[Storage] Found ${recommendedPosts.length} recommended posts`);
-      
+
       return recommendedPosts.map((post: any) => ({
         ...post,
         createdAt: safeCreateDate(post.createdAt)
@@ -3792,12 +3811,12 @@ class MemStorage {
       throw new Error('Failed to fetch recommended posts');
     }
   }
-  
+
   async getPersonalizedRecommendations(userId: number, preferredThemes: string[] = [], limit: number = 5): Promise<Post[]> {
     try {
       console.log(`[Storage] Fetching enhanced personalized recommendations for user ID: ${userId}, limit: ${limit}`);
       const startTime = Date.now(); // For performance tracking
-      
+
       // Implement safe database operation with retry logic
       const safeDbOperation = async <T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> => {
         let lastError;
@@ -3813,7 +3832,7 @@ class MemStorage {
         }
         throw lastError;
       };
-      
+
       // Step 1: Get user's reading history (posts they've read)
       const readingHistory = await safeDbOperation(async () => {
         return await db.select()
@@ -3822,7 +3841,7 @@ class MemStorage {
           .orderBy(desc(readingProgress.lastReadAt))
           .limit(15); // Increased from 10 to get better history data
       });
-      
+
       // Step 2: Get user's liked posts with additional weight
       const likedPosts = await safeDbOperation(async () => {
         return await db.select()
@@ -3833,7 +3852,7 @@ class MemStorage {
           ))
           .limit(15); // Increased from 10 to capture more preferences
       });
-      
+
       // Step 3: Get user's bookmarks
       const userBookmarks = await safeDbOperation(async () => {
         return await db.select()
@@ -3841,21 +3860,21 @@ class MemStorage {
           .where(eq(bookmarks.userId, userId))
           .limit(15); // Increased from 10
       });
-      
+
       // Collect post IDs from user history
       const historyPostIds = new Set([
         ...readingHistory.map(item => item.postId),
         ...likedPosts.map(item => item.postId),
         ...userBookmarks.map(item => item.postId)
       ]);
-      
+
       // If user has no history, fall back to trending posts with theme preferences
       if (historyPostIds.size === 0) {
         console.log(`[Storage] User ${userId} has no history, using trending posts`);
         let query: any = db.select()
           .from(postsTable)
           .orderBy(desc(postsTable.likesCount), desc(postsTable.createdAt));
-        
+
         // Apply theme filter if preferences exist
         if (preferredThemes.length > 0) {
           query = query.where(
@@ -3867,18 +3886,18 @@ class MemStorage {
             ).reduce((acc, condition) => or(acc, condition))
           );
         }
-        
+
         try {
           const trendingPosts = await safeDbOperation(async () => {
             return await query.limit(limit);
           });
-          
+
           console.log(`[Storage] Found ${trendingPosts.length} trending posts for user ${userId}`);
-          
+
           // Log performance metrics
           const duration = Date.now() - startTime;
           await this.logRecommendationPerformance(userId, 'trending_fallback', trendingPosts.length, duration);
-          
+
           return trendingPosts.map((post: any) => ({
             ...post,
             createdAt: safeCreateDate(post.createdAt)
@@ -3898,7 +3917,7 @@ class MemStorage {
           })) as unknown as Post[];
         }
       }
-      
+
       // Step 4: Get content-based recommendations
       // Find posts with similar themes to what the user has engaged with
       const historicalPosts = await safeDbOperation(async () => {
@@ -3907,34 +3926,34 @@ class MemStorage {
           .where(sql`${postsTable.id} IN (${Array.from(historyPostIds).join(',')})`)
           .limit(25); // Increased from 20 to capture more preferences
       });
-      
+
       // Extract themes from historical posts with weights
       const userThemes = new Map<string, number>();
       historicalPosts.forEach(post => {
         // Basic weight
         let weight = 1;
-        
+
         // Give more weight to posts that were recently read
         const isRecentlyRead = readingHistory.some(item => 
           item.postId === post.id && 
           new Date(item.lastReadAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000 // 7 days
         );
         if (isRecentlyRead) weight += 1;
-        
+
         // Give more weight to posts that were liked
         const isLiked = likedPosts.some(item => item.postId === post.id);
         if (isLiked) weight += 2;
-        
+
         // Give more weight to bookmarked posts
         const isBookmarked = userBookmarks.some(item => item.postId === post.id);
         if (isBookmarked) weight += 1.5;
-        
+
         // Add theme with weight
         if (post.themeCategory) {
           const currentWeight = userThemes.get(post.themeCategory) || 0;
           userThemes.set(post.themeCategory, currentWeight + weight);
         }
-        
+
         // Also check metadata for themeCategory
         if (post.metadata && typeof post.metadata === 'object') {
           const metadata: any = (post.metadata as any) || {};
@@ -3944,16 +3963,16 @@ class MemStorage {
           }
         }
       });
-      
+
       // Sort themes by weight (descending) and take top 5
       const sortedThemes = Array.from(userThemes.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
         .map(([theme]) => theme);
-      
+
       // Add user preferred themes with high priority
       const allThemes = [...preferredThemes, ...sortedThemes];
-      
+
       // Step 5: Get collaborative filtering recommendations
       // Find users with similar interests and get their liked posts
       const similarUsersPostIds = new Set<number>();
@@ -3973,7 +3992,7 @@ class MemStorage {
             .having(gte(count(), 2)) // Users who liked at least 2 posts
             .limit(10);
         });
-        
+
         if (similarUsers.length > 0) {
           // Get posts liked by similar users that the current user hasn't interacted with
           const similarUsersPosts = await safeDbOperation(async () => {
@@ -3989,7 +4008,7 @@ class MemStorage {
               .groupBy(postLikes.postId)
               .limit(10);
           });
-          
+
           const similarUsersPostIds = new Set(similarUsersPosts.map(item => item.postId));
           console.log(`[Storage] Found ${similarUsersPostIds.size} collaborative filtering recommendations`);
         }
@@ -3997,14 +4016,14 @@ class MemStorage {
         console.warn(`[Storage] Error getting collaborative filtering recommendations:`, error);
         // Continue with other recommendation methods if this one fails
       }
-      
+
       // Step 6: Get content-based recommendations with improved scoring
       let contentBasedRecommendations: Post[] = [];
       try {
         // Query posts based on themes
         let query: any = db.select()
           .from(postsTable);
-        
+
         if (allThemes.length > 0 && historyPostIds.size > 0) {
           query = query.where(
             and(
@@ -4022,23 +4041,23 @@ class MemStorage {
             )
           );
         }
-        
+
         // Get more posts than needed for scoring
         const candidatePosts = await safeDbOperation(async () => {
           return await query
             .orderBy(desc(postsTable.createdAt))
             .limit(limit * 3);
         });
-        
+
         // Score posts based on multiple factors
         const scoredPosts = candidatePosts.map((post: any): { post: Post; score: number } => {
           let score = 0;
-          
+
           // Collaborative filtering boost
           if (similarUsersPostIds.has(post.id)) {
             score += 25;
           }
-          
+
           // Theme matching score
           const postThemes = [
             post.themeCategory || '',
@@ -4046,7 +4065,7 @@ class MemStorage {
               ? (post.metadata as any)?.themeCategory || ''
               : ''
           ].filter(Boolean);
-          
+
           for (const theme of postThemes) {
             // Higher score for user-selected preferred themes
             for (const prefTheme of preferredThemes) {
@@ -4055,7 +4074,7 @@ class MemStorage {
                 break;
               }
             }
-            
+
             // Score for derived user themes (from their reading history)
             for (const userTheme of sortedThemes) {
               if (theme.toLowerCase().includes(userTheme.toLowerCase())) {
@@ -4064,36 +4083,36 @@ class MemStorage {
               }
             }
           }
-          
+
           // Recency bias (newer posts get a boost)
                      const postDate = post.createdAt instanceof Date 
             ? post.createdAt 
             : new Date(post.createdAt as unknown as string | number | Date);
-          
+
           const daysSincePosted = (Date.now() - postDate.getTime()) / (1000 * 60 * 60 * 24);
           if (daysSincePosted < 7) { // Posts less than a week old
             score += Math.max(0, 10 - daysSincePosted); // 10 points for today, decreasing to 3 for a week old
           }
-          
+
           // Popular posts get a small boost
           score += Math.min(10, post.likesCount || 0);
-          
+
           return { post, score };
         });
-        
+
         // Sort by score, descending
         scoredPosts.sort((a: { score: number }, b: { score: number }) => b.score - a.score);
-        
+
         // Take top posts
                  contentBasedRecommendations = scoredPosts
            .slice(0, limit)
            .map(({ post }: { post: Post; score: number }) => post);
-          
+
       } catch (error) {
         console.error(`[Storage] Error getting content-based recommendations:`, error);
         // Continue with fallback methods
       }
-      
+
       // Step 7: If we don't have enough recommendations, supplement with popular and recent posts
       if (contentBasedRecommendations.length < limit) {
         console.log(`[Storage] Not enough recommendations (${contentBasedRecommendations.length}), supplementing with additional posts`);
@@ -4102,7 +4121,7 @@ class MemStorage {
           ...contentBasedRecommendations.map(post => post.id),
           ...Array.from(historyPostIds)
         ]);
-        
+
         try {
           // Try to get a mix of popular and recent posts
           const popularSupplements = await safeDbOperation(async () => {
@@ -4113,7 +4132,7 @@ class MemStorage {
               .where(not(sql`${postsTable.id} IN (${Array.from(existingIds).join(',')})`))
               .orderBy(desc(postsTable.likesCount), desc(postsTable.createdAt))
               .limit(popularCount);
-            
+
             // 40% recent posts
             const recentCount = remainingCount - popularCount;
             const recentPosts = await db.select()
@@ -4121,12 +4140,12 @@ class MemStorage {
               .where(not(sql`${postsTable.id} IN (${Array.from(existingIds).join(',')})`))
               .orderBy(desc(postsTable.createdAt))
               .limit(recentCount);
-            
+
             return [...popularPosts, ...recentPosts];
           });
-          
+
           console.log(`[Storage] Found ${popularSupplements.length} supplemental posts`);
-          
+
           const result = [
             ...contentBasedRecommendations.map(post => ({
               ...post,
@@ -4137,11 +4156,11 @@ class MemStorage {
               createdAt: safeCreateDate(post.createdAt)
             }))
           ];
-          
+
           // Log performance metrics
           const duration = Date.now() - startTime;
           await this.logRecommendationPerformance(userId, 'mixed_recommendations', result.length, duration);
-          
+
           return result;
         } catch (error) {
           console.error(`[Storage] Error getting supplemental posts:`, error);
@@ -4152,13 +4171,13 @@ class MemStorage {
           }));
         }
       }
-      
+
       console.log(`[Storage] Found ${contentBasedRecommendations.length} enhanced personalized recommendations for user ${userId}`);
-      
+
       // Log performance metrics
       const duration = Date.now() - startTime;
       await this.logRecommendationPerformance(userId, 'content_based', contentBasedRecommendations.length, duration);
-      
+
       return contentBasedRecommendations.map(post => ({
         ...post,
         createdAt: safeCreateDate(post.createdAt)
@@ -4169,7 +4188,7 @@ class MemStorage {
       return [];
     }
   }
-  
+
   // Helper method to log recommendation performance
   private async logRecommendationPerformance(userId: number, method: string, count: number, durationMs: number): Promise<void> {
     try {
@@ -4182,21 +4201,21 @@ class MemStorage {
         userAgent: null,
         timestamp: new Date()
       } as InsertPerformanceMetric;
-      
+
       await db.insert(performanceMetrics).values(metric);
     } catch (error) {
       // Don't let metrics logging failure affect recommendations
       console.warn(`[Storage] Failed to log recommendation performance:`, error);
     }
   }
-  
+
   // Achievement methods
   async getUserAchievements(userId: number): Promise<any[]> {
     // This would be implemented with the actual achievement tables
     console.log(`[Storage] Fetching achievements for user: ${userId}`);
     return [];
   }
-  
+
   async getAllAchievements(): Promise<any[]> {
     // This would be implemented with the actual achievement tables
     console.log(`[Storage] Fetching all achievements`);
@@ -4215,7 +4234,7 @@ class MemStorage {
       const [postsCount] = await db.select({ count: sql<number>`count(*)` }).from(postsTable);
       const [usersCount] = await db.select({ count: sql<number>`count(*)` }).from(users);
       const [commentsCount] = await db.select({ count: sql<number>`count(*)` }).from(comments);
-      
+
       // Get recent activity
       const recentActivity = await db.select()
         .from(activityLogs)
@@ -4247,7 +4266,7 @@ class MemStorage {
         .from(siteSettings)
         .where(eq(siteSettings.key, key))
         .limit(1);
-      
+
       return setting ? {
         ...setting,
         updatedAt: setting.updatedAt instanceof Date ? setting.updatedAt : new Date(setting.updatedAt)
@@ -4258,7 +4277,7 @@ class MemStorage {
   async setSiteSetting(key: string, value: string, category: string, description?: string): Promise<SiteSetting> {
     return safeDbOperation(async () => {
       const now = new Date();
-      
+
       // Try to update existing setting first
       const [updated] = await db.update(siteSettings)
         .set({ 
@@ -4360,7 +4379,7 @@ class MemStorage {
   async getUsers(page: number = 1, limit: number = 50): Promise<User[]> {
     return safeDbOperation(async () => {
       const offset = (page - 1) * limit;
-      
+
       const userList = await db.select()
         .from(users)
         .orderBy(desc(users.createdAt))

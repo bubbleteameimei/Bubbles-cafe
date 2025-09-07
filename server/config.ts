@@ -108,7 +108,7 @@ export const config = {
   isDev: env.NODE_ENV === 'development',
   isProd: env.NODE_ENV === 'production',
   isTest: env.NODE_ENV === 'test',
-  port: env.PORT || 5000,
+  port: env.PORT || 3003,
   database: {
     url: env.DATABASE_URL,
   },

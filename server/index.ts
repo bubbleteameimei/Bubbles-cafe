@@ -38,7 +38,7 @@ app.set('trust proxy', 1);
 // Remove Express signature header
 app.disable('x-powered-by');
 const isDev = config.isDev;
-const PORT = config.port;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3003;
 const HOST = '0.0.0.0';
 
 // Create server instance outside startServer for proper cleanup
@@ -313,26 +313,29 @@ async function startServer() {
       server.listen(PORT, HOST, () => {
         const bootDuration = Date.now() - startTime;
         console.log(`✅ Server started successfully on http://${HOST}:${PORT} in ${bootDuration}ms`);
+        console.log(`🌐 App is ready and accessible at: http://${HOST}:${PORT}`);
         serverLogger.info('Server started successfully', { 
           url: `http://${HOST}:${PORT}`,
-          bootTime: `${bootDuration}ms`
+          bootTime: `${bootDuration}ms`,
+          pid: process.pid
         });
 
-        // Send port readiness signal
+        // Send port readiness signal to Replit
         if (process.send) {
           process.send({
             port: PORT,
             wait_for_port: true,
             ready: true
           });
-          console.log('Sent port readiness signal to process');
-          serverLogger.debug('Sent port readiness signal');
+          console.log(`📡 Sent port readiness signal to Replit for port ${PORT}`);
+          serverLogger.debug('Sent port readiness signal', { port: PORT });
         }
 
-        // Wait for a moment to ensure the server is fully ready
+        // Additional confirmation
         setTimeout(() => {
-          console.log('Server is now fully ready to accept connections');
-        }, 1000);
+          console.log(`🚀 Server fully initialized and ready on port ${PORT}`);
+          console.log(`📝 Preview URL should be available in Replit webview`);
+        }, 500);
 
         resolve();
       });
