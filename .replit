@@ -29,12 +29,16 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm cache clean --force"
+args = "rm -rf node_modules"
 waitForPort = 3002
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm install --no-audit --legacy-peer-deps"
+args = "rm -f package-lock.json"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install --force"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
