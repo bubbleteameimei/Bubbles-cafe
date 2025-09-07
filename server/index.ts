@@ -38,7 +38,7 @@ app.set('trust proxy', 1);
 // Remove Express signature header
 app.disable('x-powered-by');
 const isDev = config.isDev;
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3002;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 const HOST = '0.0.0.0';
 
 // Create server instance outside startServer for proper cleanup
