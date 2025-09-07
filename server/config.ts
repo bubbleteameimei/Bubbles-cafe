@@ -8,46 +8,54 @@ import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
 
-// Load environment variables from .env file
+// Load environment variables from .env files
 function loadEnvFile() {
-  const envPath = path.resolve(process.cwd(), '.env');
+  const envFiles = ['.env.local', '.env'];
+  let loaded = false;
 
-  try {
-    if (fs.existsSync(envPath)) {
-      const envContent = fs.readFileSync(envPath, 'utf8');
-      const envLines = envContent.split('\n');
+  for (const envFile of envFiles) {
+    const envPath = path.resolve(process.cwd(), envFile);
 
-      for (const line of envLines) {
-        // Skip comments and empty lines
-        if (line.trim().startsWith('#') || line.trim() === '') continue;
+    try {
+      if (fs.existsSync(envPath)) {
+        const envContent = fs.readFileSync(envPath, 'utf8');
+        const envLines = envContent.split('\n');
 
-        // Parse key=value pairs
-        const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
-        if (match) {
-          const key = match[1];
-          let value = match[2] || '';
+        for (const line of envLines) {
+          // Skip comments and empty lines
+          if (line.trim().startsWith('#') || line.trim() === '') continue;
 
-          // Remove quotes if present
-          if (value.length > 0 && (value.startsWith('"') && value.endsWith('"')) 
-              || (value.startsWith("'") && value.endsWith("'"))) {
-            value = value.substring(1, value.length - 1);
-          }
+          // Parse key=value pairs
+          const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+          if (match) {
+            const key = match[1];
+            let value = match[2] || '';
 
-          // Only set if not already defined
-          if (!process.env[key]) {
-            process.env[key] = value;
+            // Remove quotes if present
+            if (value.length > 0 && (value.startsWith('"') && value.endsWith('"')) 
+                || (value.startsWith("'") && value.endsWith("'"))) {
+              value = value.substring(1, value.length - 1);
+            }
+
+            // Only set if not already defined
+            if (!process.env[key]) {
+              process.env[key] = value;
+            }
           }
         }
+        console.log(`[Config] Environment variables loaded from ${envFile}`);
+        loaded = true;
       }
-      console.log('[Config] Environment variables loaded from .env file');
-      return true;
+    } catch (error) {
+      console.error(`[Config] Error loading ${envFile}:`, error);
     }
-    console.warn('[Config] .env file not found, using existing environment variables');
-    return false;
-  } catch (error) {
-    console.error(`[Config] Error loading .env file:`, error);
-    return false;
   }
+
+  if (!loaded) {
+    console.warn('[Config] No .env files found, using existing environment variables');
+  }
+  
+  return loaded;
 }
 
 // Load environment variables before validation
