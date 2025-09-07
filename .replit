@@ -23,7 +23,7 @@ localPort = 5000
 externalPort = 5000
 
 [workflows]
-runButton = "Start Application"
+runButton = "Start Web Feedback App"
 
 [[workflows.workflow]]
 name = "Start Web Feedback App"
@@ -67,19 +67,6 @@ args = "npm install"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npx tsx scripts/ensure-session-table.ts"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev"
-
-[[workflows.workflow]]
-name = "Start Application"
-author = 47315861
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm install"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

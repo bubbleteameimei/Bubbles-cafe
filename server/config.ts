@@ -54,7 +54,7 @@ function loadEnvFile() {
   if (!loaded) {
     console.warn('[Config] No .env files found, using existing environment variables');
   }
-  
+
   return loaded;
 }
 
@@ -108,7 +108,7 @@ export const config = {
   isDev: env.NODE_ENV === 'development',
   isProd: env.NODE_ENV === 'production',
   isTest: env.NODE_ENV === 'test',
-  port: env.PORT,
+  port: env.PORT || 5000,
   database: {
     url: env.DATABASE_URL,
   },
