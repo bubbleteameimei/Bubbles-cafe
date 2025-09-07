@@ -425,6 +425,45 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Async method to initialize session tables
+  private async initializeSessionTables(compatiblePool: any): Promise<void> {
+    try {
+      // Create session table with proper error handling
+      await compatiblePool.query(`
+        CREATE TABLE IF NOT EXISTS "session" (
+          "sid" varchar NOT NULL COLLATE "default",
+          "sess" json NOT NULL,
+          "expire" timestamp(6) NOT NULL
+        )
+        WITH (OIDS=FALSE);
+      `);
+
+      // Only add primary key if it doesn't exist
+      try {
+        await compatiblePool.query(`
+          ALTER TABLE "session" 
+          ADD CONSTRAINT "session_pkey" 
+          PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
+        `);
+      } catch (error: any) {
+        // Ignore error if constraint already exists
+        if (!error.message.includes('already exists')) {
+          throw error;
+        }
+      }
+
+      // Create index if it doesn't exist
+      await compatiblePool.query(`
+        CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
+      `);
+
+      console.log('[Storage] Session tables initialized successfully');
+    } catch (error) {
+      console.error('[Storage] Failed to initialize session tables:', error);
+      throw error;
+    }
+  }
+
   constructor() {
     console.log('[Storage] Initializing PostgreSQL session store...');
 
@@ -485,34 +524,10 @@ export class DatabaseStorage implements IStorage {
         errorLog: (err: Error) => console.error('[SessionStore] Error:', err)
       });
 
-      // Create session table with proper error handling
-      await compatiblePool.query(`
-        CREATE TABLE IF NOT EXISTS "session" (
-          "sid" varchar NOT NULL COLLATE "default",
-          "sess" json NOT NULL,
-          "expire" timestamp(6) NOT NULL
-        )
-        WITH (OIDS=FALSE);
-      `);
-
-      // Only add primary key if it doesn't exist
-      try {
-        await compatiblePool.query(`
-          ALTER TABLE "session" 
-          ADD CONSTRAINT "session_pkey" 
-          PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
-        `);
-      } catch (error: any) {
-        // Ignore error if constraint already exists
-        if (!error.message.includes('already exists')) {
-          throw error;
-        }
-      }
-
-      // Create index if it doesn't exist
-      await compatiblePool.query(`
-        CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
-      `);
+      // Initialize session tables asynchronously (non-blocking)
+      this.initializeSessionTables(compatiblePool).catch(error => {
+        console.error('[Storage] Failed to initialize session tables:', error);
+      });
 
 
       console.log('[Storage] Session store initialized successfully');
