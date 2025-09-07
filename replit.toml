@@ -11,12 +11,12 @@ build = ["sh", "-c", "npm install && npm run build"]
 run = ["sh", "-c", "npm start"]
 
 [[ports]]
-localPort = 3002
+localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 3002
-externalPort = 3002
+localPort = 5000
+externalPort = 5000
 
 [workflows]
 runButton = "Start Web Feedback App"
@@ -29,4 +29,4 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "bash -c 'npm install && npm run dev'"
-waitForPort = 3002
+waitForPort = 5000
