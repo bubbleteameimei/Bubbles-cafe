@@ -37,8 +37,8 @@ function loadEnvFile() {
               value = value.substring(1, value.length - 1);
             }
 
-            // Set the value, with .env.local taking priority over .env
-            if (!process.env[key] || envFile === '.env.local') {
+            // Only set if not already defined
+            if (!process.env[key]) {
               process.env[key] = value;
             }
           }
@@ -108,7 +108,7 @@ export const config = {
   isDev: env.NODE_ENV === 'development',
   isProd: env.NODE_ENV === 'production',
   isTest: env.NODE_ENV === 'test',
-  port: env.PORT,
+  port: env.PORT || 3002,
   database: {
     url: env.DATABASE_URL,
   },
