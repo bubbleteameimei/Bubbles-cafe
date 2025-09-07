@@ -31,6 +31,8 @@ import { applyPerformanceMiddleware } from './middleware';
 import { globalRateLimiter } from "./middlewares/rate-limiter";
 import { apiCache } from './middlewares/api-cache';
 import { browserCache, etagCache } from './middlewares/browser-cache';
+import { StartupGuardian, setupGlobalErrorHandlers } from './utils/startup-guardian';
+import { ProcessMonitor } from './utils/process-monitor';
 
 const app = express();
 // Trust proxy for correct secure cookies and client IPs when behind a proxy/CDN
@@ -123,7 +125,7 @@ app.use('/api', globalRateLimiter);
 if (config.cache.api) {
   app.use('/api', apiCache(config.cache.ttlMs));
 }
-// Add health check endpoint with CSRF token initialization
+// Add health check endpoint with startup guardian integration
 app.get('/health', (req, res) => {
   // Ensure a CSRF token is set in session only
   if (!req.session.csrfToken) {
@@ -131,10 +133,16 @@ app.get('/health', (req, res) => {
     req.session.csrfToken = token;
   }
 
+  const healthStatus = startupGuardian.getHealthStatus();
+  
   res.json({ 
-    status: 'ok', 
+    status: healthStatus.healthy ? 'ok' : 'degraded', 
     timestamp: new Date().toISOString(),
-    csrfToken: req.session.csrfToken 
+    csrfToken: req.session.csrfToken,
+    uptime: healthStatus.uptime,
+    healthy: healthStatus.healthy,
+    version: '1.0.0',
+    guardian: 'active'
   });
 });
 
@@ -181,13 +189,29 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), csrfToken: req.session.csrfToken });
 });
 
+// Initialize startup guardian, process monitor, and global error handlers
+setupGlobalErrorHandlers();
+const startupGuardian = new StartupGuardian({
+  port: PORT,
+  host: HOST,
+  maxRetries: 3,
+  retryDelay: 1000
+});
+const processMonitor = new ProcessMonitor(512, 60000); // 512MB limit, check every minute
+
 async function startServer() {
   try {
-    serverLogger.info('Starting server initialization', {
+    serverLogger.info('🚀 Starting server initialization with Startup Guardian', {
       environment: process.env.NODE_ENV,
       host: HOST,
       port: PORT
     });
+
+    // Use startup guardian for reliable initialization
+    const guardedStartup = await startupGuardian.guardedStartup();
+    if (!guardedStartup) {
+      throw new Error('Startup Guardian failed - aborting server start');
+    }
 
     // Setup database connection first
     try {
@@ -331,10 +355,14 @@ async function startServer() {
           serverLogger.debug('Sent port readiness signal', { port: PORT });
         }
 
+        // Start process monitoring
+        processMonitor.start();
+
         // Additional confirmation
         setTimeout(() => {
           console.log(`🚀 Server fully initialized and ready on port ${PORT}`);
           console.log(`📝 Preview URL should be available in Replit webview`);
+          console.log(`🛡️ Startup Guardian and Process Monitor active`);
         }, 500);
 
         resolve();
@@ -371,9 +399,10 @@ startServer().catch(error => {
   process.exit(1);
 });
 
-// Handle graceful shutdown
-process.on('SIGTERM', () => {
+// Handle graceful shutdown with startup guardian
+process.on('SIGTERM', async () => {
   serverLogger.info('SIGTERM received, initiating graceful shutdown');
+  await startupGuardian.gracefulShutdown();
   server?.close(() => {
     serverLogger.info('Server closed successfully');
     process.exit(0);
@@ -381,8 +410,9 @@ process.on('SIGTERM', () => {
 });
 
 // Handle Ctrl+C in local/dev gracefully
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   serverLogger.info('SIGINT received, initiating graceful shutdown');
+  await startupGuardian.gracefulShutdown();
   server?.close(() => {
     serverLogger.info('Server closed successfully');
     process.exit(0);
