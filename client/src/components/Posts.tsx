@@ -18,7 +18,7 @@ function Posts() {
 
   const prefetchReaderCode = () => {
     try {
-      void import("../../pages/reader");
+      void import("@/pages/reader");
     } catch {}
   };
 

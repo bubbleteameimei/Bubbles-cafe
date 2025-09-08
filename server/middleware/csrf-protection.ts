@@ -64,6 +64,7 @@ export function getCsrfToken(req: Request, res: Response) {
     timestamp: new Date().toISOString(),
     csrfToken: req.session.csrfToken
   });
+  return;
 }
 
 /**

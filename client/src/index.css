@@ -4,9 +4,8 @@
 /* Mobile responsiveness update - March 2025 */
 @tailwind base;
 @tailwind components;
-@tailwind utilities;
-
 @import './styles/design-tokens.css';
+@tailwind utilities;
 
 /* Fix double scrollbar issue */
 html, body {

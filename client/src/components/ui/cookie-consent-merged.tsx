@@ -58,14 +58,14 @@ const floatingChipVariants = {
 const MiniCookie = ({ index: _index }: { index: number }) => {
   return (
     <motion.div
-      custom={index}
+      custom={_index}
       variants={cookieDropVariants}
       initial="initial"
       animate="animate"
       className="absolute"
       style={{
         top: `${Math.random() * 80}%`,
-        left: `${index * 20}%`,
+        left: `${_index * 20}%`,
         zIndex: 10
       }}
     >
@@ -303,7 +303,7 @@ interface CookiePreferencesModalProps {
 }
 
 function CookiePreferencesModal({ open, onOpenChange }: CookiePreferencesModalProps) {
-  const { cookiePreferences, toggleCategory: _toggleCategory, updatePreferences, acceptAll } = useCookieConsent();
+  const { cookiePreferences, toggleCategory: _toggleCategory, updatePreferences, acceptAll, acceptEssentialOnly } = useCookieConsent();
 
   // Local state to track changes before saving
   const [localPreferences, setLocalPreferences] = useState(cookiePreferences);
@@ -331,6 +331,8 @@ function CookiePreferencesModal({ open, onOpenChange }: CookiePreferencesModalPr
     updatePreferences(prefsToUpdate);
     onOpenChange();
   };
+
+  const handleAcceptEssential = () => acceptEssentialOnly();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -420,7 +422,7 @@ function CookiePreferencesModal({ open, onOpenChange }: CookiePreferencesModalPr
           <div className="flex gap-2 flex-wrap">
             <Button 
               variant="outline" 
-              onClick={acceptEssentialOnly}
+              onClick={() => handleAcceptEssential()}
               className="border-[#8B5A2B] text-[#8B5A2B] hover:bg-[#F5F5DC] hover:text-[#6F4E37]"
             >
               Basic Recipe

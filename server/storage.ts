@@ -125,17 +125,16 @@ try {
 }
 
 // Add pool error handling
-pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
-  process.exit(-1);
+pool.on('error', (err: any) => {
+  storageLogger.error('Unexpected error on idle client', { message: err?.message });
 });
 
-pool.on('connect', (client) => {
-  console.log('New client connected to database');
+pool.on('connect', (_client: any) => {
+  storageLogger.debug('New client connected to database');
 });
 
-pool.on('remove', (client) => {
-  console.log('Client removed from pool');
+pool.on('remove', (_client: any) => {
+  storageLogger.debug('Client removed from pool');
 });
 
 // Graceful shutdown handling
@@ -155,10 +154,8 @@ import { eq, desc, asc, and, or, not, like, lt, gt, gte, sql, avg, count, inArra
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { createLogger } from "./utils/debug-logger";
-
 const storageLogger = createLogger('Storage');
-// Redirect all console usage in this module to structured logger
-const console = {
+const consoleProxy = {
   log: (...args: any[]) => storageLogger.debug(args.map(String).join(' ')),
   warn: (...args: any[]) => storageLogger.warn(args.map(String).join(' ')),
   error: (...args: any[]) => storageLogger.error(args.map(String).join(' '))
@@ -423,12 +420,12 @@ export class DatabaseStorage implements IStorage {
   // Cache management
   async clearCache(key: string): Promise<boolean> {
     try {
-      console.log(`[Storage] Clearing cache for key: ${key}`);
+      consoleProxy.log(`[Storage] Clearing cache for key: ${key}`);
       // In a real implementation, this would clear Redis or other cache
       // For now, we just return success since we don't have an actual cache layer
       return true;
     } catch (error) {
-      console.error(`[Storage] Error clearing cache for key ${key}:`, error);
+      consoleProxy.error(`[Storage] Error clearing cache for key ${key}:`, error);
       return false;
     }
   }
