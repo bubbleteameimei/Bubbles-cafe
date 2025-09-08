@@ -61,7 +61,8 @@ export const validateBody = (schema: z.ZodSchema) => {
       
       res.status(400).json({
         error: 'Invalid input',
-        details: error instanceof z.ZodError ? error.errors : undefined
+        details: error instanceof z.ZodError ? error.errors : undefined,
+        requestId: (req as any).requestId
       });
     }
   };
@@ -80,7 +81,8 @@ export const validateQuery = (schema: z.ZodSchema) => {
       
       res.status(400).json({
         error: 'Invalid query parameters',
-        details: error instanceof z.ZodError ? error.errors : undefined
+        details: error instanceof z.ZodError ? error.errors : undefined,
+        requestId: (req as any).requestId
       });
     }
   };
@@ -99,7 +101,8 @@ export const validateParams = (schema: z.ZodSchema) => {
       
       res.status(400).json({
         error: 'Invalid parameters',
-        details: error instanceof z.ZodError ? error.errors : undefined
+        details: error instanceof z.ZodError ? error.errors : undefined,
+        requestId: (req as any).requestId
       });
     }
   };

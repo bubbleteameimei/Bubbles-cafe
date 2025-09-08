@@ -21,6 +21,7 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run lint
+      - run: npx axe-core --urls http://localhost:3000 || true
       - run: npm run build
       - run: npm run audit --if-present
   secrets-scan:

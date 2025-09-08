@@ -30,8 +30,11 @@ import { applyPerformanceMiddleware } from './middleware';
 import { globalRateLimiter } from "./middlewares/rate-limiter";
 import { apiCache } from './middlewares/api-cache';
 import { browserCache, etagCache } from './middlewares/browser-cache';
+import { startOtel } from './utils/otel';
 
 const app = express();
+// Optional tracing
+if (process.env.ENABLE_TRACING === 'true') { try { startOtel('bubbles-cafe'); } catch {} }
 // Trust proxy for correct secure cookies and client IPs when behind a proxy/CDN
 app.set('trust proxy', 1);
 // Remove Express signature header
