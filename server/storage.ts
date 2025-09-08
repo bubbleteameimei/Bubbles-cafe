@@ -442,8 +442,7 @@ export class DatabaseStorage implements IStorage {
           "sid" varchar NOT NULL COLLATE "default",
           "sess" json NOT NULL,
           "expire" timestamp(6) NOT NULL
-        )
-        WITH (OIDS=FALSE);
+        );
       `);
 
       // Only add primary key if it doesn't exist
@@ -502,8 +501,8 @@ export class DatabaseStorage implements IStorage {
       // Cast to any to avoid TypeScript errors with the PgPool interface
       this.sessionStore = new PgSession({
         pool: compatiblePool as any,
-        createTableIfMissing: true,
-        tableName: 'express_sessions',
+        createTableIfMissing: false,
+        tableName: 'session',
         schemaName: 'public',
         ttl: 86400, // 1 day
         pruneSessionInterval: 60 * 15, // Prune expired sessions every 15 minutes

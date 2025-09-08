@@ -37,11 +37,14 @@ function sanitizeDatabaseUrl(url?: string): string | undefined {
   s = s.replace(/^postgresal:\/\//i, 'postgresql://');
   s = s.replace(/^postgres:\/\//i, 'postgresql://');
   s = s.replace(/-pool-er/gi, '-pooler');
-  // Ensure sslmode=require is preserved if present or needed
-  if (!/sslmode=/i.test(s)) {
-    const hasQuery = s.includes('?');
-    s = s + (hasQuery ? '&' : '?') + 'sslmode=require';
-  }
+  // Normalize protocol case
+  s = s.replace(/^POSTGRESQL:\/\//, 'postgresql://');
+  // Remove duplicate sslmode parameters
+  const [base, query = ''] = s.split('?');
+  const params = new URLSearchParams(query);
+  // Ensure require
+  params.set('sslmode', params.get('sslmode') || 'require');
+  s = base + '?' + params.toString();
   return s;
 }
 
