@@ -19,6 +19,7 @@ import logger from "./utils/secure-client-logger";
 import './lib/fetch-csrf';
 import { startWebVitals, trackPageView, schedulePerformanceSummary } from '@/lib/metrics';
 import { enableAxeInDev } from '@/lib/a11y-dev';
+import { lazyLoadImages } from '@/lib/image-lazy';
 
 logger.info("Starting application...");
 
@@ -48,6 +49,8 @@ addInitialLoadingIndicator();
 
 // Optimize images based on connection speed
 optimizeImagesForConnection();
+// Force lazy loading + decode hints for images to reduce CLS
+lazyLoadImages();
 
 // Initialize style preloader
 setupStylePreloader();

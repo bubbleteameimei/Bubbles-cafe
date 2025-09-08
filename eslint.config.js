@@ -4,6 +4,8 @@ import tsParser from '@typescript-eslint/parser';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import unusedImports from 'eslint-plugin-unused-imports';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
+import importPlugin from 'eslint-plugin-import';
 
 export default [
 	{
@@ -14,7 +16,7 @@ export default [
 			ecmaVersion: 'latest',
 			globals: { window: true, document: true, navigator: true },
 		},
-		plugins: { '@typescript-eslint': tseslint, react, 'react-hooks': reactHooks, 'unused-imports': unusedImports },
+		plugins: { '@typescript-eslint': tseslint, react, 'react-hooks': reactHooks, 'unused-imports': unusedImports, 'jsx-a11y': jsxA11y, import: importPlugin },
 		settings: {
 			react: { version: 'detect' }
 		},
@@ -22,6 +24,8 @@ export default [
 			...tseslint.configs.recommended.rules,
 			...react.configs.recommended.rules,
 			...reactHooks.configs.recommended.rules,
+			...(jsxA11y.configs.recommended.rules || {}),
+			...(importPlugin.configs.recommended.rules || {}),
 			// Prefer automatic import removal over generic unused vars
 			'@typescript-eslint/no-unused-vars': 'off',
 			'unused-imports/no-unused-imports': 'error',
@@ -36,7 +40,13 @@ export default [
 			// Relax non-critical React rules to reduce noise in content-heavy pages
 			'react/no-unescaped-entities': 'off',
 			'react/prop-types': 'off',
-			'react/display-name': 'off'
+			'react/display-name': 'off',
+			// Import hygiene
+			'import/no-cycle': 'warn',
+			'import/order': ['warn', { 'alphabetize': { order: 'asc', caseInsensitive: true }, 'newlines-between': 'always' }],
+			// A11y additions
+			'jsx-a11y/anchor-is-valid': 'warn',
+			'jsx-a11y/no-autofocus': 'warn'
 		},
 	},
 	{ ignores: ['dist/**', 'node_modules/**'] },

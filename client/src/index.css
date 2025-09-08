@@ -6,6 +6,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import './styles/design-tokens.css';
+
 /* Fix double scrollbar issue */
 html, body {
   overflow-x: hidden;
