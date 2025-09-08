@@ -156,3 +156,16 @@ export const config = {
 
 // Type for the config object
 export type Config = typeof config;
+
+// Enforce strong session secret in production
+if (config.isProd) {
+  const weakDefaults = new Set([
+    'horror-stories-session-secret-development-only-change-this-in-production-environment'
+  ]);
+  const secret = config.session.secret || '';
+  if (secret.length < 64 || weakDefaults.has(secret)) {
+    console.error('\u274c SESSION_SECRET is weak or using a development default.');
+    console.error('Set a strong random SESSION_SECRET (>= 64 chars) in the environment.');
+    process.exit(1);
+  }
+}

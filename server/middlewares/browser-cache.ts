@@ -14,6 +14,12 @@ export const browserCache = () => {
 
     const url = req.url;
 
+    // Never apply browser caching to API endpoints; rely on API layer/cache
+    if (url.startsWith('/api')) {
+      res.set('Cache-Control', 'no-store');
+      return next();
+    }
+
     // Static assets with long cache times (1 week)
     if (
       url.match(/\.(jpg|jpeg|png|gif|ico|svg|webp)(\?.*)?$/) || // Images
@@ -28,8 +34,8 @@ export const browserCache = () => {
       res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=86400');
       res.set('Vary', 'Accept-Encoding');
     }
-    // JSON data with medium cache times (1 hour) for API responses
-    else if (url.match(/\.json(\?.*)?$/) || url.startsWith('/api/')) {
+    // JSON data with medium cache times (1 hour)
+    else if (url.match(/\.json(\?.*)?$/)) {
       res.set('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
       res.set('Vary', 'Accept-Encoding, Accept');
     }
