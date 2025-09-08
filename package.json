@@ -25,6 +25,7 @@
     "lint": "eslint --ext .ts,.tsx client server shared",
     "format": "prettier --write .",
     "analyze": "npm run build && npx vite-bundle-analyzer dist",
+    "precommit": "npm run check && npm run lint",
     "lighthouse": "npx lighthouse http://localhost:3000 --output json --output html --output-path ./lighthouse-report",
     "perf:audit": "npm run lighthouse && echo 'Performance audit complete'",
     "optimize:images": "tsx scripts/optimize-public-images.ts",
@@ -36,6 +37,7 @@
     "validate:all": "npm run check && npm run lint && npm run security:scan && tsx scripts/check-public-images.ts"
   },
   "dependencies": {
+    "@axe-core/react": "^4.8.4",
     "@anthropic-ai/sdk": "^0.36.3",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",

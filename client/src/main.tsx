@@ -18,6 +18,7 @@ import { initCSRFProtection } from "@/lib/csrf-token";
 import logger from "./utils/secure-client-logger";
 import './lib/fetch-csrf';
 import { startWebVitals, trackPageView, schedulePerformanceSummary } from '@/lib/metrics';
+import { enableAxeInDev } from '@/lib/a11y-dev';
 
 logger.info("Starting application...");
 
@@ -92,6 +93,8 @@ const renderApp = () => {
 };
 
 renderApp();
+// Enable a11y checks in development without affecting production
+try { enableAxeInDev(); } catch {}
 
 // Start analytics + performance monitoring (non-blocking)
 try {
