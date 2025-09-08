@@ -287,3 +287,4 @@ mobile-layout.html
 accessibility*.html
 accessibility*.md
 *.cjs.env
+.env*
