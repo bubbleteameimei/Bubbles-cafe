@@ -31,6 +31,8 @@ import { globalRateLimiter } from "./middlewares/rate-limiter";
 import { apiCache } from './middlewares/api-cache';
 import { browserCache, etagCache } from './middlewares/browser-cache';
 import { startOtel } from './utils/otel';
+import { idempotency } from './middleware/idempotency';
+import { ssrStreamHandler } from './ssr';
 
 const app = express();
 // Optional tracing
@@ -52,6 +54,7 @@ app.use(requestIdMiddleware);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(compression());
+app.use(idempotency());
 
 // Enable request logging only in development (configurable)
 if (config.isDev && config.dev.requestLogging) {
@@ -277,6 +280,8 @@ async function startServer() {
       wordpressScheduler.start();
 
       await setupVite(app, server);
+      // Optional SSR streaming preview
+      app.get('/ssr', ssrStreamHandler);
     } else {
       serverLogger.info('Setting up production environment');
 
@@ -299,6 +304,9 @@ async function startServer() {
       app.use(etagCache());
 
       serveStatic(app);
+      if (process.env.ENABLE_SSR === 'true') {
+        app.get('/ssr', ssrStreamHandler);
+      }
     }
 
     // Start listening with enhanced error handling and port notification

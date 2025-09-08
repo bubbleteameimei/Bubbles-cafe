@@ -34,7 +34,10 @@
     "reorganize": "node scripts/reorganize-project.js",
     "fix:all": "npm run cleanup:dead-code && npm run check && npm run format",
     "security:scan": "npm audit && npx snyk test",
-    "validate:all": "npm run check && npm run lint && npm run security:scan && tsx scripts/check-public-images.ts"
+    "validate:all": "npm run check && npm run lint && npm run security:scan && tsx scripts/check-public-images.ts",
+    "budget": "node scripts/bundle-budget.cjs",
+    "test": "vitest run --coverage",
+    "e2e": "playwright test --config=playwright.config.ts"
   },
   "dependencies": {
     "@axe-core/react": "^4.8.4",
@@ -161,6 +164,9 @@
     "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@testing-library/react": "^16.0.1",
+    "vitest": "^2.1.8",
     "@replit/vite-plugin-runtime-error-modal": "^0.0.3",
     "@tailwindcss/typography": "^0.5.15",
     "@types/connect-pg-simple": "^7.0.3",
