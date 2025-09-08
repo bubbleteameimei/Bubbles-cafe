@@ -118,6 +118,8 @@ export async function recordPageView(
   referrer: string = document.referrer
 ): Promise<void> {
   try {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 4000);
     await fetch('/api/analytics/pageview', {
       method: 'POST',
       headers: {
@@ -131,9 +133,11 @@ export async function recordPageView(
         screenWidth: window.innerWidth,
         screenHeight: window.innerHeight,
       }),
+      signal: controller.signal,
     });
+    clearTimeout(t);
   } catch (error) {
-    console.warn('Failed to record page view:', error);
+    // Swallow to avoid noisy console in Replit envs
   }
 }
 

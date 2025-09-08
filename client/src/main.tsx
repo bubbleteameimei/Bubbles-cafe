@@ -26,8 +26,9 @@ logger.info("Starting application...");
 // Global unhandled promise rejection handler
 window.addEventListener('unhandledrejection', (event) => {
   try {
-    const reason = event.reason instanceof Error ? { message: event.reason.message, stack: event.reason.stack } : { message: String(event.reason) };
-    logger.error('Unhandled promise rejection', reason);
+    const msg = event?.reason instanceof Error ? event.reason.message : String(event?.reason ?? 'Unknown');
+    // Reduce noise in Replit preview by not logging to console
+    fetch('/api/errors', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: 'unhandledrejection', message: msg }) }).catch(() => {});
   } catch {}
 });
 
