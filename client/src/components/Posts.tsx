@@ -8,11 +8,34 @@ import { Loader2, AlertCircle, RefreshCw, WifiOff } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { sanitizeHtmlContent } from "@/lib/sanitize-content";
+import { useQueryClient } from "@tanstack/react-query";
 
 function Posts() {
   const [page, setPage] = useState(1);
   const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const prefetchReaderCode = () => {
+    try {
+      void import("../../pages/reader");
+    } catch {}
+  };
+
+  const prefetchPostBySlug = (slug?: string) => {
+    if (!slug) return;
+    try {
+      void queryClient.prefetchQuery({
+        queryKey: ["/api/posts/slug", slug],
+        queryFn: async () => {
+          const res = await fetch(`/api/posts/slug/${encodeURIComponent(slug)}`);
+          if (!res.ok) throw new Error("Failed to prefetch post");
+          return res.json();
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+    } catch {}
+  };
   
   // Check WordPress API status
   useEffect(() => {
@@ -129,7 +152,7 @@ function Posts() {
               </div>
 
               <h2 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-primary/90 transition-colors">
-                <Link href={`/reader/${post.slug}`}>
+                <Link href={`/reader/${post.slug}`} onMouseEnter={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }} onFocus={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }}>
                   {typeof post.title === 'object' 
                     ? <span dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.title.rendered) }} />
                     : post.title}
@@ -145,7 +168,7 @@ function Posts() {
                   <span className="text-xs text-muted-foreground">
                     From our archives
                   </span>
-                  <Link href={`/reader/${post.slug}`}>
+                  <Link href={`/reader/${post.slug}`} onMouseEnter={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }} onFocus={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }}>
                     <Button variant="outline" size="sm" className="gap-2">
                       Read story
                       <span className="h-1 w-1 rounded-full bg-primary animate-pulse"></span>
@@ -220,7 +243,7 @@ function Posts() {
             className="p-4 sm:p-5 md:p-6 transition-all duration-300 hover:shadow-lg hover:border-primary/30 flex flex-col"
           >
             <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3 line-clamp-2 group hover:text-primary transition-colors">
-              <Link href={`/reader/${post.slug}`}>
+              <Link href={`/reader/${post.slug}`} onMouseEnter={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }} onFocus={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }}>
                 <span dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.title.rendered) }} />
               </Link>
             </h2>
@@ -235,7 +258,7 @@ function Posts() {
               </div>
             )}
             <div className="mt-auto pt-2 sm:pt-3 border-t border-border/30">
-              <Link href={`/reader/${post.slug}`} className="w-full sm:w-auto">
+              <Link href={`/reader/${post.slug}`} className="w-full sm:w-auto" onMouseEnter={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }} onFocus={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }}>
                 <Button 
                   variant="outline" 
                   className="w-full sm:w-auto transition-all hover:bg-primary/5"

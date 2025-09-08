@@ -327,9 +327,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       console.log('[Reader] Fetching posts...', { routeSlug, isCommunityContent });
       try {
         if (routeSlug) {
-          // If slug is provided, fetch specific post
-          // Use the community endpoint if this is community content
-          const endpoint = isCommunityContent ? `/api/posts/community/${routeSlug}` : `/api/posts/${routeSlug}`;
+          // If slug is provided, always use the unified slug endpoint
+          const endpoint = `/api/posts/slug/${encodeURIComponent(routeSlug)}`;
           const response = await fetch(endpoint);
           if (!response.ok) throw new Error(`Failed to fetch ${isCommunityContent ? 'community' : ''} post`);
           const post = await response.json();

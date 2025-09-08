@@ -124,11 +124,8 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
       return next();
     }
 
-    // Alternative to CSRF: if Authorization Bearer token is present, skip CSRF validation
-    const authHeader = req.headers['authorization'] || req.headers['Authorization' as any];
-    if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
-      return next();
-    }
+    // Do not bypass CSRF validation when Authorization headers are present
+    // This server relies on session-based auth; bearer tokens are not a CSRF bypass mechanism here
 
     // Allowlist only specific endpoints to bypass CSRF header
     const allowlist = new Set<string>([
@@ -186,16 +183,11 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
 
     // Ensure session exists and has a CSRF token; if not, attempt to initialize transparently
     if (!req.session || !req.session.csrfToken) {
-      // Initialize a token to avoid hard-blocking legitimate first POSTs after fresh session
-      if (req.session) {
-        req.session.csrfToken = generateToken();
-        // Allow the request to continue this time; client will cache token for subsequent requests
-        return next();
-      }
       console.warn(`CSRF validation failed: Token missing from session for ${req.method} ${req.path}`);
       return res.status(403).json({
         error: 'CSRF token is missing from session',
         code: 'CSRF_SESSION_MISSING',
+        hint: 'Fetch a CSRF token from /api/csrf-token before making state-changing requests',
         path: req.path,
         method: req.method
       });

@@ -12,7 +12,6 @@ import crypto from 'crypto';
 
 import session from "express-session";
 import { setupAuth } from "./auth";
-import { setupOAuth } from "./oauth";
 import { storage } from "./storage";
 import { createLogger, requestLogger } from "./utils/debug-logger";
 import { requestIdMiddleware } from "./utils/request-id";
@@ -114,7 +113,6 @@ app.use(validateCsrfToken({
 // Setup authentication
 app.use((req, _res, next) => next());
 setupAuth(app);
-setupOAuth(app);
 
 // Apply a global API rate limiter after auth so authenticated users get higher limits
 app.use('/api', globalRateLimiter);
@@ -260,9 +258,6 @@ async function startServer() {
     // Setup routes based on environment
     if (isDev) {
       serverLogger.info('Setting up development environment');
-
-      // Add global request logging in development
-      app.use(requestLogger);
 
       // Register modular routes (replaces legacy monolithic routes)
       const { registerModularRoutes } = await import('./routes');
