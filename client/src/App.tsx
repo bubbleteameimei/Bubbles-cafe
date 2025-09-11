@@ -176,7 +176,7 @@ const AppContent = () => {
       trackPageView(location);
     }
   }, [location, isErrorPage]);
-  
+
   // If we're on an error page, render only the error page without layout
   if (isErrorPage) {
     return (
@@ -214,18 +214,18 @@ const AppContent = () => {
           <Route path="/contact" component={ContactPage} />
           <Route path="/privacy" component={PrivacyPage} />
           <Route path="/report-bug" component={ReportBugPage} />
-          
+
           {/* Authentication */}
           <Route path="/auth" component={AuthPage} />
           <Route path="/auth-success" component={AuthSuccessPage} />
           <Route path="/reset-password" component={ResetPasswordPage} />
-          
+
           {/* User Pages */}
           <Route path="/profile" component={ProfilePage} />
           <Route path="/bookmarks" component={BookmarksPage} />
           <Route path="/notifications" component={NotificationsPage} />
           <Route path="/recommendations" component={RecommendationsPage} />
-          
+
           {/* Settings Pages */}
           <Route path="/settings/profile" component={ProfileSettingsPage} />
           <Route path="/settings/connected-accounts" component={ConnectedAccountsPage} />
@@ -236,7 +236,7 @@ const AppContent = () => {
           <Route path="/settings/cookie-management" component={CookieManagementPage} />
           <Route path="/settings/quick-settings" component={QuickSettingsPage} />
           <Route path="/settings/preview" component={PreviewSettingsPage} />
-          
+
           {/* Community Pages */}
           <Route path="/community" component={CommunityPage} />
           <Route path="/submit-story" component={SubmitStoryPage} />
@@ -244,12 +244,12 @@ const AppContent = () => {
           <Route path="/feedback" component={FeedbackPage} />
           <Route path="/user/feedback-dashboard" component={UserFeedbackDashboardPage} />
           <Route path="/support/guidelines" component={GuidelinesPage} />
-          
+
           {/* Legal Pages */}
           <Route path="/legal/copyright" component={CopyrightPage} />
           <Route path="/legal/terms" component={TermsPage} />
           <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
-          
+
           {/* Admin Pages */}
           <Route path="/admin" component={AdminPage} />
           <Route path="/admin/dashboard" component={AdminDashboardPage} />
@@ -269,7 +269,7 @@ const AppContent = () => {
           <Route path="/admin/site-statistics" component={AdminSiteStatisticsPage} />
           <Route path="/admin/wordpress-sync" component={AdminWordPressSyncPage} />
           <Route path="/admin/themes" component={AdminThemesPage} />
-          
+
           {/* Dynamic Routes */}
           <Route path="/search" component={SearchResultsPage} />
           <Route path="/community-story/:slug">
@@ -281,7 +281,7 @@ const AppContent = () => {
           <Route path="/story/:slug">
             {(params) => <ReaderPage params={params} isCommunityContent={false} />}
           </Route>
-          
+
           {/* Error Pages */}
           <Route path="/errors/403" component={Error403Page} />
           <Route path="/errors/404" component={Error404Page} />
@@ -289,7 +289,7 @@ const AppContent = () => {
           <Route path="/errors/500" component={Error500Page} />
           <Route path="/errors/503" component={Error503Page} />
           <Route path="/errors/504" component={Error504Page} />
-          
+
           {/* Catch All */}
           <Route path="*" component={Error404Page} />
         </Switch>
@@ -306,12 +306,12 @@ const AppContent = () => {
 function App() {
   // Performance monitoring removed
   const [location] = useLocation();
-  
+
   // Set up global error handlers
   useEffect(() => {
     setupGlobalErrorHandlers();
   }, []);
-  
+
   // The page transition loading will be handled by AppContent component
   // where useLoading will be called after LoadingProvider is mounted
 
@@ -319,11 +319,11 @@ function App() {
   useEffect(() => {
     // Initialize the sync service first
     initWordPressSync();
-    
+
     // Defer preloading content until after the initial render
     preloadWordPressPostsDeferred();
   }, []);
-  
+
   // Create a FeedbackButton wrapper component to handle visibility logic
   const ConditionalFeedbackButton = () => {
     const [currentPath] = useLocation();
@@ -335,16 +335,16 @@ function App() {
       currentPath.startsWith("/reader") || 
       currentPath.startsWith("/community-story") || 
       currentPath === "/community";
-      
+
     return !shouldHideButton ? <FeedbackButton /> : null;
   };
-  
+
   // Function to handle data refresh
   const handleDataRefresh = async () => {
     // Invalidate all queries to refresh data
     await queryClient.invalidateQueries();
   };
-  
+
   return (
     <GlobalErrorBoundary level="critical">
       <QueryClientProvider client={queryClient}>
@@ -381,7 +381,7 @@ function App() {
                             )}
                             {/* Conditionally show FeedbackButton */}
                             <ConditionalFeedbackButton />
-                            
+
                             {/* Toast notifications */}
                             <Toaster />
                             <Sonner position="bottom-left" className="fixed-sonner" />

@@ -42,27 +42,27 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, noOutline = false, children, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, noOutline = false, children, 'data-testid': testId, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
-    
+
     // Extract text content for automatic aria-label when none provided
     const hasAriaLabel = Boolean(props['aria-label']);
     const childrenText = typeof children === 'string' ? children : undefined;
-    
+
     // Check if there's a data-loading attribute that indicates loading state
     const dataAttrs = props as { [key: string]: any };
     const isLoading = dataAttrs['data-loading'] === 'true';
-    
+
     // Check if it has appropriate accessibility attributes
     const hasRole = Boolean(props.role);
     const hasTabIndex = 'tabIndex' in props;
-    
+
     // Generate additional style for removing outlines if requested
     const customStyle = noOutline ? {
       outline: 'none',
       boxShadow: 'none'
     } : {};
-    
+
     return (
       <Comp
         className={cn(
@@ -79,6 +79,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           ...customStyle,
           ...props.style
         }}
+        data-testid={testId}
         {...props}
       >
         {children}

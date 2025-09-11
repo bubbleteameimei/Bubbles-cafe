@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import {
@@ -36,6 +36,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import { useQuery } from '@tanstack/react-query';
 
 // Types for our bug report data
 interface BugReport {
@@ -106,7 +107,7 @@ function BugReportItem({ report, onStatusChange }: {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [status, setStatus] = useState(report.status);
   const { toast } = useToast();
-  
+
   // Format date for display
   const formattedDate = useMemo(() => {
     try {
@@ -115,7 +116,7 @@ function BugReportItem({ report, onStatusChange }: {
       return 'Invalid date';
     }
   }, [report.createdAt]);
-  
+
   // Format time for display
   const formattedTime = useMemo(() => {
     try {
@@ -124,7 +125,7 @@ function BugReportItem({ report, onStatusChange }: {
       return '';
     }
   }, [report.createdAt]);
-  
+
   // Get icon based on device type
   const getDeviceIcon = () => {
     if (report.metadata.deviceType === 'mobile') {
@@ -135,7 +136,7 @@ function BugReportItem({ report, onStatusChange }: {
       return <Monitor className="h-4 w-4" />;
     }
   };
-  
+
   // Truncate content for preview
   const truncatedDescription = useMemo(() => {
     if (report.description.length > 120) {
@@ -143,7 +144,7 @@ function BugReportItem({ report, onStatusChange }: {
     }
     return report.description;
   }, [report.description]);
-  
+
   // Status change handler
   const handleStatusChange = (newStatus: string) => {
     console.log('[Admin:BugReports] Status update attempt', {
@@ -152,7 +153,7 @@ function BugReportItem({ report, onStatusChange }: {
       previousStatus: status,
       timestamp: new Date().toISOString()
     });
-    
+
     setStatus(newStatus);
     onStatusChange(report.id, newStatus);
   };
@@ -175,7 +176,7 @@ function BugReportItem({ report, onStatusChange }: {
           </div>
         </div>
       </div>
-      
+
       {/* Content column */}
       <div className="grow pt-0.5 pb-8">
         <div className="bg-card border rounded-lg shadow-sm hover:shadow transition-shadow duration-200">
@@ -201,14 +202,14 @@ function BugReportItem({ report, onStatusChange }: {
                 <span className="sr-only">Toggle details</span>
               </Button>
             </div>
-            
+
             {/* Preview content */}
             <div className="mb-2">
               <p className="text-sm text-gray-600 dark:text-neutral-400 whitespace-pre-line">
                 {isExpanded ? report.description : truncatedDescription}
               </p>
             </div>
-            
+
             {/* Meta info */}
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
               <div className="flex items-center">
@@ -228,7 +229,7 @@ function BugReportItem({ report, onStatusChange }: {
               )}
             </div>
           </div>
-          
+
           {/* Expanded details */}
           {isExpanded && (
             <div className="px-4 pb-4 pt-1 border-t border-border mt-2">
@@ -248,7 +249,7 @@ function BugReportItem({ report, onStatusChange }: {
                     )}
                   </div>
                 </div>
-                
+
                 {/* Contact info - only display if available */}
                 {report.email && (
                   <div>
@@ -264,7 +265,7 @@ function BugReportItem({ report, onStatusChange }: {
                   </div>
                 )}
               </div>
-              
+
               {/* Screenshot preview */}
               {report.screenshot && (
                 <div className="mt-4 pt-4 border-t border-border">
@@ -281,7 +282,7 @@ function BugReportItem({ report, onStatusChange }: {
                       </Button>
                     </div>
                   </div>
-                  
+
                   <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
                     <DialogContent 
                       className="max-w-4xl" 
@@ -310,7 +311,7 @@ function BugReportItem({ report, onStatusChange }: {
                   </Dialog>
                 </div>
               )}
-              
+
               {/* Status management */}
               <div className="mt-4 pt-4 border-t border-border">
                 <div className="flex items-center justify-between flex-wrap gap-2">
@@ -340,7 +341,7 @@ function BugReportItem({ report, onStatusChange }: {
 // Group bug reports by date for timeline display
 function groupReportsByDate(reports: BugReport[]): Record<string, BugReport[]> {
   const grouped: Record<string, BugReport[]> = {};
-  
+
   reports.forEach(item => {
     try {
       const date = format(new Date(item.createdAt), 'MMM d, yyyy');
@@ -357,87 +358,11 @@ function groupReportsByDate(reports: BugReport[]): Record<string, BugReport[]> {
       grouped[fallback].push(item);
     }
   });
-  
+
   return grouped;
 }
 
-// Mock data to simulate bug reports (would be fetched from API in production)
-const MOCK_BUG_REPORTS: BugReport[] = [
-  {
-    id: 1,
-    affectedPage: '/reader',
-    description: "The audio player doesn't stop when navigating away from the page, which causes multiple audio tracks to play simultaneously if I go back.",
-    status: 'new',
-    createdAt: '2025-03-13T15:30:00Z',
-    metadata: {
-      browser: 'Chrome 120',
-      operatingSystem: 'Windows 11',
-      screenResolution: '1920x1080',
-      deviceType: 'desktop',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-    }
-  },
-  {
-    id: 2,
-    affectedPage: '/stories',
-    description: "Infinite scroll doesn't work properly on mobile. The page stops loading new stories after about 3-4 scrolls.",
-    status: 'in-progress',
-    email: 'user@example.com',
-    createdAt: '2025-03-12T10:15:00Z',
-    metadata: {
-      browser: 'Safari',
-      operatingSystem: 'iOS 17',
-      screenResolution: '390x844',
-      deviceType: 'mobile',
-      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)'
-    }
-  },
-  {
-    id: 3,
-    affectedPage: '/settings',
-    description: "Theme settings not saving. When I switch from dark to light mode and refresh the page, it reverts back to dark mode.",
-    status: 'resolved',
-    createdAt: '2025-03-11T09:45:00Z',
-    metadata: {
-      browser: 'Firefox 124',
-      operatingSystem: 'macOS',
-      screenResolution: '2560x1600',
-      deviceType: 'desktop',
-      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:124.0)'
-    }
-  },
-  {
-    id: 4,
-    affectedPage: '/login',
-    description: "Login form doesn't validate email address properly. I can enter 'test' instead of a proper email and the form submits.",
-    status: 'duplicate',
-    email: 'tester@example.com',
-    createdAt: '2025-03-11T14:22:00Z',
-    metadata: {
-      browser: 'Edge',
-      operatingSystem: 'Windows 10',
-      screenResolution: '1366x768',
-      deviceType: 'desktop',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-    }
-  },
-  {
-    id: 5,
-    affectedPage: '/reader/horror-in-the-dark',
-    description: "Images not loading on the story page. All I see are blank squares where images should be.",
-    screenshot: 'https://placehold.co/800x600/e63946/FFFFFF.png?text=Image+Error+Screenshot',
-    status: 'new',
-    email: 'reader@example.com',
-    createdAt: '2025-03-10T16:50:00Z',
-    metadata: {
-      browser: 'Chrome',
-      operatingSystem: 'Android 14',
-      screenResolution: '412x915',
-      deviceType: 'mobile',
-      userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 6)'
-    }
-  }
-];
+// Mock data removed - using real API integration
 
 export default function BugReportsPage() {
   const [activeTab, setActiveTab] = useState('all');
@@ -463,24 +388,24 @@ export default function BugReportsPage() {
   // Update stats when data changes
   useEffect(() => {
     const stats = {
-      total: MOCK_BUG_REPORTS.length,
+      total: bugReports.length,
       new: 0,
       inProgress: 0,
       resolved: 0,
       wontFix: 0,
       duplicate: 0
     };
-    
-    MOCK_BUG_REPORTS.forEach((item) => {
+
+    bugReports.forEach((item) => {
       if (item.status === 'new') stats.new++;
       else if (item.status === 'in-progress') stats.inProgress++;
       else if (item.status === 'resolved') stats.resolved++;
       else if (item.status === 'wont-fix') stats.wontFix++;
       else if (item.status === 'duplicate') stats.duplicate++;
     });
-    
+
     setReportStats(stats);
-  }, []);
+  }, [bugReports]);
 
   // Track tab changes for debugging
   const handleTabChange = (newTab: string) => {
@@ -490,34 +415,34 @@ export default function BugReportsPage() {
     });
     setActiveTab(newTab);
   };
-  
+
   // Status update handler (would make API call in production)
   const handleStatusChange = (id: number, newStatus: string) => {
     console.log(`Changing bug report #${id} status to ${newStatus}`);
-    
+
     // Simulate successful update
     toast({
       title: 'Status Updated',
       description: `Bug report #${id} status changed to ${newStatus}`,
     });
   };
-  
+
   // Filter reports based on the active tab
   const filteredReports = useMemo(() => {
-    const reports = [...MOCK_BUG_REPORTS]; // Clone to avoid modifying original
-    
+    const reports = [...bugReports]; // Clone to avoid modifying original
+
     const filtered = reports.filter((item) => {
       if (activeTab === 'all') return true;
       if (activeTab === 'in-progress') return item.status === 'in-progress';
       return item.status === activeTab;
     });
-    
+
     // Sort by date (newest first)
     filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
+
     return filtered;
-  }, [activeTab]);
-  
+  }, [activeTab, bugReports]);
+
   // Group reports by date for timeline display
   const groupedReports = useMemo(() => {
     return groupReportsByDate(filteredReports);
@@ -541,19 +466,32 @@ export default function BugReportsPage() {
     </>
   );
 
-  if (isLoading) {
+  const { data: bugReports = [], isLoading: isDataLoading } = useQuery({
+    queryKey: ['admin', 'bug-reports'],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/bug-reports', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch bug reports');
+      }
+      return response.json();
+    }
+  });
+
+  if (isDataLoading) {
     return (
       <div className="container mx-auto py-6 px-4">
         <Skeleton className="h-10 w-64 mb-6" />
-        
+
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-24 rounded-lg" />
           ))}
         </div>
-        
+
         <Skeleton className="h-12 w-full mb-6 rounded-lg" />
-        
+
         <TimelineSkeleton />
       </div>
     );
@@ -562,7 +500,7 @@ export default function BugReportsPage() {
   return (
     <div className="container mx-auto py-6 px-4">
       <h1 className="text-3xl font-bold mb-6">Bug Report Management</h1>
-      
+
       {/* Stats Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         <Card className="bg-card">
@@ -578,7 +516,7 @@ export default function BugReportsPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className={`bg-card ${activeTab === 'new' ? 'border-blue-400' : ''}`}>
           <CardContent className="pt-6">
             <div className="flex justify-between items-center">
@@ -592,7 +530,7 @@ export default function BugReportsPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className={`bg-card ${activeTab === 'in-progress' ? 'border-yellow-400' : ''}`}>
           <CardContent className="pt-6">
             <div className="flex justify-between items-center">
@@ -606,7 +544,7 @@ export default function BugReportsPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className={`bg-card ${activeTab === 'resolved' ? 'border-green-400' : ''}`}>
           <CardContent className="pt-6">
             <div className="flex justify-between items-center">
@@ -620,7 +558,7 @@ export default function BugReportsPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className={`bg-card ${activeTab === 'wont-fix' || activeTab === 'duplicate' ? 'border-red-400' : ''}`}>
           <CardContent className="pt-6">
             <div className="flex justify-between items-center">
@@ -696,7 +634,7 @@ export default function BugReportsPage() {
                       {date}
                     </h3>
                   </div>
-                  
+
                   {/* Bug report items for this date */}
                   {items.map(item => (
                     <BugReportItem 
