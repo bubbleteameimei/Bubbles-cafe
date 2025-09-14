@@ -1,9 +1,6 @@
 import { memo, useEffect, useRef } from "react";
 import { usePreloading } from "@/hooks/use-preloading";
 
-// Import the loading screen CSS to ensure it's loaded immediately
-import "@/styles/loading-screen.css";
-
 // This is a completely rewritten version of the loading screen that prioritizes
 // reliability and performance over complex features
 export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplete?: () => void }) => {
@@ -12,7 +9,7 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
   const callbackFired = useRef(false);
 
   // Use our preloading hook to ensure critical assets are loaded
-  const { preloadAssets, preloadFont } = usePreloading();
+  const { preloadFont } = usePreloading();
 
   // Effects should run only once on mount/unmount and be completely self-contained
   useEffect(() => {
@@ -31,11 +28,6 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
       onLoad: () => console.log("Megrim font loaded successfully"),
       onError: (err: unknown) => console.error("Failed to load Megrim font:", err)
     });
-
-    // Preload other critical assets needed for the loading screen
-    preloadAssets([
-      // Background images removed
-    ]);
 
     // Reset callback fired state
     callbackFired.current = false;
@@ -69,7 +61,7 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
 
       console.log("[LoadingScreen] Cleanup complete, scroll restored");
     };
-  }, [onAnimationComplete, preloadAssets, preloadFont]);
+  }, [onAnimationComplete, preloadFont]);
 
   return (
     <div 
@@ -100,7 +92,7 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
         style={{
           display: 'flex',
           gap: '0.5rem',
-          fontFamily: '"Megrim", cursive',
+          fontFamily: 'Megrim',
           fontSize: '3rem',
           fontWeight: 400,
           color: '#ffffff',
