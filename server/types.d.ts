@@ -3,6 +3,7 @@
  */
 
 import 'express';
+import 'express-session';
 
 declare global {
 	namespace Express {
@@ -14,4 +15,25 @@ declare global {
 			requestId?: string;
 		}
 	}
+}
+
+// Augment express-session to include our session fields
+declare module 'express-session' {
+  interface SessionData {
+    csrfToken?: string;
+    user?: {
+      id: number;
+      email: string;
+      username: string;
+      isAdmin?: boolean;
+    } | null;
+    anonymousBookmarks?: Record<string, {
+      notes?: string | null;
+      tags?: string[] | null;
+      lastPosition?: string | number | null;
+      createdAt?: string;
+    }>;
+    fingerprint?: string;
+    createdAt?: number;
+  }
 }

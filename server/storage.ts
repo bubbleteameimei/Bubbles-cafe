@@ -256,8 +256,6 @@ export interface IStorage {
 
   // Session-based reaction (for anonymous users)
   updatePostReaction(postId: number, data: { isLike: boolean; sessionId?: string }): Promise<boolean>;
-  getPostReactions(postId: number): Promise&lt;{ likes: number; dislikes: number }&gt;;
-  updatePostReaction(postId: number, data: { isLike: boolean; sessionId?: string }): Promise<boolean>;
   getPostReactions(postId: number): Promise<{ likes: number; dislikes: number }>;
   getPostLikeCounts(postId: number): Promise<{ likesCount: number; dislikesCount: number }>;
 

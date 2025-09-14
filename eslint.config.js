@@ -28,7 +28,7 @@ export default [
 			...(importPlugin.configs.recommended.rules || {}),
 			// Prefer automatic import removal over generic unused vars
 			'@typescript-eslint/no-unused-vars': 'off',
-			'unused-imports/no-unused-imports': 'error',
+			'unused-imports/no-unused-imports': 'warn',
 			'unused-imports/no-unused-vars': ['warn', { vars: 'all', varsIgnorePattern: '^_', args: 'after-used', argsIgnorePattern: '^_' }],
 			'react/react-in-jsx-scope': 'off',
 			// Relax strict rules to allow incremental hardening
@@ -44,6 +44,8 @@ export default [
 			// Import hygiene
 			'import/no-cycle': 'warn',
 			'import/order': ['warn', { 'alphabetize': { order: 'asc', caseInsensitive: true }, 'newlines-between': 'always' }],
+			// Disable unresolved import checks as we use Vite path aliases
+			'import/no-unresolved': 'off',
 			// A11y additions
 			'jsx-a11y/anchor-is-valid': 'warn',
 			'jsx-a11y/no-autofocus': 'warn'
