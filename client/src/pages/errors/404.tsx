@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import SimplifiedErrorPage from '@/components/errors/SimplifiedErrorPage';
 
@@ -28,15 +27,13 @@ const NotFoundPage: React.FC = () => {
   }, []);
   
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <SimplifiedErrorPage 
-        statusCode={404}
-        title="Page Not Found"
-        message="The page you're looking for doesn't exist or has been moved."
-        actionText="Go Home"
-        actionLink="/"
-      />
-    </div>
+    <SimplifiedErrorPage 
+      statusCode={404}
+      title="Page Not Found"
+      message="The page you're looking for doesn't exist or has been moved."
+      actionText="Go Home"
+      actionLink="/"
+    />
   );
 };
 

@@ -1,17 +1,11 @@
-
 /**
- * Loading utility - simplified
- * All loading is now handled by the main LoadingScreen component
+ * Empty loading utility
+ * This is a compatibility layer that does absolutely nothing
  */
 
-// No-op functions for backward compatibility
-export function showLoading(): void {
-  console.log("Loading functionality moved to LoadingScreen component");
-}
-
-export function hideLoading(): void {
-  console.log("Loading functionality moved to LoadingScreen component");
-}
+// No-op functions that do absolutely nothing
+export function showLoading(): void {}
+export function hideLoading(): void {}
 
 // Legacy compatibility exports - all no-ops
 export const showGlobalLoading = showLoading;

@@ -1,7 +1,6 @@
-
 /**
  * Empty GlobalLoadingOverlay
- * All loading is now handled by the main LoadingScreen component
+ * A completely empty implementation with no-op methods
  */
 import React, { createContext, useContext } from 'react';
 

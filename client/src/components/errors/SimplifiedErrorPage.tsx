@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'wouter';
 import '@/styles/eyeball-loader.css';
@@ -9,118 +8,44 @@ interface SimplifiedErrorPageProps {
   message: string;
   actionText?: string;
   actionLink?: string;
-  showDetails?: boolean;
-  onRetry?: () => void;
 }
 
+/**
+ * SimplifiedErrorPage
+ * 
+ * A consistent error page component that can be used anywhere in the application
+ * without causing hook ordering issues.
+ */
 const SimplifiedErrorPage: React.FC<SimplifiedErrorPageProps> = ({
   statusCode,
   title,
   message,
-  actionText = "Go Home",
-  actionLink = "/",
-  showDetails = false,
-  onRetry
+  actionText = 'Go Home',
+  actionLink = '/'
 }) => {
   return (
-    <div 
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: '2rem',
-        textAlign: 'center',
-        background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 25%, #0f0f0f 50%, #1a1a1a 75%, #0a0a0a 100%)',
-        color: '#ffffff'
-      }}
-    >
-      {/* Eyeball loader animation */}
-      <div className="eyeball-loader" style={{ marginBottom: '2rem' }}></div>
-      
-      {/* Error content */}
-      <div style={{ maxWidth: '600px' }}>
-        <h1 style={{ 
-          fontSize: '4rem', 
-          fontWeight: 'bold', 
-          marginBottom: '1rem',
-          fontFamily: 'Megrim'
-        }}>
-          {statusCode}
-        </h1>
-        
-        <h2 style={{ 
-          fontSize: '2rem', 
-          marginBottom: '1rem',
-          fontFamily: 'Megrim'
-        }}>
-          {title}
-        </h2>
-        
-        <p style={{ 
-          fontSize: '1.2rem', 
-          marginBottom: '2rem',
-          opacity: 0.8
-        }}>
-          {message}
-        </p>
-        
-        {/* Action buttons */}
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href={actionLink}>
-            <button style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#ffffff',
-              color: '#000000',
-              border: 'none',
-              borderRadius: '0.5rem',
-              fontSize: '1rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              textDecoration: 'none'
-            }}>
-              {actionText}
-            </button>
-          </Link>
-          
-          {onRetry && (
-            <button 
-              onClick={onRetry}
-              style={{
-                padding: '0.75rem 1.5rem',
-                backgroundColor: 'transparent',
-                color: '#ffffff',
-                border: '2px solid #ffffff',
-                borderRadius: '0.5rem',
-                fontSize: '1rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              Try Again
-            </button>
-          )}
+    <div className="fixed inset-0 flex flex-col items-center justify-center text-center bg-background/90 z-50">
+      <div className="space-y-4">
+        {/* Animated eyeball loader */}
+        <div className="flex justify-center mb-6">
+          <div className="eyeball-loader"></div>
         </div>
         
-        {showDetails && (
-          <details style={{ marginTop: '2rem', textAlign: 'left' }}>
-            <summary style={{ cursor: 'pointer', marginBottom: '1rem' }}>
-              Technical Details
-            </summary>
-            <pre style={{ 
-              backgroundColor: 'rgba(255, 255, 255, 0.1)', 
-              padding: '1rem', 
-              borderRadius: '0.5rem',
-              fontSize: '0.875rem',
-              overflow: 'auto'
-            }}>
-              {JSON.stringify({ statusCode, title, message }, null, 2)}
-            </pre>
-          </details>
-        )}
+        <div className="text-9xl font-creepster text-red-600">{statusCode}</div>
+        <h1 className="text-4xl font-specialElite tracking-tighter sm:text-5xl">
+          {title}
+        </h1>
+        <p className="text-muted-foreground max-w-[42rem] leading-normal sm:text-xl sm:leading-8">
+          {message}
+        </p>
+        <div className="mt-8">
+          <Link
+            to={actionLink}
+            className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+          >
+            {actionText}
+          </Link>
+        </div>
       </div>
     </div>
   );
