@@ -44,7 +44,7 @@
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
   white-space: nowrap !important;
-  font-family: 'Megrim', monospace !important;
+  font-family: 'Megrim', cursive !important;
   font-size: 3rem !important;
   font-weight: 400 !important;
   color: #ffffff !important;
@@ -122,7 +122,7 @@
   }
 }
 
-/* Ensure font loads properly */
+/* Ensure Megrim font loads properly */
 @font-face {
   font-family: 'Megrim';
   font-style: normal;
