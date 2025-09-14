@@ -29,7 +29,7 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
   app.get("/api/users/recommendations", async (req: Request, res: Response) => {
     try {
       // Check if user is authenticated
-      const userId = req.session?.user?.id;
+      const userId = (req as any).user?.id ?? (req.session as any)?.user?.id;
       if (!userId) {
         return res.status(401).json({ message: "User not authenticated" });
       }
@@ -230,7 +230,7 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
     console.log("Enhanced personalized recommendations endpoint called");
     try {
       // Check if user is authenticated
-      const userId = req.session?.user?.id;
+      const userId = (req as any).user?.id ?? (req.session as any)?.user?.id;
       if (!userId) {
         return res.status(401).json({ message: "User not authenticated" });
       }

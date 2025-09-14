@@ -12,6 +12,7 @@ import moderationRoutes from './moderation';
 import analyticsRoutes from './analytics';
 import { registerPrivacySettingsRoutes } from './privacy-settings';
 import { registerRecommendationsRoutes } from './recommendations';
+import { registerPostRecommendationsRoutes } from './posts-recommendations';
 import { registerUserFeedbackRoutes } from '../routes/user-feedback';
 import { storage } from '../storage';
 import { handleError } from '../utils/error-handler';
@@ -77,6 +78,7 @@ export function registerModularRoutes(app: Express) {
 
     // Recommendations (function-based registration)
     registerRecommendationsRoutes(app, storage);
+    registerPostRecommendationsRoutes(app);
     routesLogger.info('Recommendations routes registered');
 
     // Admin

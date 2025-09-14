@@ -256,6 +256,8 @@ export interface IStorage {
 
   // Session-based reaction (for anonymous users)
   updatePostReaction(postId: number, data: { isLike: boolean; sessionId?: string }): Promise<boolean>;
+  getPostReactions(postId: number): Promise&lt;{ likes: number; dislikes: number }&gt;;
+  updatePostReaction(postId: number, data: { isLike: boolean; sessionId?: string }): Promise<boolean>;
   getPostReactions(postId: number): Promise<{ likes: number; dislikes: number }>;
   getPostLikeCounts(postId: number): Promise<{ likesCount: number; dislikesCount: number }>;
 
@@ -378,6 +380,10 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
+
+  // In-memory store for anonymous reactions keyed by sessionId
+  // Using loose typing here to avoid XML escaping issues in code artefacts
+  private static anonymousReactions: any = new Map();
 
   // Helper method to determine if the database is available
   isDbConnected(): boolean {
@@ -531,30 +537,27 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     try {
-      // Use explicit column selection to avoid errors with columns that might not exist
+      // Use explicit column selection including metadata (exists in DB)
       const [user] = await db.select({
         id: users.id,
         username: users.username,
         email: users.email,
         password_hash: users.password_hash,
         isAdmin: users.isAdmin,
+        metadata: users.metadata,
         createdAt: users.createdAt
       })
       .from(users)
       .where(eq(users.id, id))
       .limit(1);
 
-      // Add an empty metadata field since it doesn't exist in the DB yet
-      return {
-        ...user,
-        metadata: {}
-      };
+      return user;
     } catch (error) {
       console.error("Error in getUser:", error);
       // Try a more basic approach as fallback using raw SQL
       try {
         const result = await pool.query(
-          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", created_at as \"createdAt\" FROM users WHERE id = $1 LIMIT 1",
+          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", metadata, created_at as \"createdAt\" FROM users WHERE id = $1 LIMIT 1",
           [id]
         );
         return result.rows[0] || undefined;
@@ -569,31 +572,25 @@ export class DatabaseStorage implements IStorage {
     return this.safeDbOperation(
       async () => {
         try {
-          // Use explicit column selection to avoid errors with columns that might not exist
           const [user] = await db.select({
             id: users.id,
             username: users.username,
             email: users.email,
             password_hash: users.password_hash,
             isAdmin: users.isAdmin,
+            metadata: users.metadata,
             createdAt: users.createdAt
           })
           .from(users)
           .where(eq(users.username, username))
           .limit(1);
 
-          if (!user) return undefined;
-
-          // Add an empty metadata field since it doesn't exist in the DB yet
-          return {
-            ...user,
-            metadata: {}
-          };
+          return user || undefined;
         } catch (error) {
           console.error("Error in getUserByUsername:", error);
           // Try a more basic approach as fallback using raw SQL
           const result = await pool.query(
-            "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", created_at as \"createdAt\" FROM users WHERE username = $1 LIMIT 1",
+            "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", metadata, created_at as \"createdAt\" FROM users WHERE username = $1 LIMIT 1",
             [username]
           );
           return result.rows[0] || undefined;
@@ -1288,7 +1285,10 @@ export class DatabaseStorage implements IStorage {
             isSecret: postsTable.isSecret,
             matureContent: postsTable.matureContent,
             themeCategory: postsTable.themeCategory,
-            isAdminPost: postsTable.isAdminPost
+            isAdminPost: postsTable.isAdminPost,
+            readingTimeMinutes: postsTable.readingTimeMinutes,
+            likesCount: postsTable.likesCount,
+            dislikesCount: postsTable.dislikesCount
           })
           .from(postsTable);
 
@@ -1325,9 +1325,9 @@ export class DatabaseStorage implements IStorage {
               isSecret: Boolean(post.isSecret),
               matureContent: Boolean(post.matureContent),
               themeCategory: (post.themeCategory || (metadata as any).themeCategory || null) as string | null,
-              readingTimeMinutes: (typeof (metadata as any).readingTimeMinutes === 'number' ? (metadata as any).readingTimeMinutes : null),
-              likesCount: (typeof (metadata as any).likes === 'number' ? (metadata as any).likes : 0),
-              dislikesCount: (typeof (metadata as any).dislikes === 'number' ? (metadata as any).dislikes : 0)
+              readingTimeMinutes: (post.readingTimeMinutes as number | null) ?? Math.ceil(String(post.content || '').split(/\s+/).length / 200),
+              likesCount: Number((post.likesCount as number | null) ?? 0),
+              dislikesCount: Number((post.dislikesCount as number | null) ?? 0)
             } as Post;
           });
 
@@ -2228,13 +2228,29 @@ export class DatabaseStorage implements IStorage {
   async removePostLike(postId: number, userId: number): Promise<void> {
     try {
       console.log(`[Storage] Removing like/dislike for post ${postId} by user ${userId}`);
+
+      // Fetch existing reaction to compute delta
+      const existing = await this.getPostLike(postId, userId);
+
       await db.delete(postLikes)
         .where(and(
           eq(postLikes.postId, postId),
           eq(postLikes.userId, userId)
         ));
 
-      await this.updatePostCounts(postId);
+      // Apply atomic delta to counters
+      if (existing) {
+        const deltaLikes = existing.isLike ? -1 : 0;
+        const deltaDislikes = existing.isLike ? 0 : -1;
+
+        await db.update(postsTable)
+          .set({
+            likesCount: sql`GREATEST(COALESCE(${postsTable.likesCount}, 0) + ${deltaLikes}, 0)`,
+            dislikesCount: sql`GREATEST(COALESCE(${postsTable.dislikesCount}, 0) + ${deltaDislikes}, 0)`
+          })
+          .where(eq(postsTable.id, postId));
+      }
+
       console.log(`[Storage] Successfully removed reaction for post ${postId}`);
     } catch (error) {
       console.error(`[Storage] Error removing like for post ${postId}:`, error);
@@ -2245,6 +2261,10 @@ export class DatabaseStorage implements IStorage {
   async updatePostLike(postId: number, userId: number, isLike: boolean): Promise<void> {
     try {
       console.log(`[Storage] Updating reaction for post ${postId} by user ${userId} to ${isLike ? 'like' : 'dislike'}`);
+
+      // Fetch existing reaction to compute delta
+      const existing = await this.getPostLike(postId, userId);
+
       await db.update(postLikes)
         .set({ isLike })
         .where(and(
@@ -2252,7 +2272,19 @@ export class DatabaseStorage implements IStorage {
           eq(postLikes.userId, userId)
         ));
 
-      await this.updatePostCounts(postId);
+      // Apply atomic delta based on switch
+      if (existing && existing.isLike !== isLike) {
+        const deltaLikes = isLike ? 1 : -1;
+        const deltaDislikes = isLike ? -1 : 1;
+
+        await db.update(postsTable)
+          .set({
+            likesCount: sql`GREATEST(COALESCE(${postsTable.likesCount}, 0) + ${deltaLikes}, 0)`,
+            dislikesCount: sql`GREATEST(COALESCE(${postsTable.dislikesCount}, 0) + ${deltaDislikes}, 0)`
+          })
+          .where(eq(postsTable.id, postId));
+      }
+
       console.log(`[Storage] Successfully updated reaction for post ${postId}`);
     } catch (error) {
       console.error(`[Storage] Error updating like for post ${postId}:`, error);
@@ -2270,7 +2302,17 @@ export class DatabaseStorage implements IStorage {
           isLike
         });
 
-      await this.updatePostCounts(postId);
+      // Apply atomic increment
+      const deltaLikes = isLike ? 1 : 0;
+      const deltaDislikes = isLike ? 0 : 1;
+
+      await db.update(postsTable)
+        .set({
+          likesCount: sql`GREATEST(COALESCE(${postsTable.likesCount}, 0) + ${deltaLikes}, 0)`,
+          dislikesCount: sql`GREATEST(COALESCE(${postsTable.dislikesCount}, 0) + ${deltaDislikes}, 0)`
+        })
+        .where(eq(postsTable.id, postId));
+
       console.log(`[Storage] Successfully created reaction for post ${postId}`);
     } catch (error) {
       console.error(`[Storage] Error creating like for post ${postId}:`, error);
@@ -2282,30 +2324,8 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`[Storage] Getting like counts for post ${postId}`);
 
-      // Calculate counts directly from the post_likes table for accuracy
-      const likesResult = await db.select({
-        count: count()
-      })
-      .from(postLikes)
-      .where(and(
-        eq(postLikes.postId, postId),
-        eq(postLikes.isLike, true)
-      ));
-
-      const dislikesResult = await db.select({
-        count: count()
-      })
-      .from(postLikes)
-      .where(and(
-        eq(postLikes.postId, postId),
-        eq(postLikes.isLike, false)
-      ));
-
-      const likesCount = Number(likesResult[0]?.count || 0);
-      const dislikesCount = Number(dislikesResult[0]?.count || 0);
-
-      // Get current values from the posts table for logging comparison
-      const [currentValues] = await db.select({
+      // Prefer authoritative counts from posts table
+      const [row] = await db.select({
         likesCount: postsTable.likesCount,
         dislikesCount: postsTable.dislikesCount
       })
@@ -2313,21 +2333,28 @@ export class DatabaseStorage implements IStorage {
       .where(eq(postsTable.id, postId))
       .limit(1);
 
-      // Log both calculated and stored values to identify discrepancies
-      if (currentValues) {
-        console.log(`[Storage] Post ${postId} current stored counts:`, {
-          likesCount: Number(currentValues.likesCount || 0),
-          dislikesCount: Number(currentValues.dislikesCount || 0)
-        });
+      if (row) {
+        return {
+          likesCount: Number(row.likesCount || 0),
+          dislikesCount: Number(row.dislikesCount || 0)
+        };
       }
 
-      const counts = { likesCount, dislikesCount };
-      console.log(`[Storage] Post ${postId} calculated counts:`, counts);
+      // Fallback: compute from post_likes if post missing or counts null
+      const likesResult = await db.select({ count: count() })
+        .from(postLikes)
+        .where(and(eq(postLikes.postId, postId), eq(postLikes.isLike, true)));
 
-      return counts;
+      const dislikesResult = await db.select({ count: count() })
+        .from(postLikes)
+        .where(and(eq(postLikes.postId, postId), eq(postLikes.isLike, false)));
+
+      return {
+        likesCount: Number(likesResult[0]?.count || 0),
+        dislikesCount: Number(dislikesResult[0]?.count || 0)
+      };
     } catch (error) {
       console.error(`[Storage] Error getting like counts for post ${postId}:`, error);
-      // Return zero counts as a fallback
       return { likesCount: 0, dislikesCount: 0 };
     }
   }
@@ -2366,31 +2393,62 @@ export class DatabaseStorage implements IStorage {
 
   async updatePostReaction(postId: number, data: { isLike: boolean; sessionId?: string }): Promise<boolean> {
     try {
-      // Generate a consistent userId from sessionId for anonymous users
-      const userId = data.sessionId ? 
-        parseInt(createHash('md5').update(data.sessionId).digest('hex').substring(0, 8), 16) : 
-        -1; // Use -1 for anonymous reactions
-
-      const isLike = data.isLike;
-
-      // Check if user already reacted
-      const existingLike = await this.getPostLike(postId, userId);
-
-      if (existingLike) {
-        if (existingLike.isLike === isLike) {
-          // Remove if clicking the same button again
-          await this.removePostLike(postId, userId);
-        } else {
-          // Change reaction type
-          await this.updatePostLike(postId, userId, isLike);
-        }
-      } else {
-        // Create new reaction
-        await this.createPostLike(postId, userId, isLike);
+      // Ensure post exists
+      const post = await this.getPostById(postId);
+      if (!post) {
+        throw new Error(`Post ${postId} not found`);
       }
 
-      // Update post counts in the database
-      await this.updatePostCounts(postId);
+      const sessionKey = data.sessionId || 'anonymous';
+      const isLike = !!data.isLike;
+
+      // Initialize per-session map
+      if (!DatabaseStorage.anonymousReactions.has(sessionKey)) {
+        DatabaseStorage.anonymousReactions.set(sessionKey, new Map());
+      }
+      const sessionMap = DatabaseStorage.anonymousReactions.get(sessionKey) as Map<number, boolean>;
+
+      const prev = sessionMap.get(postId);
+      let deltaLikes = 0;
+      let deltaDislikes = 0;
+
+      if (prev === undefined) {
+        // First reaction for this session/post
+        if (isLike) {
+          deltaLikes = 1;
+        } else {
+          deltaDislikes = 1;
+        }
+        sessionMap.set(postId, isLike);
+      } else if (prev === isLike) {
+        // Toggle off
+        if (isLike) {
+          deltaLikes = -1;
+        } else {
+          deltaDislikes = -1;
+        }
+        sessionMap.delete(postId);
+      } else {
+        // Switch reaction
+        if (isLike) {
+          deltaLikes = 1;
+          deltaDislikes = -1;
+        } else {
+          deltaLikes = -1;
+          deltaDislikes = 1;
+        }
+        sessionMap.set(postId, isLike);
+      }
+
+      // Apply atomic updates, clamp at 0
+      if (deltaLikes !== 0 || deltaDislikes !== 0) {
+        await db.update(postsTable)
+          .set({
+            likesCount: sql`GREATEST(COALESCE(${postsTable.likesCount}, 0) + ${deltaLikes}, 0)`,
+            dislikesCount: sql`GREATEST(COALESCE(${postsTable.dislikesCount}, 0) + ${deltaDislikes}, 0)`
+          })
+          .where(eq(postsTable.id, postId));
+      }
 
       return true;
     } catch (error) {
@@ -2782,7 +2840,7 @@ export class DatabaseStorage implements IStorage {
   async getPendingPosts(): Promise<Post[]> {
     const posts = await db.select()
       .from(postsTable)
-      .where(eq(sql`metadata->>'status'`, 'pending'))
+      .where(sql`(metadata->>'status')::text = 'pending'`)
       .orderBy(desc(postsTable.createdAt));
 
     return posts.map(post => ({
@@ -3651,9 +3709,258 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Satisfy interface by delegating to the enhanced implementation below
+  // Implement enhanced personalized recommendations for DatabaseStorage
   async getPersonalizedRecommendations(userId: number, preferredThemes: string[] = [], limit: number = 5): Promise<Post[]> {
-    return this.getPersonalizedRecommendations(userId, preferredThemes, limit);
+    try {
+      const startTime = Date.now();
+
+      // Simple retry wrapper for robustness
+      const retry = async <T>(op: () => Promise<T>, maxRetries = 3): Promise<T> => {
+        let lastError: any;
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          try {
+            return await op();
+          } catch (err) {
+            lastError = err;
+            await new Promise(r => setTimeout(r, 100 * Math.pow(2, attempt)));
+          }
+        }
+        throw lastError;
+      };
+
+      // Step 1: Gather user signals
+      const readingHistory = await retry(async () => {
+        return await db.select()
+          .from(readingProgress)
+          .where(eq(readingProgress.userId, userId))
+          .orderBy(desc(readingProgress.lastReadAt))
+          .limit(15);
+      });
+
+      const likedPosts = await retry(async () => {
+        return await db.select()
+          .from(postLikes)
+          .where(and(eq(postLikes.userId, userId), eq(postLikes.isLike, true)))
+          .limit(15);
+      });
+
+      const userBookmarks = await retry(async () => {
+        return await db.select()
+          .from(bookmarks)
+          .where(eq(bookmarks.userId, userId))
+          .limit(15);
+      });
+
+      const historyPostIds = new Set<number>([
+        ...readingHistory.map((i: any) => i.postId),
+        ...likedPosts.map((i: any) => i.postId),
+        ...userBookmarks.map((i: any) => i.postId),
+      ]);
+
+      // Cold start: no history
+      if (historyPostIds.size === 0) {
+        let query: any = db.select()
+          .from(postsTable)
+          .orderBy(desc(postsTable.likesCount), desc(postsTable.createdAt));
+
+        if (preferredThemes.length > 0) {
+          const themeConds = preferredThemes.map(theme =>
+            or(
+              like(postsTable.themeCategory, `%${theme}%`),
+              sql`${postsTable.metadata}->>'themeCategory' LIKE ${`%${theme}%`}`
+            )
+          );
+          // Combine disjunctions
+          query = query.where(themeConds.slice(1).reduce((acc, cond) => or(acc, cond), themeConds[0]));
+        }
+
+        const trending = await retry(async () => await query.limit(limit));
+        // Log metric
+        await this.storePerformanceMetric({
+          metricName: 'recommendations_trending_fallback',
+          value: Date.now() - startTime,
+          identifier: `user:${userId}:trending_fallback:${Date.now()}`,
+          url: 'trending_fallback',
+          navigationType: null as any,
+          userAgent: null as any,
+        } as any);
+
+        return trending.map((p: any) => ({ ...p, createdAt: safeCreateDate(p.createdAt) })) as unknown as Post[];
+      }
+
+      // Step 2: Derive user themes from historical posts with weights
+      const historicalPosts = await retry(async () => {
+        const ids = Array.from(historyPostIds);
+        return await db.select()
+          .from(postsTable)
+          .where(inArray(postsTable.id, ids))
+          .limit(25);
+      });
+
+      const userThemes = new Map<string, number>();
+      historicalPosts.forEach((post: any) => {
+        let weight = 1;
+        const recentlyRead = readingHistory.some((r: any) =>
+          r.postId === post.id && new Date(r.lastReadAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000
+        );
+        if (recentlyRead) weight += 1;
+        const wasLiked = likedPosts.some((l: any) => l.postId === post.id);
+        if (wasLiked) weight += 2;
+        const wasBookmarked = userBookmarks.some((b: any) => b.postId === post.id);
+        if (wasBookmarked) weight += 1.5;
+
+        if (post.themeCategory) {
+          userThemes.set(post.themeCategory, (userThemes.get(post.themeCategory) || 0) + weight);
+        }
+        const meta = (post.metadata || {}) as any;
+        if (meta.themeCategory) {
+          userThemes.set(meta.themeCategory, (userThemes.get(meta.themeCategory) || 0) + weight);
+        }
+      });
+
+      const sortedThemes = Array.from(userThemes.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([t]) => t);
+      const allThemes = [...preferredThemes, ...sortedThemes];
+
+      // Step 3: Collaborative filtering - posts liked by similar users
+      const collaborativePostIds = new Set<number>();
+      try {
+        const similarUsers = await retry(async () => {
+          const ids = Array.from(historyPostIds);
+          return await db.select({ userId: postLikes.userId })
+            .from(postLikes)
+            .where(and(inArray(postLikes.postId, ids), eq(postLikes.isLike, true), not(eq(postLikes.userId, userId))))
+            .groupBy(postLikes.userId)
+            .having(gte(count(), 2))
+            .limit(10);
+        });
+
+        if (similarUsers.length > 0) {
+          const likedBySimilar = await retry(async () => {
+            const userIds = similarUsers.map((u: any) => u.userId);
+            const ids = Array.from(historyPostIds);
+            return await db.select({ postId: postLikes.postId })
+              .from(postLikes)
+              .where(and(inArray(postLikes.userId, userIds), eq(postLikes.isLike, true), not(inArray(postLikes.postId, ids))))
+              .groupBy(postLikes.postId)
+              .limit(10);
+          });
+          likedBySimilar.forEach((row: any) => collaborativePostIds.add(row.postId));
+        }
+      } catch (e) {
+        console.warn('[Storage] Collaborative filtering failed:', (e as any)?.message || e);
+      }
+
+      // Step 4: Candidate posts by theme and exclusion
+      const conds: any[] = [];
+      const excludeIds = Array.from(historyPostIds);
+      if (excludeIds.length > 0) {
+        conds.push(not(inArray(postsTable.id, excludeIds)));
+      }
+      if (allThemes.length > 0) {
+        const themeConds = allThemes.map(theme =>
+          or(
+            like(postsTable.themeCategory, `%${theme}%`),
+            sql`${postsTable.metadata}->>'themeCategory' LIKE ${`%${theme}%`}`
+          )
+        );
+        conds.push(themeConds.slice(1).reduce((acc, cond) => or(acc, cond), themeConds[0]));
+      }
+
+      let baseQuery: any = db.select().from(postsTable);
+      if (conds.length > 0) {
+        baseQuery = baseQuery.where(and(...conds));
+      }
+
+      const candidates = await retry(async () => {
+        return await baseQuery.orderBy(desc(postsTable.createdAt)).limit(limit * 3);
+      });
+
+      // Step 5: Score and select
+      const scored = (candidates as any[]).map((post: any) => {
+        let score = 0;
+
+        if (collaborativePostIds.has(post.id)) score += 25;
+
+        const postThemes = [
+          post.themeCategory || '',
+          (post.metadata && typeof post.metadata === 'object') ? (post.metadata as any)?.themeCategory || '' : ''
+        ].filter(Boolean) as string[];
+
+        for (const theme of postThemes) {
+          for (const pref of preferredThemes) {
+            if (theme.toLowerCase().includes(pref.toLowerCase())) { score += 20; break; }
+          }
+          for (const ut of sortedThemes) {
+            if (theme.toLowerCase().includes(ut.toLowerCase())) { score += 15; break; }
+          }
+        }
+
+        const postDate = post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt);
+        const days = (Date.now() - postDate.getTime()) / (1000 * 60 * 60 * 24);
+        if (days < 7) score += Math.max(0, 10 - days);
+
+        score += Math.min(10, post.likesCount || 0);
+
+        return { post, score };
+      });
+
+      scored.sort((a, b) => b.score - a.score);
+      let recommendations = scored.slice(0, limit).map(s => s.post);
+
+      // Step 6: Supplement if needed
+      if (recommendations.length < limit) {
+        const remaining = limit - recommendations.length;
+        const existingIds = new Set<number>([...recommendations.map((p: any) => p.id), ...excludeIds]);
+
+        const supplements = await retry(async () => {
+          const existing = Array.from(existingIds);
+          const popularCount = Math.ceil(remaining * 0.6);
+          const popular = await db.select()
+            .from(postsTable)
+            .where(not(inArray(postsTable.id, existing)))
+            .orderBy(desc(postsTable.likesCount), desc(postsTable.createdAt))
+            .limit(popularCount);
+
+          const recentCount = remaining - popularCount;
+          const recent = await db.select()
+            .from(postsTable)
+            .where(not(inArray(postsTable.id, existing)))
+            .orderBy(desc(postsTable.createdAt))
+            .limit(recentCount);
+
+          return [...popular, ...recent];
+        });
+
+        recommendations = [
+          ...recommendations.map((p: any) => ({ ...p, createdAt: safeCreateDate(p.createdAt) })),
+          ...supplements.map((p: any) => ({ ...p, createdAt: safeCreateDate(p.createdAt) })),
+        ];
+        await this.storePerformanceMetric({
+          metricName: 'recommendations_mixed_recommendations',
+          value: Date.now() - startTime,
+          identifier: `user:${userId}:mixed:${Date.now()}`,
+          url: 'mixed_recommendations',
+          navigationType: null as any,
+          userAgent: null as any,
+        } as any);
+
+        return recommendations as unknown as Post[];
+      }
+
+      await this.storePerformanceMetric({
+        metricName: 'recommendations_content_based',
+        value: Date.now() - startTime,
+        identifier: `user:${userId}:content_based:${Date.now()}`,
+        url: 'content_based',
+        navigationType: null as any,
+        userAgent: null as any,
+      } as any);
+
+      return recommendations.map((p: any) => ({ ...p, createdAt: safeCreateDate(p.createdAt) })) as unknown as Post[];
+    } catch (error) {
+      console.error('[Storage] Error getting personalized recommendations:', error);
+      return [];
+    }
   }
 }
 

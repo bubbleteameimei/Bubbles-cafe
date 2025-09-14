@@ -93,7 +93,8 @@ export function StoryRecommendations({
         return await response.json();
       } catch { 
         // Fallback: fetch all posts and filter client-side
-        const allPosts = await fetch('/api/posts').then(res => res.json());
+        const all = await fetch('/api/posts').then(res => res.json());
+        const allPosts: Post[] = Array.isArray(all) ? all as Post[] : (all?.posts ?? []);
         
         // Filter out current post and sort by relevance
         return allPosts

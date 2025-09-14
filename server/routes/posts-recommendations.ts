@@ -1,7 +1,7 @@
 import { Request, Response, Express } from "express";
 import { db } from "../db";
 import { posts } from "@shared/schema";
-import { desc, eq, and, ne, or, sql } from "drizzle-orm";
+import { desc, eq, and, ne, or, sql, not, inArray } from "drizzle-orm";
 
 /**
  * Register routes specifically for post recommendations
@@ -42,7 +42,7 @@ export function registerPostRecommendationsRoutes(app: Express) {
       const metadata = sourcePost.metadata;
       
       // Extract theme category if available
-      let themeCategory = null;
+      let themeCategory: string | null = null;
       
       if (typeof metadata === 'string') {
         try {
@@ -58,7 +58,7 @@ export function registerPostRecommendationsRoutes(app: Express) {
       }
       
       // Try to find posts with the same theme category if available
-      let recommendedPosts = [];
+      let recommendedPosts: Array<{ id: number; title: string; slug: string; excerpt: string | null; createdAt: Date }> = [];
       if (themeCategory) {
         console.log(`Finding posts with theme: ${themeCategory}`);
         
@@ -146,7 +146,7 @@ export function registerPostRecommendationsRoutes(app: Express) {
               .where(
                 and(
                   ne(posts.id, postId),
-                  sql`${posts.id} NOT IN (${existingIds.join(',')})` 
+                  not(inArray(posts.id, existingIds))
                 )
               )
               .orderBy(desc(posts.createdAt))
@@ -166,7 +166,7 @@ export function registerPostRecommendationsRoutes(app: Express) {
       console.log(`Found ${recommendedPosts.length} recommended posts`);
       
       // Add estimated reading time and other metadata
-      const enhancedPosts = enhancePostsWithMetadata(recommendedPosts);
+      const enhancedPosts = enhancePostsWithMetadata(recommendedPosts as any[]);
       return res.json(enhancedPosts);
     } catch (error) {
       console.error("Error getting post recommendations:", error);
@@ -183,22 +183,22 @@ export function registerPostRecommendationsRoutes(app: Express) {
  */
 async function fetchRecentPosts(limit: number, excludeId?: number | null) {
   try {
-    const query = db.select({
+    let q: any = db.select({
       id: posts.id,
       title: posts.title,
       slug: posts.slug,
       excerpt: posts.excerpt,
       createdAt: posts.createdAt
     })
-    .from(posts)
-    .orderBy(desc(posts.createdAt))
-    .limit(limit);
-    
+    .from(posts);
+
     if (excludeId) {
-      query.where(ne(posts.id, excludeId));
+      q = q.where(ne(posts.id, excludeId));
     }
-    
-    return await query;
+
+    q = q.orderBy(desc(posts.createdAt)).limit(limit);
+
+    return await q;
   } catch (error) {
     console.error("Error fetching recent posts:", error);
     return [];
