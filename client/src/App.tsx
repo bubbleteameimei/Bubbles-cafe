@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
@@ -10,6 +10,7 @@ import { CookieConsent } from './components/ui/cookie-consent';
 import { CookieConsentProvider } from './hooks/use-cookie-consent';
 import { GlobalErrorBoundary, setupGlobalErrorHandlers } from './components/error-boundary/global-error-boundary';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { LoadingScreen } from './components/ui/loading-screen';
 // Performance monitoring removed
 import { SidebarProvider } from './components/ui/sidebar';
 import ScrollToTopButton from './components/ScrollToTopButton';
@@ -150,6 +151,9 @@ const preloadWordPressPostsDeferred = () => {
 const AppContent = () => {
   const [location] = useLocation();
   const locationStr = location.toString();
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isPageTransition, setIsPageTransition] = useState(false);
+  const [previousLocation, setPreviousLocation] = useState('');
 
   // Basic SEO: set canonical and defaults site-wide
   const canonical = locationStr || '/';
@@ -162,6 +166,40 @@ const AppContent = () => {
     locationStr.includes('/errors/500') || 
     locationStr.includes('/errors/503') || 
     locationStr.includes('/errors/504');
+
+  // Check if we should show loading screen for current page
+  const shouldShowLoadingScreen = (path: string) => {
+    return !path.includes('/reader') && 
+           !path.includes('/stories') && 
+           path !== '/' && 
+           path !== '/index';
+  };
+
+  // Handle initial load
+  useEffect(() => {
+    if (isInitialLoad) {
+      const timer = setTimeout(() => {
+        setIsInitialLoad(false);
+      }, 1500); // Show loading screen for 1.5 seconds on initial load
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isInitialLoad]);
+
+  // Handle page transitions
+  useEffect(() => {
+    if (!isInitialLoad && previousLocation && previousLocation !== locationStr) {
+      if (shouldShowLoadingScreen(locationStr)) {
+        setIsPageTransition(true);
+        const timer = setTimeout(() => {
+          setIsPageTransition(false);
+        }, 800); // Shorter duration for page transitions
+        
+        return () => clearTimeout(timer);
+      }
+    }
+    setPreviousLocation(locationStr);
+  }, [locationStr, previousLocation, isInitialLoad]);
 
   // Simplified location tracking - no loading delays
   useEffect(() => {
@@ -176,6 +214,18 @@ const AppContent = () => {
       trackPageView(location);
     }
   }, [location, isErrorPage]);
+
+  // Show loading screen on initial load or page transitions (excluding specified pages)
+  if (isInitialLoad || (isPageTransition && shouldShowLoadingScreen(locationStr))) {
+    return (
+      <LoadingScreen 
+        onAnimationComplete={() => {
+          setIsInitialLoad(false);
+          setIsPageTransition(false);
+        }} 
+      />
+    );
+  }
 
   // If we're on an error page, render only the error page without layout
   if (isErrorPage) {

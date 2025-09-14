@@ -51,7 +51,7 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
         // Execute callback last to allow proper cleanup
         onAnimationComplete();
       }
-    }, 750);
+    }, 1200); // Slightly longer to ensure font loads
 
     // Comprehensive cleanup on unmount - ensures complete state reset
     return () => {

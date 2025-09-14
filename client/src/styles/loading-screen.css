@@ -28,10 +28,11 @@
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
-  z-index: 9999999 !important;
+  z-index: 99999999 !important;
   overflow: hidden !important;
   pointer-events: all !important;
-  transition: opacity 0.2s ease-in-out !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 /* Loading text container */
