@@ -2428,14 +2428,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCommentVoteCounts(commentId: number): Promise<{ upvotes: number; downvotes: number }> {
-    const upvotes = await db.select({ count: sql`count(*)` })
+    const upvotes = await db.select({ count: count() })
       .from(commentVotes)
       .where(and(
         eq(commentVotes.commentId, commentId),
         eq(commentVotes.isUpvote, true)
       ));
 
-    const downvotes = await db.select({ count: sql`count(*)` })
+    const downvotes = await db.select({ count: count() })
       .from(commentVotes)
       .where(and(
         eq(commentVotes.commentId, commentId),
@@ -2503,9 +2503,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateAuthorStats(authorId: number): Promise<AuthorStats> {
-    const [[totalPosts], [totalLikes], [totalTips]] = await Promise.all([
+    const [[totalPosts], [totalTips]] = await Promise.all([
       db.select({ count: count() }).from(postsTable).where(eq(postsTable.authorId, authorId)),
-      db.select({ count: count() }).from(postLikes).where(eq(postLikes.isLike, true)), // This seems incorrect, should count likes for the author's posts
       db.select({ sum: sql<string>`sum(amount)` }).from(authorTips).where(eq(authorTips.authorId, authorId))
     ]);
 
@@ -4269,7 +4268,7 @@ class MemStorage {
           query = query.where(
             and(
               // Exclude posts the user has already interacted with
-              not(sql`${postsTable.id} IN (${Array.from(historyPostIds).join(',')})`),
+              not(inArray(postsTable.id, Array.from(historyPostIds))),
               // Include posts with matching themes
               or(
                 ...allThemes.map(theme =>
@@ -4367,7 +4366,7 @@ class MemStorage {
             const popularCount = Math.ceil(remainingCount * 0.6);
             const popularPosts = await db.select()
               .from(postsTable)
-              .where(not(inArray(postsTable.id, existing)))
+              .where(not(inArray(postsTable.id, Array.from(existingIds))))
               .orderBy(desc(postsTable.likesCount), desc(postsTable.createdAt))
               .limit(popularCount);
 
@@ -4375,7 +4374,7 @@ class MemStorage {
             const recentCount = remainingCount - popularCount;
             const recentPosts = await db.select()
               .from(postsTable)
-              .where(not(inArray(postsTable.id, existing)))
+              .where(not(inArray(postsTable.id, Array.from(existingIds))))
               .orderBy(desc(postsTable.createdAt))
               .limit(recentCount);
 
@@ -4425,210 +4424,6 @@ class MemStorage {
       // Return empty array instead of throwing to provide graceful degradation
       return [];
     }
-  }
-
-  // Helper method to log recommendation performance
-  private async logRecommendationPerformance(userId: number, method: string, count: number, durationMs: number): Promise<void> {
-    try {
-      const metric: InsertPerformanceMetric = {
-        metricName: `recommendations_${method}`,
-        value: durationMs,
-        identifier: `user:${userId}:${method}:${Date.now()}`,
-        url: method,
-        navigationType: null,
-        userAgent: null,
-        timestamp: new Date()
-      } as InsertPerformanceMetric;
-
-      await db.insert(performanceMetrics).values(metric);
-    } catch (error) {
-      // Don't let metrics logging failure affect recommendations
-      console.warn(`[Storage] Failed to log recommendation performance:`, error);
-    }
-  }
-
-  // Achievement methods
-  async getUserAchievements(userId: number): Promise<any[]> {
-    // This would be implemented with the actual achievement tables
-    console.log(`[Storage] Fetching achievements for user: ${userId}`);
-    return [];
-  }
-
-  async getAllAchievements(): Promise<any[]> {
-    // This would be implemented with the actual achievement tables
-    console.log(`[Storage] Fetching all achievements`);
-    return [];
-  }
-
-  // Admin-specific methods for WordPress sync dashboard
-  async getAdminInfo(): Promise<{
-    totalPosts: number;
-    totalUsers: number;
-    totalComments: number;
-    totalLikes: number;
-    recentActivity: ActivityLog[];
-  }> {
-    return this.safeDbOperation(async () => {
-      const [postsCount] = await db.select({ count: sql<number>`count(*)` }).from(postsTable);
-      const [usersCount] = await db.select({ count: sql<number>`count(*)` }).from(users);
-      const [commentCount] = await db.select({ count: sql<number>`count(*)` }).from(commentsTable);
-
-      // Get recent activity
-      const recentActivity = await db.select()
-        .from(activityLogs)
-        .orderBy(desc(activityLogs.createdAt))
-        .limit(10);
-
-      return {
-        totalPosts: Number(postsCount.count || 0),
-        totalUsers: Number(usersCount.count || 0),
-        totalComments: Number(commentCount.count || 0),
-        totalLikes: 0,
-        recentActivity: recentActivity.map((log: any) => ({
-          ...log,
-          createdAt: safeCreateDate(log.createdAt)
-        }))
-      };
-    }, {
-      totalPosts: 0,
-      totalUsers: 0,
-      totalComments: 0,
-      totalLikes: 0,
-      recentActivity: []
-    }, 'getAdminInfo');
-  }
-
-  async getSiteSettingByKey(key: string): Promise<SiteSetting | undefined> {
-    return this.safeDbOperation(async () => {
-      const [setting] = await db.select()
-        .from(siteSettings)
-        .where(eq(siteSettings.key, key))
-        .limit(1);
-
-      return setting ? {
-        ...setting,
-        updatedAt: setting.updatedAt instanceof Date ? setting.updatedAt : new Date(setting.updatedAt)
-      } : undefined;
-    }, undefined, 'getSiteSettingByKey');
-  }
-
-  async setSiteSetting(key: string, value: string, category: string, description?: string): Promise<SiteSetting> {
-    return this.safeDbOperation(async () => {
-      const now = new Date();
-
-      // Try to update existing setting first
-      const [updated] = await db.update(siteSettings)
-        .set({
-          value,
-          category,
-          description: description || null,
-          updatedAt: now
-        })
-        .where(eq(siteSettings.key, key))
-        .returning();
-
-      if (updated) {
-        return {
-          ...updated,
-          updatedAt: updated.updatedAt instanceof Date ? updated.updatedAt : new Date(updated.updatedAt)
-        };
-      }
-
-      // If no existing setting, create new one
-      const [newSetting] = await db.insert(siteSettings)
-        .values({
-          key,
-          value,
-          category,
-          description: description || null,
-          updatedAt: now
-        })
-        .returning();
-
-      return {
-        ...newSetting,
-        updatedAt: newSetting.updatedAt instanceof Date ? newSetting.updatedAt : new Date(newSetting.updatedAt)
-      };
-    }, {} as SiteSetting, 'setSiteSetting');
-  }
-
-  async getAllSiteSettings(): Promise<SiteSetting[]> {
-    return this.safeDbOperation(async () => {
-      const settings = await db.select()
-        .from(siteSettings)
-        .orderBy(siteSettings.category, siteSettings.key);
-
-      return settings.map((setting: any) => ({
-        ...setting,
-        updatedAt: setting.updatedAt instanceof Date ? setting.updatedAt : new Date(setting.updatedAt)
-      }));
-    }, [], 'getAllSiteSettings');
-  }
-
-  async getSiteAnalytics(): Promise<{
-    totalViews: number;
-    uniqueVisitors: number;
-    avgReadTime: number;
-    bounceRate: number;
-    trendingPosts: any[];
-    activeUsers: number;
-    newUsers: number;
-    adminCount: number;
-  }> {
-    return this.safeDbOperation(async () => {
-      const [adminCount] = await db.select({ count: sql<number>`count(*)` })
-        .from(users)
-        .where(eq(users.isAdmin, true));
-
-      const [userCount] = await db.select({ count: sql<number>`count(*)` })
-        .from(users);
-
-      // Get trending posts (most liked/viewed recently)
-      const trendingPosts = await db.select()
-        .from(postsTable)
-        .orderBy(desc(postsTable.likesCount), desc(postsTable.createdAt))
-        .limit(5);
-
-      return {
-        totalViews: 0,
-        uniqueVisitors: 0,
-        avgReadTime: 0,
-        bounceRate: 0,
-        trendingPosts: trendingPosts.map((post: any) => ({
-          ...post,
-          createdAt: safeCreateDate(post.createdAt)
-        })) as unknown as Post[],
-        activeUsers: Number(userCount.count || 0),
-        newUsers: 0,
-        adminCount: Number(adminCount.count || 0)
-      };
-    }, {
-      totalViews: 0,
-      uniqueVisitors: 0,
-      avgReadTime: 0,
-      bounceRate: 0,
-      trendingPosts: [],
-      activeUsers: 0,
-      newUsers: 0,
-      adminCount: 0
-    }, 'getSiteAnalytics');
-  }
-
-  async getUsers(page: number = 1, limit: number = 50): Promise<User[]> {
-    return this.safeDbOperation(async () => {
-      const offset = (page - 1) * limit;
-
-      const userList = await db.select()
-        .from(users)
-        .orderBy(desc(users.createdAt))
-        .limit(limit)
-        .offset(offset);
-
-      return userList.map(user => ({
-        ...user,
-        createdAt: safeCreateDate(user.createdAt)
-      }));
-    }, [], 'getUsers');
   }
 }
 

@@ -386,7 +386,7 @@ export default function BugReportsPage() {
   }, []);
 
   // Query bug reports data
-  const { data: bugReports = [], isLoading: isDataLoading } = useQuery({
+  const { data: bugReportsData = [], isLoading: isDataLoading } = useQuery({
     queryKey: ['bug-reports'],
     queryFn: async () => {
       // Mock data for now - replace with actual API call
@@ -397,7 +397,7 @@ export default function BugReportsPage() {
   // Update stats when data changes
   useEffect(() => {
     const stats = {
-      total: bugReports.length,
+      total: bugReportsData.length,
       new: 0,
       inProgress: 0,
       resolved: 0,
@@ -405,7 +405,7 @@ export default function BugReportsPage() {
       duplicate: 0
     };
 
-    bugReports.forEach((item: BugReport) => {
+    bugReportsData.forEach((item: BugReport) => {
       if (item.status === 'new') stats.new++;
       else if (item.status === 'in-progress') stats.inProgress++;
       else if (item.status === 'resolved') stats.resolved++;
@@ -414,79 +414,50 @@ export default function BugReportsPage() {
     });
 
     setReportStats(stats);
-  }, [bugReports]);
+  }, [bugReportsData]);
 
   // Track tab changes for debugging
-  const handleTabChange = (newTab: string) => {
-    console.log('[Admin:BugReports] Tab changed', { 
-      from: activeTab, 
-      to: newTab
-    });
-    setActiveTab(newTab);
-  };
+  useEffect(() => {
+    console.log('[Admin:BugReports] Tab changed to:', activeTab);
+  }, [activeTab, bugReportsData]);
 
-  // Status update handler (would make API call in production)
-  const handleStatusChange = (id: number, newStatus: string) => {
-    console.log(`Changing bug report #${id} status to ${newStatus}`);
-
-    // Simulate successful update
-    toast({
-      title: 'Status Updated',
-      description: `Bug report #${id} status changed to ${newStatus}`,
-    });
-  };
-
-  // Filter reports based on the active tab
+  // Filter reports based on active tab
   const filteredReports = useMemo(() => {
-    const reports = [...bugReports]; // Clone to avoid modifying original
-
-    const filtered = reports.filter((item) => {
-      if (activeTab === 'all') return true;
-      if (activeTab === 'in-progress') return item.status === 'in-progress';
-      return item.status === activeTab;
-    });
-
-    // Sort by date (newest first)
-    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    return filtered;
-  }, [activeTab, bugReports]);
+    if (activeTab === 'all') return bugReportsData;
+    return bugReportsData.filter((report: BugReport) => report.status === activeTab);
+  }, [activeTab, bugReportsData]);
 
   // Group reports by date for timeline display
   const groupedReports = useMemo(() => {
     return groupReportsByDate(filteredReports);
   }, [filteredReports]);
 
-  // Loading skeleton for timeline
-  const TimelineSkeleton = () => (
-    <>
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="flex gap-x-3">
-          <div className="relative last:after:hidden after:absolute after:top-7 after:bottom-0 after:start-3.5 after:w-px after:-translate-x-[0.5px] after:bg-gray-200 dark:after:bg-neutral-700">
-            <div className="relative z-10 size-7 flex justify-center items-center">
-              <Skeleton className="h-5 w-5 rounded-full" />
-            </div>
-          </div>
-          <div className="grow pt-0.5 pb-8 w-full">
-            <Skeleton className="h-[160px] w-full rounded-lg" />
-          </div>
-        </div>
-      ))}
-    </>
-  );
-
-  const { data: bugReports = [], isLoading: isDataLoading } = useQuery({
-    queryKey: ['admin', 'bug-reports'],
-    queryFn: async () => {
-      const response = await fetch('/api/admin/bug-reports', {
-        credentials: 'include'
+  // Handle status change
+  const handleStatusChange = async (reportId: number, newStatus: string) => {
+    try {
+      console.log('[Admin:BugReports] Updating status', {
+        reportId,
+        newStatus,
+        timestamp: new Date().toISOString()
       });
-      if (!response.ok) {
-        throw new Error('Failed to fetch bug reports');
-      }
-      return response.json();
+
+      // Update status via API call (when implemented)
+      // await updateBugReportStatus(reportId, newStatus);
+
+      // Show success message
+      toast({
+        title: "Status Updated",
+        description: `Bug report #${reportId} status changed to ${newStatus}`,
+      });
+    } catch (error) {
+      console.error('[Admin:BugReports] Status update failed:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update bug report status",
+        variant: "destructive",
+      });
     }
-  });
+  };
 
   if (isDataLoading) {
     return (
