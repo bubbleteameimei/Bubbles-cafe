@@ -4014,6 +4014,12 @@ class MemStorage {
     return newComment;
   }
 
+  // Add missing method for MemStorage
+  async logRecommendationPerformance(userId: number, method: string, count: number, durationMs: number): Promise<void> {
+    // Mock implementation for MemStorage - just log to console
+    console.log(`[MemStorage] Recommendation performance: userId=${userId}, method=${method}, count=${count}, duration=${durationMs}ms`);
+  }
+
   // Methods for fallback endpoints
   async getRecentPosts(): Promise<Post[]> {
     try {
@@ -4064,8 +4070,8 @@ class MemStorage {
       console.log(`[Storage] Fetching enhanced personalized recommendations for user ID: ${userId}, limit: ${limit}`);
       const startTime = Date.now(); // For performance tracking
 
-      // Implement safe database operation with retry logic
-      const safeDbOperation = async <T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> => {
+      // Implement retry function for database operations
+      const retry = async <T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> => {
         let lastError: any;
         for (let attempt = 0; attempt < maxRetries; attempt++) {
           try {
@@ -4078,6 +4084,11 @@ class MemStorage {
           }
         }
         throw lastError;
+      };
+
+      // Implement safe database operation with retry logic
+      const safeDbOperation = async <T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> => {
+        return retry(operation, maxRetries);
       };
 
       // Step 1: Get user's reading history (posts they've read)

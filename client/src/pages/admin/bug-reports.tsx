@@ -459,19 +459,52 @@ export default function BugReportsPage() {
     }
   };
 
-  if (isDataLoading) {
-    return (
-      <div className="container mx-auto py-6 px-4">
-        <Skeleton className="h-10 w-64 mb-6" />
+  // Loading skeleton component
+  const TimelineSkeleton = () => (
+    <div className="space-y-4">
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="flex gap-x-3">
+          <div className="relative">
+            <Skeleton className="size-7 rounded-full" />
+          </div>
+          <div className="grow">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-6 w-16" />
+                </div>
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-3/4" />
+                <div className="flex gap-x-4 mt-2">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 rounded-lg" />
+  // Loading state
+  if (isLoading || isDataLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Bug Reports</h1>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <Skeleton className="h-4 w-16 mb-2" />
+                <Skeleton className="h-8 w-8" />
+              </CardContent>
+            </Card>
           ))}
         </div>
-
-        <Skeleton className="h-12 w-full mb-6 rounded-lg" />
-
         <TimelineSkeleton />
       </div>
     );
@@ -554,7 +587,7 @@ export default function BugReportsPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange} className="mb-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="overflow-x-auto pb-2">
           <TabsList className="inline-flex w-auto">
             <TabsTrigger value="all">
