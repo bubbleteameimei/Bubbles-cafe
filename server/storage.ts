@@ -1,4 +1,4 @@
-import { 
+import {
   type Post, type InsertPost,
   type Comment, type InsertComment,
   type ReadingProgress, type InsertProgress,
@@ -28,7 +28,7 @@ import {
   type NewsletterSubscription, type InsertNewsletterSubscription,
   // Tables
   posts as postsTable,
-  comments,
+  comments as commentsTable, // Renamed to avoid conflict with type Comment
   readingProgress,
   secretProgress,
   users,
@@ -76,8 +76,8 @@ function safeCreateDate(value: unknown): Date {
 
 // Database operation utility function with retry logic
 async function safeDbOperation<T>(
-  operation: () => Promise<T>, 
-  fallback: T, 
+  operation: () => Promise<T>,
+  fallback: T,
   operationName: string,
   maxRetries: number = 3
 ): Promise<T> {
@@ -256,8 +256,6 @@ export interface IStorage {
 
   // Session-based reaction (for anonymous users)
   updatePostReaction(postId: number, data: { isLike: boolean; sessionId?: string }): Promise<boolean>;
-  getPostReactions(postId: number): Promise&lt;{ likes: number; dislikes: number }&gt;;
-  updatePostReaction(postId: number, data: { isLike: boolean; sessionId?: string }): Promise<boolean>;
   getPostReactions(postId: number): Promise<{ likes: number; dislikes: number }>;
   getPostLikeCounts(postId: number): Promise<{ likesCount: number; dislikesCount: number }>;
 
@@ -310,9 +308,9 @@ export interface IStorage {
   getBookmarkCount(): Promise<number>;
   getRecentActivity(limit: number): Promise<ActivityLog[]>;
   getPostAnalytics(postId: number): Promise<Analytics | undefined>;
-  getSiteAnalytics(): Promise<{ 
-    totalViews: number; 
-    uniqueVisitors: number; 
+  getSiteAnalytics(): Promise<{
+    totalViews: number;
+    uniqueVisitors: number;
     avgReadTime: number;
     bounceRate: number;
     trendingPosts: any[];
@@ -323,11 +321,11 @@ export interface IStorage {
 
 
   // Analytics methods
-  getAnalyticsSummary(): Promise<{ 
-    totalViews: number; 
-    uniqueVisitors: number; 
-    avgReadTime: number; 
-    bounceRate: number; 
+  getAnalyticsSummary(): Promise<{
+    totalViews: number;
+    uniqueVisitors: number;
+    avgReadTime: number;
+    bounceRate: number;
   }>;
   getDeviceDistribution(): Promise<{
     desktop: number;
@@ -396,8 +394,8 @@ export class DatabaseStorage implements IStorage {
 
   // Helper method for safely executing database operations with fallback options and retries
   async safeDbOperation<T>(
-    operation: () => Promise<T>, 
-    fallback: T, 
+    operation: () => Promise<T>,
+    fallback: T,
     operationName: string,
     maxRetries: number = 3
   ): Promise<T> {
@@ -427,11 +425,10 @@ export class DatabaseStorage implements IStorage {
   async clearCache(key: string): Promise<boolean> {
     try {
       consoleProxy.log(`[Storage] Clearing cache for key: ${key}`);
-      // In a real implementation, this would clear Redis or other cache
-      // For now, we just return success since we don't have an actual cache layer
+      // Cache clearing logic would go here
       return true;
     } catch (error) {
-      consoleProxy.error(`[Storage] Error clearing cache for key ${key}:`, error);
+      consoleProxy.error(`[Storage] Failed to clear cache for key: ${key}`, error);
       return false;
     }
   }
@@ -451,8 +448,8 @@ export class DatabaseStorage implements IStorage {
       // Only add primary key if it doesn't exist
       try {
         await compatiblePool.query(`
-          ALTER TABLE "session" 
-          ADD CONSTRAINT "session_pkey" 
+          ALTER TABLE "session"
+          ADD CONSTRAINT "session_pkey"
           PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
         `);
       } catch (error: any) {
@@ -536,118 +533,59 @@ export class DatabaseStorage implements IStorage {
 
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    try {
-      // Use explicit column selection including metadata (exists in DB)
-      const [user] = await db.select({
-        id: users.id,
-        username: users.username,
-        email: users.email,
-        password_hash: users.password_hash,
-        isAdmin: users.isAdmin,
-        metadata: users.metadata,
-        createdAt: users.createdAt
-      })
-      .from(users)
-      .where(eq(users.id, id))
-      .limit(1);
-
-      return user;
-    } catch (error) {
-      console.error("Error in getUser:", error);
-      // Try a more basic approach as fallback using raw SQL
-      try {
-        const result = await pool.query(
-          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", metadata, created_at as \"createdAt\" FROM users WHERE id = $1 LIMIT 1",
-          [id]
-        );
-        return result.rows[0] || undefined;
-      } catch (fallbackError) {
-        console.error("Fallback error in getUser:", fallbackError);
-        throw fallbackError;
-      }
-    }
+    return await this.safeDbOperation(
+      async () => {
+        const result = await this.getDb().select().from(users).where(eq(users.id, id)).limit(1);
+        return result[0];
+      },
+      undefined,
+      'Get user by id'
+    );
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return this.safeDbOperation(
+    return await this.safeDbOperation(
       async () => {
-        try {
-          const [user] = await db.select({
-            id: users.id,
-            username: users.username,
-            email: users.email,
-            password_hash: users.password_hash,
-            isAdmin: users.isAdmin,
-            metadata: users.metadata,
-            createdAt: users.createdAt
-          })
-          .from(users)
-          .where(eq(users.username, username))
-          .limit(1);
-
-          return user || undefined;
-        } catch (error) {
-          console.error("Error in getUserByUsername:", error);
-          // Try a more basic approach as fallback using raw SQL
-          const result = await pool.query(
-            "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", metadata, created_at as \"createdAt\" FROM users WHERE username = $1 LIMIT 1",
-            [username]
-          );
-          return result.rows[0] || undefined;
-        }
+        const result = await this.getDb().select().from(users).where(eq(users.username, username)).limit(1);
+        return result[0];
       },
       undefined,
-      'getUserByUsername'
+      'Get user by username'
     );
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return this.safeDbOperation(
+    return await this.safeDbOperation(
       async () => {
         // Normalize the email address to ensure case-insensitive matching
         const normalizedEmail = email.trim().toLowerCase();
         console.log('[Storage] Looking up user by email:', normalizedEmail);
 
-        try {
-          // Now include metadata column since it exists in the database
-          // Use LOWER() for case-insensitive comparison
-          const [user] = await db.select({
-            id: users.id,
-            username: users.username,
-            email: users.email,
-            password_hash: users.password_hash,
-            isAdmin: users.isAdmin,
-            metadata: users.metadata,
-            createdAt: users.createdAt
-          })
-          .from(users)
-          .where(sql`LOWER(${users.email}) = ${normalizedEmail}`)
-          .limit(1);
+        // Now include metadata column since it exists in the database
+        // Use LOWER() for case-insensitive comparison
+        const [user] = await db.select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          password_hash: users.password_hash,
+          isAdmin: users.isAdmin,
+          metadata: users.metadata,
+          createdAt: users.createdAt
+        })
+        .from(users)
+        .where(sql`LOWER(${users.email}) = ${normalizedEmail}`)
+        .limit(1);
 
-          if (user) {
-            console.log('[Storage] User found by email:', normalizedEmail);
-          } else {
-            console.log('[Storage] No user found with email:', normalizedEmail);
-          }
-
-          return user;
-        } catch (error) {
-          console.error("Error in getUserByEmail:", error);
-          // Try a more basic approach as fallback using raw SQL with case-insensitive comparison
-          const result = await pool.query(
-            "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", metadata, created_at as \"createdAt\" FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1",
-            [email.trim()]
-          );
-
-          if (result.rows.length > 0) {
-            console.log('[Storage] User found by email (fallback method):', email);
-          }
-
-          return result.rows[0] || undefined;
+        if (user) {
+          console.log('[Storage] User found by email:', normalizedEmail);
+        } else {
+          console.log('[Storage] No user found with email:', normalizedEmail);
         }
+
+        return user;
       },
       undefined,
-      'getUserByEmail'
+      'Get user by email'
     );
   }
 
@@ -693,27 +631,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUsersCount(): Promise<number> {
-    try {
-      // Use count to get total number of users
-      const [result] = await db.select({
-        count: count(users.id)
-      }).from(users);
-
-      return result.count || 0;
-    } catch (error) {
-      console.error("Error in getUsersCount:", error);
-      // Fallback to raw SQL query
-      try {
-        const result = await pool.query("SELECT COUNT(*) FROM users");
-        return parseInt(result.rows[0].count, 10) || 0;
-      } catch (fallbackError) {
-        console.error("Fallback error in getUsersCount:", fallbackError);
-        return 0; // Return 0 as a safe default
-      }
-    }
+    return await this.safeDbOperation(
+      async () => {
+        const result = await this.getDb().select({ count: sql`count(*)` }).from(users);
+        return Number(result[0]?.count || 0);
+      },
+      0,
+      'Get users count'
+    );
   }
 
-  // Alias for the getUsersCount method to match the interface
+  // Alias for the getUsersCount method to match the interface name
   async getUserCount(): Promise<number> {
     return this.getUsersCount();
   }
@@ -784,8 +712,8 @@ export class DatabaseStorage implements IStorage {
     try {
       // Use count to get total number of comments
       const [result] = await db.select({
-        count: count(comments.id)
-      }).from(comments);
+        count: count(commentsTable.id)
+      }).from(commentsTable);
 
       return result.count || 0;
     } catch (error) {
@@ -809,21 +737,21 @@ export class DatabaseStorage implements IStorage {
     try {
       // Get total count
       const [totalResult] = await db.select({
-        count: count(comments.id)
-      }).from(comments);
+        count: count(commentsTable.id)
+      }).from(commentsTable);
 
       // Count pending comments (use SQL string for JSON access)
       const [pendingResult] = await db.select({
-        count: count(comments.id)
+        count: count(commentsTable.id)
       })
-      .from(comments)
+      .from(commentsTable)
       .where(sql`(metadata->>'status')::text = 'pending'`);
 
       // Count flagged comments
       const [flaggedResult] = await db.select({
-        count: count(comments.id)
+        count: count(commentsTable.id)
       })
-      .from(comments)
+      .from(commentsTable)
       .where(sql`(metadata->>'status')::text = 'flagged'`);
 
       return {
@@ -1223,7 +1151,7 @@ export class DatabaseStorage implements IStorage {
 
   // Posts operations
   async getPosts(
-    page: number = 1, 
+    page: number = 1,
     limit: number = 100, // Increased limit to ensure all 21 WordPress stories are returned
     filters: {
       search?: string;
@@ -1335,8 +1263,8 @@ export class DatabaseStorage implements IStorage {
           let filteredPosts = transformedPosts;
           if (filters.search) {
             const searchTerm = filters.search.toLowerCase();
-            filteredPosts = filteredPosts.filter((post: Post) => 
-              post.title.toLowerCase().includes(searchTerm) || 
+            filteredPosts = filteredPosts.filter((post: Post) =>
+              post.title.toLowerCase().includes(searchTerm) ||
               post.content.toLowerCase().includes(searchTerm) ||
               (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm))
             );
@@ -1344,7 +1272,7 @@ export class DatabaseStorage implements IStorage {
 
           // Apply category filter if specified
           if (filters.category) {
-            filteredPosts = filteredPosts.filter((post: Post) => 
+            filteredPosts = filteredPosts.filter((post: Post) =>
               post.themeCategory === filters.category
             );
           }
@@ -1370,8 +1298,8 @@ export class DatabaseStorage implements IStorage {
 
   // Fallback method for getting posts when the database operation fails
   private async getFallbackPosts(
-    page: number = 1, 
-    limit: number = 16, 
+    page: number = 1,
+    limit: number = 16,
     filters: any = {}
   ): Promise<{ posts: Post[], hasMore: boolean }> {
     try {
@@ -1379,7 +1307,7 @@ export class DatabaseStorage implements IStorage {
       const offset = (page - 1) * limit;
 
       // Fallback query without problematic columns
-      // Use jsonb metadata field directly when available 
+      // Use jsonb metadata field directly when available
       // This is the most reliable approach as it doesn't depend on columns that might not exist
       const simplePosts = await db.select({
         id: postsTable.id,
@@ -1474,8 +1402,8 @@ export class DatabaseStorage implements IStorage {
       // Apply text search filter if specified
       if (filters.search) {
         const searchTerm = filters.search.toLowerCase();
-        filteredPosts = filteredPosts.filter(post => 
-          post.title.toLowerCase().includes(searchTerm) || 
+        filteredPosts = filteredPosts.filter(post =>
+          post.title.toLowerCase().includes(searchTerm) ||
           post.content.toLowerCase().includes(searchTerm) ||
           (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm))
         );
@@ -1569,18 +1497,18 @@ export class DatabaseStorage implements IStorage {
 
           // If standard query fails, fall back to SQL for schema flexibility
           if (queryError.message && (
-              queryError.message.includes("column") || 
+              queryError.message.includes("column") ||
               queryError.message.includes("does not exist"))) {
             console.log("Using fallback SQL query for getPost.");
 
             // Fallback to raw SQL query that only selects columns we know exist
             const result = await db.execute(sql`
-              SELECT 
+              SELECT
                 id, title, content, slug, excerpt, author_id,
                 metadata, created_at, is_secret, mature_content,
                 theme_category, reading_time_minutes,
                 likes_count, dislikes_count
-              FROM posts 
+              FROM posts
               WHERE slug = ${slug}
               LIMIT 1
             `);
@@ -1664,30 +1592,30 @@ export class DatabaseStorage implements IStorage {
       // Use raw SQL to avoid schema mismatches, only including fields that actually exist
       const result = await db.execute(sql`
         INSERT INTO posts (
-          title, 
-          content, 
-          slug, 
-          author_id, 
-          excerpt, 
-          metadata, 
-          is_secret, 
+          title,
+          content,
+          slug,
+          author_id,
+          excerpt,
+          metadata,
+          is_secret,
           "isAdminPost",
-          mature_content, 
-          theme_category, 
-          created_at, 
+          matureContent,
+          theme_category,
+          created_at,
           reading_time_minutes
         ) VALUES (
-          ${basePost.title}, 
-          ${basePost.content}, 
-          ${basePost.slug}, 
-          ${basePost.authorId}, 
-          ${basePost.excerpt || null}, 
-          ${JSON.stringify(basePost.metadata)}, 
-          ${basePost.isSecret || false}, 
+          ${basePost.title},
+          ${basePost.content},
+          ${basePost.slug},
+          ${basePost.authorId},
+          ${basePost.excerpt || null},
+          ${JSON.stringify(basePost.metadata)},
+          ${basePost.isSecret || false},
           ${post.isAdminPost || false},
-          ${basePost.matureContent || false}, 
-          ${basePost.themeCategory || null}, 
-          ${basePost.createdAt}, 
+          ${basePost.matureContent || false},
+          ${basePost.themeCategory || null},
+          ${basePost.createdAt},
           ${basePost.readingTimeMinutes}
         )
         RETURNING *;
@@ -1801,9 +1729,9 @@ export class DatabaseStorage implements IStorage {
       }
 
       const postComments = await db.select()
-        .from(comments)
-        .where(eq(comments.postId, post.id))
-        .orderBy(desc(comments.createdAt));
+        .from(commentsTable)
+        .where(eq(commentsTable.postId, post.id))
+        .orderBy(desc(commentsTable.createdAt));
 
       return {
         ...post,
@@ -1824,43 +1752,43 @@ export class DatabaseStorage implements IStorage {
 
   // Comments operations
   async getComments(postId: number): Promise<Comment[]> {
-    try {
-      // Use a raw SQL query to avoid column name issues and ensure proper field mapping
-      const result = await db.execute(sql`
-        SELECT 
-          id, content, post_id as "postId", user_id as "userId", 
-          is_approved as "approved", edited, edited_at as "editedAt", 
-          metadata, created_at as "createdAt", parent_id as "parentId"
-        FROM comments
-        WHERE post_id = ${postId}
-        ORDER BY created_at DESC
-      `);
+    return await this.safeDbOperation(
+      async () => {
+        // Use a raw SQL query to avoid column name issues and ensure proper field mapping
+        const result = await db.execute(sql`
+          SELECT
+            id, content, post_id as "postId", user_id as "userId",
+            is_approved as "approved", edited, edited_at as "editedAt",
+            metadata, created_at as "createdAt", parent_id as "parentId"
+          FROM comments
+          WHERE post_id = ${postId}
+          ORDER BY created_at DESC
+        `);
 
-      return result.rows.map((comment: any) => ({
-        id: comment.id,
-        content: comment.content,
-        postId: comment.postId ?? comment.post_id ?? null,
-        userId: comment.userId ?? comment.user_id ?? null,
-        createdAt: safeCreateDate(comment.createdAt),
-        parentId: comment.parentId ?? comment.parent_id ?? null,
-        is_approved: comment.approved === undefined ? !!comment.is_approved : !!comment.approved,
-        edited: !!comment.edited,
-        editedAt: comment.editedAt ? safeCreateDate(comment.editedAt) : null,
-        metadata: typeof comment.metadata === 'string' ? JSON.parse(comment.metadata) : (comment.metadata || {})
-      }));
-    } catch (error) {
-      console.error("Error in getComments:", error);
-      // Return empty array instead of throwing to prevent cascade failures
-      return [];
-    }
+        return result.rows.map((comment: any) => ({
+          id: comment.id,
+          content: comment.content,
+          postId: comment.postId ?? comment.post_id ?? null,
+          userId: comment.userId ?? comment.user_id ?? null,
+          createdAt: safeCreateDate(comment.createdAt),
+          parentId: comment.parentId ?? comment.parent_id ?? null,
+          is_approved: comment.approved === undefined ? !!comment.is_approved : !!comment.approved,
+          edited: !!comment.edited,
+          editedAt: comment.editedAt ? safeCreateDate(comment.editedAt) : null,
+          metadata: typeof comment.metadata === 'string' ? JSON.parse(comment.metadata) : (comment.metadata || {})
+        }));
+      },
+      [],
+      'Get comments'
+    );
   }
 
   async getRecentComments(): Promise<Comment[]> {
     try {
       const result = await db.execute(sql`
-        SELECT 
-          id, content, post_id as "postId", user_id as "userId", 
-          is_approved as "approved", edited, edited_at as "editedAt", 
+        SELECT
+          id, content, post_id as "postId", user_id as "userId",
+          is_approved as "approved", edited, edited_at as "editedAt",
           metadata, created_at as "createdAt", parent_id as "parentId"
         FROM comments
         ORDER BY created_at DESC
@@ -1888,9 +1816,9 @@ export class DatabaseStorage implements IStorage {
   async getPendingComments(): Promise<Comment[]> {
     try {
       const result = await db.execute(sql`
-        SELECT 
-          id, content, post_id as "postId", user_id as "userId", 
-          is_approved as "approved", edited, edited_at as "editedAt", 
+        SELECT
+          id, content, post_id as "postId", user_id as "userId",
+          is_approved as "approved", edited, edited_at as "editedAt",
           metadata, created_at as "createdAt", parent_id as "parentId"
         FROM comments
         WHERE is_approved = false
@@ -1977,9 +1905,9 @@ export class DatabaseStorage implements IStorage {
         author: (typeof baseMeta.author === 'string') ? baseMeta.author : (comment.userId ? 'User' : 'Guest'),
         upvotes: 0,
         downvotes: 0,
-        replyCount: 0,
-        ...baseMeta
+        replyCount: 0
       };
+      const finalMetadata = { ...commentMetadata, ...baseMeta, ownerKey: baseMeta?.ownerKey };
 
       // Create a direct SQL query to ensure proper column mapping and return data
       const result = await db.execute(sql`
@@ -1990,11 +1918,11 @@ export class DatabaseStorage implements IStorage {
           ${comment.parentId ?? null},
           ${comment.userId ?? null},
           ${comment.is_approved !== undefined ? comment.is_approved : true},
-          ${JSON.stringify({ ...commentMetadata, ownerKey: (comment as any)?.metadata?.ownerKey })},
+          ${JSON.stringify(finalMetadata)},
           ${new Date()}
         )
-        RETURNING id, content, post_id as "postId", user_id as "userId", 
-                  is_approved as "approved", parent_id as "parentId", 
+        RETURNING id, content, post_id as "postId", user_id as "userId",
+                  is_approved as "approved", parent_id as "parentId",
                   metadata, created_at as "createdAt", edited, edited_at as "editedAt";
       `);
 
@@ -2020,8 +1948,8 @@ export class DatabaseStorage implements IStorage {
         is_approved: Boolean((newComment as any).is_approved ?? (newComment as any).approved ?? false),
         edited: Boolean(newComment.edited),
         editedAt: newComment.editedAt ? safeCreateDate(newComment.editedAt) : (newComment.edited_at ? safeCreateDate(newComment.edited_at) : null),
-        metadata: typeof (newComment as any).metadata === 'string' 
-          ? JSON.parse((newComment as any).metadata) 
+        metadata: typeof (newComment as any).metadata === 'string'
+          ? JSON.parse((newComment as any).metadata)
           : ((newComment as any).metadata || {})
       } as Comment;
     } catch (error) {
@@ -2032,9 +1960,9 @@ export class DatabaseStorage implements IStorage {
 
   async updateComment(id: number, comment: Partial<Comment>): Promise<Comment> {
     try {
-      const [updatedComment] = await db.update(comments)
+      const [updatedComment] = await db.update(commentsTable)
         .set(comment)
-        .where(eq(comments.id, id))
+        .where(eq(commentsTable.id, id))
         .returning();
 
       if (!updatedComment) {
@@ -2057,8 +1985,8 @@ export class DatabaseStorage implements IStorage {
   async deleteComment(id: number): Promise<Comment> {
     try {
       console.log(`[Storage] Attempting to delete comment with ID: ${id}`);
-      const result = await db.delete(comments)
-        .where(eq(comments.id, id))
+      const result = await db.delete(commentsTable)
+        .where(eq(commentsTable.id, id))
         .returning();
 
       if (!result.length) {
@@ -2077,8 +2005,8 @@ export class DatabaseStorage implements IStorage {
   async getComment(id: number): Promise<Comment | undefined> {
     try {
       const [comment] = await db.select()
-        .from(comments)
-        .where(eq(comments.id, id))
+        .from(commentsTable)
+        .where(eq(commentsTable.id, id))
         .limit(1);
 
       if (!comment) return undefined;
@@ -2185,9 +2113,9 @@ export class DatabaseStorage implements IStorage {
     try {
       const [updatedSubscription] = await db
         .update(newsletterSubscriptions)
-        .set({ 
-          status, 
-          updatedAt: new Date() 
+        .set({
+          status,
+          updatedAt: new Date()
         })
         .where(eq(newsletterSubscriptions.email, email))
         .returning();
@@ -2364,7 +2292,7 @@ export class DatabaseStorage implements IStorage {
       // Atomically recompute counts from post_likes table to avoid races
       await db.execute(sql`
         UPDATE posts p
-        SET 
+        SET
           likes_count = (
             SELECT COUNT(*)::int FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = true
           ),
@@ -2577,15 +2505,25 @@ export class DatabaseStorage implements IStorage {
   async updateAuthorStats(authorId: number): Promise<AuthorStats> {
     const [[totalPosts], [totalLikes], [totalTips]] = await Promise.all([
       db.select({ count: count() }).from(postsTable).where(eq(postsTable.authorId, authorId)),
-      db.select({ count: count() }).from(postLikes).where(eq(postLikes.isLike, true)),
+      db.select({ count: count() }).from(postLikes).where(eq(postLikes.isLike, true)), // This seems incorrect, should count likes for the author's posts
       db.select({ sum: sql<string>`sum(amount)` }).from(authorTips).where(eq(authorTips.authorId, authorId))
     ]);
+
+    // Corrected logic for totalLikes: count likes on the author's posts
+    const authorPostsLikes = await db.select({ count: count() })
+      .from(postLikes)
+      .innerJoin(postsTable, eq(postLikes.postId, postsTable.id))
+      .where(and(
+        eq(postsTable.authorId, authorId),
+        eq(postLikes.isLike, true)
+      ));
 
     const [updated] = await db.update(authorStats)
       .set({
         totalPosts: Number(totalPosts.count),
-        totalLikes: Number(totalLikes.count),
-        totalTips: totalTips.sum || "0",        updatedAt: new Date()
+        totalLikes: Number(authorPostsLikes[0]?.count || 0),
+        totalTips: totalTips.sum || "0",
+        updatedAt: new Date()
       })
       .where(eq(authorStats.authorId, authorId))
       .returning();
@@ -2773,9 +2711,9 @@ export class DatabaseStorage implements IStorage {
     return postAnalytics;
   }
 
-  async getSiteAnalytics(): Promise<{ 
-    totalViews: number; 
-    uniqueVisitors: number; 
+  async getSiteAnalytics(): Promise<{
+    totalViews: number;
+    uniqueVisitors: number;
     avgReadTime: number;
     bounceRate: number;
     trendingPosts: any[];
@@ -2899,7 +2837,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateSiteSetting(key: string, value: string): Promise<SiteSetting> {
     const [updated] = await db.update(siteSettings)
-      .set({ 
+      .set({
         value,
         updatedAt: new Date()
       })
@@ -2934,8 +2872,8 @@ export class DatabaseStorage implements IStorage {
       // Use column names from the analytics table
       const analyticsResult = await db
         .select({
-          totalViews: sql`SUM("page_views")`,
-          uniqueVisitors: sql`SUM("unique_visitors")`,
+          totalViews: sql`sum("page_views")`,
+          uniqueVisitors: sql`sum("unique_visitors")`,
           avgReadTime: sql`AVG("average_read_time")`,
           bounceRate: sql`AVG("bounce_rate")`
         })
@@ -2962,8 +2900,8 @@ export class DatabaseStorage implements IStorage {
       return {
         totalViews: Number(analyticsResult[0].totalViews) || 0,
         uniqueVisitors: Number(analyticsResult[0].uniqueVisitors) || 0,
-        avgReadTime: Number(analyticsResult[0].avgReadTime) || 
-                    Number(readTimeResult[0]?.avgReadTime) || 0,
+        avgReadTime: Number(analyticsResult[0].avgReadTime) ||
+                     Number(readTimeResult[0]?.avgReadTime) || 0,
         bounceRate: Number(analyticsResult[0].bounceRate) || 0,
       };
     } catch (error) {
@@ -3066,9 +3004,9 @@ export class DatabaseStorage implements IStorage {
       console.log(`[Storage] Fetching comments for user: ${userId}`);
 
       const userComments = await db.select()
-        .from(comments)
-        .where(eq(comments.userId, userId))
-        .orderBy(desc(comments.createdAt));
+        .from(commentsTable)
+        .where(eq(commentsTable.userId, userId))
+        .orderBy(desc(commentsTable.createdAt));
 
       console.log(`[Storage] Found ${userComments.length} comments for user: ${userId}`);
       return userComments;
@@ -3201,7 +3139,7 @@ export class DatabaseStorage implements IStorage {
       const [[postCount], [userCount], [commentCount], [likeCount], recentActivity] = await Promise.all([
         db.select({ count: count() }).from(postsTable),
         db.select({ count: count() }).from(users),
-        db.select({ count: count() }).from(comments),
+        db.select({ count: count() }).from(commentsTable),
         db.select({ count: count() }).from(postLikes).where(eq(postLikes.isLike, true)),
         db.select().from(activityLogs).orderBy(desc(activityLogs.createdAt)).limit(10)
       ]);
@@ -3435,7 +3373,7 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error in deleteBookmark:", error);
       if (error instanceof Error && error.message === "Bookmark not found") {
-        throw error; 
+        throw error;
       }
       throw new Error("Failed to delete bookmark");
     }
@@ -4123,7 +4061,7 @@ class MemStorage {
 
       // Implement safe database operation with retry logic
       const safeDbOperation = async <T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> => {
-        let lastError;
+        let lastError: any;
         for (let attempt = 0; attempt < maxRetries; attempt++) {
           try {
             return await operation();
@@ -4182,7 +4120,7 @@ class MemStorage {
         // Apply theme filter if preferences exist
         if (preferredThemes.length > 0) {
           query = query.where(
-            preferredThemes.map(theme => 
+            preferredThemes.map(theme =>
               or(
                 like(postsTable.themeCategory, `%${theme}%`),
                 sql`${postsTable.metadata}->>'themeCategory' LIKE ${`%${theme}%`}`
@@ -4238,8 +4176,8 @@ class MemStorage {
         let weight = 1;
 
         // Give more weight to posts that were recently read
-        const isRecentlyRead = readingHistory.some(item => 
-          item.postId === post.id && 
+        const isRecentlyRead = readingHistory.some(item =>
+          item.postId === post.id &&
           new Date(item.lastReadAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000 // 7 days
         );
         if (isRecentlyRead) weight += 1;
@@ -4335,7 +4273,7 @@ class MemStorage {
               not(sql`${postsTable.id} IN (${Array.from(historyPostIds).join(',')})`),
               // Include posts with matching themes
               or(
-                ...allThemes.map(theme => 
+                ...allThemes.map(theme =>
                   or(
                     like(postsTable.themeCategory, `%${theme}%`),
                     sql`${postsTable.metadata}->>'themeCategory' LIKE ${`%${theme}%`}`
@@ -4358,7 +4296,7 @@ class MemStorage {
           let score = 0;
 
           // Collaborative filtering boost
-          if (similarUsersPostIds.has(post.id)) {
+          if (collaborativePostIds.has(post.id)) {
             score += 25;
           }
 
@@ -4389,10 +4327,7 @@ class MemStorage {
           }
 
           // Recency bias (newer posts get a boost)
-                     const postDate = post.createdAt instanceof Date 
-            ? post.createdAt 
-            : new Date(post.createdAt as unknown as string | number | Date);
-
+          const postDate = post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt);
           const daysSincePosted = (Date.now() - postDate.getTime()) / (1000 * 60 * 60 * 24);
           if (daysSincePosted < 7) { // Posts less than a week old
             score += Math.max(0, 10 - daysSincePosted); // 10 points for today, decreasing to 3 for a week old
@@ -4408,9 +4343,9 @@ class MemStorage {
         scoredPosts.sort((a: { score: number }, b: { score: number }) => b.score - a.score);
 
         // Take top posts
-                 contentBasedRecommendations = scoredPosts
-           .slice(0, limit)
-           .map(({ post }: { post: Post; score: number }) => post);
+        contentBasedRecommendations = scoredPosts
+          .slice(0, limit)
+          .map(({ post }: { post: Post; score: number }) => post);
 
       } catch (error) {
         console.error(`[Storage] Error getting content-based recommendations:`, error);
@@ -4421,7 +4356,7 @@ class MemStorage {
       if (contentBasedRecommendations.length < limit) {
         console.log(`[Storage] Not enough recommendations (${contentBasedRecommendations.length}), supplementing with additional posts`);
         const remainingCount = limit - contentBasedRecommendations.length;
-        const existingIds = new Set([
+        const existingIds = new Set<number>([
           ...contentBasedRecommendations.map(post => post.id),
           ...Array.from(historyPostIds)
         ]);
@@ -4433,7 +4368,7 @@ class MemStorage {
             const popularCount = Math.ceil(remainingCount * 0.6);
             const popularPosts = await db.select()
               .from(postsTable)
-              .where(not(sql`${postsTable.id} IN (${Array.from(existingIds).join(',')})`))
+              .where(not(inArray(postsTable.id, existing)))
               .orderBy(desc(postsTable.likesCount), desc(postsTable.createdAt))
               .limit(popularCount);
 
@@ -4441,7 +4376,7 @@ class MemStorage {
             const recentCount = remainingCount - popularCount;
             const recentPosts = await db.select()
               .from(postsTable)
-              .where(not(sql`${postsTable.id} IN (${Array.from(existingIds).join(',')})`))
+              .where(not(inArray(postsTable.id, existing)))
               .orderBy(desc(postsTable.createdAt))
               .limit(recentCount);
 
@@ -4534,10 +4469,10 @@ class MemStorage {
     totalLikes: number;
     recentActivity: ActivityLog[];
   }> {
-    return safeDbOperation(async () => {
+    return this.safeDbOperation(async () => {
       const [postsCount] = await db.select({ count: sql<number>`count(*)` }).from(postsTable);
       const [usersCount] = await db.select({ count: sql<number>`count(*)` }).from(users);
-      const [commentsCount] = await db.select({ count: sql<number>`count(*)` }).from(comments);
+      const [commentsCount] = await db.select({ count: sql<number>`count(*)` }).from(commentsTable);
 
       // Get recent activity
       const recentActivity = await db.select()
@@ -4565,7 +4500,7 @@ class MemStorage {
   }
 
   async getSiteSettingByKey(key: string): Promise<SiteSetting | undefined> {
-    return safeDbOperation(async () => {
+    return this.safeDbOperation(async () => {
       const [setting] = await db.select()
         .from(siteSettings)
         .where(eq(siteSettings.key, key))
@@ -4579,16 +4514,16 @@ class MemStorage {
   }
 
   async setSiteSetting(key: string, value: string, category: string, description?: string): Promise<SiteSetting> {
-    return safeDbOperation(async () => {
+    return this.safeDbOperation(async () => {
       const now = new Date();
 
       // Try to update existing setting first
       const [updated] = await db.update(siteSettings)
-        .set({ 
-          value, 
-          category, 
+        .set({
+          value,
+          category,
           description: description || null,
-          updatedAt: now 
+          updatedAt: now
         })
         .where(eq(siteSettings.key, key))
         .returning();
@@ -4619,7 +4554,7 @@ class MemStorage {
   }
 
   async getAllSiteSettings(): Promise<SiteSetting[]> {
-    return safeDbOperation(async () => {
+    return this.safeDbOperation(async () => {
       const settings = await db.select()
         .from(siteSettings)
         .orderBy(siteSettings.category, siteSettings.key);
@@ -4641,7 +4576,7 @@ class MemStorage {
     newUsers: number;
     adminCount: number;
   }> {
-    return safeDbOperation(async () => {
+    return this.safeDbOperation(async () => {
       const [adminCount] = await db.select({ count: sql<number>`count(*)` })
         .from(users)
         .where(eq(users.isAdmin, true));
@@ -4681,7 +4616,7 @@ class MemStorage {
   }
 
   async getUsers(page: number = 1, limit: number = 50): Promise<User[]> {
-    return safeDbOperation(async () => {
+    return this.safeDbOperation(async () => {
       const offset = (page - 1) * limit;
 
       const userList = await db.select()

@@ -138,7 +138,7 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const hashedPassword = await bcrypt.hash(insertUser.password_hash, 10);
-    
+
     const [user] = await db
       .insert(users)
       .values({
@@ -149,7 +149,7 @@ export class DatabaseStorage implements IStorage {
         metadata: insertUser.metadata || {}
       })
       .returning();
-    
+
     return user;
   }
 
@@ -159,7 +159,7 @@ export class DatabaseStorage implements IStorage {
       .set(updates)
       .where(eq(users.id, id))
       .returning();
-    
+
     return user || undefined;
   }
 
@@ -181,7 +181,7 @@ export class DatabaseStorage implements IStorage {
   }): Promise<{ posts: Post[]; hasMore: boolean }> {
     const limit = filters?.limit || 10;
     const offset = filters?.offset || 0;
-    
+
     const baseQuery = db.select({
       id: posts.id,
       title: posts.title,
@@ -199,25 +199,25 @@ export class DatabaseStorage implements IStorage {
       metadata: posts.metadata,
       createdAt: posts.createdAt
     }).from(posts);
-    
+
     const conditions: any[] = [];
-    
+
     if (filters?.authorId) {
       conditions.push(eq(posts.authorId, filters.authorId));
     }
-    
+
     if (filters?.isSecret !== undefined) {
       conditions.push(eq(posts.isSecret, filters.isSecret));
     }
-    
+
     if (filters?.isAdminPost !== undefined) {
       conditions.push(eq(posts.isAdminPost, filters.isAdminPost));
     }
-    
+
     if (filters?.themeCategory) {
       conditions.push(eq(posts.themeCategory, filters.themeCategory));
     }
-    
+
     if (filters?.search) {
       conditions.push(
         or(
@@ -226,14 +226,14 @@ export class DatabaseStorage implements IStorage {
         )
       );
     }
-    
+
     const query: any = conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
-    
+
     const results = await query
       .orderBy(desc(posts.createdAt))
       .limit(limit + 1)
       .offset(offset);
-    
+
     const hasMore = results.length > limit;
     const sliced = hasMore ? results.slice(0, -1) : results;
     const posts_result: Post[] = sliced.map((p: any) => ({
@@ -253,7 +253,7 @@ export class DatabaseStorage implements IStorage {
       metadata: p.metadata,
       createdAt: p.createdAt
     }));
-    
+
     return { posts: posts_result, hasMore };
   }
 
@@ -272,7 +272,7 @@ export class DatabaseStorage implements IStorage {
       .insert(posts)
       .values(insertPost)
       .returning();
-    
+
     return post;
   }
 
@@ -282,7 +282,7 @@ export class DatabaseStorage implements IStorage {
       .set(updates)
       .where(eq(posts.id, id))
       .returning();
-    
+
     return post || undefined;
   }
 
@@ -312,7 +312,7 @@ export class DatabaseStorage implements IStorage {
         is_approved: insertComment.is_approved !== undefined ? insertComment.is_approved : false
       })
       .returning();
-    
+
     return comment;
   }
 
@@ -322,7 +322,7 @@ export class DatabaseStorage implements IStorage {
       .set(updates)
       .where(eq(comments.id, id))
       .returning();
-    
+
     return comment || undefined;
   }
 
@@ -336,7 +336,7 @@ export class DatabaseStorage implements IStorage {
       .insert(sessions)
       .values(insertSession)
       .returning();
-    
+
     return session;
   }
 
@@ -345,7 +345,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(sessions)
       .where(eq(sessions.token, token));
-    
+
     return session || undefined;
   }
 
@@ -363,7 +363,7 @@ export class DatabaseStorage implements IStorage {
       .insert(resetTokens)
       .values(insertToken)
       .returning();
-    
+
     return token;
   }
 
@@ -376,7 +376,7 @@ export class DatabaseStorage implements IStorage {
         eq(resetTokens.used, false),
         sql`expires_at > NOW()`
       ));
-    
+
     return resetToken || undefined;
   }
 
@@ -385,7 +385,7 @@ export class DatabaseStorage implements IStorage {
       .update(resetTokens)
       .set({ used: true })
       .where(eq(resetTokens.token, token));
-    
+
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
@@ -394,7 +394,7 @@ export class DatabaseStorage implements IStorage {
       .insert(bookmarks)
       .values(insertBookmark)
       .returning();
-    
+
     return bookmark;
   }
 
@@ -420,7 +420,7 @@ export class DatabaseStorage implements IStorage {
       .insert(contactMessages)
       .values(insertMessage)
       .returning();
-    
+
     return message;
   }
 
@@ -436,7 +436,7 @@ export class DatabaseStorage implements IStorage {
       .insert(newsletterSubscriptions)
       .values(insertSubscription)
       .returning();
-    
+
     return subscription;
   }
 
@@ -445,7 +445,7 @@ export class DatabaseStorage implements IStorage {
       .update(newsletterSubscriptions)
       .set({ status: 'unsubscribed' })
       .where(eq(newsletterSubscriptions.email, email));
-    
+
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
@@ -462,7 +462,7 @@ export class DatabaseStorage implements IStorage {
         }
       })
       .returning();
-    
+
     return progress;
   }
 
@@ -474,7 +474,7 @@ export class DatabaseStorage implements IStorage {
         eq(readingProgress.userId, userId),
         eq(readingProgress.postId, postId)
       ));
-    
+
     return progress || undefined;
   }
 
@@ -483,7 +483,7 @@ export class DatabaseStorage implements IStorage {
       .insert(secretProgress)
       .values(insertDiscovery)
       .returning();
-    
+
     return discovery;
   }
 
@@ -500,7 +500,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(authorStats)
       .where(eq(authorStats.authorId, authorId));
-    
+
     return stats || undefined;
   }
 
@@ -536,12 +536,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPostAnalytics(postId: number): Promise<Analytics | undefined> {
-    const [analytics_result] = await db
+    const [analyticsRecord] = await db
       .select()
       .from(analytics)
       .where(eq(analytics.postId, postId));
-    
-    return analytics_result || undefined;
+
+    return analyticsRecord || undefined;
   }
 
   async createUserFeedback(insertFeedback: InsertUserFeedback): Promise<UserFeedback> {
@@ -549,7 +549,7 @@ export class DatabaseStorage implements IStorage {
       .insert(userFeedback)
       .values(insertFeedback)
       .returning();
-    
+
     return feedback;
   }
 
