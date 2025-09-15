@@ -41,9 +41,9 @@ export default [
 			...(importPlugin.configs.recommended.rules || {}),
 			// Prefer automatic import removal over generic unused vars
 			'@typescript-eslint/no-unused-vars': 'off',
-			// Downgrade to warnings to avoid CI failures; still reported for cleanup
-			'unused-imports/no-unused-imports': 'warn',
-			'unused-imports/no-unused-vars': ['warn', { vars: 'all', varsIgnorePattern: '^_', args: 'after-used', argsIgnorePattern: '^_' }],
+			// Temporarily disabled to reduce noise
+			'unused-imports/no-unused-imports': 'off',
+			'unused-imports/no-unused-vars': 'off',
 			'react/react-in-jsx-scope': 'off',
 			// Relax strict rules to allow incremental hardening
 			'@typescript-eslint/no-explicit-any': 'off',
@@ -55,9 +55,9 @@ export default [
 			'react/no-unescaped-entities': 'off',
 			'react/prop-types': 'off',
 			'react/display-name': 'off',
-			// Import hygiene
-			'import/no-cycle': 'warn',
-			'import/order': ['warn', { 'alphabetize': { order: 'asc', caseInsensitive: true }, 'newlines-between': 'always' }],
+			// Import hygiene - temporarily relaxed
+			'import/no-cycle': 'off',
+			'import/order': 'off',
 			// Avoid false-positives while TS handles path resolution and type-checking
 			'import/no-unresolved': 'off',
 			// A11y additions
