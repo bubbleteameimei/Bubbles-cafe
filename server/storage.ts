@@ -1595,15 +1595,15 @@ export class DatabaseStorage implements IStorage {
           title,
           content,
           slug,
-          author_id,
+          authorId,
           excerpt,
           metadata,
-          is_secret,
+          isSecret,
           "isAdminPost",
           matureContent,
-          theme_category,
-          created_at,
-          reading_time_minutes
+          themeCategory,
+          createdAt,
+          readingTimeMinutes
         ) VALUES (
           ${basePost.title},
           ${basePost.content},
@@ -3762,6 +3762,7 @@ export class DatabaseStorage implements IStorage {
       // Step 3: Collaborative filtering - posts liked by similar users
       const collaborativePostIds = new Set<number>();
       try {
+        // Get users who liked similar posts to this user
         const similarUsers = await retry(async () => {
           const ids = Array.from(historyPostIds);
           return await db.select({ userId: postLikes.userId })
@@ -3773,7 +3774,8 @@ export class DatabaseStorage implements IStorage {
         });
 
         if (similarUsers.length > 0) {
-          const likedBySimilar = await retry(async () => {
+          // Get posts liked by similar users that the current user hasn't interacted with
+          const similarUsersPosts = await retry(async () => {
             const userIds = similarUsers.map((u: any) => u.userId);
             const ids = Array.from(historyPostIds);
             return await db.select({ postId: postLikes.postId })
@@ -3782,7 +3784,7 @@ export class DatabaseStorage implements IStorage {
               .groupBy(postLikes.postId)
               .limit(10);
           });
-          likedBySimilar.forEach((row: any) => collaborativePostIds.add(row.postId));
+          similarUsersPosts.forEach((row: any) => collaborativePostIds.add(row.postId));
         }
       } catch (e) {
         console.warn('[Storage] Collaborative filtering failed:', (e as any)?.message || e);
@@ -3839,7 +3841,7 @@ export class DatabaseStorage implements IStorage {
 
         score += Math.min(10, post.likesCount || 0);
 
-        return { post, score };
+        return { post,score };
       });
 
       scored.sort((a, b) => b.score - a.score);
@@ -3848,7 +3850,10 @@ export class DatabaseStorage implements IStorage {
       // Step 6: Supplement if needed
       if (recommendations.length < limit) {
         const remaining = limit - recommendations.length;
-        const existingIds = new Set<number>([...recommendations.map((p: any) => p.id), ...excludeIds]);
+        const existingIds = new Set<number>([
+          ...recommendations.map((p: any) => p.id),
+          ...excludeIds
+        ]);
 
         const supplements = await retry(async () => {
           const existing = Array.from(existingIds);
@@ -3949,6 +3954,7 @@ class MemStorage {
 
   async createBookmark(bookmark: InsertBookmark): Promise<Bookmark> {
     const newBookmark: Bookmark = {
+      ...bookmark,
       id: this.nextBookmarkId++,
       userId: Number(bookmark.userId),
       postId: Number(bookmark.postId),
@@ -4217,42 +4223,35 @@ class MemStorage {
 
       // Step 5: Get collaborative filtering recommendations
       // Find users with similar interests and get their liked posts
-      const similarUsersPostIds = new Set<number>();
+      const collaborativePostIds = new Set<number>();
       try {
         // Get users who liked similar posts to this user
-        const similarUsers = await safeDbOperation(async () => {
+        const similarUsers = await retry(async () => {
+          const ids = Array.from(historyPostIds);
           return await db.select({
             userId: postLikes.userId
           })
             .from(postLikes)
-            .where(and(
-              inArray(postLikes.postId, Array.from(historyPostIds)),
-              eq(postLikes.isLike, true),
-              not(eq(postLikes.userId, userId)) // Exclude the current user
-            ))
+            .where(and(inArray(postLikes.postId, ids), eq(postLikes.isLike, true), not(eq(postLikes.userId, userId))))
             .groupBy(postLikes.userId)
-            .having(gte(count(), 2)) // Users who liked at least 2 posts
+            .having(gte(count(), 2))
             .limit(10);
         });
 
         if (similarUsers.length > 0) {
           // Get posts liked by similar users that the current user hasn't interacted with
-          const similarUsersPosts = await safeDbOperation(async () => {
+          const similarUsersPosts = await retry(async () => {
+            const userIds = similarUsers.map((u: any) => u.userId);
+            const ids = Array.from(historyPostIds);
             return await db.select({
               postId: postLikes.postId
             })
               .from(postLikes)
-              .where(and(
-                inArray(postLikes.userId, similarUsers.map(user => user.userId)),
-                eq(postLikes.isLike, true),
-                not(inArray(postLikes.postId, Array.from(historyPostIds)))
-              ))
+              .where(and(inArray(postLikes.userId, userIds), eq(postLikes.isLike, true), not(inArray(postLikes.postId, ids))))
               .groupBy(postLikes.postId)
               .limit(10);
           });
-
-          const similarUsersPostIds = new Set(similarUsersPosts.map(item => item.postId));
-          console.log(`[Storage] Found ${similarUsersPostIds.size} collaborative filtering recommendations`);
+          similarUsersPosts.forEach((row: any) => collaborativePostIds.add(row.postId));
         }
       } catch (error) {
         console.warn(`[Storage] Error getting collaborative filtering recommendations:`, error);
@@ -4285,7 +4284,7 @@ class MemStorage {
         }
 
         // Get more posts than needed for scoring
-        const candidatePosts = await safeDbOperation(async () => {
+        const candidatePosts = await retry(async () => {
           return await query
             .orderBy(desc(postsTable.createdAt))
             .limit(limit * 3);
@@ -4472,7 +4471,7 @@ class MemStorage {
     return this.safeDbOperation(async () => {
       const [postsCount] = await db.select({ count: sql<number>`count(*)` }).from(postsTable);
       const [usersCount] = await db.select({ count: sql<number>`count(*)` }).from(users);
-      const [commentsCount] = await db.select({ count: sql<number>`count(*)` }).from(commentsTable);
+      const [commentCount] = await db.select({ count: sql<number>`count(*)` }).from(commentsTable);
 
       // Get recent activity
       const recentActivity = await db.select()
@@ -4483,7 +4482,7 @@ class MemStorage {
       return {
         totalPosts: Number(postsCount.count || 0),
         totalUsers: Number(usersCount.count || 0),
-        totalComments: Number(commentsCount.count || 0),
+        totalComments: Number(commentCount.count || 0),
         totalLikes: 0,
         recentActivity: recentActivity.map((log: any) => ({
           ...log,

@@ -385,6 +385,15 @@ export default function BugReportsPage() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Query bug reports data
+  const { data: bugReports = [], isLoading: isDataLoading } = useQuery({
+    queryKey: ['bug-reports'],
+    queryFn: async () => {
+      // Mock data for now - replace with actual API call
+      return [] as BugReport[];
+    },
+  });
+
   // Update stats when data changes
   useEffect(() => {
     const stats = {
@@ -396,7 +405,7 @@ export default function BugReportsPage() {
       duplicate: 0
     };
 
-    bugReports.forEach((item) => {
+    bugReports.forEach((item: BugReport) => {
       if (item.status === 'new') stats.new++;
       else if (item.status === 'in-progress') stats.inProgress++;
       else if (item.status === 'resolved') stats.resolved++;

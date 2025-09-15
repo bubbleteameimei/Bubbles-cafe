@@ -184,6 +184,7 @@ const AppContent = () => {
       
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isInitialLoad]);
 
   // Handle page transitions
@@ -199,6 +200,7 @@ const AppContent = () => {
       }
     }
     setPreviousLocation(locationStr);
+    return undefined;
   }, [locationStr, previousLocation, isInitialLoad]);
 
   // Simplified location tracking - no loading delays
