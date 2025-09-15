@@ -332,3 +332,14 @@ function polarToCartesian(centerX: number, centerY: number, radius: number, angl
     y: centerY + (radius * Math.sin(angleInRadians))
   };
 }
+import { ReactNode } from 'react';
+
+interface PullToRefreshProps {
+  children: ReactNode;
+  onRefresh?: () => void;
+}
+
+export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
+  // Simple wrapper for now - can be enhanced later
+  return <div>{children}</div>;
+}

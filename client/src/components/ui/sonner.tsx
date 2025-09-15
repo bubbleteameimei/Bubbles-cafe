@@ -22,3 +22,4 @@ export function Sonner({ position = "bottom-right", className = "" }: SonnerProp
     />
   )
 }
+export { Toaster } from 'sonner';
