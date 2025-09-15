@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="30" height="30" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pixel Art Potion -->
+  <!-- Bottle -->
+  <path d="M10,5 H20 V10 Q25,15 25,20 Q25,25 20,25 H10 Q5,25 5,20 Q5,15 10,10 Z" fill="#9932CC" />
+  
+  <!-- Bottle Neck -->
+  <rect x="10" y="2" width="10" height="3" fill="#9932CC" />
+  
+  <!-- Bottle Cap -->
+  <rect x="8" y="0" width="14" height="2" fill="#800080" />
+  
+  <!-- Liquid Inside -->
+  <path d="M10,10 H20 Q24,15 24,20 Q24,24 20,24 H10 Q6,24 6,20 Q6,15 10,10 Z" fill="#FF00FF" />
+  
+  <!-- Shine -->
+  <circle cx="12" cy="12" r="2" fill="#FFFFFF" opacity="0.7" />
+  
+  <!-- Bubbles -->
+  <circle cx="15" cy="14" r="1" fill="#FFFFFF" opacity="0.5" />
+  <circle cx="18" cy="17" r="1" fill="#FFFFFF" opacity="0.5" />
+  <circle cx="16" cy="20" r="1" fill="#FFFFFF" opacity="0.5" />
+</svg>

@@ -1,0 +1,337 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 128">
+  <!-- Eden's Hollow Player Character Spritesheet -->
+  <!-- 4 rows (4 directions) with 4 frames each for walking animation -->
+  <!-- Each frame is 24x32 pixels -->
+
+  <!-- First row - Down facing frames (0-3) -->
+  
+  <!-- Frame 0: Down facing standing -->
+  <g id="player-down-0">
+    <!-- Body -->
+    <rect x="8" y="12" width="8" height="16" fill="#5D3A1F"/>
+    <!-- Head -->
+    <rect x="7" y="2" width="10" height="10" fill="#F5D7B7"/>
+    <!-- Eyes -->
+    <rect x="8" y="5" width="2" height="2" fill="#000000"/>
+    <rect x="14" y="5" width="2" height="2" fill="#000000"/>
+    <!-- Mouth -->
+    <rect x="11" y="9" width="2" height="1" fill="#A52A2A"/>
+    <!-- Arms -->
+    <rect x="4" y="14" width="4" height="6" fill="#F5D7B7"/>
+    <rect x="16" y="14" width="4" height="6" fill="#F5D7B7"/>
+    <!-- Legs -->
+    <rect x="8" y="28" width="3" height="4" fill="#3F2A14"/>
+    <rect x="13" y="28" width="3" height="4" fill="#3F2A14"/>
+    <!-- Clothes -->
+    <rect x="8" y="18" width="8" height="6" fill="#228B22"/>
+    <rect x="8" y="24" width="8" height="4" fill="#1E3A8A"/>
+  </g>
+
+  <!-- Frame 1: Down walking frame 1 -->
+  <g id="player-down-1">
+    <!-- Body -->
+    <rect x="32" y="12" width="8" height="16" fill="#5D3A1F"/>
+    <!-- Head -->
+    <rect x="31" y="2" width="10" height="10" fill="#F5D7B7"/>
+    <!-- Eyes -->
+    <rect x="32" y="5" width="2" height="2" fill="#000000"/>
+    <rect x="38" y="5" width="2" height="2" fill="#000000"/>
+    <!-- Mouth -->
+    <rect x="35" y="9" width="2" height="1" fill="#A52A2A"/>
+    <!-- Arms -->
+    <rect x="28" y="15" width="4" height="6" fill="#F5D7B7"/>
+    <rect x="40" y="15" width="4" height="6" fill="#F5D7B7"/>
+    <!-- Legs (walking pose) -->
+    <rect x="32" y="28" width="3" height="4" fill="#3F2A14"/>
+    <rect x="38" y="27" width="3" height="5" fill="#3F2A14"/>
+    <!-- Clothes -->
+    <rect x="32" y="18" width="8" height="6" fill="#228B22"/>
+    <rect x="32" y="24" width="8" height="4" fill="#1E3A8A"/>
+  </g>
+
+  <!-- Frame 2: Down walking frame 2 -->
+  <g id="player-down-2">
+    <!-- Body -->
+    <rect x="56" y="12" width="8" height="16" fill="#5D3A1F"/>
+    <!-- Head -->
+    <rect x="55" y="2" width="10" height="10" fill="#F5D7B7"/>
+    <!-- Eyes -->
+    <rect x="56" y="5" width="2" height="2" fill="#000000"/>
+    <rect x="62" y="5" width="2" height="2" fill="#000000"/>
+    <!-- Mouth -->
+    <rect x="59" y="8" width="2" height="2" fill="#A52A2A"/>
+    <!-- Arms (swinging) -->
+    <rect x="52" y="13" width="4" height="6" fill="#F5D7B7"/>
+    <rect x="64" y="13" width="4" height="6" fill="#F5D7B7"/>
+    <!-- Legs (neutral stance) -->
+    <rect x="56" y="28" width="3" height="4" fill="#3F2A14"/>
+    <rect x="61" y="28" width="3" height="4" fill="#3F2A14"/>
+    <!-- Clothes -->
+    <rect x="56" y="18" width="8" height="6" fill="#228B22"/>
+    <rect x="56" y="24" width="8" height="4" fill="#1E3A8A"/>
+  </g>
+
+  <!-- Frame 3: Down walking frame 3 -->
+  <g id="player-down-3">
+    <!-- Body -->
+    <rect x="80" y="12" width="8" height="16" fill="#5D3A1F"/>
+    <!-- Head -->
+    <rect x="79" y="2" width="10" height="10" fill="#F5D7B7"/>
+    <!-- Eyes -->
+    <rect x="80" y="5" width="2" height="2" fill="#000000"/>
+    <rect x="86" y="5" width="2" height="2" fill="#000000"/>
+    <!-- Mouth -->
+    <rect x="83" y="9" width="2" height="1" fill="#A52A2A"/>
+    <!-- Arms -->
+    <rect x="76" y="15" width="4" height="6" fill="#F5D7B7"/>
+    <rect x="88" y="15" width="4" height="6" fill="#F5D7B7"/>
+    <!-- Legs (opposite walking pose) -->
+    <rect x="78" y="27" width="3" height="5" fill="#3F2A14"/>
+    <rect x="84" y="28" width="3" height="4" fill="#3F2A14"/>
+    <!-- Clothes -->
+    <rect x="80" y="18" width="8" height="6" fill="#228B22"/>
+    <rect x="80" y="24" width="8" height="4" fill="#1E3A8A"/>
+  </g>
+
+  <!-- Second row - Left facing frames (4-7) -->
+  
+  <!-- Frame 4: Left facing standing -->
+  <g id="player-left-0">
+    <!-- Body -->
+    <rect x="8" y="44" width="8" height="16" fill="#5D3A1F"/>
+    <!-- Head -->
+    <rect x="7" y="34" width="10" height="10" fill="#F5D7B7"/>
+    <!-- Eye (only one visible from side) -->
+    <rect x="9" y="37" width="2" height="2" fill="#000000"/>
+    <!-- Mouth -->
+    <rect x="8" y="41" width="2" height="1" fill="#A52A2A"/>
+    <!-- Arms (left arm hidden) -->
+    <rect x="4" y="46" width="4" height="6" fill="#F5D7B7"/>
+    <!-- Legs -->
+    <rect x="7" y="60" width="3" height="4" fill="#3F2A14"/>
+    <rect x="12" y="60" width="3" height="4" fill="#3F2A14"/>
+    <!-- Clothes -->
+    <rect x="8" y="50" width="8" height="6" fill="#228B22"/>
+    <rect x="8" y="56" width="8" height="4" fill="#1E3A8A"/>
+  </g>
+
+  <!-- Frame 5: Left walking frame 1 -->
+  <g id="player-left-1">
+    <!-- Body -->
+    <rect x="32" y="44" width="8" height="16" fill="#5D3A1F"/>
+    <!-- Head -->
+    <rect x="31" y="34" width="10" height="10" fill="#F5D7B7"/>
+    <!-- Eye -->
+    <rect x="33" y="37" width="2" height="2" fill="#000000"/>
+    <!-- Mouth -->
+    <rect x="32" y="41" width="2" height="1" fill="#A52A2A"/>
+    <!-- Arms (walking pose) -->
+    <rect x="28" y="47" width="4" height="6" fill="#F5D7B7"/>
+    <!-- Legs (walking pose) -->
+    <rect x="31" y="60" width="3" height="4" fill="#3F2A14"/>
+    <rect x="35" y="59" width="3" height="5" fill="#3F2A14"/>
+    <!-- Clothes -->
+    <rect x="32" y="50" width="8" height="6" fill="#228B22"/>
+    <rect x="32" y="56" width="8" height="4" fill="#1E3A8A"/>
+  </g>
+
+  <!-- Frame 6: Left walking frame 2 -->
+  <g id="player-left-2">
+    <!-- Body -->
+    <rect x="56" y="44" width="8" height="16" fill="#5D3A1F"/>
+    <!-- Head -->
+    <rect x="55" y="34" width="10" height="10" fill="#F5D7B7"/>
+    <!-- Eye -->
+    <rect x="57" y="37" width="2" height="2" fill="#000000"/>
+    <!-- Mouth -->
+    <rect x="56" y="40" width="2" height="2" fill="#A52A2A"/>
+    <!-- Arms (swinging) -->
+    <rect x="52" y="45" width="4" height="6" fill="#F5D7B7"/>
+    <!-- Legs (neutral stance) -->
+    <rect x="55" y="60" width="3" height="4" fill="#3F2A14"/>
+    <rect x="60" y="60" width="3" height="4" fill="#3F2A14"/>
+    <!-- Clothes -->
+    <rect x="56" y="50" width="8" height="6" fill="#228B22"/>
+    <rect x="56" y="56" width="8" height="4" fill="#1E3A8A"/>
+  </g>
+
+  <!-- Frame 7: Left walking frame 3 -->
+  <g id="player-left-3">
+    <!-- Body -->
+    <rect x="80" y="44" width="8" height="16" fill="#5D3A1F"/>
+    <!-- Head -->
+    <rect x="79" y="34" width="10" height="10" fill="#F5D7B7"/>
+    <!-- Eye -->
+    <rect x="81" y="37" width="2" height="2" fill="#000000"/>
+    <!-- Mouth -->
+    <rect x="80" y="41" width="2" height="1" fill="#A52A2A"/>
+    <!-- Arms -->
+    <rect x="76" y="47" width="4" height="6" fill="#F5D7B7"/>
+    <!-- Legs (opposite walking pose) -->
+    <rect x="79" y="59" width="3" height="5" fill="#3F2A14"/>
+    <rect x="83" y="60" width="3" height="4" fill="#3F2A14"/>
+    <!-- Clothes -->
+    <rect x="80" y="50" width="8" height="6" fill="#228B22"/>
+    <rect x="80" y="56" width="8" height="4" fill="#1E3A8A"/>
+  </g>
+
+  <!-- Third row - Right facing frames (8-11) -->
+  
+  <!-- Frame 8: Right facing standing -->
+  <g id="player-right-0">
+    <!-- Body -->
+    <rect x="8" y="76" width="8" height="16" fill="#5D3A1F"/>
+    <!-- Head -->
+    <rect x="7" y="66" width="10" height="10" fill="#F5D7B7"/>
+    <!-- Eye (only one visible from side) -->
+    <rect x="13" y="69" width="2" height="2" fill="#000000"/>
+    <!-- Mouth -->
+    <rect x="14" y="73" width="2" height="1" fill="#A52A2A"/>
+    <!-- Arms (right arm visible) -->
+    <rect x="16" y="78" width="4" height="6" fill="#F5D7B7"/>
+    <!-- Legs -->
+    <rect x="7" y="92" width="3" height="4" fill="#3F2A14"/>
+    <rect x="12" y="92" width="3" height="4" fill="#3F2A14"/>
+    <!-- Clothes -->
+    <rect x="8" y="82" width="8" height="6" fill="#228B22"/>
+    <rect x="8" y="88" width="8" height="4" fill="#1E3A8A"/>
+  </g>
+
+  <!-- Frame 9: Right walking frame 1 -->
+  <g id="player-right-1">
+    <!-- Body -->
+    <rect x="32" y="76" width="8" height="16" fill="#5D3A1F"/>
+    <!-- Head -->
+    <rect x="31" y="66" width="10" height="10" fill="#F5D7B7"/>
+    <!-- Eye -->
+    <rect x="37" y="69" width="2" height="2" fill="#000000"/>
+    <!-- Mouth -->
+    <rect x="38" y="73" width="2" height="1" fill="#A52A2A"/>
+    <!-- Arms (walking pose) -->
+    <rect x="40" y="79" width="4" height="6" fill="#F5D7B7"/>
+    <!-- Legs (walking pose) -->
+    <rect x="31" y="92" width="3" height="4" fill="#3F2A14"/>
+    <rect x="35" y="91" width="3" height="5" fill="#3F2A14"/>
+    <!-- Clothes -->
+    <rect x="32" y="82" width="8" height="6" fill="#228B22"/>
+    <rect x="32" y="88" width="8" height="4" fill="#1E3A8A"/>
+  </g>
+
+  <!-- Frame 10: Right walking frame 2 -->
+  <g id="player-right-2">
+    <!-- Body -->
+    <rect x="56" y="76" width="8" height="16" fill="#5D3A1F"/>
+    <!-- Head -->
+    <rect x="55" y="66" width="10" height="10" fill="#F5D7B7"/>
+    <!-- Eye -->
+    <rect x="61" y="69" width="2" height="2" fill="#000000"/>
+    <!-- Mouth -->
+    <rect x="62" y="72" width="2" height="2" fill="#A52A2A"/>
+    <!-- Arms (swinging) -->
+    <rect x="64" y="77" width="4" height="6" fill="#F5D7B7"/>
+    <!-- Legs (neutral stance) -->
+    <rect x="55" y="92" width="3" height="4" fill="#3F2A14"/>
+    <rect x="60" y="92" width="3" height="4" fill="#3F2A14"/>
+    <!-- Clothes -->
+    <rect x="56" y="82" width="8" height="6" fill="#228B22"/>
+    <rect x="56" y="88" width="8" height="4" fill="#1E3A8A"/>
+  </g>
+
+  <!-- Frame 11: Right walking frame 3 -->
+  <g id="player-right-3">
+    <!-- Body -->
+    <rect x="80" y="76" width="8" height="16" fill="#5D3A1F"/>
+    <!-- Head -->
+    <rect x="79" y="66" width="10" height="10" fill="#F5D7B7"/>
+    <!-- Eye -->
+    <rect x="85" y="69" width="2" height="2" fill="#000000"/>
+    <!-- Mouth -->
+    <rect x="86" y="73" width="2" height="1" fill="#A52A2A"/>
+    <!-- Arms -->
+    <rect x="88" y="79" width="4" height="6" fill="#F5D7B7"/>
+    <!-- Legs (opposite walking pose) -->
+    <rect x="79" y="91" width="3" height="5" fill="#3F2A14"/>
+    <rect x="83" y="92" width="3" height="4" fill="#3F2A14"/>
+    <!-- Clothes -->
+    <rect x="80" y="82" width="8" height="6" fill="#228B22"/>
+    <rect x="80" y="88" width="8" height="4" fill="#1E3A8A"/>
+  </g>
+
+  <!-- Fourth row - Up facing frames (12-15) -->
+  
+  <!-- Frame 12: Up facing standing -->
+  <g id="player-up-0">
+    <!-- Body -->
+    <rect x="8" y="108" width="8" height="16" fill="#5D3A1F"/>
+    <!-- Head -->
+    <rect x="7" y="98" width="10" height="10" fill="#F5D7B7"/>
+    <!-- Hair (visible from back) -->
+    <rect x="7" y="98" width="10" height="4" fill="#5D3A1F"/>
+    <!-- Arms -->
+    <rect x="4" y="110" width="4" height="6" fill="#F5D7B7"/>
+    <rect x="16" y="110" width="4" height="6" fill="#F5D7B7"/>
+    <!-- Legs -->
+    <rect x="8" y="124" width="3" height="4" fill="#3F2A14"/>
+    <rect x="13" y="124" width="3" height="4" fill="#3F2A14"/>
+    <!-- Clothes -->
+    <rect x="8" y="114" width="8" height="6" fill="#228B22"/>
+    <rect x="8" y="120" width="8" height="4" fill="#1E3A8A"/>
+  </g>
+
+  <!-- Frame 13: Up walking frame 1 -->
+  <g id="player-up-1">
+    <!-- Body -->
+    <rect x="32" y="108" width="8" height="16" fill="#5D3A1F"/>
+    <!-- Head -->
+    <rect x="31" y="98" width="10" height="10" fill="#F5D7B7"/>
+    <!-- Hair (visible from back) -->
+    <rect x="31" y="98" width="10" height="4" fill="#5D3A1F"/>
+    <!-- Arms (walking pose) -->
+    <rect x="28" y="111" width="4" height="6" fill="#F5D7B7"/>
+    <rect x="40" y="111" width="4" height="6" fill="#F5D7B7"/>
+    <!-- Legs (walking pose) -->
+    <rect x="32" y="124" width="3" height="4" fill="#3F2A14"/>
+    <rect x="38" y="123" width="3" height="5" fill="#3F2A14"/>
+    <!-- Clothes -->
+    <rect x="32" y="114" width="8" height="6" fill="#228B22"/>
+    <rect x="32" y="120" width="8" height="4" fill="#1E3A8A"/>
+  </g>
+
+  <!-- Frame 14: Up walking frame 2 -->
+  <g id="player-up-2">
+    <!-- Body -->
+    <rect x="56" y="108" width="8" height="16" fill="#5D3A1F"/>
+    <!-- Head -->
+    <rect x="55" y="98" width="10" height="10" fill="#F5D7B7"/>
+    <!-- Hair (visible from back) -->
+    <rect x="55" y="98" width="10" height="4" fill="#5D3A1F"/>
+    <!-- Arms (swinging) -->
+    <rect x="52" y="109" width="4" height="6" fill="#F5D7B7"/>
+    <rect x="64" y="109" width="4" height="6" fill="#F5D7B7"/>
+    <!-- Legs (neutral stance) -->
+    <rect x="56" y="124" width="3" height="4" fill="#3F2A14"/>
+    <rect x="61" y="124" width="3" height="4" fill="#3F2A14"/>
+    <!-- Clothes -->
+    <rect x="56" y="114" width="8" height="6" fill="#228B22"/>
+    <rect x="56" y="120" width="8" height="4" fill="#1E3A8A"/>
+  </g>
+
+  <!-- Frame 15: Up walking frame 3 -->
+  <g id="player-up-3">
+    <!-- Body -->
+    <rect x="80" y="108" width="8" height="16" fill="#5D3A1F"/>
+    <!-- Head -->
+    <rect x="79" y="98" width="10" height="10" fill="#F5D7B7"/>
+    <!-- Hair (visible from back) -->
+    <rect x="79" y="98" width="10" height="4" fill="#5D3A1F"/>
+    <!-- Arms -->
+    <rect x="76" y="111" width="4" height="6" fill="#F5D7B7"/>
+    <rect x="88" y="111" width="4" height="6" fill="#F5D7B7"/>
+    <!-- Legs (opposite walking pose) -->
+    <rect x="78" y="123" width="3" height="5" fill="#3F2A14"/>
+    <rect x="84" y="124" width="3" height="4" fill="#3F2A14"/>
+    <!-- Clothes -->
+    <rect x="80" y="114" width="8" height="6" fill="#228B22"/>
+    <rect x="80" y="120" width="8" height="4" fill="#1E3A8A"/>
+  </g>
+</svg>

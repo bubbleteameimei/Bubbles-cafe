@@ -1,0 +1,53 @@
+/* Basic page transition styles */
+.page-transition-container {
+  position: relative;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+.page-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100vw;
+  min-height: 100vh;
+  will-change: opacity;
+  animation: fadeIn 0.3s ease-out forwards;
+  margin: 0 auto;
+  padding: 0;
+  
+  /* Force full width */
+  position: relative;
+  left: 0;
+  right: 0;
+}
+
+/* Ensure all child elements inherit full width */
+.page-content > div,
+.page-content > main,
+.page-content > section {
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Simple fade-in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

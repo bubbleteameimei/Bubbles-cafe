@@ -1,0 +1,358 @@
+@import './styles/responsive.css';
+@import "./styles/sidebar-enhanced.css";
+@import './styles/loading-screen.css';
+
+/* Mobile responsiveness update - March 2025 */
+@tailwind base;
+@tailwind components;
+@import './styles/design-tokens.css';
+@tailwind utilities;
+
+/* Fix double scrollbar issue */
+html, body {
+  overflow-x: hidden;
+}
+
+body {
+  overflow-y: auto;
+}
+
+/* Screen reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Accessible skip link - hidden until focused */
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.skip-link:focus {
+  position: fixed;
+  left: 16px;
+  top: 12px;
+  width: auto;
+  height: auto;
+  padding: 8px 12px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  z-index: 10000;
+}
+
+/* Background animation for subtle zoom effect */
+@keyframes subtleZoom {
+  0% {
+    transform: scale(1.0);
+  }
+  100% {
+    transform: scale(1.02);
+  }
+}
+
+/* Pure red text override for horror easter egg - no RGB mixing allowed */
+.pure-red-text {
+  color: #ff0000 !important;
+  text-shadow: none !important;
+  animation: none !important;
+  -webkit-text-fill-color: #ff0000 !important;
+  -webkit-text-stroke: 0 transparent !important;
+}
+
+
+
+/* Global responsive design fixes */
+@layer base {
+  /* Completely disable the skeleton loading animation by overriding Tailwind's animate-pulse */
+  .animate-pulse {
+    animation: none !important;
+    background-color: hsl(var(--muted)) !important;
+    opacity: 0.3 !important;
+  }
+
+  /* Prevent black box flash during page transitions */
+  * {
+    transition: background-color 0.1s ease;
+  }
+
+  /* Ensure smooth loading transitions */
+  .loading-active {
+    background-color: hsl(var(--background)) !important;
+  }
+
+  html, body, #root {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    padding: 0;
+    width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: relative;
+    background-color: hsl(var(--background));
+    box-sizing: border-box;
+    transition: opacity 0.2s ease-in-out;
+    /* Improve scroll behavior */
+    -webkit-overflow-scrolling: touch;
+    /* Removed scroll-behavior: smooth to prevent unwanted auto-scrolling */
+  }
+
+  /* Fix for bottom page scrolling issues */
+  body {
+    overscroll-behavior-y: auto !important;
+    touch-action: pan-y !important;
+  }
+
+  img {
+    @apply max-w-full h-auto;
+  }
+
+  /* Container fixes for width issues */
+  .app-container, .layout-container, .main-container, .content-container, main,
+  [class*="container"], [class*="layout"], [class*="wrapper"] {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Ensure footer stays at bottom properly with flex */
+  main, .main-content {
+    flex: 1 0 auto; /* Take available space, don't shrink */
+  }
+
+  /* Fix for transparent backgrounds in form elements */
+  input, textarea, select, .input-field, .textarea-field, .select-field, [type="text"], [type="email"], [type="password"], [type="search"],
+  .form-control, .form-input, .search-input, [class*="input"], [class*="field"], [class*="form-control"] {
+    @apply bg-background; /* Force solid background */
+    background-color: hsl(var(--background)) !important;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    /* Ensure no transparency */
+    opacity: 1 !important;
+    /* Additional fixes for Safari */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    /* Prevent background bleeding */
+    isolation: isolate;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Additional class for input elements that need extra opacity protection */
+  .solid-input {
+    background-color: hsl(var(--background)) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-image: none !important;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 0 0 100vmax hsl(var(--background)) !important;
+    clip-path: inset(0 0 0 0) !important;
+  }
+
+  /* Background color reset for specific pages */
+  body, html, #root, [data-reader-page], .home-page, .index-page {
+    background-color: hsl(var(--background));
+  }
+
+  /* Minimal scrollbar style */
+  /* Consolidated scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px; /* Width of the scrollbar */
+    height: 8px; /* Height of the scrollbar for horizontal scrolling */
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent; /* Transparent track */
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(125, 125, 125, 0.3); /* Semi-transparent thumb color */
+    border-radius: 20px; /* Rounded corners for the thumb */
+    border: 2px solid transparent; /* Transparent border to allow track color to show through */
+    background-clip: content-box; /* Clip the background to the content box */
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent; /* Transparent scrollbar corner */
+  }
+
+  /* Optimize for touch interactions */
+  @media (hover: none) and (pointer: coarse) {
+    button,
+    a[role="button"],
+    .interactive-element,
+    .touch-target {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      min-height: 44px; /* Apple's recommended minimum touch target size */
+      min-width: 44px;
+    }
+  }
+
+  /* Specific optimizations for landscape mode and all touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    /* Ensure all buttons are accessible on touch devices */
+    button,
+    a[role="button"],
+    .interactive-element,
+    .touch-target,
+    [data-sidebar] button,
+    nav button,
+    .sidebar-menu-button,
+    .notification-button {
+      touch-action: manipulation !important;
+      -webkit-touch-callout: none !important;
+      -webkit-user-select: none !important;
+      user-select: none !important;
+      pointer-events: auto !important;
+      min-height: 44px !important;
+      min-width: 44px !important;
+      position: relative !important;
+      z-index: 1 !important;
+    }
+
+    /* Ensure sidebar trigger button is always accessible */
+    .fixed.bottom-6.left-6 {
+      touch-action: manipulation !important;
+      pointer-events: auto !important;
+      z-index: 99999 !important;
+      isolation: isolate !important;
+    }
+
+    /* Fix navigation buttons specifically */
+    nav button,
+    .main-nav button,
+    .primary-nav button {
+      isolation: isolate !important;
+      position: relative !important;
+      z-index: 10 !important;
+    }
+
+    /* Prevent event capture on non-interactive elements */
+    .sidebar-menu-container,
+    .sidebar-content,
+    main,
+    .page-container {
+      pointer-events: auto !important;
+      touch-action: pan-y !important;
+    }
+
+    /* Ensure interactive elements work in landscape */
+    @media (orientation: landscape) {
+      button,
+      a[role="button"],
+      .interactive-element {
+        min-height: 48px !important;
+        min-width: 48px !important;
+        padding: 8px !important;
+      }
+    }
+  }
+}
+
+/* Container fixes to prevent overflow and remove black borders */
+.container,
+main,
+section,
+article,
+div[class*="layout"],
+div[class*="container"] {
+  @apply max-w-full overflow-hidden;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+  box-sizing: border-box !important;
+  background-color: hsl(var(--background)) !important;
+  border: none !important;
+}
+
+/* Homepage container needs to be transparent */
+.home-page .container,
+.home-page main,
+.home-page section,
+.home-page article,
+.home-page div[class*="layout"],
+.home-page div[class*="container"],
+body.body-home .container,
+body.body-home main,
+body.body-home section,
+body.body-home article,
+body.body-home div[class*="layout"],
+body.body-home div[class*="container"] {
+  background-color: transparent !important;
+}
+
+/* Exception for reader container - needs to be controlled by reader-fixes.css */
+.reader-container.story-content,
+.reader-page .reader-container,
+[data-reader-page="true"] .reader-container,
+[data-page="reader"] .reader-container {
+  /* Reset padding to allow reader-fixes.css to control it */
+  padding-left: initial !important;
+  padding-right: initial !important;
+}
+
+/* Background images removed */
+
+/* Gradient overlay is now handled by a separate div in home.tsx */
+.home-page::after {
+  content: none; /* Remove the overlay since we use an explicit div in home.tsx */
+}
+
+/* Fix for absolute positioned elements */
+.absolute {
+  @apply max-w-[100vw];
+}
+
+/* Custom styling for reader page to reduce space between header and content */
+.reader-container {
+  padding-top: 10px !important; /* Significantly reduce the top padding */
+}
+
+/* Target routes that contain /reader */
+[href^="/reader"] ~ main .reader-container {
+  padding-top: 5px !important; /* Even more reduction for reader page */
+}
+
+/* Additional fix for reader page spacing - Container only, not story content */
+body:has(main:has([data-reader-page])) .container,
+.reader-page .container,
+div[data-reader-page="true"] .container,
+[data-page="reader"] .container {
+  padding-top: 0 !important;
+  /* Remove the padding override for left/right to allow reader-fixes.css to control this */
+}
+
+/* Reader page specific styling */
+.reader-page {
+  margin-top: -8px !important; /* Pull content up closer to header */
+}
+
+/* Define variables for background images and overlays */
+::root {
+  --bg-overlay-dark: linear-gradient(to bottom, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0.01) 50%, rgba(0,0,0,0.03) 100%);
+  --bg-overlay-light: linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.2) 100%);
+}
+
+/* Loading screen styles are now handled in loading-screen.css */
