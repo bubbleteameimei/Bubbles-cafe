@@ -1,3 +1,4 @@
+
 // @ts-check
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
@@ -15,23 +16,34 @@ export default [
 			sourceType: 'module',
 			ecmaVersion: 'latest',
 			globals: { window: true, document: true, navigator: true },
+			parserOptions: {
+				ecmaFeatures: { jsx: true },
+				project: './tsconfig.json'
+			}
 		},
-		plugins: { '@typescript-eslint': tseslint, react, 'react-hooks': reactHooks, 'unused-imports': unusedImports, 'jsx-a11y': jsxA11y, import: importPlugin },
+		plugins: { 
+			'@typescript-eslint': tseslint, 
+			react, 
+			'react-hooks': reactHooks, 
+			'unused-imports': unusedImports, 
+			'jsx-a11y': jsxA11y, 
+			import: importPlugin 
+		},
 		settings: {
 			react: { version: 'detect' },
-			// Help eslint-plugin-import resolve TS + path aliases
-			'import/parsers': {
-				'@typescript-eslint/parser': ['.ts', '.tsx'],
-			},
 			'import/resolver': {
 				typescript: {
-					project: ['./tsconfig.json'],
 					alwaysTryTypes: true,
+					project: './tsconfig.json'
 				},
 				node: {
-					extensions: ['.js', '.jsx', '.ts', '.tsx'],
-				},
+					extensions: ['.js', '.jsx', '.ts', '.tsx']
+				}
 			},
+			'import/extensions': ['.js', '.jsx', '.ts', '.tsx'],
+			'import/parsers': {
+				'@typescript-eslint/parser': ['.ts', '.tsx']
+			}
 		},
 		rules: {
 			...tseslint.configs.recommended.rules,
@@ -58,12 +70,57 @@ export default [
 			// Import hygiene - temporarily relaxed
 			'import/no-cycle': 'off',
 			'import/order': 'off',
-			// Avoid false-positives while TS handles path resolution and type-checking
+			// Disable problematic import rules that cause resolver issues
 			'import/no-unresolved': 'off',
-			// A11y additions
-			'jsx-a11y/anchor-is-valid': 'warn',
-			'jsx-a11y/no-autofocus': 'warn'
+			'import/namespace': 'off',
+			'import/named': 'off',
+			'import/default': 'off',
+			'import/no-duplicates': 'warn',
+			'import/no-named-as-default': 'off',
+			'import/no-named-as-default-member': 'off',
+			// A11y additions - fix anchor issues
+			'jsx-a11y/anchor-is-valid': ['error', {
+				components: ['Link'],
+				specialLink: ['hrefLeft', 'hrefRight'],
+				aspects: ['invalidHref', 'preferButton']
+			}]
 		},
 	},
-	{ ignores: ['dist/**', 'node_modules/**'] },
+	{
+		files: ['**/*.{js,jsx}'],
+		languageOptions: {
+			ecmaVersion: 'latest',
+			sourceType: 'module',
+			globals: { window: true, document: true, navigator: true }
+		},
+		plugins: { 
+			react, 
+			'react-hooks': reactHooks, 
+			'unused-imports': unusedImports, 
+			'jsx-a11y': jsxA11y, 
+			import: importPlugin 
+		},
+		settings: {
+			react: { version: 'detect' },
+			'import/resolver': {
+				node: {
+					extensions: ['.js', '.jsx', '.ts', '.tsx']
+				}
+			}
+		},
+		rules: {
+			...react.configs.recommended.rules,
+			...reactHooks.configs.recommended.rules,
+			...(jsxA11y.configs.recommended.rules || {}),
+			'react/react-in-jsx-scope': 'off',
+			'react/prop-types': 'off',
+			'react/display-name': 'off',
+			'jsx-a11y/anchor-is-valid': ['error', {
+				components: ['Link'],
+				specialLink: ['hrefLeft', 'hrefRight'],
+				aspects: ['invalidHref', 'preferButton']
+			}]
+		}
+	},
+	{ ignores: ['dist/**', 'node_modules/**', 'build/**', '.next/**'] },
 ];
