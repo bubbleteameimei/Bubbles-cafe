@@ -306,9 +306,10 @@ async function startServer() {
       // Start WordPress scheduler
       wordpressScheduler.start();
 
-      // Add strong browser caching headers and ETag in production
-      app.use(browserCache());
-      app.use(etagCache());
+      // Browser caching and ETag are applied conditionally earlier based on config.cache.browser
+      // Avoid applying them twice to prevent duplicate headers/wrappers
+      // app.use(browserCache());
+      // app.use(etagCache());
 
       serveStatic(app);
       if (process.env.ENABLE_SSR === 'true') {

@@ -178,7 +178,9 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
         req.path.includes('/newsletter/unsubscribe')
       )
     ) {
-      console.log(`CSRF validation skipped for ${req.method} ${req.path} (matches ignore path)`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`CSRF validation skipped for ${req.method} ${req.path} (matches ignore path)`);
+      }
       return next();
     }
 
