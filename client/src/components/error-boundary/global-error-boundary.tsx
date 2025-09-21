@@ -219,7 +219,7 @@ export class GlobalErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoun
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const errorId = this.errorLogger.logError(error, errorInfo, {
       level: this.props.level || 'component',
       component: 'ErrorBoundary'
@@ -243,7 +243,7 @@ export class GlobalErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoun
     });
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       const FallbackComponent = this.props.fallback || DefaultErrorFallback;
       

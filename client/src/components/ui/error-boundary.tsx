@@ -13,7 +13,7 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
+  public override state: State = {
     hasError: false
   };
 
@@ -25,7 +25,7 @@ export class ErrorBoundary extends Component<Props, State> {
   private cleanup?: () => void;
   private mounted: boolean = false;
 
-  public componentDidMount() {
+  public override componentDidMount() {
     this.mounted = true;
     const handleRouteChange = () => {
       if (this.mounted && this.state.hasError) {
@@ -66,14 +66,14 @@ export class ErrorBoundary extends Component<Props, State> {
     };
   }
 
-  public componentWillUnmount() {
+  public override componentWillUnmount() {
     this.mounted = false;
     if (this.cleanup) {
       this.cleanup();
     }
   }
 
-  public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  public override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Uncaught error:', error);
     console.error('Component stack:', errorInfo.componentStack);
 
@@ -133,7 +133,7 @@ export class ErrorBoundary extends Component<Props, State> {
     });
   }
 
-  public render() {
+  public override render() {
     if (!this.state.hasError) {
       return this.props.children;
     }

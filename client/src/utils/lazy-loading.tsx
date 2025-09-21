@@ -148,7 +148,7 @@ class ErrorBoundary extends React.Component<
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     logger.error('Lazy component error boundary caught error', { 
       error: error.message,
       componentStack: errorInfo.componentStack 
@@ -156,7 +156,7 @@ class ErrorBoundary extends React.Component<
     this.props.onError(error);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return null; // Let parent error fallback handle display
     }
