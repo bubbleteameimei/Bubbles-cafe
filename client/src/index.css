@@ -1,11 +1,11 @@
 @import './styles/responsive.css';
 @import "./styles/sidebar-enhanced.css";
 @import './styles/loading-screen.css';
+@import './styles/design-tokens.css';
 
 /* Mobile responsiveness update - March 2025 */
 @tailwind base;
 @tailwind components;
-@import './styles/design-tokens.css';
 @tailwind utilities;
 
 /* Fix double scrollbar issue */
