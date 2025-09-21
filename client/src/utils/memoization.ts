@@ -109,6 +109,7 @@ export function useEffectDeep(effect: EffectCallback, deps: DependencyList) {
     ref.current = deps;
   }
   
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(effect, [ref.current]);
 }
 

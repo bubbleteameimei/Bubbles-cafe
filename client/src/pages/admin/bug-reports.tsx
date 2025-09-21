@@ -181,7 +181,19 @@ function BugReportItem({ report, onStatusChange }: {
       <div className="grow pt-0.5 pb-8">
         <div className="bg-card border rounded-lg shadow-sm hover:shadow transition-shadow duration-200">
           {/* Header */}
-          <div className="p-4 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+          <div 
+            className="p-4 cursor-pointer" 
+            onClick={() => setIsExpanded(!isExpanded)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setIsExpanded(!isExpanded);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label={`${isExpanded ? 'Collapse' : 'Expand'} bug report details`}
+          >
             <div className="flex justify-between items-start flex-wrap gap-2 mb-1.5">
               <div className="flex items-center gap-1.5">
                 <h3 className="font-semibold text-gray-800 dark:text-white text-base">
@@ -273,6 +285,15 @@ function BugReportItem({ report, onStatusChange }: {
                   <div 
                     className="relative w-full h-40 bg-muted/50 rounded overflow-hidden cursor-pointer" 
                     onClick={() => setIsImageModalOpen(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setIsImageModalOpen(true);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="View screenshot in full size"
                   >
                     <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${report.screenshot})` }}></div>
                     <div className="absolute inset-0 bg-black/5 flex items-center justify-center">

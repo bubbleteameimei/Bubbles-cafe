@@ -210,6 +210,15 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
                         !notification.read && "bg-primary/5"
                       )}
                       onClick={() => handleNotificationClick(notification)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleNotificationClick(notification);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Notification: ${notification.title}`}
                     >
                       <div className="flex items-start gap-3">
                         <div className={cn(
@@ -280,6 +289,15 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
                       key={notification.id}
                       className="px-4 py-3 cursor-pointer transition-colors hover:bg-muted/50 bg-primary/5"
                       onClick={() => handleNotificationClick(notification)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleNotificationClick(notification);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Unread notification: ${notification.title}`}
                     >
                       <div className="flex items-start gap-3">
                         <div className={cn(
@@ -348,6 +366,15 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
                       key={notification.id}
                       className="px-4 py-3 cursor-pointer transition-colors hover:bg-muted/50"
                       onClick={() => handleNotificationClick(notification)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleNotificationClick(notification);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Read notification: ${notification.title}`}
                     >
                       <div className="flex items-start gap-3">
                         <div className={cn(

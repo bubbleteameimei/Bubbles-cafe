@@ -4,8 +4,7 @@
  * This file contains all payment-related routes for the platform.
  * Paystack is the only supported payment gateway.
  */
-import { Express, Request, Response } from 'express';
-import express from 'express';
+import express, { Express, Request, Response } from 'express';
 import * as paystackService from '../services/paystack';
 import { storage } from '../storage';
 import { z } from 'zod';

@@ -50,9 +50,6 @@ export default function ContentPage() {
     }
   });
   
-  // Extract posts from the response
-  const posts = data?.posts || [];
-
   // Handle editing a post
   const handleEdit = (post: Post) => {
     setSelectedPost(post);
@@ -113,6 +110,7 @@ export default function ContentPage() {
 
   // Filter and search posts
   const filteredPosts = React.useMemo(() => {
+    const posts = data?.posts || [];
     if (!posts) return [];
     
     return posts.filter(post => {
@@ -138,7 +136,7 @@ export default function ContentPage() {
       
       return true;
     });
-  }, [posts, searchQuery, statusFilter, sourceFilter]);
+  }, [data?.posts, searchQuery, statusFilter, sourceFilter]);
 
   // Handle successfully saving a post
   const handleSaveSuccess = () => {

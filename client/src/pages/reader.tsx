@@ -1314,6 +1314,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     __html: sanitizeHtmlContent(currentPost.content?.rendered || currentPost.content || 'No content available.') 
                   }}
                   onClick={toggleUI}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      toggleUI();
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Toggle user interface visibility"
                   style={{ fontSize: `${fontSize}px` }}
                 />
               </div>

@@ -279,42 +279,42 @@ export function CookieConsent() {
             <div className="py-4 space-y-4">
               <div className="flex items-center justify-between p-3 rounded-lg bg-[#F5F5DC]/50 border border-[#D2A76C]/30">
                 <div className="space-y-0.5">
-                  <label className="text-base font-semibold text-[#6F4E37]">Essential Ingredients</label>
+                  <label htmlFor="essential-ingredients" className="text-base font-semibold text-[#6F4E37]">Essential Ingredients</label>
                   <p className="text-sm text-[#8B5A2B]">The base of our cookie recipe - can't make cookies without these!</p>
                 </div>
-                <input type="checkbox" checked disabled className="rounded-full bg-[#8B5A2B]" />
+                <input id="essential-ingredients" type="checkbox" checked disabled className="rounded-full bg-[#8B5A2B]" aria-describedby="essential-ingredients-desc" />
               </div>
               
               <div className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F5F5DC]/50 transition-colors border border-transparent hover:border-[#D2A76C]/30">
                 <div className="space-y-0.5">
-                  <label className="text-base font-semibold text-[#6F4E37]">Chocolate Chips (Functional)</label>
-                  <p className="text-sm text-[#8B5A2B]">Makes your cookie experience richer and more flavorful</p>
+                  <label htmlFor="chocolate-chips" className="text-base font-semibold text-[#6F4E37]">Chocolate Chips (Functional)</label>
+                  <p id="chocolate-chips-desc" className="text-sm text-[#8B5A2B]">Makes your cookie experience richer and more flavorful</p>
                 </div>
-                <input type="checkbox" className="rounded-full" />
+                <input id="chocolate-chips" type="checkbox" className="rounded-full" aria-describedby="chocolate-chips-desc" />
               </div>
               
               <div className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F5F5DC]/50 transition-colors border border-transparent hover:border-[#D2A76C]/30">
                 <div className="space-y-0.5">
-                  <label className="text-base font-semibold text-[#6F4E37]">Sprinkles (Analytics)</label>
-                  <p className="text-sm text-[#8B5A2B]">Helps us see which cookies are most popular with visitors</p>
+                  <label htmlFor="sprinkles-analytics" className="text-base font-semibold text-[#6F4E37]">Sprinkles (Analytics)</label>
+                  <p id="sprinkles-desc" className="text-sm text-[#8B5A2B]">Helps us see which cookies are most popular with visitors</p>
                 </div>
-                <input type="checkbox" className="rounded-full" />
+                <input id="sprinkles-analytics" type="checkbox" className="rounded-full" aria-describedby="sprinkles-desc" />
               </div>
               
               <div className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F5F5DC]/50 transition-colors border border-transparent hover:border-[#D2A76C]/30">
                 <div className="space-y-0.5">
-                  <label className="text-base font-semibold text-[#6F4E37]">Extra Butter (Performance)</label>
-                  <p className="text-sm text-[#8B5A2B]">Makes everything run smoother with the perfect texture</p>
+                  <label htmlFor="extra-butter" className="text-base font-semibold text-[#6F4E37]">Extra Butter (Performance)</label>
+                  <p id="extra-butter-desc" className="text-sm text-[#8B5A2B]">Makes everything run smoother with the perfect texture</p>
                 </div>
-                <input type="checkbox" className="rounded-full" />
+                <input id="extra-butter" type="checkbox" className="rounded-full" aria-describedby="extra-butter-desc" />
               </div>
               
               <div className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F5F5DC]/50 transition-colors border border-transparent hover:border-[#D2A76C]/30">
                 <div className="space-y-0.5">
-                  <label className="text-base font-semibold text-[#6F4E37]">Special Flavors (Marketing)</label>
-                  <p className="text-sm text-[#8B5A2B]">Adds special flavors to make your cookie experience personalized</p>
+                  <label htmlFor="special-flavors" className="text-base font-semibold text-[#6F4E37]">Special Flavors (Marketing)</label>
+                  <p id="special-flavors-desc" className="text-sm text-[#8B5A2B]">Adds special flavors to make your cookie experience personalized</p>
                 </div>
-                <input type="checkbox" className="rounded-full" />
+                <input id="special-flavors" type="checkbox" className="rounded-full" aria-describedby="special-flavors-desc" />
               </div>
             </div>
             

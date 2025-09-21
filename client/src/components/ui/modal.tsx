@@ -67,17 +67,20 @@ export const Modal: React.FC<ModalProps> = ({
           className="fixed inset-0 flex items-center justify-center z-50"
           aria-modal="true"
           role="dialog"
-          onClick={handleBackdropClick}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              e.preventDefault();
-              onClose();
-            }
-          }}
         >
           {/* Backdrop */}
           <motion.div 
             className="absolute inset-0 bg-black/50 backdrop-blur-md"
+            onClick={handleBackdropClick}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                onClose();
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label="Close modal"
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useLocation, Link } from "wouter";
 import { Loader2, Search, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,18 +39,8 @@ export default function SearchResultsPage() {
   const [from, setFrom] = useState<string>("all");
   const [recent, setRecent] = useState<string[]>([]);
 
-  // Extract search query from URL
-  useEffect(() => {
-    const params = new URLSearchParams(location.split('?')[1]);
-    const query = params.get('q');
-    if (query) {
-      setSearchQuery(query);
-      performSearch(query);
-    }
-  }, [location]);
-
   // Perform search across all content
-  const performSearch = async (query: string, pageNum = 1) => {
+  const performSearch = useCallback(async (query: string, pageNum = 1) => {
     if (!query.trim()) return;
     
     setIsSearching(true);
@@ -95,7 +85,17 @@ export default function SearchResultsPage() {
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [toast, from, category]);
+
+  // Extract search query from URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.split('?')[1]);
+    const query = params.get('q');
+    if (query) {
+      setSearchQuery(query);
+      performSearch(query);
+    }
+  }, [location, performSearch]);
 
   // Suggestions (typeahead)
   useEffect(() => {

@@ -401,8 +401,16 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
       {/* Add a wrapper div to prevent the card click when interacting with menu */}
       <div 
         onMouseDown={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+          }
+        }}
         className="absolute top-2 right-2 z-10"
+        role="button"
+        tabIndex={0}
+        aria-label="Story options menu"
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

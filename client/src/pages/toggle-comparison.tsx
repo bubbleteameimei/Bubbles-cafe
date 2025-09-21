@@ -48,7 +48,7 @@ export default function ToggleComparisonPage() {
                       The toggle from the login form
                     </p>
                   </div>
-                  <label htmlFor="remember-toggle-1" className="flex items-center cursor-pointer">
+                  <label htmlFor="remember-toggle-1" className="flex items-center cursor-pointer" aria-label="Remember me toggle switch">
                     <input
                       type="checkbox"
                       id="remember-toggle-1"
@@ -85,7 +85,7 @@ export default function ToggleComparisonPage() {
                       The toggle from the login form
                     </p>
                   </div>
-                  <label htmlFor="remember-toggle-2" className="flex items-center cursor-pointer">
+                  <label htmlFor="remember-toggle-2" className="flex items-center cursor-pointer" aria-label="Remember me toggle switch">
                     <input
                       type="checkbox"
                       id="remember-toggle-2"

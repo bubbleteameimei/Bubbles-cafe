@@ -63,14 +63,12 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
   ];
 
   return (
-    <div 
+    <nav 
       className={cn(
         'fixed top-4 z-50',
         positionClasses,
         className
       )}
-      onKeyDown={handleKeyDown}
-      role="navigation"
       aria-label="Floating navigation"
     >
       <div className="relative">
@@ -184,7 +182,7 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
           )}
         </AnimatePresence>
       </div>
-    </div>
+    </nav>
   );
 };
 
