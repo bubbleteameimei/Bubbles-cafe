@@ -229,18 +229,20 @@ const AppContent = () => {
     );
   }
 
-  // If we're on an error page, render only the error page without layout
+  // If we're on an error page, render only the error page with proper landmark structure
   if (isErrorPage) {
     return (
       <ErrorBoundary>
-        <Switch>
-          <Route path="/errors/403" component={Error403Page} />
-          <Route path="/errors/404" component={Error404Page} />
-          <Route path="/errors/429" component={Error429Page} />
-          <Route path="/errors/500" component={Error500Page} />
-          <Route path="/errors/503" component={Error503Page} />
-          <Route path="/errors/504" component={Error504Page} />
-        </Switch>
+        <main id="main-content" tabIndex={-1} className="min-h-screen">
+          <Switch>
+            <Route path="/errors/403" component={Error403Page} />
+            <Route path="/errors/404" component={Error404Page} />
+            <Route path="/errors/429" component={Error429Page} />
+            <Route path="/errors/500" component={Error500Page} />
+            <Route path="/errors/503" component={Error503Page} />
+            <Route path="/errors/504" component={Error504Page} />
+          </Switch>
+        </main>
       </ErrorBoundary>
     );
   }
@@ -258,7 +260,7 @@ const AppContent = () => {
         {/* Main navigation bar */}
         <AutoHideNavbar />
         {/* Main content landmark for accessibility */}
-        <main id="main-content" className="flex-1 min-h-screen">
+        <main id="main-content" tabIndex={-1} className="flex-1 min-h-screen">
           <Switch>
             {/* Main Pages */}
             <Route path="/" component={HomePage} />
