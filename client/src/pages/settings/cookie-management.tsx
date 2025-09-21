@@ -9,10 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, ArrowLeft, CheckCircle2, CookingPot, Cookie, ExternalLink, Info, Lock, Shield, Terminal, Trash2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle2, CookingPot, Cookie, ExternalLink, Info, Lock, Shield, Terminal, Trash2 , Loader } from 'lucide-react';
 import { Link } from 'wouter';
 import { Badge } from '@/components/ui/badge';
-import { Loader } from 'lucide-react';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 

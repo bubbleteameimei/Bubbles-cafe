@@ -4,10 +4,8 @@
  * This file registers bookmark routes.
  */
 
-import { Application, NextFunction } from 'express';
+import { Application, NextFunction , Router , Request, Response } from 'express';
 import bookmarkRoutes from './bookmarks';
-import { Router } from 'express';
-import { Request, Response } from 'express';
 
 // Create a router for anonymous bookmark routes
 const anonymousBookmarkRouter = Router();

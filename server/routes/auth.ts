@@ -2,13 +2,12 @@ import { Request, Response, Router } from "express";
 import { createSecureLogger } from '../utils/secure-logger';
 import { validateBody, commonSchemas } from '../middleware/input-validation';
 import { asyncHandler, createError } from '../utils/error-handler';
-import { z } from "zod";
+import { z , z as zod } from "zod";
 import { userRegistrationSchema, userLoginSchema } from "@shared/schema";
 import { authRateLimiter, sensitiveOperationsRateLimiter } from '../middlewares/rate-limiter';
 import passport from "passport";
 import bcrypt from 'bcryptjs';
 import { storage } from "../storage";
-import { z as zod } from 'zod';
 
 const authLogger = createSecureLogger('AuthRoutes');
 const router = Router();

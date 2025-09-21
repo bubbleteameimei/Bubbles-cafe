@@ -4,8 +4,7 @@ import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { ArrowRight , Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function SecretStories() {

@@ -3,7 +3,7 @@ let sdk: any = null;
 export function startOtel(serviceName = 'bubbles-cafe') {
   try {
     if (sdk) return sdk;
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const { diag, DiagConsoleLogger, DiagLogLevel } = require('@opentelemetry/api');
     const { Resource } = require('@opentelemetry/resources');
     const { NodeSDK } = require('@opentelemetry/sdk-node');

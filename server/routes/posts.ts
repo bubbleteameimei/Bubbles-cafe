@@ -4,11 +4,10 @@ import { validateBody, validateQuery, validateParams, commonSchemas } from '../m
 import { asyncHandler, createError } from '../utils/error-handler';
 import { storage } from "../storage";
 import { z } from "zod";
-import { insertPostSchema, updatePostSchema } from "@shared/schema";
+import { insertPostSchema, updatePostSchema , posts as postsTable } from "@shared/schema";
 import { apiRateLimiter } from '../middlewares/rate-limiter';
 // DB helpers imported where needed
 import { db } from '../db';
-import { posts as postsTable } from '@shared/schema';
 
 const postsLogger = createSecureLogger('PostsRoutes');
 const router = Router();

@@ -54,11 +54,10 @@ import {
   userPrivacySettings,
   type PerformanceMetric, type InsertPerformanceMetric,
   performanceMetrics
-} from "@shared/schema";
+, CommentMetadata } from "@shared/schema";
 
 // Removed: type FeaturedAuthor, type ReadingStreak, type WriterStreak, featuredAuthors, readingStreaks, writerStreaks
 
-import type { CommentMetadata } from "@shared/schema";
 import { db } from "./db";
 import pkg from 'pg';
 import { createHash } from 'crypto';

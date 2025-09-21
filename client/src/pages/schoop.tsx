@@ -2,10 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shuffle , Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Loader2 } from "lucide-react";
 
 export default function Schoop() {
   const [currentIndex, setCurrentIndex] = useState(0);

@@ -1,0 +1,10 @@
+# Test files that don't need strict linting
+client/src/lib/content-analysis.test.ts
+
+# Build and distribution directories
+dist/
+build/
+node_modules/
+
+# Generated files
+*.d.ts

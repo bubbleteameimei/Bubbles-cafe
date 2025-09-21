@@ -1,14 +1,13 @@
 import * as React from "react";
 import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect } from "wouter";
+import { Redirect , useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Plus, Rss, PenSquare, FileText, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
-import { useLocation } from "wouter";
 import { THEME_CATEGORIES } from "@shared/theme-categories";
 
 // Import subcomponents for each tab

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery , useQueryClient } from "@tanstack/react-query";
 import { WordPressPost, checkWordPressApiStatus } from "@/lib/wordpress-api";
 import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
@@ -8,7 +8,6 @@ import { Loader2, AlertCircle, RefreshCw, WifiOff } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { sanitizeHtmlContent } from "@/lib/sanitize-content";
-import { useQueryClient } from "@tanstack/react-query";
 
 function Posts() {
   const [page, setPage] = useState(1);
