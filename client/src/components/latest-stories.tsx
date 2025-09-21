@@ -82,6 +82,15 @@ export default function LatestStories() {
               key={post.id}
               className="group p-3 rounded-lg border border-border/50 bg-card hover:bg-card/80 transition-colors cursor-pointer"
               onClick={() => setLocation(`/reader/${post.slug}`)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setLocation(`/reader/${post.slug}`);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              data-testid={`latest-story-${post.id}`}
             >
               <h3 className="font-medium group-hover:text-primary transition-colors">
                 {post.title}

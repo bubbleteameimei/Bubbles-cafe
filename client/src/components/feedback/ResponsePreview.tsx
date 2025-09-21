@@ -165,6 +165,15 @@ export function ResponsePreview({
                 key={index} 
                 className="bg-muted p-3 rounded-md cursor-pointer hover:bg-muted/80 transition-colors"
                 onClick={() => handleSelectSuggestion(suggestion)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSelectSuggestion(suggestion);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                data-testid={`suggestion-alternative-${index}`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center">

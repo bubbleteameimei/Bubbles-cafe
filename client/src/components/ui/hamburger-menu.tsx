@@ -50,7 +50,16 @@ export function HamburgerMenu({ isOpen, className, onClick }: HamburgerMenuProps
         className
       )}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      role="button"
+      tabIndex={0}
       style={{ WebkitTapHighlightColor: 'transparent' }}
+      data-testid="hamburger-menu"
     >
       <div className="w-6 h-6 flex flex-col justify-center items-center">
         <motion.span

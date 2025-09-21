@@ -70,6 +70,8 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
         className
       )}
       onKeyDown={handleKeyDown}
+      role="navigation"
+      aria-label="Floating navigation"
     >
       <div className="relative">
         {/* Main button */}
@@ -144,7 +146,8 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
                       className="pl-10 pr-10 py-2 h-10 w-full bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                       value={searchQuery}
                       onChange={handleSearchInput}
-                      autoFocus
+                      aria-label="Search stories"
+                      data-testid="search-input"
                     />
                     {searchQuery && (
                       <Button

@@ -388,9 +388,22 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
     <Card 
       className="overflow-hidden transition-all hover:shadow-md mb-6 reader-card relative cursor-pointer"
       onClick={() => navigate(`/community-story/${post.slug}`)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          navigate(`/community-story/${post.slug}`);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      data-testid={`community-card-${post.id}`}
     >
       {/* Add a wrapper div to prevent the card click when interacting with menu */}
-      <div onClick={(e) => e.stopPropagation()} className="absolute top-2 right-2 z-10">
+      <div 
+        onMouseDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        className="absolute top-2 right-2 z-10"
+      >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">

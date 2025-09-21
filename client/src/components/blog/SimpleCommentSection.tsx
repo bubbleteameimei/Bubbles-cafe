@@ -957,9 +957,16 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                     "hover:bg-muted/20 transition-colors"
                   )}
                   onClick={() => toggleCollapse(comment.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      toggleCollapse(comment.id);
+                    }
+                  }}
                   role="button"
                   tabIndex={0}
                   aria-expanded={!collapsedComments.includes(comment.id) && !autoCollapsing}
+                  data-testid={`comment-toggle-${comment.id}`}
                 >
                   <div className="flex items-center">
                     <span className="font-medium text-xs">{comment.metadata.author || "Guest"}</span>

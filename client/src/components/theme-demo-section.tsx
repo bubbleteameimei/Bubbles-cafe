@@ -56,12 +56,12 @@ export function ThemeDemoSection() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-1 block">Username</label>
-              <Input placeholder="Enter your username" />
+              <label htmlFor="demo-username" className="text-sm font-medium mb-1 block">Username</label>
+              <Input id="demo-username" placeholder="Enter your username" />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Password</label>
-              <Input type="password" placeholder="••••••••" />
+              <label htmlFor="demo-password" className="text-sm font-medium mb-1 block">Password</label>
+              <Input id="demo-password" type="password" placeholder="••••••••" />
             </div>
             <Button className="w-full">Submit</Button>
           </CardContent>

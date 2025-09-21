@@ -156,6 +156,15 @@ export default function TableOfContents({ currentPostId, onClose, posts: provide
                       post.id === currentPostId ? "bg-accent/50 font-medium" : ""
                     }`}
                     onClick={() => handlePostClick(post.slug)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handlePostClick(post.slug);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    data-testid={`toc-story-${post.id}`}
                   >
                     <div className="font-medium truncate w-full">{post.title}</div>
                     <div className="text-xs text-muted-foreground mt-0.5">{formatDate(post.date)}</div>

@@ -68,6 +68,12 @@ export const Modal: React.FC<ModalProps> = ({
           aria-modal="true"
           role="dialog"
           onClick={handleBackdropClick}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              onClose();
+            }
+          }}
         >
           {/* Backdrop */}
           <motion.div 

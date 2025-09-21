@@ -117,7 +117,7 @@ const useInlineCommenting = ({
             onChange={(e) => setCommentText(e.target.value)}
             placeholder="Write your comment here..."
             className="w-full min-h-[100px]"
-            autoFocus
+            data-testid="comment-textarea"
           />
         </div>
         

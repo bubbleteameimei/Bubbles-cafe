@@ -69,7 +69,7 @@ export function ReaderControls({ onShare, onBookmark, isBookmarked }: ReaderCont
             <div className="space-y-6">
               {/* Font Size */}
               <div className="space-y-3">
-                <label className="text-sm font-medium">Font Size</label>
+                <label htmlFor="font-size-slider" className="text-sm font-medium">Font Size</label>
                 <div className="flex items-center gap-3">
                   <Button
                     variant="outline"
@@ -80,6 +80,7 @@ export function ReaderControls({ onShare, onBookmark, isBookmarked }: ReaderCont
                     <Minus className="h-4 w-4" />
                   </Button>
                   <Slider
+                    id="font-size-slider"
                     value={[fontSize]}
                     onValueChange={([value]) => {
                       // Update font size through hook
@@ -111,9 +112,9 @@ export function ReaderControls({ onShare, onBookmark, isBookmarked }: ReaderCont
 
               {/* Font Family */}
               <div className="space-y-3">
-                <label className="text-sm font-medium">Font Family</label>
+                <span id="font-family-label" className="text-sm font-medium block">Font Family</span>
                 <Select value={fontFamily} onValueChange={handleFontFamilyChange}>
-                  <SelectTrigger>
+                  <SelectTrigger aria-labelledby="font-family-label">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -128,8 +129,9 @@ export function ReaderControls({ onShare, onBookmark, isBookmarked }: ReaderCont
 
               {/* Theme Toggle */}
               <div className="space-y-3">
-                <label className="text-sm font-medium">Theme</label>
+                <label htmlFor="theme-toggle-button" className="text-sm font-medium">Theme</label>
                 <Button
+                  id="theme-toggle-button"
                   variant="outline"
                   onClick={handleThemeToggle}
                   className="w-full justify-start"

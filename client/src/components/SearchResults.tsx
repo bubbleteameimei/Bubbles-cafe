@@ -89,6 +89,15 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query, onSelect }) => {
           key={post.id}
           className="p-3 rounded-md hover:bg-muted transition-colors cursor-pointer"
           onClick={() => handlePostClick(post.slug)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handlePostClick(post.slug);
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          data-testid={`search-result-${post.id}`}
         >
           <div className="font-medium" dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.title.rendered) }} />
           <div className="text-sm text-muted-foreground line-clamp-2 mt-1">
