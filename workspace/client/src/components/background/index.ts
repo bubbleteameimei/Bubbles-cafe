@@ -1,1 +1,0 @@
-// Pixel art components removed per user request
