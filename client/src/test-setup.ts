@@ -1,6 +1,11 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
+// Fix for webidl-conversions SharedArrayBuffer issue
+if (typeof globalThis.SharedArrayBuffer === 'undefined') {
+  globalThis.SharedArrayBuffer = ArrayBuffer;
+}
+
 // Mock window.matchMedia since it's not available in jsdom
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

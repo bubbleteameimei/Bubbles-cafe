@@ -10,7 +10,15 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/dist/**', '**/backups/**', '**/Bubbles-cafe/**', '**/bubbles-cafe/**', '**/workspace/**', '**/*.bak.*', '**/*.old', '**/*.backup.*'],
     environmentOptions: {
       jsdom: {
-        url: 'http://localhost:3000'
+        url: 'http://localhost:3000',
+        resources: 'usable',
+        pretendToBeVisual: true
+      }
+    },
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true
       }
     }
   },
