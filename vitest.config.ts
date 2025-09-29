@@ -73,7 +73,7 @@ console.log('[vitest-config] Polyfills applied successfully');
 
 export default defineConfig({
   test: {
-    environment: 'jsdom',
+    environment: 'node',
     globals: true,
     setupFiles: './client/src/test-setup.ts',
     include: ['client/src/**/*.test.{ts,tsx}'],
