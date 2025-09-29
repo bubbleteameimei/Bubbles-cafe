@@ -75,13 +75,14 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    setupFiles: './client/src/test-setup.ts',
+    // Temporarily disable setup files to eliminate any potential jsdom triggers
+    // setupFiles: './client/src/test-setup.ts',
     include: ['client/src/**/*.test.{ts,tsx}'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/backups/**', '**/Bubbles-cafe/**', '**/bubbles-cafe/**', '**/workspace/**', '**/*.bak.*', '**/*.old', '**/*.backup.*'],
-    pool: 'forks',
+    pool: 'threads',
     poolOptions: {
-      forks: {
-        singleFork: true
+      threads: {
+        singleThread: true
       }
     }
   },
