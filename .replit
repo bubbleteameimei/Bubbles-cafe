@@ -38,7 +38,7 @@ args = "npm install"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
+args = "npm run start "
 
 [[workflows.workflow]]
 name = "Start App"
@@ -55,7 +55,7 @@ args = "npm install"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
+args = "npm run start"
 
 [agent]
 integrations = ["javascript_database:1.0.0"]
