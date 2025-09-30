@@ -3,7 +3,7 @@ services:
     name: horror-stories-backend
     env: node
     plan: starter
-    buildCommand: npm ci && npm run build
+    buildCommand: NODE_ENV=development npm ci && npm run build
     startCommand: npm run start
     healthCheckPath: /api/health
     envVars:
