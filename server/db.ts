@@ -1,18 +1,21 @@
 import 'dotenv/config';
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
-import * as schema from "@shared/schema";
+import { neonConfig, Pool as NeonPool } from '@neondatabase/serverless';
+import { drizzle as drizzleNeon } from 'drizzle-orm/neon-serverless';
+import ws from 'ws';
+import * as schema from '@shared/schema';
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
+import pg from 'pg';
+const { Pool: PgPool } = pg;
+import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres';
 
 // Load environment variables from .env file if it exists
 if (existsSync(path.join(process.cwd(), '.env'))) {
   try {
     const envContent = readFileSync(path.join(process.cwd(), '.env'), 'utf8');
     const envLines = envContent.split('\n');
-    
-    envLines.forEach(line => {
+
+    envLines.forEach((line) => {
       const trimmedLine = line.trim();
       if (trimmedLine && !trimmedLine.startsWith('#')) {
         const [key, ...valueParts] = trimmedLine.split('=');
@@ -57,46 +60,64 @@ console.log('- PORT:', process.env.PORT);
 console.log('- DATABASE_URL exists:', !!process.env.DATABASE_URL);
 
 if (!DATABASE_URL) {
-        console.error('DATABASE_URL is not set. Please configure your environment.');
-        console.error('Available env vars:', Object.keys(process.env).filter(key => key.includes('DATABASE')));
-        throw new Error('DATABASE_URL is required');
+  console.error('DATABASE_URL is not set. Please configure your environment.');
+  console.error('Available env vars:', Object.keys(process.env).filter((key) => key.includes('DATABASE')));
+  throw new Error('DATABASE_URL is required');
 }
 
-// Configure WebSocket for Neon serverless with enhanced error handling
-try {
-        neonConfig.webSocketConstructor = ws;
-} catch (error) {
-        console.error('Error configuring Neon WebSocket:', error);
-        // Fallback to default HTTP mode if WebSocket fails
+// Decide which driver to use based on the URL
+function isNeonUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return /neon\.tech$/i.test(u.hostname) || /neon/i.test(u.hostname);
+  } catch {
+    return url.includes('neon.tech');
+  }
 }
 
-// Create pool with connection retry logic
-let pool: Pool;
-let db: ReturnType<typeof drizzle>;
+let pool: any;
+let db: any;
 
 try {
-        pool = new Pool({ 
-                connectionString: DATABASE_URL,
-                max: 10,
-                idleTimeoutMillis: 30000,
-                connectionTimeoutMillis: 10000,
-        });
+  if (isNeonUrl(DATABASE_URL)) {
+    // Neon serverless over WebSocket
+    try {
+      neonConfig.webSocketConstructor = ws;
+    } catch (err) {
+      console.error('Error configuring Neon WebSocket:', err);
+    }
 
-        // Test the connection
-        pool.on('connect', () => {
-                // Connection established successfully
-        });
+    pool = new NeonPool({
+      connectionString: DATABASE_URL,
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+    });
 
-        pool.on('error', (err) => {
-                console.error('Unexpected error on idle client', err);
-        });
+    pool.on('error', (err: any) => {
+      console.error('Unexpected error on idle Neon client', err);
+    });
 
-        db = drizzle({ client: pool, schema });
-        
-        // Database configuration completed successfully
+    db = drizzleNeon({ client: pool, schema });
+  } else {
+    // Standard Postgres (Render PostgreSQL, etc.)
+    pool = new PgPool({
+      connectionString: DATABASE_URL,
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
+    });
+
+    pool.on('error', (err: any) => {
+      console.error('Unexpected error on idle pg client', err);
+    });
+
+    db = drizzlePg(pool, { schema });
+  }
 } catch (error) {
-        console.error('Failed to initialize database:', error);
-        throw error;
+  console.error('Failed to initialize database:', error);
+  throw error;
 }
 
 export { pool, db };

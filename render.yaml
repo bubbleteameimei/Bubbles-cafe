@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: horror-stories-backend
+    name: bubbles-cafe-backend
     env: node
     plan: starter
     buildCommand: npm ci --production=false && npm run build
@@ -11,10 +11,10 @@ services:
         value: production
       - key: NPM_CONFIG_PRODUCTION
         value: "false"
-      - key: PORT
-        value: 3001
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: bubbles-cafe-db
+          property: connectionString
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
@@ -28,7 +28,7 @@ services:
     autoDeploy: true
 
 databases:
-  - name: horror-stories-db
-    databaseName: horror_stories
+  - name: bubbles-cafe-db
+    databaseName: bubbles_cafe
     plan: starter 
     postgresMajorVersion: 14
