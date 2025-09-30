@@ -3,12 +3,14 @@ services:
     name: horror-stories-backend
     env: node
     plan: starter
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --production=false && npm run build
     startCommand: node dist/index.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
       - key: PORT
         value: 3001
       - key: DATABASE_URL
