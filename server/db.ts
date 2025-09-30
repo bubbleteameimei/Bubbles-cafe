@@ -66,12 +66,15 @@ if (!DATABASE_URL) {
 }
 
 // Decide which driver to use based on the URL
-function isNeonUrl(url: string): boolean {
+function shouldUseNeonServerless(url: string): boolean {
   try {
     const u = new URL(url);
-    return /neon\.tech$/i.test(u.hostname) || /neon/i.test(u.hostname);
+    const host = u.hostname.toLowerCase();
+    // Use Neon Serverless driver only for non-pooler hosts
+    // Pooler hosts should use node-postgres (pg)
+    return host.includes('neon.tech') && !host.includes('pooler');
   } catch {
-    return url.includes('neon.tech');
+    return url.includes('neon.tech') && !url.includes('pooler');
   }
 }
 
@@ -79,8 +82,8 @@ let pool: any;
 let db: any;
 
 try {
-  if (isNeonUrl(DATABASE_URL)) {
-    // Neon serverless over WebSocket
+  if (shouldUseNeonServerless(DATABASE_URL)) {
+    // Neon serverless over WebSocket (non-pooler host)
     try {
       neonConfig.webSocketConstructor = ws;
     } catch (err) {
@@ -100,7 +103,7 @@ try {
 
     db = drizzleNeon({ client: pool, schema });
   } else {
-    // Standard Postgres (Render PostgreSQL, etc.)
+    // Standard Postgres (including Neon pooler hosts)
     pool = new PgPool({
       connectionString: DATABASE_URL,
       max: 10,
