@@ -84,6 +84,47 @@ export default defineConfig({
       threads: {
         singleThread: true
       }
+    },
+    coverage: {
+      provider: 'v8',
+      enabled: true,
+      reporter: ['text', 'html', 'lcov'],
+      include: ['client/src/**/*.{ts,tsx}', 'server/**/*.{ts,js}', 'shared/**/*.ts'],
+      exclude: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/*.test.{ts,tsx}',
+        '**/*.spec.{ts,tsx}',
+        '**/test-setup.ts',
+        '**/coverage/**',
+        '**/backups/**',
+        '**/__tests__/**',
+        '**/e2e/**',
+        '**/scripts/**',
+        '**/*.config.{ts,js}',
+        '**/*.d.ts',
+        '**/.cache/**',
+        '**/logs/**',
+        '**/migrations/**',
+        '**/public/**',
+        '**/static/**',
+        '**/attached_assets/**',
+        '**/replit_agent/**',
+        '**/screenshots/**',
+        '**/docs/**',
+        '**/*.cjs',
+        '**/*.mjs',
+        '**/*.sh',
+        '**/Bubbles-cafe/**',
+        '**/bubbles-cafe/**',
+        '**/workspace/**',
+        '**/*.bak.*',
+        '**/*.old',
+        '**/*.backup.*'
+      ],
+      all: false,
+      clean: true,
+      reportsDirectory: './coverage'
     }
   },
   resolve: {
