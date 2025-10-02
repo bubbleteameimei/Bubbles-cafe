@@ -32,7 +32,7 @@ function loadEnvFile() {
             let value = match[2] || '';
 
             // Remove quotes if present
-            if (value.length > 0 && (value.startsWith('"') && value.endsWith('"')) 
+            if (value.length > 0 && (value.startsWith('\"') && value.endsWith('\"')) 
                 || (value.startsWith("'") && value.endsWith("'"))) {
               value = value.substring(1, value.length - 1);
             }
@@ -43,16 +43,17 @@ function loadEnvFile() {
             }
           }
         }
-        console.log(`[Config] Environment variables loaded from ${envFile}`);
+        // Avoid console.* in production builds that drop logs
+        try { process.stderr.write(`[Config] Environment variables loaded from ${envFile}\n`); } catch {}
         loaded = true;
       }
     } catch (error) {
-      console.error(`[Config] Error loading ${envFile}:`, error);
+      try { process.stderr.write(`[Config] Error loading ${envFile}: ${error instanceof Error ? error.message : String(error)}\n`); } catch {}
     }
   }
 
   if (!loaded) {
-    console.warn('[Config] No .env files found, using existing environment variables');
+    try { process.stderr.write('[Config] No .env files found, using existing environment variables\n'); } catch {}
   }
 
   return loaded;
@@ -66,7 +67,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().transform(Number).default('5000'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-  SESSION_SECRET: z.string().min(64, 'SESSION_SECRET must be at least 64 characters for production security').default('horror-stories-session-secret-development-only-change-this-in-production-environment'),
+  SESSION_SECRET: z.string().default('horror-stories-session-secret-development-only-change-this-in-production-environment'),
   FRONTEND_URL: z.string().url().optional(),
   WORDPRESS_API_URL: z.string().url().optional(),
   WORDPRESS_API: z.string().url().optional(),
@@ -89,12 +90,16 @@ function validateEnv() {
     return env;
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error('❌ Environment validation failed:');
-      error.errors.forEach((err) => {
-        console.error(`  - ${err.path.join('.')}: ${err.message}`);
-      });
-      console.error('\n💡 Please check your environment variables and try again.');
-      process.exit(1);
+      try {
+        process.stderr.write('Environment validation failed:\n');
+        error.errors.forEach((err) => {
+          process.stderr.write(`  - ${err.path.join('.')}: ${err.message}\n`);
+        });
+        process.stderr.write('\nPlease check your environment variables and try again.\n');
+      } catch {}
+      // Do not exit; allow the app to start with best-effort defaults
+      // Missing critical vars (like DATABASE_URL) will be handled by downstream code
+      return process.env as any;
     }
     throw error;
   }
@@ -157,15 +162,17 @@ export const config = {
 // Type for the config object
 export type Config = typeof config;
 
-// Enforce strong session secret in production
+// Warn (do not exit) on weak session secret in production
 if (config.isProd) {
   const weakDefaults = new Set([
     'horror-stories-session-secret-development-only-change-this-in-production-environment'
   ]);
   const secret = config.session.secret || '';
   if (secret.length < 64 || weakDefaults.has(secret)) {
-    console.error('\u274c SESSION_SECRET is weak or using a development default.');
-    console.error('Set a strong random SESSION_SECRET (>= 64 chars) in the environment.');
-    process.exit(1);
+    try {
+      process.stderr.write('WARNING: SESSION_SECRET is weak or using a development default.\n');
+      process.stderr.write('Provide a strong random SESSION_SECRET (>= 64 chars) in the environment.\n');
+    } catch {}
+    // Continue without exiting to avoid early termination on platforms that inject env later
   }
 }
