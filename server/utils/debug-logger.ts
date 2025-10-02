@@ -25,20 +25,19 @@ interface Logger {
   error: (message: string, details?: Record<string, unknown>) => void;
 }
 
-// Ensure logs directory exists
+// Ensure logs directory exists (lazily on write to avoid top-level awaits)
 const logsDir = path.join(process.cwd(), 'logs');
-export const initLogs = async () => {
+async function ensureLogsDir() {
   try {
-    await fs.access(logsDir);
-  } catch {
     await fs.mkdir(logsDir, { recursive: true });
+  } catch {
+    // ignore mkdir errors
   }
-};
+}
+export const initLogs = ensureLogsDir;
 
 const debugLogPath = path.join(logsDir, 'debug.log');
 const errorLogPath = path.join(logsDir, 'error.log');
-
-// Console color constants removed (not used)
 
 function formatLogMessage(level: LogLevel, module: string, message: string, details?: Record<string, unknown>): LogMessage {
   return {
@@ -67,10 +66,16 @@ function getConsolePrefix(level: LogLevel): string {
 
 async function writeToFile(filePath: string, content: string): Promise<void> {
   try {
+    await ensureLogsDir();
     await fs.appendFile(filePath, content + '\n');
   } catch (error) {
-    // Fallback to console if file writing fails
-    console.error('Failed to write to log file:', error);
+    // Fallback to stderr if file writing fails (console.* may be dropped in prod build)
+    try {
+      const msg = `Failed to write to log file ${filePath}: ${error instanceof Error ? error.message : String(error)}\n`;
+      process.stderr.write(msg);
+    } catch {
+      // swallow
+    }
   }
 }
 
@@ -85,7 +90,12 @@ async function log(level: LogLevel, module: string, message: string, details?: R
   
   // Output to console: suppress debug in production
   if (process.env.NODE_ENV !== 'production' || level !== 'debug') {
-    console.log(`${timestamp} ${consoleMessage}${consoleDetails}`);
+    // In production, esbuild may drop console.*, so rely on stderr fallback too for errors
+    try {
+      console.log(`${timestamp} ${consoleMessage}${consoleDetails}`);
+    } catch {
+      // ignore
+    }
   }
   
   // Format for file output
@@ -99,6 +109,12 @@ async function log(level: LogLevel, module: string, message: string, details?: R
   // Log errors to separate error log
   if (level === 'error') {
     await writeToFile(errorLogPath, fileMessage);
+    // Ensure critical errors are visible even if console is dropped from bundle
+    try {
+      process.stderr.write(fileMessage + '\n');
+    } catch {
+      // swallow
+    }
   }
 }
 
