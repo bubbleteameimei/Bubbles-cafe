@@ -1,8 +1,8 @@
 import 'dotenv/config';
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
-import * as schema from "@shared/schema";
+import pkg from 'pg';
+const { Pool } = pkg;
+import { drizzle } from 'drizzle-orm/node-postgres';
+import * as schema from '@shared/schema';
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
 
@@ -11,7 +11,6 @@ if (existsSync(path.join(process.cwd(), '.env'))) {
   try {
     const envContent = readFileSync(path.join(process.cwd(), '.env'), 'utf8');
     const envLines = envContent.split('\n');
-    
     envLines.forEach(line => {
       const trimmedLine = line.trim();
       if (trimmedLine && !trimmedLine.startsWith('#')) {
@@ -25,7 +24,9 @@ if (existsSync(path.join(process.cwd(), '.env'))) {
       }
     });
   } catch (error) {
-    console.warn('Could not load .env file:', error);
+    try {
+      process.stderr.write(`Could not load .env file: ${error instanceof Error ? error.message : String(error)}\n`);
+    } catch {}
   }
 }
 
@@ -37,12 +38,12 @@ function sanitizeDatabaseUrl(url?: string): string | undefined {
   s = s.replace(/^postgresal:\/\//i, 'postgresql://');
   s = s.replace(/^postgres:\/\//i, 'postgresql://');
   s = s.replace(/-pool-er/gi, '-pooler');
+  s = s.replace(/re-?quire/gi, 'require');
   // Normalize protocol case
   s = s.replace(/^POSTGRESQL:\/\//, 'postgresql://');
-  // Remove duplicate sslmode parameters
+  // Ensure sslmode=require if not present
   const [base, query = ''] = s.split('?');
   const params = new URLSearchParams(query);
-  // Ensure require
   params.set('sslmode', params.get('sslmode') || 'require');
   s = base + '?' + params.toString();
   return s;
@@ -51,52 +52,57 @@ function sanitizeDatabaseUrl(url?: string): string | undefined {
 // Resolve database URL from environment with sanitization
 const DATABASE_URL = sanitizeDatabaseUrl(process.env.DATABASE_URL);
 
-console.log('Environment check:');
-console.log('- NODE_ENV:', process.env.NODE_ENV);
-console.log('- PORT:', process.env.PORT);
-console.log('- DATABASE_URL exists:', !!process.env.DATABASE_URL);
-
 if (!DATABASE_URL) {
-        console.error('DATABASE_URL is not set. Please configure your environment.');
-        console.error('Available env vars:', Object.keys(process.env).filter(key => key.includes('DATABASE')));
-        throw new Error('DATABASE_URL is required');
+  const msg = 'DATABASE_URL is not set. Please configure your environment.';
+  try {
+    process.stderr.write(msg + '\n');
+  } catch {}
+  throw new Error(msg);
 }
 
-// Configure WebSocket for Neon serverless with enhanced error handling
-try {
-        neonConfig.webSocketConstructor = ws;
-} catch (error) {
-        console.error('Error configuring Neon WebSocket:', error);
-        // Fallback to default HTTP mode if WebSocket fails
-}
-
-// Create pool with connection retry logic
-let pool: Pool;
+// Create pool with connection retry logic using node-postgres
+let pool: pkg.Pool;
 let db: ReturnType<typeof drizzle>;
 
 try {
-        pool = new Pool({ 
-                connectionString: DATABASE_URL,
-                max: 10,
-                idleTimeoutMillis: 30000,
-                connectionTimeoutMillis: 10000,
-        });
+  const useSSL = DATABASE_URL.includes('sslmode=require');
+  pool = new Pool({
+    connectionString: DATABASE_URL,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+    ssl: useSSL ? { rejectUnauthorized: false } : undefined
+  });
 
-        // Test the connection
-        pool.on('connect', () => {
-                // Connection established successfully
-        });
+  // Hook pool events
+  pool.on('error', (err: Error) => {
+    try {
+      process.stderr.write(`Unexpected error on idle client: ${err.message}\n`);
+    } catch {}
+  });
 
-        pool.on('error', (err) => {
-                console.error('Unexpected error on idle client', err);
-        });
+  db = drizzle(pool, { schema });
 
-        db = drizzle({ client: pool, schema });
-        
-        // Database configuration completed successfully
+  // Test the connection
+  (async () => {
+    let client: pkg.PoolClient | undefined;
+    try {
+      client = await pool.connect();
+      await client.query('SELECT 1');
+    } catch (error) {
+      try {
+        process.stderr.write(`Failed to test database connection: ${error instanceof Error ? error.message : String(error)}\n`);
+      } catch {}
+      throw error;
+    } finally {
+      client?.release();
+    }
+  })();
 } catch (error) {
-        console.error('Failed to initialize database:', error);
-        throw error;
+  try {
+    process.stderr.write(`Failed to initialize database: ${error instanceof Error ? error.message : String(error)}\n`);
+  } catch {}
+  throw error;
 }
 
 export { pool, db };
