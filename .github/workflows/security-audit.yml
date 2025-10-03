@@ -29,7 +29,6 @@ jobs:
           npm pkg set "overrides.esbuild=^0.25.10"
           npm pkg set "overrides.@babel/helpers=^7.26.10"
           npm pkg set "overrides.@babel/runtime=^7.26.10"
-          npm pkg set.5
 
       - name: Install after bumps
         run: npm install
