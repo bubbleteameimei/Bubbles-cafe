@@ -1,6 +1,6 @@
 import express from "express";
 import { createServer } from "http";
-import { setupVite, serveStatic } from "./vite";
+// Vite setup and static serving are imported dynamically by environment branch
 import { db } from "./db"; // Using the direct Neon database connection
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
@@ -221,6 +221,8 @@ async function startServer() {
       // Start WordPress scheduler
       wordpressScheduler.start();
 
+      // Import Vite dev middleware only in development to avoid bundling dev deps into prod
+      const { setupVite } = await import('./vite');
       await setupVite(app, server);
       // Optional SSR streaming preview
       app.get('/ssr', ssrStreamHandler);
@@ -245,6 +247,8 @@ async function startServer() {
       app.use(browserCache());
       app.use(etagCache());
 
+      // Import static serving helper lazily to avoid dev-only imports in production
+      const { serveStatic } = await import('./vite');
       serveStatic(app);
       if (process.env.ENABLE_SSR === 'true') {
         app.get('/ssr', ssrStreamHandler);

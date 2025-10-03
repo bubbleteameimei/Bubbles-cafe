@@ -2,15 +2,12 @@ import express, { type Express } from "express";
 import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
-import { createServer as createViteServer, createLogger } from "vite";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import { type Server } from "http";
 import viteConfig from "../vite.config";
 // Use a lightweight cache-busting token without external deps
 const cacheBust = () => Math.random().toString(36).slice(2);
-
-const viteLogger = createLogger();
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -34,6 +31,10 @@ function isLikelyAssetRequest(urlPath: string): boolean {
 }
 
 export async function setupVite(app: Express, server: Server) {
+  // Import Vite only when running in development to avoid requiring it in production
+  const { createServer: createViteServer, createLogger } = await import("vite");
+  const viteLogger = createLogger();
+
   const serverOptions = {
     middlewareMode: true as const,
     hmr: { server },
