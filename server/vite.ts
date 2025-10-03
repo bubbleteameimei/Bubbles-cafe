@@ -92,16 +92,35 @@ export async function setupVite(app: Express, server: Server) {
   });
 }
 
-export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "public");
-
-  if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
-    );
+function resolveStaticRoot(): string {
+  const candidates = [
+    // Standard build output
+    path.resolve(process.cwd(), "dist", "public"),
+    path.resolve(__dirname, "..", "dist", "public"),
+    // Fallbacks when running from source
+    path.resolve(process.cwd(), "server", "public"),
+    path.resolve(__dirname, "public"),
+    // Project-level public if used
+    path.resolve(process.cwd(), "public"),
+  ];
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) return p;
+    } catch {
+      // ignore filesystem errors and continue
+    }
   }
+  throw new Error(
+    `Could not find any build directory. Tried: ${candidates.join(
+      ", "
+    )}. Make sure to run 'npm run build' before starting the server in production.`
+  );
+}
 
-  app.use(express.static(distPath));
+export function serveStatic(app: Express) {
+  const staticRoot = resolveStaticRoot();
+
+  app.use(express.static(staticRoot));
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (req, res) => {
@@ -110,6 +129,6 @@ export function serveStatic(app: Express) {
       res.status(404).end('Not Found');
       return;
     }
-    res.sendFile(path.resolve(distPath, "index.html"));
+    res.sendFile(path.resolve(staticRoot, "index.html"));
   });
 }
