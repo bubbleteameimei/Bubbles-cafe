@@ -200,75 +200,10 @@ async function startServer() {
       port: PORT
     });
 
-    // Setup database connection first
-    try {
-      // Ensure DATABASE_URL is properly set
-      serverLogger.info('Setting up database connection...');
-      await setupDatabase();
-
-      // Check database connection and run migrations
-      try {
-        serverLogger.info('Running database migrations...');
-        await runMigrations();
-        serverLogger.info('Database migrations completed');
-
-        // Check if posts table has data
-        const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
-        serverLogger.info('Database connected, tables exist', { postsCount });
-
-        // Seed database if no posts exist
-        if (postsCount === 0) {
-          serverLogger.info('No posts found - seeding database from WordPress API...');
-          try {
-            await seedFromWordPressAPI();
-            serverLogger.info('Database seeding from WordPress API completed');
-          } catch (seedError) {
-            serverLogger.warn('WordPress API seeding failed, falling back to XML seeding', {
-              error: seedError instanceof Error ? seedError.message : 'Unknown error'
-            });
-            await seedDatabase();
-            serverLogger.info('Database seeding from XML completed');
-          }
-        }
-      } catch (dbError) {
-        serverLogger.error('Database setup failed', { 
-          error: dbError instanceof Error ? dbError.message : 'Unknown error' 
-        });
-
-        // Try to create schema as last resort
-        serverLogger.info('Attempting to create database schema...');
-        try {
-          await pushSchema();
-          serverLogger.info('Schema created successfully');
-
-          // Seed the database
-          await seedDatabase();
-          serverLogger.info('Database seeded successfully');
-        } catch (finalError) {
-          serverLogger.error('Critical database setup failure', {
-            error: finalError instanceof Error ? finalError.message : 'Unknown error'
-          });
-          throw new Error(`Database setup failed: ${finalError instanceof Error ? finalError.message : 'Unknown error'}`);
-        }
-      }
-    } catch (dbError) {
-      serverLogger.error('Critical database setup error', { 
-        error: dbError instanceof Error ? dbError.message : 'Unknown error' 
-      });
-      throw dbError;
-    }
-
-    // Create server instance
+    // Create server instance early
     server = createServer(app);
 
-    // Apply performance middleware
-    try {
-      applyPerformanceMiddleware(app, db);
-    } catch (e) {
-      console.warn('Performance middleware setup failed:', e instanceof Error ? e.message : e);
-    }
-
-    // Setup routes based on environment
+    // Setup routes based on environment before DB setup so the server can listen quickly
     if (isDev) {
       serverLogger.info('Setting up development environment');
 
@@ -317,38 +252,34 @@ async function startServer() {
     }
 
     // Start listening with enhanced error handling and port notification
-    return new Promise<void>((resolve, reject) => {
+    const listeningPromise = new Promise<void>((resolve, reject) => {
       const startTime = Date.now();
 
-      // Log that we're about to start listening
-      console.log(`Attempting to start server on http://0.0.0.0:${config.port}...`);
+      // Log that we're about to start listening (stderr to survive console drop)
+      try { process.stderr.write(`Starting server on http://${HOST}:${PORT}...\n`); } catch {}
 
       server.listen(PORT, HOST, () => {
         const bootDuration = Date.now() - startTime;
-        console.log(`✅ Server started successfully on http://${HOST}:${PORT} in ${bootDuration}ms`);
-        console.log(`🌐 App is ready and accessible at: http://${HOST}:${PORT}`);
+        try {
+          process.stderr.write(`Server listening on http://${HOST}:${PORT} (boot ${bootDuration}ms)\n`);
+        } catch {}
         serverLogger.info('Server started successfully', { 
           url: `http://${HOST}:${PORT}`,
           bootTime: `${bootDuration}ms`,
           pid: process.pid
         });
 
-        // Send port readiness signal to Replit
+        // Send port readiness signal to Replit (harmless in other envs)
         if (process.send) {
-          process.send({
-            port: PORT,
-            wait_for_port: true,
-            ready: true
-          });
-          console.log(`📡 Sent port readiness signal to Replit for port ${PORT}`);
+          try {
+            process.send({
+              port: PORT,
+              wait_for_port: true,
+              ready: true
+            });
+          } catch {}
           serverLogger.debug('Sent port readiness signal', { port: PORT });
         }
-
-        // Additional confirmation
-        setTimeout(() => {
-          console.log(`🚀 Server fully initialized and ready on port ${PORT}`);
-          console.log(`📝 Preview URL should be available in Replit webview`);
-        }, 500);
 
         resolve();
       });
@@ -366,12 +297,77 @@ async function startServer() {
         reject(error);
       });
     });
+
+    // Begin DB setup in background; do not block server listening
+    (async () => {
+      try {
+        serverLogger.info('Setting up database connection...');
+        await setupDatabase();
+
+        // Apply performance middleware dependent on db
+        try {
+          applyPerformanceMiddleware(app, db);
+        } catch (e) {
+          try { process.stderr.write(`Performance middleware setup failed: ${e instanceof Error ? e.message : String(e)}\n`); } catch {}
+        }
+
+        // Run migrations and seed if needed
+        try {
+          serverLogger.info('Running database migrations...');
+          await runMigrations();
+          serverLogger.info('Database migrations completed');
+
+          const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
+          serverLogger.info('Database connected, tables exist', { postsCount });
+
+          if (postsCount === 0) {
+            serverLogger.info('No posts found - seeding database from WordPress API...');
+            try {
+              await seedFromWordPressAPI();
+              serverLogger.info('Database seeding from WordPress API completed');
+            } catch (seedError) {
+              serverLogger.warn('WordPress API seeding failed, falling back to XML seeding', {
+                error: seedError instanceof Error ? seedError.message : 'Unknown error'
+              });
+              await seedDatabase();
+              serverLogger.info('Database seeding from XML completed');
+            }
+          }
+        } catch (dbError) {
+          serverLogger.error('Database setup failed', { 
+            error: dbError instanceof Error ? dbError.message : 'Unknown error' 
+          });
+
+          // Try to create schema as last resort
+          serverLogger.info('Attempting to create database schema...');
+          try {
+            await pushSchema();
+            serverLogger.info('Schema created successfully');
+
+            await seedDatabase();
+            serverLogger.info('Database seeded successfully');
+          } catch (finalError) {
+            serverLogger.error('Critical database setup failure', {
+              error: finalError instanceof Error ? finalError.message : 'Unknown error'
+            });
+            // Do not exit; keep the app running to serve static/health, DB-dependent routes may fail
+          }
+        }
+      } catch (dbError) {
+        serverLogger.error('Critical database setup error', { 
+          error: dbError instanceof Error ? dbError.message : 'Unknown error' 
+        });
+        // Do not exit on DB errors
+      }
+    })();
+
+    return listeningPromise;
   } catch (error) {
     serverLogger.error('Critical startup error', { 
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined
     });
-    process.exit(1);
+    // Do not exit; allow platform to capture logs and keep process alive if possible
   }
 }
 
@@ -381,7 +377,7 @@ startServer().catch(error => {
     error: error instanceof Error ? error.message : 'Unknown error',
     stack: error instanceof Error ? error.stack : undefined
   });
-  process.exit(1);
+  // Do not exit; keep process alive to allow diagnostics and health checks
 });
 
 // Handle graceful shutdown
@@ -425,12 +421,8 @@ process.on('unhandledRejection', (reason, _promise) => {
     stack: errorStack
   });
 
-  // In production, we might want to exit the process
-  // In development, we can continue but log the error
-  if (process.env.NODE_ENV === 'production') {
-    serverLogger.error('Exiting due to unhandled promise rejection in production');
-    process.exit(1);
-  }
+  // Do not exit; keep the process alive to avoid early termination in production environments
+  // Critical errors are still handled by the uncaughtException handler above
 });
 
 export default app;
