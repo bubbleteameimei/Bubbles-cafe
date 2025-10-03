@@ -1,0 +1,63 @@
+name: security-audit-fix-v2
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  audit-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Apply targeted dependency bumps (safe upgrades) without npm pkg set
+        run: |
+          # Remove unused deprecated direct deps if present
+          npm uninstall react-beautiful-dnd fluent-ffmpeg || true
+
+          # Mutate package.json overrides via Node (supports keys with '/')
+          node -e "const fs=require('fs');const pkg=require('./package.json');pkg.overrides=Object.assign({},pkg.overrides,{esbuild:'^0.25.10','@babel/helpers':'^7.26.10','@babel/runtime':'^7.26.10',axios:'^1.8.2'});fs.writeFileSync('package.json',JSON.stringify(pkg,null,2));"
+
+          # Update direct dev tools to latest non-breaking versions
+          npm install -D esbuild@^0.25.10 vite@^6.2.5
+
+      - name: Install after bumps
+        run: npm install
+
+      - name: Run npm audit (report only)
+        run: npm audit --json || true
+
+      - name: Attempt automatic fixes
+        run: npm audit fix || true
+
+      - name: Commit changes if any
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add package.json package-lock.json
+            git commit -m "chore: security audit: targeted bumps and lockfile fixes (v2)"
+          else
+            echo "No changes to commit"
+          fi
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "chore: security audit: targeted bumps and lockfile fixes (v2)"
+          body: "Automated security maintenance: overrides for known advisories and dev tool bumps. Please review any changes."
+          branch: "chore/security-audit-bumps-v2"
+          commit-message: "chore: security audit: targeted bumps and lockfile fixes (v2)"
+          labels: security, dependencies
