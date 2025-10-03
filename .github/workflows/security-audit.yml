@@ -21,6 +21,19 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Apply targeted dependency bumps (safe upgrades)
+        run: |
+          # Remove deprecated/unnecessary direct deps (based on repo usage checks)
+          npm uninstall react-beautiful-dnd fluent-ffmpeg || true
+          # Pin secure versions via overrides for transitive advisories
+          npm pkg set "overrides.esbuild=^0.25.10"
+          npm pkg set "overrides.@babel/helpers=^7.26.10"
+          npm pkg set "overrides.@babel/runtime=^7.26.10"
+          npm pkg set.5
+
+      - name: Install after bumps
+        run: npm install
+
       - name: Run npm audit (report only)
         run: npm audit --json || true
 
@@ -32,8 +45,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if [ -n "$(git status --porcelain)" ]; then
-            git add package-lock.json
-            git commit -m "chore: npm audit fix"
+            git add package.json package-lock.json
+            git commit -m "chore: security audit: targeted bumps and lockfile fixes"
           else
             echo "No changes to commit"
           fi
@@ -41,8 +54,8 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-          title: "chore: npm audit fix"
-          body: "Automated npm audit fix. Please review any breaking changes."
-          branch: "chore/audit-fix"
-          commit-message: "chore: npm audit fix"
+          title: "chore: security audit: targeted bumps and lockfile fixes"
+          body: "Automated security maintenance: overrides for known advisories and dev tool bumps. Please review any changes."
+          branch: "chore/security-audit-bumps"
+          commit-message: "chore: security audit: targeted bumps and lockfile fixes"
           labels: security, dependencies
