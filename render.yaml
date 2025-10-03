@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: horror-stories-backend
+    name: bubbles-cafe-backend
     env: node
     plan: starter
     buildCommand: npm ci && npm run build
@@ -11,7 +11,7 @@ services:
         value: production
       - key: DATABASE_URL
         fromDatabase:
-          name: horror-stories-db
+          name: bubbles-cafe-db
           property: connectionString
       - key: SESSION_SECRET
         generateValue: true
@@ -26,7 +26,7 @@ services:
     autoDeploy: true
 
 databases:
-  - name: horror-stories-db
-    databaseName: horror_stories
+  - name: bubbles-cafe-db
+    databaseName: bubbles_cafe
     plan: starter
     postgresMajorVersion: 14
