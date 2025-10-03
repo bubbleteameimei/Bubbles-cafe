@@ -5,7 +5,6 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import { type Server } from "http";
-import viteConfig from "../vite.config";
 // Use a lightweight cache-busting token without external deps
 const cacheBust = () => Math.random().toString(36).slice(2);
 
@@ -35,6 +34,9 @@ export async function setupVite(app: Express, server: Server) {
   const { createServer: createViteServer, createLogger } = await import("vite");
   const viteLogger = createLogger();
 
+  // Dynamically import the Vite config only in development
+  const rawViteConfig = (await import("../vite.config")).default;
+
   const serverOptions = {
     middlewareMode: true as const,
     hmr: { server },
@@ -42,9 +44,9 @@ export async function setupVite(app: Express, server: Server) {
   } as const;
 
   // Resolve vite config if it's a function (defineConfig callback)
-  const resolvedConfig = typeof (viteConfig as any) === 'function'
-    ? (viteConfig as any)({ mode: process.env.NODE_ENV || 'development', command: 'serve' })
-    : viteConfig;
+  const resolvedConfig = typeof (rawViteConfig as any) === 'function'
+    ? (rawViteConfig as any)({ mode: process.env.NODE_ENV || 'development', command: 'serve' })
+    : rawViteConfig;
 
   const vite = await createViteServer({
     ...resolvedConfig,
