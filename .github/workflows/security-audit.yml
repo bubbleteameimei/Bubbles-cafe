@@ -25,11 +25,10 @@ jobs:
         run: |
           # Remove deprecated/unnecessary direct deps (based on repo usage checks)
           npm uninstall react-beautiful-dnd fluent-ffmpeg || true
-          # Pin secure versions via overrides for transitive advisories
-          npm pkg set "overrides.esbuild=^0.25.10"
-          npm pkg set "overrides.@babel/helpers=^7.26.10"
-          npm pkg set "overrides.@babel/runtime=^7.26.10"
-          npm pkg set.5
+          # Mutate package.json overrides using Node to avoid npm pkg path quoting issues
+          node -e "const fs=require('fs');const pkg=require('./package.json');pkg.overrides=Object.assign({},pkg.overrides,{esbuild:'^0.25.10','@babel/helpers':'^7.26.10','@babel/runtime':'^7.26.10',axios:'^1.8.2'});fs.writeFileSync('package.json',JSON.stringify(pkg,null,2));"
+          # Update direct dev tools to latest non-breaking versions
+          npm install -D esbuild@^0.25.10 vite@^6.2.5
 
       - name: Install after bumps
         run: npm install
