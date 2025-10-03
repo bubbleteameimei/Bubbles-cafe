@@ -214,9 +214,4 @@
     "@babel/helpers": "^7.26.10",
     "@babel/runtime": "^7.26.10"
   }
-},
-  "optionalDependencies": {
-    "bufferutil": "^4.0.8"
-  },
-  "overrides": {}
-}
+
