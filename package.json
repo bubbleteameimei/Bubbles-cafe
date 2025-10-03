@@ -215,3 +215,7 @@
   "overrides": {
     "axios": "^1.8.2",
     "@babel/helpers": "^7.26.10",
+    "@babel/runtime": "^7.26.10",
+    "esbuild": "^0.25.2"
+  }
+}
