@@ -29,9 +29,9 @@ interface SEOProps {
 }
 
 const DEFAULT_SITE_CONFIG = {
-  siteName: 'Bubble\'s Cafe',
-  defaultTitle: 'Bubble\'s Cafe',
-  defaultDescription: 'Bubble\'s Cafe',
+  siteName: 'Bubble’s Cafe',
+  defaultTitle: 'Bubble’s Cafe - Dark, Psychological and Gothic Fiction',
+  defaultDescription: 'Dark, psychological and gothic fiction — short stories and unsettling tales from Bubble’s Cafe.',
   // Prefer PNG for social previews; fall back to existing SVG if PNG missing
   defaultImage: '/images/IMG_5266.png',
   siteUrl: typeof window !== 'undefined' ? window.location.origin : '',
