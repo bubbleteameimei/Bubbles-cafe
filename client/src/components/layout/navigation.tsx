@@ -79,9 +79,6 @@ export default function Navigation() {
         case '/contact':
           void import('../../pages/contact');
           break;
-        case '/contact':
-          void import('../../pages/contact');
-          break;
         case '/search':
           void import('../../pages/search-results');
           break;
