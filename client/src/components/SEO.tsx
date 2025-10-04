@@ -29,9 +29,9 @@ interface SEOProps {
 }
 
 const DEFAULT_SITE_CONFIG = {
-  siteName: 'Bubbles Cafe',
-  defaultTitle: 'Bubbles Cafe - Immersive Horror Storytelling Platform',
-  defaultDescription: 'Discover spine-chilling horror stories, immersive fiction, and creative writing. Join our community of storytellers and readers.',
+  siteName: 'Bubble\'s Cafe',
+  defaultTitle: 'Bubble\'s Cafe',
+  defaultDescription: 'Bubble\'s Cafe',
   // Prefer PNG for social previews; fall back to existing SVG if PNG missing
   defaultImage: '/images/IMG_5266.png',
   siteUrl: typeof window !== 'undefined' ? window.location.origin : '',

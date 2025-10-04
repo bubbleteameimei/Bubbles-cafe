@@ -1,8 +1,8 @@
 
 {
-  "name": "Horror Stories",
-  "short_name": "Horror",
-  "description": "Explore original horror stories and dark fiction.",
+  "name": "Bubble's Cafe",
+  "short_name": "Bubble's Cafe",
+  "description": "Bubble's Cafe",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#121212",
