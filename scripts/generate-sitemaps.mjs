@@ -1,5 +1,5 @@
 // scripts/generate-sitemaps.mjs
-// Generate sitemap.xml (index), pages-sitemap.xml, and stories-sitemap.xml into dist/public
+// Generate sitemap.xml (index), pages-sitemap.xml, stories-sitemap.xml, and robots.txt into dist/public
 
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -152,11 +152,22 @@ async function generateSitemapIndex() {
   console.log('[sitemaps] wrote sitemap.xml (index)');
 }
 
+async function generateRobots() {
+  const content = `User-agent: *
+Allow: /
+
+Sitemap: ${SITE_URL}/sitemap.xml
+`;
+  await fs.writeFile(path.join(distPublicDir, 'robots.txt'), content, 'utf8');
+  console.log('[sitemaps] wrote robots.txt');
+}
+
 async function main() {
   await ensureDir(distPublicDir);
   await generatePagesSitemap();
   await generateStoriesSitemap();
   await generateSitemapIndex();
+  await generateRobots();
 }
 
 main().catch((err) => {
