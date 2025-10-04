@@ -8,7 +8,7 @@ export function ssrStreamHandler(req: Request, res: Response) {
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Transfer-Encoding', 'chunked');
-  res.write(`<!doctype html><html><head><meta charset="utf-8"/><title>Bubble's Cafe</title></head><body>`);
+  res.write(`<!doctype html><html><head><meta charset="utf-8"/><title>Bubble’s Cafe - Dark, Psychological and Gothic Fiction</title></head><body>`);
   res.write(`<div id="root">`);
   // Skeleton shell
   res.write(`<div style="padding:16px;font-family:system-ui">Loading…</div>`);

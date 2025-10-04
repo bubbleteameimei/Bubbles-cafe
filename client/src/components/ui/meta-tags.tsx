@@ -10,8 +10,8 @@ interface MetaTagsProps {
 }
 
 export function MetaTags({ post, title, description, image, url }: MetaTagsProps) {
-  const pageTitle = post?.title || title || "Stories";
-  const pageDescription = post?.excerpt || description || "Experience immersive stories that will keep you engaged.";
+  const pageTitle = post?.title || title || "Bubble’s Cafe - Dark, Psychological and Gothic Fiction";
+  const pageDescription = post?.excerpt || description || "Dark, psychological, and gothic fiction — short stories and unsettling tales from Bubble’s Cafe.";
   const pageImage = image || "/og-image.svg";
   const pageUrl = url || window.location.href;
 

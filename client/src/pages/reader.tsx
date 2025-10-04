@@ -6,7 +6,7 @@ import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
 import ReaderTooltip from "@/components/reader/ReaderTooltip";
 import TableOfContents from "@/components/reader/TableOfContents";
 import SwipeNavigation from "@/components/reader/SwipeNavigation";
-import "@/styles/reader-fixes.css"; // Import custom reader fixes
+import "@/styles/reader-fixes.css";
 import { 
   Share2, Minus, Plus, Shuffle, ChevronLeft, ChevronRight,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
@@ -18,8 +18,7 @@ import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { useFontSize } from "@/hooks/use-font-size";
 import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
-import { detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
-// Import social icons directly since lazy loading was causing issues
+import { detectThemes, THEME_CATEGORIES, getExcerpt } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
 import { useTheme } from "@/components/theme-provider";
@@ -27,9 +26,9 @@ import { useAuth } from "@/hooks/use-auth";
 import ApiLoader from "@/components/api-loader";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import { useToast } from "@/hooks/use-toast";
-// Import our reader-specific gentle scroll memory hook
 import useReaderGentleScroll from "@/hooks/useReaderGentleScroll";
 import { SupportWritingCard } from "@/components/SupportWritingCard";
+import SEO from "@/components/SEO";
 
 import {
   Dialog,
@@ -42,23 +41,15 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 
-// Import comment section directly for now to avoid lazy loading issues
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
-// Import the WordPress API functions with error handling
-
-// Native HTML sanitization function (avoiding DOMPurify dependency conflicts)
+// Native HTML sanitization function
 const sanitizeHtmlContent = (html: string): string => {
   try {
-    // Create a temporary div to parse HTML safely
     const temp = document.createElement('div');
     temp.innerHTML = html;
-    
-    // Remove script tags and other dangerous elements
     const dangerousElements = temp.querySelectorAll('script, object, embed, iframe, form, input, button');
     dangerousElements.forEach(element => element.remove());
-    
-    // Remove dangerous attributes from all elements
     const allElements = temp.querySelectorAll('*');
     allElements.forEach(element => {
       const dangerousAttrs = [
@@ -72,8 +63,6 @@ const sanitizeHtmlContent = (html: string): string => {
           element.removeAttribute(attr);
         }
       });
-      
-      // Also check href and src attributes for dangerous protocols
       const href = element.getAttribute('href');
       const src = element.getAttribute('src');
       if (href && (href.startsWith('javascript:') || href.startsWith('vbscript:'))) {
@@ -83,11 +72,10 @@ const sanitizeHtmlContent = (html: string): string => {
         element.removeAttribute('src');
       }
     });
-    
     return temp.innerHTML;
   } catch (error) {
     console.error('[Reader] Error sanitizing HTML:', error);
-    return html; // Return original if sanitization fails
+    return html;
   }
 };
 
@@ -618,7 +606,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Get current post
   const currentPost = posts[validCurrentIndex];
-  
+
+  // SEO values for this story
+  const stripHtml = (s: string) => s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '';
+  const titleText = stripHtml(currentPost.title?.rendered || currentPost.title || 'Story');
+  const rawContent = currentPost.content?.rendered || currentPost.content || '';
+  const descriptionText = getExcerpt(rawContent, 160);
+  const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
+  const published = currentPost.date || new Date().toISOString();
+  const plainText = stripHtml(rawContent);
+  const wordCount = plainText ? plainText.split(/\s+/).filter(Boolean).length : 0;
+  const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
+  const keywords = detectThemes(rawContent);
+
   // Story theme icon override (check metadata for themeIcon)
   const postThemeIcon = (currentPost?.metadata as any)?.themeIcon;
 
@@ -728,11 +728,25 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   return (
     <div className="relative min-h-screen bg-background reader-page overflow-visible pt-16 sm:pt-16 md:pt-18 lg:pt-20 pb-8 flex flex-col"
-      /* Added enhanced background-related styling directly here */
       data-reader-page="true" 
       data-distraction-free={isUIHidden ? "true" : "false"}>
       
-      {/* Reader page has no background image, just clean default background */}
+      <SEO 
+        title={titleText}
+        description={descriptionText}
+        canonical={canonicalPath}
+        type="article"
+        published={published}
+        modified={published}
+        keywords={keywords}
+        readingTime={readingMinutes}
+        wordCount={wordCount}
+        breadcrumbs={[
+          { name: 'Home', url: '/' },
+          { name: 'Reader', url: '/reader' },
+          { name: titleText, url: canonicalPath }
+        ]}
+      />
       
       {/* Reading Progress Bar - Always visible at the very top */}
       <div 

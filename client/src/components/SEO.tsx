@@ -29,12 +29,12 @@ interface SEOProps {
 }
 
 const DEFAULT_SITE_CONFIG = {
-  siteName: 'Bubbles Cafe',
-  defaultTitle: 'Bubbles Cafe - Immersive Horror Storytelling Platform',
-  defaultDescription: 'Discover spine-chilling horror stories, immersive fiction, and creative writing. Join our community of storytellers and readers.',
+  siteName: 'Bubble’s Cafe',
+  defaultTitle: 'Bubble’s Cafe - Dark, Psychological and Gothic Fiction',
+  defaultDescription: 'Dark, psychological, and gothic fiction — short stories and unsettling tales from Bubble’s Cafe.',
   // Prefer PNG for social previews; fall back to existing SVG if PNG missing
   defaultImage: '/images/IMG_5266.png',
-  siteUrl: typeof window !== 'undefined' ? window.location.origin : '',
+  siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://bubblescafe.space',
   locale: 'en_US',
   twitterSite: '@bubblescafe',
   twitterCreator: '@bubblescafe'
@@ -176,17 +176,18 @@ export default function SEO({
     
     // Generate and set JSON-LD structured data
     const generateStructuredData = () => {
-      const baseSchema = {
+      const websiteSchema = {
         '@context': 'https://schema.org',
-        '@type': type === 'article' ? 'Article' : 'WebSite',
-        name: title || DEFAULT_SITE_CONFIG.defaultTitle,
-        headline: title,
-        description: description,
-        url: pageUrl,
-        image: {
-          '@type': 'ImageObject',
-          url: imageUrl,
-          alt: `${title || DEFAULT_SITE_CONFIG.defaultTitle} - Preview Image`
+        '@type': 'WebSite',
+        name: siteName,
+        alternateName: 'Bubble\'s Cafe',
+        description: description || DEFAULT_SITE_CONFIG.defaultDescription,
+        url: siteUrl || pageUrl,
+        inLanguage: locale,
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: `${siteUrl || pageUrl}/search?q={search_term_string}`,
+          'query-input': 'required name=search_term_string'
         },
         publisher: {
           '@type': 'Organization',
@@ -200,12 +201,65 @@ export default function SEO({
         }
       };
 
-      if (type === 'article' && author) {
-        Object.assign(baseSchema, {
-          author: {
-            '@type': 'Person',
-            name: author
+      const organizationSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: siteName,
+        url: siteUrl,
+        logo: {
+          '@type': 'ImageObject',
+          url: `${siteUrl}/og-image.svg`,
+          alt: `${siteName} Logo`
+        }
+      };
+
+      const navigationSchemas = [
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'Stories',
+          url: `${siteUrl}/stories`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'About',
+          url: `${siteUrl}/about`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'Contact',
+          url: `${siteUrl}/contact`
+        }
+      ];
+
+      const schemas: any[] = [websiteSchema, organizationSchema, ...navigationSchemas];
+
+      if (type === 'article') {
+        const articleSchema = {
+          '@context': 'https://schema.org',
+          '@type': 'Article',
+          name: title || DEFAULT_SITE_CONFIG.defaultTitle,
+          headline: title,
+          description: description || DEFAULT_SITE_CONFIG.defaultDescription,
+          url: pageUrl,
+          image: {
+            '@type': 'ImageObject',
+            url: imageUrl,
+            alt: `${title || DEFAULT_SITE_CONFIG.defaultTitle} - Preview Image`
           },
+          publisher: {
+            '@type': 'Organization',
+            name: siteName,
+            url: siteUrl,
+            logo: {
+              '@type': 'ImageObject',
+              url: `${siteUrl}/og-image.svg`,
+              alt: `${siteName} Logo`
+            }
+          },
+          author: author ? { '@type': 'Person', name: author } : undefined,
           datePublished: published,
           dateModified: modified || published,
           wordCount: wordCount,
@@ -213,7 +267,8 @@ export default function SEO({
           articleSection: category,
           keywords: keywords.concat(tags),
           inLanguage: locale.split('_')[0]
-        });
+        };
+        schemas.push(articleSchema);
       }
 
       if (breadcrumbs.length > 0) {
@@ -227,11 +282,10 @@ export default function SEO({
             item: `${siteUrl}${crumb.url}`
           }))
         };
-
-        return [baseSchema, breadcrumbSchema];
+        schemas.push(breadcrumbSchema);
       }
 
-      return baseSchema;
+      return schemas;
     };
 
     let jsonLdScript = document.querySelector('script[type="application/ld+json"]');
