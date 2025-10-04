@@ -55,9 +55,9 @@ export default function Navigation() {
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/stories', label: 'Stories' },
-    { href: '/reader', label: 'Reader' },
-    { href: '/community', label: 'Community' },
-    { href: '/about', label: 'About' }
+    { href: '/archive', label: 'Archive' },
+    { href: '/about', label: 'About' },
+    { href: '/contact', label: 'Contact' }
   ];
 
   // Prefetch route chunks on hover/focus for faster navigations
@@ -75,6 +75,9 @@ export default function Navigation() {
           break;
         case '/about':
           void import('../../pages/about');
+          break;
+        case '/archive':
+          void import('../../pages/archive');
           break;
         case '/contact':
           void import('../../pages/contact');
