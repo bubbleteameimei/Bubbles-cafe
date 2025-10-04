@@ -59,11 +59,10 @@ router.post('/user/:id/update-metadata', async (req, res) => {
     }
 
     // Update user metadata directly through database query
-    const updatedUser = await db.update(users)
+    const [updatedUser] = await db.update(users)
       .set({ metadata })
       .where(eq(users.id, userId))
-      .returning()
-      .then(rows => rows[0]);
+      .returning();
 
     return res.json({
       success: true,

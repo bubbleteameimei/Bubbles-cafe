@@ -835,7 +835,7 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(postsTable.createdAt))
         .limit(limit);
 
-        return recentPosts.map(post => ({
+        return recentPosts.map((post: any) => ({
           id: post.id,
           title: post.title,
           slug: post.slug,
@@ -1367,7 +1367,7 @@ export class DatabaseStorage implements IStorage {
 
           // Further filter the posts to those matching the admin post filter
           if (adminPostIds.length > 0) {
-            filteredPosts = filteredPosts.filter(post => adminPostIds.includes(post.id));
+            filteredPosts = filteredPosts.filter((post: any) => adminPostIds.includes(post.id));
           } else {
             // If no admin posts found, and we're looking for admin posts, return empty
             if (filters.isAdminPost === true) {
@@ -1401,7 +1401,7 @@ export class DatabaseStorage implements IStorage {
       // Apply text search filter if specified
       if (filters.search) {
         const searchTerm = filters.search.toLowerCase();
-        filteredPosts = filteredPosts.filter(post =>
+        filteredPosts = filteredPosts.filter((post: any) =>
           post.title.toLowerCase().includes(searchTerm) ||
           post.content.toLowerCase().includes(searchTerm) ||
           (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm))
@@ -1735,7 +1735,7 @@ export class DatabaseStorage implements IStorage {
       return {
         ...post,
         createdAt: safeCreateDate(post.createdAt),
-        comments: postComments.map(comment => ({
+        comments: postComments.map((comment: any) => ({
           ...comment,
           createdAt: safeCreateDate(comment.createdAt)
         }))
@@ -2042,7 +2042,7 @@ export class DatabaseStorage implements IStorage {
       .from(contactMessages)
       .orderBy(desc(contactMessages.createdAt));
 
-    return messages.map(message => ({
+    return messages.map((message: any) => ({
       ...message,
       createdAt: safeCreateDate(message.createdAt)
     }));
@@ -2779,7 +2779,7 @@ export class DatabaseStorage implements IStorage {
       .where(sql`(metadata->>'status')::text = 'pending'`)
       .orderBy(desc(postsTable.createdAt));
 
-    return posts.map(post => ({
+    return posts.map((post: any) => ({
       ...post,
       createdAt: safeCreateDate(post.createdAt)
     }));
@@ -2947,7 +2947,7 @@ export class DatabaseStorage implements IStorage {
       };
 
       // Aggregate device counts from all analytics records
-      analyticsData.forEach(record => {
+      analyticsData.forEach((record: any) => {
         const stats = record.deviceStats as any;
         if (stats && typeof stats === 'object') {
           if (stats.desktop) deviceCounts.desktop += Number(stats.desktop) || 0;
@@ -3301,7 +3301,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Get all post IDs from the bookmarks
-      const postIds = userBookmarks.map(bookmark => bookmark.postId);
+      const postIds = userBookmarks.map((bookmark: any) => bookmark.postId);
 
       // Fetch all posts in a single query
       const bookmarkedPosts = await db.select()
@@ -3310,7 +3310,7 @@ export class DatabaseStorage implements IStorage {
 
       // Create a map of post IDs to posts for quick lookups
       const postsMap = new Map<number, Post>();
-      bookmarkedPosts.forEach(post => {
+      bookmarkedPosts.forEach((post: any) => {
         postsMap.set(post.id, {
           ...post,
           createdAt: safeCreateDate(post.createdAt)
@@ -3318,7 +3318,7 @@ export class DatabaseStorage implements IStorage {
       });
 
       // Combine bookmarks with their corresponding posts
-      return userBookmarks.map(bookmark => ({
+      return userBookmarks.map((bookmark: any) => ({
         ...bookmark,
         post: postsMap.get(bookmark.postId)!,
         createdAt: safeCreateDate(bookmark.createdAt)
@@ -3394,7 +3394,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Get all post IDs from the bookmarks
-      const postIds = userBookmarks.map(bookmark => bookmark.postId);
+      const postIds = userBookmarks.map((bookmark: any) => bookmark.postId);
 
       // Fetch all posts in a single query
       const bookmarkedPosts = await db.select()
@@ -3403,7 +3403,7 @@ export class DatabaseStorage implements IStorage {
 
       // Create a map of post IDs to posts for quick lookups
       const postsMap = new Map<number, Post>();
-      bookmarkedPosts.forEach(post => {
+      bookmarkedPosts.forEach((post: any) => {
         postsMap.set(post.id, {
           ...post,
           createdAt: safeCreateDate(post.createdAt)
@@ -3411,7 +3411,7 @@ export class DatabaseStorage implements IStorage {
       });
 
       // Combine bookmarks with their corresponding posts
-      return userBookmarks.map(bookmark => ({
+      return userBookmarks.map((bookmark: any) => ({
         ...bookmark,
         post: postsMap.get(bookmark.postId)!,
         createdAt: safeCreateDate(bookmark.createdAt)
@@ -3843,7 +3843,7 @@ export class DatabaseStorage implements IStorage {
       });
 
       scored.sort((a, b) => b.score - a.score);
-      let recommendations = scored.slice(0, limit).map(s => s.post);
+      let recommendations = scored.slice(0, limit).map((s: any) => s.post);
 
       // Step 6: Supplement if needed
       if (recommendations.length < limit) {
@@ -4120,9 +4120,9 @@ class MemStorage {
 
       // Collect post IDs from user history
       const historyPostIds = new Set([
-        ...readingHistory.map(item => item.postId),
-        ...likedPosts.map(item => item.postId),
-        ...userBookmarks.map(item => item.postId)
+        ...readingHistory.map((item: any) => item.postId),
+        ...likedPosts.map((item: any) => item.postId),
+        ...userBookmarks.map((item: any) => item.postId)
       ]);
 
       // If user has no history, fall back to trending posts with theme preferences
@@ -4186,23 +4186,23 @@ class MemStorage {
 
       // Extract themes from historical posts with weights
       const userThemes = new Map<string, number>();
-      historicalPosts.forEach(post => {
+      historicalPosts.forEach((post: any) => {
         // Basic weight
         let weight = 1;
 
         // Give more weight to posts that were recently read
-        const isRecentlyRead = readingHistory.some(item =>
+        const isRecentlyRead = readingHistory.some((item: any) =>
           item.postId === post.id &&
           new Date(item.lastReadAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000 // 7 days
         );
         if (isRecentlyRead) weight += 1;
 
         // Give more weight to posts that were liked
-        const isLiked = likedPosts.some(item => item.postId === post.id);
+        const isLiked = likedPosts.some((item: any) => item.postId === post.id);
         if (isLiked) weight += 2;
 
         // Give more weight to bookmarked posts
-        const isBookmarked = userBookmarks.some(item => item.postId === post.id);
+        const isBookmarked = userBookmarks.some((item: any) => item.postId === post.id);
         if (isBookmarked) weight += 1.5;
 
         // Add theme with weight
@@ -4365,7 +4365,7 @@ class MemStorage {
         console.log(`[Storage] Not enough recommendations (${contentBasedRecommendations.length}), supplementing with additional posts`);
         const remainingCount = limit - contentBasedRecommendations.length;
         const existingIds = new Set<number>([
-          ...contentBasedRecommendations.map(post => post.id),
+          ...contentBasedRecommendations.map((post: any) => post.id),
           ...Array.from(historyPostIds)
         ]);
 

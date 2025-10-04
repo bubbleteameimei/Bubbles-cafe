@@ -139,7 +139,7 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
       
       // Extract themes from historical posts
       const userThemes = new Set<string>();
-      historicalPosts.forEach((post) => {
+      historicalPosts.forEach((post: any) => {
         if (post.themeCategory) {
           userThemes.add(post.themeCategory);
         }
