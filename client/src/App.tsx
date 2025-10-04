@@ -267,10 +267,9 @@ const AppContent = () => {
             <Route path="/stories" component={StoriesPage} />
             <Route path="/reader" component={ReaderPage} />
             <Route path="/about" component={AboutPage} />
-           <<Route path="/contact" component={ContactPage} />
-           <<Route path="/privacy" component={PrivacyPage} />
-           <<Route path="/privacy" component={PrivacyPage} />
-           < Route path="/} />
+            <Route path="/contact" component={ContactPage} />
+            <Route path="/privacy" component={PrivacyPage} />
+            <Route path="/report-bug" component={ReportBugPage} />
 
             {/* Authentication */}
             <Route path="/auth" component={AuthPage} />
