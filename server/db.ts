@@ -52,57 +52,71 @@ function sanitizeDatabaseUrl(url?: string): string | undefined {
 // Resolve database URL from environment with sanitization
 const DATABASE_URL = sanitizeDatabaseUrl(process.env.DATABASE_URL);
 
-if (!DATABASE_URL) {
-  const msg = 'DATABASE_URL is not set. Please configure your environment.';
-  try {
-    process.stderr.write(msg + '\n');
-  } catch {}
-  throw new Error(msg);
-}
-
 // Create pool with connection retry logic using node-postgres
-let pool: pkg.Pool;
-let db: ReturnType<typeof drizzle>;
+let pool: pkg.Pool | undefined;
+let db: any;
 
-try {
-  const useSSL = DATABASE_URL.includes('sslmode=require');
-  pool = new Pool({
-    connectionString: DATABASE_URL,
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
-    ssl: useSSL ? { rejectUnauthorized: false } : undefined
-  });
-
-  // Hook pool events
-  pool.on('error', (err: Error) => {
-    try {
-      process.stderr.write(`Unexpected error on idle client: ${err.message}\n`);
-    } catch {}
-  });
-
-  db = drizzle(pool, { schema });
-
-  // Test the connection
-  (async () => {
-    let client: pkg.PoolClient | undefined;
-    try {
-      client = await pool.connect();
-      await client.query('SELECT 1');
-    } catch (error) {
-      try {
-        process.stderr.write(`Failed to test database connection: ${error instanceof Error ? error.message : String(error)}\n`);
-      } catch {}
-      throw error;
-    } finally {
-      client?.release();
-    }
-  })();
-} catch (error) {
+if (!DATABASE_URL) {
+  // Do NOT throw at import time — let the app start and serve non-DB routes.
   try {
-    process.stderr.write(`Failed to initialize database: ${error instanceof Error ? error.message : String(error)}\n`);
+    process.stderr.write('DATABASE_URL is not set. Starting without database; DB-dependent routes will be unavailable.\n');
   } catch {}
-  throw error;
+  // Provide a safe stub that throws only when used
+  db = new Proxy({}, {
+    get(_target, _prop) {
+      return (..._args: unknown[]) => {
+        throw new Error('Database not configured. Set DATABASE_URL in the environment.');
+      };
+    }
+  });
+} else {
+  try {
+    const useSSL = DATABASE_URL.includes('sslmode=require');
+    pool = new Pool({
+      connectionString: DATABASE_URL,
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+      ssl: useSSL ? { rejectUnauthorized: false } : undefined
+    });
+
+    // Hook pool events
+    pool.on('error', (err: Error) => {
+      try {
+        process.stderr.write(`Unexpected error on idle client: ${err.message}\n`);
+      } catch {}
+    });
+
+    db = drizzle(pool, { schema });
+
+    // Test the connection asynchronously without throwing at module import time
+    (async () => {
+      let client: pkg.PoolClient | undefined;
+      try {
+        client = await pool!.connect();
+        await client.query('SELECT 1');
+      } catch (error) {
+        try {
+          process.stderr.write(`Failed to test database connection: ${error instanceof Error ? error.message : String(error)}\n`);
+        } catch {}
+        // Do not rethrow — allow app to keep running
+      } finally {
+        client?.release();
+      }
+    })();
+  } catch (error) {
+    try {
+      process.stderr.write(`Failed to initialize database: ${error instanceof Error ? error.message : String(error)}\n`);
+    } catch {}
+    // Provide a stub to avoid hard crash
+    db = new Proxy({}, {
+      get(_target, _prop) {
+        return (..._args: unknown[]) => {
+          throw new Error('Database initialization failed.');
+        };
+      }
+    });
+  }
 }
 
 export { pool, db };
