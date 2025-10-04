@@ -1367,7 +1367,7 @@ export class DatabaseStorage implements IStorage {
 
           // Further filter the posts to those matching the admin post filter
           if (adminPostIds.length > 0) {
-            filteredPosts = filteredPosts.filter(post => adminPostIds.includes(post.id));
+            filteredPosts = filteredPosts.filter((post: any) => adminPostIds.includes(post.id));
           } else {
             // If no admin posts found, and we're looking for admin posts, return empty
             if (filters.isAdminPost === true) {
