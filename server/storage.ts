@@ -3328,7 +3328,6 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Failed to fetch user bookmarks");
     }
   }
-  }
 
   async updateBookmark(userId: number, postId: number, data: Partial<InsertBookmark>): Promise<Bookmark> {
     try {
