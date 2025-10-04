@@ -1,0 +1,46 @@
+name: Validate Sitemaps
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (generates sitemaps)
+        env:
+          SITE_URL: https://bubblescafe.space
+          BACKEND_BASE_URL: https://bubbles-cafe.onrender.com
+        run: npm run build
+
+      - name: Validate sitemaps and robots
+        run: node scripts/validate-sitemaps.mjs
+
+      - name: Remote headers check (non-blocking)
+        run: |
+          echo "Checking remote sitemap headers..."
+          set -o pipefail
+          curl -sSI https://bubblescafe.space/sitemap.xml | tee /dev/stderr | grep -i 'content-type' || true
+          curl -sSI https://bubblescafe.space/pages-sitemap.xml | tee /dev/stderr | grep -i 'content-type' || true
+          curl -sSI https://bubblescafe.space/stories-sitemap.xml | tee /dev/stderr | grep -i 'content-type' || true
+          curl -sSI https://bubblescafe.space/robots.txt | tee /dev/stderr | grep -i 'content-type' || true
+        continue-on-error: true
