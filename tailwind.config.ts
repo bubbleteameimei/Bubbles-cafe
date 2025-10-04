@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import { createRequire } from "module";
 
 export default {
   darkMode: ["class"],
@@ -120,5 +121,21 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
+  plugins: (() => {
+    const req = createRequire(import.meta.url);
+    const plugins: any[] = [];
+    try {
+      const mod = req("tailwindcss-animate");
+      plugins.push((mod as any)?.default ?? mod);
+    } catch {
+      // optional
+    }
+    try {
+      const mod = req("@tailwindcss/typography");
+      plugins.push((mod as any)?.default ?? mod);
+    } catch {
+      // optional: if not installed (e.g. CI skipping dev deps), skip to avoid build failure
+    }
+    return plugins;
+  })(),
 } satisfies Config;
