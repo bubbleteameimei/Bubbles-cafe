@@ -63,7 +63,6 @@ const AboutPage = React.lazy(() => import('./pages/about'));
 const ContactPage = React.lazy(() => import('./pages/contact'));
 const PrivacyPage = React.lazy(() => import('./pages/privacy'));
 const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
-const ArchivePage = React.lazy(() => import('./pages/archive'));
 
 const AuthPage = React.lazy(() => import('./pages/auth'));
 const AuthSuccessPage = React.lazy(() => import('./pages/auth-success'));
@@ -268,8 +267,8 @@ const AppContent = () => {
             <Route path="/stories" component={StoriesPage} />
             <Route path="/reader" component={ReaderPage} />
             <Route path="/about" component={AboutPage} />
-            <Route path="/contact" component={ContactPage} />
-           <<Route path="/archive" component={ArchivePage} />
+           <<Route path="/contact" component={ContactPage} />
+           <<Route path="/privacy" component={PrivacyPage} />
            <<Route path="/privacy" component={PrivacyPage} />
            < Route path="/} />
 

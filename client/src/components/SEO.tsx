@@ -229,12 +229,6 @@ export default function SEO({
         {
           '@context': 'https://schema.org',
           '@type': 'SiteNavigationElement',
-          name: 'Archive',
-          url: `${siteUrl}/archive`
-        },
-        {
-          '@context': 'https://schema.org',
-          '@type': 'SiteNavigationElement',
           name: 'Contact',
           url: `${siteUrl}/contact`
         }
