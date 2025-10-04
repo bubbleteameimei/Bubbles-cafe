@@ -34,27 +34,6 @@ export default function Footer() {
         {/* Navigation links - centered */}
         <nav className="flex items-center justify-center" aria-label="Footer navigation">
           <Link 
-            href="/stories" 
-            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 whitespace-nowrap underline decoration-gray-400 hover:decoration-primary underline-offset-2"
-          >
-            Read more stories
-          </Link>
-          <span className="text-primary/40 text-sm mx-1">•</span>
-          <Link 
-            href="/community" 
-            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 whitespace-nowrap underline decoration-gray-400 hover:decoration-primary underline-offset-2"
-          >
-            Join the community
-          </Link>
-          <span className="text-primary/40 text-sm mx-1">•</span>
-          <Link 
-            href="/about" 
-            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 whitespace-nowrap underline decoration-gray-400 hover:decoration-primary underline-offset-2"
-          >
-            About
-          </Link>
-          <span className="text-primary/40 text-sm mx-1">•</span>
-          <Link 
             href="/privacy" 
             className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 whitespace-nowrap underline decoration-gray-400 hover:decoration-primary underline-offset-2"
           >
@@ -65,7 +44,7 @@ export default function Footer() {
             href="/contact" 
             className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 whitespace-nowrap underline decoration-gray-400 hover:decoration-primary underline-offset-2"
           >
-            Contact
+            Contact Me
           </Link>
         </nav>
       </div>
