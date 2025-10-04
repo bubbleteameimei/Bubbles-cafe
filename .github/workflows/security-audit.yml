@@ -26,7 +26,8 @@ jobs:
           # Remove deprecated/unnecessary direct deps (based on repo usage checks)
           npm uninstall react-beautiful-dnd fluent-ffmpeg || true
           # Pin secure versions via overrides for transitive advisories
-          npm pkg set "overrides.esbuild=^0.25.10"
+          # For direct dependencies, bump them directly rather than using overrides
+          npm install -D esbuild@^0.25.10
           npm pkg set "overrides.@babel/helpers=^7.26.10"
           npm pkg set "overrides.@babel/runtime=^7.26.10"
 
