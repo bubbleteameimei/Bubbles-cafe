@@ -3,23 +3,30 @@ import react from "@vitejs/plugin-react-swc";
 import themePlugin from "@replit/vite-plugin-shadcn-theme-json";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
+import { createRequire } from "module";
 // PWA removed
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-export default defineConfig(async ({ mode }) => {
-	const devPlugins = [];
+
+export default defineConfig(({ mode }) => {
+	const plugins = [react(), themePlugin()];
+
 	if (mode === "development") {
-		const { default: runtimeErrorOverlay } = await import("@replit/vite-plugin-runtime-error-modal");
-		devPlugins.push(runtimeErrorOverlay());
+		const require = createRequire(import.meta.url);
+		try {
+			const mod = require("@replit/vite-plugin-runtime-error-modal");
+			const overlay = mod?.default ?? mod;
+			if (typeof overlay === "function") {
+				plugins.push(overlay());
+			}
+		} catch {
+			// Optional dev-only plugin not available; ignore on CI/Render.
+		}
 	}
 
 	return {
-		plugins: [
-			react(),
-			...devPlugins,
-			themePlugin(),
-		],
+		plugins,
 		resolve: {
 			alias: {
 				"@": path.resolve(__dirname, "client", "src"),
