@@ -408,6 +408,9 @@ router.post('/update-profile',
 
       // Return updated user (without password hash)
       const updated = await storage.getUser(userId);
+      if (!updated) {
+        throw createError.internal('Failed to load updated user');
+      }
       const { password_hash, ...safeUser } = updated;
 
       // Update session user for immediate reflection
