@@ -362,4 +362,68 @@ router.post('/change-password',
   })
 );
 
+/**
+ * Update profile information (username, fullName, bio, avatar)
+ * Does not change email or password. Use /change-password for password updates.
+ */
+const updateProfileSchema = z.object({
+  username: z.string().min(3).max(50).optional(),
+  fullName: z.string().max(100).optional(),
+  bio: z.string().max(250).optional(),
+  avatar: z.string().url().optional()
+});
+
+router.post('/update-profile',
+  sensitiveOperationsRateLimiter,
+  validateBody(updateProfileSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw createError.unauthorized('Authentication required');
+    }
+
+    const userId = req.user.id;
+    const { username, fullName, bio, avatar } = req.body as z.infer<typeof updateProfileSchema>;
+
+    try {
+      const existing = await storage.getUser(userId);
+      if (!existing) {
+        throw createError.notFound('User not found');
+      }
+
+      // Merge metadata fields safely
+      const currentMeta = (existing.metadata as any) || {};
+      const newMeta = {
+        ...currentMeta,
+        ...(fullName !== undefined ? { fullName } : {}),
+        ...(bio !== undefined ? { bio } : {}),
+        ...(avatar !== undefined ? { avatar } : {})
+      };
+
+      const updatePayload: any = { metadata: newMeta };
+      if (username && username.trim().length > 0) {
+        updatePayload.username = username.trim();
+      }
+
+      await storage.updateUser(userId, updatePayload);
+
+      // Return updated user (without password hash)
+      const updated = await storage.getUser(userId);
+      const { password_hash, ...safeUser } = updated;
+
+      // Update session user for immediate reflection
+      (req as any).user = safeUser;
+
+      return res.json({
+        success: true,
+        user: safeUser,
+        message: 'Profile updated successfully'
+      });
+    } catch (error) {
+      const anyError = error as any;
+      if (anyError?.statusCode) throw anyError;
+      throw createError.internal('Profile update failed');
+    }
+  })
+);
+
 export { router as authRouter };

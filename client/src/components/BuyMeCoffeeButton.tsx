@@ -274,14 +274,7 @@ export const BuyMeCoffeeButton = () => {
               transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 20 }}
             >
               <DialogDescription id="donation-description" className="text-center">
-                Your support means the world! Every coffee keeps my creativity brewing. 
-                <motion.span
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="inline-block ml-1"
-                >
-                  ✨
-                </motion.span>
+                Your support means the world! Every tip keeps my creativity brewing and helps me share more stories.✨
               </DialogDescription>
             </motion.div>
           </DialogHeader>

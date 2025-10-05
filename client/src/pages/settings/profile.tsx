@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { applyCSRFToken, fetchCsrfTokenIfNeeded } from "@/lib/csrf-token";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -80,7 +81,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 type VisibilityValues = z.infer<typeof visibilitySchema>;
 
 export default function ProfileSettingsPage() {
-  const { user } = useAuth();
+  const { user, checkAuth } = useAuth();
   const { toast: showToast } = useToast();
   const [activeTab, setActiveTab] = useState("personal");
   const [isDeactivating, setIsDeactivating] = useState(false);
@@ -160,21 +161,61 @@ export default function ProfileSettingsPage() {
 
   const onProfileSubmit = async (data: ProfileFormValues) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      // Prepare profile payload
+      const payload = {
+        username: data.username,
+        fullName: data.fullName,
+        bio: data.bio,
+        avatar: avatarPreview || undefined,
+      };
+
+      await fetchCsrfTokenIfNeeded();
+
+      // Update profile fields
+      const profileRes = await fetch('/api/auth/update-profile', applyCSRFToken({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      }));
+
+      if (!profileRes.ok) {
+        const errText = await profileRes.text();
+        throw new Error(errText || 'Profile update failed');
+      }
+
+      // If user provided a new password, change it using dedicated endpoint
+      const newPwd = data.newPassword?.trim();
+      const currentPwd = data.currentPassword?.trim();
+      if (newPwd && currentPwd) {
+        const pwdRes = await fetch('/api/auth/change-password', applyCSRFToken({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ currentPassword: currentPwd, newPassword: newPwd }),
+        }));
+        if (!pwdRes.ok) {
+          const errText = await pwdRes.text();
+          throw new Error(errText || 'Password change failed');
+        }
+      }
+
+      // Refresh auth state to reflect changes
+      try { await checkAuth(); } catch {}
+
       // Success notification
       toast.success("Profile updated successfully", {
-        description: "Your profile settings have been updated."
+        description: "Your profile settings have been updated.",
       });
-      
+
       // Clear password fields after successful update
       profileForm.setValue("currentPassword", "");
       profileForm.setValue("newPassword", "");
       profileForm.setValue("confirmPassword", "");
     } catch (error) {
+      const msg = error instanceof Error ? error.message : "Please try again.";
       toast.error("Failed to update profile", {
-        description: "Please try again."
+        description: msg,
       });
     }
   };

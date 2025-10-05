@@ -82,8 +82,13 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
       if (!postId || typeof postId !== 'number' || postId <= 0) {
         throw new Error('Invalid post ID');
       }
-      
-      return apiRequest(apiBasePath, {
+
+      // Use the correct endpoint for creation:
+      // - Authenticated users: /api/bookmarks/:postId
+      // - Anonymous reader:    /api/reader/bookmarks
+      const createEndpoint = user ? `${apiBasePath}/${postId}` : apiBasePath;
+
+      return apiRequest(createEndpoint, {
         method: 'POST',
         body: JSON.stringify({
           postId,
