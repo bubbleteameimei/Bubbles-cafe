@@ -6,6 +6,9 @@
 
 import { Application, NextFunction , Router , Request, Response } from 'express';
 import bookmarkRoutes from './bookmarks';
+import { db } from '../db';
+import { inArray } from 'drizzle-orm';
+import { posts as postsTable } from '../../shared/schema';
 
 // Create a router for anonymous bookmark routes
 const anonymousBookmarkRouter = Router();
@@ -53,7 +56,7 @@ anonymousBookmarkRouter.get('/:postId', async (req: Request, res: Response) => {
 });
 
 /**
- * Get all anonymous bookmarks
+ * Get all anonymous bookmarks (with post details)
  */
 anonymousBookmarkRouter.get('/', async (req: Request, res: Response) => {
   try {
@@ -65,7 +68,8 @@ anonymousBookmarkRouter.get('/', async (req: Request, res: Response) => {
     console.log('[Anonymous Bookmarks] Session bookmarks:', req.session.anonymousBookmarks);
     
     // If there are no bookmarks, return an empty array immediately
-    if (Object.keys(req.session.anonymousBookmarks).length === 0) {
+    const entries = Object.entries(req.session.anonymousBookmarks);
+    if (entries.length === 0) {
       res.json([]);
       return;
     }
@@ -73,32 +77,53 @@ anonymousBookmarkRouter.get('/', async (req: Request, res: Response) => {
     // Filter by tag if provided in query params
     const tagFilter = req.query.tag as string | undefined;
     
-    // For each bookmark in the session, create a bookmark object
-    const bookmarks = Object.entries(req.session.anonymousBookmarks).map(([postId, bookmark]) => {
-      // Skip if tag filter is provided and this bookmark doesn't have the tag
-      if (tagFilter && (!bookmark.tags || !bookmark.tags.includes(tagFilter))) {
-        return null;
-      }
-      
-      // Return a simplified bookmark object without the post data
-      // This makes the anonymous bookmarks API match the behavior of the authenticated bookmarks API
-      return {
-        id: 0, // Not needed for anonymous bookmarks
-        userId: 0, // Anonymous user
-        postId: parseInt(postId, 10),
-        notes: bookmark.notes,
-        tags: bookmark.tags,
-        lastPosition: bookmark.lastPosition || "0",
-        createdAt: bookmark.createdAt
-      };
-    }).filter(Boolean);
+    // Collect post IDs to fetch post details
+    const postIds = entries
+      .filter(([_, b]: any) => !tagFilter || (b.tags && b.tags.includes(tagFilter)))
+      .map(([postId]) => parseInt(postId, 10))
+      .filter((id) => !Number.isNaN(id));
+
+    // Fetch posts in a single query
+    const posts = postIds.length
+      ? await db.select().from(postsTable).where(inArray(postsTable.id, postIds))
+      : [];
+    const postMap = new Map<number, any>();
+    posts.forEach((p: any) => postMap.set(p.id, p));
+
+    // Map to enriched bookmark objects with post details
+    const enriched = entries
+      .map(([postId, bookmark]: any) => {
+        if (tagFilter && (!bookmark.tags || !bookmark.tags.includes(tagFilter))) {
+          return null;
+        }
+        const pid = parseInt(postId, 10);
+        const post = postMap.get(pid);
+        if (!post) return null;
+
+        return {
+          id: 0, // Anonymous entries don't have DB IDs
+          userId: 0,
+          postId: pid,
+          notes: bookmark.notes ?? null,
+          tags: bookmark.tags ?? null,
+          lastPosition: bookmark.lastPosition || "0",
+          createdAt: bookmark.createdAt,
+          post: {
+            id: post.id,
+            title: post.title,
+            slug: post.slug,
+            excerpt: post.excerpt,
+            createdAt: post.createdAt
+          }
+        };
+      })
+      .filter(Boolean)
+      // Sort by most recent first
+      .sort((a: any, b: any) => 
+        new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime()
+      );
     
-    // Sort by most recent first
-    bookmarks.sort((a, b) => 
-      new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime()
-    );
-    
-    res.json(bookmarks);
+    res.json(enriched);
     return;
   } catch (error) {
     console.error("Error fetching anonymous bookmarks:", error);

@@ -8,15 +8,16 @@ import { Router } from 'express';
 import logger from '../utils/logger';
 import { isAuthenticated } from '../middlewares/auth';
 import { db } from '../db';
-import { and, eq } from 'drizzle-orm';
-import { bookmarks } from '../../shared/schema';
+import { and, eq, inArray } from 'drizzle-orm';
+import { bookmarks, posts as postsTable } from '../../shared/schema';
+import { storage } from '../storage';
 
 const router = Router();
 
 /**
- * GET /api/reader/bookmarks
+ * GET /api/bookmarks
  * 
- * Get all bookmarks for the current user
+ * Get all bookmarks for the current authenticated user (with post details)
  */
 router.get('/', isAuthenticated, async (req, res) => {
   try {
@@ -30,15 +31,40 @@ router.get('/', isAuthenticated, async (req, res) => {
       return;
     }
 
+    // Prefer storage implementation which returns post details
+    try {
+      const result = await storage.getUserBookmarks(userId);
+      // Return plain array to match client expectations
+      res.json(result);
+      return;
+    } catch (e) {
+      // Fallback to manual join on failure
+      logger.warn('[Bookmarks] storage.getUserBookmarks failed, falling back to manual join', {
+        error: e instanceof Error ? e.message : String(e)
+      });
+    }
+
     const userBookmarks = await db
       .select()
       .from(bookmarks)
       .where(eq(bookmarks.userId, userId));
-    
-    res.json({
-      success: true,
-      bookmarks: userBookmarks
-    });
+
+    const postIds = userBookmarks.map((b: any) => b.postId);
+    const posts = postIds.length
+      ? await db.select().from(postsTable).where(inArray(postsTable.id, postIds))
+      : [];
+
+    const postsMap = new Map<number, any>();
+    posts.forEach((p: any) => postsMap.set(p.id, p));
+
+    const enriched = userBookmarks
+      .map((b: any) => ({
+        ...b,
+        post: postsMap.get(b.postId)
+      }))
+      .filter((b: any) => !!b.post);
+
+    res.json(enriched);
     return;
   } catch (error: any) {
     logger.error('[Bookmarks] Error fetching user bookmarks', {
