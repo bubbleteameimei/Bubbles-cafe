@@ -64,6 +64,7 @@ export default function SearchResultsPage() {
       qs.set('page', String(pageNum));
       if (from !== 'all') qs.set('from', from);
       if (category !== 'all') qs.set('category', category);
+      if (tags.length > 0) qs.set('tags', tags.join(','));
       const { results, meta } = await apiJson<any>('GET', `/api/search?${qs.toString()}`);
       const mapped: SearchResult[] = (results || []).map((r: any) => ({
         id: r.id,
@@ -233,12 +234,41 @@ export default function SearchResultsPage() {
             )}
           </div>
           {/* Tags filter */}
-         <tdiv className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {tags.map((t) => (
-             < Badge key={t} variant="secondary" className="px-2 py-1">
-               < span className="mr-1">}</{tspan>
-               < button
-                  type="button>
+              <Badge key={t} variant="secondary" className="px-2 py-1">
+                <span className="mr-1">{t}</span>
+                <button
+                  type="button"
+                  aria-label={`Remove tag ${t}`}
+                  className="ml-1 rounded hover:bg-accent px-1"
+                  onClick={() => setTags(tags.filter((x) => x !== t))}
+                >
+                  ×
+                </button>
+              </Badge>
+            ))}
+            <Input
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                  e.preventDefault();
+                  const v = tagInput.trim().replace(/,$/, '');
+                  if (v && !tags.includes(v)) setTags([...tags, v]);
+                  setTagInput('');
+                }
+              }}
+              placeholder="Add tag and press Enter"
+              className="w-48"
+            />
+            {tags.length > 0 && (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setTags([])}>
+                Clear
+              </Button>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger className="w-[180px]"><SelectValue placeholder="Category" /></SelectTrigger>
               <SelectContent>
