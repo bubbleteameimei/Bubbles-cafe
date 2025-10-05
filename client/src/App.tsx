@@ -41,10 +41,10 @@ import AutoHideNavbar from './components/layout/AutoHideNavbar';
 import { NotificationProvider } from './contexts/notification-context';
 // Removed unused import: NotificationIcon
 // Import Silent Ping feature
-import { SilentPingProvider } from './contexts/silent-ping-context';
+
 // Import our like/dislike test page
 // Import music provider for background music functionality
-import { MusicProvider } from './contexts/music-context';
+
 // Removed unused imports: SidebarHeader, PrimaryNav
 import ErrorToastProvider from './components/providers/error-toast-provider';
 // Import our new refresh components
@@ -415,9 +415,7 @@ function App() {
             <ThemeProvider>
               <SidebarProvider>
                 <NotificationProvider>
-                  <SilentPingProvider>
-                    <MusicProvider>
-                      <ScrollEffectsProvider>
+                  <ScrollEffectsProvider>
                         <ErrorToastProvider>
                           <RefreshProvider>
                             {/* Wrap AppContent with PullToRefresh */}
@@ -450,8 +448,6 @@ function App() {
                             </RefreshProvider>
                           </ErrorToastProvider>
                         </ScrollEffectsProvider>
-                      </MusicProvider>
-                    </SilentPingProvider>
                   </NotificationProvider>
                 </SidebarProvider>
             </ThemeProvider>
