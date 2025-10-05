@@ -143,6 +143,11 @@ export default function CommunityPage() {
           <p className="text-muted-foreground">
             Explore stories written by our community members or share your own.
           </p>
+          <div className="mt-2">
+            <Button variant="link" onClick={() => navigate("/support/guidelines")}>
+              Community Guidelines
+            </Button>
+          </div>
         </div>
         <div className="mt-4 md:mt-0">
           <Button onClick={() => navigate("/submit-story")} className="flex items-center gap-2">
