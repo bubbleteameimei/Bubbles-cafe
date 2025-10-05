@@ -9,6 +9,7 @@ import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { getExcerpt } from "@/lib/content-analysis";
 import { sanitizeHtmlContent } from "@/lib/sanitize-content";
 import ApiLoader from "@/components/api-loader";
+import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 
 
 export default function Home() {
@@ -329,6 +330,9 @@ export default function Home() {
               )}
             </div>
           </div>
+
+          {/* Continue Reading floating banner */}
+          <ContinueReadingBanner />
         )}
     </div>
   );

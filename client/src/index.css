@@ -2,6 +2,7 @@
 @import "./styles/sidebar-enhanced.css";
 @import './styles/loading-screen.css';
 @import './styles/design-tokens.css';
+@import './styles/hover-effects.css';
 
 /* Mobile responsiveness update - March 2025 */
 @tailwind base;
