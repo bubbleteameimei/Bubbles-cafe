@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from 'date-fns';
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { useFontSize } from "@/hooks/use-font-size";
 import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
@@ -29,14 +29,6 @@ import { useToast } from "@/hooks/use-toast";
 import useReaderGentleScroll from "@/hooks/useReaderGentleScroll";
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import SEO from "@/components/SEO";
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbSeparator,
-  BreadcrumbPage
-} from "@/components/ui/breadcrumb";
 
 import {
   Dialog,
