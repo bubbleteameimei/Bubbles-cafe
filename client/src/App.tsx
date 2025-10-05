@@ -18,6 +18,7 @@ import ScrollToTopButton from './components/ScrollToTopButton';
 // EnhancedPageTransition removed to fix loading animation conflicts
 // Add critical fullwidth fix stylesheet
 import './styles/fullwidth-fix.css';
+import './components/transition.css';
 // Scroll-to-top now uses inline styles
 // Using EnhancedPageTransition for smooth page transitions
 // Removed unused imports: Button, Menu
@@ -258,13 +259,14 @@ const AppContent = () => {
       {/* Skip to content: hidden until focused, not intrusive */}
       <a href="#main-content" className="skip-link">Skip to content</a>
       <div
-        className={`min-h-screen w-full min-w-full max-w-full overflow-x-hidden bg-background text-foreground 
+        className={`page-transition-container min-h-screen w-full min-w-full max-w-full overflow-x-hidden bg-background text-foreground 
           m-0 p-0 px-0 mx-0`}
          style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: 'var(--navbar-height, 56px)' }}>
         {/* Main navigation bar */}
         <AutoHideNavbar />
         {/* Main content landmark for accessibility */}
         <main id="main-content" tabIndex={-1} className="flex-1 min-h-screen">
+          <div key={locationStr} className="page-content">
           <Switch>
             {/* Main Pages */}
             <Route path="/" component={HomePage} />
@@ -353,6 +355,7 @@ const AppContent = () => {
             {/* Catch All */}
             <Route path="*" component={Error404Page} />
           </Switch>
+        </div>
         </main>
         {/* Footer at page bottom */}
         <Footer />

@@ -3,6 +3,7 @@ import { useLocation, Link } from "wouter";
 import { Loader2, Search, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiJson } from "@/lib/api";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
@@ -46,6 +47,8 @@ export default function SearchResultsPage() {
   const [category, setCategory] = useState<string>("all");
   const [from, setFrom] = useState<string>("all");
   const [recent, setRecent] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
 
   // Perform search across all content
   const performSearch = useCallback(async (query: string, pageNum = 1) => {
@@ -93,7 +96,7 @@ export default function SearchResultsPage() {
     } finally {
       setIsSearching(false);
     }
-  }, [toast, from, category]);
+  }, [toast, from, category, tags]);
 
   // Extract search query from URL
   useEffect(() => {
@@ -229,7 +232,13 @@ export default function SearchResultsPage() {
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          {/* Tags filter */}
+         <tdiv className="flex flex-wrap items-center gap-2">
+            {tags.map((t) => (
+             < Badge key={t} variant="secondary" className="px-2 py-1">
+               < span className="mr-1">}</{tspan>
+               < button
+                  type="button>
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger className="w-[180px]"><SelectValue placeholder="Category" /></SelectTrigger>
               <SelectContent>
