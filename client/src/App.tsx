@@ -50,6 +50,7 @@ import ErrorToastProvider from './components/providers/error-toast-provider';
 // Import our new refresh components
 import { PullToRefresh } from './components/ui/pull-to-refresh';
 import { RefreshProvider } from './contexts/refresh-context';
+import { initCSRFProtection } from './lib/csrf-token';
 
 // Import essential pages directly
 const HomePage = React.lazy(() => import('./pages/home'));
@@ -365,6 +366,12 @@ function App() {
   // Set up global error handlers
   useEffect(() => {
     setupGlobalErrorHandlers();
+  }, []);
+
+  // Initialize CSRF protection early in app lifecycle
+  useEffect(() => {
+    // Fire and forget; subsequent API requests will reuse the token
+    void initCSRFProtection();
   }, []);
 
   // The page transition loading will be handled by AppContent component

@@ -127,6 +127,7 @@ export default function Navigation() {
                 aria-label="Open menu"
                 style={{ WebkitTapHighlightColor: 'transparent' }}
                 onClick={() => setIsOpen((v) => !v)}
+                data-testid="nav-open-menu-button"
               >
                 <Menu className="h-6 w-6" />
               </Button>

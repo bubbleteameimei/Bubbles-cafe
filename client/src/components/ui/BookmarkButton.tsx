@@ -231,6 +231,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
           onClick={handleRemoveBookmark}
           className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 active:scale-95 animate-none ${className}`}
           aria-label="Remove bookmark"
+          data-testid={`bookmark-remove-reader-${postId}`}
           disabled={isLoading || deleteMutation.isPending}
         >
           <svg className="h-7 w-7 fill-current text-amber-400" viewBox="0 0 24 24">
@@ -242,6 +243,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
           onClick={() => createMutation.mutate({ notes: '', tags: [] })}
           className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${className}`}
           aria-label="Bookmark post"
+          data-testid={`bookmark-add-reader-${postId}`}
           disabled={isLoading || createMutation.isPending}
         >
           <svg className="h-7 w-7 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
@@ -391,6 +393,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
           className={className}
           onClick={handleRemoveBookmark}
           disabled={deleteMutation.isPending}
+          data-testid={`bookmark-remove-default-${postId}`}
         >
           <Bookmark className="h-4 w-4 mr-2 fill-current" />
           {showText && "Bookmarked"}
@@ -403,6 +406,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
               size="sm" 
               className={className}
               disabled={createMutation.isPending || isLoading}
+              data-testid={`bookmark-open-modal-default-${postId}`}
             >
               <Bookmark className="h-4 w-4 mr-2" />
               {showText && "Bookmark"}
@@ -426,6 +430,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
                   className="w-full py-6 text-lg"
                   onClick={() => createMutation.mutate({ notes: '', tags: [] })}
                   disabled={createMutation.isPending}
+                  data-testid={`bookmark-quick-add-default-${postId}`}
                 >
                   <Bookmark className="h-5 w-5 mr-3" />
                   Simply Bookmark This Story
@@ -468,7 +473,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
               </div>
             </div>
             <DialogFooter className="flex flex-col sm:flex-row gap-2">
-              <Button type="submit" onClick={handleAddBookmark} disabled={createMutation.isPending}>
+              <Button type="submit" onClick={handleAddBookmark} disabled={createMutation.isPending} data-testid={`bookmark-add-details-default-${postId}`}>
                 Add Bookmark with Details
               </Button>
               <Link to="/bookmarks">
@@ -479,6 +484,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
                     // Close the dialog
                     setOpen(false);
                   }}
+                  data-testid="bookmark-view-all"
                 >
                   View All Bookmarks
                 </Button>

@@ -28,7 +28,7 @@ export function SilentPingProvider({ children }: { children: React.ReactNode }) 
       const saved = localStorage.getItem('silentPingEnabled');
       return saved !== null ? JSON.parse(saved) : false;
     } catch (error) {
-      console.error('[SilentPing] Error loading from localStorage:', error);
+      if (import.meta.env?.DEV) console.error('[SilentPing] Error loading from localStorage:', error);
       return false;
     }
   });
@@ -38,7 +38,7 @@ export function SilentPingProvider({ children }: { children: React.ReactNode }) 
     try {
       localStorage.setItem('silentPingEnabled', JSON.stringify(isEnabled));
     } catch (error) {
-      console.error('[SilentPing] Error saving to localStorage:', error);
+      if (import.meta[SilentPing] Error saving to localStorage:', error);
     }
   }, [isEnabled]);
 
@@ -85,7 +85,7 @@ export function SilentPingProvider({ children }: { children: React.ReactNode }) 
         // If we've decided to show a notification, update the timestamp
         return true;
       } catch (error) {
-        console.error('[SilentPing] Error checking last notification time:', error);
+        if (ole.error('[SilentPing] Error checking last notification time:', error);
         return true; // Default to allowing notification if there's an error
       }
     };
@@ -144,7 +144,7 @@ export function SilentPingProvider({ children }: { children: React.ReactNode }) 
           localStorage.setItem('lastSilentPingTime', currentTimeMs.toString());
         }
       } catch (error) {
-        console.error('[SilentPing] Error in user action listener:', error);
+        if (ole.error('[SilentPing] Error in user action listener:', error);
       }
     };
     
