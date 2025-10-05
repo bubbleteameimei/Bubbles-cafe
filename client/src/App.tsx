@@ -413,47 +413,53 @@ function App() {
   return (
     <GlobalErrorBoundary level="critical">
       <QueryClientProvider client={queryClient}>
-       <<GlobalLoadingProvider>
-         <<AuthProvider>
-           <<CookieConsentProvider>
-             <<ThemeProvider>
-               <<SidebarProvider>
-                 <<NotificationProvider>
-                   <<ScrollEffectsProvider>
-                         <<ErrorToastProvider>
-                           <<RefreshProvider>
-                              {/* Warm the cache for posts to make navigation instant */}
-                             <RPostsPrefetcher />
-                              {/* Wrap AppContent with PullToRefresh */}
-                             < PullToRefresh onRefresh={handleDataRefresh}>
-                                {/* Performance monitor overlay removed */}
-                               <ediv className="app-content">
-                                 < React.Suspense fallback={
-                                   <ediv className="w-full flex items-center justify-center py                       <span className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2" aria-label="Loading" />
-                                        Loading…
-                                      </div>
+        <GlobalLoadingProvider>
+          <AuthProvider>
+            <CookieConsentProvider>
+              <ThemeProvider>
+                <SidebarProvider>
+                  <NotificationProvider>
+                    <ScrollEffectsProvider>
+                      <ErrorToastProvider>
+                        <RefreshProvider>
+                          {/* Warm the cache for posts to make navigation instant */}
+                          <PostsPrefetcher />
+                          {/* Wrap AppContent with PullToRefresh */}
+                          <PullToRefresh onRefresh={handleDataRefresh}>
+                            {/* Performance monitor overlay removed */}
+                            <div className="app-content">
+                              <React.Suspense
+                                fallback={
+                                  <div className="w-full flex items-center justify-center py-12">
+                                    <div className="inline-flex items-center gap-3 text-sm text-muted-foreground">
+                                      <span
+                                        className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2"
+                                        aria-label="Loading"
+                                      />
+                                      Loading…
                                     </div>
-                                  }>
-                                    <AppContent />
-                                  </React.Suspense>
-                                </div>
-                              </PullToRefresh>
-                              {/* Site-wide elements outside of the main layout */}
-                              <CookieConsent />
-                              {location !== '/' && (
-                                <ScrollToTopButton position="bottom-right" />
-                              )}
-                              {/* Conditionally show FeedbackButton */}
-                              <ConditionalFeedbackButton />
-
-                              {/* Toast notifications */}
-                              <Toaster />
-                              <Sonner position="bottom-left" className="fixed-sonner" />
-                              </RefreshProvider>
-                            </ErrorToastProvider>
-                          </ScrollEffectsProvider>
-                    </NotificationProvider>
-                  </SidebarProvider>
+                                  </div>
+                                }
+                              >
+                                <AppContent />
+                              </React.Suspense>
+                            </div>
+                          </PullToRefresh>
+                          {/* Site-wide elements outside of the main layout */}
+                          <CookieConsent />
+                          {location !== '/' && (
+                            <ScrollToTopButton position="bottom-right" />
+                          )}
+                          {/* Conditionally show FeedbackButton */}
+                          <ConditionalFeedbackButton />
+                          {/* Toast notifications */}
+                          <Toaster />
+                          <Sonner position="bottom-left" className="fixed-sonner" />
+                        </RefreshProvider>
+                      </ErrorToastProvider>
+                    </ScrollEffectsProvider>
+                  </NotificationProvider>
+                </SidebarProvider>
               </ThemeProvider>
             </CookieConsentProvider>
           </AuthProvider>

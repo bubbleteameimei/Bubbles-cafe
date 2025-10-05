@@ -168,11 +168,26 @@ export default function SearchResultsPage() {
   return (
     <ErrorBoundary>
     <div className="container max-w-4xl mx-auto px-4 py-8">
-     <<div className="mb-4">
-       <lBreadcrumb aria-label="Breadcrumb">
-         <eBreadcrumbList>
-           <SBreadcrumbItem>
-             <sBreadcrumbLink asChild        <div className="flex flex-col gap-3">
+      <div className="mb-4">
+        <Breadcrumb aria-label="Breadcrumb">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/">Home</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Search</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+      <h1 className="text-2xl font-bold mb-6">Search Results</h1>
+      
+      {/* Search form */}
+      <form onSubmit={handleSearchSubmit} className="mb-4">
+        <div className="flex flex-col gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
             <Input
