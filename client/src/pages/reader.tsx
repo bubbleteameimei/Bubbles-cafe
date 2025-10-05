@@ -501,12 +501,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     margin: 0 auto;
     padding: 0 0.5rem;
     ${textColor}
-    transition: color 0.3s ease, background-color 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, font-size 0.25s ease-in-out, font-family 0.25s ease-in-out;
   }
   .story-content p, .story-content .story-paragraph {
     line-height: 1.7;
     margin-bottom: 1.7em;
     font-family: ${availableFonts[fontFamily].family};
+    transition: font-size 0.25s ease-in-out, font-family 0.25s ease-in-out;
   }
   @media (max-width: 768px) {
     .story-content p, .story-content .story-paragraph {
@@ -873,6 +874,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           will-change: opacity, visibility;
         }
       `}} />
+      {/* Reader content styles with smooth font transitions */}
+      <style dangerouslySetInnerHTML={{ __html: generateStoryContentStyles() }} />
 
       {/* Horror message modal */}
       {showHorrorMessage && (

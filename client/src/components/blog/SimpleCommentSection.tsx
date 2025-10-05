@@ -886,49 +886,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         </Card>
       </div>
 
-      {/* Unknown message from the void - appears randomly and auto-disappears after a delay */}
-      {shouldShowMessage && unknownMessageVisible && (
-        <AnimatePresence>
-          <motion.div 
-            className="mb-4 border-l-[3px] border-l-destructive/40 bg-destructive/5 rounded-sm overflow-hidden shadow-md"
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 10 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            key="unknown-message"
-            // Auto-remove after random time between 8-12 seconds
-            onAnimationComplete={() => {
-              const randomDelay = 8000 + Math.random() * 4000;
-              setTimeout(() => {
-                setUnknownMessageVisible(false);
-              }, randomDelay);
-            }}
-          >
-            <div className="px-3 py-2">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Ghost className="h-3.5 w-3.5 text-destructive/70" />
-                <span className="text-[10px] font-medium text-destructive/70">Unknown User</span>
-                <Badge variant="outline" className="ml-1 text-[8px] px-1 py-0 h-3 border-destructive/30 bg-destructive/5 text-destructive/70">
-                  lost
-                </Badge>
-                <span className="text-[8px] text-muted-foreground/60 ml-auto flex items-center">
-                  <Calendar className="h-2.5 w-2.5 mr-0.5 text-muted-foreground/40" />
-                  {formatDate(getRandomOldDate())}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground italic leading-relaxed opacity-90">
-                "{getRandomUnknownMessage()}"
-              </p>
-              <div className="flex justify-end mt-1">
-                <span className="text-[9px] text-destructive/50 flex items-center">
-                  <Skull className="h-2.5 w-2.5 mr-0.5" />
-                  Message from the archive
-                </span>
-              </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      )}
+      
       
       {/* Comments list */}
       <div className="space-y-1">

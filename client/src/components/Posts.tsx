@@ -143,13 +143,6 @@ function Posts() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {data.posts.map((post: any) => (
             <Card key={post.id} className="p-4 shadow-md transition-all duration-300 hover:shadow-lg hover:border-primary/30 relative overflow-hidden group">
-              {/* Decorative horror element */}
-              <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden">
-                <div className="absolute rotate-45 bg-muted/20 text-primary/70 font-medium py-1 text-xs px-6 text-center top-3 right-[-20px]">
-                  Archive
-                </div>
-              </div>
-
               <h2 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-primary/90 transition-colors">
                 <Link href={`/reader/${post.slug}`} onMouseEnter={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }} onFocus={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }}>
                   {typeof post.title === 'object' 
@@ -163,10 +156,7 @@ function Posts() {
                   : "No excerpt available"}
               </div>
               <div className="mt-auto pt-3 border-t border-muted/40">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">
-                    From our archives
-                  </span>
+                <div className="flex justify-end items-center">
                   <Link href={`/reader/${post.slug}`} onMouseEnter={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }} onFocus={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }}>
                     <Button variant="outline" size="sm" className="gap-2">
                       Read story

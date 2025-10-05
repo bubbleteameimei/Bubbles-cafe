@@ -487,6 +487,7 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
                 type="submit"
                 disabled={mutation.isPending || !name.trim() || !content.trim()}
                 className="w-full sm:w-auto shadow-sm"
+                data-testid={`comment-submit-${postId}`}
               >
                 {mutation.isPending ? (
                   <>

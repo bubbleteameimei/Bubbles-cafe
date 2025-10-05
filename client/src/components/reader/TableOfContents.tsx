@@ -80,7 +80,7 @@ export default function TableOfContents({ currentPostId, onClose, posts: provide
       if (filteredPosts.length > 0) {
         const randomIndex = Math.floor(Math.random() * filteredPosts.length);
         const randomPost = filteredPosts[randomIndex];
-        setLocation(`/story/${randomPost.slug}`);
+        setLocation(`/reader/${randomPost.slug}`);
         onClose();
       }
     }

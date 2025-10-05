@@ -41,15 +41,16 @@ import AutoHideNavbar from './components/layout/AutoHideNavbar';
 import { NotificationProvider } from './contexts/notification-context';
 // Removed unused import: NotificationIcon
 // Import Silent Ping feature
-import { SilentPingProvider } from './contexts/silent-ping-context';
+
 // Import our like/dislike test page
 // Import music provider for background music functionality
-import { MusicProvider } from './contexts/music-context';
+
 // Removed unused imports: SidebarHeader, PrimaryNav
 import ErrorToastProvider from './components/providers/error-toast-provider';
 // Import our new refresh components
 import { PullToRefresh } from './components/ui/pull-to-refresh';
 import { RefreshProvider } from './contexts/refresh-context';
+import { initCSRFProtection } from './lib/csrf-token';
 
 // Import essential pages directly
 const HomePage = React.lazy(() => import('./pages/home'));
@@ -367,6 +368,12 @@ function App() {
     setupGlobalErrorHandlers();
   }, []);
 
+  // Initialize CSRF protection early in app lifecycle
+  useEffect(() => {
+    // Fire and forget; subsequent API requests will reuse the token
+    void initCSRFProtection();
+  }, []);
+
   // The page transition loading will be handled by AppContent component
   // where useLoading will be called after LoadingProvider is mounted
 
@@ -408,9 +415,7 @@ function App() {
             <ThemeProvider>
               <SidebarProvider>
                 <NotificationProvider>
-                  <SilentPingProvider>
-                    <MusicProvider>
-                      <ScrollEffectsProvider>
+                  <ScrollEffectsProvider>
                         <ErrorToastProvider>
                           <RefreshProvider>
                             {/* Wrap AppContent with PullToRefresh */}
@@ -443,8 +448,6 @@ function App() {
                             </RefreshProvider>
                           </ErrorToastProvider>
                         </ScrollEffectsProvider>
-                      </MusicProvider>
-                    </SilentPingProvider>
                   </NotificationProvider>
                 </SidebarProvider>
             </ThemeProvider>

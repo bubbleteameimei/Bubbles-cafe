@@ -37,6 +37,12 @@ type BookmarkData = {
   createdAt: string;
 };
 
+type AuthBookmarkStatus = {
+  success: boolean;
+  bookmarked: boolean;
+  bookmark: BookmarkData | null;
+};
+
 export function BookmarkButton({ postId, className, variant = 'default', showText = true }: BookmarkButtonProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -49,14 +55,20 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
   const apiBasePath = user ? '/api/bookmarks' : '/api/reader/bookmarks';
   
   // Query to check if post is already bookmarked
-  const { data: bookmark, isLoading } = useQuery({
+  const { data: bookmarkState, isLoading } = useQuery({
     queryKey: [apiBasePath, postId],
     queryFn: async () => {
       // If not in reader mode and not logged in, don't fetch
       if (variant !== 'reader' && !user) return null;
       
       try {
-        return await apiRequest<BookmarkData>(`${apiBasePath}/${postId}`);
+        if (user) {
+          // Authenticated users get status envelope
+          return await apiRequest<AuthBookmarkStatus>(`${apiBasePath}/${postId}`);
+        } else {
+          // Anonymous users get raw bookmark or 404
+          return await apiRequest<BookmarkData>(`${apiBasePath}/${postId}`);
+        }
       } catch (error) {
         // If 404, it means not bookmarked which is normal
         if ((error as any).status === 404) {
@@ -75,6 +87,10 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
     refetchOnWindowFocus: false,
   });
 
+  const bookmarked = user
+    ? !!(bookmarkState as AuthBookmarkStatus | null)?.bookmarked
+    : !!bookmarkState;
+
   // Create bookmark mutation
   const createMutation = useMutation({
     mutationFn: async (data: { notes: string; tags: string[] }) => {
@@ -82,8 +98,13 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
       if (!postId || typeof postId !== 'number' || postId <= 0) {
         throw new Error('Invalid post ID');
       }
-      
-      return apiRequest(apiBasePath, {
+
+      // Use the correct endpoint for creation:
+      // - Authenticated users: /api/bookmarks/:postId
+      // - Anonymous reader:    /api/reader/bookmarks
+      const createEndpoint = user ? `${apiBasePath}/${postId}` : apiBasePath;
+
+      return apiRequest(createEndpoint, {
         method: 'POST',
         body: JSON.stringify({
           postId,
@@ -92,16 +113,26 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
         }),
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [apiBasePath] });
-      queryClient.invalidateQueries({ queryKey: [apiBasePath, postId] });
+    onSuccess: (data: any) => {
+      // Optimistically update status query for snappy UI
+      if (user) {
+        const created = (data?.bookmark ?? null) as BookmarkData | null;
+        const status: AuthBookmarkStatus = { success: true, bookmarked: true, bookmark: created };
+        queryClient.setQueryData([apiBasePath, postId], status);
+        // Also refresh the list page
+        queryClient.invalidateQueries({ queryKey: [apiBasePath] });
+      } else {
+        // Anonymous returns raw bookmark
+        queryClient.setQueryData([apiBasePath, postId], data as BookmarkData);
+        queryClient.invalidateQueries({ queryKey: [apiBasePath] });
+      }
+
       toast({
         title: 'Bookmark added',
         description: 'This story has been added to your bookmarks.',
       });
 
-      // Toast notification only - no navigation to avoid errors
-      // We'll put a link to bookmarks in the sidebar instead
+      // Close dialog and reset fields
       setOpen(false);
       setNotes('');
       setTagsInput('');
@@ -133,8 +164,16 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [apiBasePath] });
-      queryClient.invalidateQueries({ queryKey: [apiBasePath, postId] });
+      // Optimistically update
+      if (user) {
+        const status: AuthBookmarkStatus = { success: true, bookmarked: false, bookmark: null };
+        queryClient.setQueryData([apiBasePath, postId], status);
+        queryClient.invalidateQueries({ queryKey: [apiBasePath] });
+      } else {
+        queryClient.setQueryData([apiBasePath, postId], null);
+        queryClient.invalidateQueries({ queryKey: [apiBasePath] });
+      }
+
       toast({
         title: 'Bookmark removed',
         description: 'This story has been removed from your bookmarks.',
@@ -182,18 +221,17 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
     deleteMutation.mutate();
   };
 
-  const isBookmarked = !!bookmark;
-
   // Reader-style bookmark button
   if (variant === 'reader') {
     // For anonymous users in reader mode - show bookmark button that works with session-based bookmarks
     if (!user) {
       // Use anonymous bookmark API - this will be a functional button rather than auth prompt
-      return isBookmarked ? (
+      return bookmarked ? (
         <button
           onClick={handleRemoveBookmark}
           className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 active:scale-95 animate-none ${className}`}
           aria-label="Remove bookmark"
+          data-testid={`bookmark-remove-reader-${postId}`}
           disabled={isLoading || deleteMutation.isPending}
         >
           <svg className="h-7 w-7 fill-current text-amber-400" viewBox="0 0 24 24">
@@ -205,6 +243,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
           onClick={() => createMutation.mutate({ notes: '', tags: [] })}
           className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${className}`}
           aria-label="Bookmark post"
+          data-testid={`bookmark-add-reader-${postId}`}
           disabled={isLoading || createMutation.isPending}
         >
           <svg className="h-7 w-7 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
@@ -214,7 +253,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
       );
     }
 
-    if (isBookmarked) {
+    if (bookmarked) {
       return (
         <button
           onClick={handleRemoveBookmark}
@@ -347,13 +386,14 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
 
   return (
     <>
-      {isBookmarked ? (
+      {bookmarked ? (
         <Button 
           variant="outline" 
           size="sm" 
           className={className}
           onClick={handleRemoveBookmark}
           disabled={deleteMutation.isPending}
+          data-testid={`bookmark-remove-default-${postId}`}
         >
           <Bookmark className="h-4 w-4 mr-2 fill-current" />
           {showText && "Bookmarked"}
@@ -366,6 +406,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
               size="sm" 
               className={className}
               disabled={createMutation.isPending || isLoading}
+              data-testid={`bookmark-open-modal-default-${postId}`}
             >
               <Bookmark className="h-4 w-4 mr-2" />
               {showText && "Bookmark"}
@@ -389,6 +430,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
                   className="w-full py-6 text-lg"
                   onClick={() => createMutation.mutate({ notes: '', tags: [] })}
                   disabled={createMutation.isPending}
+                  data-testid={`bookmark-quick-add-default-${postId}`}
                 >
                   <Bookmark className="h-5 w-5 mr-3" />
                   Simply Bookmark This Story
@@ -431,7 +473,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
               </div>
             </div>
             <DialogFooter className="flex flex-col sm:flex-row gap-2">
-              <Button type="submit" onClick={handleAddBookmark} disabled={createMutation.isPending}>
+              <Button type="submit" onClick={handleAddBookmark} disabled={createMutation.isPending} data-testid={`bookmark-add-details-default-${postId}`}>
                 Add Bookmark with Details
               </Button>
               <Link to="/bookmarks">
@@ -442,6 +484,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
                     // Close the dialog
                     setOpen(false);
                   }}
+                  data-testid="bookmark-view-all"
                 >
                   View All Bookmarks
                 </Button>

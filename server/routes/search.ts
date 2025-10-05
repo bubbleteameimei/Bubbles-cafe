@@ -210,7 +210,8 @@ router.get('/', async (req, res) => {
             title: post.title,
             excerpt,
             type: 'post',
-            url: `/reader/${post.id}`,
+            // Use slug when available so the reader can resolve correctly
+            url: `/reader/${post.slug || post.id}`,
             matches,
             createdAt: post.createdAt
           };
@@ -760,7 +761,8 @@ router.get('/suggest', async (req, res) => {
       id: p.id,
       title: p.title || 'Untitled',
       type: 'post',
-      url: `/reader/${p.id}`
+      // Prefer slug when available to match client routes
+      url: `/reader/${p.slug || p.id}`
     }));
 
     return res.json({ suggestions });

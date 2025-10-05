@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useToast } from "@/hooks/use-toast"
-import { useSilentPingToggle } from "@/utils/trigger-silent-ping"
+
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -188,26 +188,7 @@ const timezoneOptions = {
   }
 };
 
-// Memoized silent ping component
-const SilentPingToggle = memo(({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) => (
-  <div className="flex flex-row items-center justify-between rounded-lg border p-4 border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/50">
-    <div className="space-y-0.5">
-      <div className="text-base font-medium">Silent Ping</div>
-      <p className="text-sm text-muted-foreground">
-        Occasionally receive subtle ambient notifications to enhance the immersive horror atmosphere.
-      </p>
-      <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-        This experimental feature creates random, non-disruptive notifications that lead nowhere, enhancing the subtle unease of your reading experience.
-      </p>
-    </div>
-    <Switch
-      checked={enabled}
-      onCheckedChange={onToggle}
-      className="data-[state=checked]:bg-amber-700 dark:data-[state=checked]:bg-amber-800"
-    />
-  </div>
-))
-SilentPingToggle.displayName = 'SilentPingToggle';
+
 
 export function NotificationSettingsForm() {
   // Optimize form initialization with stable references
@@ -216,8 +197,6 @@ export function NotificationSettingsForm() {
     defaultValues: defaultFormValues,
   })
 
-  // Get the Silent Ping toggle controls from our custom hook
-  const { isEnabled: silentPingEnabled, toggleEnabled: toggleSilentPing } = useSilentPingToggle();
   const { toast } = useToast();
   
   // Memoize the submit handler to prevent recreation on renders
@@ -332,15 +311,7 @@ export function NotificationSettingsForm() {
               options={timezoneOptions}
             />
             
-            {/* Silent Ping Feature - A subtle horror element that creates false notifications */}
-            <div className="pt-6 pb-2">
-              <h3 className="text-lg font-medium">Experimental Features</h3>
-            </div>
             
-            <SilentPingToggle
-              enabled={silentPingEnabled}
-              onToggle={toggleSilentPing}
-            />
           </div>
         </div>
         <Button type="submit" className="w-full sm:w-auto">Save Preferences</Button>

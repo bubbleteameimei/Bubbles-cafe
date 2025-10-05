@@ -307,7 +307,7 @@ export const SupportWritingCard = ({ className = "" }: SupportWritingCardProps) 
               transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 20 }}
             >
               <DialogDescription id="support-writing-description" className="text-center text-muted-foreground">
-                Your support means the world! Every coffee keeps my creativity brewing and helps me share more stories.
+                Your support means the world! Every tip keeps my creativity brewing and helps me share more stories.
                 <motion.span
                   animate={{ opacity: [0.4, 1, 0.4] }}
                   transition={{ duration: 1.8, repeat: Infinity }}
