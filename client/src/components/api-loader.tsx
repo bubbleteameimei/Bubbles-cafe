@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useLoading } from '@/components/GlobalLoadingProvider';
+import { SpinnerOverlay } from '@/components/ui/spinner';
 
 interface ApiLoaderProps {
   isLoading: boolean;
@@ -16,18 +17,19 @@ interface ApiLoaderProps {
 /**
  * ApiLoader Component
  * 
- * This component has been updated to integrate with the centralized loading context.
- * It shows/hides the global LoadingScreen based on the isLoading prop.
+ * Integrates with the centralized loading context. If a provider isn't mounted,
+ * it still renders a minimal inline spinner so the page never appears blank.
  */
 const ApiLoader: React.FC<ApiLoaderProps> = ({
   isLoading,
   children,
+  message,
   debug: _debug = false,
   // All other props are ignored
 }) => {
   const { showLoading, hideLoading } = useLoading();
   
-  // Use effect to synchronize the isLoading prop with the global loading state
+  // Synchronize the isLoading prop with the global loading state
   useEffect(() => {
     if (isLoading) {
       showLoading();
@@ -41,16 +43,12 @@ const ApiLoader: React.FC<ApiLoaderProps> = ({
     };
   }, [isLoading, showLoading, hideLoading]);
 
-  // Simply render children - loading is handled by the LoadingProvider
-  return (
-    <>
-      {children && (
-        <div className="relative">
-          {children}
-        </div>
-      )}
-    </>
-  );
+  // If children are provided, render them. Otherwise, render a minimal spinner when loading.
+  if (children) {
+    return <div className="relative">{children}</div>;
+  }
+
+  return isLoading ? <SpinnerOverlay message={message || 'Loading…'} className="min-h-[40vh]" /> : null;
 };
 
 export default ApiLoader;

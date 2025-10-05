@@ -32,19 +32,47 @@ export default function Footer() {
         </div>
         
         {/* Navigation links - centered */}
-        <nav className="flex items-center justify-center" aria-label="Footer navigation">
+        <nav className="flex flex-wrap items-center justify-center gap-1" aria-label="Footer navigation">
+          <Link 
+            href="/about" 
+            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-2 whitespace-nowrap underline decoration-gray-400 hover:decoration-primary underline-offset-2"
+          >
+            About
+          </Link>
+          <span className="text-primary/40 text-sm">•</span>
           <Link 
             href="/privacy" 
-            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 whitespace-nowrap underline decoration-gray-400 hover:decoration-primary underline-offset-2"
+            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-2 whitespace-nowrap underline decoration-gray-400 hover:decoration-primary underline-offset-2"
           >
-            Privacy Policy
+            Privacy
           </Link>
-          <span className="text-primary/40 text-sm mx-1">•</span>
+          <span className="text-primary/40 text-sm">•</span>
+          <Link 
+            href="/legal/terms" 
+            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-2 whitespace-nowrap underline decoration-gray-400 hover:decoration-primary underline-offset-2"
+          >
+            Terms
+          </Link>
+          <span className="text-primary/40 text-sm">•</span>
+          <Link 
+            href="/legal/cookie-policy" 
+            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-2 whitespace-nowrap underline decoration-gray-400 hover:decoration-primary underline-offset-2"
+          >
+            Cookies
+          </Link>
+          <span className="text-primary/40 text-sm">•</span>
+          <Link 
+            href="/legal/copyright" 
+            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-2 whitespace-nowrap underline decoration-gray-400 hover:decoration-primary underline-offset-2"
+          >
+            Copyright
+          </Link>
+          <span className="text-primary/40 text-sm">•</span>
           <Link 
             href="/contact" 
-            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 whitespace-nowrap underline decoration-gray-400 hover:decoration-primary underline-offset-2"
+            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-2 whitespace-nowrap underline decoration-gray-400 hover:decoration-primary underline-offset-2"
           >
-            Contact Me
+            Contact
           </Link>
         </nav>
       </div>

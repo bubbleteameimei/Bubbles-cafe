@@ -51,3 +51,10 @@
     opacity: 1;
   }
 }
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .page-content {
+    animation: none !important;
+  }
+}

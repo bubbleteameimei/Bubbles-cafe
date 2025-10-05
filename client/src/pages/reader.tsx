@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from 'date-fns';
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { useFontSize } from "@/hooks/use-font-size";
 import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
@@ -29,6 +29,14 @@ import { useToast } from "@/hooks/use-toast";
 import useReaderGentleScroll from "@/hooks/useReaderGentleScroll";
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import SEO from "@/components/SEO";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbSeparator,
+  BreadcrumbPage
+} from "@/components/ui/breadcrumb";
 
 import {
   Dialog,
@@ -115,7 +123,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   // Will initialize this after data is loaded
   const [autoSaveSlug, setAutoSaveSlug] = useState<string>("");
-  
+
   // Fixed constants for better text readability (replacing auto-contrast)
   const DARK_TEXT_COLOR = 'rgba(255, 255, 255, 0.95)';
   const LIGHT_TEXT_COLOR = 'rgba(0, 0, 0, 0.95)';
@@ -412,7 +420,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // This will only work on the reader page and community-story page
   const { positionRestored, isRefresh } = useReaderGentleScroll({
     enabled: !isLoading && postsData?.posts && postsData.posts.length > 0,
-    slug: routeSlug || '',
+    slug: autoSaveSlug || routeSlug || '',
     showToast: true,
     autoSave: true,
     autoSaveInterval: 2000
@@ -946,6 +954,29 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       {/* Full width immersive reading experience */}
 
       <div className={`pt-0 pb-0 bg-background mt-0 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
+        {/* Top breadcrumb for clear navigation context */}
+        <div className="px-4 md:px-8 lg:px-12 py-2">
+          <Breadcrumb aria-label="Breadcrumb">
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href="/">Home</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href="/reader">Reader</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{titleText}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+
         {/* Font controls/TOC should be extremely close to main nav: remove extra margins/padding */}
         <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
           {/* Font controls using the standard Button component */}

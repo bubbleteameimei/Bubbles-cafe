@@ -3,10 +3,19 @@ import { useLocation, Link } from "wouter";
 import { Loader2, Search, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiJson } from "@/lib/api";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbSeparator,
+  BreadcrumbPage
+} from "@/components/ui/breadcrumb";
 
 interface SearchResult {
   id: number;
@@ -38,6 +47,8 @@ export default function SearchResultsPage() {
   const [category, setCategory] = useState<string>("all");
   const [from, setFrom] = useState<string>("all");
   const [recent, setRecent] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
 
   // Perform search across all content
   const performSearch = useCallback(async (query: string, pageNum = 1) => {
@@ -53,6 +64,7 @@ export default function SearchResultsPage() {
       qs.set('page', String(pageNum));
       if (from !== 'all') qs.set('from', from);
       if (category !== 'all') qs.set('category', category);
+      if (tags.length > 0) qs.set('tags', tags.join(','));
       const { results, meta } = await apiJson<any>('GET', `/api/search?${qs.toString()}`);
       const mapped: SearchResult[] = (results || []).map((r: any) => ({
         id: r.id,
@@ -85,7 +97,7 @@ export default function SearchResultsPage() {
     } finally {
       setIsSearching(false);
     }
-  }, [toast, from, category]);
+  }, [toast, from, category, tags]);
 
   // Extract search query from URL
   useEffect(() => {
@@ -160,6 +172,21 @@ export default function SearchResultsPage() {
   return (
     <ErrorBoundary>
     <div className="container max-w-4xl mx-auto px-4 py-8">
+      <div className="mb-4">
+        <Breadcrumb aria-label="Breadcrumb">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/">Home</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Search</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
       <h1 className="text-2xl font-bold mb-6">Search Results</h1>
       
       {/* Search form */}
@@ -204,6 +231,41 @@ export default function SearchResultsPage() {
                   ))}
                 </ul>
               </div>
+            )}
+          </div>
+          {/* Tags filter */}
+          <div className="flex flex-wrap items-center gap-2">
+            {tags.map((t) => (
+              <Badge key={t} variant="secondary" className="px-2 py-1">
+                <span className="mr-1">{t}</span>
+                <button
+                  type="button"
+                  aria-label={`Remove tag ${t}`}
+                  className="ml-1 rounded hover:bg-accent px-1"
+                  onClick={() => setTags(tags.filter((x) => x !== t))}
+                >
+                  ×
+                </button>
+              </Badge>
+            ))}
+            <Input
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                  e.preventDefault();
+                  const v = tagInput.trim().replace(/,$/, '');
+                  if (v && !tags.includes(v)) setTags([...tags, v]);
+                  setTagInput('');
+                }
+              }}
+              placeholder="Add tag and press Enter"
+              className="w-48"
+            />
+            {tags.length > 0 && (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setTags([])}>
+                Clear
+              </Button>
             )}
           </div>
           <div className="flex items-center gap-2">

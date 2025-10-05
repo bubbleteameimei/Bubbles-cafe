@@ -18,6 +18,7 @@ import ScrollToTopButton from './components/ScrollToTopButton';
 // EnhancedPageTransition removed to fix loading animation conflicts
 // Add critical fullwidth fix stylesheet
 import './styles/fullwidth-fix.css';
+import './components/transition.css';
 // Scroll-to-top now uses inline styles
 // Using EnhancedPageTransition for smooth page transitions
 // Removed unused imports: Button, Menu
@@ -51,6 +52,9 @@ import ErrorToastProvider from './components/providers/error-toast-provider';
 import { PullToRefresh } from './components/ui/pull-to-refresh';
 import { RefreshProvider } from './contexts/refresh-context';
 import { initCSRFProtection } from './lib/csrf-token';
+// Add global loading provider so ApiLoader can display a proper loading overlay
+import { GlobalLoadingProvider } from './components/GlobalLoadingProvider';
+import PostsPrefetcher from './components/providers/PostsPrefetcher';
 
 // Import essential pages directly
 const HomePage = React.lazy(() => import('./pages/home'));
@@ -255,13 +259,14 @@ const AppContent = () => {
       {/* Skip to content: hidden until focused, not intrusive */}
       <a href="#main-content" className="skip-link">Skip to content</a>
       <div
-        className={`min-h-screen w-full min-w-full max-w-full overflow-x-hidden bg-background text-foreground 
+        className={`page-transition-container min-h-screen w-full min-w-full max-w-full overflow-x-hidden bg-background text-foreground 
           m-0 p-0 px-0 mx-0`}
          style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: 'var(--navbar-height, 56px)' }}>
         {/* Main navigation bar */}
         <AutoHideNavbar />
         {/* Main content landmark for accessibility */}
         <main id="main-content" tabIndex={-1} className="flex-1 min-h-screen">
+          <div key={locationStr} className="page-content">
           <Switch>
             {/* Main Pages */}
             <Route path="/" component={HomePage} />
@@ -350,6 +355,7 @@ const AppContent = () => {
             {/* Catch All */}
             <Route path="*" component={Error404Page} />
           </Switch>
+        </div>
         </main>
         {/* Footer at page bottom */}
         <Footer />
@@ -410,49 +416,57 @@ function App() {
   return (
     <GlobalErrorBoundary level="critical">
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <CookieConsentProvider>
-            <ThemeProvider>
-              <SidebarProvider>
-                <NotificationProvider>
-                  <ScrollEffectsProvider>
-                        <ErrorToastProvider>
-                          <RefreshProvider>
-                            {/* Wrap AppContent with PullToRefresh */}
-                            <PullToRefresh onRefresh={handleDataRefresh}>
-                              {/* Performance monitor overlay removed */}
-                              <div className="app-content">
-                                <React.Suspense fallback={
+        <GlobalLoadingProvider>
+          <AuthProvider>
+            <CookieConsentProvider>
+              <ThemeProvider>
+                <SidebarProvider>
+                  <NotificationProvider>
+                    <ScrollEffectsProvider>
+                      <ErrorToastProvider>
+                        <RefreshProvider>
+                          {/* Warm the cache for posts to make navigation instant */}
+                          <PostsPrefetcher />
+                          {/* Wrap AppContent with PullToRefresh */}
+                          <PullToRefresh onRefresh={handleDataRefresh}>
+                            {/* Performance monitor overlay removed */}
+                            <div className="app-content">
+                              <React.Suspense
+                                fallback={
                                   <div className="w-full flex items-center justify-center py-12">
                                     <div className="inline-flex items-center gap-3 text-sm text-muted-foreground">
-                                      <span className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2" aria-label="Loading" />
+                                      <span
+                                        className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2"
+                                        aria-label="Loading"
+                                      />
                                       Loading…
                                     </div>
                                   </div>
-                                }>
-                                  <AppContent />
-                                </React.Suspense>
-                              </div>
-                            </PullToRefresh>
-                            {/* Site-wide elements outside of the main layout */}
-                            <CookieConsent />
-                            {location !== '/' && (
-                              <ScrollToTopButton position="bottom-right" />
-                            )}
-                            {/* Conditionally show FeedbackButton */}
-                            <ConditionalFeedbackButton />
-
-                            {/* Toast notifications */}
-                            <Toaster />
-                            <Sonner position="bottom-left" className="fixed-sonner" />
-                            </RefreshProvider>
-                          </ErrorToastProvider>
-                        </ScrollEffectsProvider>
+                                }
+                              >
+                                <AppContent />
+                              </React.Suspense>
+                            </div>
+                          </PullToRefresh>
+                          {/* Site-wide elements outside of the main layout */}
+                          <CookieConsent />
+                          {location !== '/' && (
+                            <ScrollToTopButton position="bottom-right" />
+                          )}
+                          {/* Conditionally show FeedbackButton */}
+                          <ConditionalFeedbackButton />
+                          {/* Toast notifications */}
+                          <Toaster />
+                          <Sonner position="bottom-left" className="fixed-sonner" />
+                        </RefreshProvider>
+                      </ErrorToastProvider>
+                    </ScrollEffectsProvider>
                   </NotificationProvider>
                 </SidebarProvider>
-            </ThemeProvider>
-          </CookieConsentProvider>
-        </AuthProvider>
+              </ThemeProvider>
+            </CookieConsentProvider>
+          </AuthProvider>
+        </GlobalLoadingProvider>
       </QueryClientProvider>
     </GlobalErrorBoundary>
   );
