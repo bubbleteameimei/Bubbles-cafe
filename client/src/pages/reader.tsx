@@ -91,12 +91,17 @@ import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
       return html;
     }
   };
+  interface ReaderPageProps {
+  slug?: string;
+  params?: { slug?: string };
   isCommunityContent?: boolean;
 }
 
 export default function ReaderPage({ slug, params, isCommunityContent = false }: ReaderPageProps) {
-  // Log params for debugging
-  console.log('[ReaderPage] Initializing with params:', { routeSlug: params?.slug || slug, params, slug });
+  // Log params for debugging (dev only)
+  if (import.meta.env?.DEV) {
+    console.log('[ReaderPage] Initializing with params:', { routeSlug: params?.slug || slug, params, slug });
+  }
   // Extract slug from route params if provided
   const routeSlug = params?.slug || slug;
   const [, setLocation] = useLocation();
@@ -163,7 +168,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       const scrollPercent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
       const progress = Math.min(100, Math.max(0, scrollPercent));
       setReadingProgress(progress);
-      console.log('[Reader] Progress updated:', { scrollTop, docHeight, progress });
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Progress updated:', { scrollTop, docHeight, progress });
+      }
     };
 
     // Throttle scroll events for better performance
@@ -204,10 +211,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Delete Post Mutation for admin actions
   const deleteMutation = useMutation({
     mutationFn: async (postId: number) => {
-      console.log(`[Reader] Attempting to delete post with ID: ${postId}`);
-      
+      if (import.meta.env?.DEV) {
+        console.log(`[Reader] Attempting to delete post with ID: ${postId}`);
+      }
       const csrfToken = document.cookie.replace(/(?:(?:^|.*;\s*)XSRF-TOKEN\s*\=\s*([^;]*).*$)|^.*$/, "$1");
-      console.log('[Reader] Using CSRF token for deletion');
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Using CSRF token for deletion');
+      }
       
       const response = await fetch(`/api/posts/${postId}`, {
         method: 'DELETE',
@@ -234,18 +244,21 @@ ow new Error(data.message || 'Failed to delete post');
       return data;
     },
     onSuccess: () => {
-      // Invalidate all related queries to ensure cache is properly cleared
-      console.log('[Reader] Invalidating all related query caches');
+      // Invalidate related queries to ensure cache is properly cleared
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Invalidating related query caches');
+      }
       
-      // Invalidate community posts list
-      queryClient.invalidateQueries({ queryKey: ['/api/posts/community'] });
-      
-      // Invalidate all posts endpoint
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      // Invalidate community posts list only when applicable
+      if (isCommunityContent) {
+        queryClient.invalidateQueries({ queryKey: ['/api/posts/community'] });
+      }
       
       // Invalidate specific post endpoints
       if (currentPost?.id) {
-        console.log(`[Reader] Invalidating specific post cache for ID: ${currentPost.id}`);
+        if (import.meta.env?.DEV) {
+          console.log(`[Reader] Invalidating specific post cache for ID: ${currentPost.id}`);
+        }
         queryClient.invalidateQueries({ 
           queryKey: ['/api/posts', currentPost.id.toString()]
         });
@@ -253,7 +266,9 @@ ow new Error(data.message || 'Failed to delete post');
       
       // Also invalidate the specific post query based on the slug
       if (routeSlug) {
-        console.log('[Reader] Invalidating specific post cache for slug:', routeSlug);
+        if (import.meta.env?.DEV) {
+          console.log('[Reader] Invalidating specific post cache for slug:', routeSlug);
+        }
         queryClient.invalidateQueries({ 
           queryKey: ["wordpress", "posts", "reader", routeSlug] 
         });
@@ -272,7 +287,9 @@ ow new Error(data.message || 'Failed to delete post');
       });
       
       // Force navigation back to the community page after deletion
-      console.log('[Reader] Navigating back to community page');
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Navigating back to community page');
+      }
       // Immediate navigation to prevent page from trying to load deleted content
       setLocation('/community');
     },
@@ -286,11 +303,15 @@ ow new Error(data.message || 'Failed to delete post');
     }
   });
 
-  console.log('[Reader] Component mounted with slug:', routeSlug); // Debug log
+  if (import.meta.env?.DEV) {
+    console.log('[Reader] Component mounted with slug:', routeSlug);
+  }
   
   // Clear any cached data to ensure fresh fetch after sample story removal
   useEffect(() => {
-    console.log('[Reader] Clearing query cache to ensure fresh data');
+    if (import.meta.env?.DEV) {
+      console.log('[Reader] Clearing query cache to ensure fresh data');
+    }
     queryClient.invalidateQueries({ queryKey: ["posts"] });
     queryClient.removeQueries({ queryKey: ["posts"] });
   }, [queryClient]);
@@ -299,10 +320,14 @@ ow new Error(data.message || 'Failed to delete post');
   const [currentIndex, setCurrentIndex] = useState(() => {
     try {
       const savedIndex = sessionStorage.getItem('selectedStoryIndex');
-      console.log('[Reader] Retrieved saved index:', savedIndex);
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Retrieved saved index:', savedIndex);
+      }
 
       if (!savedIndex) {
-        console.log('[Reader] No saved index found, defaulting to 0');
+        if (import.meta.env?.DEV) {
+          console.log('[Reader] No saved index found, defaulting to 0');
+        }
         return 0;
       }
 
@@ -322,7 +347,10 @@ ow new Error(data.message || 'Failed to delete post');
   const { data: postsData, isLoading, error } = useQuery({
     queryKey: ["posts", "reader", routeSlug, isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
-      console.log('[Reader] Fetching posts...', { routeSlug, isCommunityContent });
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Fetching posts...', { routeSlug, isCommunityContent });
+      }
+
       try {
         if (routeSlug) {
           // If slug is provided, always use the unified slug endpoint
@@ -347,7 +375,9 @@ ow new Error(data.message || 'Failed to delete post');
           return { posts: [normalizedPost], totalPages: 1, total: 1 };
         } else {
           // Fetch all posts from internal API (your WordPress stories are already synced here)
-          console.log('[Reader] Fetching posts...', { isCommunityContent });
+          if (import.meta.env?.DEV) {
+            console.log('[Reader] Fetching posts...', { isCommunityContent });
+          }
           
           // Always use the core posts endpoint for maximum reliability with cache busting
           const response = await fetch(`/api/posts?limit=100&_t=${Date.now()}`);
@@ -356,9 +386,9 @@ ow new Error(data.message || 'Failed to delete post');
           }
           
           const data = await response.json();
-          console.log('[Reader] Successfully fetched posts:', {
-            totalPosts: data.posts?.length,
-            hasMore: data.hasMore,
+          if (import.meta.env?.DEV) {
+            console.log('[Reader] Successfully fetched posts:', {
+                hasMore: data.hasMore,
             firstPost: data.posts?.[0]?.title
           });
           
@@ -431,34 +461,43 @@ ow new Error(data.message || 'Failed to delete post');
   // Validate and update currentIndex when posts data changes
   useEffect(() => {
     if (postsData?.posts && postsData.posts.length > 0) {
-      console.log('[Reader] Validating current index:', {
-        currentIndex,
-        totalPosts: postsData.posts.length,
-        savedIndex: sessionStorage.getItem('selectedStoryIndex')
-      });
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Validating current index:', {
+          currentIndex,
+          totalPosts: postsData.posts.length,
+          savedIndex: sessionStorage.getItem('selectedStoryIndex')
+        });
+      }
 
       // Ensure currentIndex is within bounds
       if (currentIndex >= postsData.posts.length) {
-        console.log('[Reader] Current index out of bounds, resetting to 0');
+        if (import.meta.env?.DEV) {
+          console.log('[Reader] Current index out of bounds, resetting to 0');
+        }
         setCurrentIndex(0);
         sessionStorage.setItem('selectedStoryIndex', '0');
       } else {
-        console.log('[Reader] Current index is valid:', currentIndex);
+        if (import.meta.env?.DEV) {
+          console.log('[Reader] Current index is valid:', currentIndex);
+        }
         sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
       }
 
       // Log current post details
       const currentPost = postsData.posts[currentIndex];
-      console.log('[Reader] Selected post:', currentPost ? {
-        id: currentPost.id,
-        title: currentPost.title?.rendered || currentPost.title || 'Story',
-        date: currentPost.date
-      } : 'No post found');
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Selected post:', currentPost ? {
+          id: currentPost.id,
+          title: currentPost.title?.rendered || currentPost.title || 'Story',
+          date: currentPost.date
+        } : 'No post found');
       
       // Now that we have the post data, update our slug for auto-saving
       if (currentPost) {
         const newSlug = routeSlug || (currentPost.slug || `post-${currentPost.id}`);
-        console.log('[Reader] Setting auto-save slug:', newSlug);
+        if (import.meta.env?.DEV) {
+          console.log('[Reader] Setting auto-save slug:', newSlug);
+        }
         setAutoSaveSlug(newSlug);
         
         // Check if we've reloaded but the post has been deleted
@@ -489,24 +528,27 @@ ow new Error(data.message || 'Failed to delete post');
   // Position restoration notification has been removed as requested
 
   useEffect(() => {
-    console.log('[Reader] Verifying social icons:', {
-      twitter: !!FaTwitter,
-      wordpress: !!FaWordpress,
-      instagram: !!FaInstagram
-    });
+    if (import.meta.env?.DEV) {
+      console.log('[Reader] Verifying social icons:', {
+        twitter: !!FaTwitter,
+        wordpress: !!FaWordpress,
+        instagram: !!FaInstagram
+      });
+    }
   }, []);
 
   // Create a function to generate the styles
   const generateStoryContentStyles = () => {
     // Use fixed constants for better text readability
     const textColor = theme === 'dark' 
-          ? `color: ${DARK_TEXT_COLOR};` 
+      ? `color: ${DARK_TEXT_COLOR};` 
       : `color: ${LIGHT_TEXT_COLOR};`;
     
-    // Return the main styles with better text contrast for readability
+    // Return the main styles using CSS variables for font family and size
     return `
   .story-content {
-    font-family: ${availableFonts[fontFamily].family};
+    font-family: var(--reader-font-family);
+    font-size: var(--reader-font-size);
     width: 100%;
     margin: 0 auto;
     padding: 0 0.5rem;
@@ -516,7 +558,8 @@ ow new Error(data.message || 'Failed to delete post');
   .story-content p, .story-content .story-paragraph {
     line-height: 1.7;
     margin-bottom: 1.7em;
-    font-family: ${availableFonts[fontFamily].family};
+    font-family: var(--reader-font-family);
+    font-size: var(--reader-font-size);
     transition: font-size 0.25s ease-in-out, font-family 0.25s ease-in-out;
   }
   @media (max-width: 768px) {
@@ -530,21 +573,13 @@ ow new Error(data.message || 'Failed to delete post');
   // Apply font styles using CSS variables for smooth transitions
   useEffect(() => {
     try {
-      console.log('[Reader] Updating font styles with CSS variables:', { fontFamily, fontSize });
-      
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Updating font styles with CSS variables:', { fontFamily, fontSize });
+      }
       // Set CSS variables on the document root for smooth transitions
       const root = document.documentElement;
       root.style.setProperty('--reader-font-family', availableFonts[fontFamily].family);
       root.style.setProperty('--reader-font-size', `${fontSize}px`);
-      
-      // Apply to story content elements directly for immediate effect
-      const storyElements = document.querySelectorAll('.story-content, .story-content p, .story-content .story-paragraph');
-      storyElements.forEach(element => {
-        if (element instanceof HTMLElement) {
-          element.style.fontFamily = availableFonts[fontFamily].family;
-          element.style.fontSize = `${fontSize}px`;
-        }
-      });
     } catch (error) {
       console.error('[Reader] Error applying font styles:', error);
     }
@@ -659,7 +694,9 @@ ow new Error(data.message || 'Failed to delete post');
       
       // After 3 rapid skips, show the horror Easter egg
       if (skipCountRef.current >= 3 && !showHorrorMessage) {
-        console.log('[Reader] Horror Easter egg triggered after rapid navigation');
+        if (import.meta.env?.DEV) {
+          console.log('[Reader] Horror Easter egg triggered after rapid navigation');
+        }
         
         // Highly threatening message for maximum creepiness with subtle psychological impact
         const message = "I SEE YOU SKIPPING!!!";
@@ -940,15 +977,7 @@ ow new Error(data.message || 'Failed to delete post');
         />
       )}
       
-      {/* Reading progress indicator - always visible for user orientation */}
-      <div 
-        className="fixed top-0 left-0 z-50 h-1 bg-primary/70"
-        style={{ 
-          width: `${readingProgress}%`, 
-          transition: 'width 0.2s ease-out'
-        }}
-        aria-hidden="true"
-      />
+      
       
       {/* Floating pagination has been removed */}
       
@@ -956,28 +985,7 @@ ow new Error(data.message || 'Failed to delete post');
       {/* Full width immersive reading experience */}
 
       <div className={`pt-0 pb-0 bg-background mt-0 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
-        {/* Top breadcrumb for clear navigation context */}
-        <div className="px-4 md:px-8 lg:px-12 py-2">
-          <Breadcrumb aria-label="Breadcrumb">
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link href="/">Home</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link href="/reader">Reader</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>{titleText}</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
+        
 
         {/* Font controls/TOC should be extremely close to main nav: remove extra margins/padding */}
         <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
