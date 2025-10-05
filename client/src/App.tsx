@@ -51,6 +51,8 @@ import ErrorToastProvider from './components/providers/error-toast-provider';
 import { PullToRefresh } from './components/ui/pull-to-refresh';
 import { RefreshProvider } from './contexts/refresh-context';
 import { initCSRFProtection } from './lib/csrf-token';
+// Add global loading provider so ApiLoader can display a proper loading overlay
+import { GlobalLoadingProvider } from './components/GlobalLoadingProvider';
 
 // Import essential pages directly
 const HomePage = React.lazy(() => import('./pages/home'));
@@ -410,49 +412,51 @@ function App() {
   return (
     <GlobalErrorBoundary level="critical">
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <CookieConsentProvider>
-            <ThemeProvider>
-              <SidebarProvider>
-                <NotificationProvider>
-                  <ScrollEffectsProvider>
-                        <ErrorToastProvider>
-                          <RefreshProvider>
-                            {/* Wrap AppContent with PullToRefresh */}
-                            <PullToRefresh onRefresh={handleDataRefresh}>
-                              {/* Performance monitor overlay removed */}
-                              <div className="app-content">
-                                <React.Suspense fallback={
-                                  <div className="w-full flex items-center justify-center py-12">
-                                    <div className="inline-flex items-center gap-3 text-sm text-muted-foreground">
-                                      <span className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2" aria-label="Loading" />
-                                      Loading…
+        <GlobalLoadingProvider>
+          <AuthProvider>
+            <CookieConsentProvider>
+              <ThemeProvider>
+                <SidebarProvider>
+                  <NotificationProvider>
+                    <ScrollEffectsProvider>
+                          <ErrorToastProvider>
+                            <RefreshProvider>
+                              {/* Wrap AppContent with PullToRefresh */}
+                              <PullToRefresh onRefresh={handleDataRefresh}>
+                                {/* Performance monitor overlay removed */}
+                                <div className="app-content">
+                                  <React.Suspense fallback={
+                                    <div className="w-full flex items-center justify-center py-12">
+                                      <div className="inline-flex items-center gap-3 text-sm text-muted-foreground">
+                                        <span className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2" aria-label="Loading" />
+                                        Loading…
+                                      </div>
                                     </div>
-                                  </div>
-                                }>
-                                  <AppContent />
-                                </React.Suspense>
-                              </div>
-                            </PullToRefresh>
-                            {/* Site-wide elements outside of the main layout */}
-                            <CookieConsent />
-                            {location !== '/' && (
-                              <ScrollToTopButton position="bottom-right" />
-                            )}
-                            {/* Conditionally show FeedbackButton */}
-                            <ConditionalFeedbackButton />
+                                  }>
+                                    <AppContent />
+                                  </React.Suspense>
+                                </div>
+                              </PullToRefresh>
+                              {/* Site-wide elements outside of the main layout */}
+                              <CookieConsent />
+                              {location !== '/' && (
+                                <ScrollToTopButton position="bottom-right" />
+                              )}
+                              {/* Conditionally show FeedbackButton */}
+                              <ConditionalFeedbackButton />
 
-                            {/* Toast notifications */}
-                            <Toaster />
-                            <Sonner position="bottom-left" className="fixed-sonner" />
-                            </RefreshProvider>
-                          </ErrorToastProvider>
-                        </ScrollEffectsProvider>
-                  </NotificationProvider>
-                </SidebarProvider>
-            </ThemeProvider>
-          </CookieConsentProvider>
-        </AuthProvider>
+                              {/* Toast notifications */}
+                              <Toaster />
+                              <Sonner position="bottom-left" className="fixed-sonner" />
+                              </RefreshProvider>
+                            </ErrorToastProvider>
+                          </ScrollEffectsProvider>
+                    </NotificationProvider>
+                  </SidebarProvider>
+              </ThemeProvider>
+            </CookieConsentProvider>
+          </AuthProvider>
+        </GlobalLoadingProvider>
       </QueryClientProvider>
     </GlobalErrorBoundary>
   );
