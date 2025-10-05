@@ -44,45 +44,53 @@ import {
 
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
-// Native HTML sanitization function
-const sanitizeHtmlContent = (html: string): string => {
-  try {
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
-    const dangerousElements = temp.querySelectorAll('script, object, embed, iframe, form, input, button');
-    dangerousElements.forEach(element => element.remove());
-    const allElements = temp.querySelectorAll('*');
-    allElements.forEach(element => {
-      const dangerousAttrs = [
-        'onload', 'onerror', 'onclick', 'onmouseover', 'onfocus', 'onblur',
-        'onchange', 'onsubmit', 'onreset', 'onselect', 'onkeydown', 'onkeyup',
-        'onkeypress', 'onmousedown', 'onmouseup', 'onmousemove', 'onmouseout',
-        'onmousein', 'ondblclick', 'oncontextmenu', 'javascript:', 'vbscript:'
-      ];
-      dangerousAttrs.forEach(attr => {
-        if (element.hasAttribute(attr)) {
-          element.removeAttribute(attr);
+// Native HTML sanitization function (hardened)
+  const sanitizeHtmlContent = (html: string): string => {
+    try {
+      const temp = document.createElement('div');
+      temp.innerHTML = html;
+
+      // Remove dangerous elements
+      temp.querySelectorAll('script, object, embed, iframe, form, input, button, link, meta').forEach(el => el.remove());
+
+      // Sanitize attributes and protocols
+      temp.querySelectorAll('*').forEach(el => {
+        for (const attr of Array.from(el.attributes)) {
+          const name = attr.name.toLowerCase();
+          const value = attr.value || '';
+
+          // Remove event handler attributes like onload, onclick, etc.
+          if (name.startsWith('on')) {
+            el.removeAttribute(attr.name);
+            continue;
+          }
+
+          // Remove href/src with dangerous protocols
+          if (name === 'href' || name === 'src') {
+            const val = value.trim().toLowerCase();
+            if (val.startsWith('javascript:') || val.startsWith('vbscript:')) {
+              el.removeAttribute(attr.name);
+              continue;
+            }
+          }
+
+          // Remove styles that include dangerous url() protocols
+          if (name === 'style') {
+            const lower = value.toLowerCase();
+            if (lower.includes('url(') && (lower.includes('javascript:') || lower.includes('vbscript:'))) {
+              el.removeAttribute(attr.name);
+              continue;
+            }
+          }
         }
       });
-      const href = element.getAttribute('href');
-      const src = element.getAttribute('src');
-      if (href && (href.startsWith('javascript:') || href.startsWith('vbscript:'))) {
-        element.removeAttribute('href');
-      }
-      if (src && (src.startsWith('javascript:') || src.startsWith('vbscript:'))) {
-        element.removeAttribute('src');
-      }
-    });
-    return temp.innerHTML;
-  } catch (error) {
-    console.error('[Reader] Error sanitizing HTML:', error);
-    return html;
-  }
-};
 
-interface ReaderPageProps {
-  slug?: string;
-  params?: { slug?: string };
+      return temp.innerHTML;
+    } catch (error) {
+      console.error('[Reader] Error sanitizing HTML:', error);
+      return html;
+    }
+  };
   isCommunityContent?: boolean;
 }
 
@@ -209,16 +217,17 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         },
         credentials: 'include'
       });
-      
-      // Read response data
-      const data = await response.json();
-      
-      if (!response.ok) {
-        console.error(`[Reader] Delete failed with status: ${response.status}`, data);
-        if (response.status === 401) {
-          throw new Error('Please log in to delete this story');
-        } else {
-          throw new Error(data.message || 'Failed to delete post');
+
+      // Handle 204 No Content without parsing
+      if (response.status === 204) {
+        return { ok: true };
+      }
+
+      // Parse JSON only if content-type indicates JSON
+      let data: any = null;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+ow new Error(data.message || 'Failed to delete post');
         }
       }
       
@@ -489,9 +498,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Create a function to generate the styles
   const generateStoryContentStyles = () => {
-    // Use our fixed constants for better text readability
+    // Use fixed constants for better text readability
     const textColor = theme === 'dark' 
-      ? `color: ${DARK_TEXT_COLOR};` 
+          ? `color: ${DARK_TEXT_COLOR};` 
       : `color: ${LIGHT_TEXT_COLOR};`;
     
     // Return the main styles with better text contrast for readability
