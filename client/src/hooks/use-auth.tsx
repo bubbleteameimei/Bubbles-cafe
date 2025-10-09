@@ -47,9 +47,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (response.ok) {
         const data = await response.json();
-        if (data.isAuthenticated) {
-          // Ensure we have the latest user data with all fields
-          console.log('[Auth] User authenticated:', data.user);
+        const isAuth = (data?.authenticated ?? data?.isAuthenticated) === true;
+        if (isAuth) {
+          if (import.meta.env?.DEV) {
+            console.log('[Auth] User authenticated:', data.user);
+          }
           setUser(data.user);
         } else {
           setUser(null);

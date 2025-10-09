@@ -237,11 +237,23 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       let data: any = null;
       const contentType = response.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
-ow new Error(data.message || 'Failed to delete post');
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+      }
+
+      if (!response.ok) {
+        console.error(`[Reader] Delete failed with status: ${response.status}`, data);
+        if (response.status === 401) {
+          throw new Error('Please log in to delete this story');
+        } else {
+          throw new Error((data && data.message) ? data.message : `Failed to delete post (status ${response.status})`);
         }
       }
       
-      return data;
+      return data ?? { ok: true };
     },
     onSuccess: () => {
       // Invalidate related queries to ensure cache is properly cleared
@@ -388,9 +400,10 @@ ow new Error(data.message || 'Failed to delete post');
           const data = await response.json();
           if (import.meta.env?.DEV) {
             console.log('[Reader] Successfully fetched posts:', {
-                hasMore: data.hasMore,
-            firstPost: data.posts?.[0]?.title
-          });
+              hasMore: data.hasMore,
+              firstPost: data.posts?.[0]?.title
+            });
+          }
           
           if (!data.posts || data.posts.length === 0) {
             throw new Error('No stories available');
@@ -491,6 +504,7 @@ ow new Error(data.message || 'Failed to delete post');
           title: currentPost.title?.rendered || currentPost.title || 'Story',
           date: currentPost.date
         } : 'No post found');
+      }
       
       // Now that we have the post data, update our slug for auto-saving
       if (currentPost) {

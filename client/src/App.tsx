@@ -71,6 +71,7 @@ const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
 
 const AuthPage = React.lazy(() => import('./pages/auth'));
 const AuthSuccessPage = React.lazy(() => import('./pages/auth-success'));
+const AuthCallbackPage = React.lazy(() => import('./pages/auth-callback'));
 const ProfilePage = React.lazy(() => import('./pages/profile'));
 const BookmarksPage = React.lazy(() => import('./pages/bookmarks'));
 const SearchResultsPage = React.lazy(() => import('./pages/search-results'));
@@ -280,6 +281,7 @@ const AppContent = () => {
             {/* Authentication */}
             <Route path="/auth" component={AuthPage} />
             <Route path="/auth-success" component={AuthSuccessPage} />
+            <Route path="/auth/callback" component={AuthCallbackPage} />
             <Route path="/reset-password" component={ResetPasswordPage} />
 
             {/* User Pages */}
