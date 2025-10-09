@@ -72,17 +72,58 @@ async function ensureImportAuthorUser() {
 }
 
 function cleanContent(content: string): string {
+  if (!content) return "";
   return content
-    .replace(/<!-- wp:paragraph -->/g, "")
-    .replace(/<!-- \\/wp:paragraph -->/g, "")
-    .replace(/<!-- wp:social-links -->[\\s\\S]*?<!-- \\/wp:social-links -->/g, "")
-    .replace(/<!-- wp:latest-posts[\\s\\S]*?\\/-->/g, "")
-    .replace(/<em>(.*?)<\\/em>/g, "_$1_")
-    .replace(/<br\\s*\\/?>/gi, "\\n")
-    .replace(/<p>/g, "\\n")
-    .replace(/<\\/p>/g, "\\n")
-    .replace(/(?<![_\\w]|^)_(?![_\\w]|$)/g, "")
-    .replace(/\\n\\s*\\n\\s*\\n/g, "\\n\\n")
+    // Remove WordPress block comments and wrappers
+    .replace(/<!-- wp:([^>])*?-->/g, "")
+    .replace(/<!-- \/wp:([^>])*?-->/g, "")
+    .replace(/<ul class="wp-block[^>]*>[\s\S]*?<\/ul>/g, "")
+    .replace(/<div class="wp-block[^>]*>[\s\S]*?<\/div>/g, "")
+    // Remove common shortcodes
+    .replace(/\[caption[^\]]*\][\s\S]*?\[\/caption\]/g, "")
+    .replace(/\[gallery[^\]]*\][\s\S]*?\[\/gallery\]/g, "")
+    .replace(/\[[^\]]+\]/g, "")
+    // Convert HTML to simple markdown-like text
+    .replace(/<h([1-6])>(.*?)<\/h\1>/g, (_: string, level: string, inner: string) => {
+      const hashes = "#".repeat(parseInt(level, 10));
+      return `\n\n${hashes} ${inner.trim()}\n\n`;
+    })
+    .replace(/<em>([^<]+)<\/em>/g, "_$1_")
+    .replace(/<i>([^<]+)<\/i>/g, "_$1_")
+    .replace(/<strong>([^<]+)<\/strong>/g, "**$1**")
+    .replace(/<b>([^<]+)<\/b>/g, "**$1**")
+    .replace(/<li>(.*?)<\/li>/g, "- $1\n")
+    .replace(/<blockquote>([\s\S]*?)<\/blockquote>/g, (_: string, bq: string) => {
+      return bq
+        .split("\n")
+        .map((line: string) => `> ${line.trim()}`)
+        .join("\n");
+    })
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<p[^>]*>/g, "\n\n")
+    .replace(/<\/p>/g, "\n\n")
+    .replace(/<[^>]+>/g, "")
+    // Decode common HTML entities
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&#8211;/g, "–")
+    .replace(/&#8212;/g, "—")
+    .replace(/&#8216;/g, "'")
+    .replace(/&#8217;/g, "'")
+    .replace(/&#8220;/g, '"')
+    .replace(/&#8221;/g, '"')
+    .replace(/&#8230;/g, "…")
+    .replace(/&#(\d+);/g, (_: string, dec: string) => String.fromCharCode(Number(dec)))
+    // Whitespace cleanup
+    .replace(/\n\s*\n\s*\n/g, "\n\n")
+    .replace(/[ \t]+/g, " ")
+    .split("\n")
+    .map((line) => line.trim())
+    .join("\n")
     .trim();
 }
 

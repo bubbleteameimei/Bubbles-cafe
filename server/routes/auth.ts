@@ -603,7 +603,8 @@ router.post('/callback',
       const msg = e instanceof Error ? e.message : String(e);
       authLogger.error('Auth callback error', { error: msg });
       // Respond with 401 for invalid token/code
-      return res.status(401).json({ message: msg });
+      res.status(401).json({ message: msg });
+      return;
     }
   })
 );

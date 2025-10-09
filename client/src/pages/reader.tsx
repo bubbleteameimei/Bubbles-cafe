@@ -293,7 +293,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
       toast({
         title: 'Story Deleted',
-        description: isAdmin && user?.id !== currentPost?.authorId
+        description: isAdmin && user?.id !== (currentPost as any)?.authorId
           ? 'Community story has been deleted by admin.'
           : 'Your story has been deleted successfully.',
       });
@@ -640,7 +640,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const keywords = detectThemes(rawContent);
 
   // Story theme icon override (check metadata for themeIcon)
-  const postThemeIcon = (currentPost?.metadata as any)?.themeIcon;
+  const postThemeIcon = (currentPost as any)?.metadata?.themeIcon;
 
   // If post doesn't exist, show error
   if (!currentPost) {
@@ -1125,7 +1125,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       Community Story
                     </Badge>
                     {/* Show delete button for admins or post authors */}
-                    {(isAdmin || (isCommunityContent && user?.id === currentPost?.authorId)) && isCommunityContent && (
+                    {(isAdmin || (isCommunityContent && user?.id === (currentPost as any)?.authorId)) && isCommunityContent && (
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -1150,12 +1150,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   <DialogHeader>
                     <DialogTitle className="flex items-center text-xl">
                       <Trash className="h-5 w-5 mr-2 text-red-500" />
-                      {isAdmin && user?.id !== currentPost?.authorId ? 
+                      {isAdmin && user?.id !== (currentPost as any)?.authorId ? 
                         "Delete Community Story" : 
                         "Delete Your Story"}
                     </DialogTitle>
                     <DialogDescription className="pt-2 text-sm">
-                      {isAdmin && user?.id !== currentPost?.authorId ? 
+                      {isAdmin && user?.id !== (currentPost as any)?.authorId ? 
                         "As an admin, you are about to delete a user-submitted community story. This action cannot be undone." : 
                         "You are about to delete your community story. This action cannot be undone."}
                     </DialogDescription>
@@ -1314,7 +1314,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   
                   {/* Estimated reading time */}
                   <span className="text-xs px-2 py-1 bg-accent/50 rounded-md">
-                    {currentPost.readingTimeMinutes || '~5'} min read
+                    {readingMinutes} min read
                   </span>
                 </div>
 

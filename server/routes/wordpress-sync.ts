@@ -174,7 +174,7 @@ export function registerWordPressSyncRoutes(app: Express): void {
    * POST /api/wordpress/sync/:postId
    * Trigger a WordPress sync for a single post (admin only)
    */
-  app.post('/api/wordpress/sync/:postId', simpleRateLimit(), requireAdmin, async (req: Request, res: Response) => {
+  app.post('/api/wordpress/sync/:postId', simpleRateLimit(), requireSyncAuth, async (req: Request, res: Response) => {
     // Validate input
     const parseResult = syncPostSchema.safeParse({ postId: req.params.postId });
     if (!parseResult.success) {
