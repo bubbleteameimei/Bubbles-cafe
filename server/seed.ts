@@ -1,5 +1,7 @@
-// import { storage } from "./storage"; // Unused for now
-import { XMLParser } from "fast-xml-parser";
+>
+ WordPress API-based seeding (XML removed)
+import fetch from "node-fetch";
+importom "fast-xml-parser";
 import fs from "fs/promises";
 import path from "path";
 import { posts, users } from "@shared/schema";
@@ -9,28 +11,62 @@ import { initializeDatabaseConnection } from "../scripts/connect-db";
 // We'll initialize db in each function
 let db: any;
 
-async function getAdminUser() {
+async function ensureImportAuthorUser() {
   try {
-    console.log("Locating existing admin user...");
-    const [existingAdmin] = await db.select({
-      id: users.id,
-      username: users.username,
-      email: users.email,
-      isAdmin: users.isAdmin,
-      createdAt: users.createdAt
-    })
-    .from(users)
-    .where(eq(users.isAdmin, true))
-    .limit(1);
+    console.log("Resolving import author user...");
+    const importEmail = process.env.CONTENT_AUTHOR_EMAIL || process.env.WP_IMPORT_AUTHOR_EMAIL;
 
-    if (existingAdmin) {
-      console.log("Admin user found with ID:", existingAdmin.id);
-      return existingAdmin;
+    let author;
+    if (importEmail) {
+      [author] = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        isAdmin: users.isAdmin,
+        createdAt: users.createdAt
+      })
+      .from(users)
+      .where(eq(users.email, importEmail))
+      .limit(1);
+    } else {
+      [author] = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        isAdmin: users.isAdmin,
+        createdAt: users.createdAt
+      })
+      .from(users)
+      .where(eq(users.isAdmin, false))
+      .limit(1);
     }
 
-    throw new Error("No admin user found. Please create one securely before seeding.");
+    if (author) {
+      console.log("✅ Import author user found with ID:", author.id);
+      return author;
+    }
+
+    // Create non-admin import author
+    const email = importEmail || 'wordpress_import@local';
+    const username = 'wordpress_import';
+    const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+    const password_hash = await bcrypt.hash(randomPassword, 12);
+
+    const [newAuthor] = await db
+      .insert(users)
+      .values({
+        username,
+        email,
+        password_hash,
+        isAdmin: false,
+        metadata: { system: 'wp-import' }
+      })
+      .returning();
+
+    console.log("✅ Created import author user with ID:", newAuthor.id);
+    return newAuthor;
   } catch (error) {
-    console.error("Error locating admin user:", error);
+    console.error("Error resolving import author user:", error);
     throw error;
   }
 }
@@ -50,131 +86,89 @@ function cleanContent(content: string): string {
     .trim();
 }
 
-async function parseWordPressXML() {
-  try {
-    const xmlPath = path.join(process.cwd(), "attached_assets", "bubblescafe.wordpress.2025-02-04.000.xml");
-    
-    // Check if file exists first
-    try {
-      await fs.access(xmlPath);
-    } catch (error) {
-      console.log("WordPress XML file not found, skipping XML seeding.");
-      return { posts: [], admin: await getAdminUser() };
-    }
-    
-    const xmlContent = await fs.readFile(xmlPath, "utf-8");
-
-    const parser = new XMLParser({
-      ignoreAttributes: false,
-      parseTagValue: true,
-      parseAttributeValue: true,
-      textNodeName: "_text",
-      isArray: (name) => ['item'].indexOf(name) !== -1
-    });
-
-    const data = parser.parse(xmlContent);
-    const items = data.rss.channel.item;
-
-    // Get admin user for post authorship
-    const admin = await getAdminUser();
-
-    // Track existing slugs to prevent duplicates
-    const existingSlugs = new Set<string>();
-    console.log("Starting to create posts...");
-    let createdCount = 0;
-
-    for (const item of items) {
-      if (item["wp:post_type"] === "post" && item["wp:status"] === "publish") {
-        try {
-          const cleanedContent = cleanContent(item["content:encoded"]);
-          const excerpt = item["excerpt:encoded"]
-            ? cleanContent(item["excerpt:encoded"]).split('\n')[0]
-            : cleanedContent.split('\n')[0];
-
-          let baseSlug = item["wp:post_name"] || item.title
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)/g, '');
-
-          let finalSlug = baseSlug;
-          let counter = 1;
-          while (existingSlugs.has(finalSlug)) {
-            finalSlug = `${baseSlug}-${counter}`;
-            counter++;
-          }
-          existingSlugs.add(finalSlug);
-
-          // Parse the publication date properly
-          const pubDateStr = item.pubDate;
-          const pubDate = new Date(pubDateStr);
-
-          // Check if post already exists
-          const [existingPost] = await db.select()
-            .from(posts)
-            .where(eq(posts.slug, finalSlug));
-
-          if (!existingPost) {
-            // Create post with only the fields that exist in the table
-            try {
-              // Use raw SQL with pool.query to avoid schema mapping
-              const readingTime = Math.ceil(cleanedContent.split(/\s+/).length / 200);
-              const { pool } = await import("./db-connect");
-              const result = await pool.query(
-                `INSERT INTO posts (
-                  title, content, excerpt, slug, is_secret, author_id, 
-                  created_at, mature_content, reading_time_minutes
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                RETURNING id, title, slug, created_at as "createdAt"`,
-                [
-                  item.title,
-                  cleanedContent,
-                  excerpt,
-                  finalSlug,
-                  false, // isSecret
-                  admin.id,
-                  pubDate.toISOString(),
-                  false, // matureContent
-                  readingTime
-                ]
-              );
-              
-              const newPost = result.rows[0] as { id: number, title: string, slug: string, createdAt: Date };
-
-              createdCount++;
-              console.log(`Created post: "${item.title}" (ID: ${newPost.id}) with date: ${pubDate.toISOString()}`);
-            } catch (error) {
-              console.error(`Error creating post "${item.title}":`, error);
-            }
-          } else {
-            console.log(`Post "${item.title}" already exists, skipping...`);
-          }
-        } catch (error) {
-          console.error(`Error processing post "${item.title}":`, error);
-        }
-      }
-    }
-
-    console.log(`Successfully processed ${createdCount} posts`);
-    return createdCount;
-  } catch (error) {
-    console.error("Error parsing WordPress XML:", error);
-    throw error;
+async function fetchWordPressPosts(page = 1, perPage = 20) {
+  const baseUrl = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
+  const response = await fetch(`${baseUrl}/posts?page=${page}&per_page=${perPage}&_fields=id,date,title,content,excerpt,slug`);
+  if (!response.ok) {
+    throw new Error(`WordPress API error: ${response.status} ${response.statusText}`);
   }
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
 }
 
 export async function seedDatabase() {
   try {
-    console.log("Starting database seeding...");
-    
+    console.log("Starting API-based database seeding...");
     // Initialize database connection first
     console.log('🔄 Initializing database connection...');
     const connection = await initializeDatabaseConnection();
     db = connection.db;
-    
-    const result = await parseWordPressXML();
-    const postsCreated = typeof result === 'number' ? result : 0;
-    console.log(`Database seeded successfully with ${postsCreated} posts!`);
-    return postsCreated;
+
+    const author = await ensureImportAuthorUser();
+
+    let page = 1;
+    let totalCreated = 0;
+    const perPage = 20;
+
+    while (true) {
+      const wpPosts = await fetchWordPressPosts(page, perPage);
+      if (wpPosts.length === 0) break;
+
+      for (const wpPost of wpPosts) {
+        try {
+          const title = wpPost.title?.rendered || 'Untitled';
+          const content = cleanContent(wpPost.content?.rendered || '');
+          const excerpt = wpPost.excerpt?.rendered
+            ? cleanContent(wpPost.excerpt.rendered).substring(0, 200) + '...'
+            : content.substring(0, 200) + '...';
+
+          const finalSlug = wpPost.slug;
+          const pubDate = new Date(wpPost.date);
+
+          // Check if post already exists
+          const [existingPost] = await db.select()
+            .from(posts)
+            .where(eq(posts.slug, finalSlug))
+            .limit(1);
+
+          if (!existingPost) {
+            const readingTime = Math.ceil(content.split(/\s+/).length / 200);
+
+            await db.insert(posts).values({
+              title,
+              content,
+              excerpt,
+              slug: finalSlug,
+              authorId: author.id,
+              isSecret: false,
+              isAdminPost: false,
+              matureContent: false,
+              readingTimeMinutes: readingTime,
+              themeCategory: 'General',
+              metadata: {
+                importSource: 'wordpress-api',
+                importDate: new Date().toISOString(),
+                wordpressId: wpPost.id,
+                originalDate: wpPost.date
+              },
+              createdAt: pubDate
+            });
+
+            totalCreated++;
+            console.log(`Created post: "${title}" with date: ${pubDate.toISOString()}`);
+          } else {
+            console.log(`Post "${title}" already exists, skipping...`);
+          }
+        } catch (error) {
+          console.error(`Error processing post "${wpPost.title?.rendered}":`, error);
+        }
+      }
+
+      page++;
+    }
+
+    console.log(`Database seeded successfully from WordPress API with ${totalCreated} posts!`);
+    return totalCreated;
   } catch (error) {
     console.error("Error seeding database:", error);
     throw error;
