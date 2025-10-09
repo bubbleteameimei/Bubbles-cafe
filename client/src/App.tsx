@@ -281,6 +281,7 @@ const AppContent = () => {
             {/* Authentication */}
             <Route path="/auth" component={AuthPage} />
             <Route path="/auth-success" component={AuthSuccessPage} />
+            <Route path="/auth/success" component={AuthSuccessPage} />
             <Route path="/auth/callback" component={AuthCallbackPage} />
             <Route path="/reset-password" component={ResetPasswordPage} />
 

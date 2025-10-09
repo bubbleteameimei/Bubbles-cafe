@@ -588,7 +588,10 @@ router.post('/callback',
           return res.status(500).json({ message: 'Session error' });
         }
 
-        const frontendUrl = process.env.FRONTEND_SUCCESS_URL || process.env.FRONTEND_URL || 'https://bubblescafe.space';
+        // Build fallback redirect to /auth/success on the frontend if no explicit success URL is set
+        const baseFrontend = process.env.FRONTEND_URL || 'https://bubblescafe.space';
+        const fallbackSuccess = `${String(baseFrontend).replace(/\/$/, '')}/auth/success`;
+        const frontendUrl = process.env.FRONTEND_SUCCESS_URL || fallbackSuccess;
         // Redirect to frontend after successful login
         try {
           return res.redirect(frontendUrl);
