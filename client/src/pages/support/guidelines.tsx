@@ -1,4 +1,11 @@
 import { motion } from "framer-motion";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbSeparator
+} from "@/components/ui/breadcrumb";
 
 export default function Guidelines() {
   return (
@@ -8,7 +15,25 @@ export default function Guidelines() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <h1 className="text-4xl font-bold mb-6">Community Guidelines</h1>
+      <h1 className="text-4xl font-bold mb-3">Community Guidelines</h1>
+      {/* Breadcrumb navigation */}
+      <div className="mb-5">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/community">Community</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <span className="text-muted-foreground">Guidelines</span>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
 
       {/* Table of Contents */}
       <nav className="mb-8 rounded-lg border border-border bg-muted/40 p-4">

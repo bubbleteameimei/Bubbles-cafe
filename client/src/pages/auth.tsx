@@ -93,13 +93,15 @@ export default function AuthPage() {
 
     try {
       // Enhanced logging for debugging
-      console.log("[Auth] Attempting authentication via form submit", { 
-        mode: isSignIn ? "sign-in" : "sign-up",
-        hasEmail: !!email,
-        hasPassword: !!password,
-        hasUsername: !!username,
-        rememberMe
-      });
+      if (import.meta.env?.DEV) {
+        console.log("[Auth] Attempting authentication via form submit", { 
+          mode: isSignIn ? "sign-in" : "sign-up",
+          hasEmail: !!email,
+          hasPassword: !!password,
+          hasUsername: !!username,
+          rememberMe
+        });
+      }
 
       if (isSignIn) {
         // Validate email and password
@@ -115,7 +117,8 @@ export default function AuthPage() {
           throw new Error("Password must be at least 6 characters long");
         }
         
-        console.log("[Auth] Validations passed, submitting login request");
+        if (import.meta.env?.DEV) {
+          console.log("[Auth]request");
         // Use the direct login method
         const result = await login(email, password, rememberMe);
         
@@ -123,7 +126,9 @@ export default function AuthPage() {
           throw new Error("Login failed - no user data received");
         }
         
-        console.log("[Auth] Login successful, redirecting", { userId: result.id });
+        if (import.meta.env?.DEV) {
+          console.log("[Auth] Login successful, redirecting", { userId: result.id });
+        }
         
         // Show success notification
         toast({
@@ -163,7 +168,9 @@ export default function AuthPage() {
           throw new Error("Password is too weak. Please include at least uppercase letters, numbers, or special characters.");
         }
         
-        console.log("[Auth] Validations passed, submitting registration request");
+        if (import.meta.env?.DEV) {
+          console.log("[Auth] Validations passed, submitting registration request");
+        }
         const result = await registerMutation.mutateAsync({ 
           username, 
           email, 
@@ -174,7 +181,9 @@ export default function AuthPage() {
           throw new Error("Registration failed - no user data received");
         }
         
-        console.log("[Auth] Registration successful, redirecting", { userId: result.id });
+        if (import.meta.env?.DEV) {
+          console.log("[Auth] Registration successful, redirecting", { userId: result.id });
+        }
         
         // Show success notification
         toast({

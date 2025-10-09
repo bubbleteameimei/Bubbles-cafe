@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { CommunityReaderCard, ExtendedUser, ExtendedPost as CommunityReaderPost } from "@/components/community/community-reader-card";
 import { CategoryFilters } from "@/components/community/category-filters";
 import { useAuth } from "@/hooks/use-auth";
@@ -340,75 +341,91 @@ export default function CommunityPage() {
         </div>
       )}
       
-      {/* Guidelines Section */}
+      {/* Guidelines Section - converted to accordion for easier navigation */}
       <div className="mt-12 bg-muted/40 rounded-lg p-6 border border-border">
         <h2 className="text-xl font-bold mb-4">Community Guidelines</h2>
-        <div className="space-y-6">
-          <section>
-            <h3 className="text-lg font-semibold">Our Community Values</h3>
-            <p>
-              Our horror story community strives to be a welcoming space for writers and readers to share and enjoy creepy content.
-              We believe in fostering creativity while maintaining respect for all members.
-            </p>
-          </section>
+        {/* Import Accordion components */}
+        {/* eslint-disable-next-line @typescript-eslint/no-unused-vars */}
+        {false && <div />}
+        {/* Accordion content */}
+        {/* We import at the top of the file */}
+        {/* See updated import: Accordion, AccordionItem, AccordionTrigger, AccordionContent */}
+        <Accordion type="single" collapsible className="w-full space-y-2">
+          <AccordionItem value="values">
+            <AccordionTrigger>Our Community Values</AccordionTrigger>
+            <AccordionContent>
+              <p>
+                Our horror story community strives to be a welcoming space for writers and readers to share and enjoy creepy content.
+                We believe in fostering creativity while maintaining respect for all members.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
 
-          <section>
-            <h3 className="text-lg font-semibold">Content Standards</h3>
-            <p>While we embrace horror and the macabre, we have guidelines about what content is appropriate:</p>
-            <ul className="list-disc pl-5 space-y-2">
-              <li>Clearly label mature content (gore, extreme violence, etc.)</li>
-              <li>No glorification of real-world tragedies or criminals</li>
-              <li>No explicit sexual content involving minors</li>
-              <li>No hate speech or content that targets specific groups</li>
-              <li>No doxxing or sharing others' personal information</li>
-            </ul>
-          </section>
+          <AccordionItem value="content-standards">
+            <AccordionTrigger>Content Standards</AccordionTrigger>
+            <AccordionContent>
+              <p>While we embrace horror and the macabre, we have guidelines about what content is appropriate:</p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li>Clearly label mature content (gore, extreme violence, etc.)</li>
+                <li>No glorification of real-world tragedies or criminals</li>
+                <li>No explicit sexual content involving minors</li>
+                <li>No hate speech or content that targets specific groups</li>
+                <li>No doxxing or sharing others' personal information</li>
+              </ul>
+            </AccordionContent>
+          </AccordionItem>
 
-          <section>
-            <h3 className="text-lg font-semibold">Interaction Guidelines</h3>
-            <p>When interacting with other community members:</p>
-            <ul className="list-disc pl-5 space-y-2">
-              <li>Provide constructive feedback, not destructive criticism</li>
-              <li>Respect different writing styles and horror preferences</li>
-              <li>Don't harass or bully other members</li>
-              <li>Report inappropriate content instead of engaging with it</li>
-              <li>Be mindful that behind every story is a real person</li>
-            </ul>
-          </section>
+          <AccordionItem value="interaction">
+            <AccordionTrigger>Interaction Guidelines</AccordionTrigger>
+            <AccordionContent>
+              <p>When interacting with other community members:</p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li>Provide constructive feedback, not destructive criticism</li>
+                <li>Respect different writing styles and horror preferences</li>
+                <li>Don't harass or bully other members</li>
+                <li>Report inappropriate content instead of engaging with it</li>
+                <li>Be mindful that behind every story is a real person</li>
+              </ul>
+            </AccordionContent>
+          </AccordionItem>
 
-          <section>
-            <h3 className="text-lg font-semibold">Plagiarism Policy</h3>
-            <p>We take intellectual property seriously:</p>
-            <ul className="list-disc pl-5 space-y-2">
-              <li>Only post original content you created or have permission to share</li>
-              <li>Give proper credit when building upon others' ideas</li>
-              <li>Report suspected plagiarism to moderators</li>
-            </ul>
-            <p className="text-sm text-muted-foreground">
-              Violations of our plagiarism policy may result in content removal and account restrictions.
-            </p>
-          </section>
+          <AccordionItem value="plagiarism">
+            <AccordionTrigger>Plagiarism Policy</AccordionTrigger>
+            <AccordionContent>
+              <p>We take intellectual property seriously:</p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li>Only post original content you created or have permission to share</li>
+                <li>Give proper credit when building upon others' ideas</li>
+                <li>Report suspected plagiarism to moderators</li>
+              </ul>
+              <p className="text-sm text-muted-foreground">
+                Violations of our plagiarism policy may result in content removal and account restrictions.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
 
-          <section>
-            <h3 className="text-lg font-semibold">Moderation</h3>
-            <p>Our moderation team works to ensure these guidelines are followed. Actions they may take include:</p>
-            <ul className="list-disc pl-5 space-y-2">
-              <li>Content removal</li>
-              <li>Warnings</li>
-              <li>Temporary restrictions</li>
-              <li>Permanent bans for serious or repeated violations</li>
-            </ul>
-            <p className="text-sm text-muted-foreground">
-              If you believe a moderation action was taken in error, you can appeal through our{" "}
-              <a href="/contact" className="underline">contact form</a>.
-            </p>
-          </section>
+          <AccordionItem value="moderation">
+            <AccordionTrigger>Moderation</AccordionTrigger>
+            <AccordionContent>
+              <p>Our moderation team works to ensure these guidelines are followed. Actions they may take include:</p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li>Content removal</li>
+                <li>Warnings</li>
+                <li>Temporary restrictions</li>
+                <li>Permanent bans for serious or repeated violations</li>
+              </ul>
+              <p className="text-sm text-muted-foreground">
+                If you believe a moderation action was taken in error, you can appeal through our{" "}
+                <a href="/contact" className="underline">contact form</a>.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
-          <p className="text-sm text-muted-foreground">
-            For more details, please read our{" "}
-            <a href="/support/guidelines" className="underline">full community guidelines</a>.
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground mt-4">
+          For more details, please read our{" "}
+          <a href="/support/guidelines" className="underline">full community guidelines</a>.
+        </p>
       </div>
     </div>
   );
