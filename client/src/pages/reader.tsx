@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import useReaderGentleScroll from "@/hooks/useReaderGentleScroll";
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import SEO from "@/components/SEO";
+import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
 
 
 import {
@@ -363,77 +364,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         console.log('[Reader] Fetching WordPress posts...', { routeSlug });
       }
 
-      const site = 'bubbleteameimei.wordpress.com';
-      const baseUrl = `https://public-api.wordpress.com/wp/v2/sites/${site}`;
-
       try {
         if (routeSlug) {
-          // Fetch a single WordPress post by slug
-          const url = `${baseUrl}/posts?slug=${encodeURIComponent(routeSlug)}&_fields=id,date,slug,title,content,excerpt`;
-          const response = await fetch(url);
-          if (!response.ok) throw new Error('Failed to fetch WordPress post by slug');
-          const arr = await response.json();
-
-          if (!Array.isArray(arr) || arr.length === 0) {
-            throw new Error('Post not found');
-          }
-
-          const item = arr[0];
-          const normalizedPost = {
-            id: item.id,
-            slug: item.slug,
-            title: { rendered: item?.title?.rendered || '' },
-            content: { rendered: item?.content?.rendered || '' },
-            date: item?.date || new Date().toISOString()
-          };
-
-          return { posts: [normalizedPost], totalPages: 1, total: 1 };
+          // Use server-proxied WordPress API to avoid CORS
+          const post = await fetchWordPressPostBySlug(routeSlug);
+          return { posts: [post], totalPages: 1, total: 1 };
         } else {
-          // Fetch a list of WordPress posts
-          const url = `${baseUrl}/posts?per_page=100&_fields=id,date,slug,title,content,excerpt`;
-          const response = await fetch(url);
-          if (!response.ok) {
-            throw new Error('Failed to fetch WordPress posts');
-          }
-
-          const arr = await response.json();
-          if (!Array.isArray(arr) || arr.length === 0) {
-            throw new Error('No stories available');
-          }
-
-          const normalizedPosts = arr.map((item: any) => ({
-            id: item.id,
-            slug: item.slug,
-            title: { rendered: item?.title?.rendered || '' },
-            content: { rendered: item?.content?.rendered || '' },
-            date: item?.date || new Date().toISOString()
-          }));
-
-          return { posts: normalizedPosts, totalPages: 1, total: normalizedPosts.length };
+          // Fetch a list of WordPress posts via proxy
+          const result = await fetchWordPressPosts({ perPage: 100, includeContent: true });
+          const posts = Array.isArray(result.posts) ? result.posts : [];
+          return { posts, totalPages: result.totalPages ?? 1, total: result.total ?? posts.length };
         }
       } catch (error) {
-        console.error('[Reader] Error fetching WordPress posts:', error);
-        // Fallback: try a smaller page size
-        try {
-          const url = `${baseUrl}/posts?per_page=20&_fields=id,date,slug,title,content,excerpt`;
-          const response = await fetch(url);
-          if (response.ok) {
-            const arr = await response.json();
-            if (Array.isArray(arr) && arr.length > 0) {
-              const normalizedPosts = arr.map((item: any) => ({
-                id: item.id,
-                slug: item.slug,
-                title: { rendered: item?.title?.rendered || 'Story' },
-                content: { rendered: item?.content?.rendered || 'Content not available.' },
-                date: item?.date || new Date().toISOString()
-              }));
-              return { posts: normalizedPosts, totalPages: 1, total: normalizedPosts.length };
-            }
-          }
-        } catch (fallbackError) {
-          console.error('[Reader] Fallback also failed:', fallbackError);
-        }
-
+        console.error('[Reader] Error fetching WordPress posts via proxy:', error);
         throw error;
       }
     },

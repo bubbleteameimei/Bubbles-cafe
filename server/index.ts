@@ -171,6 +171,30 @@ app.use(helmet({
   }
 }));
 
+// Encourage indexing for main HTML routes
+app.use((req, res, next) => {
+  try {
+    const accept = String(req.headers.accept || "");
+    const isHtml = accept.includes("text/html");
+    const path = (req.path || "");
+    if (
+      req.method === "GET" &&
+      (isHtml ||
+        path === "/" ||
+        path.startsWith("/reader") ||
+        path.startsWith("/stories") ||
+        path.startsWith("/about") ||
+        path.startsWith("/contact") ||
+        path.startsWith("/privacy") ||
+        path.startsWith("/community") ||
+        path.startsWith("/submit-story"))
+    ) {
+      res.setHeader("X-Robots-Tag", "index, follow");
+    }
+  } catch {}
+  next();
+});
+
 // Conditional browser caching and ETag
 if (config.cache.browser) {
   app.use(etagCache());

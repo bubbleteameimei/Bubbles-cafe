@@ -26,6 +26,8 @@ router.get('/robots.txt', async (req: Request, res: Response) => {
 			''
 		];
 		res.setHeader('Content-Type', 'text/plain');
+		// Cache robots for 1 hour
+		res.setHeader('Cache-Control', 'public, max-age=3600');
 		res.send(lines.join('\n'));
 		return;
 	} catch (error) {
@@ -39,24 +41,53 @@ router.get('/sitemap.xml', async (req: Request, res: Response) => {
 	try {
 		const origin = getOrigin(req);
 		const urls: Array<{ loc: string; lastmod?: string; changefreq?: string; priority?: string }> = [];
+		const seen = new Set<string>();
 
 		// Static primary routes
 		const staticPaths = ['/', '/stories', '/reader', '/about', '/contact', '/privacy', '/community', '/submit-story'];
 		for (const p of staticPaths) {
-			urls.push({ loc: `${origin}${p}`, changefreq: 'weekly', priority: '0.8' });
+			const loc = `${origin}${p}`;
+			urls.push({ loc, changefreq: 'weekly', priority: '0.8' });
+			seen.add(loc);
 		}
 
-		// Include recent posts
+		// Include recent posts from local storage/database
 		try {
 			const result = await storage.getPosts?.(1, 200, {} as any);
 			const posts = result?.posts || [];
 			for (const post of posts as any[]) {
 				const slug = post.slug || `post-${post.id}`;
-				const date = (post.updatedAt || post.createdAt || new Date()).toString();
-				urls.push({ loc: `${origin}/reader/${slug}`, lastmod: new Date(date).toISOString(), changefreq: 'monthly', priority: '0.6' });
+				const loc = `${origin}/reader/${slug}`;
+				if (!seen.has(loc)) {
+					const date = (post.updatedAt || post.createdAt || new Date()).toString();
+					urls.push({ loc, lastmod: new Date(date).toISOString(), changefreq: 'monthly', priority: '0.6' });
+					seen.add(loc);
+				}
 			}
 		} catch (e) {
 			seoLogger.warn('Failed to include posts in sitemap', { error: e instanceof Error ? e.message : String(e) });
+		}
+
+		// Fallback: include WordPress posts via server-side fetch if DB is empty or for completeness
+		try {
+			const wpResponse = await fetch('https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts?per_page=100&_fields=slug,date');
+			if (wpResponse.ok) {
+				const wpPosts: Array<{ slug: string; date?: string }> = await wpResponse.json();
+				for (const wp of wpPosts) {
+					if (wp?.slug) {
+						const loc = `${origin}/reader/${wp.slug}`;
+						if (!seen.has(loc)) {
+							const lastmod = wp.date ? new Date(wp.date).toISOString() : undefined;
+							urls.push({ loc, lastmod, changefreq: 'monthly', priority: '0.5' });
+							seen.add(loc);
+						}
+					}
+				}
+			} else {
+				seoLogger.warn('WordPress fallback failed for sitemap', { status: wpResponse.status });
+			}
+		} catch (wpErr) {
+			seoLogger.warn('Error fetching WordPress posts for sitemap', { error: wpErr instanceof Error ? wpErr.message : String(wpErr) });
 		}
 
 		const xml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
@@ -67,6 +98,8 @@ router.get('/sitemap.xml', async (req: Request, res: Response) => {
 			`\n</urlset>`;
 
 		res.setHeader('Content-Type', 'application/xml');
+		// Cache sitemap for 1 hour
+		res.setHeader('Cache-Control', 'public, max-age=3600');
 		res.send(xml);
 		return;
 	} catch (error) {

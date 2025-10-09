@@ -9,7 +9,7 @@ export interface WordPressPost {
   excerpt: { rendered: string };
 }
 
-const WORDPRESS_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts';
+const WORDPRESS_API_URL = '/api/wordpress/posts';
 const MAX_POSTS = 1000;
 const POSTS_PER_PAGE = 100;
 
@@ -258,8 +258,9 @@ export async function fetchWordPressPosts(page = 1, perPage = 100): Promise<Word
         throw new Error(`API returned error status: ${response.status}`);
       }
 
-      // Parse response
-      const posts = await response.json() as WordPressPost[];
+      // Parse response (supports proxy wrapper)
+      const json = await response.json() as any;
+      const posts = Array.isArray(json) ? json : (Array.isArray(json?.posts) ? json.posts : []);
       console.log(`[WordPress Service] Received ${Array.isArray(posts) ? posts.length : 'non-array'} response`);
 
       // Validate response format
@@ -269,10 +270,10 @@ export async function fetchWordPressPosts(page = 1, perPage = 100): Promise<Word
       }
 
       // Cache successful results to local storage
-      savePostsToLocalStorage(posts);
+      savePostsToLocalStorage(posts as WordPressPost[]);
       
       // Return successfully parsed posts
-      return posts;
+      return posts as WordPressPost[];
     } catch (fetchError) {
       clearTimeout(timeoutId); // Clear timeout if fetch fails
       console.error('[WordPress Service] Fetch operation failed:', fetchError);
