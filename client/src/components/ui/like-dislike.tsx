@@ -4,6 +4,8 @@ import { useToast } from "@/hooks/use-toast";
 
 interface LikeDislikeProps {
   postId: number;
+  slug?: string;
+  source?: 'local' | 'wp';
   userLikeStatus?: 'like' | 'dislike' | null;
   onLike?: (liked: boolean) => void;
   onDislike?: (disliked: boolean) => void;
@@ -36,27 +38,44 @@ function isValidStats(obj: any): obj is Stats {
     && typeof obj.userInteracted === 'boolean';
 }
 
-const getStorageKey = (postId: number) => `post-stats-${postId}`;
+const getStorageKey = (postId: number, slug?: string, source: 'local' | 'wp' = 'local') =>
+  slug && slug.trim()
+    ? `reaction-${source}:${slug.trim()}`
+    : `post-stats-${postId}`;
 
 // Generate consistent random numbers based on postId
-const generateBaseStats = (postId: number) => {
-  // Use postId as seed for consistent random generation across all components
-  const seed = postId * 12345;
-  const seededRandom = (seed: number) => {
-    const x = Math.sin(seed) * 10000;
+const generateBaseStats = (postId: number, slug?: string) => {
+  // Use slug hash when available for consistent generation across pages
+  const seedNumber = (() => {
+    if (slug && slug.length) {
+      let hash = 0;
+      for (let i = 0; i < slug.length; i++) {
+        hash = (hash << 5) - hash + slug.charCodeAt(i);
+        hash |= 0; // 32-bit integer
+      }
+      return Math.abs(hash);
+    }
+    return postId;
+  })();
+
+  const seed = seedNumber * 12345;
+  const seededRandom = (s: number) => {
+    const x = Math.sin(s) * 10000;
     return x - Math.floor(x);
   };
-  
+
   const likesBase = Math.floor(seededRandom(seed) * (150 - 80 + 1)) + 80;
   const dislikesBase = Math.floor(seededRandom(seed + 999) * (20 - 8 + 1)) + 8;
-  
-  console.log(`Generated base stats for post ${postId}: likes=${likesBase}, dislikes=${dislikesBase}`);
+
+  if (import.meta.env?.DEV) {
+    console.log(`Generated base stats for key (${slug ?? postId}): likes=${likesBase}, dislikes=${dislikesBase}`);
+  }
   return { likes: likesBase, dislikes: dislikesBase };
 };
 
-const getOrCreateStats = (postId: number): Stats => {
+const getOrCreateStats = (postId: number, slug?: string, source: 'local' | 'wp' = 'local'): Stats => {
   try {
-    const storageKey = getStorageKey(postId);
+    const storageKey = getStorageKey(postId, slug, source);
     const existingStats = localStorage.getItem(storageKey);
 
     if (existingStats) {
@@ -66,8 +85,8 @@ const getOrCreateStats = (postId: number): Stats => {
       }
     }
 
-    // Generate consistent base stats for this postId
-    const baseStats = generateBaseStats(postId);
+    // Generate consistent base stats using slug when available
+    const baseStats = generateBaseStats(postId, slug);
 
     const newStats: Stats = {
       likes: baseStats.likes,
@@ -82,8 +101,8 @@ const getOrCreateStats = (postId: number): Stats => {
     localStorage.setItem(storageKey, JSON.stringify(newStats));
     return newStats;
   } catch (error) {
-    console.error(`[LikeDislike] Error managing stats for post ${postId}:`, error);
-    const fallbackBase = generateBaseStats(postId);
+    console.error(`[LikeDislike] Error managing stats for key (${slug ?? postId}):`, error);
+    const fallbackBase = generateBaseStats(postId, slug);
     return {
       likes: fallbackBase.likes,
       dislikes: fallbackBase.dislikes,
@@ -98,6 +117,8 @@ const getOrCreateStats = (postId: number): Stats => {
 
 export function LikeDislike({
   postId,
+  slug,
+  source = 'local',
   userLikeStatus = null,
   onLike,
   onDislike,
@@ -111,6 +132,7 @@ export function LikeDislike({
   const [stats, setStats] = useState<Stats>(() => getOrCreateStats(postId));
   const [inlineToast, setInlineToast] = useState<{ message: string; type: 'like' | 'dislike' | 'error' | null } | null>(null);
   const [isToastVisible, setIsToastVisible] = useState(false);
+  const storageKey = getStorageKey(postId, slug, source);
 
   // Listen for stats updates from other components and reset events
   useEffect(() => {
@@ -132,11 +154,11 @@ export function LikeDislike({
 
     const handleStatsReset = () => {
       // Clear all post stats and regenerate
-      const keys = Object.keys(localStorage).filter(key => key.startsWith('post-stats-'));
+      const keys = Object.keys(localStorage).filter(key => key.startsWith('post-stats-') || key.startsWith('reaction-'));
       keys.forEach(key => localStorage.removeItem(key));
       
       // Regenerate stats for this component
-      const freshStats = getOrCreateStats(postId);
+      const freshStats = getOrCreateStats(postId, slug, source);
       setStats(freshStats);
       setLiked(false);
       setDisliked(false);
@@ -154,8 +176,10 @@ export function LikeDislike({
 
   // Load existing stats or create new ones consistently
   useEffect(() => {
-    const currentStats = getOrCreateStats(postId);
-    console.log(`Loading stats for post ${postId}:`, currentStats);
+    const currentStats = getOrCreateStats(postId, slug, source);
+    if (import.meta.env?.DEV) {
+      console.log(`Loading stats for key (${slug ?? postId}):`, currentStats);
+    }
     setStats(currentStats);
     
     // Determine user state from current stats vs base stats
@@ -165,7 +189,7 @@ export function LikeDislike({
     setLiked(userLiked);
     setDisliked(userDisliked);
     onUpdate?.(currentStats.likes, currentStats.dislikes);
-  }, [postId, onUpdate]);
+  }, [postId, slug, source, onUpdate]);
 
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
     setInlineToast({ message, type });
@@ -184,7 +208,7 @@ export function LikeDislike({
 
   const updateStats = (newStats: Stats) => {
     try {
-      localStorage.setItem(getStorageKey(postId), JSON.stringify(newStats));
+      localStorage.setItem(storageKey, JSON.stringify(newStats));
       setStats(newStats);
       onUpdate?.(newStats.likes, newStats.dislikes);
       
@@ -193,9 +217,11 @@ export function LikeDislike({
         detail: { postId, stats: newStats }
       }));
       
-      console.log('Stats updated:', newStats);
+      if (import.meta.env?.DEV) {
+        console.log('Stats updated:', newStats);
+      }
     } catch (error) {
-      console.error(`[LikeDislike] Error updating stats for post ${postId}:`, error);
+      console.error(`[LikeDislike] Error updating stats for key (${slug ?? postId}):`, error);
       showInlineToast("Error updating reaction - please try again later", 'error');
     }
   };

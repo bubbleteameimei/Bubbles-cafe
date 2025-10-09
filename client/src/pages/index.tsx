@@ -617,7 +617,9 @@ export default function IndexView() {
                           <Suspense fallback={<div className="text-xs text-muted-foreground">…</div>}>
                             <LikeDislike 
                               key={`like-${post.id}`} 
-                              postId={post.id} 
+                              postId={post.id}
+                              slug={post.slug}
+                              source="wp"
                               variant="index"
                               onLike={() => console.log('Liked on index')}
                               onUpdate={(likes, dislikes) => console.log('Index stats updated', { likes, dislikes })}

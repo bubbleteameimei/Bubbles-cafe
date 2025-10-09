@@ -1,9 +1,9 @@
->
- WordPress API-based seeding (XML removed)
+/**
+ * WordPress API-based seeding (XML removed)
+ * Fixed malformed header and imports; uses WordPress REST API only.
+ */
 import fetch from "node-fetch";
-importom "fast-xml-parser";
-import fs from "fs/promises";
-import path from "path";
+import bcrypt from "bcryptjs";
 import { posts, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { initializeDatabaseConnection } from "../scripts/connect-db";
@@ -74,15 +74,15 @@ async function ensureImportAuthorUser() {
 function cleanContent(content: string): string {
   return content
     .replace(/<!-- wp:paragraph -->/g, "")
-    .replace(/<!-- \/wp:paragraph -->/g, "")
-    .replace(/<!-- wp:social-links -->[\s\S]*?<!-- \/wp:social-links -->/g, "")
-    .replace(/<!-- wp:latest-posts[\s\S]*?\/-->/g, "")
-    .replace(/<em>(.*?)<\/em>/g, "_$1_")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<p>/g, "\n")
-    .replace(/<\/p>/g, "\n")
-    .replace(/(?<![_\w]|^)_(?![_\w]|$)/g, "")
-    .replace(/\n\s*\n\s*\n/g, "\n\n")
+    .replace(/<!-- \\/wp:paragraph -->/g, "")
+    .replace(/<!-- wp:social-links -->[\\s\\S]*?<!-- \\/wp:social-links -->/g, "")
+    .replace(/<!-- wp:latest-posts[\\s\\S]*?\\/-->/g, "")
+    .replace(/<em>(.*?)<\\/em>/g, "_$1_")
+    .replace(/<br\\s*\\/?>/gi, "\\n")
+    .replace(/<p>/g, "\\n")
+    .replace(/<\\/p>/g, "\\n")
+    .replace(/(?<![_\\w]|^)_(?![_\\w]|$)/g, "")
+    .replace(/\\n\\s*\\n\\s*\\n/g, "\\n\\n")
     .trim();
 }
 
@@ -132,7 +132,7 @@ export async function seedDatabase() {
             .limit(1);
 
           if (!existingPost) {
-            const readingTime = Math.ceil(content.split(/\s+/).length / 200);
+            const readingTime = Math.ceil(content.split(/\\s+/).length / 200);
 
             await db.insert(posts).values({
               title,

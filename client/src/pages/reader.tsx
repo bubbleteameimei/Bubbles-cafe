@@ -1078,7 +1078,30 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </div>
               <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
               <TableOfContents 
-                currentPostId={currentPost.id} 
+                currentPostId={currentPost.id}
+                posts={posts.map((p: any) => ({
+                  id: p.id,
+                  title: (p.title?.rendered || p.title || 'Untitled') as string,
+                  slug: (p.slug || `post-${p.id}`) as string,
+                  date: (p.date || p.createdAt || new Date().toISOString()) as string
+                }))}
+                onSelect={(selected) => {
+                  try {
+                    // Prefer match by slug when available
+                    const foundIndex = posts.findIndex((p: any) =>
+                      (selected.slug && p.slug === selected.slug) || p.id === selected.id
+                    );
+                    if (foundIndex >= 0) {
+                      setCurrentIndex(foundIndex);
+                      // Scroll to top for a clean transition
+                      window.scrollTo({ top: 0, behavior: 'auto' });
+                    }
+                  } catch (err) {
+                    console.error('[Reader] TOC onSelect error:', err);
+                  } finally {
+                    setContentsDialogOpen(false);
+                  }
+                }}
                 onClose={() => setContentsDialogOpen(false)} 
               />
             </DialogContent>
@@ -1408,7 +1431,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               <div className="flex flex-col items-center justify-center gap-6">
                 {/* Centered Like/Dislike buttons */}
                 <div className={`flex justify-center w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-                  <LikeDislike postId={currentPost.id} />
+                  <LikeDislike postId={currentPost.id} slug={currentPost.slug} source="wp" variant="reader" />
                 </div>
 
                 <div className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
