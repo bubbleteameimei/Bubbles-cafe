@@ -357,94 +357,75 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   });
 
   const { data: postsData, isLoading, error } = useQuery({
-    queryKey: ["posts", "reader", routeSlug, isCommunityContent ? "community" : "regular"],
+    queryKey: ["wordpress", "reader", routeSlug ?? "", isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
       if (import.meta.env?.DEV) {
-        console.log('[Reader] Fetching posts...', { routeSlug, isCommunityContent });
+        console.log('[Reader] Fetching WordPress posts...', { routeSlug });
       }
+
+      const site = 'bubbleteameimei.wordpress.com';
+      const baseUrl = `https://public-api.wordpress.com/wp/v2/sites/${site}`;
 
       try {
         if (routeSlug) {
-          // If slug is provided, always use the unified slug endpoint
-          const endpoint = `/api/posts/slug/${encodeURIComponent(routeSlug)}`;
-          const response = await fetch(endpoint);
-          if (!response.ok) throw new Error(`Failed to fetch ${isCommunityContent ? 'community' : ''} post`);
-          const post = await response.json();
-          
-          // Convert post to a format compatible with both WordPress and internal posts
+          // Fetch a single WordPress post by slug
+          const url = `${baseUrl}/posts?slug=${encodeURIComponent(routeSlug)}&_fields=id,date,slug,title,content,excerpt`;
+          const response = await fetch(url);
+          if (!response.ok) throw new Error('Failed to fetch WordPress post by slug');
+          const arr = await response.json();
+
+          if (!Array.isArray(arr) || arr.length === 0) {
+            throw new Error('Post not found');
+          }
+
+          const item = arr[0];
           const normalizedPost = {
-            ...post,
-            // Ensure title and content are in the expected format
-            title: {
-              rendered: post.title?.rendered || post.title || ''
-            },
-            content: {
-              rendered: post.content?.rendered || post.content || ''
-            },
-            date: post.date || post.createdAt || new Date().toISOString()
+            id: item.id,
+            slug: item.slug,
+            title: { rendered: item?.title?.rendered || '' },
+            content: { rendered: item?.content?.rendered || '' },
+            date: item?.date || new Date().toISOString()
           };
-          
+
           return { posts: [normalizedPost], totalPages: 1, total: 1 };
         } else {
-          // Fetch all posts from internal API (your WordPress stories are already synced here)
-          if (import.meta.env?.DEV) {
-            console.log('[Reader] Fetching posts...', { isCommunityContent });
-          }
-          
-          // Always use the core posts endpoint for maximum reliability with cache busting
-          const response = await fetch(`/api/posts?limit=100&_t=${Date.now()}`);
+          // Fetch a list of WordPress posts
+          const url = `${baseUrl}/posts?per_page=100&_fields=id,date,slug,title,content,excerpt`;
+          const response = await fetch(url);
           if (!response.ok) {
-            throw new Error('Failed to fetch posts from database');
+            throw new Error('Failed to fetch WordPress posts');
           }
-          
-          const data = await response.json();
-          if (import.meta.env?.DEV) {
-            console.log('[Reader] Successfully fetched posts:', {
-              hasMore: data.hasMore,
-              firstPost: data.posts?.[0]?.title
-            });
-          }
-          
-          if (!data.posts || data.posts.length === 0) {
+
+          const arr = await response.json();
+          if (!Array.isArray(arr) || arr.length === 0) {
             throw new Error('No stories available');
           }
-          
-          // Normalize posts to ensure consistent format
-          const normalizedPosts = data.posts.map((post: any) => ({
-            ...post,
-            title: {
-              rendered: post.title?.rendered || post.title || ''
-            },
-            content: {
-              rendered: post.content?.rendered || post.content || ''
-            },
-            date: post.date || post.created_at || new Date().toISOString()
+
+          const normalizedPosts = arr.map((item: any) => ({
+            id: item.id,
+            slug: item.slug,
+            title: { rendered: item?.title?.rendered || '' },
+            content: { rendered: item?.content?.rendered || '' },
+            date: item?.date || new Date().toISOString()
           }));
-          
+
           return { posts: normalizedPosts, totalPages: 1, total: normalizedPosts.length };
         }
       } catch (error) {
-        console.error('[Reader] Error fetching posts:', error);
-        // Add fallback error handling here
-        console.error('[Reader] Error or no posts available:', { error, currentIndex });
-        
-        // Try to fetch any posts to show something
+        console.error('[Reader] Error fetching WordPress posts:', error);
+        // Fallback: try a smaller page size
         try {
-          // Try to fetch community posts if that's what we're looking for
-          const endpoint = isCommunityContent ? '/api/posts/community?limit=50' : '/api/posts?limit=50';
-          const response = await fetch(endpoint);
+          const url = `${baseUrl}/posts?per_page=20&_fields=id,date,slug,title,content,excerpt`;
+          const response = await fetch(url);
           if (response.ok) {
-            const data = await response.json();
-            if (data.posts && data.posts.length > 0) {
-              const normalizedPosts = data.posts.map((post: any) => ({
-                ...post,
-                title: {
-                  rendered: post.title?.rendered || post.title || 'Story'
-                },
-                content: {
-                  rendered: post.content?.rendered || post.content || 'Content not available.'
-                },
-                date: post.date || post.createdAt || new Date().toISOString()
+            const arr = await response.json();
+            if (Array.isArray(arr) && arr.length > 0) {
+              const normalizedPosts = arr.map((item: any) => ({
+                id: item.id,
+                slug: item.slug,
+                title: { rendered: item?.title?.rendered || 'Story' },
+                content: { rendered: item?.content?.rendered || 'Content not available.' },
+                date: item?.date || new Date().toISOString()
               }));
               return { posts: normalizedPosts, totalPages: 1, total: normalizedPosts.length };
             }
@@ -452,7 +433,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         } catch (fallbackError) {
           console.error('[Reader] Fallback also failed:', fallbackError);
         }
-        
+
         throw error;
       }
     },
@@ -602,28 +583,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // This duplicate has been removed - reading progress tracking is handled above
 
   
-  // Add a useEffect hook to handle deleted posts detection on component mount
-  useEffect(() => {
-    // Only run this check if we're looking at a specific post by slug
-    if (routeSlug && !isLoading && postsData?.posts?.length === 1) {
-      const post = postsData.posts[0];
-      // Make a direct API request to verify the post still exists
-      fetch(`/api/posts/${post.id}`)
-        .then(response => {
-          if (response.status === 404) {
-            console.log('[Reader] Post appears to have been deleted');
-            toast({
-              title: 'Post Not Available', 
-              description: 'This post is no longer available.'
-            });
-            setLocation('/community');
-          }
-        })
-        .catch(err => {
-          console.error('[Reader] Error verifying post exists:', err);
-        });
-    }
-  }, [routeSlug, isLoading, postsData?.posts, setLocation, toast]);
+  {/* Removed duplicate deleted posts detection useEffect block */}
 
   // Let's make sure we have posts data and current post before rendering
   if (isLoading) {
