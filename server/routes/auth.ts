@@ -112,16 +112,51 @@ router.post('/social-login',
   authRateLimiter,
   validateBody(zod.object({
     provider: zod.string().min(1),
-    email: zod.string().email().transform(s => s.toLowerCase().trim()),
-    socialId: zod.string().min(1),
+    email: zod.string().email().transform(s => s.toLowerCase().trim()).optional(),
+    socialId: zod.string().min(1).optional(),
     username: zod.string().optional(),
     photoURL: zod.string().optional(),
     token: zod.string().optional()
   })),
   asyncHandler(async (req: Request, res: Response) => {
-    const { provider, email, socialId } = req.body;
-    let { username, photoURL } = req.body as any;
+    let { provider, email, socialId, username, photoURL, token } = req.body as any;
+
     try {
+      // For Google, if an ID token is provided, verify it via Google's tokeninfo endpoint.
+      if (provider === 'google' && token) {
+        try {
+          const verifyResp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);
+          if (!verifyResp.ok) {
+            const errText = await verifyResp.text();
+            authLogger.warn('Google token verification failed', { status: verifyResp.status, body: errText });
+            throw createError.unauthorized('Invalid Google ID token');
+          }
+          const payload = await verifyResp.json() as any;
+          // Validate audience if env is set
+          const expectedClientId = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
+          if (expectedClientId && payload.aud && payload.aud !== expectedClientId) {
+            authLogger.warn('Google token audience mismatch', { aud: payload.aud, expected: expectedClientId });
+            throw createError.unauthorized('Invalid token audience');
+          }
+          // Extract fields
+          email = (payload.email || email || '').toLowerCase();
+          socialId = payload.sub || socialId;
+          username = username || payload.name || (email ? email.split('@')[0] : undefined);
+          photoURL = photoURL || payload.picture || undefined;
+
+          if (!email || !socialId) {
+            throw createError.badRequest('Missing required user info from Google token');
+          }
+        } catch (verErr: any) {
+          const msg = verErr?.message || 'Google token verification failed';
+          throw createError.unauthorized(msg);
+        }
+      }
+
+      if (!email || !socialId) {
+        throw createError.badRequest('Missing email or socialId for social login');
+      }
+
       let user = await storage.getUserByEmail(email);
       if (!user) {
         const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
@@ -152,8 +187,9 @@ router.post('/social-login',
         return res.json(safeUser);
       });
     } catch (e) {
-      authLogger.error('Social login error', { provider, error: e instanceof Error ? e.message : String(e) });
-      throw createError.internal('Social login failed');
+      const msg = e instanceof Error ? e.message : String(e);
+      authLogger.error('Social login error', { provider, error: msg });
+      throw (e as any);
     }
   })
 );
