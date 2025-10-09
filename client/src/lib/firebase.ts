@@ -21,15 +21,17 @@ const firebaseConfig = {
 };
 
 // Log Firebase configuration status for debugging
-console.log('Firebase config initialized with:', {
-  apiKey: firebaseConfig.apiKey ? '✓ Set' : '✗ Missing',
-  authDomain: firebaseConfig.authDomain ? '✓ Set' : '✗ Missing',
-  projectId: firebaseConfig.projectId ? '✓ Set' : '✗ Missing',
-  storageBucket: firebaseConfig.storageBucket ? '✓ Set' : '✗ Missing',
-  messagingSenderId: firebaseConfig.messagingSenderId ? '✓ Set' : '✗ Missing',
-  appId: firebaseConfig.appId ? '✓ Set' : '✗ Missing',
-  measurementId: firebaseConfig.measurementId ? '✓ Set' : '✗ Missing',
-});
+if (import.meta.env?.DEV) {
+  console.log('Firebase config initialized with:', {
+    apiKey: firebaseConfig.apiKey ? '✓ Set' : '✗ Missing',
+    authDomain: firebaseConfig.authDomain ? '✓ Set' : '✗ Missing',
+    projectId: firebaseConfig.projectId ? '✓ Set' : '✗ Missing',
+    storageBucket: firebaseConfig.storageBucket ? '✓ Set' : '✗ Missing',
+    messagingSenderId: firebaseConfig.messagingSenderId ? '✓ Set' : '✗ Missing',
+    appId: firebaseConfig.appId ? '✓ Set' : '✗ Missing',
+    measurementId: firebaseConfig.measurementId ? '✓ Set' : '✗ Missing',
+  });
+}
 
 // Initialize Firebase
 let app;
@@ -46,7 +48,9 @@ try {
     if (typeof window !== 'undefined') {
       analytics = getAnalytics(app);
     }
-    console.log('Firebase successfully initialized');
+    if (import.meta.env?.DEV) {
+      console.log('Firebase successfully initialized');
+    }
   }
 } catch (error) {
   console.error('Firebase initialization error:', error);

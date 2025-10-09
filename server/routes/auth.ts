@@ -122,22 +122,42 @@ router.post('/social-login',
     let { provider, email, socialId, username, photoURL, token } = req.body as any;
 
     try {
-      // For Google, if an ID token is provided, verify it via Google's tokeninfo endpoint.
+      // For Google, if an ID token is provided, verify it via google-auth-library when available; otherwise use tokeninfo endpoint.
       if (provider === 'google' && token) {
         try {
-          const verifyResp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);
-          if (!verifyResp.ok) {
-            const errText = await verifyResp.text();
-            authLogger.warn('Google token verification failed', { status: verifyResp.status, body: errText });
-            throw createError.unauthorized('Invalid Google ID token');
-          }
-          const payload = await verifyResp.json() as any;
-          // Validate audience if env is set
           const expectedClientId = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
-          if (expectedClientId && payload.aud && payload.aud !== expectedClientId) {
-            authLogger.warn('Google token audience mismatch', { aud: payload.aud, expected: expectedClientId });
-            throw createError.unauthorized('Invalid token audience');
+
+          // Try dynamic import of google-auth-library
+          let payload: any | null = null;
+          try {
+            const mod = await import('google-auth-library');
+            const OAuth2Client = (mod as any).OAuth2Client;
+            if (OAuth2Client && expectedClientId) {
+              const client = new OAuth2Client(expectedClientId);
+              const ticket = await client.verifyIdToken({
+                idToken: token,
+                audience: expectedClientId,
+              });
+              payload = ticket.getPayload();
+            }
+          } catch (_libErr) {
+            // Fallback to tokeninfo if library not available
           }
+
+          if (!payload) {
+            const verifyResp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);
+            if (!verifyResp.ok) {
+              const errText = await verifyResp.text();
+              authLogger.warn('Google token verification failed', { status: verifyResp.status, body: errText });
+              throw createError.unauthorized('Invalid Google ID token');
+            }
+            payload = await verifyResp.json() as any;
+            if (expectedClientId && payload.aud && payload.aud !== expectedClientId) {
+              authLogger.warn('Google token audience mismatch', { aud: payload.aud, expected: expectedClientId });
+              throw createError.unauthorized('Invalid token audience');
+            }
+          }
+
           // Extract fields
           email = (payload.email || email || '').toLowerCase();
           socialId = payload.sub || socialId;

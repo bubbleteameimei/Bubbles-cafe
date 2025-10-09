@@ -77,7 +77,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     
     try {
-      console.log('[Auth] Attempting login with credentials:', { email, rememberMe });
+      if (import.meta.env?.DEV) {
+        console.log('[Auth] Attempting login with credentials:', { email, rememberMe });
+      }
       
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -95,7 +97,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.message || 'Login failed');
       }
       
-      console.log('[Auth] Login successful:', data);
+      if (import.meta.env?.DEV) {
+        console.log('[Auth] Login successful:', data);
+      }
       setUser(data);
       try {
         if (data?.token) localStorage.setItem('auth_token', data.token);
@@ -116,7 +120,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     
     try {
-      console.log('[Auth] Attempting registration:', { email: data.email, username: data.username });
+      if (import.meta.env?.DEV) {
+        console.log('[Auth] Attempting registration:', { email: data.email, username: data.username });
+      }
       
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -134,7 +140,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(responseData.message || 'Registration failed');
       }
       
-      console.log('[Auth] Registration successful:', responseData);
+      if (import.meta.env?.DEV) {
+        console.log('[Auth] Registration successful:', responseData);
+      }
       setUser(responseData);
       try {
         if (responseData?.token) localStorage.setItem('auth_token', responseData.token);
