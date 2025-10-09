@@ -167,10 +167,10 @@ export function registerModularRoutes(app: Express) {
         if (!item) {
           return res.status(404).json({ error: 'Not found' });
         }
-        res.json(item);
+        return res.json(item);
       } catch (error: any) {
         routesLogger.error('Failed to get feedback item', { error: error?.message });
-        res.status(500).json({ error: 'Failed to get feedback item' });
+        return res.status(500).json({ error: 'Failed to get feedback item' });
       }
     });
 
