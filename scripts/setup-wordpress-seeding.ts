@@ -6,7 +6,6 @@
  */
 import { Pool } from '@neondatabase/serverless';
 import ws from "ws";
-import bcrypt from 'bcryptjs';
 
 // Configure Neon for serverless
 const neonConfig = { webSocketConstructor: ws };
@@ -25,21 +24,11 @@ async function setupWordPressSeeding() {
     const result = await pool.query('SELECT current_database()');
     console.log('✅ Connected to database:', result.rows[0].current_database);
     
-    // Ensure admin user exists
+    // Ensure admin user exists (do not create automatically)
     console.log('👤 Verifying admin user...');
-    const adminCheck = await pool.query('SELECT id, username, email FROM users WHERE is_admin = true');
-    
+    const adminCheck = await pool.query('SELECT id, username, email FROM users WHERE is_admin = true LIMIT 1');
     if (adminCheck.rows.length === 0) {
-      console.log('Creating admin user...');
-      const hashedPassword = await bcrypt.hash('admin123', 10);
-      
-      const adminResult = await pool.query(`
-        INSERT INTO users (username, email, password_hash, is_admin, created_at)
-        VALUES ($1, $2, $3, $4, NOW())
-        RETURNING id, username, email
-      `, ['admin', 'admin@storytelling.com', hashedPassword, true]);
-      
-      console.log('✅ Admin user created:', adminResult.rows[0]);
+      console.log('⚠️ No admin user found. Please create one securely via a controlled process.');
     } else {
       console.log('✅ Admin user exists:', adminCheck.rows[0]);
     }

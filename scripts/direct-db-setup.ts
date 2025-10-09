@@ -10,7 +10,7 @@
 import { db } from '../server/db';
 import { users, posts } from '../shared/schema';
 import { count, eq } from 'drizzle-orm';
-import bcrypt from 'bcryptjs';
+
 
 const logger = {
   info: (msg: string) => console.log(`[Direct DB Setup] ${msg}`),

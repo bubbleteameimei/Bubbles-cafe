@@ -1,37 +1,20 @@
 import { db } from '../server/db.js';
 import { users, posts, comments, authorStats, siteSettings, bookmarks } from '../shared/schema.js';
 import { sql } from 'drizzle-orm';
-import * as bcrypt from 'bcrypt';
-
 async function initializeDatabase() {
   try {
     console.log('🚀 Starting database initialization...');
 
-    // Create admin user
-    console.log('Setting up admin user...');
-    const hashedPassword = await bcrypt.hash('admin123', 10);
+    // Verify admin user presence (do not create automatically)
+    console.log('Verifying admin user presence...');
+    const existingAdmin = await db.select().from(users).where(sql`is_admin = true`).limit(1);
     
-    // Check if vandalison@gmail.com admin user already exists
-    const existingAdmin = await db.select().from(users).where(sql`email = 'vandalison@gmail.com'`).limit(1);
-    
-    let adminUserId: number;
+    let adminUserId: number | null = null;
     if (existingAdmin.length === 0) {
-      const [adminUser] = await db.insert(users).values({
-        username: 'vandalison',
-        email: 'vandalison@gmail.com',
-        password_hash: hashedPassword,
-        isAdmin: true,
-        metadata: {
-          fullName: 'Site Administrator',
-          bio: 'Welcome to our digital storytelling platform',
-          avatar: '/images/admin-avatar.jpg'
-        }
-      }).returning();
-      adminUserId = adminUser.id;
-      console.log('✅ Admin user created: vandalison@gmail.com');
+      console.log('⚠️ No admin user found. Please create one securely via a controlled process.');
     } else {
       adminUserId = existingAdmin[0].id;
-      console.log('✅ Admin user exists: vandalison@gmail.com');
+      console.log('✅ Admin user exists');
     }
 
     // Create author stats for admin
@@ -70,16 +53,14 @@ async function initializeDatabase() {
     console.log('✅ Site settings configured');
 
     // Update author stats
-    const postCount = await db.select().from(posts).where(sql`author_id = ${adminUserId}`);
+    ifnst postCount = await db.select().from(posts).where(sql`author_id = ${adminUserId}`);
     await db.update(authorStats)
       .set({ totalPosts: postCount.length })
       .where(sql`author_id = ${adminUserId}`);
 
     console.log('🎉 Database initialization completed successfully!');
     console.log('📊 No sample posts created - WordPress API will sync authentic content');
-    console.log('👤 Admin user ready (email: vandalison@gmail.com, password: admin123)');
-    
-  } catch (error) {
+    } catch (error) {
     console.error('❌ Database initialization failed:', error);
     throw error;
   }

@@ -1,7 +1,6 @@
 import { db } from '../server/db';
 import { posts, users } from '../shared/schema';
 import { eq } from 'drizzle-orm';
-import bcrypt from 'bcryptjs';
 import fetch from 'node-fetch';
 
 // WordPress API endpoint
@@ -138,7 +137,7 @@ async function syncWordPressPosts() {
   try {
     console.log(`[Sync #${syncId}] Starting WordPress API sync at ${syncStartTime}`);
 
-    const admin = await getOrCreateAdminUser();
+    const admin = await getAdminUser();
     const wpPosts = await fetchWordPressPosts();
 
     // Check if posts table has metadata column

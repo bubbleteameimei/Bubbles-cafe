@@ -341,7 +341,7 @@ Start your storytelling journey today! 🚀`,
 
     console.log('🎉 Database initialization completed successfully!');
     console.log(`📊 Created ${samplePosts.length} sample posts`);
-    console.log('👤 Admin user ready (email: admin@storytelling.com, password: admin123)');
+    
     
   } catch (error) {
     console.error('❌ Database initialization failed:', error);

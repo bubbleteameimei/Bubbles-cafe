@@ -1,5 +1,5 @@
 const { Client } = require('pg');
-const bcrypt = require('bcryptjs');
+
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -17,47 +17,18 @@ async function fixWordPressPosts() {
     await client.connect();
     console.log('Fixing WordPress posts and admin configuration...\n');
     
-    // 1. First, ensure vantalison@gmail.com is the only admin
-    console.log('1. Setting up admin user...');
-    
-    // Remove admin privileges from other users
-    const removedAdmins = await client.query(`
-      UPDATE users SET is_admin = false 
-      WHERE email != 'vantalison@gmail.com' AND is_admin = true
-      RETURNING email
-    `);
-    
-    if (removedAdmins.rows.length > 0) {
-      console.log(`Removed admin privileges from: ${removedAdmins.rows.map(u => u.email).join(', ')}`);
-    }
-    
-    // Get or create vantalison@gmail.com admin
+    // 1. Verify an admin user exists (do not create or modify users)
+    console.log('1. Verifying admin user presence...');
     const existingAdmin = await client.query(`
       SELECT id, username, email, is_admin
       FROM users
-      WHERE email = 'vantalison@gmail.com'
+      WHERE is_admin = true
       LIMIT 1
     `);
-    
-    let adminId;
-    if (existingAdmin.rows.length > 0) {
-      adminId = existingAdmin.rows[0].id;
-      const hashedPassword = await bcrypt.hash("admin124", 12);
-      await client.query(`
-        UPDATE users SET is_admin = true, username = 'vantalison', password_hash = $1
-        WHERE email = 'vantalison@gmail.com'
-      `, [hashedPassword]);
-      console.log(`Updated admin user vantalison@gmail.com (ID: ${adminId})`);
-    } else {
-      const hashedPassword = await bcrypt.hash("admin124", 12);
-      const newAdmin = await client.query(`
-        INSERT INTO users (username, email, password_hash, is_admin, created_at)
-        VALUES ('vantalison', 'vantalison@gmail.com', $1, true, NOW())
-        RETURNING id
-      `, [hashedPassword]);
-      adminId = newAdmin.rows[0].id;
-      console.log(`Created admin user vantalison@gmail.com (ID: ${adminId})`);
+    if (existingAdmin.rows.length === 0) {
+      throw new Error('No admin user found. Please create one securely before running fixes.');
     }
+    const adminId = existingAdmin.rows[0].id;
     
     // 2. Fix all WordPress posts
     console.log('\n2. Fixing WordPress posts...');

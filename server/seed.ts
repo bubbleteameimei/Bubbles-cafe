@@ -4,18 +4,14 @@ import fs from "fs/promises";
 import path from "path";
 import { posts, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import bcrypt from "bcryptjs";
 import { initializeDatabaseConnection } from "../scripts/connect-db";
 
 // We'll initialize db in each function
 let db: any;
 
-async function getOrCreateAdminUser() {
+async function getAdminUser() {
   try {
-    const hashedPassword = await bcrypt.hash("admin123", 12);
-    console.log("Creating admin user with email: vantalison@gmail.com");
-
-    // First check if admin user exists - explicit column selection to avoid errors with non-existent columns
+    console.log("Locating existing admin user...");
     const [existingAdmin] = await db.select({
       id: users.id,
       username: users.username,
@@ -24,39 +20,17 @@ async function getOrCreateAdminUser() {
       createdAt: users.createdAt
     })
     .from(users)
-    .where(eq(users.email, "vantalison@gmail.com"));
+    .where(eq(users.isAdmin, true))
+    .limit(1);
 
     if (existingAdmin) {
-      console.log("Admin user already exists with ID:", existingAdmin.id);
+      console.log("Admin user found with ID:", existingAdmin.id);
       return existingAdmin;
     }
 
-    // Create new admin user if doesn't exist
-    // Only include fields that exist in the actual database table
-    // Note: We're explicitly specifying only the columns we know exist
-    const insertData = {
-      username: "admin",
-      email: "vantalison@gmail.com",
-      password_hash: hashedPassword,
-      isAdmin: true
-      // metadata field is missing in the actual table
-    };
-    
-    // Raw SQL with pool.query to avoid Drizzle's automatic schema mapping
-    const { pool } = await import("./db-connect");
-    const result = await pool.query(
-      `INSERT INTO users (username, email, password_hash, is_admin, created_at) 
-       VALUES ($1, $2, $3, $4, NOW()) 
-       RETURNING id, username, email, is_admin as "isAdmin", created_at as "createdAt"`,
-      [insertData.username, insertData.email, insertData.password_hash, insertData.isAdmin]
-    );
-    
-    const newAdmin = result.rows[0] as { id: number, username: string, email: string, isAdmin: boolean, createdAt: Date };
-
-    console.log("Admin user created successfully with ID:", newAdmin.id);
-    return newAdmin;
+    throw new Error("No admin user found. Please create one securely before seeding.");
   } catch (error) {
-    console.error("Error in getOrCreateAdminUser:", error);
+    console.error("Error locating admin user:", error);
     throw error;
   }
 }
@@ -85,7 +59,7 @@ async function parseWordPressXML() {
       await fs.access(xmlPath);
     } catch (error) {
       console.log("WordPress XML file not found, skipping XML seeding.");
-      return { posts: [], admin: await getOrCreateAdminUser() };
+      return { posts: [], admin: await getAdminUser() };
     }
     
     const xmlContent = await fs.readFile(xmlPath, "utf-8");
@@ -102,7 +76,7 @@ async function parseWordPressXML() {
     const items = data.rss.channel.item;
 
     // Get admin user for post authorship
-    const admin = await getOrCreateAdminUser();
+    const admin = await getAdminUser();
 
     // Track existing slugs to prevent duplicates
     const existingSlugs = new Set<string>();

@@ -1,6 +1,5 @@
 import { posts, users } from '../shared/schema';
 import { eq } from 'drizzle-orm';
-import bcrypt from 'bcryptjs';
 import fetch from 'node-fetch';
 
 // Import our database connection module

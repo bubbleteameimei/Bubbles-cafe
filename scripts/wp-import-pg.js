@@ -1,7 +1,6 @@
 // WordPress API Import using standard pg module
 // This script imports posts from WordPress API to our database
 import pg from 'pg';
-import bcrypt from 'bcryptjs';
 
 const { Pool } = pg;
 
@@ -70,34 +69,31 @@ function cleanContent(content) {
 }
 
 /**
- * Get or create an admin user in the database
+ * Get an existing admin user in the database
+ * Optionally selects by ADMIN_AUTHOR_EMAIL env var; otherwise uses first is_admin=true.
  */
-async function getOrCreateAdminUser() {
+async function getAdminUser() {
   try {
-    // Check if admin user exists
-    const existingUser = await pool.query(`
-      SELECT id, username, email, is_admin
-      FROM users
-      WHERE email = 'vantalison@gmail.com'
-    `);
-
-    if (existingUser.rows.length > 0) {
-      console.log("Found admin user with ID:", existingUser.rows[0].id);
-      return existingUser.rows[0];
+    const email = process.env.ADMIN_AUTHOR_EMAIL;
+    let result;
+    if (email) {
+      result = await pool.query(
+        `SELECT id, username, email, is_admin FROM users WHERE email = $1 LIMIT 1`,
+        [email]
+      );
+    } else {
+      result = await pool.query(
+        `SELECT id, username, email, is_admin FROM users WHERE is_admin = true LIMIT 1`
+      );
     }
 
-    // Create new admin user if not exists
-    const hashedPassword = await bcrypt.hash("admin123", 12);
-    const newUser = await pool.query(`
-      INSERT INTO users (username, email, password_hash, is_admin, created_at)
-      VALUES ('vantalison', 'vantalison@gmail.com', $1, true, NOW())
-      RETURNING id, username, email, is_admin
-    `, [hashedPassword]);
-
-    console.log("Created new admin user with ID:", newUser.rows[0].id);
-    return newUser.rows[0];
+    if (result.rows.length === 0) {
+      throw new Error("No admin user found. Set ADMIN_AUTHOR_EMAIL or create one securely.");
+    }
+    console.log("Using admin user with ID:", result.rows[0].id);
+    return result.rows[0];
   } catch (error) {
-    console.error("Error getting/creating admin user:", error);
+    console.error("Error locating admin user:", error);
     throw error;
   }
 }
@@ -174,7 +170,7 @@ async function syncWordPressPosts() {
 
   try {
     // Get admin user and category mapping
-    const admin = await getOrCreateAdminUser();
+    const admin = await getAdminUser();
     const categories = await fetchCategories();
     
     // Counters for summary

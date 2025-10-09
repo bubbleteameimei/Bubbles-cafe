@@ -8,13 +8,13 @@ export async function sendFreshNewsletter(email: string): Promise<boolean> {
   console.log('[FreshEmail] Sending completely fresh email to:', email);
   
   // Create a fresh transporter every time
-  const fromEmail = process.env.GMAIL_USER || 'vantalison@gmail.com';
+  const fromEmail = process.env.GMAIL_USER || 'no-reply@bubblescafe.space';
   const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
     secure: true,
     auth: {
-      user: process.env.GMAIL_USER || 'vantalison@gmail.com',
+      user: process.env.GMAIL_USER || 'no-reply@bubblescafe.space',
       pass: process.env.GMAIL_APP_PASSWORD?.trim()
     },
     connectionTimeout: 10000,

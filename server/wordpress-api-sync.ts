@@ -32,21 +32,10 @@ export class WordPressAPISync {
     const errors: any[] = [];
     let hasMore = true;
 
-    // Get or create admin user for WordPress posts
-    let adminUser = await db.select().from(users).where(eq(users.email, 'admin@storytelling.com')).limit(1);
+    // Locate existing admin user for WordPress posts
+    let adminUser = await db.select().from(users).where(eq(users.isAdmin, true)).limit(1);
     if (adminUser.length === 0) {
-      console.log('[WordPress Sync] Admin user not found, creating...');
-      const [newAdmin] = await db.insert(users).values({
-        username: 'admin',
-        email: 'admin@storytelling.com',
-        password_hash: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
-        isAdmin: true,
-        metadata: {
-          fullName: 'Site Administrator',
-          bio: 'WordPress content sync admin'
-        }
-      }).returning();
-      adminUser = [newAdmin];
+      throw new Error('[WordPress Sync] No admin user found. Create one securely before syncing.');
     }
 
     const adminUserId = adminUser[0].id;
@@ -111,17 +100,10 @@ export class WordPressAPISync {
    */
   async syncOnePostById(wpId: number): Promise<{ success: boolean; synced: number; errors: any[] }> {
     try {
-      // Ensure admin user exists (same logic as syncAllPosts)
-      let adminUser = await db.select().from(users).where(eq(users.email, 'admin@storytelling.com')).limit(1);
+      // Locate existing admin user
+      let adminUser = await db.select().from(users).where(eq(users.isAdmin, true)).limit(1);
       if (adminUser.length === 0) {
-        const [newAdmin] = await db.insert(users).values({
-          username: 'admin',
-          email: 'admin@storytelling.com',
-          password_hash: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
-          isAdmin: true,
-          metadata: { fullName: 'Site Administrator', bio: 'WordPress content sync admin' }
-        }).returning();
-        adminUser = [newAdmin];
+        throw new Error('[WordPress Sync] No admin user found. Create one securely before syncing.');
       }
       const adminUserId = adminUser[0].id;
       
