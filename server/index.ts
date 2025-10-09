@@ -4,7 +4,7 @@ import { createServer } from "http";
 import { db } from "./db"; // Using the direct Neon database connection
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
-import { seedDatabase } from "./seed";
+
 
 import helmet from "helmet";
 import compression from "compression";
@@ -183,6 +183,7 @@ const serverLogger = createLogger('Server');
 // Import our database setup utilities
 import setupDatabase from '../scripts/setup-db';
 import pushSchema from '../scripts/db-push';
+import seedFromWordPressAPI from '../scripts/api-seed';
 
 
 // Ensure /api/health mirrors /health by returning csrfToken when available
@@ -328,7 +329,15 @@ async function startServer() {
           serverLogger.info('Database connected, tables exist', { postsCount });
 
           if (postsCount === 0) {
-            serverLogger.warn('No posts found. Automatic seeding is disabled until a secure admin flow is established.');
+            serverLogger.info('No posts found - seeding from WordPress API...');
+            try {
+              await seedFromWordPressAPI();
+              serverLogger.info('Initial API seeding completed');
+            } catch (seedError) {
+              serverLogger.error('WordPress API seeding failed', {
+                error: seedError instanceof Error ? seedError.message : 'Unknown error'
+              });
+            }
           }
         } catch (dbError) {
           serverLogger.error('Database setup failed', { 
@@ -341,7 +350,15 @@ async function startServer() {
             await pushSchema();
             serverLogger.info('Schema created successfully');
 
-            serverLogger.warn('Automatic database seeding is disabled until a secure admin flow is established.');
+            serverLogger.info('Seeding from WordPress API after schema creation...');
+            try {
+              await seedFromWordPressAPI();
+              serverLogger.info('API seeding completed after schema creation');
+            } catch (seedErr) {
+              serverLogger.error('API seeding failed after schema creation', {
+                error: seedErr instanceof Error ? seedErr.message : 'Unknown error'
+              });
+            }
           } catch (finalError) {
             serverLogger.error('Critical database setup failure', {
               error: finalError instanceof Error ? finalError.message : 'Unknown error'

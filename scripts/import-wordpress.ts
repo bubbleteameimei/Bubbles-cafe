@@ -18,7 +18,23 @@ async function importWordPressContent() {
       : await db.select().from(users).where(eq(users.isAdmin, false)).limit(1);
 
     if (!defaultAuthor) {
-      throw new Error('No non-admin content author found. Set CONTENT_AUTHOR_EMAIL or create a user securely.');
+      // Create a non-admin import author if none exists
+      const seedEmail = authorEmail || (process.env.WP_IMPORT_AUTHOR_EMAIL || 'wordpress_import@local');
+      const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+      const hashed = createHash('sha256').update(randomPassword).digest('hex');
+
+      const [createdAuthor] = await db
+        .insert(users)
+        .values({
+          username: 'wordpress_import',
+          email: seedEmail,
+          password_hash: hashed,
+          isAdmin: false,
+          metadata: { system: 'wp-import' }
+        })
+        .returning();
+
+      defaultAuthor = createdAuthor;
     }
 
     console.log('Fetching posts from WordPress API...');

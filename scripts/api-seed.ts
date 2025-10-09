@@ -1,6 +1,7 @@
 import { posts, users } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 import fetch from 'node-fetch';
+import bcrypt from 'bcryptjs';
 
 // Import our database connection module
 import { initializeDatabaseConnection } from './connect-db';
@@ -70,28 +71,57 @@ function cleanContent(content: string): string {
 }
 
 // Locate existing admin user (do not create automatically)
-async function getAdminUser() {
+async function getImportAuthorUser() {
   try {
-    console.log("🔍 Checking for existing admin user");
-    const existingAdmin = await db.select({
-      id: users.id,
-      username: users.username,
-      email: users.email,
-      isAdmin: users.isAdmin,
-      createdAt: users.createdAt
-    })
-    .from(users)
-    .where(eq(users.isAdmin, true))
-    .limit(1);
+    const importEmail = process.env.CONTENT_AUTHOR_EMAIL || process.env.WP_IMPORT_AUTHOR_EMAIL;
+    let author;
 
-    if (existingAdmin && existingAdmin.length > 0) {
-      console.log("✅ Admin user found with ID:", existingAdmin[0].id);
-      return existingAdmin[0];
+    if (importEmail) {
+      const existing = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        isAdmin: users.isAdmin,
+        createdAt: users.createdAt
+      }).from(users).where(eq(users.email, importEmail)).limit(1);
+      author = existing[0];
+    } else {
+      const existing = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        isAdmin: users.isAdmin,
+        createdAt: users.createdAt
+      }).from(users).where(eq(users.isAdmin, false)).limit(1);
+      author = existing[0];
     }
 
-    throw new Error("No admin user found. Please create one securely before syncing.");
+    if (author) {
+      console.log("✅ Import author user resolved with ID:", author.id);
+      return author;
+    }
+
+    // Create a non-admin import author with random password
+    const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+    const password_hash = await bcrypt.hash(randomPassword, 12);
+    const email = importEmail || 'wordpress_import@local';
+    const username = 'wordpress_import';
+
+    const [newAuthor] = await db
+      .insert(users)
+      .values({
+        username,
+        email,
+        password_hash,
+        isAdmin: false,
+        metadata: { system: 'wp-import' }
+      })
+      .returning();
+
+    console.log("✅ Created import author user with ID:", newAuthor.id);
+    return newAuthor;
   } catch (error) {
-    console.error("❌ Error locating admin user:", error);
+    console.error("❌ Error resolving/creating import author:", error);
     throw error;
   }
 }
@@ -170,7 +200,7 @@ async function seedFromWordPressAPI() {
     await pushSchema();
     
     // Get admin user and category mapping
-    const admin = await getAdminUser();
+    const admin = await getImportAuthorUser();
     const categories = await fetchCategories();
     
     // Counters for summary

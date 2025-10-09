@@ -3,6 +3,7 @@ import { posts, users } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 import fetch from 'node-fetch';
 import cron from 'node-cron';
+import bcrypt from 'bcryptjs';
 
 // WordPress API endpoint
 const WP_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
@@ -76,21 +77,48 @@ async function cleanContent(content: string): Promise<string> {
     .trim();
 }
 
-async function getAdminUser() {
+async function getImportAuthorUser() {
   try {
-    console.log("Locating existing admin user...");
-    const [existingAdmin] = await db.select()
-      .from(users)
-      .where(eq(users.isAdmin, true))
-      .limit(1);
+    const importEmail = process.env.CONTENT_AUTHOR_EMAIL || process.env.WP_IMPORT_AUTHOR_EMAIL;
+    let author;
 
-    if (existingAdmin) {
-      console.log("Admin user found with ID:", existingAdmin.id);
-      return existingAdmin;
+    if (importEmail) {
+      const [existingByEmail] = await db.select()
+        .from(users)
+        .where(eq(users.email, importEmail))
+        .limit(1);
+      author = existingByEmail;
+    } else {
+      const [existingNonAdmin] = await db.select()
+        .from(users)
+        .where(eq(users.isAdmin, false))
+        .limit(1);
+      author = existingNonAdmin;
     }
-    throw new Error("No admin user found. Please create one securely before syncing.");
+
+    if (author) {
+      console.log("Import author user resolved with ID:", author.id);
+      return author;
+    }
+
+    // Create a non-admin import author with random password
+    const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+    const password_hash = await bcrypt.hash(randomPassword, 12);
+    const email = importEmail || 'wordpress_import@local';
+    const username = 'wordpress_import';
+
+    const [newAuthor] = await db.insert(users).values({
+      username,
+      email,
+      password_hash,
+      isAdmin: false,
+      metadata: { system: 'wp-import' }
+    }).returning();
+
+    console.log("Created import author user with ID:", newAuthor.id);
+    return newAuthor;
   } catch (error) {
-    console.error("Error locating admin user:", error);
+    console.error("Error resolving/creating import author:", error);
     throw error;
   }
 }
@@ -122,7 +150,7 @@ async function syncWordPressPosts() {
   try {
     console.log(`[Sync #${syncId}] Starting WordPress API sync at ${syncStartTime}`);
 
-    const admin = await getAdminUser();
+    const admin = await getImportAuthorUser();
     const wpPosts = await fetchWordPressPosts();
 
     let createdCount = 0;

@@ -3,6 +3,7 @@
  * This module provides functionality to import posts from WordPress API
  */
 import pg from 'pg';
+import bcrypt from 'bcryptjs';
 import { db } from './db-connect.js';
 import { log } from './vite.js';
 import { determineThemeCategory as determineThemeCategoryFromShared, STORY_THEME_MAPPING } from '../shared/theme-categories.js';
@@ -120,31 +121,45 @@ function determineThemeCategory(title, content) {
 }
 
 /**
- * Get an existing admin user in the database
- * Optionally selects by ADMIN_AUTHOR_EMAIL env var; otherwise uses first is_admin=true.
+ * Resolve or create a non-admin import author user
+ * Prefers CONTENT_AUTHOR_EMAIL or WP_IMPORT_AUTHOR_EMAIL env vars. Creates if missing.
  */
-async function getAdminUser(pool) {
+async function getImportAuthorUser(pool) {
   try {
-    const email = process.env.ADMIN_AUTHOR_EMAIL;
+    const importEmail = process.env.CONTENT_AUTHOR_EMAIL || process.env.WP_IMPORT_AUTHOR_EMAIL;
     let result;
-    if (email) {
+    if (importEmail) {
       result = await pool.query(
         `SELECT id, username, email, is_admin FROM users WHERE email = $1 LIMIT 1`,
-        [email]
+        [importEmail]
       );
     } else {
       result = await pool.query(
-        `SELECT id, username, email, is_admin FROM users WHERE is_admin = true LIMIT 1`
+        `SELECT id, username, email, is_admin FROM users WHERE is_admin = false LIMIT 1`
       );
     }
 
-    if (result.rows.length === 0) {
-      throw new Error("No admin user found. Set ADMIN_AUTHOR_EMAIL or create one securely.");
+    if (result.rows.length > 0) {
+      log(`Using import author with ID: ${result.rows[0].id}`, 'wordpress-sync');
+      return result.rows[0];
     }
-    log(`Using admin user with ID: ${result.rows[0].id}`, 'wordpress-sync');
-    return result.rows[0];
+
+    // Create a non-admin import author
+    const email = importEmail || 'wordpress_import@local';
+    const username = 'wordpress_import';
+    const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+    const password_hash = await bcrypt.hash(randomPassword, 12);
+
+    const insertRes = await pool.query(
+      `INSERT INTO users (username, email, password_hash, is_admin, metadata, created_at)
+       VALUES ($1, $2, $3, false, $4, NOW()) RETURNING id, username, email, is_admin`,
+      [username, email, password_hash, JSON.stringify({ system: 'wp-import' })]
+    );
+
+    log(`Created import author with ID: ${insertRes.rows[0].id}`, 'wordpress-sync');
+    return insertRes.rows[0];
   } catch (error) {
-    log(`Error locating admin user: ${error.message}`, 'wordpress-sync');
+    log(`Error resolving/creating import author: ${error.message}`, 'wordpress-sync');
     throw error;
   }
 }
@@ -267,8 +282,8 @@ export async function syncWordPressPosts() {
   });
 
   try {
-    // Get admin user and category mapping
-    const admin = await getAdminUser(pool);
+    // Resolve import author and category mapping
+    const admin = await getImportAuthorUser(pool);
     const categories = await fetchCategories();
     
     // Counters for summary
@@ -492,7 +507,7 @@ export async function syncSingleWordPressPost(wpPostId) {
     }
     
     const wpPost = await response.json();
-    const admin = await getAdminUser(pool);
+    const admin = await getImportAuthorUser(pool);
     const categories = await fetchCategories();
 
     const title = wpPost.title.rendered;
