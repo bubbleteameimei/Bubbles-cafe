@@ -37,12 +37,10 @@ router.get('/robots.txt', async (req: Request, res: Response) => {
 			'User-agent: *',
 			'Allow: /',
 			'',
+			// Explicitly list all sitemap endpoints
 			`Sitemap: ${origin}/sitemap.xml`,
-			''
-		];
-		res.setHeader('Content-Type', 'text/plain');
-		// Cache robots for 1 hour
-		res.setHeader('Cache-Control', 'public, max-age=3600');
+			`Sitemap: ${origin}/pages-sitemap.xml`,
+			`Sitemapader('Cache-Control', 'public, max-age=3600');
 		res.send(lines.join('\n'));
 		return;
 	} catch (error) {
@@ -55,16 +53,87 @@ router.get('/robots.txt', async (req: Request, res: Response) => {
 router.get('/sitemap.xml', async (req: Request, res: Response) => {
 	try {
 		const origin = getOrigin(req);
+
+		// Derive lastmod values
+		const now = new Date().toISOString();
+		let storiesLastmod = now;
+
+		try {
+			const result = await storage.getPosts?.(1, 50, {} as any);
+			const posts = result?.posts || [];
+			let latestMs = 0;
+			for (const post of posts as any[]) {
+				const dateStr = String((post.updatedAt || post.modified || post.createdAt || new Date()));
+				const ms = new Date(dateStr).getTime();
+				if (!Number.isNaN(ms) && ms > latestMs) {
+					latestMs = ms;
+				}
+			}
+			if (latestMs > 0) {
+				storiesLastmod = new Date(latestMs).toISOString();
+			}
+		} catch (e) {
+			seoLogger.warn('Failed to compute stories lastmod', { error: e instanceof Error ? e.message : String(e) });
+		}
+
+		const xml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+			`<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+			`  <sitemap>\n    <loc>${origin}/pages-sitemap.xml</loc>\n    <lastmod>${now}</lastmod>\n  </sitemap>\n` +
+			`  <sitemap>\n    <loc>${origin}/stories-sitemap.xml</loc>\n    <lastmod>${storiesLastmod}</lastmod>\n  </sitemap>\n` +
+			`</sitemapindex>`;
+
+		res.setHeader('Content-Type', 'application/xml');
+		res.setHeader('Cache-Control', 'public, max-age=3600');
+		res.send(xml);
+		return;
+	} catch (error) {
+		seoLogger.error('sitemap.xml (index) generation error', { error: error instanceof Error ? error.message : String(error) });
+		res.status(500).send('<?xml version="1.0" encoding="UTF-8"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>');
+		return;
+	}
+});
+
+/**
+ * Pages sitemap: static routes
+ */
+router.get('/pages-sitemap.xml', async (req: Request, res: Response) => {
+	try {
+		const origin = getOrigin(req);
+		const staticPaths = ['/', '/stories', '/reader', '/about', '/contact', '/privacy', '/community', '/submit-story'];
+
+		const urls = staticPaths.map(p => ({
+			loc: `${origin}${p}`,
+			lastmod: new Date().toISOString(),
+			changefreq: 'weekly',
+			priority: '0.8'
+		}));
+
+		const xml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+			`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
+			urls
+				.map(u => `\n  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`)
+				.join('') +
+			`\n</urlset>`;
+
+		res.setHeader('Content-Type', 'application/xml');
+		res.setHeader('Cache-Control', 'public, max-age=3600');
+		res.send(xml);
+		return;
+	} catch (error) {
+		seoLogger.error('pages-sitemap.xml generation error', { error: error instanceof Error ? error.message : String(error) });
+		res.status(500).send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>');
+		return;
+	}
+});
+
+/**
+ * Stories sitemap: dynamic posts + WordPress fallback
+ */
+router.get('/stories-sitemap.xml', async (req: Request, res: Response) => {
+	try {
+		const origin = getOrigin(req);
 		const urls: Array<{ loc: string; lastmod?: string; changefreq?: string; priority?: string }> = [];
 		const seen = new Set<string>();
-
-		// Static primary routes
-		const staticPaths = ['/', '/stories', '/reader', '/about', '/contact', '/privacy', '/community', '/submit-story'];
-		for (const p of staticPaths) {
-			const loc = `${origin}${p}`;
-			urls.push({ loc, changefreq: 'weekly', priority: '0.8' });
-			seen.add(loc);
-		}
 
 		// Include recent posts from local storage/database
 		try {
@@ -93,7 +162,7 @@ router.get('/sitemap.xml', async (req: Request, res: Response) => {
 				}
 			}
 		} catch (e) {
-			seoLogger.warn('Failed to include posts in sitemap', { error: e instanceof Error ? e.message : String(e) });
+			seoLogger.warn('Failed to include posts in stories sitemap', { error: e instanceof Error ? e.message : String(e) });
 		}
 
 		// Fallback: include WordPress posts via server-side fetch if DB is empty or for completeness
@@ -104,19 +173,19 @@ router.get('/sitemap.xml', async (req: Request, res: Response) => {
 				for (const wp of wpPosts) {
 					const wpSlug = typeof wp?.slug === 'string' ? wp.slug.trim() : '';
 					if (wpSlug) {
-						const loc = `${origin}/reader/${encodeURIComponent(wpSlug)}`;
-						if (!seen.has(loc)) {
-							const lastmod = wp.date ? new Date(wp.date).toISOString() : undefined;
-							urls.push({ loc, lastmod, changefreq: 'monthly', priority: '0.5' });
-							seen.add(loc);
-						}
+					 const loc = `${origin}/reader/${encodeURIComponent(wpSlug)}`;
+					 if (!seen.has(loc)) {
+						const lastmod = wp.date ? new Date(wp.date).toISOString() : undefined;
+						urls.push({ loc, lastmod, changefreq: 'monthly', priority: '0.5' });
+						seen.add(loc);
+					 }
 					}
 				}
 			} else {
-				seoLogger.warn('WordPress fallback failed for sitemap', { status: wpResponse.status });
+				seoLogger.warn('WordPress fallback failed for stories sitemap', { status: wpResponse.status });
 			}
 		} catch (wpErr) {
-			seoLogger.warn('Error fetching WordPress posts for sitemap', { error: wpErr instanceof Error ? wpErr.message : String(wpErr) });
+			seoLogger.warn('Error fetching WordPress posts for stories sitemap', { error: wpErr instanceof Error ? wpErr.message : String(wpErr) });
 		}
 
 		const xml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
@@ -132,7 +201,7 @@ router.get('/sitemap.xml', async (req: Request, res: Response) => {
 		res.send(xml);
 		return;
 	} catch (error) {
-		seoLogger.error('sitemap.xml generation error', { error: error instanceof Error ? error.message : String(error) });
+		seoLogger.error('stories-sitemap.xml generation error', { error: error instanceof Error ? error.message : String(error) });
 		res.status(500).send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>');
 		return;
 	}
