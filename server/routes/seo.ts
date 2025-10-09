@@ -26,7 +26,7 @@ function getOrigin(req: Request): string {
 		const host = req.get('host');
 		return `${proto}://${host}`;
 	} catch {
-		return 'https://localhost:3000';
+		return 'https://bubblescafe.space';
 	}
 }
 
