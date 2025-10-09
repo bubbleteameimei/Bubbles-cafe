@@ -115,6 +115,7 @@ app.use(validateCsrfToken({
     '/api/auth/forgot-password',
     '/api/auth/reset-password',
     '/api/auth/verify-reset-token',
+    '/api/auth/callback',
     '/api/analytics/vitals',
     '/api/analytics/performance',
     '/api/wordpress/sync/status',

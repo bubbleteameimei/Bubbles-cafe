@@ -106,11 +106,12 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
 
       if (containerRef.current) {
         google.accounts.id.renderButton(containerRef.current, {
-          theme: 'outline',
+          theme: 'filled_blue',
           size: 'large',
-          text: 'signin_with',
-          shape: 'rect',
-          width: 260
+          text: 'continue_with',
+          shape: 'pill',
+          width: 320,
+          logo_alignment: 'left'
         });
       }
       return true;
