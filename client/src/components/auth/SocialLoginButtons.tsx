@@ -74,14 +74,35 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
         return false;
       }
 
-      // Read client_id from the g_id_onload element if available, else fallback to provided ID
-      const setupEl = document.getElementById('g_id_onload') as HTMLDivElement | null;
-      const clientId = setupEl?.dataset?.clientId || '507042442187-17u8iqde1aeogo405iskul1t5dbr1kos.apps.googleusercontent.com';
+      // Read from environment variables first (Vite-prefixed), then fall back to g_id_onload dataset, then default
+      const envClientId = (import.meta as any)?.env?.VITE_GOOGLE_CLIENT_ID as string | undefined;
+      const envLoginUri = (import.meta as any)?.env?.VITE_GOOGLE_LOGIN_URI as string | undefined;
+      const envUxMode = ((import.meta as any)?.env?.VITE_GOOGLE_UX_MODE as string | undefined) || 'popup';
 
-      google.accounts.id.initialize({
+      const setupEl = document.getElementById('g_id_onload') as HTMLDivElement | null;
+      const clientId =
+        envClientId ||
+        setupEl?.dataset?.clientId ||
+        (setupEl?.dataset as any)?.client_id ||
+        '507042442187-17u8iqde1aeogo405iskul1t5dbr1kos.apps.googleusercontent.com';
+
+      const opts: Record<string, any> = {
         client_id: clientId,
         callback: handleCredentialResponse
-      });
+      };
+
+      if (envUxMode === 'redirect') {
+        const loginUri =
+          envLoginUri ||
+          setupEl?.dataset?.loginUri ||
+          (setupEl?.dataset as any)?.login_uri ||
+          `${window.location.origin}/auth/callback`;
+
+        opts.ux_mode = 'redirect';
+        opts.login_uri = loginUri;
+      }
+
+      google.accounts.id.initialize(opts);
 
       if (containerRef.current) {
         google.accounts.id.renderButton(containerRef.current, {

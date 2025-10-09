@@ -46,7 +46,8 @@ export default function AuthCallbackPage() {
 
         const url = new URL(window.location.href);
         const code = url.searchParams.get("code");
-        const idToken = url.searchParams.get("id_token");
+        const credential = url.searchParams.get("credential");
+        const idToken = url.searchParams.get("id_token") || credential;
         const accessToken = url.searchParams.get("access_token");
 
         // Show debug info only in development
