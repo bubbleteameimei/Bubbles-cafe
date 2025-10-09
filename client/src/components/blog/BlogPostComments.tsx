@@ -3,6 +3,7 @@ import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import CommentPlugin from '../CommentPlugin';
 import { useToast } from '@/hooks/use-toast';
+import { apiJson } from '@/lib/api';
 
 interface BlogPostCommentsProps {
   postId: number;
@@ -27,19 +28,7 @@ const BlogPostComments: React.FC<BlogPostCommentsProps> = ({ postId }) => {
   // Submit a new comment
   const submitCommentMutation = useMutation({
     mutationFn: async ({ text, postId }: { text: string; postId: number }) => {
-      const response = await fetch(`/api/posts/${postId}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: text }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to submit comment');
-      }
-      
-      return response.json();
+      return apiJson<any>('POST', `/api/posts/${postId}/comments`, { content: text });
     },
     onSuccess: () => {
       // Refetch comments after successful submission
@@ -62,19 +51,7 @@ const BlogPostComments: React.FC<BlogPostCommentsProps> = ({ postId }) => {
   // Vote on a comment
   const voteCommentMutation = useMutation({
     mutationFn: async ({ commentId, isUpvote }: { commentId: string; isUpvote: boolean }) => {
-      const response = await fetch(`/api/comments/${commentId}/vote`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ isUpvote }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to register vote');
-      }
-      
-      return response.json();
+      return apiJson<any>('POST', `/api/comments/${commentId}/vote`, { isUpvote });
     },
     onSuccess: () => {
       // Optionally refresh comments after voting

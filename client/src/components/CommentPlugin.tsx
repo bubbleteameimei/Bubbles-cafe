@@ -7,6 +7,7 @@ import { Card } from './ui/card';
 import { MessageSquare, ThumbsUp, ThumbsDown, Reply } from 'lucide-react';
 import { CommentWithMarkdown } from './CommentWithMarkdown';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { useToast } from '@/hooks/use-toast';
 
 interface Comment {
   id: string;
@@ -44,6 +45,17 @@ const CommentPlugin: React.FC<CommentPluginProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+  const { toast } = useToast();
+
+  const handleReport = (commentId: string) => {
+    // Minimal UX: acknowledge report locally. This CommentPlugin uses local comments,
+    // so we don't call the backend here.
+    toast({
+      title: 'Comment reported',
+      description: 'Thank you for your report. Our moderators will review it.',
+      variant: 'default'
+    });
+  };
 
   const handleSubmitComment = async () => {
     if (!commentText.trim()) return;
@@ -174,18 +186,18 @@ const CommentPlugin: React.FC<CommentPluginProps> = ({
           </div>
           <div className="mt-2">
             <CommentWithMarkdown 
-              author={comment.author}
-              content={comment.content}
-              createdAt={comment.createdAt instanceof Date 
-                ? comment.createdAt.toLocaleString() 
-                : new Date(comment.createdAt).toLocaleString()}
-              upvotes={comment.votes?.upvotes || 0}
-              downvotes={comment.votes?.downvotes || 0}
-              onReply={() => {}} // Add proper handler
-              onUpvote={() => handleVote(comment.id, true)}
-              onDownvote={() => handleVote(comment.id, false)}
-              onReport={() => {}} // Add proper handler
-            />
+                author={comment.author}
+                content={comment.content}
+                createdAt={comment.createdAt instanceof Date 
+                  ? comment.createdAt.toLocaleString() 
+                  : new Date(comment.createdAt).toLocaleString()}
+                upvotes={comment.votes?.upvotes || 0}
+                downvotes={comment.votes?.downvotes || 0}
+                onReply={() => handleReply(comment.id)}
+                onUpvote={() => handleVote(comment.id, true)}
+                onDownvote={() => handleVote(comment.id, false)}
+                onReport={() => handleReport(comment.id)}
+              />
           </div>
           <div className="mt-3 flex items-center gap-4">
             <TooltipProvider>

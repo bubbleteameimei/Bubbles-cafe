@@ -56,6 +56,40 @@ interface BugReport {
   };
 }
 
+// Map API feedback status to bug-report UI status
+function apiToBugStatus(status: string): 'new' | 'in-progress' | 'resolved' | 'wont-fix' | 'duplicate' {
+  switch ((status || '').toLowerCase()) {
+    case 'pending':
+      return 'new';
+    case 'reviewed':
+      return 'in-progress';
+    case 'resolved':
+      return 'resolved';
+    case 'rejected':
+      // We don't know if it's duplicate or wont-fix from API, default to wont-fix
+      return 'wont-fix';
+    default:
+      return 'new';
+  }
+}
+
+// Map bug-report UI status back to API status
+function bugToApiStatus(status: string): 'pending' | 'reviewed' | 'resolved' | 'rejected' {
+  switch ((status || '').toLowerCase()) {
+    case 'new':
+      return 'pending';
+    case 'in-progress':
+      return 'reviewed';
+    case 'resolved':
+      return 'resolved';
+    case 'wont-fix':
+    case 'duplicate':
+      return 'rejected';
+    default:
+      return 'pending';
+  }
+}
+
 // Status badge component to visualize status
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
@@ -147,13 +181,6 @@ function BugReportItem({ report, onStatusChange }: {
 
   // Status change handler
   const handleStatusChange = (newStatus: string) => {
-    console.log('[Admin:BugReports] Status update attempt', {
-      reportId: report.id,
-      newStatus: newStatus,
-      previousStatus: status,
-      timestamp: new Date().toISOString()
-    });
-
     setStatus(newStatus);
     onStatusChange(report.id, newStatus);
   };
@@ -383,8 +410,6 @@ function groupReportsByDate(reports: BugReport[]): Record<string, BugReport[]> {
   return grouped;
 }
 
-// Mock data removed - using real API integration
-
 export default function BugReportsPage() {
   const [activeTab, setActiveTab] = useState('all');
   const { toast } = useToast();
@@ -396,22 +421,39 @@ export default function BugReportsPage() {
     wontFix: 0,
     duplicate: 0
   });
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Simulate fetching data
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
 
   // Query bug reports data
-  const { data: bugReportsData = [], isLoading: isDataLoading } = useQuery({
-    queryKey: ['bug-reports'],
+  const { data: bugReportsData = [], isLoading: isDataLoading, refetch } = useQuery({
+    queryKey: ['bug-reports', activeTab],
     queryFn: async () => {
-      // Mock data for now - replace with actual API call
-      return [] as BugReport[];
+      const params = new URLSearchParams();
+      params.set('type', 'bug');
+      if (activeTab !== 'all') {
+        params.set('status', bugToApiStatus(activeTab));
+      }
+      const res = await fetch(`/api/feedback?${params.toString()}`, { credentials: 'include' });
+      if (!res.ok) {
+        throw new Error('Failed to load bug reports');
+      }
+      const data = await res.json();
+      const rawItems = Array.isArray(data) ? data : (Array.isArray(data?.feedback) ? data.feedback : []);
+      const mapped: BugReport[] = rawItems.map((item: any) => ({
+        id: Number(item.id),
+        affectedPage: String(item.page || item.metadata?.location?.path || 'unknown'),
+        description: String(item.content || ''),
+        screenshot: item.metadata?.screenshot || undefined,
+        email: item.metadata?.email || null,
+        status: apiToBugStatus(String(item.status || 'pending')),
+        createdAt: (item.createdAt ? String(item.createdAt) : new Date().toISOString()),
+        metadata: {
+          browser: item.browser || item.metadata?.browser || undefined,
+          operatingSystem: item.operatingSystem || item.metadata?.operatingSystem || undefined,
+          screenResolution: item.screenResolution || item.metadata?.screenResolution || undefined,
+          deviceType: item.metadata?.device?.type || item.metadata?.deviceType || undefined,
+          userAgent: item.userAgent || item.metadata?.userAgent || undefined
+        }
+      }));
+      return mapped;
     },
   });
 
@@ -437,11 +479,6 @@ export default function BugReportsPage() {
     setReportStats(stats);
   }, [bugReportsData]);
 
-  // Track tab changes for debugging
-  useEffect(() => {
-    console.log('[Admin:BugReports] Tab changed to:', activeTab);
-  }, [activeTab, bugReportsData]);
-
   // Filter reports based on active tab
   const filteredReports = useMemo(() => {
     if (activeTab === 'all') return bugReportsData;
@@ -456,22 +493,23 @@ export default function BugReportsPage() {
   // Handle status change
   const handleStatusChange = async (reportId: number, newStatus: string) => {
     try {
-      console.log('[Admin:BugReports] Updating status', {
-        reportId,
-        newStatus,
-        timestamp: new Date().toISOString()
+      const apiStatus = bugToApiStatus(newStatus);
+      const res = await fetch(`/api/feedback/${reportId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status: apiStatus })
       });
-
-      // Update status via API call (when implemented)
-      // await updateBugReportStatus(reportId, newStatus);
-
-      // Show success message
+      if (!res.ok) {
+        throw new Error('Failed to update status');
+      }
       toast({
         title: "Status Updated",
         description: `Bug report #${reportId} status changed to ${newStatus}`,
       });
+      // Refresh list
+      refetch();
     } catch (error) {
-      console.error('[Admin:BugReports] Status update failed:', error);
       toast({
         title: "Update Failed",
         description: "Failed to update bug report status",
@@ -510,7 +548,7 @@ export default function BugReportsPage() {
   );
 
   // Loading state
-  if (isLoading || isDataLoading) {
+  if (isDataLoading) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">

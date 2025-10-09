@@ -4,6 +4,7 @@
  * This module provides utilities for handling CSRF tokens and automatically applying
  * CSRF tokens to API requests for enhanced security.
  */
+import logger from '@/utils/secure-client-logger';
 
 // Constants for CSRF token handling
 export const CSRF_HEADER_NAME = 'X-CSRF-Token';
@@ -77,10 +78,39 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
       return csrfToken;
     }
 
-    console.error('Failed to obtain CSRF token after retry');
+    logger.error('Failed to obtain CSRF token after retry');
     return null;
   } catch (error) {
-    console.error('Error fetching CSRF token:', error);
+    logger.error('Error fetching CSRF token', error);
+    return null;
+  }
+}
+
+/**
+ * Force-refresh the CSRF token from the server, ignoring any cached token.
+ * Useful after a 403 CSRF failure due to a rotated session.
+ */
+export async function refreshCsrfToken(): Promise<string | null> {
+  try {
+    const resp = await fetch('/api/csrf-token', {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!resp.ok) {
+      logger.warn('[CSRF] Failed to refresh CSRF token', { status: resp.status });
+      return null;
+    }
+    const data = await resp.json().catch(() => ({}));
+    const token = data?.csrfToken || null;
+    if (token) {
+      setCsrfToken(token);
+      return token;
+    }
+    logger.warn('[CSRF] No token in refresh response');
+    return null;
+  } catch (error) {
+    logger.error('[CSRF] Error refreshing token', error);
     return null;
   }
 }
@@ -98,7 +128,7 @@ export function applyCSRFToken(options: RequestInit = {}): RequestInit {
     if (!token) {
       // Note: This is async but we can't make this function async
       // The caller should ensure fetchCsrfTokenIfNeeded() is called first
-      console.warn('[CSRF] No token available, ensure fetchCsrfTokenIfNeeded() is called first');
+      logger.warn('[CSRF] No token available, ensure fetchCsrfTokenIfNeeded() is called first');
       return options;
     }
 
@@ -111,7 +141,7 @@ export function applyCSRFToken(options: RequestInit = {}): RequestInit {
       headers,
     };
   } catch (e) {
-    console.error('[CSRF] Error applying CSRF token:', e);
+    logger.error('[CSRF] Error applying CSRF token', e);
     return options;
   }
 }
@@ -147,8 +177,8 @@ export async function initCSRFProtection(): Promise<void> {
   try {
     // Fetch initial CSRF token
     await fetchCsrfTokenIfNeeded();
-    console.log('CSRF protection initialized successfully');
+    logger.info('CSRF protection initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize CSRF protection:', error);
+    logger.error('Failed to initialize CSRF protection', error);
   }
 }

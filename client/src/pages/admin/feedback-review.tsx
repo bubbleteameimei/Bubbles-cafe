@@ -39,7 +39,8 @@ export default function FeedbackReviewPage() {
       if (!response.ok) {
         throw new Error('Failed to fetch feedback');
       }
-      return response.json();
+      const data = await response.json();
+      return Array.isArray(data) ? data : (data?.feedback ?? []);
     }
   });
 
