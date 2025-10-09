@@ -89,11 +89,10 @@ const cacheUtils = {
         timestamp: Date.now()
       };
       localStorage.setItem(key, JSON.stringify(cacheItem));
-      logger.debug(`[WordPress] Cache saved: ${key_code}`new)</;
-`);
+      logger.debug(`[WordPress] Cache saved: ${key}`);
     } catch (error) {
       logger.warn(`[WordPress] Failed to save cache`, error);
- _code  }
+    }
   },
 
   getFromCache(key: string): any {
@@ -106,15 +105,15 @@ const cacheUtils = {
 
       // Check if cache is still valid
       if (now - cacheItem.timestamp > CACHE_DURATION_MS) {
-        console.log(`[WordPress] Cache expired: ${key}`);
+        logger.info(`[WordPress] Cache expired: ${key}`);
         localStorage.removeItem(key);
         return null;
       }
 
-      console.log(`[WordPress] Cache hit: ${key}`);
+      logger.info(`[WordPress] Cache hit: ${key}`);
       return cacheItem.data;
     } catch (error) {
-      console.warn(`[WordPress] Failed to retrieve cache: ${error}`);
+      logger.warn(`[WordPress] Failed to retrieve cache`, error);
       return null;
     }
   },
@@ -127,7 +126,7 @@ const cacheUtils = {
         details: error
       }));
     } catch (e) {
-      console.error(`[WordPress] Failed to save error details: ${e}`);
+      logger.warn(`[WordPress] Failed to save error details`, e);
     }
   },
 
@@ -148,10 +147,10 @@ function safeJsonParse(text: string): any {
   try {
     return JSON.parse(text);
   } catch (error) {
-    console.error(`[WordPress] JSON parse error: ${error}`);
-    console.log(`[WordPress] Problematic JSON content: ${text.substring(0, 100)}...`);
+    logger.error(`[WordPress] JSON parse error`, error);
+    logger.warn(`[WordPress] Problematic JSON content truncated`, { preview: text.substring(0, 100) });
     throw new Error('Invalid JSON response');
-  }
+   }
 }
 
 /**
@@ -180,7 +179,8 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
     if (cachedResult) {
       logger.info(`[WordPress] Using cached data for page ${page}`);
       return cachedResult;
- _code  }
+    }
+  }
 
   // Build query parameters once
   const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
@@ -232,7 +232,7 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
       logger.warn(`[WordPress] Base failed, trying next: ${apiUrl}`, err);
       cacheUtils.saveError(err);
       // try next base
- _code
+    }
   }
 
   // All bases failed, use server API fallback
@@ -333,10 +333,10 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
       };
     }
 
-    console.log(`[WordPress] Fallback successful, retrieved ${formattedResult.posts.length} posts`);
+    logger.info(`[WordPress] Fallback successful, retrieved ${formattedResult.posts.length} posts`);
     return formattedResult;
   } catch (fallbackError) {
-    console.error('[WordPress] Both primary and fallback fetches failed:', { original: error, fallback: fallbackError });
+    logger.error('[WordPress] Both primary and fallback fetches failed', { original: error, fallback: fallbackError });
     return { posts: [], totalPages: 0, total: 0, fromFallback: true };
   }
 }
@@ -593,7 +593,7 @@ export function checkLocalSyncedPosts() {
     // No timeout - posts will persist indefinitely
     // Just log how old they are for debugging purposes
 
-    console.log(`[WordPress] Found ${parsedData.posts.length} locally synced posts from ${Math.round(ageHours * 10) / 10}h ago`);
+    logger.info(`[WordPress] Found ${parsedData.posts.length} locally synced posts from ${Math.round(ageHours * 10) / 10}h ago`);
     return {
       posts: parsedData.posts,
       totalPages: 1,
@@ -601,7 +601,7 @@ export function checkLocalSyncedPosts() {
       fromLocalSync: true
     };
   } catch (error) {
-    console.error('[WordPress] Error checking local synced posts:', error);
+    logger.error('[WordPress] Error checking local synced posts', error);
     return null;
   }
 }

@@ -186,18 +186,18 @@ const CommentPlugin: React.FC<CommentPluginProps> = ({
           </div>
           <div className="mt-2">
             <CommentWithMarkdown 
-              author={comment.author}
-              content={comment.content}
-              createdAt={comment.createdAt instanceof Date 
-                ? comment.createdAt.toLocaleString() 
-                : new Date(comment.createdAt).toLocaleString()}
-              upvotes={comment.votes?.upvotes || 0}
-              downvotes={comment.votes?.downvotes || 0}
-              onReply={() => handleReply(comment.id)}
-              onUpvote={() => handleVote(commentt.id, true)}
-              onDownvote={() => handleVote(comment.id, false)}
-              onReport={() => {}} // Add proper handler
-            />
+                author={comment.author}
+                content={comment.content}
+                createdAt={comment.createdAt instanceof Date 
+                  ? comment.createdAt.toLocaleString() 
+                  : new Date(comment.createdAt).toLocaleString()}
+                upvotes={comment.votes?.upvotes || 0}
+                downvotes={comment.votes?.downvotes || 0}
+                onReply={() => handleReply(comment.id)}
+                onUpvote={() => handleVote(comment.id, true)}
+                onDownvote={() => handleVote(comment.id, false)}
+                onReport={() => handleReport(comment.id)}
+              />
           </div>
           <div className="mt-3 flex items-center gap-4">
             <TooltipProvider>

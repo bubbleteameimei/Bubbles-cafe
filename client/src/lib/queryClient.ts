@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { getApiPath } from './asset-path';
-import { applyCSRFToken, fetchCsrfTokenIfNeeded } from './csrf-token';
+import { applyCSRFToken, fetchCsrfTokenIfNeeded, refreshCsrfToken } from './csrf-token';
 
 // Enhanced API error with better type checking and error categorization
 export class APIError extends Error {
@@ -142,7 +142,25 @@ export async function apiRequest<T = unknown>(
       );
     }
 
-    await throwIfResNotOk(res);
+    try {
+      await throwIfResNotOk(res);
+    } catch (err) {
+      // Handle CSRF invalidation by refreshing token and retrying once
+      if (err instanceof APIError && err.isForbiddenError) {
+        const msg = typeof err.data?.error === 'string' ? err.data.error.toLowerCase() : '';
+        if (msg.includes('csrf')) {
+          await refreshCsrfToken();
+          const method = (requestOptions.method || 'GET').toUpperCase();
+          const retryOptions = method === 'GET' ? requestOptions : applyCSRFToken(requestOptions);
+          res = await fetch(fullUrl, retryOptions);
+          await throwIfResNotOk(res);
+        } else {
+          throw err;
+        }
+      } else {
+        throw err;
+      }
+    }
 
     // Parse response based on content type
     const contentType = res.headers.get('Content-Type') || '';

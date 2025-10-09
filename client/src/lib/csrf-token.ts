@@ -87,6 +87,35 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
 }
 
 /**
+ * Force-refresh the CSRF token from the server, ignoring any cached token.
+ * Useful after a 403 CSRF failure due to a rotated session.
+ */
+export async function refreshCsrfToken(): Promise<string | null> {
+  try {
+    const resp = await fetch('/api/csrf-token', {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!resp.ok) {
+      logger.warn('[CSRF] Failed to refresh CSRF token', { status: resp.status });
+      return null;
+    }
+    const data = await resp.json().catch(() => ({}));
+    const token = data?.csrfToken || null;
+    if (token) {
+      setCsrfToken(token);
+      return token;
+    }
+    logger.warn('[CSRF] No token in refresh response');
+    return null;
+  } catch (error) {
+    logger.error('[CSRF] Error refreshing token', error);
+    return null;
+  }
+}
+
+/**
  * Apply CSRF token to fetch options
  * @param options The fetch options to update
  * @returns Updated fetch options with CSRF token
@@ -148,8 +177,8 @@ export async function initCSRFProtection(): Promise<void> {
   try {
     // Fetch initial CSRF token
     await fetchCsrfTokenIfNeeded();
-    console.log('CSRF protection initialized successfully');
+    logger.info('CSRF protection initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize CSRF protection:', error);
+    logger.error('Failed to initialize CSRF protection', error);
   }
 }

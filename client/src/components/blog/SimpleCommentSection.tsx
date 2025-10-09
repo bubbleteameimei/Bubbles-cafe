@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { fetchCsrfTokenIfNeeded, applyCSRFToken } from "@/lib/csrf-token";
+import { apiJson } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, subYears, subMonths } from "date-fns";
 import { Card } from "@/components/ui/card";
@@ -428,33 +428,21 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     mutationFn: async () => {
       // Use authenticated user's username if available, otherwise let the server handle author assignment
       const commentAuthor = isAuthenticated && user ? user.username : undefined;
-      await fetchCsrfTokenIfNeeded();
-      
+
       // Check if the content needs moderation
       const { isFlagged, isUnderReview } = checkModeration(content);
-      
-      // Using our CSRF wrapper for posting
-      const response = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          content: content.trim(),
-          author: commentAuthor,
-          needsModeration: isFlagged || isUnderReview,
-          moderationStatus: isFlagged ? 'flagged' : (isUnderReview ? 'under_review' : 'none'),
-        })
-      }));
+      const moderationStatus = isFlagged ? 'flagged' : (isUnderReview ? 'under_review' : 'none');
 
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Error response:', errorData);
-        throw new Error('Failed to post comment: ' + errorData);
-      }
+      const data = await apiJson<any>('POST', `/api/posts/${postId}/comments`, {
+        content: content.trim(),
+        author: commentAuthor,
+        needsModeration: isFlagged || isUnderReview,
+        moderationStatus
+      });
 
       return {
-        data: await response.json(),
-        moderationStatus: isFlagged ? 'flagged' : (isUnderReview ? 'under_review' : 'none')
+        data,
+        moderationStatus
       };
     },
     onSuccess: (result) => {

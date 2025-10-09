@@ -5,7 +5,7 @@
  * @param body Optional request body for POST/PUT/PATCH requests
  * @returns The fetch response
  */
-import { applyCSRFToken, fetchCsrfTokenIfNeeded } from './csrf-token';
+import { applyCSRFToken, fetchCsrfTokenIfNeeded, refreshCsrfToken } from './csrf-token';
 import { formatError, notifyError, ErrorCategory, ErrorSeverity } from './error-handler';
 
 // This will be set in production deployment to the URL of the backend API server
@@ -45,18 +45,18 @@ export async function apiRequest(
       // If we get a 403 with a specific message about CSRF, try to refresh the token and retry
       if (response.status === 403) {
         try {
-          const errorData = await response.json();
-          if (errorData && errorData.error && errorData.error.includes('CSRF')) {
-            console.warn('CSRF token validation failed, refreshing token and retrying...');
-            
+          const errorData = await response.json().catch(() => ({}));
+          const isCsrfError = typeof errorData?.error === 'string' && errorData.error.toLowerCase().includes('csrf');
+          if (isCsrfError) {
             // Force refresh the token
-            await fetchCsrfTokenIfNeeded();
-            
+            await refreshCsrfToken();
             // Retry the request with a fresh token
             return fetch(url, applyCSRFToken(options));
           }
-        } catch (e) {
-          // If we can't parse the error response, just return the original response
+        } catch (_e) {
+          // Best effort: still try to refresh and retry once
+          await refreshCsrfToken();
+          return fetch(url, applyCSRFToken(options));
         }
       }
       

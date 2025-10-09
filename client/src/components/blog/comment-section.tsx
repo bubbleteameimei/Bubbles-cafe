@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { applyCSRFToken, fetchCsrfTokenIfNeeded } from "@/lib/csrf-token";
+import { apiJson } from '@/lib/api';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import CommentReactionButtons from "@/components/blog/CommentReactionButtons";
 
@@ -84,26 +84,11 @@ function ReplyForm({ commentId, postId, onCancel }: ReplyFormProps) {
 
   const replyMutation = useMutation({
     mutationFn: async () => {
-      await fetchCsrfTokenIfNeeded();
-      const response = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          content: content.trim(),
-          author: name.trim(),
-          parentId: commentId
-        })
-      }));
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Reply error response:", errorData);
-        throw new Error(errorData.message || errorData.error || 'Failed to post reply');
-      }
-
-      const data = await response.json();
-      console.log("Reply success response:", data);
+      const data = await apiJson<any>('POST', `/api/posts/${postId}/comments`, {
+        content: content.trim(),
+        author: name.trim(),
+        parentId: commentId
+      });
       return data;
     },
     onSuccess: () => {
@@ -242,25 +227,12 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      await fetchCsrfTokenIfNeeded();
-      const response = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          content: content.trim(),
-          author: name.trim(),
-          needsModeration: moderation.isFlagged,
-          moderationStatus: moderation.isFlagged ? 'flagged' : 'none'
-        })
-      }));
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to post comment');
-      }
-
-      return response.json();
+      return apiJson<any>('POST', `/api/posts/${postId}/comments`, {
+        content: content.trim(),
+        author: name.trim(),
+        needsModeration: moderation.isFlagged,
+        moderationStatus: moderation.isFlagged ? 'flagged' : 'none'
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
@@ -292,18 +264,7 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
 
   const editMutation = useMutation({
     mutationFn: async ({ commentId, newContent }: { commentId: number; newContent: string }) => {
-      await fetchCsrfTokenIfNeeded();
-      const res = await fetch(`/api/comments/${commentId}`, applyCSRFToken({
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ content: newContent.trim() })
-      }));
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(t || `Failed to update comment (HTTP ${res.status})`);
-      }
-      return res.json();
+      return apiJson<any>('PATCH', `/api/comments/${commentId}`, { content: newContent.trim() });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
@@ -318,16 +279,7 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
 
   const deleteMutation = useMutation({
     mutationFn: async (commentId: number) => {
-      await fetchCsrfTokenIfNeeded();
-      const res = await fetch(`/api/comments/${commentId}`, applyCSRFToken({
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include"
-      }));
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(t || `Failed to delete comment (HTTP ${res.status})`);
-      }
+      await apiJson<any>('DELETE', `/api/comments/${commentId}`);
       return true;
     },
     onSuccess: () => {
@@ -341,18 +293,7 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
 
   const handleUpvote = async (commentId: number) => {
     try {
-      await fetchCsrfTokenIfNeeded();
-      const response = await fetch(`/api/comments/${commentId}/vote`, applyCSRFToken({
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ isUpvote: true })
-      }));
-      
-      if (!response.ok) {
-        throw new Error("Failed to upvote comment");
-      }
-      
+      await apiJson<any>('POST', `/api/comments/${commentId}/vote`, { isUpvote: true });
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
     } catch (error) {
       console.error("Failed to upvote comment:", error);
@@ -366,18 +307,7 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
   
   const handleDownvote = async (commentId: number) => {
     try {
-      await fetchCsrfTokenIfNeeded();
-      const response = await fetch(`/api/comments/${commentId}/vote`, applyCSRFToken({
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ isUpvote: false })
-      }));
-      
-      if (!response.ok) {
-        throw new Error("Failed to downvote comment");
-      }
-      
+      await apiJson<any>('POST', `/api/comments/${commentId}/vote`, { isUpvote: false });
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
     } catch (error) {
       console.error("Failed to downvote comment:", error);
