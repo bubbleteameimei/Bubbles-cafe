@@ -2,7 +2,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { eq } from 'drizzle-orm';
 import * as schema from './shared/schema.js';
-import bcrypt from 'bcryptjs';
+
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -18,27 +18,17 @@ async function setupDatabase() {
   try {
     console.log('Setting up database...');
     
-    // Create an admin user if it doesn't exist
+    // Skip admin user creation. Verify presence only.
     const existingAdmin = await db
       .select()
       .from(schema.users)
-      .where(eq(schema.users.email, 'admin@storytelling.com'))
+      .where(eq(schema.users.isAdmin, true))
       .limit(1);
 
     if (existingAdmin.length === 0) {
-      const hashedPassword = await bcrypt.hash('admin123', 10);
-      
-      await db.insert(schema.users).values({
-        username: 'admin',
-        email: 'admin@storytelling.com',
-        password_hash: hashedPassword,
-        isAdmin: true,
-        metadata: {}
-      });
-      
-      console.log('✅ Admin user created (email: admin@storytelling.com, password: admin123)');
+      console.log('⚠️ No admin user found. Please create one securely via a controlled process.');
     } else {
-      console.log('✅ Admin user already exists');
+      console.log('✅ Admin user exists');
     }
     
     console.log('✅ Database setup completed successfully!');

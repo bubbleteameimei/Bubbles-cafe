@@ -55,35 +55,20 @@ async function setupDatabase() {
       console.log('ℹ️  UUID extension already exists or not needed');
     }
     
-    // Create admin user
-    console.log('👤 Setting up admin user...');
-    const hashedPassword = await bcrypt.hash('admin123', 12);
-    
+    // Skip admin user creation. Verify presence only.
+    console.log('👤 Verifying admin user presence...');
     try {
-      // Check if admin user already exists
       const existingAdmin = await db.select()
         .from(schema.users)
-        .where(sql`email = 'admin@storytelling.local'`)
+        .where(sql`is_admin = true`)
         .limit(1);
-      
       if (existingAdmin.length === 0) {
-        await db.insert(schema.users).values({
-          username: 'admin',
-          email: 'admin@storytelling.local',
-          password_hash: hashedPassword,
-          isAdmin: true,
-          metadata: {
-            fullName: 'Site Administrator',
-            bio: 'Welcome to our digital storytelling platform'
-          }
-        });
-        console.log('✅ Admin user created (admin@storytelling.local / admin123)');
+        console.log('⚠️ No admin user found. Please create one securely via a controlled process.');
       } else {
-        console.log('✅ Admin user already exists');
+        console.log('✅ Admin user exists');
       }
     } catch (error) {
-      console.error('⚠️  Error setting up admin user:', error);
-      // Continue even if admin user creation fails
+      console.error('⚠️  Error verifying admin user:', error);
     }
     
     // Create basic site settings

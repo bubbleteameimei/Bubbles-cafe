@@ -1,9 +1,9 @@
 import { db } from '../server/db';
 import { posts, users } from '../shared/schema';
 import { eq } from 'drizzle-orm';
-import bcrypt from 'bcryptjs';
 import fetch from 'node-fetch';
 import cron from 'node-cron';
+import bcrypt from 'bcryptjs';
 
 // WordPress API endpoint
 const WP_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
@@ -77,42 +77,48 @@ async function cleanContent(content: string): Promise<string> {
     .trim();
 }
 
-async function getOrCreateAdminUser() {
+async function getImportAuthorUser() {
   try {
-    const hashedPassword = await bcrypt.hash("admin123", 12);
-    console.log("Getting admin user with email: vandalison@gmail.com");
+    const importEmail = process.env.CONTENT_AUTHOR_EMAIL || process.env.WP_IMPORT_AUTHOR_EMAIL;
+    let author;
 
-    // First try to directly query the database to check structure
-    const checkTable = await db.execute(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_schema = 'public' 
-      AND table_name = 'users'
-    `);
-    
-    console.log("Available columns in users table:", checkTable.rows.map(r => r.column_name));
-    
-    const [existingAdmin] = await db.select()
-      .from(users)
-      .where(eq(users.email, "vandalison@gmail.com"));
-
-    if (existingAdmin) {
-      console.log("Admin user found with ID:", existingAdmin.id);
-      return existingAdmin;
+    if (importEmail) {
+      const [existingByEmail] = await db.select()
+        .from(users)
+        .where(eq(users.email, importEmail))
+        .limit(1);
+      author = existingByEmail;
+    } else {
+      const [existingNonAdmin] = await db.select()
+        .from(users)
+        .where(eq(users.isAdmin, false))
+        .limit(1);
+      author = existingNonAdmin;
     }
 
-    // Create a new admin user with only the fields that exist in the database
-    const [newAdmin] = await db.insert(users).values({
-      username: "vandalison",
-      email: "vandalison@gmail.com",
-      password_hash: hashedPassword,
-      isAdmin: true
+    if (author) {
+      console.log("Import author user resolved with ID:", author.id);
+      return author;
+    }
+
+    // Create a non-admin import author with random password
+    const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+    const password_hash = await bcrypt.hash(randomPassword, 12);
+    const email = importEmail || 'wordpress_import@local';
+    const username = 'wordpress_import';
+
+    const [newAuthor] = await db.insert(users).values({
+      username,
+      email,
+      password_hash,
+      isAdmin: false,
+      metadata: { system: 'wp-import' }
     }).returning();
 
-    console.log("Admin user created successfully with ID:", newAdmin.id);
-    return newAdmin;
+    console.log("Created import author user with ID:", newAuthor.id);
+    return newAuthor;
   } catch (error) {
-    console.error("Error in getOrCreateAdminUser:", error);
+    console.error("Error resolving/creating import author:", error);
     throw error;
   }
 }
@@ -144,7 +150,7 @@ async function syncWordPressPosts() {
   try {
     console.log(`[Sync #${syncId}] Starting WordPress API sync at ${syncStartTime}`);
 
-    const admin = await getOrCreateAdminUser();
+    const admin = await getImportAuthorUser();
     const wpPosts = await fetchWordPressPosts();
 
     let createdCount = 0;

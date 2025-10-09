@@ -12,9 +12,18 @@ let syncInProgress = false;
 let lastSyncStatus: any = null;
 let lastSyncTime: string | null = null;
 
-// Minimal real auth/authorization: require session user and admin flag
-const requireAdmin: import('express').RequestHandler = (req, res, next) => {
+// Flexible sync authorization: allow either admin user OR a valid sync key header
+const requireSyncAuth: import('express').RequestHandler = (req, res, next) => {
   const user = (req as any).user || req.session?.user;
+  const headerKey = req.get('X-WordPress-Sync-Key');
+  const envKey = process.env.WORDPRESS_SYNC_KEY;
+
+  // If a valid sync key is provided, allow without admin
+  if (envKey && headerKey && headerKey === envKey) {
+    return next();
+  }
+
+  // Otherwise require admin
   if (!user) {
     res.status(401).json({ error: 'Authentication required' });
     return;
@@ -127,7 +136,7 @@ export function registerWordPressSyncRoutes(app: Express): void {
    * POST /api/wordpress/sync
    * Trigger a WordPress sync manually (admin only)
    */
-  app.post('/api/wordpress/sync', simpleRateLimit(), requireAdmin, async (req: Request, res: Response) => {
+  app.post('/api/wordpress/sync', simpleRateLimit(), requireSyncAuth, async (req: Request, res: Response) => {
     logEvent('Manual WordPress sync triggered via API', { user: (req as any).user });
 
     if (syncInProgress) {

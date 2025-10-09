@@ -16,6 +16,8 @@ export function setupCors(app: Express) {
   const allowedOrigins = [
     // Add frontend URL from environment variables for production
     process.env.FRONTEND_URL,
+    // Allow Google Identity Services origin for redirect/One Tap posts
+    "https://accounts.google.com",
     // Development URLs
     "http://localhost:3000",
     "http://localhost:5173",

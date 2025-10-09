@@ -1,10 +1,5 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { signInWithGoogle } from '@/lib/firebase';
-import { SiGoogle } from 'react-icons/si';
-import { Loader2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import './SocialLoginButtons.css';
-import { User } from 'firebase/auth';
 
 interface SocialUser {
   id: string;
@@ -20,58 +15,146 @@ interface SocialLoginButtonsProps {
   onError: (error: Error) => void;
 }
 
+/**
+ * Decode a JWT (base64url) payload without verification.
+ * Used to extract email, sub, name, and picture from Google's id_token.
+ */
+function decodeJwtPayload(token: string): Record<string, any> | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = atob(base64);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
 export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginButtonsProps) {
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [initialized, setInitialized] = useState(false);
 
-  const processFirebaseUser = async (user: User, provider: string) => {
-    const token = await user.getIdToken();
-    return {
-      id: user.uid,
-      email: user.email,
-      name: user.displayName,
-      photoURL: user.photoURL,
-      provider,
-      token
-    };
-  };
+  useEffect(() => {
+    let cancelled = false;
 
-  const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
-    try {
-      const userCredential = await signInWithGoogle();
-      if (userCredential) {
-        const userData = await processFirebaseUser(userCredential, 'google');
+    const handleCredentialResponse = (response: any) => {
+      try {
+        const idToken = response?.credential as string | undefined;
+        if (!idToken) {
+          throw new Error('Missing credential from Google');
+        }
+        const claims = decodeJwtPayload(idToken);
+        const email =
+          (claims?.email as string | undefined) ||
+          (claims?.emails?.[0] as string | undefined) ||
+          null;
+        const socialId = (claims?.sub as string | undefined) || '';
+        const name = (claims?.name as string | undefined) || null;
+        const photoURL = (claims?.picture as string | undefined) || null;
+
+        const userData: SocialUser = {
+          id: socialId,
+          email,
+          name,
+          photoURL,
+          provider: 'google',
+          token: idToken
+        };
         onSuccess(userData);
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error('Failed to process Google credential');
+        onError(err);
       }
-    } catch (error) {
-      console.error('Google sign-in error:', error);
-      if (error instanceof Error) {
-        onError(error);
+    };
+
+    const tryInit = () => {
+      const google = (window as any).google;
+      if (!google || !google.accounts || !google.accounts.id) {
+        return false;
+      }
+
+      // Read from environment variables first (Vite-prefixed), then fall back to g_id_onload dataset, then default
+      const envClientId = (import.meta as any)?.env?.VITE_GOOGLE_CLIENT_ID as string | undefined;
+      const envLoginUri = (import.meta as any)?.env?.VITE_GOOGLE_LOGIN_URI as string | undefined;
+      const envUxMode = ((import.meta as any)?.env?.VITE_GOOGLE_UX_MODE as string | undefined) || 'popup';
+
+      const setupEl = document.getElementById('g_id_onload') as HTMLDivElement | null;
+      const clientId =
+        envClientId ||
+        setupEl?.dataset?.clientId ||
+        (setupEl?.dataset as any)?.client_id ||
+        '507042442187-17u8iqde1aeogo405iskul1t5dbr1kos.apps.googleusercontent.com';
+
+      const opts: Record<string, any> = {
+        client_id: clientId,
+        callback: handleCredentialResponse
+      };
+
+      if (envUxMode === 'redirect') {
+        const loginUri =
+          envLoginUri ||
+          setupEl?.dataset?.loginUri ||
+          (setupEl?.dataset as any)?.login_uri ||
+          `${window.location.origin}/auth/callback`;
+
+        opts.ux_mode = 'redirect';
+        opts.login_uri = loginUri;
+      }
+
+      google.accounts.id.initialize(opts);
+
+      if (containerRef.current) {
+        const isDark =
+          document.documentElement.classList.contains('dark') ||
+          (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+        google.accounts.id.renderButton(containerRef.current, {
+          theme: isDark ? 'filled_black' : 'filled_blue',
+          size: 'large',
+          text: 'continue_with',
+          shape: 'pill',
+          width: 320,
+          logo_alignment: 'left'
+        });
+      }
+      return true;
+    };
+
+    if (!initialized) {
+      // Attempt immediate initialization
+      const ok = tryInit();
+      if (ok) {
+        setInitialized(true);
       } else {
-        onError(new Error('Failed to sign in with Google'));
+        // Poll for GIS script readiness up to ~2 seconds
+        let attempts = 0;
+        const interval = setInterval(() => {
+          if (cancelled) {
+            clearInterval(interval);
+            return;
+          }
+          attempts += 1;
+          const ok2 = tryInit();
+          if (ok2) {
+            setInitialized(true);
+            clearInterval(interval);
+          } else if (attempts > 20) {
+            clearInterval(interval);
+            onError(new Error('Google Identity Services failed to initialize'));
+          }
+        }, 100);
       }
-    } finally {
-      setIsGoogleLoading(false);
     }
-  };
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialized, onSuccess, onError]);
 
   return (
     <div className="social-auth-buttons">
-      <Button
-        variant="outline"
-        className="social-button google-button"
-        onClick={handleGoogleSignIn}
-        disabled={isGoogleLoading}
-      >
-        {isGoogleLoading ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <SiGoogle className="mr-2 h-4 w-4" />
-        )}
-        Google
-      </Button>
-      
-      {/* Apple auth removed */}
+      <div ref={containerRef} />
     </div>
   );
 }

@@ -43,8 +43,16 @@
     <meta name="twitter:description" content="Dark, psychological, and gothic fiction — short stories and unsettling tales from Bubble’s Cafe." />
     
     <!-- Removed missing Phaser scripts to prevent 404/SRI failures -->
+  <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
   <body class="min-h-screen w-full m-0 p-0 bg-black">
+    <!-- Google Sign-In redirect configuration -->
+    <div id="g_id_onload"
+      data-client_id="507042442187-17u8iqde1aeogo405iskul1t5dbr1kos.apps.googleusercontent.com"
+      data-login_uri="https://bubblescafe.space/auth/callback"
+      data-auto_prompt="false">
+    </div>
     <div id="root" class="min-h-screen w-full min-w-full max-w-full overflow-x-hidden mx-0 p-0"></div>
     <script type="module" src="/src/main.tsx" crossorigin="anonymous"></script>
   </body>

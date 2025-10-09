@@ -270,23 +270,13 @@ async function initializeDatabase() {
       console.log(`✅ ${table.name} table created`);
     }
 
-    // Create admin user if not exists
-    console.log('👤 Creating admin user...');
-    const adminExists = await pool.query('SELECT id FROM users WHERE email = $1', ['admin@storytelling.com']);
-    
+    // Skip admin user creation. Verify presence only.
+    console.log('👤 Verifying admin user presence...');
+    const adminExists = await pool.query('SELECT id FROM users WHERE is_admin = true LIMIT 1');
     if (adminExists.rows.length === 0) {
-      // Import bcrypt for password hashing
-      const bcrypt = await import('bcryptjs');
-      const hashedPassword = await bcrypt.hash('admin123', 10);
-      
-      await pool.query(`
-        INSERT INTO users (username, email, password_hash, is_admin)
-        VALUES ($1, $2, $3, $4)
-      `, ['admin', 'admin@storytelling.com', hashedPassword, true]);
-      
-      console.log('✅ Admin user created (email: admin@storytelling.com, password: admin123)');
+      console.log('⚠️ No admin user found. Please create one securely via a controlled process.');
     } else {
-      console.log('✅ Admin user already exists');
+      console.log('✅ Admin user exists');
     }
 
     // Verify tables were created

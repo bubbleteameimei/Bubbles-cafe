@@ -2,7 +2,6 @@
  * Trigger WordPress sync using direct database calls
  */
 import pg from 'pg';
-import bcrypt from 'bcryptjs';
 
 const { Pool } = pg;
 
@@ -24,14 +23,7 @@ async function triggerWordPressSync() {
     `);
     
     if (adminQuery.rows.length === 0) {
-      const hashedPassword = await bcrypt.hash('admin123', 10);
-      const newAdmin = await pool.query(`
-        INSERT INTO users (username, email, password_hash, is_admin, created_at)
-        VALUES ('admin', 'admin@example.com', $1, true, NOW())
-        RETURNING id
-      `, [hashedPassword]);
-      adminUser = newAdmin.rows[0];
-      console.log('Created admin user');
+      throw new Error('No admin user found. Please create an admin securely before running sync.');
     } else {
       adminUser = adminQuery.rows[0];
       console.log('Found existing admin user');

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from 'date-fns';
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { useFontSize } from "@/hooks/use-font-size";
 import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
@@ -29,14 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import useReaderGentleScroll from "@/hooks/useReaderGentleScroll";
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import SEO from "@/components/SEO";
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbSeparator,
-  BreadcrumbPage
-} from "@/components/ui/breadcrumb";
+
 
 import {
   Dialog,
@@ -51,51 +44,64 @@ import {
 
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
-// Native HTML sanitization function
-const sanitizeHtmlContent = (html: string): string => {
-  try {
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
-    const dangerousElements = temp.querySelectorAll('script, object, embed, iframe, form, input, button');
-    dangerousElements.forEach(element => element.remove());
-    const allElements = temp.querySelectorAll('*');
-    allElements.forEach(element => {
-      const dangerousAttrs = [
-        'onload', 'onerror', 'onclick', 'onmouseover', 'onfocus', 'onblur',
-        'onchange', 'onsubmit', 'onreset', 'onselect', 'onkeydown', 'onkeyup',
-        'onkeypress', 'onmousedown', 'onmouseup', 'onmousemove', 'onmouseout',
-        'onmousein', 'ondblclick', 'oncontextmenu', 'javascript:', 'vbscript:'
-      ];
-      dangerousAttrs.forEach(attr => {
-        if (element.hasAttribute(attr)) {
-          element.removeAttribute(attr);
+// Native HTML sanitization function (hardened)
+  const sanitizeHtmlContent = (html: string): string => {
+    try {
+      const temp = document.createElement('div');
+      temp.innerHTML = html;
+
+      // Remove dangerous elements
+      temp.querySelectorAll('script, object, embed, iframe, form, input, button, link, meta').forEach(el => el.remove());
+
+      // Sanitize attributes and protocols
+      temp.querySelectorAll('*').forEach(el => {
+        for (const attr of Array.from(el.attributes)) {
+          const name = attr.name.toLowerCase();
+          const value = attr.value || '';
+
+          // Remove event handler attributes like onload, onclick, etc.
+          if (name.startsWith('on')) {
+            el.removeAttribute(attr.name);
+            continue;
+          }
+
+          // Remove href/src with dangerous protocols
+          if (name === 'href' || name === 'src') {
+            const val = value.trim().toLowerCase();
+            if (val.startsWith('javascript:') || val.startsWith('vbscript:')) {
+              el.removeAttribute(attr.name);
+              continue;
+            }
+          }
+
+          // Remove styles that include dangerous url() protocols
+          if (name === 'style') {
+            const lower = value.toLowerCase();
+            if (lower.includes('url(') && (lower.includes('javascript:') || lower.includes('vbscript:'))) {
+              el.removeAttribute(attr.name);
+              continue;
+            }
+          }
         }
       });
-      const href = element.getAttribute('href');
-      const src = element.getAttribute('src');
-      if (href && (href.startsWith('javascript:') || href.startsWith('vbscript:'))) {
-        element.removeAttribute('href');
-      }
-      if (src && (src.startsWith('javascript:') || src.startsWith('vbscript:'))) {
-        element.removeAttribute('src');
-      }
-    });
-    return temp.innerHTML;
-  } catch (error) {
-    console.error('[Reader] Error sanitizing HTML:', error);
-    return html;
-  }
-};
 
-interface ReaderPageProps {
+      return temp.innerHTML;
+    } catch (error) {
+      console.error('[Reader] Error sanitizing HTML:', error);
+      return html;
+    }
+  };
+  interface ReaderPageProps {
   slug?: string;
   params?: { slug?: string };
   isCommunityContent?: boolean;
 }
 
 export default function ReaderPage({ slug, params, isCommunityContent = false }: ReaderPageProps) {
-  // Log params for debugging
-  console.log('[ReaderPage] Initializing with params:', { routeSlug: params?.slug || slug, params, slug });
+  // Log params for debugging (dev only)
+  if (import.meta.env?.DEV) {
+    console.log('[ReaderPage] Initializing with params:', { routeSlug: params?.slug || slug, params, slug });
+  }
   // Extract slug from route params if provided
   const routeSlug = params?.slug || slug;
   const [, setLocation] = useLocation();
@@ -162,7 +168,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       const scrollPercent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
       const progress = Math.min(100, Math.max(0, scrollPercent));
       setReadingProgress(progress);
-      console.log('[Reader] Progress updated:', { scrollTop, docHeight, progress });
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Progress updated:', { scrollTop, docHeight, progress });
+      }
     };
 
     // Throttle scroll events for better performance
@@ -203,10 +211,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Delete Post Mutation for admin actions
   const deleteMutation = useMutation({
     mutationFn: async (postId: number) => {
-      console.log(`[Reader] Attempting to delete post with ID: ${postId}`);
-      
+      if (import.meta.env?.DEV) {
+        console.log(`[Reader] Attempting to delete post with ID: ${postId}`);
+      }
       const csrfToken = document.cookie.replace(/(?:(?:^|.*;\s*)XSRF-TOKEN\s*\=\s*([^;]*).*$)|^.*$/, "$1");
-      console.log('[Reader] Using CSRF token for deletion');
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Using CSRF token for deletion');
+      }
       
       const response = await fetch(`/api/posts/${postId}`, {
         method: 'DELETE',
@@ -216,34 +227,50 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         },
         credentials: 'include'
       });
-      
-      // Read response data
-      const data = await response.json();
-      
+
+      // Handle 204 No Content without parsing
+      if (response.status === 204) {
+        return { ok: true };
+      }
+
+      // Parse JSON only if content-type indicates JSON
+      let data: any = null;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+      }
+
       if (!response.ok) {
         console.error(`[Reader] Delete failed with status: ${response.status}`, data);
         if (response.status === 401) {
           throw new Error('Please log in to delete this story');
         } else {
-          throw new Error(data.message || 'Failed to delete post');
+          throw new Error((data && data.message) ? data.message : `Failed to delete post (status ${response.status})`);
         }
       }
       
-      return data;
+      return data ?? { ok: true };
     },
     onSuccess: () => {
-      // Invalidate all related queries to ensure cache is properly cleared
-      console.log('[Reader] Invalidating all related query caches');
+      // Invalidate related queries to ensure cache is properly cleared
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Invalidating related query caches');
+      }
       
-      // Invalidate community posts list
-      queryClient.invalidateQueries({ queryKey: ['/api/posts/community'] });
-      
-      // Invalidate all posts endpoint
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      // Invalidate community posts list only when applicable
+      if (isCommunityContent) {
+        queryClient.invalidateQueries({ queryKey: ['/api/posts/community'] });
+      }
       
       // Invalidate specific post endpoints
       if (currentPost?.id) {
-        console.log(`[Reader] Invalidating specific post cache for ID: ${currentPost.id}`);
+        if (import.meta.env?.DEV) {
+          console.log(`[Reader] Invalidating specific post cache for ID: ${currentPost.id}`);
+        }
         queryClient.invalidateQueries({ 
           queryKey: ['/api/posts', currentPost.id.toString()]
         });
@@ -251,7 +278,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
       // Also invalidate the specific post query based on the slug
       if (routeSlug) {
-        console.log('[Reader] Invalidating specific post cache for slug:', routeSlug);
+        if (import.meta.env?.DEV) {
+          console.log('[Reader] Invalidating specific post cache for slug:', routeSlug);
+        }
         queryClient.invalidateQueries({ 
           queryKey: ["wordpress", "posts", "reader", routeSlug] 
         });
@@ -270,7 +299,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       });
       
       // Force navigation back to the community page after deletion
-      console.log('[Reader] Navigating back to community page');
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Navigating back to community page');
+      }
       // Immediate navigation to prevent page from trying to load deleted content
       setLocation('/community');
     },
@@ -284,11 +315,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   });
 
-  console.log('[Reader] Component mounted with slug:', routeSlug); // Debug log
+  if (import.meta.env?.DEV) {
+    console.log('[Reader] Component mounted with slug:', routeSlug);
+  }
   
   // Clear any cached data to ensure fresh fetch after sample story removal
   useEffect(() => {
-    console.log('[Reader] Clearing query cache to ensure fresh data');
+    if (import.meta.env?.DEV) {
+      console.log('[Reader] Clearing query cache to ensure fresh data');
+    }
     queryClient.invalidateQueries({ queryKey: ["posts"] });
     queryClient.removeQueries({ queryKey: ["posts"] });
   }, [queryClient]);
@@ -297,10 +332,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [currentIndex, setCurrentIndex] = useState(() => {
     try {
       const savedIndex = sessionStorage.getItem('selectedStoryIndex');
-      console.log('[Reader] Retrieved saved index:', savedIndex);
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Retrieved saved index:', savedIndex);
+      }
 
       if (!savedIndex) {
-        console.log('[Reader] No saved index found, defaulting to 0');
+        if (import.meta.env?.DEV) {
+          console.log('[Reader] No saved index found, defaulting to 0');
+        }
         return 0;
       }
 
@@ -318,88 +357,75 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   });
 
   const { data: postsData, isLoading, error } = useQuery({
-    queryKey: ["posts", "reader", routeSlug, isCommunityContent ? "community" : "regular"],
+    queryKey: ["wordpress", "reader", routeSlug ?? "", isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
-      console.log('[Reader] Fetching posts...', { routeSlug, isCommunityContent });
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Fetching WordPress posts...', { routeSlug });
+      }
+
+      const site = 'bubbleteameimei.wordpress.com';
+      const baseUrl = `https://public-api.wordpress.com/wp/v2/sites/${site}`;
+
       try {
         if (routeSlug) {
-          // If slug is provided, always use the unified slug endpoint
-          const endpoint = `/api/posts/slug/${encodeURIComponent(routeSlug)}`;
-          const response = await fetch(endpoint);
-          if (!response.ok) throw new Error(`Failed to fetch ${isCommunityContent ? 'community' : ''} post`);
-          const post = await response.json();
-          
-          // Convert post to a format compatible with both WordPress and internal posts
+          // Fetch a single WordPress post by slug
+          const url = `${baseUrl}/posts?slug=${encodeURIComponent(routeSlug)}&_fields=id,date,slug,title,content,excerpt`;
+          const response = await fetch(url);
+          if (!response.ok) throw new Error('Failed to fetch WordPress post by slug');
+          const arr = await response.json();
+
+          if (!Array.isArray(arr) || arr.length === 0) {
+            throw new Error('Post not found');
+          }
+
+          const item = arr[0];
           const normalizedPost = {
-            ...post,
-            // Ensure title and content are in the expected format
-            title: {
-              rendered: post.title?.rendered || post.title || ''
-            },
-            content: {
-              rendered: post.content?.rendered || post.content || ''
-            },
-            date: post.date || post.createdAt || new Date().toISOString()
+            id: item.id,
+            slug: item.slug,
+            title: { rendered: item?.title?.rendered || '' },
+            content: { rendered: item?.content?.rendered || '' },
+            date: item?.date || new Date().toISOString()
           };
-          
+
           return { posts: [normalizedPost], totalPages: 1, total: 1 };
         } else {
-          // Fetch all posts from internal API (your WordPress stories are already synced here)
-          console.log('[Reader] Fetching posts...', { isCommunityContent });
-          
-          // Always use the core posts endpoint for maximum reliability with cache busting
-          const response = await fetch(`/api/posts?limit=100&_t=${Date.now()}`);
+          // Fetch a list of WordPress posts
+          const url = `${baseUrl}/posts?per_page=100&_fields=id,date,slug,title,content,excerpt`;
+          const response = await fetch(url);
           if (!response.ok) {
-            throw new Error('Failed to fetch posts from database');
+            throw new Error('Failed to fetch WordPress posts');
           }
-          
-          const data = await response.json();
-          console.log('[Reader] Successfully fetched posts:', {
-            totalPosts: data.posts?.length,
-            hasMore: data.hasMore,
-            firstPost: data.posts?.[0]?.title
-          });
-          
-          if (!data.posts || data.posts.length === 0) {
+
+          const arr = await response.json();
+          if (!Array.isArray(arr) || arr.length === 0) {
             throw new Error('No stories available');
           }
-          
-          // Normalize posts to ensure consistent format
-          const normalizedPosts = data.posts.map((post: any) => ({
-            ...post,
-            title: {
-              rendered: post.title?.rendered || post.title || ''
-            },
-            content: {
-              rendered: post.content?.rendered || post.content || ''
-            },
-            date: post.date || post.created_at || new Date().toISOString()
+
+          const normalizedPosts = arr.map((item: any) => ({
+            id: item.id,
+            slug: item.slug,
+            title: { rendered: item?.title?.rendered || '' },
+            content: { rendered: item?.content?.rendered || '' },
+            date: item?.date || new Date().toISOString()
           }));
-          
+
           return { posts: normalizedPosts, totalPages: 1, total: normalizedPosts.length };
         }
       } catch (error) {
-        console.error('[Reader] Error fetching posts:', error);
-        // Add fallback error handling here
-        console.error('[Reader] Error or no posts available:', { error, currentIndex });
-        
-        // Try to fetch any posts to show something
+        console.error('[Reader] Error fetching WordPress posts:', error);
+        // Fallback: try a smaller page size
         try {
-          // Try to fetch community posts if that's what we're looking for
-          const endpoint = isCommunityContent ? '/api/posts/community?limit=50' : '/api/posts?limit=50';
-          const response = await fetch(endpoint);
+          const url = `${baseUrl}/posts?per_page=20&_fields=id,date,slug,title,content,excerpt`;
+          const response = await fetch(url);
           if (response.ok) {
-            const data = await response.json();
-            if (data.posts && data.posts.length > 0) {
-              const normalizedPosts = data.posts.map((post: any) => ({
-                ...post,
-                title: {
-                  rendered: post.title?.rendered || post.title || 'Story'
-                },
-                content: {
-                  rendered: post.content?.rendered || post.content || 'Content not available.'
-                },
-                date: post.date || post.createdAt || new Date().toISOString()
+            const arr = await response.json();
+            if (Array.isArray(arr) && arr.length > 0) {
+              const normalizedPosts = arr.map((item: any) => ({
+                id: item.id,
+                slug: item.slug,
+                title: { rendered: item?.title?.rendered || 'Story' },
+                content: { rendered: item?.content?.rendered || 'Content not available.' },
+                date: item?.date || new Date().toISOString()
               }));
               return { posts: normalizedPosts, totalPages: 1, total: normalizedPosts.length };
             }
@@ -407,7 +433,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         } catch (fallbackError) {
           console.error('[Reader] Fallback also failed:', fallbackError);
         }
-        
+
         throw error;
       }
     },
@@ -429,34 +455,44 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Validate and update currentIndex when posts data changes
   useEffect(() => {
     if (postsData?.posts && postsData.posts.length > 0) {
-      console.log('[Reader] Validating current index:', {
-        currentIndex,
-        totalPosts: postsData.posts.length,
-        savedIndex: sessionStorage.getItem('selectedStoryIndex')
-      });
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Validating current index:', {
+          currentIndex,
+          totalPosts: postsData.posts.length,
+          savedIndex: sessionStorage.getItem('selectedStoryIndex')
+        });
+      }
 
       // Ensure currentIndex is within bounds
       if (currentIndex >= postsData.posts.length) {
-        console.log('[Reader] Current index out of bounds, resetting to 0');
+        if (import.meta.env?.DEV) {
+          console.log('[Reader] Current index out of bounds, resetting to 0');
+        }
         setCurrentIndex(0);
         sessionStorage.setItem('selectedStoryIndex', '0');
       } else {
-        console.log('[Reader] Current index is valid:', currentIndex);
+        if (import.meta.env?.DEV) {
+          console.log('[Reader] Current index is valid:', currentIndex);
+        }
         sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
       }
 
       // Log current post details
       const currentPost = postsData.posts[currentIndex];
-      console.log('[Reader] Selected post:', currentPost ? {
-        id: currentPost.id,
-        title: currentPost.title?.rendered || currentPost.title || 'Story',
-        date: currentPost.date
-      } : 'No post found');
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Selected post:', currentPost ? {
+          id: currentPost.id,
+          title: currentPost.title?.rendered || currentPost.title || 'Story',
+          date: currentPost.date
+        } : 'No post found');
+      }
       
       // Now that we have the post data, update our slug for auto-saving
       if (currentPost) {
         const newSlug = routeSlug || (currentPost.slug || `post-${currentPost.id}`);
-        console.log('[Reader] Setting auto-save slug:', newSlug);
+        if (import.meta.env?.DEV) {
+          console.log('[Reader] Setting auto-save slug:', newSlug);
+        }
         setAutoSaveSlug(newSlug);
         
         // Check if we've reloaded but the post has been deleted
@@ -487,24 +523,27 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Position restoration notification has been removed as requested
 
   useEffect(() => {
-    console.log('[Reader] Verifying social icons:', {
-      twitter: !!FaTwitter,
-      wordpress: !!FaWordpress,
-      instagram: !!FaInstagram
-    });
+    if (import.meta.env?.DEV) {
+      console.log('[Reader] Verifying social icons:', {
+        twitter: !!FaTwitter,
+        wordpress: !!FaWordpress,
+        instagram: !!FaInstagram
+      });
+    }
   }, []);
 
   // Create a function to generate the styles
   const generateStoryContentStyles = () => {
-    // Use our fixed constants for better text readability
+    // Use fixed constants for better text readability
     const textColor = theme === 'dark' 
       ? `color: ${DARK_TEXT_COLOR};` 
       : `color: ${LIGHT_TEXT_COLOR};`;
     
-    // Return the main styles with better text contrast for readability
+    // Return the main styles using CSS variables for font family and size
     return `
   .story-content {
-    font-family: ${availableFonts[fontFamily].family};
+    font-family: var(--reader-font-family);
+    font-size: var(--reader-font-size);
     width: 100%;
     margin: 0 auto;
     padding: 0 0.5rem;
@@ -514,7 +553,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   .story-content p, .story-content .story-paragraph {
     line-height: 1.7;
     margin-bottom: 1.7em;
-    font-family: ${availableFonts[fontFamily].family};
+    font-family: var(--reader-font-family);
+    font-size: var(--reader-font-size);
     transition: font-size 0.25s ease-in-out, font-family 0.25s ease-in-out;
   }
   @media (max-width: 768px) {
@@ -528,21 +568,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Apply font styles using CSS variables for smooth transitions
   useEffect(() => {
     try {
-      console.log('[Reader] Updating font styles with CSS variables:', { fontFamily, fontSize });
-      
+      if (import.meta.env?.DEV) {
+        console.log('[Reader] Updating font styles with CSS variables:', { fontFamily, fontSize });
+      }
       // Set CSS variables on the document root for smooth transitions
       const root = document.documentElement;
       root.style.setProperty('--reader-font-family', availableFonts[fontFamily].family);
       root.style.setProperty('--reader-font-size', `${fontSize}px`);
-      
-      // Apply to story content elements directly for immediate effect
-      const storyElements = document.querySelectorAll('.story-content, .story-content p, .story-content .story-paragraph');
-      storyElements.forEach(element => {
-        if (element instanceof HTMLElement) {
-          element.style.fontFamily = availableFonts[fontFamily].family;
-          element.style.fontSize = `${fontSize}px`;
-        }
-      });
     } catch (error) {
       console.error('[Reader] Error applying font styles:', error);
     }
@@ -551,28 +583,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // This duplicate has been removed - reading progress tracking is handled above
 
   
-  // Add a useEffect hook to handle deleted posts detection on component mount
-  useEffect(() => {
-    // Only run this check if we're looking at a specific post by slug
-    if (routeSlug && !isLoading && postsData?.posts?.length === 1) {
-      const post = postsData.posts[0];
-      // Make a direct API request to verify the post still exists
-      fetch(`/api/posts/${post.id}`)
-        .then(response => {
-          if (response.status === 404) {
-            console.log('[Reader] Post appears to have been deleted');
-            toast({
-              title: 'Post Not Available', 
-              description: 'This post is no longer available.'
-            });
-            setLocation('/community');
-          }
-        })
-        .catch(err => {
-          console.error('[Reader] Error verifying post exists:', err);
-        });
-    }
-  }, [routeSlug, isLoading, postsData?.posts, setLocation, toast]);
+  {/* Removed duplicate deleted posts detection useEffect block */}
 
   // Let's make sure we have posts data and current post before rendering
   if (isLoading) {
@@ -657,7 +668,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
       // After 3 rapid skips, show the horror Easter egg
       if (skipCountRef.current >= 3 && !showHorrorMessage) {
-        console.log('[Reader] Horror Easter egg triggered after rapid navigation');
+        if (import.meta.env?.DEV) {
+          console.log('[Reader] Horror Easter egg triggered after rapid navigation');
+        }
         
         // Highly threatening message for maximum creepiness with subtle psychological impact
         const message = "I SEE YOU SKIPPING!!!";
@@ -938,15 +951,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         />
       )}
       
-      {/* Reading progress indicator - always visible for user orientation */}
-      <div 
-        className="fixed top-0 left-0 z-50 h-1 bg-primary/70"
-        style={{ 
-          width: `${readingProgress}%`, 
-          transition: 'width 0.2s ease-out'
-        }}
-        aria-hidden="true"
-      />
+      
       
       {/* Floating pagination has been removed */}
       
@@ -954,28 +959,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       {/* Full width immersive reading experience */}
 
       <div className={`pt-0 pb-0 bg-background mt-0 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
-        {/* Top breadcrumb for clear navigation context */}
-        <div className="px-4 md:px-8 lg:px-12 py-2">
-          <Breadcrumb aria-label="Breadcrumb">
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link href="/">Home</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link href="/reader">Reader</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>{titleText}</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
+        
 
         {/* Font controls/TOC should be extremely close to main nav: remove extra margins/padding */}
         <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
@@ -1094,7 +1078,30 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </div>
               <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
               <TableOfContents 
-                currentPostId={currentPost.id} 
+                currentPostId={currentPost.id}
+                posts={posts.map((p: any) => ({
+                  id: p.id,
+                  title: (p.title?.rendered || p.title || 'Untitled') as string,
+                  slug: (p.slug || `post-${p.id}`) as string,
+                  date: (p.date || p.createdAt || new Date().toISOString()) as string
+                }))}
+                onSelect={(selected) => {
+                  try {
+                    // Prefer match by slug when available
+                    const foundIndex = posts.findIndex((p: any) =>
+                      (selected.slug && p.slug === selected.slug) || p.id === selected.id
+                    );
+                    if (foundIndex >= 0) {
+                      setCurrentIndex(foundIndex);
+                      // Scroll to top for a clean transition
+                      window.scrollTo({ top: 0, behavior: 'auto' });
+                    }
+                  } catch (err) {
+                    console.error('[Reader] TOC onSelect error:', err);
+                  } finally {
+                    setContentsDialogOpen(false);
+                  }
+                }}
                 onClose={() => setContentsDialogOpen(false)} 
               />
             </DialogContent>
@@ -1424,7 +1431,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               <div className="flex flex-col items-center justify-center gap-6">
                 {/* Centered Like/Dislike buttons */}
                 <div className={`flex justify-center w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-                  <LikeDislike postId={currentPost.id} />
+                  <LikeDislike postId={currentPost.id} slug={currentPost.slug} source="wp" variant="reader" />
                 </div>
 
                 <div className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>

@@ -4,7 +4,7 @@ import { createServer } from "http";
 import { db } from "./db"; // Using the direct Neon database connection
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
-import { seedDatabase } from "./seed";
+
 
 import helmet from "helmet";
 import compression from "compression";
@@ -115,6 +115,7 @@ app.use(validateCsrfToken({
     '/api/auth/forgot-password',
     '/api/auth/reset-password',
     '/api/auth/verify-reset-token',
+    '/api/auth/callback',
     '/api/analytics/vitals',
     '/api/analytics/performance',
     '/api/wordpress/sync/status',
@@ -157,10 +158,12 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
       fontSrc: ["'self'", "fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://accounts.google.com", "https://apis.google.com"],
       connectSrc: ["'self'", "https:"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
+      // Allow Google Identity Services iframe in production when One Tap is used
+      frameSrc: ["'self'", "https://accounts.google.com"],
       frameAncestors: ["'self'"],
       formAction: ["'self'"],
       upgradeInsecureRequests: []
@@ -181,6 +184,7 @@ const serverLogger = createLogger('Server');
 import setupDatabase from '../scripts/setup-db';
 import pushSchema from '../scripts/db-push';
 import seedFromWordPressAPI from '../scripts/api-seed';
+
 
 // Ensure /api/health mirrors /health by returning csrfToken when available
 app.get('/api/health', (req, res) => {
@@ -325,16 +329,14 @@ async function startServer() {
           serverLogger.info('Database connected, tables exist', { postsCount });
 
           if (postsCount === 0) {
-            serverLogger.info('No posts found - seeding database from WordPress API...');
+            serverLogger.info('No posts found - seeding from WordPress API...');
             try {
               await seedFromWordPressAPI();
-              serverLogger.info('Database seeding from WordPress API completed');
+              serverLogger.info('Initial API seeding completed');
             } catch (seedError) {
-              serverLogger.warn('WordPress API seeding failed, falling back to XML seeding', {
+              serverLogger.error('WordPress API seeding failed', {
                 error: seedError instanceof Error ? seedError.message : 'Unknown error'
               });
-              await seedDatabase();
-              serverLogger.info('Database seeding from XML completed');
             }
           }
         } catch (dbError) {
@@ -348,8 +350,15 @@ async function startServer() {
             await pushSchema();
             serverLogger.info('Schema created successfully');
 
-            await seedDatabase();
-            serverLogger.info('Database seeded successfully');
+            serverLogger.info('Seeding from WordPress API after schema creation...');
+            try {
+              await seedFromWordPressAPI();
+              serverLogger.info('API seeding completed after schema creation');
+            } catch (seedErr) {
+              serverLogger.error('API seeding failed after schema creation', {
+                error: seedErr instanceof Error ? seedErr.message : 'Unknown error'
+              });
+            }
           } catch (finalError) {
             serverLogger.error('Critical database setup failure', {
               error: finalError instanceof Error ? finalError.message : 'Unknown error'

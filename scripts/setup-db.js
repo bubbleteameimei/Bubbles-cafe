@@ -9,33 +9,9 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL
 });
 
+// Admin creation removed
 async function createAdminUser() {
-  try {
-    console.log('Checking for existing admin user...');
-    
-    // Check if admin user already exists
-    const checkResult = await pool.query('SELECT * FROM users WHERE email = $1', ['admin@example.com']);
-    
-    if (checkResult.rows.length > 0) {
-      console.log('Admin user already exists');
-      return;
-    }
-    
-    console.log('Creating admin user...');
-    
-    // Hash the password
-    const passwordHash = await hash('adminpassword', 10);
-    
-    // Insert admin user
-    const result = await pool.query(
-      'INSERT INTO users (username, email, password_hash, is_admin, full_name) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-      ['admin', 'admin@example.com', passwordHash, true, 'Admin User']
-    );
-    
-    console.log('Admin user created with ID:', result.rows[0].id);
-  } catch (error) {
-    console.error('Error creating admin user:', error);
-  }
+  console.log('Skipping admin user creation. No admin users will be created by setup scripts.');
 }
 
 async function verifyTables() {
@@ -67,8 +43,7 @@ async function main() {
     
     // Run setup steps
     await verifyTables();
-    await createAdminUser();
-    
+    // Admin creation removed
     console.log('Database setup completed successfully');
   } catch (error) {
     console.error('Database setup failed:', error);

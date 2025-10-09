@@ -12,6 +12,27 @@ import { storage } from "../storage";
 const authLogger = createSecureLogger('AuthRoutes');
 const router = Router();
 
+// Helper to exchange authorization code for tokens via Google OAuth
+async function exchangeGoogleCode(code: string, redirectUri: string, clientId: string, clientSecret: string) {
+  const params = new URLSearchParams({
+    code,
+    client_id: clientId,
+    client_secret: clientSecret,
+    redirect_uri: redirectUri,
+    grant_type: 'authorization_code'
+  });
+  const resp = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString()
+  });
+  if (!resp.ok) {
+    const body = await resp.text();
+    throw createError.unauthorized(`Google code exchange failed: ${body}`);
+  }
+  return resp.json() as Promise<any>;
+}
+
 // Password reset schema
 const passwordResetRequestSchema = z.object({
   email: commonSchemas.email
@@ -112,16 +133,71 @@ router.post('/social-login',
   authRateLimiter,
   validateBody(zod.object({
     provider: zod.string().min(1),
-    email: zod.string().email().transform(s => s.toLowerCase().trim()),
-    socialId: zod.string().min(1),
+    grantType: zod.string().optional(),
+    email: zod.string().email().transform(s => s.toLowerCase().trim()).optional(),
+    socialId: zod.string().min(1).optional(),
     username: zod.string().optional(),
     photoURL: zod.string().optional(),
-    token: zod.string().optional()
+    token: zod.string().optional(),
+    code: zod.string().optional(),
+    redirectUri: zod.string().optional()
   })),
   asyncHandler(async (req: Request, res: Response) => {
-    const { provider, email, socialId } = req.body;
-    let { username, photoURL } = req.body as any;
+    let { provider, grantType, email, socialId, username, photoURL, token, code, redirectUri } = req.body as any;
+
     try {
+      const expectedClientId = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
+
+      // Handle Google code flow if requested
+      if (provider === 'google' && grantType === 'authorization_code' && (code || token)) {
+        const clientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.VITE_GOOGLE_CLIENT_SECRET;
+        const redirect = redirectUri || process.env.GOOGLE_REDIRECT_URI || `${process.env.API_URL || ''}/api/auth/callback`;
+        const authCode = code || token; // support both field names
+
+        if (!expectedClientId || !clientSecret) {
+          throw createError.internal('Google OAuth client credentials not configured');
+        }
+
+        const tokenResp = await exchangeGoogleCode(authCode, redirect, expectedClientId, clientSecret);
+        // Expect id_token with user claims
+        const idToken = tokenResp.id_token as string | undefined;
+        if (!idToken) {
+          throw createError.unauthorized('No ID token received from Google');
+        }
+        // Reuse the ID token branch below
+        token = idToken;
+        grantType = undefined;
+      }
+
+      // For Google, if an ID token is provided, verify it via Google's public tokeninfo endpoint (no extra deps).
+      if (provider === 'google' && token) {
+        const verifyResp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);
+        if (!verifyResp.ok) {
+          const errText = await verifyResp.text();
+          authLogger.warn('Google token verification failed', { status: verifyResp.status, body: errText });
+          throw createError.unauthorized('Invalid Google ID token');
+        }
+        const payload = await verifyResp.json() as any;
+        if (expectedClientId && payload.aud && payload.aud !== expectedClientId) {
+          authLogger.warn('Google token audience mismatch', { aud: payload.aud, expected: expectedClientId });
+          throw createError.unauthorized('Invalid token audience');
+        }
+
+        // Extract fields
+        email = (payload.email || email || '').toLowerCase();
+        socialId = payload.sub || socialId;
+        username = username || payload.name || (email ? email.split('@')[0] : undefined);
+        photoURL = photoURL || payload.picture || undefined;
+
+        if (!email || !socialId) {
+          throw createError.badRequest('Missing required user info from Google token');
+        }
+      }
+
+      if (!email || !socialId) {
+        throw createError.badRequest('Missing email or socialId for social login');
+      }
+
       let user = await storage.getUserByEmail(email);
       if (!user) {
         const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
@@ -152,8 +228,9 @@ router.post('/social-login',
         return res.json(safeUser);
       });
     } catch (e) {
-      authLogger.error('Social login error', { provider, error: e instanceof Error ? e.message : String(e) });
-      throw createError.internal('Social login failed');
+      const msg = e instanceof Error ? e.message : String(e);
+      authLogger.error('Social login error', { provider, error: msg });
+      throw (e as any);
     }
   })
 );
@@ -162,25 +239,21 @@ router.post('/social-login',
 router.post('/logout',
   asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?.id;
-    
-          return req.logout((err) => {
-      if (err) {
-        authLogger.error('Logout error', { userId, error: err });
-        throw createError.internal('Logout failed');
-      }
-      
-      req.session.destroy((err) => {
-        if (err) {
-          authLogger.error('Session destruction error', { userId, error: err });
-          throw createError.internal('Session cleanup failed');
-        }
-        
-        authLogger.info('User logged out successfully', { userId });
-              return res.json({
-        success: true,
-        message: 'Logout successful'
-      });
-      });
+
+    // Promisify logout for consistent flow
+    await new Promise<void>((resolve, reject) => {
+      req.logout((err) => (err ? reject(err) : resolve()));
+    });
+
+    // Destroy session
+    await new Promise<void>((resolve, reject) => {
+      req.session.destroy((err) => (err ? reject(err) : resolve()));
+    });
+
+    authLogger.info('User logged out successfully', { userId });
+    return res.json({
+      success: true,
+      message: 'Logout successful'
     });
   })
 );
@@ -425,6 +498,112 @@ router.post('/update-profile',
       const anyError = error as any;
       if (anyError?.statusCode) throw anyError;
       throw createError.internal('Profile update failed');
+    }
+  })
+);
+
+/**
+ * Google Identity Services redirect handler.
+ * Accepts POST from Google with 'credential' (ID token) or 'code', verifies, creates session and redirects.
+ */
+router.post('/callback',
+  asyncHandler(async (req: Request, res: Response) => {
+    const body = req.is('application/json') ? (req.body || {}) : req.body || {};
+    const credential: string | undefined = body.credential || body.id_token;
+    const code: string | undefined = body.code;
+    const expectedClientId = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
+
+    try {
+      let idToken = credential;
+
+      // If code provided, exchange for tokens
+      if (!idToken && code) {
+        const clientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.VITE_GOOGLE_CLIENT_SECRET;
+        const redirect = process.env.GOOGLE_REDIRECT_URI || `${process.env.API_URL || ''}/api/auth/callback`;
+        if (!expectedClientId || !clientSecret) {
+          throw createError.internal('Google OAuth client credentials not configured');
+        }
+        const tokenResp = await exchangeGoogleCode(code, redirect, expectedClientId, clientSecret);
+        idToken = tokenResp.id_token as string | undefined;
+        if (!idToken) {
+          throw createError.unauthorized('No ID token received from Google');
+        }
+      }
+
+      if (!idToken) {
+        throw createError.badRequest('Missing credential or code');
+      }
+
+      // Verify ID token via Google's public tokeninfo endpoint (no extra deps)
+      const verifyResp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+      if (!verifyResp.ok) {
+        const errText = await verifyResp.text();
+        authLogger.warn('Google token verification failed (callback)', { status: verifyResp.status, body: errText });
+        throw createError.unauthorized('Invalid Google ID token');
+      }
+      const payload = await verifyResp.json() as any;
+      if (expectedClientId && payload.aud && payload.aud !== expectedClientId) {
+        authLogger.warn('Google token audience mismatch (callback)', { aud: payload.aud, expected: expectedClientId });
+        throw createError.unauthorized('Invalid token audience');
+      }
+
+      const email = (payload.email || '').toLowerCase();
+      const socialId = payload.sub;
+      const username = payload.name || (email ? email.split('@')[0] : undefined);
+      const photoURL = payload.picture || undefined;
+
+      if (!email || !socialId) {
+        throw createError.badRequest('Missing required user info from Google token');
+      }
+
+      let user = await storage.getUserByEmail(email);
+      if (!user) {
+        const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+        const password_hash = await bcrypt.hash(randomPassword, 12);
+        user = await storage.createUser({
+          username: username || email.split('@')[0],
+          email,
+          password_hash,
+          isAdmin: false,
+          metadata: {
+            email,
+            socialId,
+            provider: 'google',
+            lastLogin: new Date().toISOString(),
+            displayName: username || null,
+            photoURL: photoURL || null
+          }
+        });
+      } else {
+        const existing = user.metadata || {};
+        await storage.updateUser(user.id, {
+          metadata: { ...existing, socialId, provider: 'google', lastLogin: new Date().toISOString(), displayName: username || (existing as any).displayName || null, photoURL: photoURL || (existing as any).photoURL || null }
+        });
+      }
+
+      const { password_hash, ...safeUser } = user;
+      req.login(safeUser as any, (err) => {
+        if (err) {
+          authLogger.error('Session error during callback login', { error: err });
+          return res.status(500).json({ message: 'Session error' });
+        }
+
+        // Build fallback redirect to /auth/success on the frontend if no explicit success URL is set
+        const baseFrontend = process.env.FRONTEND_URL || 'https://bubblescafe.space';
+        const fallbackSuccess = `${String(baseFrontend).replace(/\/$/, '')}/auth/success`;
+        const frontendUrl = process.env.FRONTEND_SUCCESS_URL || fallbackSuccess;
+        // Redirect to frontend after successful login
+        try {
+          return res.redirect(frontendUrl);
+        } catch {
+          return res.json(safeUser);
+        }
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      authLogger.error('Auth callback error', { error: msg });
+      // Respond with 401 for invalid token/code
+      return res.status(401).json({ message: msg });
     }
   })
 );

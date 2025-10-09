@@ -1,6 +1,4 @@
-import { useState, useEffect } from 'react';
-import { auth, getCurrentUser } from '@/lib/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { useAuth } from '@/hooks/use-auth';
 
 export interface SocialUser {
   id: string;
@@ -11,59 +9,14 @@ export interface SocialUser {
 }
 
 /**
- * Custom hook to monitor Firebase auth state
+ * Replacement hook for social auth state.
+ * Uses the server-backed session via useAuth instead of Firebase.
  */
 export const useSocialAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    // Set up auth state listener if auth is initialized
-    if (!auth) {
-      console.error('Firebase auth not initialized');
-      setError(new Error('Firebase auth not initialized'));
-      setLoading(false);
-      return;
-    }
-
-    // Check for existing user on mount
-    const checkCurrentUser = async () => {
-      try {
-        const currentUser = await getCurrentUser();
-        setUser(currentUser);
-      } catch (err) {
-        console.error('Error checking current user:', err);
-        if (err instanceof Error) {
-          setError(err);
-        } else {
-          setError(new Error('Failed to check current user'));
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Set up auth state listener
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (authUser) => {
-        setUser(authUser);
-        setLoading(false);
-      },
-      (err) => {
-        console.error('Auth state change error:', err);
-        setError(err);
-        setLoading(false);
-      }
-    );
-
-    // Check for user first
-    checkCurrentUser();
-
-    // Cleanup subscription
-    return () => unsubscribe();
-  }, []);
-
-  return { user, loading, error };
+  const { user } = useAuth();
+  return {
+    user: (user as any) || null,
+    loading: false,
+    error: null as Error | null
+  };
 };

@@ -121,49 +121,45 @@ function determineThemeCategory(title, content) {
 }
 
 /**
- * Get or create the single admin user in the database
- * Always ensures vantalison@gmail.com is the only admin account
+ * Resolve or create a non-admin import author user
+ * Prefers CONTENT_AUTHOR_EMAIL or WP_IMPORT_AUTHOR_EMAIL env vars. Creates if missing.
  */
-async function getOrCreateAdminUser(pool) {
+async function getImportAuthorUser(pool) {
   try {
-    // First, remove admin privileges from any other users except vantalison@gmail.com
-    await pool.query(`
-      UPDATE users SET is_admin = false 
-      WHERE email != 'vantalison@gmail.com' AND is_admin = true
-    `);
-
-    // Always use vantalison@gmail.com as the primary admin
-    const existingUser = await pool.query(`
-      SELECT id, username, email, is_admin
-      FROM users
-      WHERE email = 'vantalison@gmail.com'
-      LIMIT 1
-    `);
-
-    if (existingUser.rows.length > 0) {
-      // Ensure this user is admin and update password
-      const hashedPassword = await bcrypt.hash("admin124", 12);
-      await pool.query(`
-        UPDATE users SET is_admin = true, username = 'vantalison', password_hash = $1
-        WHERE email = 'vantalison@gmail.com'
-      `, [hashedPassword]);
-      
-      log(`Found and updated admin user with ID: ${existingUser.rows[0].id}`, 'wordpress-sync');
-      return { ...existingUser.rows[0], is_admin: true };
+    const importEmail = process.env.CONTENT_AUTHOR_EMAIL || process.env.WP_IMPORT_AUTHOR_EMAIL;
+    let result;
+    if (importEmail) {
+      result = await pool.query(
+        `SELECT id, username, email, is_admin FROM users WHERE email = $1 LIMIT 1`,
+        [importEmail]
+      );
+    } else {
+      result = await pool.query(
+        `SELECT id, username, email, is_admin FROM users WHERE is_admin = false LIMIT 1`
+      );
     }
 
-    // Create vantalison@gmail.com admin user if it doesn't exist
-    const hashedPassword = await bcrypt.hash("admin124", 12);
-    const newUser = await pool.query(`
-      INSERT INTO users (username, email, password_hash, is_admin, created_at)
-      VALUES ('vantalison', 'vantalison@gmail.com', $1, true, NOW())
-      RETURNING id, username, email, is_admin
-    `, [hashedPassword]);
+    if (result.rows.length > 0) {
+      log(`Using import author with ID: ${result.rows[0].id}`, 'wordpress-sync');
+      return result.rows[0];
+    }
 
-    log(`Created admin user vantalison@gmail.com with ID: ${newUser.rows[0].id}`, 'wordpress-sync');
-    return newUser.rows[0];
+    // Create a non-admin import author
+    const email = importEmail || 'wordpress_import@local';
+    const username = 'wordpress_import';
+    const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+    const password_hash = await bcrypt.hash(randomPassword, 12);
+
+    const insertRes = await pool.query(
+      `INSERT INTO users (username, email, password_hash, is_admin, metadata, created_at)
+       VALUES ($1, $2, $3, false, $4, NOW()) RETURNING id, username, email, is_admin`,
+      [username, email, password_hash, JSON.stringify({ system: 'wp-import' })]
+    );
+
+    log(`Created import author with ID: ${insertRes.rows[0].id}`, 'wordpress-sync');
+    return insertRes.rows[0];
   } catch (error) {
-    log(`Error getting/creating admin user: ${error.message}`, 'wordpress-sync');
+    log(`Error resolving/creating import author: ${error.message}`, 'wordpress-sync');
     throw error;
   }
 }
@@ -286,8 +282,8 @@ export async function syncWordPressPosts() {
   });
 
   try {
-    // Get admin user and category mapping
-    const admin = await getOrCreateAdminUser(pool);
+    // Resolve import author and category mapping
+    const admin = await getImportAuthorUser(pool);
     const categories = await fetchCategories();
     
     // Counters for summary
@@ -511,7 +507,7 @@ export async function syncSingleWordPressPost(wpPostId) {
     }
     
     const wpPost = await response.json();
-    const admin = await getOrCreateAdminUser(pool);
+    const admin = await getImportAuthorUser(pool);
     const categories = await fetchCategories();
 
     const title = wpPost.title.rendered;

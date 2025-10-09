@@ -6,7 +6,6 @@
  */
 import { Pool } from '@neondatabase/serverless';
 import ws from "ws";
-import bcrypt from 'bcryptjs';
 
 // Configure Neon for serverless
 const neonConfig = { webSocketConstructor: ws };
@@ -25,21 +24,11 @@ async function setupWordPressSeeding() {
     const result = await pool.query('SELECT current_database()');
     console.log('✅ Connected to database:', result.rows[0].current_database);
     
-    // Ensure admin user exists
-    console.log('👤 Verifying admin user...');
-    const adminCheck = await pool.query('SELECT id, username, email FROM users WHERE is_admin = true');
-    
+    // Ensure import author user (non-admin) exists or create one
+    console.log('👤 Ensuring import author user...');
+    const importEmail = process.env.CONTENTername, email FROM users WHERE is_admin = true LIMIT 1');
     if (adminCheck.rows.length === 0) {
-      console.log('Creating admin user...');
-      const hashedPassword = await bcrypt.hash('admin123', 10);
-      
-      const adminResult = await pool.query(`
-        INSERT INTO users (username, email, password_hash, is_admin, created_at)
-        VALUES ($1, $2, $3, $4, NOW())
-        RETURNING id, username, email
-      `, ['admin', 'admin@storytelling.com', hashedPassword, true]);
-      
-      console.log('✅ Admin user created:', adminResult.rows[0]);
+      console.log('⚠️ No admin user found. Please create one securely via a controlled process.');
     } else {
       console.log('✅ Admin user exists:', adminCheck.rows[0]);
     }
@@ -51,7 +40,7 @@ async function setupWordPressSeeding() {
     // Check for WordPress API connectivity
     console.log('🌐 Testing WordPress API connectivity...');
     try {
-      const response = await fetch('https://bubbleteameimei.wordpress.com/wp-json/wp/v2/posts?per_page=1');
+      const response = await fetch('https://public-api.wordpress.com/wpom/wp-json/wp/v2/posts?per_page=1');
       if (response.ok) {
         const posts = await response.json();
         console.log('✅ WordPress API is accessible, found posts:', posts.length);
@@ -167,7 +156,7 @@ async function setupWordPressSeeding() {
     console.log('📋 Summary:');
     console.log(`   - Database: Connected and verified`);
     console.log(`   - Posts: ${postsCount.rows[0].count} posts available`);
-    console.log(`   - Admin user: Ready`);
+    console.log(`   - Import author user: Ready`);
     console.log(`   - WordPress sync: Configured`);
     console.log(`   - Session store: Ready`);
     console.log(`   - Analytics: Ready`);

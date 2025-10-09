@@ -8,14 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiJson } from "@/lib/api";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbSeparator,
-  BreadcrumbPage
-} from "@/components/ui/breadcrumb";
+
 
 interface SearchResult {
   id: number;
@@ -172,21 +165,7 @@ export default function SearchResultsPage() {
   return (
     <ErrorBoundary>
     <div className="container max-w-4xl mx-auto px-4 py-8">
-      <div className="mb-4">
-        <Breadcrumb aria-label="Breadcrumb">
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link href="/">Home</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Search</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
+      
       <h1 className="text-2xl font-bold mb-6">Search Results</h1>
       
       {/* Search form */}
