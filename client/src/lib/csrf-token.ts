@@ -4,6 +4,7 @@
  * This module provides utilities for handling CSRF tokens and automatically applying
  * CSRF tokens to API requests for enhanced security.
  */
+import logger from '@/utils/secure-client-logger';
 
 // Constants for CSRF token handling
 export const CSRF_HEADER_NAME = 'X-CSRF-Token';
@@ -77,10 +78,10 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
       return csrfToken;
     }
 
-    console.error('Failed to obtain CSRF token after retry');
+    logger.error('Failed to obtain CSRF token after retry');
     return null;
   } catch (error) {
-    console.error('Error fetching CSRF token:', error);
+    logger.error('Error fetching CSRF token', error);
     return null;
   }
 }
@@ -98,7 +99,7 @@ export function applyCSRFToken(options: RequestInit = {}): RequestInit {
     if (!token) {
       // Note: This is async but we can't make this function async
       // The caller should ensure fetchCsrfTokenIfNeeded() is called first
-      console.warn('[CSRF] No token available, ensure fetchCsrfTokenIfNeeded() is called first');
+      logger.warn('[CSRF] No token available, ensure fetchCsrfTokenIfNeeded() is called first');
       return options;
     }
 
@@ -111,7 +112,7 @@ export function applyCSRFToken(options: RequestInit = {}): RequestInit {
       headers,
     };
   } catch (e) {
-    console.error('[CSRF] Error applying CSRF token:', e);
+    logger.error('[CSRF] Error applying CSRF token', e);
     return options;
   }
 }

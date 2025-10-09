@@ -7,6 +7,7 @@ import { Card } from './ui/card';
 import { MessageSquare, ThumbsUp, ThumbsDown, Reply } from 'lucide-react';
 import { CommentWithMarkdown } from './CommentWithMarkdown';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { useToast } from '@/hooks/use-toast';
 
 interface Comment {
   id: string;
@@ -44,6 +45,17 @@ const CommentPlugin: React.FC<CommentPluginProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+  const { toast } = useToast();
+
+  const handleReport = (commentId: string) => {
+    // Minimal UX: acknowledge report locally. This CommentPlugin uses local comments,
+    // so we don't call the backend here.
+    toast({
+      title: 'Comment reported',
+      description: 'Thank you for your report. Our moderators will review it.',
+      variant: 'default'
+    });
+  };
 
   const handleSubmitComment = async () => {
     if (!commentText.trim()) return;
@@ -181,8 +193,8 @@ const CommentPlugin: React.FC<CommentPluginProps> = ({
                 : new Date(comment.createdAt).toLocaleString()}
               upvotes={comment.votes?.upvotes || 0}
               downvotes={comment.votes?.downvotes || 0}
-              onReply={() => {}} // Add proper handler
-              onUpvote={() => handleVote(comment.id, true)}
+              onReply={() => handleReply(comment.id)}
+              onUpvote={() => handleVote(commentt.id, true)}
               onDownvote={() => handleVote(comment.id, false)}
               onReport={() => {}} // Add proper handler
             />

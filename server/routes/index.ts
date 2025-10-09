@@ -20,6 +20,7 @@ import healthRoutes from './health';
 import { getCsrfToken } from '../middleware/csrf-protection';
 import { z } from 'zod';
 import seoRoutes from './seo';
+import { requireAuth, requireAdmin } from '../middlewares/auth';
 
 const routesLogger = createSecureLogger('RoutesIndex');
 
@@ -120,6 +121,132 @@ export function registerModularRoutes(app: Express) {
       } catch (error: any) {
         routesLogger.error('Feedback submission failed', { error: error?.message });
         res.status(400).json({ error: 'Invalid feedback payload' });
+      }
+    });
+
+    // Admin: list all feedback with optional filters and pagination
+    app.get('/api/feedback', requireAuth, requireAdmin, async (req, res) => {
+      try {
+        const status = typeof req.query.status === 'string' ? req.query.status : 'all';
+        const type = typeof req.query.type === 'string' ? req.query.type : undefined;
+        const page = Number(req.query.page || 1);
+        const limit = Number(req.query.limit || 50);
+
+        // Fetch a superset then paginate in memory (storage doesn't support offset)
+        const all = await (storage as any).getAllFeedback(page * limit, status);
+        let items = Array.isArray(all) ? all : [];
+
+        if (type) {
+          items = items.filter((f: any) => (f.type || 'general') === type);
+        }
+
+        const start = (page - 1) * limit;
+        const end = start + limit;
+        const paginated = items.slice(start, end);
+
+        res.json({
+          feedback: paginated,
+          total: items.length,
+          page,
+          hasMore: items.length > end
+        });
+      } catch (error: any) {
+        routesLogger.error('Failed to list feedback', { error: error?.message });
+        res.status(500).json({ error: 'Failed to list feedback' });
+      }
+    });
+
+    // Admin: get feedback by id
+    app.get('/api/feedback/:id', requireAuth, requireAdmin, async (req, res) => {
+      try {
+        const id = Number(req.params.id);
+        if (!Number.isFinite(id)) {
+          return res.status(400).json({ error: 'Invalid id' });
+        }
+        const item = await (storage as any).getFeedback(id);
+        if (!item) {
+          return res.status(404).json({ error: 'Not found' });
+        }
+        res.json(item);
+      } catch (error: any) {
+        routesLogger.error('Failed to get feedback item', { error: error?.message });
+        res.status(500).json({ error: 'Failed to get feedback item' });
+      }
+    });
+
+    // Admin: update feedback status
+    app.patch('/api/feedback/:id/status', requireAuth, requireAdmin, async (req, res) => {
+      try {
+        const id = Number(req.params.id);
+        if (!Number.isFinite(id)) {
+          return res.status(400).json({ error: 'Invalid id' });
+        }
+        const schema = z.object({ status: z.string().min(1) });
+        const { status } = schema.parse(req.body);
+        const updated = await (storage as any).updateFeedbackStatus(id, status);
+        res.json({ success: true, feedback: updated });
+      } catch (error: any) {
+        routesLogger.error('Failed to update feedback status', { error: error?.message });
+        res.status(400).json({ error: 'Failed to update feedback status' });
+      }
+    });
+
+    // Admin: respond to feedback (stores adminResponse in metadata)
+    app.post('/api/feedback/:id/respond', requireAuth, requireAdmin, async (req, res) => {
+      try {
+        const id = Number(req.params.id);
+        if (!Number.isFinite(id)) {
+          return res.status(400).json({ error: 'Invalid id' });
+        }
+        const schema = z.object({ response: z.string().min(1) });
+        const { response: adminResponse } = schema.parse(req.body);
+        const responderId = (req as any).user?.id ?? null;
+        const updated = await (storage as any).respondToFeedback(id, adminResponse, responderId);
+        res.json({ success: true, feedback: updated });
+      } catch (error: any) {
+        routesLogger.error('Failed to respond to feedback', { error: error?.message });
+        res.status(400).json({ error: 'Failed to respond to feedback' });
+      }
+    });
+
+    // Admin: simple AI response suggestions (mocked)
+    app.get('/api/feedback/:id/suggestions', requireAuth, requireAdmin, async (req, res) => {
+      try {
+        const id = Number(req.params.id);
+        if (!Number.isFinite(id)) {
+          return res.status(400).json({ error: 'Invalid id' });
+        }
+        const item = await (storage as any).getFeedback(id);
+        const baseText = (item?.content as string) || 'your feedback';
+
+        const suggestion = {
+          suggestion: `Thanks for the report. We’ve reviewed ${baseText.slice(0, 60)}... and will look into it.`,
+          confidence: 0.82,
+          category: 'acknowledgement',
+          tags: ['bug', 'acknowledge'],
+          isAutomated: true
+        };
+        const alternatives = [
+          {
+            suggestion: `Appreciate the detailed report. We’ve triaged this and marked it for investigation.`,
+            confidence: 0.76,
+            category: 'triage',
+            tags: ['bug', 'triaged'],
+            isAutomated: true
+          },
+          {
+            suggestion: `We can’t reproduce this yet. Could you share steps to reproduce and a screenshot if possible?`,
+            confidence: 0.69,
+            category: 'follow-up',
+            tags: ['info-request'],
+            isAutomated: true
+          }
+        ];
+
+        res.json({ responseSuggestion: suggestion, alternativeSuggestions: alternatives });
+      } catch (error: any) {
+        routesLogger.error('Failed to generate suggestions', { error: error?.message });
+        res.status(500).json({ error: 'Failed to generate suggestions' });
       }
     });
 

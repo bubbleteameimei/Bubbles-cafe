@@ -365,6 +365,7 @@ export interface IStorage {
   getFeedback(id: number): Promise<UserFeedback | undefined>;
   getAllFeedback(limit?: number, status?: string): Promise<UserFeedback[]>;
   updateFeedbackStatus(id: number, status: string): Promise<UserFeedback>;
+  respondToFeedback(id: number, response: string, responderId: number | null): Promise<UserFeedback>;
   getUserFeedback(userId: number): Promise<UserFeedback[]>;
 
   // User Privacy Settings methods
