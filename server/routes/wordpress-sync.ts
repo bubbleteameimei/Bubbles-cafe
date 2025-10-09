@@ -201,33 +201,65 @@ export function registerWordPressSyncRoutes(app: Express): void {
 
   /**
    * GET /api/wordpress/posts
-   * Get a list of posts directly from WordPress
-   * Supports optional 'search' parameter and 'limit' parameter
+   * Proxy WordPress posts with optional query params to avoid browser CORS
+   * Supported query params: page, per_page, slug, search, _fields
    */
   app.get('/api/wordpress/posts', async (req: Request, res: Response) => {
     try {
-      // With the updated requirements, we want to fetch all posts in one request
-      // We'll use a large limit value to get as many posts as possible
-      const wpApiUrl = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts?per_page=100';
-      const response = await fetch(wpApiUrl);
-      
-      if (!response.ok) {
-        throw new Error(`WordPress API error: ${response.status} ${response.statusText}`);
+      const pageParam = req.query.page ? Number(req.query.page) : 1;
+      const perPageParam = req.query.per_page ? Number(req.query.per_page) : 100;
+      const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+      // WordPress caps per_page to 100
+      const per_page = Number.isFinite(perPageParam) ? Math.max(1, Math.min(100, perPageParam)) : 100;
+      const slug = typeof req.query.slug === 'string' ? req.query.slug.trim() : '';
+      const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+      const fields = typeof req.query._fields === 'string' ? req.query._fields.trim() : '';
+
+      // Build query
+      const params = new URLSearchParams();
+      if (slug) {
+        params.set('slug', slug);
+      } else {
+        params.set('page', String(page));
+        params.set('per_page', String(per_page));
       }
-      
+      if (search) params.set('search', search);
+      if (fields) params.set('_fields', fields);
+
+      const wpBase = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts';
+      const wpApiUrl = `${wpBase}?${params.toString()}`;
+
+      const response = await fetch(wpApiUrl);
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(`WordPress API error: ${response.status} ${response.statusText} ${text.slice(0, 200)}`);
+      }
+
       const posts = await response.json();
-      
+
+      // Derive totals from headers when available
+      const totalPagesHeader = response.headers.get('X-WP-TotalPages');
+      const totalHeader = response.headers.get('X-WP-Total');
+      const totalPages = totalPagesHeader ? parseInt(totalPagesHeader, 10) : 1;
+      const total = totalHeader ? parseInt(totalHeader, 10) : (Array.isArray(posts) ? posts.length : 0);
+
       // Log a preview of the response data
-      log(`Response preview: ${JSON.stringify(posts.slice(0, 1))}`, 'WordPress');
-      log(`Successfully fetched ${posts.length} posts`, 'WordPress');
-      
+      try {
+        const preview = Array.isArray(posts) ? posts.slice(0, 1) : posts;
+        log(`Response preview: ${JSON.stringify(preview)}`, 'WordPress');
+        log(`Successfully fetched ${Array.isArray(posts) ? posts.length : 0} posts`, 'WordPress');
+      } catch {}
+
       res.json({
         success: true,
-        posts
+        posts,
+        totalPages,
+        total
       });
     } catch (error) {
       log(`Error fetching WordPress posts: ${error instanceof Error ? error.message : String(error)}`, 'wordpress-sync');
-      
+
       res.status(500).json({
         success: false,
         message: `Error fetching WordPress posts: ${error instanceof Error ? error.message : String(error)}`

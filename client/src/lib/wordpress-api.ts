@@ -16,13 +16,14 @@ import { ErrorCategory, handleError } from './error-handler';
 
 // Supported WordPress API bases (tries in order). You can override via VITE_WORDPRESS_API_URL.
 const WP_BASES: string[] = [
+  '/api/wordpress', // Prefer server proxy to avoid browser CORS
   import.meta.env.VITE_WORDPRESS_API_URL || '',
   'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com',
   'https://bubbleteameimei.wordpress.com/wp-json/wp/v2'
 ].filter(Boolean);
 
 // Fallback to server API if WordPress is unavailable
-const SERVER_FALLBACK_API = '/api/posts';
+const SERVER_FALLBACK_API = '/api/wordpress/posts';
 
 // Cache configuration
 const CACHE_KEY_PREFIX = 'wp_cache_';
@@ -199,10 +200,11 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
       if (!response.ok) throw new Error(`WordPress API error: ${response.status}`);
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) throw new Error(`Unexpected content-type: ${contentType}`);
-      const postsData = await response.json();
-      if (!Array.isArray(postsData)) throw new Error('Non-array response');
+      const json = await response.json();
+      const postsArray = Array.isArray(json) ? json : (Array.isArray(json?.posts) ? json.posts : null);
+      if (!postsArray) throw new Error('Non-array response');
 
-      const validatedPosts = postsData.map((post: any) => {
+      const validatedPosts = postsArray.map((post: any) => {
         const result = wordpressPostSchema.safeParse(post);
         if (!result.success) {
           return {
@@ -271,12 +273,12 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
     // If no local synced posts or we need a specific post by slug, use server API
     const { page = 1, perPage = 10 } = options;
 
-    // Adjust fallback URL based on options
-    let fallbackUrl = `${SERVER_FALLBACK_API}?page=${page}&limit=${perPage}`;
+    // Adjust fallback URL based on options (use WordPress proxy)
+    let fallbackUrl = `${SERVER_FALLBACK_API}?page=${page}&per_page=${perPage}`;
 
     // Add slug filter if provided
     if (options.slug) {
-      fallbackUrl = `${SERVER_FALLBACK_API}/${options.slug}`;
+      fallbackUrl = `${SERVER_FALLBACK_API}?slug=${encodeURIComponent(options.slug)}&per_page=1`;
     }
 
     console.log(`[WordPress] Fallback URL: ${fallbackUrl}`);
@@ -290,39 +292,42 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
 
     const data = await response.json();
 
+    // Extract posts array from proxy response
+    const postsArr = Array.isArray(data?.posts) ? data.posts : (Array.isArray(data) ? data : []);
+
     // Format response in WordPress-compatible format
     let formattedResult;
 
     if (options.slug) {
       // Single post response
-      const post: any = data;
+      const post: any = postsArr[0];
       formattedResult = {
-        posts: [{
+        posts: post ? [{
           id: post.id,
-          date: post.createdAt,
+          date: post.date || post.createdAt,
           slug: post.slug,
-          title: { rendered: post.title },
-          content: { rendered: post.content },
-          excerpt: { rendered: post.excerpt || post.content.substring(0, 150) + '...' }
-        }],
+          title: { rendered: post.title?.rendered || post.title },
+          content: { rendered: post.content?.rendered || post.content },
+          excerpt: { rendered: post.excerpt?.rendered || (post.content?.rendered || post.content || '').substring(0, 150) + '...' }
+        }] : [],
         totalPages: 1,
-        total: 1,
+        total: post ? 1 : 0,
         fromFallback: true
       };
     } else {
       // Multiple posts response
-      const posts = Array.isArray(data.posts) ? data.posts : [];
+      const posts = postsArr || [];
       formattedResult = {
         posts: posts.map((post: any) => ({
           id: post.id,
-          date: post.createdAt,
+          date: post.date || post.createdAt,
           slug: post.slug,
-          title: { rendered: post.title },
-          content: { rendered: post.content },
-          excerpt: { rendered: post.excerpt || post.content.substring(0, 150) + '...' }
+          title: { rendered: post.title?.rendered || post.title },
+          content: { rendered: post.content?.rendered || post.content },
+          excerpt: { rendered: post.excerpt?.rendered || (post.content?.rendered || post.content || '').substring(0, 150) + '...' }
         })),
-        totalPages: data.hasMore ? page + 1 : page,
-        total: posts.length,
+        totalPages: typeof data?.totalPages === 'number' ? data.totalPages : 1,
+        total: typeof data?.total === 'number' ? data.total : posts.length,
         fromFallback: true
       };
     }
