@@ -1,17 +1,32 @@
 import { Router, Request, Response } from 'express';
 import { storage } from '../storage';
 import { createLogger } from '../utils/debug-logger';
+import { config } from '../config';
 
 const router = Router();
 const seoLogger = createLogger('SEO');
 
 function getOrigin(req: Request): string {
+	// Prefer configured FRONTEND_URL to avoid http->https redirects in sitemap/robots
 	try {
-		const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'http';
+		const configured = process.env.FRONTEND_URL || config.cors.origin;
+		if (configured) {
+			const u = new URL(configured);
+			// Normalize to protocol + host (strip any path)
+			return `${u.protocol}//${u.host}`;
+		}
+	} catch (e) {
+		// fall through to header-derived origin
+	}
+
+	try {
+		// Trust proxy headers when present
+		const forwarded = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+		const proto = String(forwarded).split(',')[0].trim() || 'https';
 		const host = req.get('host');
 		return `${proto}://${host}`;
 	} catch {
-		return 'http://localhost:3000';
+		return 'https://localhost:3000';
 	}
 }
 
@@ -56,11 +71,24 @@ router.get('/sitemap.xml', async (req: Request, res: Response) => {
 			const result = await storage.getPosts?.(1, 200, {} as any);
 			const posts = result?.posts || [];
 			for (const post of posts as any[]) {
-				const slug = post.slug || `post-${post.id}`;
-				const loc = `${origin}/reader/${slug}`;
+				// Only include posts that have a valid slug and are not secret/placeholder
+				const slugValue = typeof post.slug === 'string' ? post.slug.trim() : '';
+				const isSecret = post.isSecret === true;
+				const isPlaceholder = !!(post.metadata && typeof post.metadata === 'object' && (post.metadata as any).isPlaceholder === true);
+
+				if (!slugValue || isSecret || isPlaceholder) continue;
+
+				const safeSlug = encodeURIComponent(slugValue);
+				const loc = `${origin}/reader/${safeSlug}`;
 				if (!seen.has(loc)) {
-					const date = (post.updatedAt || post.createdAt || new Date()).toString();
-					urls.push({ loc, lastmod: new Date(date).toISOString(), changefreq: 'monthly', priority: '0.6' });
+					const dateStr = String((post.updatedAt || post.modified || post.createdAt || new Date()));
+					let lastmod: string | undefined;
+					try {
+						lastmod = new Date(dateStr).toISOString();
+					} catch {
+						lastmod = undefined;
+					}
+					urls.push({ loc, lastmod, changefreq: 'monthly', priority: '0.6' });
 					seen.add(loc);
 				}
 			}
@@ -74,8 +102,9 @@ router.get('/sitemap.xml', async (req: Request, res: Response) => {
 			if (wpResponse.ok) {
 				const wpPosts: Array<{ slug: string; date?: string }> = await wpResponse.json();
 				for (const wp of wpPosts) {
-					if (wp?.slug) {
-						const loc = `${origin}/reader/${wp.slug}`;
+					const wpSlug = typeof wp?.slug === 'string' ? wp.slug.trim() : '';
+					if (wpSlug) {
+						const loc = `${origin}/reader/${encodeURIComponent(wpSlug)}`;
 						if (!seen.has(loc)) {
 							const lastmod = wp.date ? new Date(wp.date).toISOString() : undefined;
 							urls.push({ loc, lastmod, changefreq: 'monthly', priority: '0.5' });
