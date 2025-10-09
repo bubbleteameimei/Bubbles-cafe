@@ -40,7 +40,11 @@ router.get('/robots.txt', async (req: Request, res: Response) => {
 			// Explicitly list all sitemap endpoints
 			`Sitemap: ${origin}/sitemap.xml`,
 			`Sitemap: ${origin}/pages-sitemap.xml`,
-			`Sitemapader('Cache-Control', 'public, max-age=3600');
+			`Sitemap: ${origin}/stories-sitemap.xml`,
+		];
+		res.setHeader('Content-Type', 'text/plain');
+		// Cache robots for 1 hour
+		res.setHeader('Cache-Control', 'public, max-age=3600');
 		res.send(lines.join('\n'));
 		return;
 	} catch (error) {
