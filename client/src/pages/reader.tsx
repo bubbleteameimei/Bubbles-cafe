@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"; 
 import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
+import { useCopyProtection } from "@/hooks/useCopyProtection";
 import ReaderTooltip from "@/components/reader/ReaderTooltip";
 import TableOfContents from "@/components/reader/TableOfContents";
 import SwipeNavigation from "@/components/reader/SwipeNavigation";
@@ -205,8 +206,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const skipCountRef = useRef(0);
   const lastNavigationTimeRef = useRef(Date.now());
   
-  // Create a ref for the content container to attach swipe events
-  const contentRef = useRef<HTMLDivElement>(null);
+  // Create a ref for the content container to attach swipe events and copy protection
+  const contentRef = useCopyProtection(true);
   // Removed positionRestoredRef as we no longer save reading position
   
   // Delete Post Mutation for admin actions
@@ -491,6 +492,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     margin: 0 auto;
     padding: 0 0.5rem;
     ${textColor}
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
     transition: color 0.3s ease, background-color 0.3s ease, font-size 0.25s ease-in-out, font-family 0.25s ease-in-out;
   }
   .story-content p, .story-content .story-paragraph {
@@ -1308,6 +1313,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               <div className="story-container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
                 <div 
                   className="story-content cursor-pointer text-justify"
+                  ref={contentRef}
                   dangerouslySetInnerHTML={{ 
                     __html: sanitizeHtmlContent(currentPost.content?.rendered || currentPost.content || 'No content available.') 
                   }}
