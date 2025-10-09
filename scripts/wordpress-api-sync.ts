@@ -1,7 +1,6 @@
 import { db } from '../server/db';
 import { posts, users } from '../shared/schema';
 import { eq } from 'drizzle-orm';
-import bcrypt from 'bcryptjs';
 import fetch from 'node-fetch';
 import cron from 'node-cron';
 
@@ -77,42 +76,21 @@ async function cleanContent(content: string): Promise<string> {
     .trim();
 }
 
-async function getOrCreateAdminUser() {
+async function getAdminUser() {
   try {
-    const hashedPassword = await bcrypt.hash("admin123", 12);
-    console.log("Getting admin user with email: vandalison@gmail.com");
-
-    // First try to directly query the database to check structure
-    const checkTable = await db.execute(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_schema = 'public' 
-      AND table_name = 'users'
-    `);
-    
-    console.log("Available columns in users table:", checkTable.rows.map(r => r.column_name));
-    
+    console.log("Locating existing admin user...");
     const [existingAdmin] = await db.select()
       .from(users)
-      .where(eq(users.email, "vandalison@gmail.com"));
+      .where(eq(users.isAdmin, true))
+      .limit(1);
 
     if (existingAdmin) {
       console.log("Admin user found with ID:", existingAdmin.id);
       return existingAdmin;
     }
-
-    // Create a new admin user with only the fields that exist in the database
-    const [newAdmin] = await db.insert(users).values({
-      username: "vandalison",
-      email: "vandalison@gmail.com",
-      password_hash: hashedPassword,
-      isAdmin: true
-    }).returning();
-
-    console.log("Admin user created successfully with ID:", newAdmin.id);
-    return newAdmin;
+    throw new Error("No admin user found. Please create one securely before syncing.");
   } catch (error) {
-    console.error("Error in getOrCreateAdminUser:", error);
+    console.error("Error locating admin user:", error);
     throw error;
   }
 }
@@ -144,7 +122,7 @@ async function syncWordPressPosts() {
   try {
     console.log(`[Sync #${syncId}] Starting WordPress API sync at ${syncStartTime}`);
 
-    const admin = await getOrCreateAdminUser();
+    const admin = await getAdminUser();
     const wpPosts = await fetchWordPressPosts();
 
     let createdCount = 0;

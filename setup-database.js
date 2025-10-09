@@ -2,7 +2,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { eq } from 'drizzle-orm';
 import * as schema from './shared/schema.js';
-import bcrypt from 'bcryptjs';
+
 
 const connectionString = process.env.DATABASE_URL;
 

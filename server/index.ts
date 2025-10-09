@@ -183,7 +183,7 @@ const serverLogger = createLogger('Server');
 // Import our database setup utilities
 import setupDatabase from '../scripts/setup-db';
 import pushSchema from '../scripts/db-push';
-import seedFromWordPressAPI from '../scripts/api-seed';
+
 
 // Ensure /api/health mirrors /health by returning csrfToken when available
 app.get('/api/health', (req, res) => {
@@ -328,17 +328,7 @@ async function startServer() {
           serverLogger.info('Database connected, tables exist', { postsCount });
 
           if (postsCount === 0) {
-            serverLogger.info('No posts found - seeding database from WordPress API...');
-            try {
-              await seedFromWordPressAPI();
-              serverLogger.info('Database seeding from WordPress API completed');
-            } catch (seedError) {
-              serverLogger.warn('WordPress API seeding failed, falling back to XML seeding', {
-                error: seedError instanceof Error ? seedError.message : 'Unknown error'
-              });
-              await seedDatabase();
-              serverLogger.info('Database seeding from XML completed');
-            }
+            serverLogger.warn('No posts found. Automatic seeding is disabled until a secure admin flow is established.');
           }
         } catch (dbError) {
           serverLogger.error('Database setup failed', { 
@@ -351,8 +341,7 @@ async function startServer() {
             await pushSchema();
             serverLogger.info('Schema created successfully');
 
-            await seedDatabase();
-            serverLogger.info('Database seeded successfully');
+            serverLogger.warn('Automatic database seeding is disabled until a secure admin flow is established.');
           } catch (finalError) {
             serverLogger.error('Critical database setup failure', {
               error: finalError instanceof Error ? finalError.message : 'Unknown error'

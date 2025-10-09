@@ -11,17 +11,15 @@ async function importWordPressContent() {
   try {
     console.log('Starting WordPress import...');
 
-    // Create default author if not exists
-    const [defaultAuthor] = await db
-      .insert(users)
-      .values({
-        username: 'wordpress_import',
-        email: 'wordpress_import@example.com',
-        password_hash: createHash('sha256').update('temp_password').digest('hex'),
-        isAdmin: false
-      })
-      .onConflictDoNothing()
-      .returning();
+    // Locate non-admin content author (do not create automatically)
+    const authorEmail = process.env.CONTENT_AUTHOR_EMAIL;
+    let [defaultAuthor] = authorEmail
+      ? await db.select().from(users).where(eq(users.email, authorEmail)).limit(1)
+      : await db.select().from(users).where(eq(users.isAdmin, false)).limit(1);
+
+    if (!defaultAuthor) {
+      throw new Error('No non-admin content author found. Set CONTENT_AUTHOR_EMAIL or create a user securely.');
+    }
 
     console.log('Fetching posts from WordPress API...');
 

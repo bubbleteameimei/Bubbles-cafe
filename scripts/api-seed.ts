@@ -69,13 +69,10 @@ function cleanContent(content: string): string {
     .trim();
 }
 
-// Get or create admin user
-async function getOrCreateAdminUser() {
+// Locate existing admin user (do not create automatically)
+async function getAdminUser() {
   try {
-    const hashedPassword = await bcrypt.hash("admin123", 12);
-    console.log("🔍 Checking for admin user with email: vandalison@gmail.com");
-
-    // Check if admin user exists
+    console.log("🔍 Checking for existing admin user");
     const existingAdmin = await db.select({
       id: users.id,
       username: users.username,
@@ -84,30 +81,17 @@ async function getOrCreateAdminUser() {
       createdAt: users.createdAt
     })
     .from(users)
-    .where(eq(users.email, "vandalison@gmail.com"));
+    .where(eq(users.isAdmin, true))
+    .limit(1);
 
     if (existingAdmin && existingAdmin.length > 0) {
-      console.log("✅ Admin user already exists with ID:", existingAdmin[0].id);
+      console.log("✅ Admin user found with ID:", existingAdmin[0].id);
       return existingAdmin[0];
     }
 
-    console.log("👤 Creating new admin user...");
-    
-    // Create new admin user
-    const [newAdmin] = await db
-      .insert(users)
-      .values({
-        username: "admin",
-        email: "vandalison@gmail.com",
-        password_hash: hashedPassword,
-        isAdmin: true
-      })
-      .returning();
-
-    console.log("✅ Admin user created successfully with ID:", newAdmin.id);
-    return newAdmin;
+    throw new Error("No admin user found. Please create one securely before syncing.");
   } catch (error) {
-    console.error("❌ Error in getOrCreateAdminUser:", error);
+    console.error("❌ Error locating admin user:", error);
     throw error;
   }
 }
@@ -186,7 +170,7 @@ async function seedFromWordPressAPI() {
     await pushSchema();
     
     // Get admin user and category mapping
-    const admin = await getOrCreateAdminUser();
+    const admin = await getAdminUser();
     const categories = await fetchCategories();
     
     // Counters for summary
