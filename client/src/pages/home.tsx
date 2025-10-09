@@ -283,12 +283,13 @@ export default function Home() {
               </motion.div>
               {/* Monthly readers pill removed by request */}
               
+              {/* Buy Me a Coffee button positioned above Latest Story (always visible) */}
+              <div className="flex justify-center mt-8 sm:mt-10 mb-2 sm:mb-3 w-full px-4 max-w-4xl mx-auto">
+                <BuyMeCoffeeButton />
+              </div>
+
               {posts.length > 0 && (
                 <div className="mt-8 sm:mt-10 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
-                  {/* Buy Me a Coffee button positioned above Latest Story */}
-                  <div className="flex justify-center mb-2 sm:mb-3">
-                    <BuyMeCoffeeButton />
-                  </div>
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <motion.div 
                     onClick={() => setLocation('/reader')} 
