@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiJson } from '@/lib/api';
+import { fetchCsrfTokenIfNeeded, applyCSRFToken } from '@/lib/csrf-token';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, subYears, subMonths } from "date-fns";
 import { Card } from "@/components/ui/card";

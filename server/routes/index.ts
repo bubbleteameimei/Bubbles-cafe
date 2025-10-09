@@ -184,10 +184,10 @@ export function registerModularRoutes(app: Express) {
         const schema = z.object({ status: z.string().min(1) });
         const { status } = schema.parse(req.body);
         const updated = await (storage as any).updateFeedbackStatus(id, status);
-        res.json({ success: true, feedback: updated });
+        return res.json({ success: true, feedback: updated });
       } catch (error: any) {
         routesLogger.error('Failed to update feedback status', { error: error?.message });
-        res.status(400).json({ error: 'Failed to update feedback status' });
+        return res.status(400).json({ error: 'Failed to update feedback status' });
       }
     });
 
@@ -202,10 +202,10 @@ export function registerModularRoutes(app: Express) {
         const { response: adminResponse } = schema.parse(req.body);
         const responderId = (req as any).user?.id ?? null;
         const updated = await (storage as any).respondToFeedback(id, adminResponse, responderId);
-        res.json({ success: true, feedback: updated });
+        return res.json({ success: true, feedback: updated });
       } catch (error: any) {
         routesLogger.error('Failed to respond to feedback', { error: error?.message });
-        res.status(400).json({ error: 'Failed to respond to feedback' });
+        return res.status(400).json({ error: 'Failed to respond to feedback' });
       }
     });
 
@@ -243,10 +243,10 @@ export function registerModularRoutes(app: Express) {
           }
         ];
 
-        res.json({ responseSuggestion: suggestion, alternativeSuggestions: alternatives });
+        return res.json({ responseSuggestion: suggestion, alternativeSuggestions: alternatives });
       } catch (error: any) {
         routesLogger.error('Failed to generate suggestions', { error: error?.message });
-        res.status(500).json({ error: 'Failed to generate suggestions' });
+        return res.status(500).json({ error: 'Failed to generate suggestions' });
       }
     });
 
@@ -254,9 +254,9 @@ export function registerModularRoutes(app: Express) {
     app.post('/api/errors', (req, res) => {
       try {
         routesLogger.warn('Client error report received', { id: req.body?.id, message: req.body?.message });
-        res.status(204).end();
+        return res.status(204).end();
       } catch (_e) {
-        res.status(204).end();
+        return res.status(204).end();
       }
     });
 

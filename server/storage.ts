@@ -3531,6 +3531,49 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Store an admin response in feedback metadata (and optionally update status)
+  async respondToFeedback(id: number, response: string, responderId: number | null): Promise<UserFeedback> {
+    try {
+      console.log(`[Storage] Responding to feedback ID ${id} by responder ${responderId}`);
+
+      // Fetch existing feedback to merge metadata and optionally adjust status
+      const existing = await db.select()
+        .from(userFeedback)
+        .where(eq(userFeedback.id, id))
+        .limit(1);
+
+      if (!existing.length) {
+        throw new Error('Feedback not found');
+      }
+
+      const current = existing[0];
+      const currentMeta = (current.metadata || {}) as Record<string, any>;
+
+      const updatedMeta = {
+        ...currentMeta,
+        adminResponse: response,
+        responderId: responderId,
+        respondedAt: new Date()
+      };
+
+      // If status is pending, promote to reviewed when a response is added
+      const nextStatus = current.status === 'pending' ? 'reviewed' : current.status;
+
+      const [updated] = await db.update(userFeedback)
+        .set({
+          metadata: updatedMeta,
+          status: nextStatus
+        })
+        .where(eq(userFeedback.id, id))
+        .returning();
+
+      return updated;
+    } catch (error) {
+      console.error('[Storage] Error responding to feedback:', error);
+      throw new Error('Failed to respond to feedback');
+    }
+  }
+
   async getUserFeedback(userId: number): Promise<UserFeedback[]> {
     try {
       console.log(`[Storage] Retrieving feedback for user ID: ${userId}`);
