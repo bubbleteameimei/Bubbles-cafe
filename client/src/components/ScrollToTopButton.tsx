@@ -10,8 +10,7 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
 }) => {
   const [isVisible, setIsVisible] = useState(false);
 
-  // Set to false for normal scroll-based behavior 
-  const forceVisible = false;
+  // Removed forceVisible; visibility is based on scroll position
 
   useEffect(() => {
     const handleScroll = () => {
@@ -36,50 +35,15 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
     });
   };
 
-  // Simple button styles without any complex class composition
-  const buttonStyles: React.CSSProperties = {
-    position: 'fixed',
-    zIndex: 9999,
-    bottom: '25px',
-    right: position === 'bottom-right' ? '25px' : 'auto',
-    left: position === 'bottom-left' ? '25px' : 'auto',
-    width: '40px',
-    height: '40px',
-    borderRadius: '50%',
-    backgroundColor: '#f5f5f5',
-    color: '#666',
-    border: '1px solid #e0e0e0',
-    cursor: 'pointer',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
-    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-    opacity: (isVisible || forceVisible) ? 1 : 0,
-    transform: (isVisible || forceVisible) ? 'scale(1)' : 'scale(0.7)',
-    pointerEvents: (isVisible || forceVisible) ? 'auto' : 'none'
-  };
-
-  const buttonHoverStyle: React.CSSProperties = {
-    backgroundColor: '#fafafa',
-    boxShadow: '0 3px 8px rgba(0, 0, 0, 0.12)',
-    transform: 'translateY(-1px)'
-  };
-
-  const [isHovered, setIsHovered] = useState(false);
+  // Use Tailwind CSS classes via .scroll-to-top; toggle position and visibility via classes
+  const positionClasses = position === 'bottom-left' ? 'left-5 right-auto' : 'right-5 left-auto';
+  const visibilityClasses = isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none';
 
   return (
     <button
       onClick={scrollToTop}
-      style={{
-        ...buttonStyles,
-        ...(isHovered ? buttonHoverStyle : {})
-      }}
+      className={`scroll-to-top ${positionClasses} ${visibilityClasses}`}
       aria-label="Scroll to top"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onTouchStart={() => setIsHovered(true)}
-      onTouchEnd={() => setIsHovered(false)}
     >
       <ArrowUp size={18} />
     </button>
