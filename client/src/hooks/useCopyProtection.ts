@@ -66,20 +66,6 @@ export function useCopyProtection(enabled = true) {
       }
     };
 
-    // Very limited anti-screenshot effect (Android only, cosmetic)
-    let antiShotStyleEl: HTMLStyleElement | null = null;
-    if (typeof navigator !== "undefined" && navigator.userAgent.includes("Android")) {
-      antiShotStyleEl = document.createElement("style");
-      antiShotStyleEl.innerHTML = "html, body { filter: brightness(0) contrast(0); }";
-      document.head.appendChild(antiShotStyleEl);
-      setTimeout(() => {
-        if (antiShotStyleEl && antiShotStyleEl.parentNode) {
-          antiShotStyleEl.parentNode.removeChild(antiShotStyleEl);
-        }
-        antiShotStyleEl = null;
-      }, 100);
-    }
-
     document.addEventListener("copy", onCopy);
     document.addEventListener("cut", onCut);
     document.addEventListener("contextmenu", onContextMenu);
@@ -98,10 +84,6 @@ export function useCopyProtection(enabled = true) {
       document.removeEventListener("contextmenu", onContextMenu);
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("touchstart", onTouchStart as any);
-
-      if (antiShotStyleEl && antiShotStyleEl.parentNode) {
-        antiShotStyleEl.parentNode.removeChild(antiShotStyleEl);
-      }
     };
   }, [enabled]);
 
