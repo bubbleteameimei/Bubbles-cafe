@@ -10,6 +10,7 @@ import { getExcerpt } from "@/lib/content-analysis";
 import { sanitizeHtmlContent } from "@/lib/sanitize-content";
 import ApiLoader from "@/components/api-loader";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
+import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 
 
 export default function Home() {
@@ -284,6 +285,10 @@ export default function Home() {
               
               {posts.length > 0 && (
                 <div className="mt-8 sm:mt-10 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
+                  {/* Buy Me a Coffee button positioned above Latest Story */}
+                  <div className="flex justify-center mb-2 sm:mb-3">
+                    <BuyMeCoffeeButton />
+                  </div>
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <motion.div 
                     onClick={() => setLocation('/reader')} 
