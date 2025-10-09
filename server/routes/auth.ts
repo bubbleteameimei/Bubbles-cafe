@@ -633,8 +633,8 @@ router.post('/callback',
           return res.status(500).json({ message: 'Session error' });
         }
 
-        const frontendUrl = process.env.FRONTEND_URL || 'https://bubblescafe.space';
-        // Redirect to frontend home after successful login
+        const frontendUrl = process.env.FRONTEND_SUCCESS_URL || process.env.FRONTEND_URL || 'https://bubblescafe.space';
+        // Redirect to frontend after successful login
         try {
           return res.redirect(frontendUrl);
         } catch {

@@ -118,7 +118,8 @@ export default function AuthPage() {
         }
         
         if (import.meta.env?.DEV) {
-          console.log("[Auth]request");
+          console.log("[Auth] Validations passed, submitting login request");
+        }
         // Use the direct login method
         const result = await login(email, password, rememberMe);
         

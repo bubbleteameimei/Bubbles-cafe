@@ -105,8 +105,12 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
       google.accounts.id.initialize(opts);
 
       if (containerRef.current) {
+        const isDark =
+          document.documentElement.classList.contains('dark') ||
+          (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
         google.accounts.id.renderButton(containerRef.current, {
-          theme: 'filled_blue',
+          theme: isDark ? 'filled_black' : 'filled_blue',
           size: 'large',
           text: 'continue_with',
           shape: 'pill',

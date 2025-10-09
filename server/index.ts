@@ -158,10 +158,12 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
       fontSrc: ["'self'", "fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://accounts.google.com", "https://apis.google.com"],
       connectSrc: ["'self'", "https:"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
+      // Allow Google Identity Services iframe in production when One Tap is used
+      frameSrc: ["'self'", "https://accounts.google.com"],
       frameAncestors: ["'self'"],
       formAction: ["'self'"],
       upgradeInsecureRequests: []
