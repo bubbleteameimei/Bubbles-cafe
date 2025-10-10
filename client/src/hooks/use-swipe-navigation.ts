@@ -49,10 +49,10 @@ export function useSwipeNavigation({
       // Only trigger if swipe distance is significant enough
       if (Math.abs(swipeDistance) >= minSwipeDistance) {
         if (swipeDistance > 0) {
-          // Swiped left-to-right (going back, previous chapter)
+          // Swiped left-to-right (going back, previous story)
           onPrevious();
         } else {
-          // Swiped right-to-left (moving forward, next chapter)
+          // Swiped right-to-left (moving forward, next story)
           onNext();
         }
       }

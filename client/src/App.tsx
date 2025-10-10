@@ -123,6 +123,7 @@ const UserFeedbackDashboardPage = React.lazy(() => import('./pages/user/feedback
 const GuidelinesPage = React.lazy(() => import('./pages/support/guidelines'));
 
 import { trackPageView } from '@/lib/metrics';
+import { usePrefersReducedMotion } from './hooks/use-prefers-reduced-motion';
 
 // Defer WordPress posts preloading until after initial page render
 // This improves initial load time significantly

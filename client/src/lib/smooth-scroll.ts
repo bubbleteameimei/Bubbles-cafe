@@ -1,4 +1,6 @@
 // Lightweight, targeted smooth-scroll for in-page anchors with reduced-motion support
+import { getPrefersReducedMotion } from './motion';
+
 export function initSmoothScroll() {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
@@ -6,9 +8,7 @@ export function initSmoothScroll() {
   if ((window as any).__smoothScrollInitialized) return;
   (window as any).__smoothScrollInitialized = true;
 
-  const prefersReducedMotion =
-    window.matchMedia &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const prefersReducedMotion = getPrefersReducedMotion();
 
   function getNavOffset(): number {
     try {

@@ -260,7 +260,7 @@ export function NotificationSettingsForm() {
             {/* Use memoized toggle items instead of FormField for better performance */}
             <NotificationToggleItem
               label="Story Updates"
-              description="Receive notifications about new chapters and story updates."
+              description="Receive notifications about new stories and updates."
               checked={story_updates}
               onChange={handleStoryUpdatesChange}
             />
