@@ -11,7 +11,7 @@ import "@/styles/reader-fixes.css";
 import { 
   Share2, Minus, Plus, Shuffle, ChevronLeft, ChevronRight,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
-  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog, BookText, Trash, X
+  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog, BookText, Trash, X, Pencil
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from 'date-fns';
@@ -43,6 +43,15 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } from "@shared/theme-categories";
 
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
@@ -140,6 +149,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [fontDialogOpen, setFontDialogOpen] = useState(false);
   const [contentsDialogOpen, setContentsDialogOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  // Inline admin theme editor state
+  const [themeEditorOpen, setThemeEditorOpen] = useState(false);
+  const [selectedThemeCat, setSelectedThemeCat] = useState<string>('');
+  const [selectedThemeIcon, setSelectedThemeIcon] = useState<string>('');
+  const [savingTheme, setSavingTheme] = useState(false);
+  const [overrideThemeCategory, setOverrideThemeCategory] = useState<string | null>(null);
+  const [overrideThemeIcon, setOverrideThemeIcon] = useState<string | null>(null);
   
   // Detect if this is a refresh using Performance API
   const isRefreshRef = useRef<boolean>(
@@ -1138,7 +1155,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded-md border border-primary/20">
                       {(() => {
                         // Get the primary theme (first one as it's sorted by relevance)
-                        const primaryTheme = detectedThemes[0];
+                        const primaryTheme = overrideThemeCategory || detectedThemes[0];
                         // Safely get the theme information with fallback
                         const themeInfo = primaryTheme && 
                           Object.prototype.hasOwnProperty.call(THEME_CATEGORIES, primaryTheme) 
@@ -1152,10 +1169,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                               };
                         
                         const ThemeIcon = (() => {
-                          // First check if we have a custom icon from the post
-                          if (postThemeIcon) {
+                          // First check if we have an override icon from editor, otherwise from the post metadata
+                          const chosenIcon = overrideThemeIcon || postThemeIcon;
+                          if (chosenIcon) {
                             // Try to find the icon in our import list
-                            switch(postThemeIcon.toLowerCase()) {
+                            switch(String(chosenIcon).toLowerCase()) {
                               case 'skull': return Skull;
                               case 'brain': return Brain;
                               case 'pill': return Pill;
@@ -1236,10 +1254,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                           }
                         })();
 
+                        const themeLabel = overrideThemeCategory
+                          ? (SHARED_THEME_CATEGORIES[overrideThemeCategory as keyof typeof SHARED_THEME_CATEGORIES]?.label || overrideThemeCategory)
+                          : primaryTheme;
                         return (
                           <>
                             <ThemeIcon className="h-4 w-4 text-primary" />
-                            <span className="text-xs font-medium">{primaryTheme}</span>
+                            <span className="text-xs font-medium">{themeLabel}</span>
                           </>
                         );
                       })()}
@@ -1264,7 +1285,174 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   <span className="text-xs px-2 py-1 bg-accent/50 rounded-md">
                     {readingMinutes} min read
                   </span>
+
+                  {/* Admin: inline edit theme */}
+                  {isAdmin && (
+                    <>
+                      <span className="text-muted-foreground">•</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2"
+                        onClick={() => {
+                          try {
+                            const currentCat =
+                              (currentPost as any)?.themeCategory ||
+                              (currentPost as any)?.metadata?.themeCategory ||
+                              '';
+                            const auto = determineThemeCategory(
+                              titleText || 'Story',
+                              plainText || ''
+                            );
+                            const initCat = String(currentCat || auto || 'HORROR');
+                            setSelectedThemeCat(initCat);
+                            const metaIcon = (currentPost as any)?.metadata?.themeIcon as string | undefined;
+                            const defIcon =
+                              SHARED_THEME_CATEGORIES[
+                                initCat as keyof typeof SHARED_THEME_CATEGORIES
+                              ]?.icon || 'ghost';
+                            setSelectedThemeIcon(String(metaIcon || defIcon));
+                            setThemeEditorOpen(true);
+                          } catch {
+                            setSelectedThemeCat('HORROR');
+                            setSelectedThemeIcon('ghost');
+                            setThemeEditorOpen(true);
+                          }
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5 mr-1" />
+                        <span className="text-xs">Edit theme</span>
+                      </Button>
+                    </>
+                  )}
                 </div>
+
+                {/* Admin Theme Editor Dialog */}
+                {isAdmin && (
+                  <Dialog open={themeEditorOpen} onOpenChange={setThemeEditorOpen}>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Edit Story Theme</DialogTitle>
+                        <DialogDescription>
+                          Choose the theme category and icon shown on this story.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-2">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Theme category</label>
+                          <Select
+                            value={selectedThemeCat}
+                            onValueChange={(v) => {
+                              setSelectedThemeCat(v);
+                              // Update default icon when category changes
+                              const def =
+                                SHARED_THEME_CATEGORIES[
+                                  v as keyof typeof SHARED_THEME_CATEGORIES
+                                ]?.icon || 'ghost';
+                              setSelectedThemeIcon(def);
+                            }}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select a theme" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(SHARED_THEME_CATEGORIES).map(([key, info]) => (
+                                <SelectItem key={key} value={key}>
+                                  {info.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Icon (slug)</label>
+                          <Input
+                            value={selectedThemeIcon}
+                            onChange={(e) => setSelectedThemeIcon(e.target.value)}
+                            placeholder="e.g., ghost, skull, brain"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Common options: ghost, skull, brain, bug, cpu, footprints, cloud-rain, castle
+                          </p>
+                        </div>
+                      </div>
+                      <DialogFooter className="gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            try {
+                              const auto = determineThemeCategory(
+                                titleText || 'Story',
+                                plainText || ''
+                              );
+                              const autoCat = String(auto || 'HORROR');
+                              setSelectedThemeCat(autoCat);
+                              const defIcon =
+                                SHARED_THEME_CATEGORIES[
+                                  autoCat as keyof typeof SHARED_THEME_CATEGORIES
+                                ]?.icon || 'ghost';
+                              setSelectedThemeIcon(defIcon);
+                            } catch {
+                              setSelectedThemeCat('HORROR');
+                              setSelectedThemeIcon('ghost');
+                            }
+                          }}
+                        >
+                          Auto-detect
+                        </Button>
+                        <Button
+                          onClick={async () => {
+                            try {
+                              setSavingTheme(true);
+                              const csrfToken = document.cookie.replace(
+                                /(?:(?:^|.*;\s*)XSRF-TOKEN\s*\=\s*([^;]*).*$)|^.*$/,
+                                "$1"
+                              );
+                              const res = await fetch(`/api/posts/${currentPost.id}/theme`, {
+                                method: 'PATCH',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'X-CSRF-Token': csrfToken
+                                },
+                                credentials: 'include',
+                                body: JSON.stringify({
+                                  themeCategory: selectedThemeCat,
+                                  themeIcon: selectedThemeIcon,
+                                  // snake_case for older compatibility
+                                  theme_category: selectedThemeCat,
+                                  icon: selectedThemeIcon
+                                })
+                              });
+                              if (!res.ok) {
+                                const data = await res.json().catch(() => null);
+                                throw new Error(data?.error || 'Failed to update theme');
+                              }
+                              setOverrideThemeCategory(selectedThemeCat);
+                              setOverrideThemeIcon(selectedThemeIcon);
+                              setThemeEditorOpen(false);
+                              toast({
+                                title: 'Theme updated',
+                                description: 'Theme and icon were updated for this story.'
+                              });
+                            } catch (err: any) {
+                              toast({
+                                title: 'Update failed',
+                                description: err?.message || 'Could not update theme. Make sure this story exists in the database.',
+                                variant: 'destructive'
+                              });
+                            } finally {
+                              setSavingTheme(false);
+                            }
+                          }}
+                          disabled={savingTheme}
+                        >
+                          {savingTheme ? 'Saving…' : 'Save'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
 
                 {/* Original navigation controls moved here under time-to-read */}
                 <div className={`flex justify-center items-center gap-4 py-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>

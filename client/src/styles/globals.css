@@ -79,16 +79,27 @@
   outline-offset: 2px;
 }
 
-/* Remove focus rings from sidebar and navigation elements */
-.sidebar-menu-button-enhanced:focus,
+/* Restore accessible focus styles for navigation and sidebar */
+.sidebar-menu-button-enhanced:focus { outline: none; }
+[data-sidebar] button:focus { outline: none; }
+nav button:focus { outline: none; }
+
 .sidebar-menu-button-enhanced:focus-visible,
-[data-sidebar] button:focus,
 [data-sidebar] button:focus-visible,
-nav button:focus,
-nav button:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
-  ring: none !important;
+nav button:focus-visible,
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.3);
+}
+
+/* Contrast tweaks: ensure small muted text on tinted surfaces meets AA */
+.bg-muted .text-muted-foreground,
+.bg-accent .text-muted-foreground,
+.bg-muted .text-xs,
+.bg-accent .text-xs {
+  color: hsl(var(--foreground) / 0.9);
 }
 
 .sr-only {
