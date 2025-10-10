@@ -210,11 +210,14 @@ export function LikeDislike({
       setIsToastVisible(true);
     });
     
-    // Start fade out after 4 seconds
-    setTimeout(() => {
+    // Start fade out after 4 seconds (managed via refs so we can clean up on unmount)
+    if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+    if (removeTimerRef.current) window.clearTimeout(removeTimerRef.current);
+
+    hideTimerRef.current = window.setTimeout(() => {
       setIsToastVisible(false);
       // Remove from DOM after fade out completes
-      setTimeout(() => setInlineToast(null), 300);
+      removeTimerRef.current = window.setTimeout(() => setInlineToast(null), 300);
     }, 4000);
   };
 
