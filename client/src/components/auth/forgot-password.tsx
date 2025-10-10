@@ -102,7 +102,7 @@ export function ForgotPasswordDialog() {
             action: (
               <Button 
                 variant="outline" 
-                onClick={() => window.open(resetUrl, '_blank')}
+                onClick={() => window.open(resetUrl, '_blank', 'noopener,noreferrer')}
                 className="mt-2"
               >
                 Open Reset Page

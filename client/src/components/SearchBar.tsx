@@ -25,7 +25,7 @@ export const SearchBar = ({
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const [, navigate] = useLocation();
@@ -56,9 +56,10 @@ export const SearchBar = ({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       // Check if we're clicking on an input element anywhere (not just in our component)
-      const isClickOnInput = (event.target as HTMLElement).tagName === 'INPUT' ||
-                            (event.target as HTMLElement).tagName === 'TEXTAREA';
-      
+      const isClickOnInput =
+        (event.target as HTMLElement).tagName === "INPUT" ||
+        (event.target as HTMLElement).tagName === "TEXTAREA";
+
       // Only hide results and blur when not clicking on another input
       if (
         searchContainerRef.current &&
@@ -76,33 +77,42 @@ export const SearchBar = ({
     };
   }, []);
 
-  // Handle mock search results - replace with actual API call in production
+  // Fetch remote suggestions with debounce
   useEffect(() => {
     if (onSearchChange) {
       onSearchChange(query);
     }
 
-    if (query.trim().length > 1) {
-      // This is where you would normally fetch results from an API
-      // For now, we're just simulating a search
-      const mockResults = [
-        { id: 1, title: "The Haunting", excerpt: "A ghost story about..." },
-        { id: 2, title: "Midnight Terror", excerpt: "When the clock strikes..." },
-        { id: 3, title: "Shadows in the Attic", excerpt: "The family never..." }
-      ].filter(result => 
-        result.title.toLowerCase().includes(query.toLowerCase())
-      );
-      
-      setSearchResults(mockResults);
-      setShowResults(isFocused && mockResults.length > 0);
-    } else {
-      setSearchResults([]);
-      setShowResults(false);
-    }
+    const q = query.trim();
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      try {
+        const url =
+          q.length >= 2
+            ? `/api/search/suggest?q=${encodeURIComponent(q)}&limit=8`
+            : `/api/search/suggest?limit=8`;
+        const resp = await fetch(url, { signal: controller.signal });
+        if (!resp.ok) throw new Error("Failed to fetch suggestions");
+        const data = await resp.json();
+        const items = Array.isArray(data?.suggestions) ? data.suggestions : [];
+        setSuggestions(items);
+        setShowResults(isFocused && items.length > 0);
+      } catch (err: any) {
+        if (err?.name !== "AbortError") {
+          setSuggestions([]);
+          setShowResults(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, [query, isFocused, onSearchChange]);
 
   return (
-    <div 
+    <div
       ref={searchContainerRef}
       className={`relative w-full max-w-md ${className}`}
     >
@@ -114,10 +124,10 @@ export const SearchBar = ({
       >
         <div className="relative w-full flex items-center">
           {showIcon && (
-            <Search 
+            <Search
               className={`absolute left-3 w-5 h-5 ${
                 isFocused ? "text-accent" : "text-muted-foreground"
-              } transition-colors duration-200`} 
+              } transition-colors duration-200`}
             />
           )}
           <motion.input
@@ -127,7 +137,7 @@ export const SearchBar = ({
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => {
               setIsFocused(true);
-              if (searchResults.length > 0) {
+              if (suggestions.length > 0) {
                 setShowResults(true);
               }
             }}
@@ -158,7 +168,7 @@ export const SearchBar = ({
         </div>
       </motion.div>
 
-      {/* Search Results Dropdown */}
+      {/* Suggestions Dropdown */}
       {showResults && (
         <motion.div
           initial={{ opacity: 0, y: 10, height: 0 }}
@@ -168,23 +178,25 @@ export const SearchBar = ({
           className="absolute z-50 mt-1 w-full bg-background input-solid-bg border border-border rounded-md shadow-lg overflow-hidden"
         >
           <div className="max-h-[300px] overflow-y-auto p-2">
-            {searchResults.map((result) => (
+            {suggestions.map((s) => (
               <motion.div
-                key={result.id}
+                key={s.id}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.2 }}
                 className="p-2 cursor-pointer hover:bg-accent/10 rounded"
                 onClick={() => {
-                  navigate(`/reader/${result.id}`);
+                  navigate(s.url || `/reader/${s.id}`);
                   setShowResults(false);
                   setQuery("");
                 }}
               >
-                <h4 className="font-medium text-foreground">{result.title}</h4>
-                <p className="text-sm text-muted-foreground line-clamp-1">
-                  {result.excerpt}
-                </p>
+                <h4 className="font-medium text-foreground">{s.title}</h4>
+                {s.type && (
+                  <p className="text-sm text-muted-foreground line-clamp-1">
+                    {s.type}
+                  </p>
+                )}
               </motion.div>
             ))}
           </div>

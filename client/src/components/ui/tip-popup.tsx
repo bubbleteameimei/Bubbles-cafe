@@ -35,7 +35,7 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
   }, [autoShow]);
 
   const handleTip = () => {
-    window.open('https://paystack.com/pay/z7fmj9rge1', '_blank');
+    window.open('https://paystack.com/pay/z7fmj9rge1', '_blank', 'noopener,noreferrer');
     setIsOpen(false);
   };
 

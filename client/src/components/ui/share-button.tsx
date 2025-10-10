@@ -123,21 +123,21 @@ export function ShareButton({ title, text, url = window.location.href, className
             <div className="grid grid-cols-3 gap-2 mt-4">
               <Button
                 variant="outline"
-                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(url)}`, '_blank')}
+                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(url)}`, '_blank', 'noopener,noreferrer')}
                 aria-label="Share on WhatsApp"
               >
                 WhatsApp
               </Button>
               <Button
                 variant="outline"
-                onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}`, '_blank')}
+                onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}`, '_blank', 'noopener,noreferrer')}
                 aria-label="Share on Twitter"
               >
                 Twitter
               </Button>
               <Button
                 variant="outline"
-                onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank')}
+                onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank', 'noopener,noreferrer')}
                 aria-label="Share on Facebook"
               >
                 Facebook

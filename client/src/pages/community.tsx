@@ -52,7 +52,7 @@ interface PostsResponse {
 }
 
 export default function CommunityPage() {
-  const [location, navigate] = useLocation();
+  const [, navigate] = useLocation();
   const { user, isAuthenticated } = useAuth();
   
   // States for filtering and pagination
@@ -118,18 +118,22 @@ export default function CommunityPage() {
   // Handle search submission
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setCurrentPage(1);
     refetch();
   };
   
   // Filter posts that match search term
   const filteredPosts = data?.posts || [];
+  const pageSize = view === "list" ? 6 : 12;
+  const totalPages = Math.max(1, Math.ceil(filteredPosts.length / pageSize));
+  const start = (currentPage - 1) * pageSize;
+  const end = start + pageSize;
+  const paginatedPosts = filteredPosts.slice(start, end);
   
   // Pagination handling
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
-  
-  const totalPages = data ? Math.ceil(data.totalPosts / (view === "list" ? 6 : 12)) : 0;
 
   // Handle edit post
   const handleEditPost = (post: ExtendedPost) => {
@@ -315,7 +319,7 @@ export default function CommunityPage() {
             ) : (
               // Posts with responsive view toggle
               <div className={view === "list" ? "space-y-6 community-container" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
-                {filteredPosts.map((post) => (
+                {paginatedPosts.map((post) => (
                   <CommunityReaderCard
                     key={post.id}
                     post={post}
@@ -345,7 +349,6 @@ export default function CommunityPage() {
       <div className="mt-12 bg-muted/40 rounded-lg p-6 border border-border">
         <h2 className="text-xl font-bold mb-4">Community Guidelines</h2>
         {/* Import Accordion components */}
-        {/* eslint-disable-next-line @typescript-eslint/no-unused-vars */}
         {false && <div />}
         {/* Accordion content */}
         {/* We import at the top of the file */}

@@ -9,11 +9,11 @@ interface SwipeNavigationOptions {
 }
 
 /**
- * Hook to add chapter navigation via swipe gestures
- * 
- * Swipe right-to-left navigates to the next chapter (natural direction of reading)
- * Swipe left-to-right navigates to the previous chapter (going back in reading)
- * 
+ * Hook to add story navigation via swipe gestures
+ *
+ * Swipe right-to-left navigates to the next story (natural direction of reading)
+ * Swipe left-to-right navigates to the previous story (going back in reading)
+ *
  * @param options Configuration options for swipe navigation
  */
 export function useSwipeNavigation({
@@ -49,10 +49,10 @@ export function useSwipeNavigation({
       // Only trigger if swipe distance is significant enough
       if (Math.abs(swipeDistance) >= minSwipeDistance) {
         if (swipeDistance > 0) {
-          // Swiped left-to-right (going back, previous chapter)
+          // Swiped left-to-right (going back, previous story)
           onPrevious();
         } else {
-          // Swiped right-to-left (moving forward, next chapter)
+          // Swiped right-to-left (moving forward, next story)
           onNext();
         }
       }

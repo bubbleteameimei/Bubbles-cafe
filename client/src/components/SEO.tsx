@@ -22,10 +22,6 @@ interface SEOProps {
   noindex?: boolean;
   nofollow?: boolean;
   robots?: string;
-  breadcrumbs?: Array<{
-    name: string;
-    url: string;
-  }>;
 }
 
 const DEFAULT_SITE_CONFIG = {
@@ -60,15 +56,13 @@ export default function SEO({
   twitterSite = DEFAULT_SITE_CONFIG.twitterSite,
   noindex = false,
   nofollow = false,
-  robots,
-  breadcrumbs = []
+  robots
 }: SEOProps) {
   const siteUrl = DEFAULT_SITE_CONFIG.siteUrl;
   const pageUrl = useMemo(() => canonical ? `${siteUrl}${canonical}` : (typeof window !== 'undefined' ? window.location.href : ''), [canonical, siteUrl]);
   const imageUrl = useMemo(() => image ? (image.startsWith('http') ? image : `${siteUrl}${image}`) : `${siteUrl}${DEFAULT_SITE_CONFIG.defaultImage}`, [image, siteUrl]);
   const fullTitle = useMemo(() => (title ? `${title} | ${siteName}` : DEFAULT_SITE_CONFIG.defaultTitle), [title, siteName]);
   const keywordsJoined = useMemo(() => keywords.concat(tags).join(', '), [keywords, tags]);
-  const breadcrumbsJoined = useMemo(() => breadcrumbs.map(b => `${b.name}:${b.url}`).join('|'), [breadcrumbs]);
   
   useEffect(() => {
     // Set document title with proper formatting
@@ -271,27 +265,16 @@ export default function SEO({
         schemas.push(articleSchema);
       }
 
-      if (breadcrumbs.length > 0) {
-        const breadcrumbSchema = {
-          '@context': 'https://schema.org',
-          '@type': 'BreadcrumbList',
-          itemListElement: breadcrumbs.map((crumb, index) => ({
-            '@type': 'ListItem',
-            position: index + 1,
-            name: crumb.name,
-            item: `${siteUrl}${crumb.url}`
-          }))
-        };
-        schemas.push(breadcrumbSchema);
-      }
+      
 
       return schemas;
     };
 
-    let jsonLdScript = document.querySelector('script[type="application/ld+json"]');
+    let jsonLdScript = document.querySelector('script[type="application/ld+json"][data-seo-managed="1"]');
     if (!jsonLdScript) {
       jsonLdScript = document.createElement('script');
       jsonLdScript.setAttribute('type', 'application/ld+json');
+      jsonLdScript.setAttribute('data-seo-managed', '1');
       document.head.appendChild(jsonLdScript);
     }
 
@@ -303,12 +286,10 @@ export default function SEO({
     }
     
     return () => {
-      const scripts = document.querySelectorAll('script[type="application/ld+json"]');
-      scripts.forEach(script => {
-        if (script.textContent?.includes('"@context":"https://schema.org"')) {
-          script.remove();
-        }
-      });
+      const script = document.querySelector('script[type="application/ld+json"][data-seo-managed="1"]');
+      if (script) {
+        script.remove();
+      }
     };
   }, [
     fullTitle,
@@ -328,15 +309,13 @@ export default function SEO({
     siteUrl,
     pageUrl,
     keywordsJoined,
-    breadcrumbsJoined,
     category,
     readingTime,
     wordCount,
     title,
     canonical,
     keywords,
-    tags,
-    breadcrumbs
+    tags
   ]);
 
   return null;

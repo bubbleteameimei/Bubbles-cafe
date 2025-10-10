@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -133,6 +133,8 @@ export function LikeDislike({
   const [inlineToast, setInlineToast] = useState<{ message: string; type: 'like' | 'dislike' | 'error' | null } | null>(null);
   const [isToastVisible, setIsToastVisible] = useState(false);
   const storageKey = getStorageKey(postId, slug, source);
+  const hideTimerRef = useRef<number | null>(null);
+  const removeTimerRef = useRef<number | null>(null);
 
   // Listen for stats updates from other components and reset events
   useEffect(() => {
@@ -172,7 +174,7 @@ export function LikeDislike({
       window.removeEventListener('statsUpdated', handleStatsUpdate as EventListener);
       window.removeEventListener('resetAllStats', handleStatsReset as EventListener);
     };
-  }, [postId, onUpdate]);
+  }, [postId, slug, source, onUpdate]);
 
   // Load existing stats or create new ones consistently
   useEffect(() => {
@@ -189,6 +191,18 @@ export function LikeDislike({
     setLiked(userLiked);
     setDisliked(userDisliked);
     onUpdate?.(currentStats.likes, currentStats.dislikes);
+
+    // Cleanup any pending inline toast timers on unmount
+    return () => {
+      if (hideTimerRef.current) {
+        window.clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
+      if (removeTimerRef.current) {
+        window.clearTimeout(removeTimerRef.current);
+        removeTimerRef.current = null;
+      }
+    };
   }, [postId, slug, source, onUpdate]);
 
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
@@ -198,11 +212,14 @@ export function LikeDislike({
       setIsToastVisible(true);
     });
     
-    // Start fade out after 4 seconds
-    setTimeout(() => {
+    // Start fade out after 4 seconds (managed via refs so we can clean up on unmount)
+    if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+    if (removeTimerRef.current) window.clearTimeout(removeTimerRef.current);
+
+    hideTimerRef.current = window.setTimeout(() => {
       setIsToastVisible(false);
       // Remove from DOM after fade out completes
-      setTimeout(() => setInlineToast(null), 300);
+      removeTimerRef.current = window.setTimeout(() => setInlineToast(null), 300);
     }, 4000);
   };
 

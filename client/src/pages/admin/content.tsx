@@ -58,7 +58,7 @@ export default function ContentPage() {
 
   // Handle viewing a post
   const handleView = (post: Post) => {
-    window.open(`/reader/${post.slug}`, '_blank');
+    window.open(`/reader/${post.slug}`, '_blank', 'noopener,noreferrer');
   };
 
   // Handle deleting a post
