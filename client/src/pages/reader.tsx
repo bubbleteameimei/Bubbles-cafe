@@ -1567,7 +1567,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         size="icon"
                         onClick={() => {
                           const tweetText = `Check out this story: ${currentPost.title?.rendered || currentPost.title || 'Story'} ${window.location.href}`;
-                          window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`, '_blank');
+                          window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`, '_blank', 'noopener,noreferrer');
                         }}
                         className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
                       >
@@ -1581,7 +1581,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         size="icon"
                         onClick={() => {
                           const wpUrl = `https://wordpress.com/wp-admin/press-this.php?u=${encodeURIComponent(window.location.href)}&t=${encodeURIComponent(currentPost.title?.rendered || currentPost.title || 'Story')}`;
-                          window.open(wpUrl, '_blank');
+                          window.open(wpUrl, '_blank', 'noopener,noreferrer');
                         }}
                         className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
                       >

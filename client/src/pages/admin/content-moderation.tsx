@@ -653,7 +653,7 @@ export default function ContentModerationPage() {
                                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem 
-                                    onClick={() => window.open(`/content/${content.contentId}`, '_blank')}
+                                    onClick={() => window.open(`/content/${content.contentId}`, '_blank', 'noopener,noreferrer')}
                                     className="flex items-center"
                                   >
                                     <ArrowUpRight className="mr-2 h-4 w-4" />
