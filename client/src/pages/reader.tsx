@@ -728,11 +728,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         keywords={keywords}
         readingTime={readingMinutes}
         wordCount={wordCount}
-    _codereadcrumbs={[
-          { name: 'Home', url: '/' },
-          { name: 'Reader', url: '/reader' },
-          { name: titleText, url: canonicalPath }
-        ]}
       />
       
       {/* Reading Progress Bar - Always visible at the very top */}

@@ -150,6 +150,9 @@ const AppContent = () => {
   // Basic SEO: set canonical and defaults site-wide
   const canonical = locationStr || '/';
   const isReaderLike = locationStr.includes('/reader')
+  const prefersReducedMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    : false;
   // Check if current route is an error page
   const isErrorPage = 
     locationStr.includes('/errors/403') || 
