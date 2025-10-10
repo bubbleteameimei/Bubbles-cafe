@@ -172,7 +172,7 @@ export function LikeDislike({
       window.removeEventListener('statsUpdated', handleStatsUpdate as EventListener);
       window.removeEventListener('resetAllStats', handleStatsReset as EventListener);
     };
-  }, [postId, onUpdate]);
+  }, [postId, slug, source, onUpdate]);
 
   // Load existing stats or create new ones consistently
   useEffect(() => {

@@ -345,7 +345,6 @@ export default function CommunityPage() {
       <div className="mt-12 bg-muted/40 rounded-lg p-6 border border-border">
         <h2 className="text-xl font-bold mb-4">Community Guidelines</h2>
         {/* Import Accordion components */}
-        {/* eslint-disable-next-line @typescript-eslint/no-unused-vars */}
         {false && <div />}
         {/* Accordion content */}
         {/* We import at the top of the file */}

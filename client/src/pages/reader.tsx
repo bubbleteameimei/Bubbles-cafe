@@ -51,6 +51,8 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } from "@/shared/theme-categories";
 import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } from "@shared/theme-categories";
 
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
@@ -1334,7 +1336,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       </DialogHeader>
                       <div className="space-y-4 py-2">
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Theme category</label>
+                          <span id="theme-category-label" className="text-sm font-medium">Theme category</span>
                           <Select
                             value={selectedThemeCat}
                             onValueChange={(v) => {
@@ -1347,7 +1349,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                               setSelectedThemeIcon(def);
                             }}
                           >
-                            <SelectTrigger className="w-full">
+                            <SelectTrigger className="w-full" aria-labelledby="theme-category-label">
                               <SelectValue placeholder="Select a theme" />
                             </SelectTrigger>
                             <SelectContent>
