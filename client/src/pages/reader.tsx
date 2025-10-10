@@ -52,7 +52,6 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } from "@/shared/theme-categories";
 import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } from "@shared/theme-categories";
 
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
@@ -1353,7 +1352,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                               <SelectValue placeholder="Select a theme" />
                             </SelectTrigger>
                             <SelectContent>
-                              {Object.entries(SHARED_THEME_CATEGORIES).map(([key, info]) => (
+                              {Object.entries(SHARED_THEME_CATEGORIES as Record<string, { label: string; icon: string }>).map(([key, info]) => (
                                 <SelectItem key={key} value={key}>
                                   {info.label}
                                 </SelectItem>
@@ -1363,8 +1362,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         </div>
 
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Icon (slug)</label>
+                          <Label htmlFor="theme-icon" className="text-sm font-medium">Icon (slug)</Label>
                           <Input
+                            id="theme-icon"
                             value={selectedThemeIcon}
                             onChange={(e) => setSelectedThemeIcon(e.target.value)}
                             placeholder="e.g., ghost, skull, brain"
