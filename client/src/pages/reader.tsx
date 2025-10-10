@@ -728,7 +728,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         keywords={keywords}
         readingTime={readingMinutes}
         wordCount={wordCount}
-        breadcrumbs={[
+    _codereadcrumbs={[
           { name: 'Home', url: '/' },
           { name: 'Reader', url: '/reader' },
           { name: titleText, url: canonicalPath }
