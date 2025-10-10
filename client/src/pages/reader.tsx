@@ -31,6 +31,7 @@ import useReaderGentleScroll from "@/hooks/useReaderGentleScroll";
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import SEO from "@/components/SEO";
 import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 
 import {
@@ -56,48 +57,10 @@ import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } f
 
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
-// Native HTML sanitization function (hardened)
+// Native HTML sanitization function (now powered by DOMPurify with extra hardening)
   const sanitizeHtmlContent = (html: string): string => {
     try {
-      const temp = document.createElement('div');
-      temp.innerHTML = html;
-
-      // Remove dangerous elements
-      temp.querySelectorAll('script, object, embed, iframe, form, input, button, link, meta').forEach(el => el.remove());
-
-      // Sanitize attributes and protocols
-      temp.querySelectorAll('*').forEach(el => {
-        for (const attr of Array.from(el.attributes)) {
-          const name = attr.name.toLowerCase();
-          const value = attr.value || '';
-
-          // Remove event handler attributes like onload, onclick, etc.
-          if (name.startsWith('on')) {
-            el.removeAttribute(attr.name);
-            continue;
-          }
-
-          // Remove href/src with dangerous protocols
-          if (name === 'href' || name === 'src') {
-            const val = value.trim().toLowerCase();
-            if (val.startsWith('javascript:') || val.startsWith('vbscript:')) {
-              el.removeAttribute(attr.name);
-              continue;
-            }
-          }
-
-          // Remove styles that include dangerous url() protocols
-          if (name === 'style') {
-            const lower = value.toLowerCase();
-            if (lower.includes('url(') && (lower.includes('javascript:') || lower.includes('vbscript:'))) {
-              el.removeAttribute(attr.name);
-              continue;
-            }
-          }
-        }
-      });
-
-      return temp.innerHTML;
+      return sanitizeHtml(html);
     } catch (error) {
       console.error('[Reader] Error sanitizing HTML:', error);
       return html;
@@ -1512,6 +1475,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   role="button"
                   tabIndex={0}
                   aria-label="Toggle user interface visibility"
+                  aria-pressed={isUIHidden}
                   style={{ fontSize: `${fontSize}px` }}
                 />
               </div>

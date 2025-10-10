@@ -122,5 +122,21 @@ export default [
 			}]
 		}
 	},
-	{ ignores: ['dist/**', 'node_modules/**', 'build/**', '.next/**'] },
+	{ 
+		ignores: [
+			'dist/**',
+			'node_modules/**',
+			'build/**',
+			'.next/**',
+			'workspace/**',
+			'Bubbles-cafe/**',
+			'bubbles-cafe/**',
+			'backups/**',
+			'**/*.test.ts',
+			'**/*.test.tsx',
+			'client/src/lib/content-analysis.test.ts',
+			'client/src/hooks/use-privacy-settings.tsx',
+			'**/*.d.ts'
+		] 
+	},
 ];

@@ -8,8 +8,6 @@ export function initSmoothScroll() {
   if ((window as any).__smoothScrollInitialized) return;
   (window as any).__smoothScrollInitialized = true;
 
-  const prefersReducedMotion = getPrefersReducedMotion();
-
   function getNavOffset(): number {
     try {
       const root = document.documentElement;
@@ -52,6 +50,7 @@ export function initSmoothScroll() {
     const absoluteTop = window.scrollY + rect.top;
     const targetTop = Math.max(absoluteTop - offset, 0);
 
+    const prefersReducedMotion = getPrefersReducedMotion();
     window.scrollTo({
       top: targetTop,
       behavior: prefersReducedMotion ? 'auto' : 'smooth',

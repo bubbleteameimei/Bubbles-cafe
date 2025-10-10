@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -189,6 +189,18 @@ export function LikeDislike({
     setLiked(userLiked);
     setDisliked(userDisliked);
     onUpdate?.(currentStats.likes, currentStats.dislikes);
+
+    // Cleanup any pending inline toast timers on unmount
+    return () => {
+      if (hideTimerRef.current) {
+        window.clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
+      if (removeTimerRef.current) {
+        window.clearTimeout(removeTimerRef.current);
+        removeTimerRef.current = null;
+      }
+    };
   }, [postId, slug, source, onUpdate]);
 
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {

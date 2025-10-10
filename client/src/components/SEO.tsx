@@ -270,10 +270,11 @@ export default function SEO({
       return schemas;
     };
 
-    let jsonLdScript = document.querySelector('script[type="application/ld+json"]');
+    let jsonLdScript = document.querySelector('script[type="application/ld+json"][data-seo-managed="1"]');
     if (!jsonLdScript) {
       jsonLdScript = document.createElement('script');
       jsonLdScript.setAttribute('type', 'application/ld+json');
+      jsonLdScript.setAttribute('data-seo-managed', '1');
       document.head.appendChild(jsonLdScript);
     }
 
@@ -285,12 +286,10 @@ export default function SEO({
     }
     
     return () => {
-      const scripts = document.querySelectorAll('script[type="application/ld+json"]');
-      scripts.forEach(script => {
-        if (script.textContent?.includes('"@context":"https://schema.org"')) {
-          script.remove();
-        }
-      });
+      const script = document.querySelector('script[type="application/ld+json"][data-seo-managed="1"]');
+      if (script) {
+        script.remove();
+      }
     };
   }, [
     fullTitle,
