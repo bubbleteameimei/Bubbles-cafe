@@ -73,7 +73,8 @@ router.get('/', async (req, res) => {
       limit = '20',
       page = '1',
       from, // can be number of days or ISO date
-      category
+      category,
+      tags // comma-separated string or repeated array: tag1,tag2 or ["tag1","tag2"]
     } = req.query;
 
     if (!q || typeof q !== 'string') {
@@ -113,7 +114,18 @@ router.get('/', async (req, res) => {
       }
     }
 
-    const cacheParams = { q: searchQuery, types: contentTypes, limit: resultLimit, page: pageNum, from: fromDate?.toISOString() || null, category: category || null };
+    // Parse tag filters (case-insensitive)
+    let tagFilters: string[] = [];
+    if (Array.isArray(tags)) {
+      tagFilters = (tags as string[]).flatMap((t) => String(t).split(','));
+    } else if (typeof tags === 'string' && tags.trim()) {
+      tagFilters = tags.split(',');
+    }
+    tagFilters = tagFilters
+      .map((t) => t.trim().toLowerCase())
+      .filter((t) => t.length > 0);
+
+    const cacheParams = { q: searchQuery, types: contentTypes, limit: resultLimit, page: pageNum, from: fromDate?.toISOString() || null, category: category || null, tags: tagFilters };
     const key = makeCacheKey(cacheParams);
     const cached = searchCache.get(key);
     if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
@@ -152,13 +164,38 @@ router.get('/', async (req, res) => {
       
       let postResults = allPosts
         .filter((post: Post) => {
-          const title = post.title?.toLowerCase() || '';
-          const content = post.content?.toLowerCase() || '';
-  
-          // Check if ANY search term appears in title or content
-          return searchTerms.some(term => {
-            return title.includes(term) || content.includes(term);
-          });
+          const title = (post.title || '').toLowerCase();
+          const rawContent = (post.content || '');
+          const content = rawContent.toLowerCase();
+
+          // Must match at least one search term in title or content
+          const matchesQuery = searchTerms.some(term => title.includes(term) || content.includes(term));
+
+          if (!matchesQuery) return false;
+
+          // If tag filters are provided, require a tag match as well
+          if (tagFilters.length > 0) {
+            // Collect post tags from metadata (if any), themeCategory, and simple keyword heuristic
+            let postTags: string[] = [];
+            try {
+              const meta: any = (post as any).metadata || {};
+              if (Array.isArray(meta.tags)) {
+                postTags = postTags.concat(meta.tags.map((t: any) => String(t).toLowerCase()));
+              }
+              if (typeof post.themeCategory === 'string' && post.themeCategory.trim()) {
+                postTags.push(post.themeCategory.toLowerCase());
+              }
+            } catch {}
+
+            // Also allow tag matching against title/content keywords as a fallback
+            const matchesProvidedTags =
+              tagFilters.some((t) => postTags.includes(t)) ||
+              tagFilters.some((t) => title.includes(t) || content.includes(t));
+
+            if (!matchesProvidedTags) return false;
+          }
+
+          return true;
         })
         .map((post: Post) => {
           const title = post.title || '';
@@ -710,6 +747,7 @@ router.get('/', async (req, res) => {
         types: contentTypes,
         from: fromDate?.toISOString() || null,
         category: category || null,
+        tags: tagFilters,
         didYouMean: didYouMean || null
       }
     };
