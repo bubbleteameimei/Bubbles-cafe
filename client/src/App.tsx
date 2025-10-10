@@ -84,7 +84,7 @@ const AdminAnalyticsPage = React.lazy(() => import('./pages/admin/analytics'));
 const AdminAnalyticsDashboardPage = React.lazy(() => import('./pages/admin/analytics-dashboard'));
 const AdminUsersPage = React.lazy(() => import('./pages/admin/users'));
 const AdminSettingsPage = React.lazy(() => import('./pages/admin/settings'));
-const AdminPostsPage = React.lazy(() => import('./pages/admin/posts'));
+
 const AdminManagePostsPage = React.lazy(() => import('./pages/admin/manage-posts'));
 const AdminFeedbackPage = React.lazy(() => import('./pages/admin/feedback'));
 const AdminFeedbackManagementPage = React.lazy(() => import('./pages/admin/FeedbackAdmin'));

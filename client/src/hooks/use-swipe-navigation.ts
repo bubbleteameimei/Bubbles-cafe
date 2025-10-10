@@ -9,11 +9,11 @@ interface SwipeNavigationOptions {
 }
 
 /**
- * Hook to add chapter navigation via swipe gestures
- * 
- * Swipe right-to-left navigates to the next chapter (natural direction of reading)
- * Swipe left-to-right navigates to the previous chapter (going back in reading)
- * 
+ * Hook to add story navigation via swipe gestures
+ *
+ * Swipe right-to-left navigates to the next story (natural direction of reading)
+ * Swipe left-to-right navigates to the previous story (going back in reading)
+ *
  * @param options Configuration options for swipe navigation
  */
 export function useSwipeNavigation({
