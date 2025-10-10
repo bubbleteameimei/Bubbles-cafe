@@ -146,20 +146,7 @@ export class ErrorBoundary extends Component<Props, State> {
     const errorMessage = this.getErrorMessage(this.state.error!);
     const errorTime = this.state.errorTime ? this.formatTime(this.state.errorTime) : '';
     
-    // Import necessary fonts 
-    const styleElement = document.createElement('style');
-    styleElement.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
-      @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
-    `;
-    document.head.appendChild(styleElement);
     
-    // Clean up when unmounted
-    setTimeout(() => {
-      if (document.head.contains(styleElement)) {
-        document.head.removeChild(styleElement);
-      }
-    }, 100);
 
     // Inline ErrorPage component to avoid dynamic imports that can cause cross-origin errors
     return (
