@@ -133,6 +133,8 @@ export function LikeDislike({
   const [inlineToast, setInlineToast] = useState<{ message: string; type: 'like' | 'dislike' | 'error' | null } | null>(null);
   const [isToastVisible, setIsToastVisible] = useState(false);
   const storageKey = getStorageKey(postId, slug, source);
+  const hideTimerRef = useRef<number | null>(null);
+  const removeTimerRef = useRef<number | null>(null);
 
   // Listen for stats updates from other components and reset events
   useEffect(() => {
