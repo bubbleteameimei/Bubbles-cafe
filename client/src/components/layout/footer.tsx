@@ -1,4 +1,3 @@
-import { Link } from "wouter";
 import { useEffect } from "react";
 import { Link } from "wouter";
 
