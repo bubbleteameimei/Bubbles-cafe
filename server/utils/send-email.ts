@@ -81,7 +81,7 @@ export async function sendNewsletterWelcomeEmail(email: string): Promise<boolean
   // Add random ID to ensure uniqueness and bypass caching
   const randomId = Math.random().toString(36).substring(2, 15);
   
-  const fromEmail = process.env.GMAIL_USER || process.env.GMAIL || 'no-reply@bubblescafe.space';
+  const fromEmail = process.env.GMAIL_USER || process.env.GMAIL || 'noreply@bubblescafe.space';
   
   // SIMPLIFIED TITLE AS REQUESTED WITH RANDOM ID TO PREVENT CACHING
   const subject = `Welcome to Bubble's Cafe Newsletter [${randomId}]`;

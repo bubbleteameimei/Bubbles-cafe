@@ -57,7 +57,7 @@ export default function Privacy() {
             If you have any questions about this Privacy Policy, please contact us at:
           </p>
           <p className="text-muted-foreground">
-            Email: vanessachiwetalu@gmail.com
+            Email: contact@bubblescafe.space
           </p>
         </section>
       </div>

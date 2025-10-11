@@ -67,7 +67,7 @@ export default function Terms() {
           <h2 className="text-2xl font-semibold">Contact Us</h2>
           <p className="text-muted-foreground">
             For questions or concerns about these terms or your data, please contact us through our contact form 
-            or email us at <a href="mailto:vanessachiwetalu@gmail.com" className="hover:underline">vanessachiwetalu@gmail.com</a>
+            or email us at <a href="mailto:contact@bubblescafe.space" className="hover:underline">contact@bubblescafe.space</a>
           </p>
         </section>
       </div>
