@@ -28,7 +28,7 @@ export function GlobalThemeToggle({ className = "", noOutline = false }: GlobalT
           className="absolute top-0 left-0 h-4 w-4 rotate-90 scale-0 opacity-0 transition-all duration-300 ease-in-out dark:rotate-0 dark:scale-100 dark:opacity-100"
           strokeWidth={1.75}
         />
-        <span className="absolute inset-0 bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150 rounded-md" />
+        <span className="absolute inset-0 bg-foreground opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150 rounded-md" />
       </span>
     </Button>
   );

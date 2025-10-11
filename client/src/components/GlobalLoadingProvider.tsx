@@ -6,7 +6,7 @@ type LoadingContextType = {
   isLoading: boolean;
   showLoading: (message?: string) => void;
   hideLoading: () => void;
-  withLoading: <T,>(promise: Promise<T>, message?: string) => Promise<T>;
+  withLoading: <T>(promise: Promise<T>, message?: string) => Promise<T>;
   setLoadingMessage: (message: string) => void;
   suppressSkeletons: boolean;
 };
@@ -16,7 +16,8 @@ const LoadingContext = createContext<LoadingContextType>({
   isLoading: false,
   showLoading: () => {},
   hideLoading: () => {},
-  withLoading: <T,>(promise: Promise<T>): Promise<T> => promise,
+  // Provide a typed default without generic syntax that conflicts with TSX
+  withLoading: ((promise: Promise<any>) => promise) as LoadingContextType['withLoading'],
   setLoadingMessage: () => {},
   suppressSkeletons: false
 });
@@ -28,13 +29,12 @@ export const useLoading = () => {
   return useContext(LoadingContext);
 }
 
-// Add comments and centralize magic numbers
-const MIN_LOADING_DURATION = 700; // Reduced to make transitions feel snappier
-const PREVENT_RAPID_SHOW_DURATION = 400; // Shorter prevention window
+// Prevent rapid re-show window
+const PREVENT_RAPID_SHOW_DURATION = 400;
 
 /**
- * GlobalLoadingProvider - Completely rewritten to work with the new loading screen
- * This provider manages the loading state in a simpler, more robust way
+ * GlobalLoadingProvider - unified controller for the loading overlay.
+ * Handles scroll locking and avoids forced-close timers.
  */
 export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Core state
@@ -56,93 +56,67 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
   
   // Handle animation completion from loading screen
   const handleAnimationComplete = useCallback(() => {
-    // Loading animation has completed, update state
     setIsLoading(false);
-    
-    // Update session storage
     try {
+      document.documentElement.classList.remove('disable-scroll');
+      document.body.classList.remove('loading-active');
       sessionStorage.removeItem('app_loading');
     } catch {
       // Ignore storage errors
     }
-    
-    console.log('[LoadingProvider] Animation complete');
-    console.log('[LoadingProvider] Scroll re-enabled after animation');
-    
-    // Allow new loading actions after a longer delay to prevent multiple screens
     setTimeout(() => {
       preventRapidShowRef.current = false;
-    }, PREVENT_RAPID_SHOW_DURATION); // Increased from 300ms to 1000ms
+    }, PREVENT_RAPID_SHOW_DURATION);
   }, []);
   
   // Show loading screen with smart prevention of multiple triggers
   const showLoading = useCallback((newMessage?: string) => {
-    // Check if we're already loading or recently prevented loading
     if (isLoading || preventRapidShowRef.current) {
-      console.log('[LoadingProvider] Prevented duplicate loading screen trigger');
       return;
     }
-    
-    // Set prevention flag for longer duration to prevent multiple screens
     preventRapidShowRef.current = true;
     
-    // Update message if provided
     if (newMessage) {
       setMessage(newMessage);
     }
     
-    // Set loading state
     setIsLoading(true);
     
-    // Set storage state for persistence
+    // Lock scroll and set persistence flag
     try {
+      document.documentElement.classList.add('disable-scroll');
+      document.body.classList.add('loading-active');
       sessionStorage.setItem('app_loading', 'true');
-      console.log('[LoadingProvider] Set loading state in session storage');
     } catch {
       // Ignore storage errors
     }
-    
-    // Safety timer: force close after minimum duration regardless of other state
-    if (loadingTimerRef.current) {
-      clearTimeout(loadingTimerRef.current);
-    }
-    
-    loadingTimerRef.current = setTimeout(() => {
-      console.log('Loading provider backup timer triggered after minimum duration');
-      setIsLoading(false);
-      
-      try {
-        sessionStorage.removeItem('app_loading');
-      } catch {
-        // Ignore storage errors
-      }
-      
-      // Reset prevention flag after short delay to prevent rapid multiple screens
-      preventRapidShowRef.current = false;
-    }, MIN_LOADING_DURATION);
   }, [isLoading]);
   
   // Hide loading screen
   const hideLoading = useCallback(() => {
-    // Let the loading screen component handle itself
-    // It has its own cleanup logic and will call handleAnimationComplete
-    
-    // Just clean up the timer
     if (loadingTimerRef.current) {
       clearTimeout(loadingTimerRef.current);
       loadingTimerRef.current = null;
     }
     
-    // Clear storage
+    setIsLoading(false);
+    
+    // Clear scroll lock and storage
     try {
+      document.documentElement.classList.remove('disable-scroll');
+      document.body.classList.remove('loading-active');
       sessionStorage.removeItem('app_loading');
     } catch {
       // Ignore storage errors
     }
+    
+    setTimeout(() => {
+      preventRapidShowRef.current = false;
+    }, PREVENT_RAPID_SHOW_DURATION);
   }, []);
   
   // Utility to wrap promises with loading state
-  const withLoading = useCallback(<T,>(promise: Promise<T>, loadingMessage?: string): Promise<T> => {
+  const withLoading = useCallback(function<T>(promise: Promise<T>, loadingMessage?: string): Promise<T> {
     showLoading(loadingMessage);
     
     return promise
@@ -159,6 +133,19 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
   // Update loading message
   const setLoadingMessage = useCallback((newMessage: string) => {
     setMessage(newMessage);
+  }, []);
+  
+  // Recover from any stuck state on mount
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('app_loading') === 'true') {
+        setIsLoading(true);
+        document.documentElement.classList.add('disable-scroll');
+        document.body.classList.add('loading-active');
+      }
+    } catch {
+      // Ignore storage errors
+    }
   }, []);
   
   return (

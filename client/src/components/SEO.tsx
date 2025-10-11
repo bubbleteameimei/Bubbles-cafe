@@ -29,7 +29,7 @@ const DEFAULT_SITE_CONFIG = {
   defaultTitle: 'Bubble’s Cafe - Dark, Psychological and Gothic Fiction',
   defaultDescription: 'Dark, psychological, and gothic fiction — short stories and unsettling tales from Bubble’s Cafe.',
   // Use provided favicon image for default social previews as well
-  defaultImage: '/favicon.png',
+  defaultImage: '/img_9653.png',
   siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://bubblescafe.space',
   locale: 'en_US',
   twitterSite: '@bubblescafe',
@@ -163,8 +163,8 @@ export default function SEO({
     setLinkTag('preconnect', 'https://fonts.gstatic.com', { crossorigin: 'anonymous' });
     
     // Favicon and app icons (use provided PNG favicon)
-    setLinkTag('icon', '/favicon.png', { type: 'image/png' });
-    setLinkTag('apple-touch-icon', '/favicon.png');
+    setLinkTag('icon', '/img_9653.png', { type: 'image/png' });
+    setLinkTag('apple-touch-icon', '/img_9653.png');
     
     // Generate and set JSON-LD structured data
     const generateStructuredData = () => {
@@ -187,7 +187,7 @@ export default function SEO({
           url: siteUrl,
           logo: {
             '@type': 'ImageObject',
-            url: `${siteUrl}/favicon.png`,
+            url: `${siteUrl}/img_9653.png`,
             alt: `${siteName} Logo`
           }
         }

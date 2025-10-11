@@ -149,7 +149,7 @@ export const Sidebar = React.forwardRef<
           >
             <X className="h-3.5 w-3.5" />
             <span className="sr-only">Close</span>
-            <span className="absolute inset-0 bg-current opacity-0 hover:opacity-10 active:opacity-20 transition-opacity duration-150 rounded-full" />
+            <span className="absolute inset-0 bg-foreground opacity-0 hover:opacity-10 active:opacity-20 transition-opacity duration-150 rounded-full" />
           </button>
 
           <div className="flex h-full w-full flex-col overflow-hidden sidebar-full-height will-change-transform">
@@ -181,10 +181,10 @@ export const Sidebar = React.forwardRef<
       />
       <div
         className={cn(
-          "duration-200 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex",
+          "duration-200 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-transform ease-out md:flex transform-gpu will-change-transform",
           side === "left"
-            ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-            : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
+            ? "left-0 translate-x-0 group-data-[collapsible=offcanvas]:-translate-x-full"
+            : "right-0 translate-x-0 group-data-[collapsible=offcanvas]:translate-x-full",
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
             : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
@@ -228,7 +228,7 @@ export const SidebarTrigger = React.forwardRef<
     >
       <PanelLeft className="h-8 w-8" />
       <span className="sr-only">Toggle Sidebar</span>
-      <span className="absolute inset-0 rounded-md bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" />
+      <span className="absolute inset-0 rounded-md bg-foreground opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" />
     </Button>
   )
 })
@@ -402,7 +402,7 @@ export const SidebarGroupAction = React.forwardRef<
       {...props}
     >
       {props.children}
-      <span className="absolute inset-0 rounded-md bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" />
+      <span className="absolute inset-0 rounded-md bg-foreground opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" />
     </Comp>
   )
 })
@@ -516,7 +516,7 @@ export const SidebarMenuButton = React.forwardRef<
         {...props}
       >
         {props.children}
-        <span className="absolute inset-0 rounded-md bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" aria-hidden="true" />
+        <span className="absolute inset-0 rounded-md bg-foreground opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" aria-hidden="true" />
       </Comp>
     )
 
@@ -577,7 +577,7 @@ export const SidebarMenuAction = React.forwardRef<
       {...props}
     >
       {props.children}
-      <span className="absolute inset-0 rounded-md bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" aria-hidden="true" />
+      <span className="absolute inset-0 rounded-md bg-foreground opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" aria-hidden="true" />
     </Comp>
   )
 })
@@ -707,7 +707,7 @@ export const SidebarMenuSubButton = React.forwardRef<
       {...props}
     >
       {props.children}
-      <span className="absolute inset-0 rounded-md bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" aria-hidden="true" />
+      <span className="absolute inset-0 rounded-md bg-foreground opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" aria-hidden="true" />
     </Comp>
   )
 })

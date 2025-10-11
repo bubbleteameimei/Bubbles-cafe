@@ -108,7 +108,7 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
                 exit={{ scale: 0, opacity: 0 }}
               >
                 <Badge 
-                  variant="destructive" 
+                  variant="secondary" 
                   className="h-4 min-w-4 px-1 text-[10px] font-semibold rounded-full"
                 >
                   {unreadCount > 99 ? '99+' : unreadCount}
@@ -177,7 +177,7 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
             <TabsTrigger value="unread" className="text-xs px-1 py-1.5 min-h-[28px] flex items-center justify-center">
               Unread
               {unreadCount > 0 && (
-                <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1 text-[10px] flex items-center justify-center">
+                <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1 text-[10px] flex items-center justify-center">
                   {unreadCount}
                 </Badge>
               )}
