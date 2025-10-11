@@ -247,25 +247,25 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         case '/search':
           void import('../../pages/search-results');
           break;
-        // Admin routes
+        // Admin routes (only import modules that exist)
         case '/admin':
         case '/admin/dashboard':
-          void import('../../pages/admin/index');
+          void import('../../pages/admin/dashboard');
           break;
-        case '/admin/posts':
-          void import('../../pages/admin/posts');
+        case '/admin/content-management':
+          void import('../../pages/admin/content-management');
           break;
         case '/admin/themes':
           void import('../../pages/admin/themes');
           break;
         case '/admin/wordpress-sync':
-          void import('../../pages/admin/wordpress-sync');
+          void import('../../pages/admin/WordPressSyncPage');
           break;
         case '/admin/users':
           void import('../../pages/admin/users');
           break;
         case '/admin/moderation':
-          void import('../../pages/admin/moderation');
+          void import('../../pages/admin/content-moderation');
           break;
         case '/admin/analytics':
           void import('../../pages/admin/analytics');
@@ -278,9 +278,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           break;
         case '/admin/email-test':
           void import('../../pages/admin/email-test');
-          break;
-        case '/admin/database':
-          void import('../../pages/admin/database');
           break;
         default:
           break;
