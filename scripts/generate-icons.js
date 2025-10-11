@@ -6,13 +6,6 @@ async function ensureDir(dir) {
   await fs.promises.mkdir(dir, { recursive: true });
 }
 
-async function generatePngBuffer(sourcePath, size) {
-  return await sharp(sourcePath)
-    .resize(size, size, { fit: 'cover' })
-    .png({ quality: 90 })
-    .toBuffer();
-}
-
 async function main() {
   const publicDir = path.resolve(process.cwd(), 'client', 'public');
   const iconsDir = path.join(publicDir, 'icons');
@@ -58,19 +51,8 @@ async function main() {
   console.log('Generated', favicon16Path);
   console.log('Generated', favicon32Path);
 
-  // ICO favicon (16 + 32)
-  try {
-    const toIcoMod = await import('to-ico');
-    const toIco = toIcoMod.default ?? toIcoMod;
-    const buf16 = await generatePngBuffer(sourcePath, 16);
-    const buf32 = await generatePngBuffer(sourcePath, 32);
-    const icoBuf = await toIco([buf16, buf32]);
-    const icoPath = path.join(publicDir, 'favicon.ico');
-    await fs.promises.writeFile(icoPath, icoBuf);
-    console.log('Generated', icoPath);
-  } catch (e) {
-    console.error('Failed to generate favicon.ico, ensure "to-ico" is installed:', e?.message ?? e);
-  }
+  // Note: ICO generation removed to avoid pulling deprecated/transitive packages.
+  // Modern browsers support PNG favicons; if .ico is required, use a maintained generator in CI.
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
