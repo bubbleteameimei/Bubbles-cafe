@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { useEffect } from "react";
+import { Link } from "wouter";
 
 export default function Footer() {
   useEffect(() => {
@@ -25,14 +26,14 @@ export default function Footer() {
       aria-label="Site footer"
     >
       <div className="container mx-auto max-w-5xl px-5 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-[auto_auto] md:justify-end md:justify-items-end gap-8 md:gap-16">
           {/* Brand + Contact (Left) */}
-          <div className="text-left">
+          <div className="text-left md:text-right">
             <h3 className="text-sm font-semibold tracking-wide">Bubble’s Cafe</h3>
             <p className="mt-1.5 text-xs text-muted-foreground max-w-md">
               Every story here is a portal to the unexpected, the unexplained, and the unsettling.
             </p>
-            <div className="mt-3 flex flex-wrap gap-2 items-center">
+            <div className="mt-3 flex flex-wrap gap-2 items-center md:justify-end">
               <Link
                 href="/contact"
                 className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
