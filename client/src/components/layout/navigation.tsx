@@ -100,7 +100,7 @@ export default function Navigation() {
 
   // inline search visibility removed
   const [inlineQuery, setInlineQuery] = useState("");
-  const [searchOpen, setSearchOpen] = useState(fal_codesenew)</;
+  const [searchOpen, setSearchOpen] = useState(false);
 
   return (
     <header 
@@ -111,16 +111,7 @@ export default function Navigation() {
         {/* Left section with menu toggle for all screen sizes */}
         <div className="flex items-center -mt-1 ml-2 sm:ml-3">
           {/* Menu toggle for all devices */}
-          <Sheet open={isOpen} onOpenChange={(next) => {
-            setIsOpen(next);
-         _codeshould close the sheet
-            if (window.innerWidth >= 1024) {
-              // If next is false due to overlay/escape, ignore
-              const activelyToggling = (document.activeElement && (document.activeElement as HTMLElement).closest('[aria-label="Open menu"]'));
-              if (!next && !activelyToggling) return;
-            }
-            setIsOpen(next);
-          }}>
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"

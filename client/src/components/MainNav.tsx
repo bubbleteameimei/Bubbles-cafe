@@ -52,126 +52,128 @@ export default function MainNav() {
   }, []);
 
   return (
-    <header 
-      className={`sticky top-0 z-40 w-full border-b
-                bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
-                transition-all duration-300 ease-in-out 
-                dark:border-gray-800
-                ${scrolled ? 'shadow-sm' : ''}`}
-      data-device-type={deviceType}
-    >
-      <div className="container flex h-14 items-center justify-between px-2 sm:px-4 lg:px-6">
-        {/* Left section with sidebar toggle */}
-        <div className="flex items-center space-x-2">
-          {/* Sidebar button - opens unified sidebar on all devices */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(true)}
-            className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                      transition-all duration-200 ease-in-out transform active:scale-95
-                      focus:outline-none focus:ring-0 focus-visible:ring-0"
-            aria-label="Open menu"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+    <>
+      <header 
+        className={`sticky top-0 z-40 w-full border-b
+                  bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
+                  transition-all duration-300 ease-in-out 
+                  dark:border-gray-800
+                  ${scrolled ? 'shadow-sm' : ''}`}
+        data-device-type={deviceType}
+      >
+        <div className="container flex h-14 items-center justify-between px-2 sm:px-4 lg:px-6">
+          {/* Left section with sidebar toggle */}
+          <div className="flex items-center space-x-2">
+            {/* Sidebar button - opens unified sidebar on all devices */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(true)}
+              className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                        transition-all duration-200 ease-in-out transform active:scale-95
+                        focus:outline-none focus:ring-0 focus-visible:ring-0"
+              aria-label="Open menu"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            
+            {/* Logo/Home link - Always visible */}
+            <Link href="/">
+              <a className="flex items-center space-x-2 text-lg font-semibold tracking-tight text-foreground/90 hover:text-foreground transition-colors duration-200">
+                {deviceType !== 'mobile' && (
+                  <span className="hidden sm:inline-block">Stories</span>
+                )}
+              </a>
+            </Link>
+          </div>
           
-          {/* Logo/Home link - Always visible */}
-          <Link href="/">
-            <a className="flex items-center space-x-2 text-lg font-semibold tracking-tight text-foreground/90 hover:text-foreground transition-colors duration-200">
-              {deviceType !== 'mobile' && (
-                <span className="hidden sm:inline-block">Stories</span>
+          {/* Center section - Empty on all screens */}
+          <div className="flex-1 mx-4"></div>
+          
+          {/* Right section - Action buttons */}
+          <div className="flex items-center space-x-1 sm:space-x-2">
+            {/* Search icon on all devices */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                        transition-all duration-200 ease-in-out
+                        focus:outline-none focus:ring-0 focus-visible:ring-0"
+              aria-label="Search"
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+            
+            {/* Theme toggle - visible on all screen sizes */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                        transition-all duration-200 ease-in-out
+                        focus:outline-none focus:ring-0 focus-visible:ring-0"
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? (
+                <Sun className="h-5 w-5 rotate-0 scale-100 transition-all duration-300 ease-in-out" />
+              ) : (
+                <Moon className="h-5 w-5 rotate-0 scale-100 transition-all duration-300 ease-in-out" />
               )}
-            </a>
-          </Link>
-        </div>
-        
-        {/* Center section - Empty on all screens */}
-        <div className="flex-1 mx-4"></div>
-        
-        {/* Right section - Action buttons */}
-        <div className="flex items-center space-x-1 sm:space-x-2">
-          {/* Search icon on all devices */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                      transition-all duration-200 ease-in-out
-                      focus:outline-none focus:ring-0 focus-visible:ring-0"
-            aria-label="Search"
-          >
-            <Search className="h-5 w-5" />
-          </Button>
-          
-          {/* Theme toggle - visible on all screen sizes */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                      transition-all duration-200 ease-in-out
-                      focus:outline-none focus:ring-0 focus-visible:ring-0"
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {theme === 'dark' ? (
-              <Sun className="h-5 w-5 rotate-0 scale-100 transition-all duration-300 ease-in-out" />
-            ) : (
-              <Moon className="h-5 w-5 rotate-0 scale-100 transition-all duration-300 ease-in-out" />
+            </Button>
+            
+            {/* Notification icon - hidden on mobile */}
+            {deviceType !== 'mobile' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                          transition-all duration-200 ease-in-out
+                          focus:outline-none focus:ring-0 focus-visible:ring-0"
+                aria-label="Notifications"
+              >
+                <Bell className="h-5 w-5" />
+              </Button>
             )}
-          </Button>
-          
-          {/* Notification icon - hidden on mobile */}
-          {deviceType !== 'mobile' && (
+            
+            {/* User account button */}
             <Button
               variant="ghost"
               size="icon"
               className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
                         transition-all duration-200 ease-in-out
                         focus:outline-none focus:ring-0 focus-visible:ring-0"
-              aria-label="Notifications"
+              aria-label="Account"
             >
-              <Bell className="h-5 w-5" />
+              {user ? (
+                <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-primary-foreground text-xs font-medium">
+                  {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
+                </div>
+              ) : (
+                <User className="h-5 w-5" />
+              )}
             </Button>
-          )}
-          
-          {/* User account button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                      transition-all duration-200 ease-in-out
-                      focus:outline-none focus:ring-0 focus-visible:ring-0"
-            aria-label="Account"
-          >
-            {user ? (
-              <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-primary-foreground text-xs font-medium">
-                {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
-              </div>
-            ) : (
-              <User className="h-5 w-5" />
+            
+            {/* Settings button - only visible on larger screens */}
+            {deviceType === 'desktop' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                          transition-all duration-200 ease-in-out
+                          focus:outline-none focus:ring-0 focus-visible:ring-0"
+                aria-label="Settings"
+              >
+                <Settings className="h-5 w-5" />
+              </Button>
             )}
-          </Button>
-          
-          {/* Settings button - only visible on larger screens */}
-          {deviceType === 'desktop' && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                        transition-all duration-200 ease-in-out
-                        focus:outline-none focus:ring-0 focus-visible:ring-0"
-              aria-label="Settings"
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
-          )}
+          </div>
         </div>
-      </div>
-    </header>
-    <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-      <SheetContent side="left" className="p-0 w-[300px] max-w-[85vw] h-full overflow-y-auto">
-        <SidebarNavigation onNavigate={() => setSidebarOpen(false)} />
-      </SheetContent>
-    </Sheet>
+      </header>
+      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+        <SheetContent side="left" className="p-0 w-[300px] max-w-[85vw] h-full overflow-y-auto">
+          <SidebarNavigation onNavigate={() => setSidebarOpen(false)} />
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }
