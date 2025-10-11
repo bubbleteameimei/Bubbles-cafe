@@ -1,10 +1,13 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Smartphone, BadgeInfo, Chrome } from "lucide-react";
+import { Smartphone, BadgeInfo, Chrome, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useInstallPrompt } from "@/hooks/use-install-prompt";
 
 export default function InstallAppPage() {
   const [, setLocation] = useLocation();
+  const { isInstallable, install } = useInstallPrompt();
 
   return (
     <div className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-10">
@@ -13,6 +16,24 @@ export default function InstallAppPage() {
         <p className="text-muted-foreground mt-2">
           Add Bubble’s Cafe to your Home Screen for a fast, immersive reading experience.
         </p>
+
+        {isInstallable && (
+          <div className="mt-4 flex justify-center">
+            <Button
+              size="lg"
+              onClick={() => install()}
+              className="group relative h-12 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              <span className="mr-2">Install App</span>
+              <motion.div
+                animate={{ x: [0, 4, 0] }}
+                transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <ChevronRight className="h-7 w-7 group-hover:translate-x-1 transition-transform duration-300" />
+              </motion.div>
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
