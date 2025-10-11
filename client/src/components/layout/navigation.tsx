@@ -195,7 +195,6 @@ export default function Navigation() {
                     }}
                     placeholder="Search stories…"
                     className="h-9 text-sm bg-background/70 border-border/40 flex-1"
-                    autoFocus
                   />
                   <Button
                     variant="default"
