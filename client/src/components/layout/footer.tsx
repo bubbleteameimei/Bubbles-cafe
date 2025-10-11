@@ -10,9 +10,9 @@ export default function Footer() {
 
   return (
     <footer
-      className="w-screen mt-10 border-t border-border/40 bg-background/40 backdrop-blur-sm shadow-inner"
+      className="w-full mt-10 border-t border-border/40 bg-background/40 backdrop-blur-sm shadow-inner"
       style={{
-        position: "relative",
+          position: "relative",
         left: 0,
         right: 0,
         margin: 0,
