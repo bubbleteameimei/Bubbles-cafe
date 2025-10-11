@@ -4,7 +4,7 @@ import {
   Bug, Scroll, Shield, Monitor, Bell, Lock, Building,
   Mail, MessageSquare, Palette, Type,
   User, Link2 as Link, CircleUserRound as UserCircle, Bookmark as BookmarkIcon,
-  LineChart, Eye, Star, Compass
+  LineChart, Eye, Star, Compass, Database, Globe, ShieldAlert
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -246,6 +246,41 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           break;
         case '/search':
           void import('../../pages/search-results');
+          break;
+        // Admin routes
+        case '/admin':
+        case '/admin/dashboard':
+          void import('../../pages/admin/index');
+          break;
+        case '/admin/posts':
+          void import('../../pages/admin/posts');
+          break;
+        case '/admin/themes':
+          void import('../../pages/admin/themes');
+          break;
+        case '/admin/wordpress-sync':
+          void import('../../pages/admin/wordpress-sync');
+          break;
+        case '/admin/users':
+          void import('../../pages/admin/users');
+          break;
+        case '/admin/moderation':
+          void import('../../pages/admin/moderation');
+          break;
+        case '/admin/analytics':
+          void import('../../pages/admin/analytics');
+          break;
+        case '/admin/feedback':
+          void import('../../pages/admin/feedback');
+          break;
+        case '/admin/settings':
+          void import('../../pages/admin/settings');
+          break;
+        case '/admin/email-test':
+          void import('../../pages/admin/email-test');
+          break;
+        case '/admin/database':
+          void import('../../pages/admin/database');
           break;
         default:
           break;
@@ -654,6 +689,71 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         >
                           <LineChart className="h-7 w-7 mr-2" />
                           <span>Insights & Reports</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+
+                      {/* WordPress Sync */}
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          isActive={location === '/admin/wordpress-sync'}
+                          onClick={() => handleNavigation('/admin/wordpress-sync')}
+                          className={submenuItemClass}
+                          aria-current={location === '/admin/wordpress-sync' ? 'page' : undefined}
+                        >
+                          <Globe className="h-7 w-7 mr-2" />
+                          <span>WordPress Sync</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+
+                      {/* Moderation */}
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          isActive={location === '/admin/moderation'}
+                          onClick={() => handleNavigation('/admin/moderation')}
+                          className={submenuItemClass}
+                          aria-current={location === '/admin/moderation' ? 'page' : undefined}
+                        >
+                          <ShieldAlert className="h-7 w-7 mr-2" />
+                          <span>Moderation</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+
+                      {/* Email Services */}
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          isActive={location === '/admin/email-test'}
+                          onClick={() => handleNavigation('/admin/email-test')}
+                          className={submenuItemClass}
+                          aria-current={location === '/admin/email-test' ? 'page' : undefined}
+                        >
+                          <Mail className="h-7 w-7 mr-2" />
+                          <span>Email Services</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+
+                      {/* Database */}
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          isActive={location === '/admin/database'}
+                          onClick={() => handleNavigation('/admin/database')}
+                          className={submenuItemClass}
+                          aria-current={location === '/admin/database' ? 'page' : undefined}
+                        >
+                          <Database className="h-7 w-7 mr-2" />
+                          <span>Database</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+
+                      {/* Admin Settings */}
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          isActive={location === '/admin/settings'}
+                          onClick={() => handleNavigation('/admin/settings')}
+                          className={submenuItemClass}
+                          aria-current={location === '/admin/settings' ? 'page' : undefined}
+                        >
+                          <Settings className="h-7 w-7 mr-2" />
+                          <span>Admin Settings</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>
