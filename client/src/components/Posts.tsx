@@ -121,7 +121,7 @@ function Posts() {
         <div className="mb-6 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-4 relative shadow-sm dark:bg-amber-900/30 dark:border-amber-800/50 dark:text-amber-200">
           <div className="flex items-center">
             <WifiOff className="h-5 w-5 mr-2" />
-            <h5 className="font-medium text-lg">WordPress API Unavailable</h5>
+            <p className="font-medium text-lg">WordPress API Unavailable</p>
           </div>
           <div className="mt-2 text-sm">
             <p>Displaying locally stored content while WordPress connection is being restored.</p>
@@ -217,7 +217,7 @@ function Posts() {
         <div className="mb-4 bg-green-50 border border-green-200 text-green-800 rounded-lg p-4 relative">
           <div className="flex items-center">
             <span className="mr-2 h-2 w-2 rounded-full bg-green-600"></span>
-            <h5 className="font-medium">WordPress API Connected</h5>
+            <p className="font-medium">WordPress API Connected</p>
           </div>
           <div className="mt-2 text-sm">
             Displaying the latest stories from WordPress.
