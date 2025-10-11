@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { extractHorrorExcerpt } from "@/lib/content-analysis";
 import { useMemo } from "react";
 
@@ -101,6 +102,61 @@ export default function LatestStories() {
             </div>
           ))}
         </div>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Try the Bubble’s Cafe App!</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <h4 className="font-semibold">How to install — iPhone &amp; iPad</h4>
+              <ol className="list-decimal pl-5 space-y-2 text-sm">
+                <li>Open in Safari browser</li>
+                <li className="flex items-center gap-2">
+                  Tap Share
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="inline-block"
+                  >
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                    <polyline points="16 6 12 2 8 6"></polyline>
+                    <line x1="12" y1="2" x2="12" y2="15"></line>
+                  </svg>
+                </li>
+                <li>Scroll down and select "Add to Home Screen"</li>
+                <li>Tap "Add" to confirm</li>
+              </ol>
+            </div>
+
+            <div>
+              <h4 className="font-semibold">Android</h4>
+              <ol className="list-decimal pl-5 space-y-2 text-sm">
+                <li>Open in Chrome browser</li>
+                <li>Look for "Add to Home Screen" banner</li>
+                <li>Or tap menu → "Install app"</li>
+                <li>Tap "Install" to confirm</li>
+              </ol>
+            </div>
+
+            <div>
+              <h4 className="font-semibold">Having trouble?</h4>
+              <ul className="list-disc pl-5 text-sm space-y-1">
+                <li>Use Safari (iOS) or Chrome (Android)</li>
+                <li>Try refreshing the page</li>
+                <li>Disable ad blockers temporarily</li>
+                <li>Search how to install PWA</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
       </section>
     </ErrorBoundary>
   );
