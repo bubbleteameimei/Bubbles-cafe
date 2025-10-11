@@ -84,7 +84,15 @@ initCSRFProtection().then(() => {
   logger.error("Error initializing CSRF protection:", error);
 });
 
-// Service worker removed
+// Service worker registration
+try {
+  if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+    const isLocalhost = ['localhost', '127.0.0.1'].includes(location.hostname);
+    if (location.protocol === 'https:' || isLocalhost) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  }
+} catch {}
 
 logger.debug("CSS styles loaded");
 logger.info("Mounting React application...");
