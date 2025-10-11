@@ -13,6 +13,16 @@ export default function SubmitStoryPage() {
           <p className="text-muted-foreground">
             Tell your scary tale and share it with our horror community.
           </p>
+          <p className="text-sm text-muted-foreground mt-3">
+            Prefer email? Send your story to{" "}
+            <a
+              href="mailto:submissions@bubblescafe.space"
+              className="text-primary hover:underline"
+            >
+              submissions@bubblescafe.space
+            </a>
+            {" "}with your title and attach your manuscript or paste your story in the email body.
+          </p>
         </div>
 
         <SimplePostEditor 
