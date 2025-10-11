@@ -28,8 +28,8 @@ const DEFAULT_SITE_CONFIG = {
   siteName: 'Bubble’s Cafe',
   defaultTitle: 'Bubble’s Cafe - Dark, Psychological and Gothic Fiction',
   defaultDescription: 'Dark, psychological, and gothic fiction — short stories and unsettling tales from Bubble’s Cafe.',
-  // Prefer PNG for social previews; fall back to existing SVG if PNG missing
-  defaultImage: '/images/IMG_5266.png',
+  // Use provided favicon image for default social previews as well
+  defaultImage: '/favicon.png',
   siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://bubblescafe.space',
   locale: 'en_US',
   twitterSite: '@bubblescafe',
