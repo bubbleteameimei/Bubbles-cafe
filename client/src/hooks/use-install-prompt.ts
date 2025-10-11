@@ -20,10 +20,8 @@ export function useInstallPrompt() {
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setInstallable(true);
     };
-    // @ts-expect-error: 'beforeinstallprompt' is not part of standard DOM typings across browsers
     window.addEventListener("beforeinstallprompt", handler);
     return () => {
-      // @ts-expect-error: removing listener for non-standard event
       window.removeEventListener("beforeinstallprompt", handler);
     };
   }, []);
