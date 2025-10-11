@@ -75,12 +75,23 @@ const generateBaseStats = (postId: number, slug?: string) => {
 
 const getOrCreateStats = (postId: number, slug?: string, source: 'local' | 'wp' = 'local'): Stats => {
   try {
-    const storageKey = getStorageKey(postId, slug, source);
-    const existingStats = localStorage.getItem(storageKey);
+    const primaryKey = getStorageKey(postId, slug, source);
+    const legacyKey = getStorageKey(postId, undefined, source);
+
+    const existingStats = localStorage.getItem(primaryKey) ?? localStorage.getItem(legacyKey);
+    const fromLegacy = !localStorage.getItem(primaryKey) && !!localStorage.getItem(legacyKey);
 
     if (existingStats) {
       const parsed = JSON.parse(existingStats);
       if (isValidStats(parsed)) {
+        // Migrate legacy key to slug-based key if needed
+        if (fromLegacy) {
+          try {
+            localStorage.setItem(primaryKey, JSON.stringify(parsed));
+            // Optional: keep legacy for backward-compat temporarily
+            // localStorage.removeItem(legacyKey);
+          } catch {}
+        }
         return parsed;
       }
     }
@@ -98,7 +109,7 @@ const getOrCreateStats = (postId: number, slug?: string, source: 'local' | 'wp' 
       userInteracted: false
     };
 
-    localStorage.setItem(storageKey, JSON.stringify(newStats));
+    localStorage.setItem(primaryKey, JSON.stringify(newStats));
     return newStats;
   } catch (error) {
     console.error(`[LikeDislike] Error managing stats for key (${slug ?? postId}):`, error);
@@ -129,7 +140,7 @@ export function LikeDislike({
   const { toast: _toast } = useToast();
   const [liked, setLiked] = useState(userLikeStatus === 'like');
   const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
-  const [stats, setStats] = useState<Stats>(() => getOrCreateStats(postId));
+  const [stats, setStats] = useState<Stats>(() => getOrCreateStats(postId, slug, source));
   const [inlineToast, setInlineToast] = useState<{ message: string; type: 'like' | 'dislike' | 'error' | null } | null>(null);
   const [isToastVisible, setIsToastVisible] = useState(false);
   const storageKey = getStorageKey(postId, slug, source);
