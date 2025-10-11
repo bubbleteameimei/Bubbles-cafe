@@ -84,14 +84,15 @@
 [data-sidebar] button:focus { outline: none; }
 nav button:focus { outline: none; }
 
+/* Remove focus outlines/rings on sidebar, nav, and buttons */
 .sidebar-menu-button-enhanced:focus-visible,
 [data-sidebar] button:focus-visible,
 nav button:focus-visible,
 a:focus-visible,
 button:focus-visible {
-  outline: 2px solid hsl(var(--primary));
-  outline-offset: 2px;
-  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.3);
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
 }
 
 /* Contrast tweaks: ensure small muted text on tinted surfaces meets AA */

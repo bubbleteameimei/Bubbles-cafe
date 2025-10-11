@@ -213,6 +213,9 @@
   },
   "overrides": {
     "@babel/helpers": "^7.26.10",
-    "@babel/runtime": "^7.26.10"
+    "@babel/runtime": "^7.26.10",
+    "axios": "^1.8.2",
+    "esbuild": "^0.25.10",
+    "vite": "^6.2.5"
   }
 }

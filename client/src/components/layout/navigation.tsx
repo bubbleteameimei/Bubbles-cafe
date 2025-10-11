@@ -17,6 +17,7 @@ import {
 import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/contexts/notification-context";
 import { useTheme } from "@/components/theme-provider";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export default function Navigation() {
   const [location, setLocation] = useLocation();
@@ -99,25 +100,18 @@ export default function Navigation() {
 
   // inline search visibility removed
   const [inlineQuery, setInlineQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
 
   return (
     <header 
-      className={`w-screen relative top-0 z-40 bg-background/20 backdrop-blur supports-[backdrop-filter]:bg-background/15 overflow-x-clip ${scrolled ? 'shadow-md' : ''}`}
-      style={{ position: 'relative', left: 0, right: 0, margin: 0, padding: 0, width: '100vw', marginLeft: 'calc(-50vw + 50%)' }}
+      className={`w-full relative top-0 z-40 bg-background/20 backdrop-blur supports-[backdrop-filter]:bg-background/15 overflow-x-clip ${scrolled ? 'shadow-md' : ''}`}
+      style={{ position: 'relative', left: 0, right: 0, margin: 0, padding: 0 }}
     >
       <div className="w-full flex h-16 items-center justify-between px-0 main-header border-b border-border/50">
         {/* Left section with menu toggle for all screen sizes */}
         <div className="flex items-center -mt-1 ml-2 sm:ml-3">
           {/* Menu toggle for all devices */}
-          <Sheet open={isOpen} onOpenChange={(next) => {
-            // On desktop, only the button should close the sheet
-            if (window.innerWidth >= 1024) {
-              // If next is false due to overlay/escape, ignore
-              const activelyToggling = (document.activeElement && (document.activeElement as HTMLElement).closest('[aria-label="Open menu"]'));
-              if (!next && !activelyToggling) return;
-            }
-            setIsOpen(next);
-          }}>
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
@@ -171,36 +165,54 @@ export default function Navigation() {
         <div className="flex-1 lg:flex"></div>
         
         {/* Right section - Action buttons */}
-        <div className="flex items-center space-x-2 -mt-1 ml-auto pr-2">
-          {/* Search icon button - restored */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95 mt-2"
-            aria-label="Search"
-            onMouseEnter={() => prefetchRoute('/search')}
-            onFocus={() => prefetchRoute('/search')}
-            onClick={() => setLocation('/search')}
-          >
-            <Search className="h-5 w-5" />
-          </Button>
-          {/* Inline desktop search */}
-          <div className="hidden lg:flex items-center transition-all duration-200 ease-out w-28 focus-within:w-56 mr-2">
-            <Input
-              value={inlineQuery}
-              onChange={(e) => setInlineQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  const q = encodeURIComponent(inlineQuery.trim());
-                  setLocation(q ? `/search?q=${q}` : '/search');
-                }
-              }}
-              placeholder="Search..."
-              className="h-9 text-sm bg-background/70 border-border/40"
-            />
-          </div>
-          
-          {/* Notifications */}
+          <div className="flex items-center space-x-2 -mt-1 ml-auto pr-2">
+            {/* Search button with popover input */}
+            <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95 mt-2"
+                  aria-label="Search"
+                  onMouseEnter={() => prefetchRoute('/search')}
+                  onFocus={() => prefetchRoute('/search')}
+                  onClick={() => setSearchOpen((v) => !v)}
+                >
+                  <Search className="h-5 w-5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64 p-3">
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={inlineQuery}
+                    onChange={(e) => setInlineQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const q = encodeURIComponent(inlineQuery.trim());
+                        setLocation(q ? `/search?q=${q}` : '/search');
+                        setSearchOpen(false);
+                      }
+                    }}
+                    placeholder="Search stories…"
+                    className="h-9 text-sm bg-background/70 border-border/40 flex-1"
+                  />
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="h-9"
+                    onClick={() => {
+                      const q = encodeURIComponent(inlineQuery.trim());
+                      setLocation(q ? `/search?q=${q}` : '/search');
+                      setSearchOpen(false);
+                    }}
+                  >
+                    Go
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+            
+            {/* Notifications */}
           <div className="relative">
             {Array.isArray(notifications) && notifications.some((n) => !n.read) && (
               <span className="absolute -top-0.5 -right-0.5 inline-flex h-3 w-3">

@@ -184,9 +184,8 @@ export default function Home() {
             backgroundAttachment: 'fixed'
           }}
         >
-          {/* Background overlay for better text readability */}
-          <div className="absolute inset-0 bg-black/40 z-0"></div>
-            
+          {/* Background overlay removed per request */}
+          
           {/* Invisible barrier to prevent scrolling under header */}
           <div className="relative w-full h-2 sm:h-3 md:h-4 lg:h-3" aria-hidden="true"></div>
           

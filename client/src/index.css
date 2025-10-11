@@ -32,27 +32,36 @@ body {
 }
 
 /* Accessible skip link - hidden until focused */
-.skip-link {
-  position: absolute;
-  left: -999px;
-  top: auto;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-}
-.skip-link:focus {
-  position: fixed;
-  left: 16px;
-  top: 12px;
-  width: auto;
-  height: auto;
-  padding: 8px 12px;
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  border: 1px solid hsl(var(--border));
-  border-radius: 6px;
-  z-index: 10000;
-}
+  .skip-link {
+    position: absolute;
+    left: -999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .skip-link:focus {
+    position: fixed;
+    left: 16px;
+    top: 12px;
+    width: auto;
+    height: auto;
+    padding: 8px 12px;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--border));
+    border-radius: 6px;
+    z-index: 10000;
+  }
+
+  /* Prevent focus outlines from creating a vertical stripe on page edges for non-interactive containers */
+  #root:focus,
+  .page-transition-container:focus,
+  .page-content:focus,
+  main:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
 
 /* Background animation for subtle zoom effect */
 @keyframes subtleZoom {

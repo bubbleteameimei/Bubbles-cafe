@@ -9,17 +9,17 @@
 }
 
 .sidebar-menu-container::-webkit-scrollbar { /* Chrome/Safari */
-  display: none;
-  width: 0;
-  height: 0;
+  width: 8px;
+  height: 8px;
 }
 
 .sidebar-menu-container::-webkit-scrollbar-track {
-  display: none;
+  background: transparent;
 }
 
 .sidebar-menu-container::-webkit-scrollbar-thumb {
-  display: none;
+  background-color: rgba(125, 125, 125, 0.3);
+  border-radius: 8px;
 }
 
 /* Hide scrollbar but maintain functionality */
@@ -32,17 +32,17 @@
 }
 
 [data-sidebar="content"]::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
+  width: 8px !important;
+  height: 8px !important;
 }
 
 [data-sidebar="content"]::-webkit-scrollbar-track {
-  display: none !important;
+  background: transparent !important;
 }
 
 [data-sidebar="content"]::-webkit-scrollbar-thumb {
-  display: none !important;
+  background-color: rgba(125, 125, 125, 0.3) !important;
+  border-radius: 8px !important;
 }
 
 /* Apply to all scrollable elements in sidebar */
@@ -58,16 +58,16 @@
 [data-sidebar="sidebar"] *::-webkit-scrollbar,
 [data-sidebar="content"] *::-webkit-scrollbar,
 .sidebar-menu *::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
+  display: block !important;
+  width: 8px !important;
+  height: 8px !important;
 }
 
 [data-sidebar="sidebar"] *,
 [data-sidebar="content"] *,
 .sidebar-menu * {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
+  scrollbar-width: thin !important;
+  -ms-overflow-style: auto !important;
 }
 
 /* Apply sans-serif font to all sidebar elements */
@@ -138,11 +138,12 @@
   transition-duration: 0.1s;
 }
 
-/* UX: Focus state for keyboard navigation */
+/* UX: Focus state for keyboard navigation - outlines removed per request */
 .sidebar-menu-button-enhanced:focus-visible {
-  outline: 2px solid hsl(var(--primary));
-  outline-offset: 2px;
-  border-color: hsl(var(--primary));
+  outline: none !important;
+  outline-offset: 0 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 /* UX: Active/current page state with clear indication */
@@ -341,9 +342,9 @@
   will-change: transform, opacity;
 }
 
-/* Focus enhancements for accessibility */
+/* Focus enhancements for accessibility - outlines removed */
 .sidebar-menu-button-enhanced:focus-visible {
-  outline: 2px solid rgb(var(--primary));
+  outline:--primary));
   outline-offset: 2px;
 }
 
