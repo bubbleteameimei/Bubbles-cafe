@@ -138,11 +138,12 @@
   transition-duration: 0.1s;
 }
 
-/* UX: Focus state for keyboard navigation */
+/* UX: Focus state for keyboard navigation - outlines removed per request */
 .sidebar-menu-button-enhanced:focus-visible {
-  outline: 2px solid hsl(var(--primary));
-  outline-offset: 2px;
-  border-color: hsl(var(--primary));
+  outline: none !important;
+  outline-offset: 0 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 /* UX: Active/current page state with clear indication */
@@ -341,9 +342,9 @@
   will-change: transform, opacity;
 }
 
-/* Focus enhancements for accessibility */
+/* Focus enhancements for accessibility - outlines removed */
 .sidebar-menu-button-enhanced:focus-visible {
-  outline: 2px solid rgb(var(--primary));
+  outline:--primary));
   outline-offset: 2px;
 }
 
