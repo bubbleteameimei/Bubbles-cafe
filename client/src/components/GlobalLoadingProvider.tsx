@@ -6,7 +6,7 @@ type LoadingContextType = {
   isLoading: boolean;
   showLoading: (message?: string) => void;
   hideLoading: () => void;
-  withLoading: <T,>(promise: Promise<T>, message?: string) => Promise<T>;
+  withLoading: <T>(promise: Promise<T>, message?: string) => Promise<T>;
   setLoadingMessage: (message: string) => void;
   suppressSkeletons: boolean;
 };
@@ -16,7 +16,8 @@ const LoadingContext = createContext<LoadingContextType>({
   isLoading: false,
   showLoading: () => {},
   hideLoading: () => {},
-  withLoading: <T,>(promise: Promise<T>): Promise<T> => promise,
+  // Provide a typed default without generic syntax that conflicts with TSX
+  withLoading: ((promise: Promise<any>) => promise) as LoadingContextType['withLoading'],
   setLoadingMessage: () => {},
   suppressSkeletons: false
 });
@@ -115,7 +116,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
   }, []);
   
   // Utility to wrap promises with loading state
-  const withLoading = useCallback<<T,>>(promise: Promise<T>, loadingMessage?: string): Promise<T> => {
+  const withLoading = useCallback(function<T>(promise: Promise<T>, loadingMessage?: string): Promise<T> {
     showLoading(loadingMessage);
     
     return promise
