@@ -500,19 +500,9 @@ function App() {
     preloadWordPressPostsDeferred();
   }, []);
 
-  // Create a FeedbackButton wrapper component to handle visibility logic
+  // Floating feedback button should be visible across the site
   const ConditionalFeedbackButton = () => {
-    const [currentPath] = useLocation();
-    // Check if current page is index, reader, community page, or community-story
-    const shouldHideButton = 
-      currentPath === "/" || 
-      currentPath === "/index" || 
-      currentPath === "/stories" || 
-      currentPath.startsWith("/reader") || 
-      currentPath.startsWith("/community-story") || 
-      currentPath === "/community";
-
-    return !shouldHideButton ? <FeedbackButton /> : null;
+    return <FeedbackButton />;
   };
 
   // Function to handle data refresh
