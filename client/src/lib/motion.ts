@@ -23,11 +23,10 @@ export function subscribePrefersReducedMotion(callback: (value: boolean) => void
   // Handler supports both modern and legacy event signatures
   const handler = (event: MediaQueryListEvent | MediaQueryList) => {
     // In some environments, event may be the MediaQueryList itself
-    // Prefer event.matches when available, otherwise read from mql
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const anyEvent = event as any;
-    const matches = typeof anyEvent.matches === 'boolean' ? anyEvent.matches : mql.matches;
-    callback(matches);
+// Prefer event.matches when available, otherwise read from mql
+const anyEvent = event as any;
+const matches = typeof anyEvent.matches === 'boolean' ? anyEvent.matches : mql.matches;
+callback(matches);
   };
 
   if (typeof mql.addEventListener === 'function') {
