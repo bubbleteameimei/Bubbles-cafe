@@ -25,6 +25,53 @@ export default function Footer() {
       role="contentinfo"
       aria-label="Site footer"
     >
+      {/* Main footer grid */}
+      <div className="container mx-auto max-w-7xl px-6 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Left Column - Bubble's Cafe */}
+          <div className="text-left">
+            <h3 className="text-2xl font-bold">Bubble’s Cafe</h3>
+            <p className="mt-2 text-sm text-muted-foreground max-w-md">
+              Every story here is a portal to the unexplained, the unexpected and the unsettling.
+            </p>
+            <Link
+              href="/feedback"
+              className="inline-block mt-4 px-4 py-2 rounded-md bg-amber-500 hover:bg-amber-600 text-black font-medium transition-colors"
+            >
+              Feedback
+            </Link>
+          </div>
+
+          {/* Middle Column - Quick Links */}
+          <div className="text-left">
+            <h4 className="text-xl font-semibold">Quick Links</h4>
+            <div className="mt-2 flex flex-col space-y-1">
+              <Link href="/" className="text-sm hover:text-primary transition-colors">Home</Link>
+              <Link href="/reader" className="text-sm hover:text-primary transition-colors">Reader</Link>
+              <Link href="/stories" className="text-sm hover:text-primary transition-colors">Stories</Link>
+              <Link href="/community" className="text-sm hover:text-primary transition-colors">Community</Link>
+              <Link href="/about" className="text-sm hover:text-primary transition-colors">About</Link>
+              <Link href="/privacy" className="text-sm hover:text-primary transition-colors">Privacy</Link>
+            </div>
+          </div>
+
+          {/* Right Column - Connect */}
+          <div className="text-left">
+            <h4 className="text-xl font-semibold">Connect</h4>
+            <a
+              href="mailto:contact@bubblescafe.space"
+              className="inline-block mt-3 px-4 py-2 rounded-md border border-primary/40 hover:border-primary text-primary hover:text-primary/90 transition-colors"
+            >
+              contact@bubblescafe.space
+            </a>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <hr className="mt-8 border-t border-white/20" />
+      </div>
+
+      {/* Bottom footer - existing content retained */}
       <div className="w-full flex flex-col items-center justify-center py-4 px-4">
         {/* Copyright text - centered */}
         <div className="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap mb-2">

@@ -333,6 +333,49 @@ export default function Home() {
                       {posts[0]?.date ? formatDate(posts[0].date) : ''}
                     </div>
                   </motion.div>
+
+                  {/* App install CTA card */}
+                  <motion.div
+                    onClick={() => setLocation('/install')}
+                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-7 rounded-xl bg-white/5 dark:bg-white/10 backdrop-blur-md border border-white/15 transition-all duration-300 mt-6"
+                    whileHover={{ 
+                      y: -6, 
+                      scale: 1.01,
+                      borderColor: "rgba(255,255,255,0.4)"
+                    }}
+                    whileTap={{ 
+                      scale: 0.98,
+                      y: -3
+                    }}
+                    transition={{ 
+                      type: "spring", 
+                      stiffness: 280, 
+                      damping: 22 
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setLocation('/install');
+                      }
+                    }}
+                  >
+                    <div className="flex items-center justify-center gap-3">
+                      <h3 className="text-xl sm:text-2xl font-semibold text-white">
+                        Try the Bubble’s Cafe App!
+                      </h3>
+                      <motion.div
+                        animate={{ x: [0, 4, 0] }}
+                        transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+                      >
+                        <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8 group-hover:translate-x-1 transition-transform duration-300 text-white" />
+                      </motion.div>
+                    </div>
+                    <p className="text-white/80 mt-2 text-center text-sm sm:text-base">
+                      Install on your phone for a fast, immersive reading experience.
+                    </p>
+                  </motion.div>
                 </div>
               )}
             </div>

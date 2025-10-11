@@ -110,8 +110,14 @@ const AlertDialogContent = React.forwardRef<
   }
   
   // Set aria attributes properly
-  const finalAriaLabelledby = props['aria-labelledby'] || (hasAriaLabel ? undefined : defaultTitleId);
-  const finalAriaDescribedby = props['aria-describedby'] || defaultDescId;
+  // Only apply our default IDs when we injected sr-only elements.
+  // If the consumer provided title/description, let Radix/natural semantics work.
+  const finalAriaLabelledby =
+    props["aria-labelledby"] ||
+    (!hasAriaLabel && !hasTitle ? defaultTitleId : undefined);
+
+  const finalAriaDescribedby =
+    props["aria-describedby"] || (!hasDescription ? defaultDescId : undefined);
   
   return (
     <AlertDialogPortal>

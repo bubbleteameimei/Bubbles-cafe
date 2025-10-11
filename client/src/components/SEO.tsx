@@ -28,8 +28,8 @@ const DEFAULT_SITE_CONFIG = {
   siteName: 'Bubble’s Cafe',
   defaultTitle: 'Bubble’s Cafe - Dark, Psychological and Gothic Fiction',
   defaultDescription: 'Dark, psychological, and gothic fiction — short stories and unsettling tales from Bubble’s Cafe.',
-  // Prefer PNG for social previews; fall back to existing SVG if PNG missing
-  defaultImage: '/images/IMG_5266.png',
+  // Use provided favicon image for default social previews as well
+  defaultImage: '/favicon.png',
   siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://bubblescafe.space',
   locale: 'en_US',
   twitterSite: '@bubblescafe',
@@ -162,11 +162,9 @@ export default function SEO({
     setLinkTag('preconnect', 'https://fonts.googleapis.com');
     setLinkTag('preconnect', 'https://fonts.gstatic.com', { crossorigin: 'anonymous' });
     
-    // Favicon and app icons (use available assets)
-    setLinkTag('icon', '/og-image.svg', { type: 'image/svg+xml' });
-    // Optional raster favicon if added later:
-    // setLinkTag('icon', '/favicon.ico', { sizes: 'any' });
-    // setLinkTag('apple-touch-icon', '/apple-touch-icon.png');
+    // Favicon and app icons (use provided PNG favicon)
+    setLinkTag('icon', '/favicon.png', { type: 'image/png' });
+    setLinkTag('apple-touch-icon', '/favicon.png');
     
     // Generate and set JSON-LD structured data
     const generateStructuredData = () => {
@@ -189,7 +187,7 @@ export default function SEO({
           url: siteUrl,
           logo: {
             '@type': 'ImageObject',
-            url: `${siteUrl}/og-image.svg`,
+            url: `${siteUrl}/favicon.png`,
             alt: `${siteName} Logo`
           }
         }

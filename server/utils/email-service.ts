@@ -39,7 +39,7 @@ export class EmailService {
     });
     
     // Default from email
-    this.fromEmail = user || 'noreply@bubblescafe.com';
+    this.fromEmail = user || 'noreply@bubblescafe.space';
     
     // Verify connection configuration
     if (user && pass) {

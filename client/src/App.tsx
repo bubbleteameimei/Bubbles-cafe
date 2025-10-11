@@ -54,6 +54,7 @@ const AboutPage = React.lazy(() => import('./pages/about'));
 const ContactPage = React.lazy(() => import('./pages/contact'));
 const PrivacyPage = React.lazy(() => import('./pages/privacy'));
 const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
+const InstallAppPage = React.lazy(() => import('./pages/install-app'));
 
 const AuthPage = React.lazy(() => import('./pages/auth'));
 const AuthSuccessPage = React.lazy(() => import('./pages/auth-success'));
@@ -268,6 +269,8 @@ const AppContent = () => {
                 <Route path="/contact" component={ContactPage} />
                 <Route path="/privacy" component={PrivacyPage} />
                 <Route path="/report-bug" component={ReportBugPage} />
+                <Route path="/install" component={InstallAppPage} />
+                <Route path="/install" component={InstallAppPage} />
 
                 {/* Authentication */}
                 <Route path="/auth" component={AuthPage} />
@@ -369,6 +372,7 @@ const AppContent = () => {
                     <Route path="/contact" component={ContactPage} />
                     <Route path="/privacy" component={PrivacyPage} />
                     <Route path="/report-bug" component={ReportBugPage} />
+                    <Route path="/install" component={InstallAppPage} />
 
                     {/* Authentication */}
                     <Route path="/auth" component={AuthPage} />
@@ -496,19 +500,9 @@ function App() {
     preloadWordPressPostsDeferred();
   }, []);
 
-  // Create a FeedbackButton wrapper component to handle visibility logic
+  // Floating feedback button should be visible across the site
   const ConditionalFeedbackButton = () => {
-    const [currentPath] = useLocation();
-    // Check if current page is index, reader, community page, or community-story
-    const shouldHideButton = 
-      currentPath === "/" || 
-      currentPath === "/index" || 
-      currentPath === "/stories" || 
-      currentPath.startsWith("/reader") || 
-      currentPath.startsWith("/community-story") || 
-      currentPath === "/community";
-
-    return !shouldHideButton ? <FeedbackButton /> : null;
+    return <FeedbackButton />;
   };
 
   // Function to handle data refresh
