@@ -118,13 +118,13 @@ export default function Navigation() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative h-9 w-9 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 transition-all duration-150 ease-out"
+                className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95 mt-2"
                 aria-label="Open menu"
                 style={{ WebkitTapHighlightColor: 'transparent' }}
                 onClick={() => setIsOpen((v) => !v)}
                 data-testid="nav-open-menu-button"
               >
-                <Menu className="h-4 w-4" />
+                <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent 
@@ -149,13 +149,11 @@ export default function Navigation() {
             <Link
               key={href}
               href={href}
-              className={`relative h-12 px-4 inline-flex items-center rounded-md text-sm font-medium transition-colors hover:bg-accent/30 mt-2 border border-transparent
-                        ${location === href
-                          ? 'text-primary font-semibold bg-accent/40 border border-border/40 shadow-sm after:absolute after:left-3 after:right-3 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary' 
-                          : 'text-white hover:text-white'}`}
-                        ${location === href
-                          ? 'text-primary font-semibold bg-accent/40 border border-border/40 shadow-sm after:absolute after:left-3 after:right-3 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary' 
-                          : 'text-white hover:text-white'}`}
+              className={`relative h-12 px-4 inline-flex items-center rounded-md text-sm font-medium transition-colors hover:bg-accent/30 mt-2 border border-transparent ${
+                location === href
+                  ? 'text-primary font-semibold bg-accent/40 border border-border/40 shadow-sm after:absolute after:left-3 after:right-3 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary'
+                  : 'text-white hover:text-white'
+              }`}
               aria-current={location === href ? 'page' : undefined}
               onMouseEnter={() => prefetchRoute(href)}
               onFocus={() => prefetchRoute(href)}
