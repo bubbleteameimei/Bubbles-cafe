@@ -23,7 +23,7 @@ import { preloadWordPressPosts } from './lib/wordpress-api';
 // Import WordPress sync service
 import { initWordPressSync } from './lib/wordpress-sync';
 // Import FeedbackButton component for site-wide feedback
-import { FeedbackButton } from './components/feedback/FeedbackButton';
+
 // Import our scroll effects provider for multi-speed scroll and gentle return
 import ScrollEffectsProvider from './components/ScrollEffectsProvider';
 import SEO from '@/components/SEO';
@@ -500,10 +500,7 @@ function App() {
     preloadWordPressPostsDeferred();
   }, []);
 
-  // Floating feedback button should be visible across the site
-  const ConditionalFeedbackButton = () => {
-    return <FeedbackButton />;
-  };
+  
 
   // Function to handle data refresh
   const handleDataRefresh = async () => {
@@ -551,8 +548,7 @@ function App() {
                           {location !== '/' && (
                             <ScrollToTopButton position="bottom-right" />
                           )}
-                          {/* Conditionally show FeedbackButton */}
-                          <ConditionalFeedbackButton />
+                          
                           {/* Toast notifications */}
                           <Toaster />
                           <Sonner position="bottom-left" className="fixed-sonner" />
