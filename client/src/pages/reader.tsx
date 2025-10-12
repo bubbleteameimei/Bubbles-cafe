@@ -694,17 +694,18 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         wordCount={wordCount}
       />
       
-      {/* Reading Progress Bar - Always visible at the very top */}
+      {/* Reading Progress Bar - fixed to the header demarcation line, full-bleed */}
       <div 
         style={{ 
           position: 'fixed',
-          top: '0px',
-          left: '0px',
-          right: '0px',
-          width: '100%',
+          top: 'var(--navbar-height, 56px)',
+          left: 0,
+          right: 0,
+          width: '100vw',
+          marginLeft: 'calc(-50vw + 50%)',
           height: '3px',
-          backgroundColor: 'rgba(255, 255, 255, 0.2)',
-          zIndex: 999999,
+          backgroundColor: 'transparent',
+          zIndex: 39, // below the fixed header (z-40) to avoid overlapping/cropping
           pointerEvents: 'none'
         }}
       >
@@ -713,8 +714,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             height: '100%',
             width: `${readingProgress}%`,
             background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
-            transition: 'width 0.1s ease-out',
-            boxShadow: readingProgress > 5 ? '0 0 10px rgba(59, 130, 246, 0.7)' : 'none'
+            transition: 'width 0.1s ease-out'
           }}
         />
       </div>
