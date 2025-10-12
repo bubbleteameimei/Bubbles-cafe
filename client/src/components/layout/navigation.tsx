@@ -106,12 +106,12 @@ export default function Navigation() {
 
   return (
     <header 
-      className={`w-full relative top-0 z-40 bg-background/95 backdrop-blur-md ${scrolled ? 'shadow-md' : 'shadow-sm'}`}
+      className={`w-full relative top-0 z-40 bg-transparent ${scrolled ? 'shadow-md' : ''}`}
       style={{ position: 'relative', left: 0, right: 0, margin: 0, padding: 0 }}
     >
       <div className="w-full flex h-16 items-center justify-between px-0 main-header">
         {/* Left section with menu toggle for all screen sizes */}
-        <div className="flex items-center -mt-1 ml-2 sm:ml-3">
+        <div className="flex items-center -mt-1">
           {/* Menu toggle for all devices */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>

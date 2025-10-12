@@ -92,7 +92,7 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 	return (
 		<div ref={containerRef} className={`navbar-container transition-transform duration-300 fixed top-0 left-0 right-0 z-40 w-full ${hidden ? '-translate-y-full' : 'translate-y-0'}`}
 			style={{ width: "100%", margin: 0, padding: 0 }}>
-			<div className="bg-background/95 backdrop-blur-md shadow-sm">
+			<div className="bg-transparent">
 				<Navigation />
 			</div>
 		</div>
