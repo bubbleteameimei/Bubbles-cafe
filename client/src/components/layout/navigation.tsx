@@ -106,7 +106,7 @@ export default function Navigation() {
 
   return (
     <header 
-      className={`w-full relative top-0 z-40 bg-transparent ${scrolled ? 'shadow-md' : ''}`}
+      className="w-full relative top-0 z-40 bg-transparent"
       style={{ position: 'relative', left: 0, right: 0, margin: 0, padding: 0 }}
     >
       <div className="w-full flex h-16 items-center justify-between px-0 main-header">
@@ -118,13 +118,13 @@ export default function Navigation() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95 mt-2"
+                className="relative h-9 w-9 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 transition-all duration-150 ease-out"
                 aria-label="Open menu"
                 style={{ WebkitTapHighlightColor: 'transparent' }}
                 onClick={() => setIsOpen((v) => !v)}
                 data-testid="nav-open-menu-button"
               >
-                <Menu className="h-6 w-6" />
+                <Menu className="h-4 w-4" />
               </Button>
             </SheetTrigger>
             <SheetContent 
@@ -152,7 +152,10 @@ export default function Navigation() {
               className={`relative h-12 px-4 inline-flex items-center rounded-md text-sm font-medium transition-colors hover:bg-accent/30 mt-2 border border-transparent
                         ${location === href
                           ? 'text-primary font-semibold bg-accent/40 border border-border/40 shadow-sm after:absolute after:left-3 after:right-3 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary' 
-                          : 'text-foreground/80 hover:text-foreground'}`}
+                          : 'text-white hover:text-white'}`}
+                        ${location === href
+                          ? 'text-primary font-semibold bg-accent/40 border border-border/40 shadow-sm after:absolute after:left-3 after:right-3 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary' 
+                          : 'text-white hover:text-white'}`}
               aria-current={location === href ? 'page' : undefined}
               onMouseEnter={() => prefetchRoute(href)}
               onFocus={() => prefetchRoute(href)}
