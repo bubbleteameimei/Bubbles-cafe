@@ -39,30 +39,3 @@ main,
   box-sizing: border-box !important;
   /* Padding removed to allow reader-fixes.css to control this */
 }
-
-/* Prevent header overlap */
-main {
-  padding-top: 4rem; /* same as header height (h-16) */
-}
-
-@media (min-width: 1024px) {
-  main {
-    padding-top: 4.5rem;
-  }
-}
-
-/* Transparent nav styles */
-.navbar-container,
-.nav-transparent {
-  background: none !important;
-  box-shadow: none !important;
-  border-bottom: none !important;
-}
-
-.nav-transparent nav a {
-  color: #fff !important;
-}
-
-.nav-transparent nav a[aria-current="page"] {
-  color: hsl(var(--primary)) !important;
-}
