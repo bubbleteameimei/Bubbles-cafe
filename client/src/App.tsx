@@ -253,7 +253,7 @@ const AppContent = () => {
       <div
         className={`page-transition-container min-h-screen w-full min-w-full max-w-full overflow-x-hidden bg-background text-foreground 
           m-0 p-0 px-0 mx-0`}
-         style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: locationStr === '/' ? 'var(--navbar-height, 56px)' : 'calc(var(--navbar-height, 56px) + 8px)' }}>
+         style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: 'calc(var(--navbar-height, 56px) + 8px)' }}>
         {/* Main navigation bar */}
         <AutoHideNavbar />
         {/* Main content landmark for accessibility */}
