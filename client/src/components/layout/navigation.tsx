@@ -106,7 +106,7 @@ export default function Navigation() {
 
   return (
     <header 
-      className={`w-full relative top-0 z-40 bg-background/20 backdrop-blur supports-[backdrop-filter]:bg-background/15 overflow-x-clip ${scrolled ? 'shadow-md' : ''}`}
+      className={`w-full relative top-0 z-40 bg-background/95 backdrop-blur-md ${scrolled ? 'shadow-md' : 'shadow-sm'}`}
       style={{ position: 'relative', left: 0, right: 0, margin: 0, padding: 0 }}
     >
       <div className="w-full flex h-16 items-center justify-between px-0 main-header">
@@ -318,7 +318,7 @@ export default function Navigation() {
       </div>
       
       {/* Full-bleed demarcation line */}
-      <div aria-hidden="true" className="border-t border-border/50" style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }} />
+      <div aria-hidden="true" className="border-b border-border/40" style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }} />
       
       {/* Reading progress removed per request */}
     </header>
