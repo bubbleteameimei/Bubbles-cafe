@@ -86,6 +86,7 @@ export const SupportWritingCard = ({ className = "" }: SupportWritingCardProps) 
         className="bg-background/30 backdrop-blur-md rounded-xl border border-border/30 p-6 text-center shadow-lg relative overflow-hidden"
         onHoverStart={() => setIsHovered(true)}
         onHoverEnd={() => setIsHovered(false)}
+        style={{ contain: 'layout paint', isolation: 'isolate' }}
       >
         {/* Cute sparkles around the card when hovered */}
         <AnimatePresence>
@@ -168,8 +169,8 @@ export const SupportWritingCard = ({ className = "" }: SupportWritingCardProps) 
               rotate: { duration: 0.4, repeat: Infinity, repeatType: "reverse" }
             }
           }}
-          whileTap={{ scale: 0.95 }}
           className="relative"
+          style={{ contain: 'layout paint', isolation: 'isolate' }}
         >
           <Button
             onClick={() => setIsOpen(true)}

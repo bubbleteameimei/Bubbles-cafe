@@ -1,13 +1,13 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { WordPressPost, checkWordPressApiStatus } from '@/lib/wordpress-api';
-import { Link } from 'wouter';
-import { Card } from '@/components/ui/card';
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Loader2, AlertCircle, RefreshCw, WifiOff } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { useToast } from '@/hooks/use-toast';
-import { sanitizeHtmlContent } from '@/lib/sanitize-content';
+import { useQuery , useQueryClient } from "@tanstack/react-query";
+import { WordPressPost, checkWordPressApiStatus } from "@/lib/wordpress-api";
+import { Link } from "wouter";
+import { Card } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Loader2, AlertCircle, RefreshCw, WifiOff } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import { sanitizeHtmlContent } from "@/lib/sanitize-content";
 
 function Posts() {
   const [page, setPage] = useState(1);
@@ -17,7 +17,7 @@ function Posts() {
 
   const prefetchReaderCode = () => {
     try {
-      void import('@/pages/reader');
+      void import("@/pages/reader");
     } catch {}
   };
 
@@ -25,40 +25,40 @@ function Posts() {
     if (!slug) return;
     try {
       void queryClient.prefetchQuery({
-        queryKey: ['/api/posts/slug', slug],
+        queryKey: ["/api/posts/slug", slug],
         queryFn: async () => {
           const res = await fetch(`/api/posts/slug/${encodeURIComponent(slug)}`);
-          if (!res.ok) throw new Error('Failed to prefetch post');
+          if (!res.ok) throw new Error("Failed to prefetch post");
           return res.json();
         },
         staleTime: 5 * 60 * 1000,
       });
     } catch {}
   };
-
+  
   // Check WordPress API status
   useEffect(() => {
     const checkApiStatus = async () => {
       try {
         const isAvailable = await checkWordPressApiStatus();
         setApiStatus(isAvailable ? 'available' : 'unavailable');
-
+        
         if (!isAvailable) {
           toast({
-            title: 'WordPress content notice',
-            description: 'Using local content because WordPress API is currently unavailable',
-            variant: 'default',
+            title: "WordPress content notice",
+            description: "Using local content because WordPress API is currently unavailable",
+            variant: "default"
           });
         }
       } catch (error) {
         setApiStatus('unavailable');
-        console.error('Error checking WordPress API status:', error);
+        console.error("Error checking WordPress API status:", error);
       }
     };
-
+    
     checkApiStatus();
   }, [toast]);
-
+  
   // Fetch posts with enhanced error handling
   const { data, isLoading, error, isError, refetch } = useQuery({
     queryKey: ['/api/posts', page],
@@ -72,17 +72,15 @@ function Posts() {
           id: p.id,
           slug: p.slug,
           title: { rendered: p.title },
-          excerpt: {
-            rendered: p.excerpt || (p.content ? String(p.content).slice(0, 150) + '…' : ''),
-          },
+          excerpt: { rendered: p.excerpt || (p.content ? String(p.content).slice(0, 150) + '…' : '') },
         })),
         totalPages: json.hasMore ? page + 1 : page,
-        fromFallback: json.fromFallback as boolean | undefined,
+        fromFallback: json.fromFallback as boolean | undefined
       };
       return adapted as { posts: WordPressPost[]; totalPages: number; fromFallback?: boolean };
     },
     retry: 1,
-    retryDelay: (attemptIndex) => Math.min(800 * Math.pow(2, attemptIndex), 5000),
+    retryDelay: (attemptIndex) => Math.min(800 * Math.pow(2, attemptIndex), 5000)
   });
 
   // Loading state
@@ -102,8 +100,13 @@ function Posts() {
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Error loading stories</AlertTitle>
         <AlertDescription className="flex flex-col gap-2">
-          <p>{error instanceof Error ? error.message : 'An unknown error occurred'}</p>
-          <Button variant="outline" size="sm" className="w-fit mt-2" onClick={() => refetch()}>
+          <p>{error instanceof Error ? error.message : "An unknown error occurred"}</p>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="w-fit mt-2"
+            onClick={() => refetch()}
+          >
             <RefreshCw className="h-4 w-4 mr-2" /> Try again
           </Button>
         </AlertDescription>
@@ -118,7 +121,7 @@ function Posts() {
         <div className="mb-6 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-4 relative shadow-sm dark:bg-amber-900/30 dark:border-amber-800/50 dark:text-amber-200">
           <div className="flex items-center">
             <WifiOff className="h-5 w-5 mr-2" />
-            <p className="font-medium text-lg">WordPress API Unavailable</p>
+            <h5 className="font-medium text-lg">WordPress API Unavailable</h5>
           </div>
           <div className="mt-2 text-sm">
             <p>Displaying locally stored content while WordPress connection is being restored.</p>
@@ -128,7 +131,7 @@ function Posts() {
             </div>
           </div>
         </div>
-
+        
         {/* Simplified Header with Horror Theme Elements */}
         <div className="mb-4 py-3 border-b border-muted">
           <h1 className="text-2xl font-creepster text-center mb-2">Tales from the Archive</h1>
@@ -136,56 +139,25 @@ function Posts() {
             Locally cached stories available for your reading pleasure
           </p>
         </div>
-
+        
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {data.posts.map((post: any) => (
-            <Card
-              key={post.id}
-              className="p-4 shadow-md transition-all duration-300 hover:shadow-lg hover:border-primary/30 relative overflow-hidden group"
-            >
+            <Card key={post.id} className="p-4 shadow-md transition-all duration-300 hover:shadow-lg hover:border-primary/30 relative overflow-hidden group">
               <h2 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-primary/90 transition-colors">
-                <Link
-                  href={`/reader/${post.slug}`}
-                  onMouseEnter={() => {
-                    prefetchReaderCode();
-                    prefetchPostBySlug(post.slug as any);
-                  }}
-                  onFocus={() => {
-                    prefetchReaderCode();
-                    prefetchPostBySlug(post.slug as any);
-                  }}
-                >
-                  {typeof post.title === 'object' ? (
-                    <span
-                      dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.title.rendered) }}
-                    />
-                  ) : (
-                    post.title
-                  )}
+                <Link href={`/reader/${post.slug}`} onMouseEnter={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }} onFocus={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }}>
+                  {typeof post.title === 'object' 
+                    ? <span dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.title.rendered) }} />
+                    : post.title}
                 </Link>
               </h2>
               <div className="text-sm text-muted-foreground mb-4 line-clamp-3">
-                {post.excerpt?.rendered ? (
-                  <span
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.excerpt.rendered) }}
-                  />
-                ) : (
-                  'No excerpt available'
-                )}
+                {post.excerpt?.rendered 
+                  ? <span dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.excerpt.rendered) }} />
+                  : "No excerpt available"}
               </div>
               <div className="mt-auto pt-3 border-t border-muted/40">
                 <div className="flex justify-end items-center">
-                  <Link
-                    href={`/reader/${post.slug}`}
-                    onMouseEnter={() => {
-                      prefetchReaderCode();
-                      prefetchPostBySlug(post.slug as any);
-                    }}
-                    onFocus={() => {
-                      prefetchReaderCode();
-                      prefetchPostBySlug(post.slug as any);
-                    }}
-                  >
+                  <Link href={`/reader/${post.slug}`} onMouseEnter={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }} onFocus={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }}>
                     <Button variant="outline" size="sm" className="gap-2">
                       Read story
                       <span className="h-1 w-1 rounded-full bg-primary animate-pulse"></span>
@@ -196,31 +168,30 @@ function Posts() {
             </Card>
           ))}
         </div>
-
+        
         {/* Reconnection button */}
         <div className="flex justify-center mt-8 mb-4">
-          <Button
-            variant="outline"
+          <Button 
+            variant="outline" 
             className="gap-2"
             onClick={() => {
               toast({
-                title: 'Reconnecting...',
-                description: 'Attempting to reconnect to WordPress API',
+                title: "Reconnecting...",
+                description: "Attempting to reconnect to WordPress API",
               });
-              checkWordPressApiStatus().then((isAvailable) => {
+              checkWordPressApiStatus().then(isAvailable => {
                 if (isAvailable) {
                   refetch();
                   toast({
-                    title: 'Connection restored!',
-                    description: 'Successfully reconnected to WordPress API',
-                    variant: 'default',
+                    title: "Connection restored!",
+                    description: "Successfully reconnected to WordPress API",
+                    variant: "default",
                   });
                 } else {
                   toast({
-                    title: 'Connection failed',
-                    description:
-                      'Still unable to connect to WordPress API. Will try again automatically.',
-                    variant: 'destructive',
+                    title: "Connection failed",
+                    description: "Still unable to connect to WordPress API. Will try again automatically.",
+                    variant: "destructive",
                   });
                 }
               });
@@ -246,37 +217,27 @@ function Posts() {
         <div className="mb-4 bg-green-50 border border-green-200 text-green-800 rounded-lg p-4 relative">
           <div className="flex items-center">
             <span className="mr-2 h-2 w-2 rounded-full bg-green-600"></span>
-            <p className="font-medium">WordPress API Connected</p>
+            <h5 className="font-medium">WordPress API Connected</h5>
           </div>
-          <div className="mt-2 text-sm">Displaying the latest stories from WordPress.</div>
+          <div className="mt-2 text-sm">
+            Displaying the latest stories from WordPress.
+          </div>
         </div>
       )}
-
+      
       <div className="grid gap-4 sm:gap-5 md:gap-6 lg:gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
         {posts.map((post: WordPressPost) => (
-          <Card
-            key={post.id}
+          <Card 
+            key={post.id} 
             className="p-4 sm:p-5 md:p-6 transition-all duration-300 hover:shadow-lg hover:border-primary/30 flex flex-col"
           >
             <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3 line-clamp-2 group hover:text-primary transition-colors">
-              <Link
-                href={`/reader/${post.slug}`}
-                onMouseEnter={() => {
-                  prefetchReaderCode();
-                  prefetchPostBySlug(post.slug as any);
-                }}
-                onFocus={() => {
-                  prefetchReaderCode();
-                  prefetchPostBySlug(post.slug as any);
-                }}
-              >
-                <span
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.title.rendered) }}
-                />
+              <Link href={`/reader/${post.slug}`} onMouseEnter={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }} onFocus={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }}>
+                <span dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.title.rendered) }} />
               </Link>
             </h2>
             {post.excerpt?.rendered ? (
-              <div
+              <div 
                 className="text-sm sm:text-base text-muted-foreground mb-4 line-clamp-3 flex-grow"
                 dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.excerpt.rendered) }}
               />
@@ -286,20 +247,9 @@ function Posts() {
               </div>
             )}
             <div className="mt-auto pt-2 sm:pt-3 border-t border-border/30">
-              <Link
-                href={`/reader/${post.slug}`}
-                className="w-full sm:w-auto"
-                onMouseEnter={() => {
-                  prefetchReaderCode();
-                  prefetchPostBySlug(post.slug as any);
-                }}
-                onFocus={() => {
-                  prefetchReaderCode();
-                  prefetchPostBySlug(post.slug as any);
-                }}
-              >
-                <Button
-                  variant="outline"
+              <Link href={`/reader/${post.slug}`} className="w-full sm:w-auto" onMouseEnter={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }} onFocus={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }}>
+                <Button 
+                  variant="outline" 
                   className="w-full sm:w-auto transition-all hover:bg-primary/5"
                 >
                   Read story
@@ -312,7 +262,10 @@ function Posts() {
 
       {hasMore && (
         <div className="mt-6 text-center">
-          <Button onClick={() => setPage((p) => p + 1)} className="gap-2">
+          <Button 
+            onClick={() => setPage(p => p + 1)}
+            className="gap-2"
+          >
             Load more stories
             <RefreshCw className="h-4 w-4" />
           </Button>
