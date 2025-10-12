@@ -153,10 +153,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     const animate = () => {
       const target = progressTargetRef.current;
       const current = progressCurrentRef.current;
-      const next = current + (target - current) * 0.2; // smoothing factor
+      // Use direction-aware smoothing: slower when decreasing (scrolling up), faster when increasing
+      const factor = target < current ? 0.12 : 0.24;
+      const next = current + (target - current) * factor;
       progressCurrentRef.current = next;
       setAnimatedProgress(next);
-      if (Math.abs(target - next) > 0.1) {
+      if (Math.abs(target - next) > 0.08) {
         progressRAFRef.current = requestAnimationFrame(animate);
       } else {
         progressCurrentRef.current = target;
@@ -911,7 +913,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         
 
         {/* Font controls/TOC spacing below header and progress bar */}
-        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-2 py-1 border-b border-border/30 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-1 py-1 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -1514,13 +1516,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             
             {/* Simple pagination at bottom of story content - compact and tighter */}
             <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1 px-2 shadow-md">
+              <div className="flex items-center gap-1 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1 px-1 shadow-md">
                 {/* Previous story button */}
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   onClick={goToPreviousStory}
-                  className="h-6 w-6 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
+                  className="h-5 w-5 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
                   aria-label="Previous story"
                   disabled={posts.length <= 1 || isFirstStory}
                 >
@@ -1542,7 +1544,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   variant="ghost" 
                   size="icon" 
                   onClick={goToNextStory}
-                  className="h-6 w-6 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
+                  className="h-5 w-5 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
                   aria-label="Next story"
                   disabled={posts.length <= 1 || isLastStory}
                 >
@@ -1556,7 +1558,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </div>
             </div>
 
-            <div className="mt-2 pt-3 border-t border-border/50">
+            {/* Full-bleed separator above reactions/share section */}
+            <div aria-hidden="true" className="border-b border-border/40" style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)' }} />
+            <div className="mt-2 pt-3">
               <div className="flex flex-col items-center justify-center gap-6">
                 {/* Centered Like/Dislike buttons */}
                 <div className={`flex justify-center w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
