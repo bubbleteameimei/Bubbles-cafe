@@ -24,15 +24,15 @@ export default function Footer() {
       role="contentinfo"
       aria-label="Site footer"
     >
-      <div className="container mx-auto max-w-5xl px-6 py-6">
-        <div className="grid grid-cols-2 gap-6">
+      <div className="container mx-auto max-w-5xl px-6 py-4">
+        <div className="grid grid-cols-2 gap-4 items-start">
           {/* Brand + Contact (Left) */}
           <div className="text-left">
             <h3 className="text-sm font-semibold tracking-wide">Bubble’s Cafe</h3>
             <p className="mt-1.5 text-xs text-muted-foreground max-w-md">
               Unexpected. Unexplained. Unsettling.
             </p>
-            <div className="mt-3 flex flex-col gap-2">
+            <div className="mt-2 flex flex-col gap-2">
               <div className="flex flex-row gap-2 items-center">
                 <Link
                   href="/contact"
@@ -49,7 +49,7 @@ export default function Footer() {
               </div>
               <a
                 href="mailto:contact@bubblescafe.space"
-                className="inline-flex items-center px-2 py-1 rounded-[6px] bg-primary text-primary-foreground text-[11px] font-semibold shadow-sm hover:bg-primary/90 transition-colors"
+                className="inline-flex items-center w-fit px-2.5 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium shadow-sm hover:bg-primary/90 transition-colors"
               >
                 Email
               </a>
@@ -73,16 +73,16 @@ export default function Footer() {
           </div>
         </div>
 
-        <hr className="mt-6 border-t border-border/40" />
+        <hr className="mt-4 border-t border-border/40" />
 
         {/* Bottom strip */}
-        <div className="mt-4 w-full flex flex-col items-center justify-center">
-          <div className="text-xs font-medium text-foreground/80 whitespace-nowrap mb-2">
+        <div className="mt-3 w-full flex flex-col items-center justify-center">
+          <div className="text-xs font-medium text-foreground/80 whitespace-nowrap mb-1.5">
             © Bubble’s Cafe {new Date().getFullYear()}. All rights reserved.
           </div>
 
           <nav
-            className="flex flex-wrap items-center justify-center gap-2"
+            className="flex flex-wrap items-center justify-center gap-1.5"
             aria-label="Footer navigation"
           >
             <Link href="/about" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">About</Link>
