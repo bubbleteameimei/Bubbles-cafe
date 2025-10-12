@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { useEffect } from "react";
 import { Link } from "wouter";
 
 export default function Footer() {
