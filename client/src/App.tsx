@@ -13,7 +13,6 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingScreen } from './components/ui/loading-screen';
 // Performance monitoring removed
 import { SidebarProvider } from './components/ui/sidebar';
-import ScrollToTopButton from './components/ScrollToTopButton';
 import { AnimatePresence, motion } from 'framer-motion';
 // Add critical fullwidth fix stylesheet
 import './styles/fullwidth-fix.css';
@@ -548,9 +547,6 @@ function App() {
                           </PullToRefresh>
                           {/* Site-wide elements outside of the main layout */}
                           <CookieConsent />
-                          {location !== '/' && (
-                            <ScrollToTopButton position="bottom-right" />
-                          )}
                           {/* Conditionally show FeedbackButton */}
                           <ConditionalFeedbackButton />
                           {/* Toast notifications */}
