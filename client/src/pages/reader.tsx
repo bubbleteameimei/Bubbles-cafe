@@ -537,7 +537,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // This duplicate has been removed - reading progress tracking is handled above
 
   
-  {/* Removed duplicate deleted posts detection useEffect block */}
+  // Removed duplicate deleted posts detection useEffect block
 
   // Let's make sure we have posts data and current post before rendering
   if (isLoading) {
