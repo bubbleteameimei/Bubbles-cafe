@@ -1516,7 +1516,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </SwipeNavigation>
             
             {/* Simple pagination at bottom of story content - compact and tighter */}
-            <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+            <div className={`flex items-center justify-center gap-2 mb-6 mt-3 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
               <div className="flex items-center gap-2 bg-background/90 backdrop-blur-md border border-border/50 rounded-full h-14 py-3 px-4 shadow-lg">
                 {/* Previous story button */}
                 <Button 
