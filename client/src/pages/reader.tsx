@@ -101,6 +101,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
+  // Smooth, GPU-accelerated animated progress value
+  const [animatedProgress, setAnimatedProgress] = useState(0);
+  const progressCurrentRef = useRef(0);
+  const progressTargetRef = useRef(0);
+  const progressRAFRef = useRef<number | null>(null);
   
   // Will initialize this after data is loaded
   const [autoSaveSlug, setAutoSaveSlug] = useState<string>("");
@@ -140,29 +145,45 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   };
   
-  // Reading progress tracking with scroll-based calculation
+  // Reading progress tracking with scroll-based calculation and rAF smoothing
   useEffect(() => {
     let ticking = false;
-    let animationFrameId: number | null = null;
-    
+    let scrollRafId: number | null = null;
+
+    const animate = () => {
+      const target = progressTargetRef.current;
+      const current = progressCurrentRef.current;
+      const next = current + (target - current) * 0.2; // smoothing factor
+      progressCurrentRef.current = next;
+      setAnimatedProgress(next);
+      if (Math.abs(target - next) > 0.1) {
+        progressRAFRef.current = requestAnimationFrame(animate);
+      } else {
+        progressCurrentRef.current = target;
+        setAnimatedProgress(target);
+        progressRAFRef.current = null;
+      }
+    };
+
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       const scrollPercent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
       const progress = Math.min(100, Math.max(0, scrollPercent));
       setReadingProgress(progress);
-      if (import.meta.env?.DEV) {
-        console.log('[Reader] Progress updated:', { scrollTop, docHeight, progress });
+      progressTargetRef.current = progress;
+      if (!progressRAFRef.current) {
+        progressRAFRef.current = requestAnimationFrame(animate);
       }
     };
 
     // Throttle scroll events for better performance
     const throttledHandleScroll = () => {
       if (!ticking) {
-        animationFrameId = requestAnimationFrame(() => {
+        scrollRafId = requestAnimationFrame(() => {
           handleScroll();
           ticking = false;
-          animationFrameId = null;
+          scrollRafId = null;
         });
         ticking = true;
       }
@@ -175,8 +196,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     
     return () => {
       window.removeEventListener('scroll', throttledHandleScroll);
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
+      if (scrollRafId) cancelAnimationFrame(scrollRafId);
+      if (progressRAFRef.current) {
+        cancelAnimationFrame(progressRAFRef.current);
+        progressRAFRef.current = null;
       }
     };
   }, []);
@@ -714,9 +737,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             height: '100%',
             width: '100%',
             background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
-            transform: `scaleX(${readingProgress / 100})`,
+            transform: `scaleX(${animatedProgress / 100}) translateZ(0)`,
             transformOrigin: '0 0',
-            transition: 'transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
             willChange: 'transform'
           }}
         />
@@ -889,7 +911,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         
 
         {/* Font controls/TOC spacing below header and progress bar */}
-        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-4 py-2 border-b border-border/30 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-2 py-1 border-b border-border/30 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -1035,12 +1057,17 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </DialogContent>
           </Dialog>
         </div>
+        {/* Full-bleed separator under controls row */}
+        <div aria-hidden="true" className="border-b border-border/40" style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)' }} />
       
         <article
             key={currentPost.id}
             className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
           >
             {/* Navigation buttons above story content removed; now placed under time-to-read */}
+
+            {/* Full-bleed separator above story title */}
+            <div aria-hidden="true" className="border-b border-border/40" style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)' }} />
 
             <div className="flex flex-col items-center mb-2 mt-0">
               <div className="relative flex flex-col items-center">
