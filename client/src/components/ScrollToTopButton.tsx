@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ScrollToTopButtonProps {
   position?: 'bottom-right' | 'bottom-left';
@@ -10,21 +11,15 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
 }) => {
   const [isVisible, setIsVisible] = useState(false);
 
-  // Removed forceVisible; visibility is based on scroll position
-
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       setIsVisible(scrollTop > 300);
     };
 
-    // Add scroll event listener
     window.addEventListener('scroll', handleScroll);
-    
-    // Check visibility on mount
     handleScroll();
-    
-    // Clean up
+
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -35,18 +30,22 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
     });
   };
 
-  // Use Tailwind CSS classes via .scroll-to-top; toggle position and visibility via classes
-  const positionClasses = position === 'bottom-left' ? 'left-5 right-auto' : 'right-5 left-auto';
+  const positionClasses =
+    position === 'bottom-left' ? 'left-5 right-auto' : 'right-5 left-auto';
   const visibilityClasses = isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none';
 
   return (
-    <button
+    <Button
+      variant="default"
+      size="icon"
       onClick={scrollToTop}
-      className={`scroll-to-top ${positionClasses} ${visibilityClasses}`}
+      className={`fixed bottom-5 ${positionClasses} ${visibilityClasses} z-50 shadow-lg scroll-to-top`}
       aria-label="Scroll to top"
+      noOutline
     >
-      <ArrowUp size={18} />
-    </button>
+      <ArrowUp className="h-4 w-4" strokeWidth={1.75} />
+      <span className="sr-only">Scroll to top</span>
+    </Button>
   );
 };
 
