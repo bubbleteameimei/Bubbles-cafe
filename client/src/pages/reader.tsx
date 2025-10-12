@@ -897,7 +897,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           className="fixed inset-0 z-[999]" 
           style={{ pointerEvents: 'all' }}
           aria-hidden="true"
-          /* This div blocks all interactions with the page behind it */
         />
       )}
       
@@ -1515,13 +1514,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </div>
             </SwipeNavigation>
             
-            {/* Simple pagination at bottom of story content - compact and tighter */}
-end-to-end) */}
-            <div
+            {/* Full-bleed separator above reactions/share section (thin, end-to-end) */}
+           <vdiv
               aria-hidden="true"
               className="border-b border-border/20"
               style={{ width: 'var(--viewport-width, 100vw)', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
-            />
+           
             <div className="mt-2 pt-3">
               <div className="flex flex-col items-center justify-center gap-6">
                 {/* Centered Like/Dislike buttons */}
