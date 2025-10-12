@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { Link } from "wouter";
+import { useEffect } from 'react';
+import { Link } from 'wouter';
 
 export default function Footer() {
   useEffect(() => {
@@ -12,14 +12,14 @@ export default function Footer() {
     <footer
       className="w-full mt-10 border-t border-border/40 bg-background/40 backdrop-blur-sm shadow-inner"
       style={{
-          position: "relative",
+        position: 'relative',
         left: 0,
         right: 0,
         margin: 0,
         padding: 0,
         zIndex: 10,
-        width: "100vw",
-        marginLeft: "calc(-50vw + 50%)",
+        width: '100vw',
+        marginLeft: 'calc(-50vw + 50%)',
       }}
       role="contentinfo"
       aria-label="Site footer"
@@ -63,9 +63,24 @@ export default function Footer() {
             <div className="ml-auto inline-block text-left">
               <h4 className="text-sm font-semibold tracking-wide">Quick Links</h4>
               <div className="mt-2 flex flex-wrap gap-2 justify-start">
-                <Link href="/" className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Home</Link>
-                <Link href="/reader" className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Reader</Link>
-                <Link href="/community" className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Community</Link>
+                <Link
+                  href="/"
+                  className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+                >
+                  Home
+                </Link>
+                <Link
+                  href="/reader"
+                  className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+                >
+                  Reader
+                </Link>
+                <Link
+                  href="/community"
+                  className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+                >
+                  Community
+                </Link>
               </div>
             </div>
           </div>
@@ -83,11 +98,36 @@ export default function Footer() {
             className="flex flex-wrap items-center justify-center gap-2"
             aria-label="Footer navigation"
           >
-            <Link href="/about" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">About</Link>
-            <Link href="/privacy" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Privacy</Link>
-            <Link href="/legal/terms" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Terms</Link>
-            <Link href="/legal/cookie-policy" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Cookies</Link>
-            <Link href="/legal/copyright" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Copyright</Link>
+            <Link
+              href="/about"
+              className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+            >
+              About
+            </Link>
+            <Link
+              href="/privacy"
+              className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/legal/terms"
+              className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+            >
+              Terms
+            </Link>
+            <Link
+              href="/legal/cookie-policy"
+              className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+            >
+              Cookies
+            </Link>
+            <Link
+              href="/legal/copyright"
+              className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+            >
+              Copyright
+            </Link>
           </nav>
         </div>
       </div>
