@@ -49,7 +49,7 @@ export default function Footer() {
               </div>
               <a
                 href="mailto:contact@bubblescafe.space"
-                className="inline-flex items-center px-2 py-1 rounded-[6px] bg-primary text-primary-foreground text-[11px] font-semibold shadow-sm hover:bg-primary/90 transition-colors"
+                className="inline-flex w-fit min-w-0 px-1.5 py-1 rounded-[6px] bg-primary text-primary-foreground text-[11px] font-semibold hover:bg-primary/90 transition-colors"
               >
                 Email
               </a>
@@ -73,7 +73,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <hr className="mt-4 border-t border-border/40" style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }} />
+        <hr className="mt-4 border-t border-border/40" style={{ width: "var(--viewport-width, 100vw)", position: "relative", left: "50%", transform: "translateX(-50%)" }} />
 
         {/* Bottom strip */}
         <div className="mt-3 w-full flex flex-col items-center justify-center">

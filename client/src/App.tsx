@@ -56,9 +56,9 @@ const PrivacyPage = React.lazy(() => import('./pages/privacy'));
 const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
 const InstallAppPage = React.lazy(() => import('./pages/install-app'));
 
-const AuthPage = React.lazy(() => import('./pages/auth'));
-const AuthSuccessPage = React.lazy(() => import('./pages/auth-success'));
-const AuthCallbackPage = React.lazy(() => import('./pages/auth-callback'));
+import AuthPage from './pages/auth';
+import AuthSuccessPage from './pages/auth-success';
+import AuthCallbackPage from './pages/auth-callback';
 const ProfilePage = React.lazy(() => import('./pages/profile'));
 const BookmarksPage = React.lazy(() => import('./pages/bookmarks'));
 const SearchResultsPage = React.lazy(() => import('./pages/search-results'));
@@ -166,8 +166,10 @@ const AppContent = () => {
 
   // Check if we should show loading screen for current page
   const shouldShowLoadingScreen = (path: string) => {
+    const isAuthRoute = path.startsWith('/auth') || path.includes('/auth');
     return !path.includes('/reader') && 
            !path.includes('/stories') && 
+           !isAuthRoute &&
            path !== '/' && 
            path !== '/index';
   };
@@ -253,7 +255,7 @@ const AppContent = () => {
       <div
         className={`page-transition-container min-h-screen w-full min-w-full max-w-full overflow-x-hidden bg-background text-foreground 
           m-0 p-0 px-0 mx-0`}
-         style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: 0 }}>
+         style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: isReaderLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)' }}>
         {/* Main navigation bar */}
         <AutoHideNavbar />
         {/* Main content landmark for accessibility */}

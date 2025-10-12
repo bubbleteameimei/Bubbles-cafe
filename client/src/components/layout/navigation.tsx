@@ -20,8 +20,11 @@ export default function Navigation() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <header className="nav-transparent w-full bg-transparent">
-      <div className="main-header flex items-center justify-between h-16 px-4">
+    <header
+      className="w-full bg-background/40 backdrop-blur-sm shadow-sm"
+      style={{ position: 'relative', left: 0, right: 0, margin: 0, padding: 0, width: '100%' }}
+    >
+      <div className="main-header flex items-center justify-between h-14 px-4">
         
         {/* Left: menu */}
         <div className="flex items-center">
@@ -30,9 +33,10 @@ export default function Navigation() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10 transition-all duration-150 active:scale-95"
+                className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
                 aria-label="Open menu"
                 onClick={() => setIsOpen((v) => !v)}
+                noOutline
               >
                 <Menu className="h-5 w-5" />
               </Button>
@@ -75,8 +79,9 @@ export default function Navigation() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10 transition-all duration-150 active:scale-95"
+                className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
                 aria-label="Search"
+                noOutline
               >
                 <Search className="h-5 w-5" />
               </Button>
@@ -90,15 +95,17 @@ export default function Navigation() {
           </Popover>
 
           <NotificationIcon
-            className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10 transition-all duration-150 active:scale-95"
+            className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+            noOutline
           />
 
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10 transition-all duration-150 active:scale-95"
+            className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            noOutline
           >
             {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
@@ -108,8 +115,9 @@ export default function Navigation() {
               variant="ghost"
               size="icon"
               onClick={() => setLocation("/auth")}
-              className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10 transition-all duration-150 active:scale-95"
+              className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
               aria-label="Sign in"
+              noOutline
             >
               <User className="h-5 w-5" />
             </Button>
@@ -117,7 +125,8 @@ export default function Navigation() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10 transition-all duration-150 active:scale-95"
+              className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+              noOutline
             >
               <User className="h-5 w-5" />
             </Button>
@@ -125,8 +134,12 @@ export default function Navigation() {
         </div>
       </div>
 
-      {/* Full-width separator */}
-      <div aria-hidden="true" className="border-b border-border/40" />
+      {/* Full-width separator - match footer HR style */}
+      <div
+        aria-hidden="true"
+        className="border-b border-border/40"
+        style={{ width: "var(--viewport-width, 100vw)", position: "relative", left: "50%", transform: "translateX(-50%)" }}
+      />
     </header>
   );
 }
