@@ -1516,51 +1516,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </SwipeNavigation>
             
             {/* Simple pagination at bottom of story content - compact and tighter */}
-            <div className={`flex items-center justify-center gap-2 mb-6 mt-3 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-md border border-border/50 rounded-full h-14 py-3 px-4 shadow-lg">
-                {/* Previous story button with tooltip */}
-               < Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={goToPreviousStory}
-                  className="group h-8 w-8 rounded-full flex items-center justify-center hover:bg-background/80 relative disabled:opacity-70 disabled:bg-gray-100/50"
-                  aria-label="Previous story"
-                  disabled={posts.length <= 1 || isFirstStory}
-                >
-                 <esvg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                   <ipath d="m15 18-6-6 6-6"/>
-                </mesvg>
-                 < span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-xs opacity-0 group-hover:opacityround">Previous</span>
-                </div>
-                
-                {/* Story counter */}
-                <div className="px-2 text-[12px] leading-none text-muted-foreground font-medium h-14 flex items-center">
-                  {currentIndex + 1}/{posts.length}
-                </div>
-                
-                {/* Next story button with tooltip */}
-               < Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={goToNextStory}
-Next</span>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={goToNextStory}
-                    className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-background/80 relative disabled:opacity-70 disabled:bg-gray-100/50"
-                    aria-label="Next story"
-                    disabled={posts.length <= 1 || isLastStory}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                      <path d="m9 18 6-6-6-6"/>
-                    </svg>
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Full-bleed separator above reactions/share section (thin, end-to-end) */}
+end-to-end) */}
             <div
               aria-hidden="true"
               className="border-b border-border/20"
