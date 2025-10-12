@@ -1566,10 +1566,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </div>
 
             {/* Full-bleed separator above reactions/share section (thin, end-to-end) */}
-           <<div
+            <div
               aria-hidden="true"
               className="border-b border-border/20"
-              style={{ width: 'var(--viewport-width, 100vw)', position: 'relativerm: 'translateX(-50%)' }}
+              style={{ width: 'var(--viewport-width, 100vw)', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
             />
             <div className="mt-2 pt-3">
               <div className="flex flex-col items-center justify-center gap-6">
