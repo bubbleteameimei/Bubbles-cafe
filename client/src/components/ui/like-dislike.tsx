@@ -328,14 +328,14 @@ export function LikeDislike({
           className={`
             inline-flex items-center gap-2 font-sans font-medium text-sm
             px-4 py-2 rounded-lg border transition-all duration-200
-            hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-1
+            hover:scale-105 active:scale-95 focus:outline-none focus:ring-0 focus:ring-offset-0
             ${variant === 'reader' 
               ? 'min-w-[100px] justify-center' 
               : 'h-8 px-3 py-1 text-xs min-w-[70px]'
             }
             ${liked 
-              ? 'bg-green-100 border-green-300 text-green-700 shadow-sm focus:ring-green-300 dark:bg-green-900/30 dark:border-green-600 dark:text-green-400 dark:focus:ring-green-600' 
-              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm focus:ring-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-gray-500'
+              ? 'bg-green-100 border-green-300 text-green-700 shadow-sm dark:bg-green-900/30 dark:border-green-600 dark:text-green-400' 
+              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
             }
           `}
         >
@@ -349,14 +349,14 @@ export function LikeDislike({
           className={`
             inline-flex items-center gap-2 font-sans font-medium text-sm
             px-4 py-2 rounded-lg border transition-all duration-200
-            hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-1
+            hover:scale-105 active:scale-95 focus:outline-none focus:ring-0 focus:ring-offset-0
             ${variant === 'reader' 
               ? 'min-w-[100px] justify-center' 
               : 'h-8 px-3 py-1 text-xs min-w-[70px]'
             }
             ${disliked 
-              ? 'bg-red-100 border-red-300 text-red-700 shadow-sm focus:ring-red-300 dark:bg-red-900/30 dark:border-red-600 dark:text-red-400 dark:focus:ring-red-600' 
-              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm focus:ring-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-gray-500'
+              ? 'bg-red-100 border-red-300 text-red-700 shadow-sm dark:bg-red-900/30 dark:border-red-600 dark:text-red-400' 
+              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
             }
           `}
         >

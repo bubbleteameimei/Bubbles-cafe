@@ -1517,13 +1517,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             
             {/* Simple pagination at bottom of story content - compact and tighter */}
             <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-md border border-border/50 rounded-full h-6 py-0 px-1.5 shadow-md">
+              <div className="flex items-center gap-3 bg-background/90 backdrop-blur-md border border-border/50 rounded-full h-10 py-1.5 px-3 shadow-lg">
                 {/* Previous story button */}
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   onClick={goToPreviousStory}
-                  className="h-6 w-6 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
+                  className="h-8 w-8 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
                   aria-label="Previous story"
                   disabled={posts.length <= 1 || isFirstStory}
                 >
@@ -1536,7 +1536,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 </Button>
                 
                 {/* Story counter */}
-                <div className="px-1 text-[10px] leading-none text-muted-foreground font-medium h-6 flex items-center">
+                <div className="px-2 text-[12px] leading-none text-muted-foreground font-medium h-10 flex items-center">
                   {currentIndex + 1}/{posts.length}
                 </div>
                 
@@ -1545,7 +1545,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   variant="ghost" 
                   size="icon" 
                   onClick={goToNextStory}
-                  className="h-6 w-6 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
+                  className="h-8 w-8 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
                   aria-label="Next story"
                   disabled={posts.length <= 1 || isLastStory}
                 >
