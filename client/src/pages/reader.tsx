@@ -713,7 +713,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             height: '100%',
             width: `${readingProgress}%`,
             background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
-            transition: 'width 0.1s ease-out'
+            transition: 'width 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
+            willChange: 'width'
           }}
         />
       </div>
