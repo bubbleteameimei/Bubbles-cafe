@@ -726,7 +726,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           top: 'var(--navbar-height, 56px)',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: '100vw',
+          width: 'var(--viewport-width, 100vw)',
           height: '3px',
           backgroundColor: 'transparent',
           zIndex: 39, // below the fixed header (z-40) to avoid overlapping/cropping
@@ -1062,7 +1062,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         <div
           aria-hidden="true"
           className="border-b border-border/20"
-          style={{ width: '100vw', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
+          style={{ width: 'var(--viewport-width, 100vw)', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
         />
       
         <article
@@ -1075,7 +1075,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             <div
               aria-hidden="true"
               className="border-b border-border/20"
-              style={{ width: '100vw', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
+              style={{ width: 'var(--viewport-width, 100vw)', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
             />
 
             <div className="flex flex-col items-center mb-2 mt-0">
@@ -1566,10 +1566,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </div>
 
             {/* Full-bleed separator above reactions/share section (thin, end-to-end) */}
-            <div
+           <<div
               aria-hidden="true"
               className="border-b border-border/20"
-              style={{ width: '100vw', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
+              style={{ width: 'var(--viewport-width, 100vw)', position: 'relativerm: 'translateX(-50%)' }}
             />
             <div className="mt-2 pt-3">
               <div className="flex flex-col items-center justify-center gap-6">

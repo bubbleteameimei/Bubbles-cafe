@@ -138,7 +138,7 @@ export default function Navigation() {
       <div
         aria-hidden="true"
         className="border-b border-border/40"
-        style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
+        style={{ width: "var(--viewport-width, 100vw)", position: "relative", left: "50%", transform: "translateX(-50%)" }}
       />
     </header>
   );

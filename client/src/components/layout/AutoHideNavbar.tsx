@@ -24,11 +24,13 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 	const containerRef = useRef<HTMLDivElement | null>(null);
 	const [navbarHeight, setNavbarHeight] = useState<number>(56);
 
-	// Helper to update CSS variables for progress positioning
+	// Helper to update CSS variables for progress positioning and viewport width
 	const updateCssVars = (isHidden: boolean, heightPx: number) => {
 		const root = document.documentElement;
+		const vw = document.documentElement.clientWidth; // viewport width excluding scrollbar
 		root.style.setProperty('--navbar-height', `${heightPx}px`);
 		root.style.setProperty('--progress-top-offset', isHidden ? '0px' : `${heightPx}px`);
+		root.style.setProperty('--viewport-width', `${vw}px`);
 		root.toggleAttribute('data-nav-hidden', isHidden);
 	};
 
