@@ -33,9 +33,10 @@ export default function Navigation() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10 transition-all duration-150 active:scale-95"
+                className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
                 aria-label="Open menu"
                 onClick={() => setIsOpen((v) => !v)}
+                noOutline
               >
                 <Menu className="h-5 w-5" />
               </Button>
@@ -78,8 +79,9 @@ export default function Navigation() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10 transition-all duration-150 active:scale-95"
+                className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
                 aria-label="Search"
+                noOutline
               >
                 <Search className="h-5 w-5" />
               </Button>
@@ -93,15 +95,17 @@ export default function Navigation() {
           </Popover>
 
           <NotificationIcon
-            className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10 transition-all duration-150 active:scale-95"
+            className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+            noOutline
           />
 
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10 transition-all duration-150 active:scale-95"
+            className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            noOutline
           >
             {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
@@ -111,8 +115,9 @@ export default function Navigation() {
               variant="ghost"
               size="icon"
               onClick={() => setLocation("/auth")}
-              className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10 transition-all duration-150 active:scale-95"
+              className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
               aria-label="Sign in"
+              noOutline
             >
               <User className="h-5 w-5" />
             </Button>
@@ -120,7 +125,8 @@ export default function Navigation() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10 transition-all duration-150 active:scale-95"
+              className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+              noOutline
             >
               <User className="h-5 w-5" />
             </Button>

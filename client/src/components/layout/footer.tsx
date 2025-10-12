@@ -49,7 +49,7 @@ export default function Footer() {
               </div>
               <a
                 href="mailto:contact@bubblescafe.space"
-                className="inline-flex items-center px-2 py-1 rounded-[6px] bg-primary text-primary-foreground text-[11px] font-semibold shadow-sm hover:bg-primary/90 transition-colors"
+                className="inline-flex px-1.5 py-1 rounded-[6px] bg-primary text-primary-foreground text-[11px] font-semibold hover:bg-primary/90 transition-colors"
               >
                 Email
               </a>
