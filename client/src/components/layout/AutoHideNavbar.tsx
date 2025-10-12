@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import Navigation from './navigation';
 
 interface AutoHideNavbarProps {
@@ -42,8 +42,8 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 		return () => window.removeEventListener('scroll', handleScroll as any);
 	}, []);
 
-	// Measure navbar height and keep CSS variables in sync
-	useEffect(() => {
+	// Measure navbar height and keep CSS variables in sync before first paint to avoid layout shifts
+	useLayoutEffect(() => {
 		const measure = () => {
 			const el = containerRef.current;
 			const rect = el?.getBoundingClientRect();

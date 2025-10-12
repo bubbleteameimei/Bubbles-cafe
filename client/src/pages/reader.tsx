@@ -701,8 +701,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           top: 'var(--navbar-height, 56px)',
           left: 0,
           right: 0,
-          width: '100vw',
-          marginLeft: 'calc(-50vw + 50%)',
+          width: '100%',
           height: '3px',
           backgroundColor: 'transparent',
           zIndex: 39, // below the fixed header (z-40) to avoid overlapping/cropping

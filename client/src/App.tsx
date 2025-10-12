@@ -56,9 +56,9 @@ const PrivacyPage = React.lazy(() => import('./pages/privacy'));
 const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
 const InstallAppPage = React.lazy(() => import('./pages/install-app'));
 
-const AuthPage = React.lazy(() => import('./pages/auth'));
-const AuthSuccessPage = React.lazy(() => import('./pages/auth-success'));
-const AuthCallbackPage = React.lazy(() => import('./pages/auth-callback'));
+import AuthPage from './pages/auth';
+import AuthSuccessPage from './pages/auth-success';
+import AuthCallbackPage from './pages/auth-callback';
 const ProfilePage = React.lazy(() => import('./pages/profile'));
 const BookmarksPage = React.lazy(() => import('./pages/bookmarks'));
 const SearchResultsPage = React.lazy(() => import('./pages/search-results'));
