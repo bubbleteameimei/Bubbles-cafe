@@ -21,7 +21,7 @@ export default function Navigation() {
 
   return (
     <header
-      className="w-full bg-background/40 backdrop-blur-sm shadow-sm border-b border-border/40"
+      className="w-full bg-background/40 backdrop-blur-sm shadow-sm"
       style={{ position: 'relative', left: 0, right: 0, margin: 0, padding: 0, width: '100vw', marginLeft: 'calc(-50vw + 50%)' }}
     >
       <div className="main-header flex items-center justify-between h-14 px-4">
@@ -128,8 +128,12 @@ export default function Navigation() {
         </div>
       </div>
 
-      {/* Full-width separator */}
-      <div aria-hidden="true" className="border-b border-border/40" />
+      {/* Full-width separator - match footer HR style */}
+      <div
+        aria-hidden="true"
+        className="border-b border-border/40"
+        style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }}
+      />
     </header>
   );
 }
