@@ -36,20 +36,20 @@ export default function Footer() {
               <div className="flex flex-row gap-2 items-center">
                 <Link
                   href="/contact"
-                  className="inline-flex min-w-[64px] justify-center px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+                  className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
                 >
                   Contact
                 </Link>
                 <Link
                   href="/feedback"
-                  className="inline-flex min-w-[64px] justify-center px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+                  className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
                 >
                   Feedback
                 </Link>
               </div>
               <a
                 href="mailto:contact@bubblescafe.space"
-                className="inline-flex items-center min-w-[64px] justify-center px-2 py-1 rounded-[6px] bg-primary text-primary-foreground text-[11px] font-semibold shadow-sm hover:bg-primary/90 transition-colors"
+                className="inline-flex items-center px-2 py-1 rounded-[6px] bg-primary text-primary-foreground text-[11px] font-semibold shadow-sm hover:bg-primary/90 transition-colors"
               >
                 Email
               </a>
@@ -61,13 +61,13 @@ export default function Footer() {
             <h4 className="text-sm font-semibold tracking-wide">Quick Links</h4>
             <ul className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap justify-start sm:justify-start">
               <li>
-                <Link href="/" className="inline-flex min-w-[64px] justify-center px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Home</Link>
+                <Link href="/" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Home</Link>
               </li>
               <li>
-                <Link href="/reader" className="inline-flex min-w-[64px] justify-center px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Reader</Link>
+                <Link href="/reader" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Reader</Link>
               </li>
               <li>
-                <Link href="/community" className="inline-flex min-w-[64px] justify-center px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Community</Link>
+                <Link href="/community" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Community</Link>
               </li>
             </ul>
           </div>
