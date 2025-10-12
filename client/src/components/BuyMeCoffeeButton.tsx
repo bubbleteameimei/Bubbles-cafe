@@ -84,10 +84,10 @@ export const BuyMeCoffeeButton = () => {
             rotate: { duration: 0.5, repeat: Infinity, repeatType: "reverse" }
           }
         }}
-        whileTap={{ scale: 0.9 }}
         onHoverStart={() => setIsHovered(true)}
         onHoverEnd={() => setIsHovered(false)}
         className="relative"
+        style={{ contain: 'layout paint', isolation: 'isolate' }}
       >
         {/* Cute sparkles around the button when hovered */}
         <AnimatePresence>
