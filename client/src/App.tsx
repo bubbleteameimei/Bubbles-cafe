@@ -26,6 +26,7 @@ import { FeedbackButton } from './components/feedback/FeedbackButton';
 // Import our scroll effects provider for multi-speed scroll and gentle return
 import ScrollEffectsProvider from './components/ScrollEffectsProvider';
 import SEO from '@/components/SEO';
+import ScrollToTopButton from './components/ScrollToTopButton';
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
 // Import our notification system components
@@ -547,6 +548,7 @@ function App() {
                           </PullToRefresh>
                           {/* Site-wide elements outside of the main layout */}
                           <CookieConsent />
+                          <ScrollToTopButton position="bottom-right" />
                           {/* Conditionally show FeedbackButton */}
                           <ConditionalFeedbackButton />
                           {/* Toast notifications */}
