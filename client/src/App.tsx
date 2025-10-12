@@ -166,8 +166,10 @@ const AppContent = () => {
 
   // Check if we should show loading screen for current page
   const shouldShowLoadingScreen = (path: string) => {
+    const isAuthRoute = path.startsWith('/auth') || path.includes('/auth');
     return !path.includes('/reader') && 
            !path.includes('/stories') && 
+           !isAuthRoute &&
            path !== '/' && 
            path !== '/index';
   };
