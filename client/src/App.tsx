@@ -357,10 +357,10 @@ const AppContent = () => {
             <AnimatePresence mode="wait">
               <motion.div
                 key={locationStr}
-                initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, filter: 'blur(6px)' }}
-                animate={{ opacity: 1, filter: 'blur(0px)' }}
-                exit={prefersReducedMotion ? { opacity: 1 } : { opacity: 0.9, filter: 'blur(3px)' }}
-                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={prefersReducedMotion ? { opacity: 1 } : { opacity: 0.92 }}
+                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
               >
                 <div className="page-content">
                   <Switch>

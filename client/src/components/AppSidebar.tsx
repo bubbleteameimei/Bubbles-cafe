@@ -66,7 +66,7 @@ export function AppSidebar() {
             onClick={handleToggle}
             className="ml-auto h-8 w-8 text-[hsl(var(--sidebar-foreground))] 
                       hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]
-                      transition-all duration-200 ease-in-out transform active:scale-95
+                      transition-all duration-200 ease-in-out
                       focus:outline-none focus:ring-0 focus-visible:ring-0"
             aria-label="Close sidebar"
           >
@@ -102,7 +102,7 @@ export function AppSidebar() {
             }}
             className="fixed bottom-6 left-6 h-12 w-12 rounded-full shadow-lg
                       bg-primary text-primary-foreground 
-                      z-[99999] transition-all duration-300 ease-in-out transform hover:scale-105
+                      z-[99999] transition-opacity duration-300 ease-in-out
                       touch-manipulation select-none interactive-element
                       focus:outline-none focus:ring-0 focus-visible:ring-0"
             style={{ 
