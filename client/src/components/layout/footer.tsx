@@ -25,7 +25,7 @@ export default function Footer() {
       aria-label="Site footer"
     >
       <div className="container mx-auto max-w-5xl px-6 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-6">
           {/* Brand + Contact (Left) */}
           <div className="text-left">
             <h3 className="text-sm font-semibold tracking-wide">Bubble’s Cafe</h3>
@@ -51,15 +51,15 @@ export default function Footer() {
                 href="mailto:contact@bubblescafe.space"
                 className="inline-flex items-center px-2 py-1 rounded-[6px] bg-primary text-primary-foreground text-[11px] font-semibold shadow-sm hover:bg-primary/90 transition-colors"
               >
-                contact@bubblescafe.space
+                Email
               </a>
             </div>
           </div>
 
           {/* Quick Links (Right) */}
-          <div className="text-left md:text-right">
+          <div className="text-left">
             <h4 className="text-sm font-semibold tracking-wide">Quick Links</h4>
-            <ul className="mt-2 flex flex-col gap-2 md:flex-row md:flex-wrap md:justify-end">
+            <ul className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-start">
               <li>
                 <Link href="/" className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Home</Link>
               </li>
