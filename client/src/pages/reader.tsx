@@ -1517,7 +1517,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             
             {/* Simple pagination at bottom of story content - compact and tighter */}
             <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <div className="flex items-center gap-3 bg-background/90 backdrop-blur-md border border-border/50 rounded-full h-10 py-1.5 px-3 shadow-lg">
+              <div className="flex items-center gap-1 bg-background/90 backdrop-blur-md border border-border/50 rounded-full h-8 py-0 px-2 shadow-md">
                 {/* Previous story button */}
                 <Button 
                   variant="ghost" 
@@ -1536,7 +1536,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 </Button>
                 
                 {/* Story counter */}
-                <div className="px-2 text-[12px] leading-none text-muted-foreground font-medium h-10 flex items-center">
+                <div className="px-1 text-[11px] leading-none text-muted-foreground font-medium h-8 flex items-center">
                   {currentIndex + 1}/{posts.length}
                 </div>
                 
