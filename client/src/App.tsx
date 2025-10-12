@@ -23,7 +23,7 @@ import { preloadWordPressPosts } from './lib/wordpress-api';
 // Import WordPress sync service
 import { initWordPressSync } from './lib/wordpress-sync';
 // Import FeedbackButton component for site-wide feedback
-import { FeedbackButton } from './components/feedback/FeedbackButton';
+
 // Import our scroll effects provider for multi-speed scroll and gentle return
 import ScrollEffectsProvider from './components/ScrollEffectsProvider';
 import SEO from '@/components/SEO';
@@ -253,7 +253,7 @@ const AppContent = () => {
       <div
         className={`page-transition-container min-h-screen w-full min-w-full max-w-full overflow-x-hidden bg-background text-foreground 
           m-0 p-0 px-0 mx-0`}
-         style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: 'var(--navbar-height, 56px)' }}>
+         style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: 0 }}>
         {/* Main navigation bar */}
         <AutoHideNavbar />
         {/* Main content landmark for accessibility */}
@@ -500,10 +500,7 @@ function App() {
     preloadWordPressPostsDeferred();
   }, []);
 
-  // Floating feedback button should be visible across the site
-  const ConditionalFeedbackButton = () => {
-    return <FeedbackButton />;
-  };
+  
 
   // Function to handle data refresh
   const handleDataRefresh = async () => {
@@ -551,8 +548,7 @@ function App() {
                           {location !== '/' && (
                             <ScrollToTopButton position="bottom-right" />
                           )}
-                          {/* Conditionally show FeedbackButton */}
-                          <ConditionalFeedbackButton />
+                          
                           {/* Toast notifications */}
                           <Toaster />
                           <Sonner position="bottom-left" className="fixed-sonner" />
