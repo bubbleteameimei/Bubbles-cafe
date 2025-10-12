@@ -101,8 +101,10 @@
 }
 
 /* Italics for emphasized text */
-.story-content em {
+.story-content em,
+.story-content i {
   font-family: var(--reader-font-family, "Crimson Text", Georgia, "Times New Roman", serif);
+  font-style: italic;
   font-size: 1.05em;
 }
 

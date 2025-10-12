@@ -1018,14 +1018,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               aria-labelledby="toc-dialog-title" 
               aria-describedby="toc-dialog-description"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center">
                 <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
-                <DialogClose asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Close</span>
-                  </Button>
-                </DialogClose>
               </div>
               <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
               <TableOfContents 
@@ -1523,7 +1517,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             
             {/* Simple pagination at bottom of story content - compact and tighter */}
             <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-0.5 px-2 shadow-md">
+              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-md border border-border/50 rounded-full h-6 py-0 px-1.5 shadow-md">
                 {/* Previous story button */}
                 <Button 
                   variant="ghost" 
@@ -1542,7 +1536,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 </Button>
                 
                 {/* Story counter */}
-                <div className="px-1.5 text-xs text-muted-foreground font-medium">
+                <div className="px-1 text-[10px] leading-none text-muted-foreground font-medium h-6 flex items-center">
                   {currentIndex + 1}/{posts.length}
                 </div>
                 

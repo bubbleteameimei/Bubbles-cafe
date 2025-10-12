@@ -102,8 +102,10 @@
 }
 
 /* Italics for emphasized text */
-.story-content em {
-  font-family: 'Dancing Script', cursive;
+.story-content em,
+.story-content i {
+  font-family: var(--reader-font-family, 'Cormorant Garamond', serif);
+  font-style: italic;
   font-size: 1.05em;
 }
 
