@@ -1,5 +1,5 @@
-import { Link } from "wouter";
-import { useEffect } from "react";
+import { useEffect } from 'react';
+import { Link } from 'wouter';
 
 export default function Footer() {
   useEffect(() => {
@@ -12,25 +12,25 @@ export default function Footer() {
     <footer
       className="w-full mt-10 border-t border-border/40 bg-background/40 backdrop-blur-sm shadow-inner"
       style={{
-          position: "relative",
+        position: 'relative',
         left: 0,
         right: 0,
         margin: 0,
         padding: 0,
         zIndex: 10,
-        width: "100vw",
-        marginLeft: "calc(-50vw + 50%)",
+        width: '100vw',
+        marginLeft: 'calc(-50vw + 50%)',
       }}
       role="contentinfo"
       aria-label="Site footer"
     >
       <div className="container mx-auto max-w-5xl px-5 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 items-start justify-between gap-6 md:gap-12">
           {/* Brand + Contact (Left) */}
-          <div className="text-left">
+          <div className="text-left pl-4 sm:pl-6 md:pl-8">
             <h3 className="text-sm font-semibold tracking-wide">Bubble’s Cafe</h3>
-            <p className="mt-1.5 text-xs text-muted-foreground max-w-md">
-              Every story here is a portal to the unexpected, the unexplained, and the unsettling.
+            <p className="mt-1.5 text-xs text-muted-foreground max-w-sm sm:max-w-md leading-relaxed break-words">
+              Unexpected. Unexplained. Unsettling.
             </p>
             <div className="mt-3 flex flex-wrap gap-2 items-center">
               <Link
@@ -39,12 +39,6 @@ export default function Footer() {
               >
                 Contact
               </Link>
-              <a
-                href="mailto:contact@bubblescafe.space"
-                className="inline-flex items-center px-2 py-1 rounded-[6px] bg-primary text-primary-foreground text-[11px] font-semibold shadow-sm hover:bg-primary/90 transition-colors"
-              >
-                contact@bubblescafe.space
-              </a>
               <Link
                 href="/feedback"
                 className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
@@ -52,16 +46,42 @@ export default function Footer() {
                 Feedback
               </Link>
             </div>
+            <ul className="list-none m-0 p-0 mt-2">
+              <li>
+                <a
+                  href="mailto:contact@bubblescafe.space"
+                  className="inline-flex items-center px-2 py-1 rounded-[6px] bg-primary text-primary-foreground text-[11px] font-semibold shadow-sm hover:bg-primary/90 transition-colors"
+                >
+                  contact@bubblescafe.space
+                </a>
+              </li>
+            </ul>
           </div>
 
           {/* Quick Links (Right) */}
-          <div className="text-left md:text-right">
-            <h4 className="text-sm font-semibold tracking-wide">Quick Links</h4>
-            <div className="mt-2 flex flex-wrap gap-2 md:justify-end">
-              <Link href="/" className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Home</Link>
-              <Link href="/reader" className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Reader</Link>
-              <Link href="/stories" className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Stories</Link>
-              <Link href="/community" className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Community</Link>
+          <div className="text-right pr-4 sm:pr-6 md:pr-8">
+            <div className="ml-auto inline-block text-left">
+              <h4 className="text-sm font-semibold tracking-wide">Quick Links</h4>
+              <div className="mt-2 flex flex-wrap gap-2 justify-start">
+                <Link
+                  href="/"
+                  className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+                >
+                  Home
+                </Link>
+                <Link
+                  href="/reader"
+                  className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+                >
+                  Reader
+                </Link>
+                <Link
+                  href="/community"
+                  className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+                >
+                  Community
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -78,11 +98,36 @@ export default function Footer() {
             className="flex flex-wrap items-center justify-center gap-2"
             aria-label="Footer navigation"
           >
-            <Link href="/about" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">About</Link>
-            <Link href="/privacy" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Privacy</Link>
-            <Link href="/legal/terms" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Terms</Link>
-            <Link href="/legal/cookie-policy" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Cookies</Link>
-            <Link href="/legal/copyright" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Copyright</Link>
+            <Link
+              href="/about"
+              className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+            >
+              About
+            </Link>
+            <Link
+              href="/privacy"
+              className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/legal/terms"
+              className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+            >
+              Terms
+            </Link>
+            <Link
+              href="/legal/cookie-policy"
+              className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+            >
+              Cookies
+            </Link>
+            <Link
+              href="/legal/copyright"
+              className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+            >
+              Copyright
+            </Link>
           </nav>
         </div>
       </div>

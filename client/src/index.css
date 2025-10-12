@@ -1,5 +1,5 @@
 @import './styles/responsive.css';
-@import "./styles/sidebar-enhanced.css";
+@import './styles/sidebar-enhanced.css';
 @import './styles/loading-screen.css';
 @import './styles/design-tokens.css';
 @import './styles/hover-effects.css';
@@ -9,8 +9,17 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .scroll-to-top {
+    @apply fixed bottom-5 right-5 p-3 bg-primary text-white rounded-full
+           opacity-0 transition-opacity duration-300 cursor-pointer
+           hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50;
+  }
+}
+
 /* Fix double scrollbar issue */
-html, body {
+html,
+body {
   overflow-x: hidden;
 }
 
@@ -32,41 +41,41 @@ body {
 }
 
 /* Accessible skip link - hidden until focused */
-  .skip-link {
-    position: absolute;
-    left: -999px;
-    top: auto;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-  }
-  .skip-link:focus {
-    position: fixed;
-    left: 16px;
-    top: 12px;
-    width: auto;
-    height: auto;
-    padding: 8px 12px;
-    background: hsl(var(--background));
-    color: hsl(var(--foreground));
-    border: 1px solid hsl(var(--border));
-    border-radius: 6px;
-    z-index: 10000;
-  }
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.skip-link:focus {
+  position: fixed;
+  left: 16px;
+  top: 12px;
+  width: auto;
+  height: auto;
+  padding: 8px 12px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  z-index: 10000;
+}
 
-  /* Prevent focus outlines from creating a vertical stripe on page edges for non-interactive containers */
-  #root:focus,
-  .page-transition-container:focus,
-  .page-content:focus,
-  main:focus {
-    outline: none !important;
-    box-shadow: none !important;
-  }
+/* Prevent focus outlines from creating a vertical stripe on page edges for non-interactive containers */
+#root:focus,
+.page-transition-container:focus,
+.page-content:focus,
+main:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
 
 /* Background animation for subtle zoom effect */
 @keyframes subtleZoom {
   0% {
-    transform: scale(1.0);
+    transform: scale(1);
   }
   100% {
     transform: scale(1.02);
@@ -81,8 +90,6 @@ body {
   -webkit-text-fill-color: #ff0000 !important;
   -webkit-text-stroke: 0 transparent !important;
 }
-
-
 
 /* Global responsive design fixes */
 @layer base {
@@ -103,7 +110,9 @@ body {
     background-color: hsl(var(--background)) !important;
   }
 
-  html, body, #root {
+  html,
+  body,
+  #root {
     margin: 0;
     padding: 0;
     width: 100%;
@@ -135,21 +144,42 @@ body {
   }
 
   /* Container fixes for width issues */
-  .app-container, .layout-container, .main-container, .content-container, main,
-  [class*="container"], [class*="layout"], [class*="wrapper"] {
+  .app-container,
+  .layout-container,
+  .main-container,
+  .content-container,
+  main,
+  [class*='container'],
+  [class*='layout'],
+  [class*='wrapper'] {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
   }
 
   /* Ensure footer stays at bottom properly with flex */
-  main, .main-content {
+  main,
+  .main-content {
     flex: 1 0 auto; /* Take available space, don't shrink */
   }
 
   /* Fix for transparent backgrounds in form elements */
-  input, textarea, select, .input-field, .textarea-field, .select-field, [type="text"], [type="email"], [type="password"], [type="search"],
-  .form-control, .form-input, .search-input, [class*="input"], [class*="field"], [class*="form-control"] {
+  input,
+  textarea,
+  select,
+  .input-field,
+  .textarea-field,
+  .select-field,
+  [type='text'],
+  [type='email'],
+  [type='password'],
+  [type='search'],
+  .form-control,
+  .form-input,
+  .search-input,
+  [class*='input'],
+  [class*='field'],
+  [class*='form-control'] {
     @apply bg-background; /* Force solid background */
     background-color: hsl(var(--background)) !important;
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
@@ -173,12 +203,19 @@ body {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     background-image: none !important;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 0 0 100vmax hsl(var(--background)) !important;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.1),
+      0 0 0 100vmax hsl(var(--background)) !important;
     clip-path: inset(0 0 0 0) !important;
   }
 
   /* Background color reset for specific pages */
-  body, html, #root, [data-reader-page], .home-page, .index-page {
+  body,
+  html,
+  #root,
+  [data-reader-page],
+  .home-page,
+  .index-page {
     background-color: hsl(var(--background));
   }
 
@@ -207,7 +244,7 @@ body {
   /* Optimize for touch interactions */
   @media (hover: none) and (pointer: coarse) {
     button,
-    a[role="button"],
+    a[role='button'],
     .interactive-element,
     .touch-target {
       touch-action: manipulation;
@@ -221,7 +258,7 @@ body {
   @media (hover: none) and (pointer: coarse) {
     /* Ensure all buttons are accessible on touch devices */
     button,
-    a[role="button"],
+    a[role='button'],
     .interactive-element,
     .touch-target,
     [data-sidebar] button,
@@ -268,7 +305,7 @@ body {
     /* Ensure interactive elements work in landscape */
     @media (orientation: landscape) {
       button,
-      a[role="button"],
+      a[role='button'],
       .interactive-element {
         min-height: 48px !important;
         min-width: 48px !important;
@@ -283,8 +320,8 @@ body {
 main,
 section,
 article,
-div[class*="layout"],
-div[class*="container"] {
+div[class*='layout'],
+div[class*='container'] {
   @apply max-w-full overflow-hidden;
   width: 100% !important;
   max-width: 100% !important;
@@ -302,22 +339,22 @@ div[class*="container"] {
 .home-page main,
 .home-page section,
 .home-page article,
-.home-page div[class*="layout"],
-.home-page div[class*="container"],
+.home-page div[class*='layout'],
+.home-page div[class*='container'],
 body.body-home .container,
 body.body-home main,
 body.body-home section,
 body.body-home article,
-body.body-home div[class*="layout"],
-body.body-home div[class*="container"] {
+body.body-home div[class*='layout'],
+body.body-home div[class*='container'] {
   background-color: transparent !important;
 }
 
 /* Exception for reader container - needs to be controlled by reader-fixes.css */
 .reader-container.story-content,
 .reader-page .reader-container,
-[data-reader-page="true"] .reader-container,
-[data-page="reader"] .reader-container {
+[data-reader-page='true'] .reader-container,
+[data-page='reader'] .reader-container {
   /* Reset padding to allow reader-fixes.css to control it */
   padding-left: initial !important;
   padding-right: initial !important;
@@ -341,15 +378,15 @@ body.body-home div[class*="container"] {
 }
 
 /* Target routes that contain /reader */
-[href^="/reader"] ~ main .reader-container {
+[href^='/reader'] ~ main .reader-container {
   padding-top: 5px !important; /* Even more reduction for reader page */
 }
 
 /* Additional fix for reader page spacing - Container only, not story content */
 body:has(main:has([data-reader-page])) .container,
 .reader-page .container,
-div[data-reader-page="true"] .container,
-[data-page="reader"] .container {
+div[data-reader-page='true'] .container,
+[data-page='reader'] .container {
   padding-top: 0 !important;
   /* Remove the padding override for left/right to allow reader-fixes.css to control this */
 }
@@ -361,8 +398,18 @@ div[data-reader-page="true"] .container,
 
 /* Define variables for background images and overlays */
 ::root {
-  --bg-overlay-dark: linear-gradient(to bottom, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0.01) 50%, rgba(0,0,0,0.03) 100%);
-  --bg-overlay-light: linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.2) 100%);
+  --bg-overlay-dark: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.03) 0%,
+    rgba(0, 0, 0, 0.01) 50%,
+    rgba(0, 0, 0, 0.03) 100%
+  );
+  --bg-overlay-light: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.2) 100%
+  );
 }
 
 /* Loading screen styles are now handled in loading-screen.css */
