@@ -30,7 +30,7 @@ export default function Footer() {
           <div className="text-left pl-4 sm:pl-6 md:pl-8">
             <h3 className="text-sm font-semibold tracking-wide">Bubble’s Cafe</h3>
             <p className="mt-1.5 text-xs text-muted-foreground max-w-sm sm:max-w-md leading-relaxed break-words">
-              Every story here is a portal to the unexpected, the unexplained, and the unsettling.
+              Unexpected. Unexplained. Unsettling.
             </p>
             <div className="mt-3 flex flex-wrap gap-2 items-center">
               <Link
