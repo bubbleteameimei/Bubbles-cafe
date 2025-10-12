@@ -49,7 +49,7 @@ export default function Footer() {
               </div>
               <a
                 href="mailto:contact@bubblescafe.space"
-                className="inline-flex items-center w-fit px-2.5 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium shadow-sm hover:bg-primary/90 transition-colors"
+                className="inline-flex w-fit px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
               >
                 Email
               </a>
@@ -57,17 +57,17 @@ export default function Footer() {
           </div>
 
           {/* Quick Links (Right) */}
-          <div className="text-left">
+          <div className="text-right justify-self-end">
             <h4 className="text-sm font-semibold tracking-wide">Quick Links</h4>
-            <ul className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-start">
+            <ul className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap justify-end sm:justify-end">
               <li>
-                <Link href="/" className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Home</Link>
+                <Link href="/" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Home</Link>
               </li>
               <li>
-                <Link href="/reader" className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Reader</Link>
+                <Link href="/reader" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Reader</Link>
               </li>
               <li>
-                <Link href="/community" className="inline-flex px-2.5 py-1.5 rounded-md border border-border/40 bg-muted/20 text-xs font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Community</Link>
+                <Link href="/community" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Community</Link>
               </li>
             </ul>
           </div>
