@@ -49,7 +49,7 @@ export default function Footer() {
               </div>
               <a
                 href="mailto:contact@bubblescafe.space"
-                className="inline-flex w-fit px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
+                className="inline-flex items-center w-fit px-2 py-1 roundedrder-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors"
               >
                 Email
               </a>
@@ -57,9 +57,9 @@ export default function Footer() {
           </div>
 
           {/* Quick Links (Right) */}
-          <div className="text-right justify-self-end">
+          <div className="text-center">
             <h4 className="text-sm font-semibold tracking-wide">Quick Links</h4>
-            <ul className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap justify-end sm:justify-end">
+            <ul className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap justify-center sm:justify-center md:pl-2">
               <li>
                 <Link href="/" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Home</Link>
               </li>
