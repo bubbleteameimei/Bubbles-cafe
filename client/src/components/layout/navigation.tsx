@@ -14,8 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { NotificationIcon } from "@/components/ui/notification-icon";
-import { useNotifications } from "@/contexts/notification-context";
+
+
 import { useTheme } from "@/components/theme-provider";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -23,7 +23,7 @@ export default function Navigation() {
   const [location, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
-  const { notifications } = useNotifications();
+  
   const { theme, setTheme } = useTheme();
 
   const [scrolled, setScrolled] = useState(false);
@@ -212,20 +212,7 @@ export default function Navigation() {
               </PopoverContent>
             </Popover>
             
-            {/* Notifications */}
-          <div className="relative">
-            {Array.isArray(notifications) && notifications.some((n) => !n.read) && (
-              <span className="absolute -top-0.5 -right-0.5 inline-flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-              </span>
-            )}
-            <NotificationIcon 
-              notifications={notifications} 
-              className="h-12 w-12 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 
-                        transition-all duration-150 active:scale-95 mt-2" 
-            />
-          </div>
+            
           
           {/* Theme toggle */}
           <Button
