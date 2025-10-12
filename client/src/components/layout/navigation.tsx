@@ -138,7 +138,7 @@ export default function Navigation() {
       <div
         aria-hidden="true"
         className="border-b border-border/40"
-        style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }}
+        style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
       />
     </header>
   );

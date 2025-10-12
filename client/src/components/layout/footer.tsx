@@ -73,7 +73,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <hr className="mt-4 border-t border-border/40" style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }} />
+        <hr className="mt-4 border-t border-border/40" style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }} />
 
         {/* Bottom strip */}
         <div className="mt-3 w-full flex flex-col items-center justify-center">

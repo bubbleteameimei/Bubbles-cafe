@@ -724,10 +724,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         style={{ 
           position: 'fixed',
           top: 'var(--navbar-height, 56px)',
-          left: 0,
-          right: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
           width: '100vw',
-          marginLeft: 'calc(-50vw + 50%)',
           height: '3px',
           backgroundColor: 'transparent',
           zIndex: 39, // below the fixed header (z-40) to avoid overlapping/cropping
@@ -1059,8 +1058,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </DialogContent>
           </Dialog>
         </div>
-        {/* Full-bleed separator under controls row */}
-        <div aria-hidden="true" className="border-b border-border/40" style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)' }} />
+        {/* Full-bleed separator under controls row (thin, end-to-end) */}
+        <div
+          aria-hidden="true"
+          className="border-b border-border/20"
+          style={{ width: '100vw', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
+        />
       
         <article
             key={currentPost.id}
@@ -1068,8 +1071,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           >
             {/* Navigation buttons above story content removed; now placed under time-to-read */}
 
-            {/* Full-bleed separator above story title */}
-            <div aria-hidden="true" className="border-b border-border/40" style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)' }} />
+            {/* Full-bleed separator above story title (thin, end-to-end) */}
+            <div
+              aria-hidden="true"
+              className="border-b border-border/20"
+              style={{ width: '100vw', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
+            />
 
             <div className="flex flex-col items-center mb-2 mt-0">
               <div className="relative flex flex-col items-center">
@@ -1516,13 +1523,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             
             {/* Simple pagination at bottom of story content - compact and tighter */}
             <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <div className="flex items-center gap-1 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1 px-1 shadow-md">
+              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-0.5 px-2 shadow-md">
                 {/* Previous story button */}
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   onClick={goToPreviousStory}
-                  className="h-5 w-5 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
+                  className="h-6 w-6 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
                   aria-label="Previous story"
                   disabled={posts.length <= 1 || isFirstStory}
                 >
@@ -1544,7 +1551,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   variant="ghost" 
                   size="icon" 
                   onClick={goToNextStory}
-                  className="h-5 w-5 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
+                  className="h-6 w-6 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
                   aria-label="Next story"
                   disabled={posts.length <= 1 || isLastStory}
                 >
@@ -1558,8 +1565,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </div>
             </div>
 
-            {/* Full-bleed separator above reactions/share section */}
-            <div aria-hidden="true" className="border-b border-border/40" style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)' }} />
+            {/* Full-bleed separator above reactions/share section (thin, end-to-end) */}
+            <div
+              aria-hidden="true"
+              className="border-b border-border/20"
+              style={{ width: '100vw', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
+            />
             <div className="mt-2 pt-3">
               <div className="flex flex-col items-center justify-center gap-6">
                 {/* Centered Like/Dislike buttons */}
