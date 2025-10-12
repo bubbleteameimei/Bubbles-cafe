@@ -20,7 +20,9 @@ export default function Navigation() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <header className="nav-transparent w-full bg-transparent">
+    <header
+      className="w-full bg-background/40 backdrop-blur-sm shadow-sm"
+    >
       <div className="main-header flex items-center justify-between h-16 px-4">
         
         {/* Left: menu */}
