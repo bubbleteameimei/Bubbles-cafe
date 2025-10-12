@@ -694,14 +694,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         wordCount={wordCount}
       />
       
-      {/* Reading Progress Bar - fixed to the header demarcation line, full-bleed */}
+      {/* Reading Progress Bar - fixed to the header demarcation line, full-bleed end-to-end */}
       <div 
         style={{ 
           position: 'fixed',
           top: 'var(--navbar-height, 56px)',
           left: 0,
           right: 0,
-          width: '100%',
+          width: '100vw',
+          marginLeft: 'calc(-50vw + 50%)',
           height: '3px',
           backgroundColor: 'transparent',
           zIndex: 39, // below the fixed header (z-40) to avoid overlapping/cropping
@@ -711,10 +712,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         <div 
           style={{ 
             height: '100%',
-            width: `${readingProgress}%`,
+            width: '100%',
             background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
-            transition: 'width 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
-            willChange: 'width'
+            transform: `scaleX(${readingProgress / 100})`,
+            transformOrigin: '0 0',
+            transition: 'transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
+            willChange: 'transform'
           }}
         />
       </div>
@@ -885,8 +888,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       <div className={`pt-0 pb-0 bg-background mt-0 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
         
 
-        {/* Font controls/TOC should be extremely close to main nav: remove extra margins/padding */}
-        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+        {/* Font controls/TOC spacing below header and progress bar */}
+        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-4 py-2 border-b border-border/30 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button

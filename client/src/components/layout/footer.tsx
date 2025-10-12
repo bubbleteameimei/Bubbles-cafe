@@ -18,7 +18,8 @@ export default function Footer() {
         margin: 0,
         padding: 0,
         zIndex: 10,
-        width: "100%",
+        width: "100vw",
+        marginLeft: "calc(-50vw + 50%)",
       }}
       role="contentinfo"
       aria-label="Site footer"
