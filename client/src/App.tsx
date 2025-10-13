@@ -531,15 +531,15 @@ function App() {
                             <div className="app-content">
                               <React.Suspense
                                 fallback={
-                                  <div className="w-full flex items-center justify-center py-12">
-                                    <div className="inline-flex items-center gap-3 text-sm text-muted-foreground">
+                                  <main id="main-content" role="main" tabIndex={-1} className="w-full flex items-center justify-center py-12 min-h-screen">
+                                    <div className="inline-flex items-center gap-3 text-sm text-muted-foreground" role="status" aria-live="polite">
                                       <span
                                         className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2"
-                                        aria-label="Loading"
+                                        aria-hidden="true"
                                       />
                                       Loading…
                                     </div>
-                                  </div>
+                                  </main>
                                 }
                               >
                                 <AppContent />
