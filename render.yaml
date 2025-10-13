@@ -41,9 +41,7 @@ services:
       # Disable background WordPress scheduler by default in production
       - key: ENABLE_WORDPRESS_SCHEDULER
         value: "false"
-      # Only relevant for Neon; leave disabled on Render-managed Postgres
-      - key: DB_FORCE_NEON_POOLER
-        value: "false"
+      
     autoDeploy: true
 
 databases:

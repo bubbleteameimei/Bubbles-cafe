@@ -50,25 +50,7 @@ function sanitizeDatabaseUrl(url?: string): string | undefined {
   params.delete('channel_binding');
   s = base + '?' + params.toString();
 
-  // Neon pooler host check and optional enforcement
-  try {
-    const u = new URL(s);
-    const host = u.hostname;
-    const isNeon = host.endsWith('neon.tech');
-    const usesPooler = host.includes('-pooler');
-    if (isNeon && !usesPooler) {
-      const force = (process.env.DB_FORCE_NEON_POOLER || '').toLowerCase() === 'true';
-      const insertPooler = (h: string) => h.replace(/^([^\.]+)(\..+)$/, (_m, first, rest) => `${String(first)}-pooler${String(rest)}`);
-      if (force) {
-        const newHost = insertPooler(host);
-        u.hostname = newHost;
-        s = u.toString();
-        try { process.stderr.write(`[DB] Rewrote Neon host to pooler: ${host} -> ${newHost}\n`); } catch {}
-      } else {
-        try { process.stderr.write('[DB] WARNING: Neon host does not use pooler (-pooler.neon.tech). Set DB_FORCE_NEON_POOLER=true to enforce it.\n'); } catch {}
-      }
-    }
-  } catch {}
+  
 
   return s;
 }
