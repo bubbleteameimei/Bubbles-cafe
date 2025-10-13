@@ -42,10 +42,12 @@ function sanitizeDatabaseUrl(url?: string): string | undefined {
   // Normalize protocol case
   s = s.replace(/^POSTGRESQL:\/\//, 'postgresql://');
 
-  // Ensure sslmode=require if not present
+  // Ensure sslmode=require if not present and remove incompatible params
   const [base, query = ''] = s.split('?');
   const params = new URLSearchParams(query);
   params.set('sslmode', params.get('sslmode') || 'require');
+  // Node-postgres does not use libpq's channel_binding parameter; remove if present
+  params.delete('channel_binding');
   s = base + '?' + params.toString();
 
   // Neon pooler host check and optional enforcement

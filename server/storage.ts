@@ -103,8 +103,21 @@ try {
   const minClients = Number(process.env.DB_POOL_MIN || 0);
   const connTimeoutMs = Number(process.env.DB_POOL_CONN_TIMEOUT_MS || 10000);
 
+  // Sanitize DATABASE_URL (remove channel_binding, ensure sslmode=require)
+  const sanitizeUrl = (url?: string): string | undefined => {
+    if (!url) return url;
+    let s = url.trim().replace(/\s+/g, '');
+    s = s.replace(/^postgresal:\/\//i, 'postgresql://').replace(/^postgres:\/\//i, 'postgresql://');
+    const [base, query = ''] = s.split('?');
+    const params = new URLSearchParams(query);
+    if (!params.get('sslmode')) params.set('sslmode', 'require');
+    params.delete('channel_binding');
+    return base + '?' + params.toString();
+  };
+  const sanitizedUrl = sanitizeUrl(process.env.DATABASE_URL);
+
   pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: sanitizedUrl,
     max: maxClients, // Reduced maximum number of clients in the pool
     min: minClients, // Minimum number of clients in the pool
     idleTimeoutMillis: idleMs, // Close idle clients quickly to reduce Neon compute
