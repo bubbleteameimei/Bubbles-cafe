@@ -98,14 +98,32 @@ async function safeDbOperation<T>(
 // Create a direct pool for use with session store and SQL queries with optimized connection options
 let pool: any;
 try {
+  const idleMs = Number(process.env.DB_POOL_IDLE_MS || 5000);
+  const maxClients = Number(process.env.DB_POOL_MAX || 5);
+  const minClients = Number(process.env.DB_POOL_MIN || 0);
+  const connTimeoutMs = Number(process.env.DB_POOL_CONN_TIMEOUT_MS || 10000);
+
+  // Sanitize DATABASE_URL (remove channel_binding, ensure sslmode=require)
+  const sanitizeUrl = (url?: string): string | undefined => {
+    if (!url) return url;
+    let s = url.trim().replace(/\s+/g, '');
+    s = s.replace(/^postgresal:\/\//i, 'postgresql://').replace(/^postgres:\/\//i, 'postgresql://');
+    const [base, query = ''] = s.split('?');
+    const params = new URLSearchParams(query);
+    if (!params.get('sslmode')) params.set('sslmode', 'require');
+    params.delete('channel_binding');
+    return base + '?' + params.toString();
+  };
+  const sanitizedUrl = sanitizeUrl(process.env.DATABASE_URL);
+
   pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    max: 5, // Reduced maximum number of clients in the pool
-    min: 1, // Minimum number of clients in the pool
-    idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-    connectionTimeoutMillis: 10000, // Reduced timeout for faster failures
+    connectionString: sanitizedUrl,
+    max: maxClients, // Reduced maximum number of clients in the pool
+    min: minClients, // Minimum number of clients in the pool
+    idleTimeoutMillis: idleMs, // Close idle clients quickly to reduce Neon compute
+    connectionTimeoutMillis: connTimeoutMs, // Reduced timeout for faster failures
     maxUses: 1000, // Reduced max uses to prevent memory issues
-    allowExitOnIdle: false, // Don't exit when the pool is empty - better for production
+    allowExitOnIdle: false, // Keep pool available; connections close via idle timeout
     keepAlive: true, // Enable TCP keep-alive
     keepAliveInitialDelayMillis: 0,
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,

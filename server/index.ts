@@ -1,14 +1,12 @@
 import express from "express";
 import { createServer } from "http";
 // Vite setup and static serving are imported dynamically by environment branch
-import { db } from "./db"; // Using the direct Neon database connection
+import { db } from "./db";
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
 
-
 import helmet from "helmet";
 import compression from "compression";
-import crypto from 'crypto';
 
 import session from "express-session";
 import { setupAuth } from "./auth";
@@ -17,11 +15,11 @@ import { createLogger, requestLogger } from "./utils/debug-logger";
 import { requestIdMiddleware } from "./utils/request-id";
 
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
-import { registerEmailServiceRoutes } from "./routes/email-service"; // Email service routes
-import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark routes
-import { registerPaymentRoutes } from "./routes/payment"; // Paystack payment routes
+import { registerEmailServiceRoutes } from "./routes/email-service";
+import { registerBookmarkRoutes } from "./routes/bookmark-routes";
+import { registerPaymentRoutes } from "./routes/payment";
 import { setCsrfToken, validateCsrfToken, csrfTokenToLocals } from "./middleware/csrf-protection";
-import { runMigrations } from "./migrations"; // Import our custom migrations
+import { runMigrations } from "./migrations";
 import { setupCors } from "./cors-setup";
 
 import { config } from './config';
@@ -30,12 +28,10 @@ import { applyPerformanceMiddleware } from './middleware';
 import { globalRateLimiter } from "./middlewares/rate-limiter";
 import { apiCache } from './middlewares/api-cache';
 import { browserCache, etagCache } from './middlewares/browser-cache';
-// Tracing is loaded dynamically to avoid adding heavy deps to the bundle
 import { idempotency } from './middleware/idempotency';
 import { ssrStreamHandler } from './ssr';
 
 const app = express();
-// Optional tracing (dynamic import to keep build lean when disabled)
 if (process.env.ENABLE_TRACING === 'true') {
   (async () => {
     try {
@@ -44,49 +40,53 @@ if (process.env.ENABLE_TRACING === 'true') {
     } catch {}
   })();
 }
-// Trust proxy for correct secure cookies and client IPs when behind a proxy/CDN
 app.set('trust proxy', 1);
-// Remove Express signature header
 app.disable('x-powered-by');
 const isDev = config.isDev;
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 const HOST = '0.0.0.0';
 
-// Create server instance outside startServer for proper cleanup
 let server: ReturnType<typeof createServer>;
 
-// Configure basic middleware
-// Set a unique request id for tracing before anything else
 app.use(requestIdMiddleware);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(compression());
 app.use(idempotency());
 
-// Enable request logging only in development (configurable)
 if (config.isDev && config.dev.requestLogging) {
   app.use(requestLogger);
 }
 
-// Configure CORS for cross-domain requests when deployed on Vercel/Render
 setupCors(app);
-
-// When serving frontend on Vercel, accept that origin explicitly via env FRONTEND_URL
-// and ensure credentials are allowed by CORS; trust proxy already enabled above
-
-// Session already handles cookies for us
-// No additional cookie parser needed for CSRF protection
 
 // Increase body parser limit for file uploads
 app.use((req, _res, next) => {
-  // Skip content-type check for multipart requests
   if (req.headers['content-type']?.includes('multipart/form-data')) {
     return next();
   }
   next();
 });
 
-// Configure session
+// Lightweight, static health endpoints BEFORE session/CSRF to avoid DB writes
+app.get('/health', (_req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+app.get('/api/health', (_req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Session
 app.use(session({
   secret: config.session.secret,
   resave: false,
@@ -95,16 +95,15 @@ app.use(session({
     secure: config.session.secure,
     httpOnly: true,
     sameSite: config.session.sameSite,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000
   },
   store: storage.sessionStore
 }));
 
-// Setup CSRF protection
-app.use(setCsrfToken(!isDev)); // Secure cookies in production
+// CSRF protection (skip health endpoints to avoid touching session)
+app.use(setCsrfToken(!isDev, { ignorePaths: ['/health', '/api/health'] }));
 app.use(csrfTokenToLocals);
 
-// Apply CSRF validation after routes that don't need it (restrict exemptions)
 app.use(validateCsrfToken({
   ignorePaths: [
     '/health',
@@ -128,29 +127,12 @@ app.use(validateCsrfToken({
 app.use((req, _res, next) => next());
 setupAuth(app);
 
-// Apply a global API rate limiter after auth so authenticated users get higher limits
 app.use('/api', globalRateLimiter);
 
-// Conditional API response caching for GET requests
 if (config.cache.api) {
   app.use('/api', apiCache(config.cache.ttlMs));
 }
-// Add health check endpoint with CSRF token initialization
-app.get('/health', (req, res) => {
-  // Ensure a CSRF token is set in session only
-  if (!req.session.csrfToken) {
-    const token = crypto.randomBytes(32).toString('hex');
-    req.session.csrfToken = token;
-  }
 
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    csrfToken: req.session.csrfToken 
-  });
-});
-
-// Basic security headers
 app.use(helmet({
   contentSecurityPolicy: isDev ? false : {
     directives: {
@@ -162,7 +144,6 @@ app.use(helmet({
       connectSrc: ["'self'", "https:"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
-      // Allow Google Identity Services iframe in production when One Tap is used
       frameSrc: ["'self'", "https://accounts.google.com"],
       frameAncestors: ["'self'"],
       formAction: ["'self'"],
@@ -171,7 +152,6 @@ app.use(helmet({
   }
 }));
 
-// Encourage indexing for main HTML routes
 app.use((req, res, next) => {
   try {
     const accept = String(req.headers.accept || "");
@@ -195,30 +175,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// Conditional browser caching and ETag
 if (config.cache.browser) {
   app.use(etagCache());
   app.use(browserCache());
 }
 
-// Create a server logger
 const serverLogger = createLogger('Server');
 
-// Import our database setup utilities
 import setupDatabase from '../scripts/setup-db';
 import pushSchema from '../scripts/db-push';
 import seedFromWordPressAPI from '../scripts/api-seed';
-
-
-// Ensure /api/health mirrors /health by returning csrfToken when available
-app.get('/api/health', (req, res) => {
-  // Ensure a CSRF token is set in session only
-  if (!req.session.csrfToken) {
-    const token = crypto.randomBytes(32).toString('hex');
-    req.session.csrfToken = token;
-  }
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), csrfToken: req.session.csrfToken });
-});
 
 async function startServer() {
   try {
@@ -228,14 +194,11 @@ async function startServer() {
       port: PORT
     });
 
-    // Create server instance early
     server = createServer(app);
 
-    // Setup routes based on environment before DB setup so the server can listen quickly
     if (isDev) {
       serverLogger.info('Setting up development environment');
 
-      // Register modular routes (replaces legacy monolithic routes)
       const { registerModularRoutes } = await import('./routes');
       registerModularRoutes(app);
       registerEmailServiceRoutes(app);
@@ -243,21 +206,18 @@ async function startServer() {
       registerWordPressSyncRoutes(app);
       registerPaymentRoutes(app);
 
-      // Unknown API endpoints should return 404 JSON (avoid SPA fallback)
       app.use('/api/*', (_req, res) => res.status(404).json({ error: 'Not found' }));
 
-      // Start WordPress scheduler
-      wordpressScheduler.start();
+      if (config.wordpress.schedulerEnabled) {
+        wordpressScheduler.start();
+      }
 
-      // Import Vite dev middleware only in development to avoid bundling dev deps into prod
       const { setupVite } = await import('./vite');
       await setupVite(app, server);
-      // Optional SSR streaming preview
       app.get('/ssr', ssrStreamHandler);
     } else {
       serverLogger.info('Setting up production environment');
 
-      // Register modular routes (replaces legacy monolithic routes)
       const { registerModularRoutes } = await import('./routes');
       registerModularRoutes(app);
       registerEmailServiceRoutes(app);
@@ -265,17 +225,15 @@ async function startServer() {
       registerWordPressSyncRoutes(app);
       registerPaymentRoutes(app);
 
-      // Unknown API endpoints should return 404 JSON (avoid SPA fallback)
       app.use('/api/*', (_req, res) => res.status(404).json({ error: 'Not found' }));
 
-      // Start WordPress scheduler
-      wordpressScheduler.start();
+      if (config.wordpress.schedulerEnabled) {
+        wordpressScheduler.start();
+      }
 
-      // Add strong browser caching headers and ETag in production
       app.use(browserCache());
       app.use(etagCache());
 
-      // Import static serving helper lazily to avoid dev-only imports in production
       const { serveStatic } = await import('./vite');
       serveStatic(app);
       if (process.env.ENABLE_SSR === 'true') {
@@ -283,11 +241,8 @@ async function startServer() {
       }
     }
 
-    // Start listening with enhanced error handling and port notification
     const listeningPromise = new Promise<void>((resolve, reject) => {
       const startTime = Date.now();
-
-      // Log that we're about to start listening (stderr to survive console drop)
       try { process.stderr.write(`Starting server on http://${HOST}:${PORT}...\n`); } catch {}
 
       server.listen(PORT, HOST, () => {
@@ -301,7 +256,6 @@ async function startServer() {
           pid: process.pid
         });
 
-        // Send port readiness signal to Replit (harmless in other envs)
         if (process.send) {
           try {
             process.send({
@@ -330,20 +284,17 @@ async function startServer() {
       });
     });
 
-    // Begin DB setup in background; do not block server listening
     (async () => {
       try {
         serverLogger.info('Setting up database connection...');
         await setupDatabase();
 
-        // Apply performance middleware dependent on db
         try {
           applyPerformanceMiddleware(app, db);
         } catch (e) {
           try { process.stderr.write(`Performance middleware setup failed: ${e instanceof Error ? e.message : String(e)}\n`); } catch {}
         }
 
-        // Run migrations and seed if needed
         try {
           serverLogger.info('Running database migrations...');
           await runMigrations();
@@ -368,7 +319,6 @@ async function startServer() {
             error: dbError instanceof Error ? dbError.message : 'Unknown error' 
           });
 
-          // Try to create schema as last resort
           serverLogger.info('Attempting to create database schema...');
           try {
             await pushSchema();
@@ -387,14 +337,12 @@ async function startServer() {
             serverLogger.error('Critical database setup failure', {
               error: finalError instanceof Error ? finalError.message : 'Unknown error'
             });
-            // Do not exit; keep the app running to serve static/health, DB-dependent routes may fail
           }
         }
       } catch (dbError) {
         serverLogger.error('Critical database setup error', { 
           error: dbError instanceof Error ? dbError.message : 'Unknown error' 
         });
-        // Do not exit on DB errors
       }
     })();
 
@@ -404,20 +352,16 @@ async function startServer() {
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined
     });
-    // Do not exit; allow platform to capture logs and keep process alive if possible
   }
 }
 
-// Start the server
 startServer().catch(error => {
   serverLogger.error('Critical startup error', {
     error: error instanceof Error ? error.message : 'Unknown error',
     stack: error instanceof Error ? error.stack : undefined
   });
-  // Do not exit; keep process alive to allow diagnostics and health checks
 });
 
-// Handle graceful shutdown
 process.on('SIGTERM', () => {
   serverLogger.info('SIGTERM received, initiating graceful shutdown');
   server?.close(() => {
@@ -426,7 +370,6 @@ process.on('SIGTERM', () => {
   });
 });
 
-// Handle Ctrl+C in local/dev gracefully
 process.on('SIGINT', () => {
   serverLogger.info('SIGINT received, initiating graceful shutdown');
   server?.close(() => {
@@ -435,20 +378,16 @@ process.on('SIGINT', () => {
   });
 });
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   serverLogger.error('Uncaught exception', {
     error: error.message,
     stack: error.stack
   });
-
-  // Give time for the error to be logged before exiting
   setTimeout(() => {
     process.exit(1);
   }, 1000);
 });
 
-// Handle unhandled rejections
 process.on('unhandledRejection', (reason, _promise) => {
   const errorMessage = reason instanceof Error ? reason.message : String(reason);
   const errorStack = reason instanceof Error ? reason.stack : undefined;
@@ -457,9 +396,6 @@ process.on('unhandledRejection', (reason, _promise) => {
     reason: errorMessage,
     stack: errorStack
   });
-
-  // Do not exit; keep the process alive to avoid early termination in production environments
-  // Critical errors are still handled by the uncaughtException handler above
 });
 
 export default app;

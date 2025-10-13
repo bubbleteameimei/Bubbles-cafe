@@ -73,6 +73,7 @@ const envSchema = z.object({
   WORDPRESS_API: z.string().url().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_REDIRECT_URI: z.string().url().optional(),
   GMAIL_APP_PASSWORD: z.string().optional(),
   SENDGRID_API_KEY: z.string().optional(),
   MAILERSEND_API_KEY: z.string().optional(),
@@ -81,6 +82,14 @@ const envSchema = z.object({
   ENABLE_BROWSER_CACHE: z.string().optional(),
   DEV_REQUEST_LOGGING: z.string().optional(),
   API_CACHE_TTL_MS: z.string().optional(),
+  // DB pool tuning
+  DB_POOL_IDLE_MS: z.string().optional(),
+  DB_POOL_MAX: z.string().optional(),
+  DB_POOL_MIN: z.string().optional(),
+  DB_POOL_CONN_TIMEOUT_MS: z.string().optional(),
+  DB_FORCE_NEON_POOLER: z.string().optional(),
+  // Scheduler toggles
+  ENABLE_WORDPRESS_SCHEDULER: z.string().optional(),
 });
 
 // Validate environment variables
@@ -128,11 +137,16 @@ export const config = {
   },
   wordpress: {
     apiUrl: env.WORDPRESS_API_URL || env.WORDPRESS_API || 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts',
+    // Default: enabled in development, disabled in production unless explicitly enabled
+    schedulerEnabled: env.ENABLE_WORDPRESS_SCHEDULER
+      ? env.ENABLE_WORDPRESS_SCHEDULER === 'true'
+      : (env.NODE_ENV === 'development'),
   },
   auth: {
     google: {
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
+      redirectUri: env.GOOGLE_REDIRECT_URI
     },
   },
   email: {
