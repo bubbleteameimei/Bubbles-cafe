@@ -1094,9 +1094,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           <Button
             variant="default"
             size="sm"
-            className="w-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm uppercase tracking-wider px-4 py-2"
+            className="w-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider px-4 py-2"
             onClick={() => handleNavigation("/auth")}
             aria-label="Sign in to your account"
+            noOutline
           >
             SIGN IN
           </Button>
@@ -1104,13 +1105,14 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           <Button
             variant="default"
             size="sm"
-            className="w-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm uppercase tracking-wider px-4 py-2"
+            className="w-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider px-4 py-2"
             onClick={() => {
               if (logout) {
                 logout();
               }
             }}
             aria-label="Sign out of your account"
+            noOutline
           >
             SIGN OUT
           </Button>

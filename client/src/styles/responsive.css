@@ -382,8 +382,8 @@
 
 /* Focus-visible for better keyboard navigation */
 .focus-visible:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
+  outline: none;
+  outline-offset: 0;
 }
 
 /* ===== PRINT STYLES ===== */

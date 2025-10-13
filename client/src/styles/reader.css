@@ -2,7 +2,7 @@
 
 /* Main content container - optimized width like literary publications */
 .story-container {
-  max-width: 680px; /* Optimal width for reading (equivalent to ~75-80ch) */
+  max-width: 100%; /* Allow full width */
   margin: 0 auto;
   padding: 0 1.5rem;
   font-family: "Crimson Text", Georgia, "Times New Roman", serif;
@@ -17,7 +17,7 @@
   line-height: 1.6; /* Match About page spacing */
   letter-spacing: 0.01em; /* Slightly increased for better text flow */
   color: var(--foreground);
-  max-width: 70ch; /* Use character width measurement instead of pixels */
+  max-width: 100%; /* Allow full width */
   margin: 0 auto;
   font-size: var(--base-font-size, 16px); /* Use the base font size variable with fallback */
   transition: font-size 0.2s ease, font 0.2s ease, font-family 0.2s ease; /* Smooth transitions when size or family changes */
@@ -101,8 +101,10 @@
 }
 
 /* Italics for emphasized text */
-.story-content em {
+.story-content em,
+.story-content i {
   font-family: var(--reader-font-family, "Crimson Text", Georgia, "Times New Roman", serif);
+  font-style: italic;
   font-size: 1.05em;
 }
 

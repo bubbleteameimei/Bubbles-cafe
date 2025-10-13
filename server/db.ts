@@ -41,11 +41,35 @@ function sanitizeDatabaseUrl(url?: string): string | undefined {
   s = s.replace(/re-?quire/gi, 'require');
   // Normalize protocol case
   s = s.replace(/^POSTGRESQL:\/\//, 'postgresql://');
-  // Ensure sslmode=require if not present
+
+  // Ensure sslmode=require if not present and remove incompatible params
   const [base, query = ''] = s.split('?');
   const params = new URLSearchParams(query);
   params.set('sslmode', params.get('sslmode') || 'require');
+  // Node-postgres does not use libpq's channel_binding parameter; remove if present
+  params.delete('channel_binding');
   s = base + '?' + params.toString();
+
+  // Neon pooler host check and optional enforcement
+  try {
+    const u = new URL(s);
+    const host = u.hostname;
+    const isNeon = host.endsWith('neon.tech');
+    const usesPooler = host.includes('-pooler');
+    if (isNeon && !usesPooler) {
+      const force = (process.env.DB_FORCE_NEON_POOLER || '').toLowerCase() === 'true';
+      const insertPooler = (h: string) => h.replace(/^([^\.]+)(\..+)$/, (_m, first, rest) => `${String(first)}-pooler${String(rest)}`);
+      if (force) {
+        const newHost = insertPooler(host);
+        u.hostname = newHost;
+        s = u.toString();
+        try { process.stderr.write(`[DB] Rewrote Neon host to pooler: ${host} -> ${newHost}\n`); } catch {}
+      } else {
+        try { process.stderr.write('[DB] WARNING: Neon host does not use pooler (-pooler.neon.tech). Set DB_FORCE_NEON_POOLER=true to enforce it.\n'); } catch {}
+      }
+    }
+  } catch {}
+
   return s;
 }
 
@@ -72,11 +96,15 @@ if (!DATABASE_URL) {
 } else {
   try {
     const useSSL = DATABASE_URL.includes('sslmode=require');
+    const maxClients = Number(process.env.DB_POOL_MAX || 5);
+    const idleMs = Number(process.env.DB_POOL_IDLE_MS || 5000);
+    const connTimeoutMs = Number(process.env.DB_POOL_CONN_TIMEOUT_MS || 10000);
+
     pool = new Pool({
       connectionString: DATABASE_URL,
-      max: 10,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
+      max: maxClients,
+      idleTimeoutMillis: idleMs,
+      connectionTimeoutMillis: connTimeoutMs,
       ssl: useSSL ? { rejectUnauthorized: false } : undefined
     });
 
