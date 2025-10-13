@@ -1,6 +1,5 @@
 import { Pool } from 'pg';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import { Pool as NeonPool } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import { sql } from 'drizzle-orm';
 import * as schema from '../shared/schema';
 import bcrypt from 'bcryptjs';
@@ -38,8 +37,12 @@ async function setupDatabase() {
     
     console.log('🔌 Connecting to database...');
     
-    // Create connection pool using Neon serverless
-    const pool = new NeonPool({ connectionString: databaseUrl });
+    // Create connection pool using node-postgres
+    const useSSL = (databaseUrl || '').toLowerCase().includes('sslmode=require');
+    const pool = new Pool({ 
+      connectionString: databaseUrl,
+      ssl: useSSL ? { rejectUnauthorized: false } : undefined
+    });
     const db = drizzle(pool, { schema });
     
     // Test the connection
