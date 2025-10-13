@@ -31,6 +31,21 @@ services:
         sync: false
       - key: GOOGLE_REDIRECT_URI
         sync: false
+      # Reduce Postgres pool idle to close connections quickly when idle
+      - key: DB_POOL_IDLE_MS
+        value: "5000"
+      - key: DB_POOL_MAX
+        value: "5"
+      - key: DB_POOL_MIN
+        value: "0"
+      - key: DB_POOL_CONN_TIMEOUT_MS
+        value: "10000"
+      # Disable background WordPress scheduler by default in production
+      - key: ENABLE_WORDPRESS_SCHEDULER
+        value: "false"
+      # Only relevant for Neon; leave disabled on Render-managed Postgres
+      - key: DB_FORCE_NEON_POOLER
+        value: "false"
     autoDeploy: true
 
 databases:

@@ -208,7 +208,9 @@ async function startServer() {
 
       app.use('/api/*', (_req, res) => res.status(404).json({ error: 'Not found' }));
 
-      wordpressScheduler.start();
+      if (config.wordpress.schedulerEnabled) {
+        wordpressScheduler.start();
+      }
 
       const { setupVite } = await import('./vite');
       await setupVite(app, server);
@@ -225,7 +227,9 @@ async function startServer() {
 
       app.use('/api/*', (_req, res) => res.status(404).json({ error: 'Not found' }));
 
-      wordpressScheduler.start();
+      if (config.wordpress.schedulerEnabled) {
+        wordpressScheduler.start();
+      }
 
       app.use(browserCache());
       app.use(etagCache());
