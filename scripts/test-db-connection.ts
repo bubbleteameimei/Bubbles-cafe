@@ -1,7 +1,8 @@
 /**
  * Simple script to test database connectivity
  */
-const { Pool } = require('pg');
+const pkg = require('pg');
+const { Pool } = pkg;
 
 async function testDatabaseConnection() {
   console.log('Testing database connection...');
@@ -14,8 +15,18 @@ async function testDatabaseConnection() {
   
   try {
     // Try to connect using the Pool
+    const useSSL = (() => {
+      try {
+        const u = new URL(process.env.DATABASE_URL || '');
+        return u.hostname.endsWith('supabase.co') || (process.env.DATABASE_URL || '').toLowerCase().includes('sslmode=require');
+      } catch {
+        return (process.env.DATABASE_URL || '').toLowerCase().includes('sslmode=require');
+      }
+    })();
+
     const pool = new Pool({
-      connectionString: process.env.DATABASE_URL
+      connectionString: process.env.DATABASE_URL,
+      ssl: useSSL ? { rejectUnauthorized: false } : undefined
     });
     
     console.log('Attempting to connect to the database...');
@@ -36,6 +47,7 @@ async function testDatabaseConnection() {
     console.log('Database connection test completed successfully.');
   } catch (error) {
     console.error('Error connecting to the database:', error);
+    process.exitCode = 1;
   }
 }
 

@@ -14,13 +14,26 @@ async function testDatabaseConnection() {
   
   try {
     // Try to connect using individual parameters instead of connection string
+    const useSSL = (() => {
+      try {
+        const dbUrl = process.env.DATABASE_URL || '';
+        if (dbUrl) {
+          const u = new URL(dbUrl);
+          if (u.hostname.endsWith('supabase.co')) return true;
+          if (dbUrl.toLowerCase().includes('sslmode=require')) return true;
+        }
+      } catch {}
+      const host = (process.env.PGHOST || '').toLowerCase();
+      return host.endsWith('supabase.co');
+    })();
+
     const pool = new Pool({
       host: process.env.PGHOST,
       port: process.env.PGPORT,
       database: process.env.PGDATABASE,
       user: process.env.PGUSER,
       password: process.env.PGPASSWORD,
-      ssl: true
+      ssl: useSSL ? { rejectUnauthorized: false } : undefined
     });
     
     console.log('Attempting to connect to the database...');

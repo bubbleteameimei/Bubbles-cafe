@@ -1,12 +1,21 @@
 // Simple WordPress API Import Script
 // This script imports posts from WordPress API to our database
-import { Pool } from '@neondatabase/serverless';
+import pkg from 'pg';
+const { Pool } = pkg;
 
-// DATABASE_URL will be available from the server environment
+// Configure the database connection with optional SSL for Supabase
+const useSSL = (() => {
+  try {
+    const u = new URL(process.env.DATABASE_URL || '');
+    return u.hostname.endsWith('supabase.co') || (process.env.DATABASE_URL || '').toLowerCase().includes('sslmode=require');
+  } catch {
+    return (process.env.DATABASE_URL || '').toLowerCase().includes('sslmode=require');
+  }
+})();
 
-// Configure the database connection
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
+  ssl: useSSL ? { rejectUnauthorized: false } : undefined
 });
 
 // WordPress API endpoint

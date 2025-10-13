@@ -1,20 +1,27 @@
 /**
  * WordPress Content Seeding Setup
- * 
- * This script ensures permanent content seeding from the WordPress API
- * and sets up the automated sync system properly.
+ * Ensures the DB is ready for WordPress sync and basic settings exist.
  */
-import { Pool } from '@neondatabase/serverless';
-import ws from "ws";
-
-// Configure Neon for serverless
-const neonConfig = { webSocketConstructor: ws };
+import pkg from 'pg';
+const { Pool } = pkg;
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
 }
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const useSSL = (() => {
+  try {
+    const u = new URL(process.env.DATABASE_URL || '');
+    return u.hostname.endsWith('supabase.co') || (process.env.DATABASE_URL || '').toLowerCase().includes('sslmode=require');
+  } catch {
+    return (process.env.DATABASE_URL || '').toLowerCase().includes('sslmode=require');
+  }
+})();
+
+const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  ssl: useSSL ? { rejectUnauthorized: false } : undefined
+});
 
 async function setupWordPressSeeding() {
   console.log('🔄 Setting up WordPress content seeding...');
@@ -24,9 +31,8 @@ async function setupWordPressSeeding() {
     const result = await pool.query('SELECT current_database()');
     console.log('✅ Connected to database:', result.rows[0].current_database);
     
-    // Ensure import author user (non-admin) exists or create one
-    console.log('👤 Ensuring import author user...');
-    const importEmail = process.env.CONTENTername, email FROM users WHERE is_admin = true LIMIT 1');
+    // Verify admin user presence
+    const adminCheck = await pool.query('SELECT id, username, email FROM users WHERE is_admin = true LIMIT 1');
     if (adminCheck.rows.length === 0) {
       console.log('⚠️ No admin user found. Please create one securely via a controlled process.');
     } else {
@@ -40,7 +46,7 @@ async function setupWordPressSeeding() {
     // Check for WordPress API connectivity
     console.log('🌐 Testing WordPress API connectivity...');
     try {
-      const response = await fetch('https://public-api.wordpress.com/wpom/wp-json/wp/v2/posts?per_page=1');
+      const response = await fetch('https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts?per_page=1');
       if (response.ok) {
         const posts = await response.json();
         console.log('✅ WordPress API is accessible, found posts:', posts.length);
@@ -48,14 +54,14 @@ async function setupWordPressSeeding() {
         console.log('⚠️ WordPress API returned status:', response.status);
       }
     } catch (apiError) {
-      console.log('⚠️ WordPress API connection issue:', apiError.message);
+      console.log('⚠️ WordPress API connection issue:', (apiError as any)?.message || String(apiError));
     }
     
-    // Verify site settings for WordPress sync
+    // Verify site settings for WordPress sync (category: 'sync')
     console.log('⚙️ Checking site settings...');
     const settingsCheck = await pool.query(`
       SELECT key, value FROM site_settings 
-      WHERE category = 'wordpress' 
+      WHERE category IN ('sync', 'wordpress') 
       ORDER BY key
     `);
     
@@ -64,10 +70,10 @@ async function setupWordPressSeeding() {
       await pool.query(`
         INSERT INTO site_settings (key, value, category, description, updated_at)
         VALUES 
-        ('wordpress_url', 'https://bubbleteameimei.wordpress.com', 'wordpress', 'WordPress site URL for content sync', NOW()),
-        ('wordpress_sync_enabled', 'true', 'wordpress', 'Enable automatic WordPress content sync', NOW()),
-        ('wordpress_sync_interval', '300000', 'wordpress', 'WordPress sync interval in milliseconds (5 minutes)', NOW()),
-        ('last_wordpress_sync', '0', 'wordpress', 'Timestamp of last successful WordPress sync', NOW())
+        ('wordpress_api_url', 'https://bubbleteameimei.wordpress.com/wp-json/wp/v2/posts', 'sync', 'WordPress API endpoint for content sync', NOW()),
+        ('wordpress_sync_enabled', 'true', 'sync', 'Enable automatic WordPress content sync', NOW()),
+        ('wordpress_sync_interval', '300000', 'sync', 'WordPress sync interval in milliseconds (5 minutes)', NOW()),
+        ('last_wordpress_sync', '0', 'sync', 'Timestamp of last successful WordPress sync', NOW())
         ON CONFLICT (key) DO UPDATE SET
         value = EXCLUDED.value,
         updated_at = NOW()
@@ -77,12 +83,12 @@ async function setupWordPressSeeding() {
       console.log('✅ WordPress sync settings exist:', settingsCheck.rows.length);
     }
     
-    // Verify analytics table exists for tracking
+    // Verify analytics table exists for tracking (created in schema)
     console.log('📈 Verifying analytics table...');
     const analyticsCheck = await pool.query(`
       SELECT COUNT(*) as count 
       FROM information_schema.tables 
-      WHERE table_name = 'analytics'
+      WHERE table_schema = 'public' AND table_name = 'analytics'
     `);
     
     if (analyticsCheck.rows[0].count === '0') {
@@ -106,12 +112,12 @@ async function setupWordPressSeeding() {
       console.log('✅ Analytics table exists');
     }
     
-    // Check if session table exists for the session store
+    // Check if session table exists for express-session store
     console.log('🔐 Verifying session storage...');
     const sessionCheck = await pool.query(`
       SELECT COUNT(*) as count 
       FROM information_schema.tables 
-      WHERE table_name = 'session'
+      WHERE table_schema = 'public' AND table_name = 'session'
     `);
     
     if (sessionCheck.rows[0].count === '0') {
@@ -121,10 +127,8 @@ async function setupWordPressSeeding() {
           "sid" varchar NOT NULL COLLATE "default",
           "sess" json NOT NULL,
           "expire" timestamp(6) NOT NULL
-        )
-        WITH (OIDS=FALSE);
-        
-        ALTER TABLE "session" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
+        );
+        ALTER TABLE "session" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid");
         CREATE INDEX "IDX_session_expire" ON "session" ("expire");
       `);
       console.log('✅ Session table created');
@@ -132,7 +136,7 @@ async function setupWordPressSeeding() {
       console.log('✅ Session table exists');
     }
     
-    // Final verification of all key tables
+    // Final verification of key tables
     console.log('🔍 Final database verification...');
     const tablesResult = await pool.query(`
       SELECT table_name 
@@ -156,7 +160,7 @@ async function setupWordPressSeeding() {
     console.log('📋 Summary:');
     console.log(`   - Database: Connected and verified`);
     console.log(`   - Posts: ${postsCount.rows[0].count} posts available`);
-    console.log(`   - Import author user: Ready`);
+    console.log(`   - Admin user: ${adminCheck.rows.length > 0 ? 'Ready' : 'Missing'}`);
     console.log(`   - WordPress sync: Configured`);
     console.log(`   - Session store: Ready`);
     console.log(`   - Analytics: Ready`);

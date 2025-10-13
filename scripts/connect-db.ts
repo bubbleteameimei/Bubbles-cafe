@@ -21,14 +21,16 @@ function sanitizeDatabaseUrl(url?: string): string | undefined {
   s = s.replace(/^postgres:\/\//i, 'postgresql://');
   s = s.replace(/-pool-er/gi, '-pooler');
   s = s.replace(/re-?quire/gi, 'require');
+  // Remove libpq-only channel_binding param which node-postgres does not use
+  s = s.replace(/[?&]channel_binding=require/gi, '');
+  // Ensure sslmode=require is present
+  if (!/[?&]sslmode=/i.test(s)) {
+    s += (s.includes('?') ? '&' : '?') + 'sslmode=require';
+  }
   return s;
 }
 
-// Set permanent database URL if not already set
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = 'postgresql://neondb_owner:npg_P6ghCZR2BASQ@ep-young-bread-aeojmse9-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
-}
-
+// Do not set a default DATABASE_URL here. It must be provided by the environment (.env or platform).
 if (process.env.DATABASE_URL) {
   process.env.DATABASE_URL = sanitizeDatabaseUrl(process.env.DATABASE_URL)!;
 }
@@ -46,10 +48,10 @@ export async function initializeDatabaseConnection(): Promise<{ pool: PgPool, db
       if (fs.existsSync(envPath)) {
         console.log('📄 Found .env file, checking for DATABASE_URL...');
         const envContent = fs.readFileSync(envPath, 'utf8');
-        const dbUrlMatch = envContent.match(/DATABASE_URL=["']?(.*?)["']?$/m);
+        const dbUrlMatch = envContent.match(/DATABASE_URL["']?=(.*?)[\"']?$/m);
         
         if (dbUrlMatch && dbUrlMatch[1]) {
-          process.env.DATABASE_URL = dbUrlMatch[1];
+          process.env.DATABASE_URL = sanitizeDatabaseUrl(dbUrlMatch[1])!;
           console.log('✅ Found DATABASE_URL in .env file');
         }
       }
@@ -64,13 +66,15 @@ export async function initializeDatabaseConnection(): Promise<{ pool: PgPool, db
   }
   
   // Create the connection pool
+  const useSSL = (process.env.DATABASE_URL || '').toLowerCase().includes('sslmode=require');
   const pool = new Pool({ 
     connectionString: process.env.DATABASE_URL,
     max: 10,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
     maxUses: 5000,
-    keepAlive: true
+    keepAlive: true,
+    ssl: useSSL ? { rejectUnauthorized: false } : undefined
   });
   
   // Initialize Drizzle ORM

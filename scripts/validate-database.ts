@@ -105,14 +105,14 @@ async function validateDatabase() {
     console.error("\n❌ DATABASE CONNECTION FAILED");
     console.error(`   Error: ${error.message}`);
     
-    if (error.code === 'XX000' && error.message.includes('endpoint is disabled')) {
+    if (error.code === 'XX000' && (error.message || '').includes('endpoint is disabled')) {
       console.error("\n⚠️ The database endpoint appears to be disabled.");
       console.error("   This could be because:");
       console.error("   - The database has been paused or suspended");
       console.error("   - The database requires a billing update");
       console.error("   - The database service is experiencing issues");
       console.error("\n   To fix this:");
-      console.error("   1. Check your Neon dashboard to ensure the database is running");
+      console.error("   1. Check your Supabase (or provider) dashboard to ensure the database is running");
       console.error("   2. Verify your billing status if applicable");
       console.error("   3. Generate a new connection string if needed");
     } else if (error.code === 'ENOTFOUND') {

@@ -5,8 +5,18 @@ import pg from 'pg';
 const { Pool } = pg;
 
 // Configure the database connection
+const useSSL = (() => {
+  try {
+    const u = new URL(process.env.DATABASE_URL || '');
+    return u.hostname.endsWith('supabase.co') || (process.env.DATABASE_URL || '').toLowerCase().includes('sslmode=require');
+  } catch {
+    return (process.env.DATABASE_URL || '').toLowerCase().includes('sslmode=require');
+  }
+})();
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
+  ssl: useSSL ? { rejectUnauthorized: false } : undefined
 });
 
 // WordPress API endpoint

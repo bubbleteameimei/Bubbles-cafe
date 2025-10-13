@@ -2,23 +2,24 @@
  * Database Initialization Script
  * 
  * This script creates all required tables and sets up the database schema
- * using the proper connection method for the PostgreSQL database.
+ * using node-postgres and Drizzle for a standard PostgreSQL database (Supabase-compatible).
  */
-import { Pool } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import pkg from 'pg';
+const { Pool } = pkg;
+import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
-
-// Configure Neon for serverless
-const neonConfig = { webSocketConstructor: ws };
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
 }
 
-// Create connection pool
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const db = drizzle({ client: pool, schema });
+// Create connection pool (enable SSL if requested via sslmode=require)
+const useSSL = (process.env.DATABASE_URL || '').toLowerCase().includes('sslmode=require');
+const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  ssl: useSSL ? { rejectUnauthorized: false } : undefined
+});
+const db = drizzle(pool, { schema });
 
 async function initializeDatabase() {
   console.log('🔄 Initializing PostgreSQL database...');

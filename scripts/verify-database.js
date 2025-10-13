@@ -1,25 +1,35 @@
 /**
  * Database Verification Script
- * Uses the same connection method as the server
+ * Uses node-postgres pool with optional SSL.
  */
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import ws from "ws";
-
-neonConfig.webSocketConstructor = ws;
+import pkg from 'pg';
+const { Pool } = pkg;
 
 if (!process.env.DATABASE_URL) {
   console.error("DATABASE_URL not found");
   process.exit(1);
 }
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const useSSL = (() => {
+  try {
+    const u = new URL(process.env.DATABASE_URL || '');
+    return u.hostname.endsWith('supabase.co') || (process.env.DATABASE_URL || '').toLowerCase().includes('sslmode=require');
+  } catch {
+    return (process.env.DATABASE_URL || '').toLowerCase().includes('sslmode=require');
+  }
+})();
+
+const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  ssl: useSSL ? { rejectUnauthorized: false } : undefined
+});
 
 async function verifyDatabase() {
   try {
     console.log('Verifying database connection and tables...');
     
     // Test connection
-    const versionResult = await pool.query('SELECT version()');
+    await pool.query('SELECT 1');
     console.log('✅ Database connected successfully');
     
     // List all tables
