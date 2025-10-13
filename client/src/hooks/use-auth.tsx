@@ -43,7 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/auth/status');
+      const response = await fetch('/api/auth/status', {
+        credentials: 'include', // Include cookies for cross-site deployments
+      });
       
       if (response.ok) {
         const data = await response.json();
@@ -71,6 +73,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     checkAuth();
   }, []);
+
+  // Helper to fetch CSRF token for protected POST routes (e.g., logout)
+  const fetchCsrfToken = async (): Promise<string> => {
+    try {
+      const resp = await fetch('/api/csrf-token', { credentials: 'include' });
+      if (!resp.ok) return '';
+      const data = await resp.json();
+      return (data?.csrfToken as string) || '';
+    } catch {
+      return '';
+    }
+  };
 
   const login = async (email: string, password: string, rememberMe = false) => {
     setIsLoading(true);
@@ -100,11 +114,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (import.meta.env?.DEV) {
         console.log('[Auth] Login successful:', data);
       }
-      setUser(data);
+      // Backend returns { success, user, message }; store the user object
+      setUser(data.user ?? data);
       try {
         if (data?.token) localStorage.setItem('auth_token', data.token);
       } catch {}
-      return data;
+      return data.user ?? data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       console.error('[Auth] Login error:', errorMessage);
@@ -143,11 +158,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (import.meta.env?.DEV) {
         console.log('[Auth] Registration successful:', responseData);
       }
-      setUser(responseData);
+      // Backend returns { success, user, message }; store the user object
+      setUser(responseData.user ?? responseData);
       try {
         if (responseData?.token) localStorage.setItem('auth_token', responseData.token);
       } catch {}
-      return responseData;
+      return responseData.user ?? responseData;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       console.error('[Auth] Registration error:', errorMessage);
@@ -162,13 +178,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     
     try {
+      // CSRF token required for logout POST in production
+      const csrfToken = await fetchCsrfToken();
       const response = await fetch('/api/auth/logout', {
-        credentials: 'include' // Important for ensuring cookies are sent
+        method: 'POST',
+        headers: {
+          ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+        },
+        credentials: 'include'
       });
       
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Logout failed');
+        let message = 'Logout failed';
+        try {
+          const data = await response.json();
+          message = data.message || message;
+        } catch {}
+        throw new Error(message);
       }
       
       setUser(null);
