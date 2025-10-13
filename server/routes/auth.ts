@@ -622,7 +622,7 @@ router.post('/callback',
 
         // Build fallback redirect to /auth/success on the frontend if no explicit success URL is set
         const baseFrontend = process.env.FRONTEND_URL || 'https://bubblescafe.space';
-        const fallbackSuccess = `${String(baseFrontend).replace(/\\/$/, '')}/auth/success`;
+        const fallbackSuccess = `${String(baseFrontend).replace(/\/$/, '')}/auth/success`;
         const frontendUrl = process.env.FRONTEND_SUCCESS_URL || fallbackSuccess;
         // Redirect to frontend after successful login
         try {
