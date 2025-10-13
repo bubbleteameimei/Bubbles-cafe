@@ -4,12 +4,11 @@ import { memo } from "react";
 // Visibility is controlled by the parent (GlobalLoadingProvider/AppContent).
 export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplete?: () => void }) => {
   return (
-    <div
-      id="eden-loading-screen"
+    <main
+      id="main-content"
       className="loading-screen"
       aria-label="Loading screen"
       aria-live="polite"
-      role="status"
       style={{
         position: 'fixed',
         top: 0,
@@ -28,6 +27,8 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
     >
       <div
         className="loader"
+        role="status"
+        aria-live="polite"
         style={{
           display: 'flex',
           gap: '0.5rem',
@@ -123,7 +124,7 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
           }
         `
       }} />
-    </div>
+    </main>
   );
 });
 
