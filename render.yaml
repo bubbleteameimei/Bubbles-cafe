@@ -3,18 +3,18 @@ services:
     name: bubbles-cafe-backend
     env: node
     plan: starter
-    buildCommand: npm ci || npm install && npm run build
+    buildCommand: npm install && npm run build
     startCommand: npm run start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
       - key: NODE_VERSION
-        value: "22"
+        value: '22'
       - key: NODE_OPTIONS
-        value: "--enable-source-maps"
+        value: '--enable-source-maps'
       - key: NPM_CONFIG_PRODUCTION
-        value: "false"
+        value: 'false'
       - key: DATABASE_URL
         sync: false
       - key: SESSION_SECRET

@@ -8,7 +8,10 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from './hooks/use-auth';
 import { CookieConsent } from './components/ui/cookie-consent';
 import { CookieConsentProvider } from './hooks/use-cookie-consent';
-import { GlobalErrorBoundary, setupGlobalErrorHandlers } from './components/error-boundary/global-error-boundary';
+import {
+  GlobalErrorBoundary,
+  setupGlobalErrorHandlers,
+} from './components/error-boundary/global-error-boundary';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingScreen } from './components/ui/loading-screen';
 // Performance monitoring removed
@@ -76,8 +79,6 @@ const CookieManagementPage = React.lazy(() => import('./pages/settings/cookie-ma
 const QuickSettingsPage = React.lazy(() => import('./pages/settings/quick-settings'));
 const PreviewSettingsPage = React.lazy(() => import('./pages/settings/preview'));
 
-
-
 // Demo pages - lazy loaded
 // Admin pages - eager loaded
 const AdminPage = React.lazy(() => import('./pages/admin'));
@@ -131,9 +132,12 @@ import { usePrefersReducedMotion } from './hooks/use-prefers-reduced-motion';
 const preloadWordPressPostsDeferred = () => {
   // Use requestIdleCallback for browsers that support it, or setTimeout as fallback
   if (typeof window.requestIdleCallback === 'function') {
-    window.requestIdleCallback(() => {
-      preloadWordPressPosts();
-    }, { timeout: 2000 }); // 2-second timeout
+    window.requestIdleCallback(
+      () => {
+        preloadWordPressPosts();
+      },
+      { timeout: 2000 },
+    ); // 2-second timeout
   } else {
     // Fallback to setTimeout with a slight delay
     setTimeout(() => {
@@ -151,17 +155,18 @@ const AppContent = () => {
 
   // Basic SEO: set canonical and defaults site-wide
   const canonical = locationStr || '/';
-  const isReaderLike = locationStr.includes('/reader')
-  const prefersReducedMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    : false;
+  const isReaderLike = locationStr.includes('/reader');
+  const prefersReducedMotion =
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false;
   // Check if current route is an error page
-  const isErrorPage = 
-    locationStr.includes('/errors/403') || 
-    locationStr.includes('/errors/404') || 
-    locationStr.includes('/errors/429') || 
-    locationStr.includes('/errors/500') || 
-    locationStr.includes('/errors/503') || 
+  const isErrorPage =
+    locationStr.includes('/errors/403') ||
+    locationStr.includes('/errors/404') ||
+    locationStr.includes('/errors/429') ||
+    locationStr.includes('/errors/500') ||
+    locationStr.includes('/errors/503') ||
     locationStr.includes('/errors/504');
 
   // Check if we should show loading screen for current page
@@ -180,7 +185,7 @@ const AppContent = () => {
       const timer = setTimeout(() => {
         setIsInitialLoad(false);
       }, 1500); // Show loading screen for 1.5 seconds on initial load
-      
+
       return () => clearTimeout(timer);
     }
     return undefined;
@@ -194,7 +199,7 @@ const AppContent = () => {
         const timer = setTimeout(() => {
           setIsPageTransition(false);
         }, 800); // Shorter duration for page transitions
-        
+
         return () => clearTimeout(timer);
       }
     }
@@ -219,11 +224,11 @@ const AppContent = () => {
   // Show loading screen on initial load or page transitions (excluding specified pages)
   if (isInitialLoad || (isPageTransition && shouldShowLoadingScreen(locationStr))) {
     return (
-      <LoadingScreen 
+      <LoadingScreen
         onAnimationComplete={() => {
           setIsInitialLoad(false);
           setIsPageTransition(false);
-        }} 
+        }}
       />
     );
   }
@@ -251,7 +256,9 @@ const AppContent = () => {
       {/* Global SEO defaults; pages can override with their own SEO if desired */}
       <SEO title={undefined} canonical={canonical} />
       {/* Skip to content: hidden until focused, not intrusive */}
-      <a href="#main-content" className="skip-link">Skip to content</a>
+      <a href="#main-content" className="skip-link">
+        Skip to content
+      </a>
       <div
         className={`page-transition-container min-h-screen w-full min-w-full max-w-full overflow-x-hidden bg-background text-foreground 
           m-0 p-0 px-0 mx-0`}
@@ -417,16 +424,28 @@ const AppContent = () => {
                     <Route path="/admin" component={AdminPage} />
                     <Route path="/admin/dashboard" component={AdminDashboardPage} />
                     <Route path="/admin/analytics" component={AdminAnalyticsPage} />
-                    <Route path="/admin/analytics-dashboard" component={AdminAnalyticsDashboardPage} />
+                    <Route
+                      path="/admin/analytics-dashboard"
+                      component={AdminAnalyticsDashboardPage}
+                    />
                     <Route path="/admin/users" component={AdminUsersPage} />
                     <Route path="/admin/settings" component={AdminSettingsPage} />
                     <Route path="/admin/posts" component={AdminManagePostsPage} />
                     <Route path="/admin/manage-posts" component={AdminManagePostsPage} />
                     <Route path="/admin/content" component={AdminContentPage} />
-                    <Route path="/admin/content-management" component={AdminContentManagementPage} />
-                    <Route path="/admin/content-moderation" component={AdminContentModerationPage} />
+                    <Route
+                      path="/admin/content-management"
+                      component={AdminContentManagementPage}
+                    />
+                    <Route
+                      path="/admin/content-moderation"
+                      component={AdminContentModerationPage}
+                    />
                     <Route path="/admin/feedback" component={AdminFeedbackPage} />
-                    <Route path="/admin/feedback-management" component={AdminFeedbackManagementPage} />
+                    <Route
+                      path="/admin/feedback-management"
+                      component={AdminFeedbackManagementPage}
+                    />
                     <Route path="/admin/feedback-review" component={AdminFeedbackReviewPage} />
                     <Route path="/admin/bug-reports" component={AdminBugReportsPage} />
                     <Route path="/admin/site-statistics" component={AdminSiteStatisticsPage} />
@@ -530,15 +549,24 @@ function App() {
                             <div className="app-content">
                               <React.Suspense
                                 fallback={
-                                  <div className="w-full flex items-center justify-center py-12">
-                                    <div className="inline-flex items-center gap-3 text-sm text-muted-foreground">
+                                  <main
+                                    id="main-content"
+                                    role="main"
+                                    tabIndex={-1}
+                                    className="w-full flex items-center justify-center py-12 min-h-screen"
+                                  >
+                                    <div
+                                      className="inline-flex items-center gap-3 text-sm text-muted-foreground"
+                                      role="status"
+                                      aria-live="polite"
+                                    >
                                       <span
                                         className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2"
-                                        aria-label="Loading"
+                                        aria-hidden="true"
                                       />
                                       Loading…
                                     </div>
-                                  </div>
+                                  </main>
                                 }
                               >
                                 <AppContent />
