@@ -16,9 +16,7 @@ services:
       - key: NPM_CONFIG_PRODUCTION
         value: "false"
       - key: DATABASE_URL
-        fromDatabase:
-          name: bubbles-cafe-db
-          property: connectionString
+        sync: false
       - key: SESSION_SECRET
         generateValue: true
       - key: CSRF_SECRET
