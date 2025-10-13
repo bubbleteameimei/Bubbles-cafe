@@ -87,7 +87,7 @@ const envSchema = z.object({
   DB_POOL_MAX: z.string().optional(),
   DB_POOL_MIN: z.string().optional(),
   DB_POOL_CONN_TIMEOUT_MS: z.string().optional(),
-  DB_FORCE_NEON_POOLER: z.string().optional(),
+  
   // Scheduler toggles
   ENABLE_WORDPRESS_SCHEDULER: z.string().optional(),
 });
