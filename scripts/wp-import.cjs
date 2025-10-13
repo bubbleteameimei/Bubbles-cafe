@@ -1,13 +1,23 @@
 // WordPress API Import Script (CommonJS Version)
 // This script imports posts from WordPress API to our database
-const { Pool } = require('@neondatabase/serverless');
+const pkg = require('pg');
+const { Pool } = pkg;
 
 const fetch = require('node-fetch');
-const ws = require('ws');
 
 // Configure the database connection (directly, not using server/db.ts)
+const useSSL = (() => {
+  try {
+    const u = new URL(process.env.DATABASE_URL || '');
+    return u.hostname.endsWith('supabase.co') || (process.env.DATABASE_URL || '').toLowerCase().includes('sslmode=require');
+  } catch {
+    return (process.env.DATABASE_URL || '').toLowerCase().includes('sslmode=require');
+  }
+})();
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
+  ssl: useSSL ? { rejectUnauthorized: false } : undefined
 });
 
 // WordPress API endpoint
@@ -24,7 +34,7 @@ async function cleanContent(content) {
     .replace(/<ul class="wp-block[^>]*>[\s\S]*?<\/ul>/g, '')
     .replace(/<div class="wp-block[^>]*>[\s\S]*?<\/div>/g, '')
     .replace(/\[caption[^\]]*\][\s\S]*?\[\/caption\]/g, '')
-    .replace(/\[gallery[^\]]*\][\s\S]*?\[\/gallery\]/g, '')
+    .replace(/\[gallery[^\]]*\\][\\s\\S]*?\\[\\/gallery\\]/g, '')
     .replace(/\[[^\]]+\]/g, '')
     // Convert HTML to Markdown
     .replace(/<h([1-6])>(.*?)<\/h\1>/g, (_, level, content) => {
@@ -50,14 +60,14 @@ async function cleanContent(content) {
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
+    .replace(/&quot;/g, '\"')
     .replace(/&#039;/g, "'")
     .replace(/&#8211;/g, '–')
     .replace(/&#8212;/g, '—')
     .replace(/&#8216;/g, "'")
     .replace(/&#8217;/g, "'")
-    .replace(/&#8220;/g, '"')
-    .replace(/&#8221;/g, '"')
+    .replace(/&#8220;/g, '\"')
+    .replace(/&#8221;/g, '\"')
     .replace(/&#8230;/g, '…')
     .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
     // Clean up whitespace
@@ -300,6 +310,8 @@ async function syncWordPressPosts() {
   } catch (error) {
     console.error("Error during WordPress sync:", error);
     throw error;
+  } finally {
+    await pool.end();
   }
 }
 
