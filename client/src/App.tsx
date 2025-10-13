@@ -26,7 +26,7 @@ import { preloadWordPressPosts } from './lib/wordpress-api';
 // Import WordPress sync service
 import { initWordPressSync } from './lib/wordpress-sync';
 // Import FeedbackButton component for site-wide feedback
-import { FeedbackButton } from './components/feedback/FeedbackButton';
+
 // Import our scroll effects provider for multi-speed scroll and gentle return
 import ScrollEffectsProvider from './components/ScrollEffectsProvider';
 import SEO from '@/components/SEO';
@@ -59,9 +59,9 @@ const PrivacyPage = React.lazy(() => import('./pages/privacy'));
 const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
 const InstallAppPage = React.lazy(() => import('./pages/install-app'));
 
-const AuthPage = React.lazy(() => import('./pages/auth'));
-const AuthSuccessPage = React.lazy(() => import('./pages/auth-success'));
-const AuthCallbackPage = React.lazy(() => import('./pages/auth-callback'));
+import AuthPage from './pages/auth';
+import AuthSuccessPage from './pages/auth-success';
+import AuthCallbackPage from './pages/auth-callback';
 const ProfilePage = React.lazy(() => import('./pages/profile'));
 const BookmarksPage = React.lazy(() => import('./pages/bookmarks'));
 const SearchResultsPage = React.lazy(() => import('./pages/search-results'));
@@ -171,9 +171,12 @@ const AppContent = () => {
 
   // Check if we should show loading screen for current page
   const shouldShowLoadingScreen = (path: string) => {
-    return (
-      !path.includes('/reader') && !path.includes('/stories') && path !== '/' && path !== '/index'
-    );
+    const isAuthRoute = path.startsWith('/auth') || path.includes('/auth');
+    return !path.includes('/reader') && 
+           !path.includes('/stories') && 
+           !isAuthRoute &&
+           path !== '/' && 
+           path !== '/index';
   };
 
   // Handle initial load
@@ -259,14 +262,7 @@ const AppContent = () => {
       <div
         className={`page-transition-container min-h-screen w-full min-w-full max-w-full overflow-x-hidden bg-background text-foreground 
           m-0 p-0 px-0 mx-0`}
-        style={{
-          width: '100%',
-          minWidth: '100%',
-          maxWidth: '100vw',
-          margin: '0 auto',
-          paddingTop: 'var(--navbar-height, 56px)',
-        }}
-      >
+         style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: isReaderLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)' }}>
         {/* Main navigation bar */}
         <AutoHideNavbar />
         {/* Main content landmark for accessibility */}
@@ -525,10 +521,7 @@ function App() {
     preloadWordPressPostsDeferred();
   }, []);
 
-  // Floating feedback button should be visible across the site
-  const ConditionalFeedbackButton = () => {
-    return <FeedbackButton />;
-  };
+  
 
   // Function to handle data refresh
   const handleDataRefresh = async () => {
@@ -582,9 +575,10 @@ function App() {
                           </PullToRefresh>
                           {/* Site-wide elements outside of the main layout */}
                           <CookieConsent />
-                          {location !== '/' && <ScrollToTopButton position="bottom-right" />}
-                          {/* Conditionally show FeedbackButton */}
-                          <ConditionalFeedbackButton />
+                          {location !== '/' && (
+                            <ScrollToTopButton position="bottom-right" />
+                          )}
+                          
                           {/* Toast notifications */}
                           <Toaster />
                           <Sonner position="bottom-left" className="fixed-sonner" />

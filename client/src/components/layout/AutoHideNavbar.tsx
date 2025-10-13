@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import Navigation from './navigation';
 
 interface AutoHideNavbarProps {
@@ -24,11 +24,13 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 	const containerRef = useRef<HTMLDivElement | null>(null);
 	const [navbarHeight, setNavbarHeight] = useState<number>(56);
 
-	// Helper to update CSS variables for progress positioning
+	// Helper to update CSS variables for progress positioning and viewport width
 	const updateCssVars = (isHidden: boolean, heightPx: number) => {
 		const root = document.documentElement;
+		const vw = document.documentElement.clientWidth; // viewport width excluding scrollbar
 		root.style.setProperty('--navbar-height', `${heightPx}px`);
 		root.style.setProperty('--progress-top-offset', isHidden ? '0px' : `${heightPx}px`);
+		root.style.setProperty('--viewport-width', `${vw}px`);
 		root.toggleAttribute('data-nav-hidden', isHidden);
 	};
 
@@ -42,8 +44,8 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 		return () => window.removeEventListener('scroll', handleScroll as any);
 	}, []);
 
-	// Measure navbar height and keep CSS variables in sync
-	useEffect(() => {
+	// Measure navbar height and keep CSS variables in sync before first paint to avoid layout shifts
+	useLayoutEffect(() => {
 		const measure = () => {
 			const el = containerRef.current;
 			const rect = el?.getBoundingClientRect();
@@ -92,7 +94,7 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 	return (
 		<div ref={containerRef} className={`navbar-container transition-transform duration-300 fixed top-0 left-0 right-0 z-40 w-full ${hidden ? '-translate-y-full' : 'translate-y-0'}`}
 			style={{ width: "100%", margin: 0, padding: 0 }}>
-			<div className={`${isScrolled ? 'lg:bg-background/90 lg:backdrop-blur-md lg:shadow-md' : 'lg:bg-transparent'}`}>
+			<div className="bg-transparent">
 				<Navigation />
 			</div>
 		</div>

@@ -66,8 +66,8 @@
 
 /* Accessibility styles */
 .user-is-tabbing :focus {
-  outline: 3px solid hsl(var(--primary));
-  outline-offset: 2px;
+  outline: none;
+  outline-offset: 0;
 }
 
 .user-is-tabbing :focus:not(:focus-visible) {
@@ -75,8 +75,8 @@
 }
 
 .user-is-tabbing :focus-visible {
-  outline: 3px solid hsl(var(--primary));
-  outline-offset: 2px;
+  outline: none;
+  outline-offset: 0;
 }
 
 /* Restore accessible focus styles for navigation and sidebar */

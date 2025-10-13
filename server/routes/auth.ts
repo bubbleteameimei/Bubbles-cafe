@@ -8,6 +8,7 @@ import { authRateLimiter, sensitiveOperationsRateLimiter } from '../middlewares/
 import passport from "passport";
 import bcrypt from 'bcryptjs';
 import { storage } from "../storage";
+import { OAuth2Client } from "google-auth-library";
 
 const authLogger = createSecureLogger('AuthRoutes');
 const router = Router();
@@ -31,6 +32,57 @@ async function exchangeGoogleCode(code: string, redirectUri: string, clientId: s
     throw createError.unauthorized(`Google code exchange failed: ${body}`);
   }
   return resp.json() as Promise<any>;
+}
+
+// Local verification of Google ID tokens using google-auth-library with graceful fallback
+const SUPPORTED_GOOGLE_ISS = new Set(['accounts.google.com', 'https://accounts.google.com']);
+const googleClient = new OAuth2Client();
+
+async function verifyGoogleIdToken(idToken: string, expectedClientId?: string): Promise<any> {
+  // First try local verification using Google public keys (JWKS)
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: expectedClientId
+    });
+    const payload = ticket.getPayload();
+    if (!payload) throw createError.unauthorized('Invalid Google ID token');
+    // Basic claim checks (defensive, verifyIdToken already checks exp/nbr)
+    if (expectedClientId && payload.aud && payload.aud !== expectedClientId) {
+      throw createError.unauthorized('Invalid token audience');
+    }
+    const iss = String(payload.iss || '');
+    if (!SUPPORTED_GOOGLE_ISS.has(iss)) {
+      throw createError.unauthorized('Invalid token issuer');
+    }
+    return payload;
+  } catch (e) {
+    authLogger.warn('Local Google ID token verification failed, falling back to tokeninfo', {
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+
+  // Fallback: verify via tokeninfo endpoint (network call)
+  const verifyResp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+  if (!verifyResp.ok) {
+    const errText = await verifyResp.text();
+    authLogger.warn('Google token verification (tokeninfo) failed', { status: verifyResp.status, body: errText });
+    throw createError.unauthorized('Invalid Google ID token');
+  }
+  const payload = await verifyResp.json() as any;
+  if (expectedClientId && payload.aud && payload.aud !== expectedClientId) {
+    authLogger.warn('Google token audience mismatch (tokeninfo)', { aud: payload.aud, expected: expectedClientId });
+    throw createError.unauthorized('Invalid token audience');
+  }
+  const iss = String(payload.iss || '');
+  if (!SUPPORTED_GOOGLE_ISS.has(iss)) {
+    throw createError.unauthorized('Invalid token issuer');
+  }
+  // tokeninfo returns exp as string seconds; ensure not expired
+  if (payload.exp && Number(payload.exp) * 1000 < Date.now()) {
+    throw createError.unauthorized('Token expired');
+  }
+  return payload;
 }
 
 // Password reset schema
@@ -169,19 +221,9 @@ router.post('/social-login',
         grantType = undefined;
       }
 
-      // For Google, if an ID token is provided, verify it via Google's public tokeninfo endpoint (no extra deps).
+      // For Google, if an ID token is provided, verify it locally (fallback to tokeninfo if needed)
       if (provider === 'google' && token) {
-        const verifyResp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);
-        if (!verifyResp.ok) {
-          const errText = await verifyResp.text();
-          authLogger.warn('Google token verification failed', { status: verifyResp.status, body: errText });
-          throw createError.unauthorized('Invalid Google ID token');
-        }
-        const payload = await verifyResp.json() as any;
-        if (expectedClientId && payload.aud && payload.aud !== expectedClientId) {
-          authLogger.warn('Google token audience mismatch', { aud: payload.aud, expected: expectedClientId });
-          throw createError.unauthorized('Invalid token audience');
-        }
+        const payload = await verifyGoogleIdToken(token, expectedClientId);
 
         // Extract fields
         email = (payload.email || email || '').toLowerCase();
@@ -225,7 +267,7 @@ router.post('/social-login',
       const { password_hash, ...safeUser } = user;
       req.login(safeUser as any, (err) => {
         if (err) return res.status(500).json({ message: 'Session error' });
-        return res.json(safeUser);
+        return res.json({ success: true, user: safeUser, message: 'Login successful' });
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -534,18 +576,8 @@ router.post('/callback',
         throw createError.badRequest('Missing credential or code');
       }
 
-      // Verify ID token via Google's public tokeninfo endpoint (no extra deps)
-      const verifyResp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
-      if (!verifyResp.ok) {
-        const errText = await verifyResp.text();
-        authLogger.warn('Google token verification failed (callback)', { status: verifyResp.status, body: errText });
-        throw createError.unauthorized('Invalid Google ID token');
-      }
-      const payload = await verifyResp.json() as any;
-      if (expectedClientId && payload.aud && payload.aud !== expectedClientId) {
-        authLogger.warn('Google token audience mismatch (callback)', { aud: payload.aud, expected: expectedClientId });
-        throw createError.unauthorized('Invalid token audience');
-      }
+      // Verify ID token locally (with network fallback)
+      const payload = await verifyGoogleIdToken(idToken, expectedClientId);
 
       const email = (payload.email || '').toLowerCase();
       const socialId = payload.sub;
@@ -596,7 +628,7 @@ router.post('/callback',
         try {
           return res.redirect(frontendUrl);
         } catch {
-          return res.json(safeUser);
+          return res.json({ success: true, user: safeUser, message: 'Login successful' });
         }
       });
     } catch (e) {
