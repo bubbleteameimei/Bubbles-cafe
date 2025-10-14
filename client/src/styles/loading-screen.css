@@ -5,7 +5,7 @@
 /* Global scroll disable classes */
 .disable-scroll {
   overflow: hidden !important;
-  height: 100vh !important;
+  /* Avoid forcing 100vh which can cause layout jumps; let the document height remain natural */
 }
 
 .loading-active {

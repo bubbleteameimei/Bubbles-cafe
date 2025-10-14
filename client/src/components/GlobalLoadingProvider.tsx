@@ -57,14 +57,8 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
   // Scroll lock helpers with scrollbar compensation to prevent layout shift
   const applyScrollLock = useCallback(() => {
     try {
-      const docEl = document.documentElement;
       const body = document.body;
-      const scrollbarWidth = Math.max(0, window.innerWidth - docEl.clientWidth);
-      // Lock scroll on root
-      docEl.classList.add('disable-scroll');
-      // Compensate for scrollbar removal
-      body.style.paddingRight = scrollbarWidth ? `${scrollbarWidth}px` : '';
-      // Backward-compat class (visual only; CSS shouldn't set position fixed)
+      // Do not lock scroll to avoid layout reflow; only set a visual state
       body.classList.add('loading-active');
     } catch {}
   }, []);
@@ -72,7 +66,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
   const releaseScrollLock = useCallback(() => {
     try {
       const body = document.body;
-      document.documentElement.classList.remove('disable-scroll');
+      body.classList.remove('disable-scroll');
       body.classList.remove('loading-active');
       body.style.paddingRight = '';
     } catch {}

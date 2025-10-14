@@ -27,8 +27,8 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 	// Helper to update CSS variables for progress positioning and viewport width
 	const updateCssVars = (isHidden: boolean, heightPx: number) => {
 		const root = document.documentElement;
-		// Use window.innerWidth so the value stays stable even if the scrollbar shows/hides.
-		const vw = Math.max(0, window.innerWidth);
+		// Use clientWidth (excludes scrollbar) which stays stable with scrollbar-gutter.
+		const vw = Math.max(0, document.documentElement.clientWidth);
 		root.style.setProperty('--navbar-height', `${heightPx}px`);
 		root.style.setProperty('--progress-top-offset', isHidden ? '0px' : `${heightPx}px`);
 		root.style.setProperty('--viewport-width', `${vw}px`);
