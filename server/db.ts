@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import dns from 'node:dns';
+import dns, { promises as dnsPromises } from 'node:dns';
 import pkg from 'pg';
 const { Pool } = pkg;
 import { drizzle } from 'drizzle-orm/node-postgres';
@@ -54,8 +54,6 @@ function sanitizeDatabaseUrl(url?: string): string | undefined {
   params.delete('channel_binding');
   s = base + '?' + params.toString();
 
-  
-
   return s;
 }
 
@@ -65,6 +63,17 @@ const DATABASE_URL = sanitizeDatabaseUrl(process.env.DATABASE_URL);
 // Create pool with connection retry logic using node-postgres
 let pool: pkg.Pool | undefined;
 let db: any;
+
+function parsePgUrl(url: string) {
+  const u = new URL(url.replace(/^postgresql:/i, 'http:'));
+  return {
+    host: u.hostname,
+    port: u.port ? Number(u.port) : 5432,
+    user: decodeURIComponent(u.username || ''),
+    password: decodeURIComponent(u.password || ''),
+    database: u.pathname.replace(/^\//, '')
+  };
+}
 
 if (!DATABASE_URL) {
   // Do NOT throw at import time — let the app start and serve non-DB routes.
@@ -113,6 +122,40 @@ if (!DATABASE_URL) {
         try {
           process.stderr.write(`Failed to test database connection: ${error instanceof Error ? error.message : String(error)}\n`);
         } catch {}
+        // Try IPv4 fallback if initial test failed due to IPv6 issues
+        try {
+          const msg = String(error instanceof Error ? error.message : error);
+          if (msg.includes('ENETUNREACH') || msg.includes('EAI_AGAIN') || msg.includes('ETIMEDOUT')) {
+            const parsed = parsePgUrl(DATABASE_URL);
+            // If host is not an IPv4 literal or IPv6 literal, attempt IPv4 resolution
+            if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(parsed.host) && !/^[0-9a-fA-F:]+$/.test(parsed.host)) {
+              const { address } = await dnsPromises.lookup(parsed.host, { family: 4 });
+              const fallbackPool = new Pool({
+                host: address,
+                port: parsed.port,
+                user: parsed.user,
+                password: parsed.password || undefined,
+                database: parsed.database,
+                max: maxClients,
+                idleTimeoutMillis: idleMs,
+                connectionTimeoutMillis: connTimeoutMs,
+                ssl: useSSL ? { rejectUnauthorized: false } : undefined
+              });
+              // Replace pool and drizzle instance
+              pool = fallbackPool;
+              db = drizzle(pool, { schema });
+              client = await pool.connect();
+              await client.query('SELECT 1');
+              try { process.stderr.write('Database connection established via IPv4 fallback\n'); } catch {}
+            }
+          }
+        } catch (fallbackErr) {
+          try {
+            process.stderr.write(`IPv4 fallback failed: ${fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr)}\n`);
+          } catch {}
+        } finally {
+          client?.release();
+        }
         // Do not rethrow — allow app to keep running
       } finally {
         client?.release();

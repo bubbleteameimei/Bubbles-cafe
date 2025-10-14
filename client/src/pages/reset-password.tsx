@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 
 // Password validation schema
 const resetPasswordSchema = z.object({
@@ -22,63 +23,34 @@ const resetPasswordSchema = z.object({
 
 export default function ResetPasswordPage() {
   const [location, navigate] = useLocation();
-  const [token, setToken] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
-  const [isValid, setIsValid] = useState(false);
+  const [hasRecoverySession, setHasRecoverySession] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({});
   const { toast } = useToast();
 
-  // Extract token from URL
+  // Verify Supabase recovery session
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tokenParam = params.get('token');
-    
-    if (!tokenParam) {
-      toast({
-        title: "Error",
-        description: "Missing password reset token",
-        variant: "destructive",
-      });
-      navigate('/auth');
-      return;
-    }
-    
-    setToken(tokenParam);
-    console.log("[ResetPassword] Processing reset token:", tokenParam.substring(0, 10) + "...");
-    
-    // Verify token with the backend
-    const verifyToken = async () => {
+    const verify = async () => {
       try {
-        // Show loading toast
-        toast({
-          title: "Verifying Token",
-          description: "Please wait while we verify your reset token...",
-        });
-        
-        const response = await fetch(`/api/auth/verify-reset-token/${tokenParam}`);
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.message || 'Invalid or expired token');
+        const { data } = await supabase.auth.getSession();
+        const hasSession = !!data.session?.access_token;
+        setHasRecoverySession(hasSession);
+        if (!hasSession) {
+          toast({
+            title: "Error",
+            description: "No recovery session found. Please use the password reset link from your email.",
+            variant: "destructive",
+          });
+          navigate('/auth');
         }
-        
-        setIsValid(true);
-        
-        // Show success toast once verified
+      } catch (e) {
         toast({
-          title: "Token Verified",
-          description: "Your reset token is valid. You can now set a new password.",
-          variant: "default",
-        });
-      } catch (error) {
-        console.error('[ResetPassword] Error verifying token:', error);
-        toast({
-          title: "Invalid Token",
-          description: error instanceof Error ? error.message : "Your password reset link is invalid or has expired",
+          title: "Error",
+          description: "Failed to verify recovery session.",
           variant: "destructive",
         });
         navigate('/auth');
@@ -86,8 +58,7 @@ export default function ResetPasswordPage() {
         setIsVerifying(false);
       }
     };
-    
-    verifyToken();
+    verify();
   }, [toast, navigate]);
 
   const validateForm = (): boolean => {
@@ -124,43 +95,23 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-    
+    if (!validateForm()) return;
     setIsLoading(true);
-    
     try {
-      const response = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token,
-          password,
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to reset password');
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) {
+        throw new Error(error.message || 'Failed to reset password');
       }
-      
       setIsSuccess(true);
       toast({
         title: "Password Reset Successful",
         description: "Your password has been reset successfully",
       });
-      
-      // Redirect to login page after a delay
       setTimeout(() => {
         navigate('/auth');
       }, 3000);
     } catch (error) {
-      console.error('Error resetting password:', error);
+      console.error('Error resetting password (Supabase):', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to reset your password. Please try again.",
@@ -176,8 +127,8 @@ export default function ResetPasswordPage() {
       <div className="flex justify-center items-center min-h-screen bg-background px-4">
         <Card className="w-full max-w-md border border-slate-800 shadow-xl">
           <CardHeader className="text-center">
-            <CardTitle className="text-xl">Verifying Reset Token</CardTitle>
-            <CardDescription>Please wait while we verify your reset token</CardDescription>
+            <CardTitle className="text-xl">Verifying Recovery Session</CardTitle>
+            <CardDescription>Please wait while we verify your reset link</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center py-6">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -186,7 +137,7 @@ export default function ResetPasswordPage() {
       </div>
     );
   }
-  
+
   if (isSuccess) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-background px-4">
@@ -207,6 +158,10 @@ export default function ResetPasswordPage() {
         </Card>
       </div>
     );
+  }
+
+  if (!hasRecoverySession) {
+    return null;
   }
 
   return (

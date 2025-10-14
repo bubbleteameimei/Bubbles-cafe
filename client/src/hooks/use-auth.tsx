@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/lib/supabase';
 
 interface User {
   id: number;
@@ -44,20 +45,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       const response = await fetch('/api/auth/status', {
-        credentials: 'include', // Include cookies for cross-site deployments
+        credentials: 'include',
       });
-      
       if (response.ok) {
         const data = await response.json();
         const isAuth = (data?.authenticated ?? data?.isAuthenticated) === true;
-        if (isAuth) {
-          if (import.meta.env?.DEV) {
-            console.log('[Auth] User authenticated:', data.user);
-          }
-          setUser(data.user);
-        } else {
-          setUser(null);
-        }
+        setUser(isAuth ? data.user : null);
       } else {
         setUser(null);
       }
@@ -74,100 +67,85 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, []);
 
-  // Helper to fetch CSRF token for protected POST routes (e.g., logout)
-  const fetchCsrfToken = async (): Promise<string> => {
-    try {
-      const resp = await fetch('/api/csrf-token', { credentials: 'include' });
-      if (!resp.ok) return '';
-      const data = await resp.json();
-      return (data?.csrfToken as string) || '';
-    } catch {
-      return '';
+  const finalizeServerSession = async (access_token: string) => {
+    const resp = await fetch('/api/auth/supabase/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${access_token}`,
+      },
+      credentials: 'include',
+      body: JSON.stringify({ access_token }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      throw new Error((data as any)?.error || 'Failed to create server session');
     }
+    setUser((data as any)?.user ?? null);
+    return (data as any)?.user;
   };
 
-  const login = async (email: string, password: string, rememberMe = false) => {
+  const login = async (email: string, password: string, _rememberMe = false) => {
     setIsLoading(true);
     setError(null);
-    
     try {
       if (import.meta.env?.DEV) {
-        console.log('[Auth] Attempting login with credentials:', { email, rememberMe });
+        console.log('[Auth] Supabase signInWithPassword:', { email });
       }
-      
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Important for ensuring cookies are sent
-        body: JSON.stringify({ email, password, rememberMe }),
+      const { data, error: sError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        console.error('[Auth] Login failed with status:', response.status);
-        throw new Error(data.message || 'Login failed');
+      if (sError) {
+        throw new Error(sError.message || 'Login failed');
       }
-      
-      if (import.meta.env?.DEV) {
-        console.log('[Auth] Login successful:', data);
+      const access_token = data.session?.access_token;
+      if (!access_token) {
+        throw new Error('Login succeeded but no session token was returned');
       }
-      // Backend returns { success, user, message }; store the user object
-      setUser(data.user ?? data);
-      try {
-        if (data?.token) localStorage.setItem('auth_token', data.token);
-      } catch {}
-      return data.user ?? data;
+      const serverUser = await finalizeServerSession(access_token);
+      return serverUser;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      console.error('[Auth] Login error:', errorMessage);
-      setError(errorMessage);
+      const msg = err instanceof Error ? err.message : 'An unknown error occurred';
+      console.error('[Auth] Login error:', msg);
+      setError(msg);
       throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (data: RegisterData) => {
+  const register = async (payload: RegisterData) => {
     setIsRegistering(true);
     setError(null);
-    
     try {
       if (import.meta.env?.DEV) {
-        console.log('[Auth] Attempting registration:', { email: data.email, username: data.username });
+        console.log('[Auth] Supabase signUp:', { email: payload.email, username: payload.username });
       }
-      
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const { data, error: sError } = await supabase.auth.signUp({
+        email: payload.email,
+        password: payload.password,
+        options: {
+          data: { username: payload.username },
+          emailRedirectTo: `${window.location.origin}/auth-success`,
         },
-        credentials: 'include', // Important for ensuring cookies are sent
-        body: JSON.stringify(data),
       });
-      
-      const responseData = await response.json();
-      
-      if (!response.ok) {
-        console.error('[Auth] Registration failed with status:', response.status);
-        throw new Error(responseData.message || 'Registration failed');
+      if (sError) {
+        throw new Error(sError.message || 'Registration failed');
       }
-      
-      if (import.meta.env?.DEV) {
-        console.log('[Auth] Registration successful:', responseData);
+      // Depending on Supabase settings, signUp may require email confirmation (no session)
+      const access_token = data.session?.access_token;
+      if (access_token) {
+        const serverUser = await finalizeServerSession(access_token);
+        return serverUser;
+      } else {
+        // No immediate session; prompt the user to verify email
+        return { message: 'Check your email to confirm your account.' };
       }
-      // Backend returns { success, user, message }; store the user object
-      setUser(responseData.user ?? responseData);
-      try {
-        if (responseData?.token) localStorage.setItem('auth_token', responseData.token);
-      } catch {}
-      return responseData.user ?? responseData;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      console.error('[Auth] Registration error:', errorMessage);
-      setError(errorMessage);
+      const msg = err instanceof Error ? err.message : 'An unknown error occurred';
+      console.error('[Auth] Registration error:', msg);
+      setError(msg);
       throw err;
     } finally {
       setIsRegistering(false);
@@ -176,39 +154,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     setIsLoading(true);
-    
     try {
-      // CSRF token required for logout POST in production
-      const csrfToken = await fetchCsrfToken();
+      // Clear Supabase session
+      await supabase.auth.signOut();
+      // Clear server session
       const response = await fetch('/api/auth/logout', {
         method: 'POST',
-        headers: {
-          ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-        },
-        credentials: 'include'
+        credentials: 'include',
       });
-      
       if (!response.ok) {
         let message = 'Logout failed';
         try {
           const data = await response.json();
-          message = data.message || message;
+          message = (data as any).message || message;
         } catch {}
         throw new Error(message);
       }
-      
       setUser(null);
       try { localStorage.removeItem('auth_token'); } catch {}
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      setError(errorMessage);
-      console.error('Logout error:', errorMessage);
+      const msg = err instanceof Error ? err.message : 'An unknown error occurred';
+      setError(msg);
+      console.error('Logout error:', msg);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Registration mutation with proper isPending property
   const registerMutation = {
     mutateAsync: register,
     isPending: isRegistering
@@ -231,10 +203,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  
   return context;
 }

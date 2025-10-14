@@ -325,6 +325,14 @@ body.body-home div[class*="container"] {
 
 /* Background images removed */
 
+/* Prevent iOS Safari zoom on input focus by ensuring 16px minimum font-size */
+@layer base {
+  input, textarea, select {
+    font-size: 16px !important;
+    line-height: 1.3 !important;
+  }
+}
+
 /* Gradient overlay is now handled by a separate div in home.tsx */
 .home-page::after {
   content: none; /* Remove the overlay since we use an explicit div in home.tsx */

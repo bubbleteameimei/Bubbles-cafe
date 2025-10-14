@@ -2,11 +2,11 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
 import { queryClient } from './lib/queryClient';
-import { Toaster } from './components/ui/toaster';
-import { Sonner } from './components/ui/sonner';
+const Toaster = React.lazy(() => import('./components/ui/toaster').then(m => ({ default: m.Toaster })));
+const Sonner = React.lazy(() => import('./components/ui/sonner').then(m => ({ default: m.Sonner })));
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from './hooks/use-auth';
-import { CookieConsent } from './components/ui/cookie-consent';
+const CookieConsent = React.lazy(() => import('./components/ui/cookie-consent').then(m => ({ default: m.CookieConsent })));
 import { CookieConsentProvider } from './hooks/use-cookie-consent';
 import {
   GlobalErrorBoundary,
@@ -16,40 +16,37 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingScreen } from './components/ui/loading-screen';
 // Performance monitoring removed
 import { SidebarProvider } from './components/ui/sidebar';
-import ScrollToTopButton from './components/ScrollToTopButton';
-import { AnimatePresence, motion } from 'framer-motion';
+const ScrollToTopButton = React.lazy(() => import('./components/ScrollToTopButton'));
+import PageTransition from './components/PageTransition';
 // Add critical fullwidth fix stylesheet
 import './styles/fullwidth-fix.css';
 import './components/transition.css';
-// Import WordPress API preload function for enhanced reliability
-import { preloadWordPressPosts } from './lib/wordpress-api';
-// Import WordPress sync service
-import { initWordPressSync } from './lib/wordpress-sync';
+// Import WordPress API preload function for enhanced reliability (lazy-loaded below)
+// Import WordPress sync service (lazy-loaded below)
 // Import FeedbackButton component for site-wide feedback
 
 // Import our scroll effects provider for multi-speed scroll and gentle return
 import ScrollEffectsProvider from './components/ScrollEffectsProvider';
-import SEO from '@/components/SEO';
+const SEO = React.lazy(() => import('@/components/SEO'));
 
-import AutoHideNavbar from './components/layout/AutoHideNavbar';
+const AutoHideNavbar = React.lazy(() => import('./components/layout/AutoHideNavbar'));
 // Import our notification system components
 import { NotificationProvider } from './contexts/notification-context';
 import ErrorToastProvider from './components/providers/error-toast-provider';
 // Import our new refresh components
 import { PullToRefresh } from './components/ui/pull-to-refresh';
 import { RefreshProvider } from './contexts/refresh-context';
-import { initCSRFProtection } from './lib/csrf-token';
 // Add global loading provider so ApiLoader can display a proper loading overlay
 import { GlobalLoadingProvider } from './components/GlobalLoadingProvider';
-import PostsPrefetcher from './components/providers/PostsPrefetcher';
+const PostsPrefetcher = React.lazy(() => import('./components/providers/PostsPrefetcher'));
 import { initSmoothScroll } from './lib/smooth-scroll';
 import { useA11y } from '@/hooks/useA11y';
 
 // Import essential pages directly
 const HomePage = React.lazy(() => import('./pages/home'));
 const StoriesPage = React.lazy(() => import('./pages/index'));
-// Import footer component
-import Footer from './components/layout/footer';
+// Import footer component lazily
+const Footer = React.lazy(() => import('./components/layout/footer'));
 
 // Eager-load all pages for faster route switching
 const ReaderPage = React.lazy(() => import('./pages/reader'));
@@ -59,9 +56,9 @@ const PrivacyPage = React.lazy(() => import('./pages/privacy'));
 const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
 const InstallAppPage = React.lazy(() => import('./pages/install-app'));
 
-import AuthPage from './pages/auth';
-import AuthSuccessPage from './pages/auth-success';
-import AuthCallbackPage from './pages/auth-callback';
+const AuthPage = React.lazy(() => import('./pages/auth'));
+const AuthSuccessPage = React.lazy(() => import('./pages/auth-success'));
+const AuthCallbackPage = React.lazy(() => import('./pages/auth-callback'));
 const ProfilePage = React.lazy(() => import('./pages/profile'));
 const BookmarksPage = React.lazy(() => import('./pages/bookmarks'));
 const SearchResultsPage = React.lazy(() => import('./pages/search-results'));
@@ -79,14 +76,12 @@ const CookieManagementPage = React.lazy(() => import('./pages/settings/cookie-ma
 const QuickSettingsPage = React.lazy(() => import('./pages/settings/quick-settings'));
 const PreviewSettingsPage = React.lazy(() => import('./pages/settings/preview'));
 
-// Demo pages - lazy loaded
-// Admin pages - eager loaded
+// Admin pages - lazy loaded
 const AdminPage = React.lazy(() => import('./pages/admin'));
 const AdminAnalyticsPage = React.lazy(() => import('./pages/admin/analytics'));
 const AdminAnalyticsDashboardPage = React.lazy(() => import('./pages/admin/analytics-dashboard'));
 const AdminUsersPage = React.lazy(() => import('./pages/admin/users'));
 const AdminSettingsPage = React.lazy(() => import('./pages/admin/settings'));
-
 const AdminManagePostsPage = React.lazy(() => import('./pages/admin/manage-posts'));
 const AdminFeedbackPage = React.lazy(() => import('./pages/admin/feedback'));
 const AdminFeedbackManagementPage = React.lazy(() => import('./pages/admin/FeedbackAdmin'));
@@ -101,22 +96,20 @@ const AdminContentManagementPage = React.lazy(() => import('./pages/admin/conten
 const AdminThemesPage = React.lazy(() => import('./pages/admin/themes'));
 const ResetPasswordPage = React.lazy(() => import('./pages/reset-password'));
 
-// Placeholder for discontinued features removed
+// Error pages - lazy loaded
+const Error403Page = React.lazy(() => import('./pages/errors/403'));
+const Error404Page = React.lazy(() => import('./pages/errors/404'));
+const Error429Page = React.lazy(() => import('./pages/errors/429'));
+const Error500Page = React.lazy(() => import('./pages/errors/500'));
+const Error503Page = React.lazy(() => import('./pages/errors/503'));
+const Error504Page = React.lazy(() => import('./pages/errors/504'));
 
-// Error pages - eager loaded
-import Error403Page from './pages/errors/403';
-import Error404Page from './pages/errors/404';
-import Error429Page from './pages/errors/429';
-import Error500Page from './pages/errors/500';
-import Error503Page from './pages/errors/503';
-import Error504Page from './pages/errors/504';
+// Legal Pages - lazy loaded
+const CopyrightPage = React.lazy(() => import('./pages/legal/copyright'));
+const TermsPage = React.lazy(() => import('./pages/legal/terms'));
+const CookiePolicyPage = React.lazy(() => import('./pages/legal/cookie-policy'));
 
-// Legal Pages - eager loaded
-import CopyrightPage from './pages/legal/copyright';
-import TermsPage from './pages/legal/terms';
-import CookiePolicyPage from './pages/legal/cookie-policy';
-
-// Community Pages - eager loaded
+// Community Pages - lazy loaded
 const CommunityPage = React.lazy(() => import('./pages/community'));
 const SubmitStoryPage = React.lazy(() => import('./pages/submit-story'));
 const EditStoryPage = React.lazy(() => import('./pages/edit-story'));
@@ -131,18 +124,16 @@ import { usePrefersReducedMotion } from './hooks/use-prefers-reduced-motion';
 // This improves initial load time significantly
 const preloadWordPressPostsDeferred = () => {
   // Use requestIdleCallback for browsers that support it, or setTimeout as fallback
-  if (typeof window.requestIdleCallback === 'function') {
-    window.requestIdleCallback(
-      () => {
-        preloadWordPressPosts();
-      },
-      { timeout: 2000 },
-    ); // 2-second timeout
-  } else {
-    // Fallback to setTimeout with a slight delay
-    setTimeout(() => {
+  const run = async () => {
+    try {
+      const { preloadWordPressPosts } = await import('./lib/wordpress-api');
       preloadWordPressPosts();
-    }, 1000); // 1-second delay
+    } catch {}
+  };
+  if (typeof (window as any).requestIdleCallback === 'function') {
+    (window as any).requestIdleCallback(() => { void run(); }, { timeout: 2000 });
+  } else {
+    setTimeout(() => { void run(); }, 1000); // 1-second delay
   }
 };
 
@@ -254,7 +245,9 @@ const AppContent = () => {
   return (
     <ErrorBoundary>
       {/* Global SEO defaults; pages can override with their own SEO if desired */}
-      <SEO title={undefined} canonical={canonical} />
+      <React.Suspense fallback={null}>
+        <SEO title={undefined} canonical={canonical} />
+      </React.Suspense>
       {/* Skip to content: hidden until focused, not intrusive */}
       <a href="#main-content" className="skip-link">
         Skip to content
@@ -264,7 +257,9 @@ const AppContent = () => {
           m-0 p-0 px-0 mx-0`}
          style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: isReaderLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)' }}>
         {/* Main navigation bar */}
-        <AutoHideNavbar />
+        <React.Suspense fallback={null}>
+          <AutoHideNavbar />
+        </React.Suspense>
         {/* Main content landmark for accessibility */}
         <main id="main-content" tabIndex={-1} className="flex-1 min-h-screen">
           {isReaderLike ? (
@@ -363,14 +358,7 @@ const AppContent = () => {
               </Switch>
             </div>
           ) : (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={locationStr}
-                initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={prefersReducedMotion ? { opacity: 1 } : { opacity: 0.92 }}
-                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              >
+            <PageTransition>
                 <div className="page-content">
                   <Switch>
                     {/* Main Pages */}
@@ -476,8 +464,7 @@ const AppContent = () => {
                     <Route path="*" component={Error404Page} />
                   </Switch>
                 </div>
-              </motion.div>
-            </AnimatePresence>
+            </PageTransition>
           )}
         </main>
         {/* Footer at page bottom */}
@@ -503,22 +490,20 @@ function App() {
     setupGlobalErrorHandlers();
   }, []);
 
-  // Initialize CSRF protection early in app lifecycle
-  useEffect(() => {
-    // Fire and forget; subsequent API requests will reuse the token
-    void initCSRFProtection();
-  }, []);
+  // CSRF protection is initialized in main.tsx via dynamic import
 
   // The page transition loading will be handled by AppContent component
   // where useLoading will be called after LoadingProvider is mounted
 
   // Initialize WordPress sync service and defer content preloading
   useEffect(() => {
-    // Initialize the sync service first
-    initWordPressSync();
-
-    // Defer preloading content until after the initial render
-    preloadWordPressPostsDeferred();
+    (async () => {
+      try {
+        const { initWordPressSync } = await import('./lib/wordpress-sync');
+        initWordPressSync();
+      } catch {}
+      preloadWordPressPostsDeferred();
+    })();
   }, []);
 
   
@@ -542,7 +527,9 @@ function App() {
                       <ErrorToastProvider>
                         <RefreshProvider>
                           {/* Warm the cache for posts to make navigation instant */}
-                          <PostsPrefetcher />
+                          <React.Suspense fallback={null}>
+                            <PostsPrefetcher />
+                          </React.Suspense>
                           {/* Wrap AppContent with PullToRefresh */}
                           <PullToRefresh onRefresh={handleDataRefresh}>
                             {/* Performance monitor overlay removed */}
@@ -574,14 +561,22 @@ function App() {
                             </div>
                           </PullToRefresh>
                           {/* Site-wide elements outside of the main layout */}
-                          <CookieConsent />
+                          <React.Suspense fallback={null}>
+                            <CookieConsent />
+                          </React.Suspense>
                           {location !== '/' && (
-                            <ScrollToTopButton position="bottom-right" />
+                            <React.Suspense fallback={null}>
+                              <ScrollToTopButton position="bottom-right" />
+                            </React.Suspense>
                           )}
                           
                           {/* Toast notifications */}
-                          <Toaster />
-                          <Sonner position="bottom-left" className="fixed-sonner" />
+                          <React.Suspense fallback={null}>
+                            <Toaster />
+                          </React.Suspense>
+                          <React.Suspense fallback={null}>
+                            <Sonner position="bottom-left" className="fixed-sonner" />
+                          </React.Suspense>
                         </RefreshProvider>
                       </ErrorToastProvider>
                     </ScrollEffectsProvider>

@@ -1,10 +1,11 @@
 /**
  * Database Connection Initialization Module
- * 
+ *
  * This script handles explicitly initializing the database connection
  * before any database operations are performed.
  */
 import dns from 'node:dns';
+import { promises as dnsPromises } from 'node:dns';
 import pkg from 'pg';
 const { Pool } = pkg;
 import type { Pool as PgPool } from 'pg';
@@ -16,10 +17,12 @@ import path from 'path';
 // Prefer IPv4 to avoid ENETUNREACH when IPv6 is unreachable
 try { dns.setDefaultResultOrder?.('ipv4first'); } catch {}
 
-// Sanitize potentially malformed DATABASE_URL values
+/**
+ * Basic sanitizer for DATABASE_URL values
+ */
 function sanitizeDatabaseUrl(url?: string): string | undefined {
   if (!url) return url;
-  let s = url;
+  let s = url.trim();
   s = s.replace(/\s+/g, '');
   s = s.replace(/^postgresal:\/\//i, 'postgresql://');
   s = s.replace(/^postgres:\/\//i, 'postgresql://');
@@ -34,6 +37,76 @@ function sanitizeDatabaseUrl(url?: string): string | undefined {
   return s;
 }
 
+/**
+ * Parse a PostgreSQL connection string using URL with scheme swap
+ */
+function parsePgUrl(url: string) {
+  // Swap scheme to http for URL parsing then map fields back
+  const u = new URL(url.replace(/^postgresql:/i, 'http:'));
+  // NOTE: u.username/u.password are already percent-decoded
+  return {
+    host: u.hostname,
+    port: u.port ? Number(u.port) : 5432,
+    user: decodeURIComponent(u.username || ''),
+    password: decodeURIComponent(u.password || ''),
+    database: u.pathname.replace(/^\//, ''),
+    search: u.search || ''
+  };
+}
+
+/**
+ * Build a connection config object for pg Pool, optionally overriding host
+ */
+function buildPgConfig(connString: string, hostOverride?: string) {
+  const useSSL = connString.toLowerCase().includes('sslmode=require');
+
+  if (!hostOverride) {
+    return {
+      connectionString: connString,
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+      maxUses: 5000,
+      keepAlive: true,
+      ssl: useSSL ? { rejectUnauthorized: false } : undefined
+    } as pkg.PoolConfig;
+  }
+
+  // When overriding host, construct discrete fields to avoid re-resolution
+  const p = parsePgUrl(connString);
+  return {
+    host: hostOverride,
+    port: p.port,
+    user: p.user,
+    password: p.password || undefined,
+    database: p.database,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+    maxUses: 5000,
+    keepAlive: true,
+    ssl: useSSL ? { rejectUnauthorized: false } : undefined
+  } as pkg.PoolConfig;
+}
+
+/**
+ * Resolve the host in a connection string to an IPv4 address if possible.
+ * Returns undefined if resolution fails or host is already an IPv4 literal.
+ */
+async function resolveIPv4Host(connString: string): Promise<string | undefined> {
+  try {
+    const { host } = parsePgUrl(connString);
+    // If host already looks like an IPv4 literal, keep it
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return host;
+    // If host appears to be an IPv6 literal, we cannot coerce — return undefined
+    if (/^[0-9a-fA-F:]+$/.test(host)) return undefined;
+    const res = await dnsPromises.lookup(host, { family: 4 });
+    return res?.address;
+  } catch {
+    return undefined;
+  }
+}
+
 // Do not set a default DATABASE_URL here. It must be provided by the environment (.env or platform).
 if (process.env.DATABASE_URL) {
   process.env.DATABASE_URL = sanitizeDatabaseUrl(process.env.DATABASE_URL)!;
@@ -46,14 +119,14 @@ export async function initializeDatabaseConnection(): Promise<{ pool: PgPool, db
   // Ensure DATABASE_URL is available
   if (!process.env.DATABASE_URL) {
     console.warn("⚠️ DATABASE_URL environment variable is not set, checking .env file...");
-    
+
     try {
       const envPath = path.join(process.cwd(), '.env');
       if (fs.existsSync(envPath)) {
         console.log('📄 Found .env file, checking for DATABASE_URL...');
         const envContent = fs.readFileSync(envPath, 'utf8');
         const dbUrlMatch = envContent.match(/DATABASE_URL["']?=(.*?)[\"']?$/m);
-        
+
         if (dbUrlMatch && dbUrlMatch[1]) {
           process.env.DATABASE_URL = sanitizeDatabaseUrl(dbUrlMatch[1])!;
           console.log('✅ Found DATABASE_URL in .env file');
@@ -62,28 +135,19 @@ export async function initializeDatabaseConnection(): Promise<{ pool: PgPool, db
     } catch (err) {
       console.error('❌ Error reading .env file:', err);
     }
-    
+
     if (!process.env.DATABASE_URL) {
       console.error("❌ DATABASE_URL environment variable is still not set");
       process.exit(1);
     }
   }
-  
-  // Create the connection pool
-  const useSSL = (process.env.DATABASE_URL || '').toLowerCase().includes('sslmode=require');
-  const pool = new Pool({ 
-    connectionString: process.env.DATABASE_URL,
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
-    maxUses: 5000,
-    keepAlive: true,
-    ssl: useSSL ? { rejectUnauthorized: false } : undefined
-  });
-  
-  // Initialize Drizzle ORM
-  const db = drizzle(pool, { schema });
-  
+
+  const originalUrl = sanitizeDatabaseUrl(process.env.DATABASE_URL)!;
+
+  // Attempt to create pool with IPv4-first resolution; on ENETUNREACH fallback to explicit IPv4
+  let pool = new Pool(buildPgConfig(originalUrl));
+  let db = drizzle(pool, { schema });
+
   // Test connection
   let client;
   try {
@@ -94,10 +158,36 @@ export async function initializeDatabaseConnection(): Promise<{ pool: PgPool, db
       console.log('✅ Database connection successful');
     }
     return { pool, db };
-  } catch (error) {
+  } catch (error: any) {
+    const message = String(error?.message || '');
+    // If IPv6 route is unreachable, try forcing IPv4 by resolving host to an IPv4 literal
+    if (message.includes('ENETUNREACH') || message.includes('EAI_AGAIN') || message.includes('ETIMEDOUT')) {
+      try {
+        console.log('🌐 IPv6 connection failed, attempting IPv4 fallback...');
+        const ipv4 = await resolveIPv4Host(originalUrl);
+        if (ipv4) {
+          // Replace pool with IPv4 override
+          pool = new Pool(buildPgConfig(originalUrl, ipv4));
+          db = drizzle(pool, { schema });
+          client = await pool.connect();
+          const result = await client.query('SELECT 1 as connected');
+          if (result.rows[0].connected === 1) {
+            console.log('✅ Database connection successful via IPv4 fallback');
+            return { pool, db };
+          }
+        } else {
+          console.warn('⚠️ Could not resolve IPv4 address for database host');
+        }
+      } catch (fallbackErr) {
+        console.error('❌ IPv4 fallback connection failed:', fallbackErr);
+      } finally {
+        try { client?.release(); } catch {}
+      }
+    }
+
     console.error('❌ Database connection failed:', error);
     throw error;
   } finally {
-    if (client) client.release();
+    try { client?.release(); } catch {}
   }
 }

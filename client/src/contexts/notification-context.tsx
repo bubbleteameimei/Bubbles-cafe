@@ -2,9 +2,8 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { v4 as uuidv4 } from 'uuid';
-import { CreepyTextGlitch } from '@/components/effects/CursedNotificationEffect';
+import { CreepyTextGlitch } from '@/components/effects/CreepyTextGlitch';
 
-// Notification types
 export type NotificationType = 'info' | 'success' | 'warning' | 'error' | 'new-story' | 'cursed';
 
 export interface Notification {
@@ -34,30 +33,25 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-// Time threshold to trigger the cursed effect (in milliseconds)
-// 24 hours in milliseconds = 86400000, but we'll use a much shorter time for testing
-const IGNORED_THRESHOLD = 30 * 1000; // 30 seconds for easy testing
+const IGNORED_THRESHOLD = 30 * 1000;
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>(() => {
-    // Try to load from localStorage first
     try {
       const saved = localStorage.getItem('notifications');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Convert stored date strings back to Date objects
         return parsed.map((n: any) => ({
           ...n,
           date: new Date(n.date)
         }));
       }
-    } catch (error) {
-      console.error('[Notifications] Error loading from localStorage:', error);
+    } catch {
+      // ignore storage errors
     }
     return [];
   });
 
-  // Track when notifications were last viewed
   const [lastNotificationOpen, setLastNotificationOpen] = useState<Date | null>(() => {
     try {
       const saved = localStorage.getItem('lastNotificationOpen');
@@ -67,10 +61,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   });
 
-  // State for the cursed effect
   const [showCursedEffect, setShowCursedEffect] = useState(false);
   
-  // Save last open time to localStorage
   useEffect(() => {
     if (lastNotificationOpen) {
       localStorage.setItem('lastNotificationOpen', lastNotificationOpen.toISOString());
@@ -79,18 +71,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  // Save notifications to localStorage when they change
   useEffect(() => {
     try {
       localStorage.setItem('notifications', JSON.stringify(notifications));
-    } catch (error) {
-      console.error('[Notifications] Error saving to localStorage:', error);
+    } catch {
+      // ignore storage errors
     }
   }, [notifications]);
 
   const { toast } = useToast();
   
-  // Define read/clear helpers before any functions that reference them
   const markAsRead = useCallback((id: string) => {
     setNotifications(prev =>
       prev.map(n => (n.id === id ? { ...n, read: true } : n))
@@ -105,7 +95,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setNotifications([]);
   }, []);
 
-  // Declare showNotificationToast before any functions that reference it
   const showNotificationToast = useCallback((notification: Notification) => {
     if (notification.read) return;
     if (notification.type === 'cursed') {
@@ -123,7 +112,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         oscillator.start();
         setTimeout(() => oscillator.stop(), 500);
       } catch {
-        console.log('Browser does not support Web Audio API');
+        // ignore audio errors
       }
       toast({
         title: (
@@ -149,9 +138,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       ) : undefined
     });
   }, [toast, markAsRead]);
-  // Add special cursed notification for users who ignore notifications
+
   const hasAddedCursedRef = useRef(false);
-  // Declare addNotification before effects that depend on it
+
   const addNotification = useCallback((notification: Omit<Notification, 'id' | 'date' | 'read'>) => {
     const newNotification: Notification = {
       ...notification,
@@ -162,23 +151,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     
     setNotifications(prev => [newNotification, ...prev]);
     
-    // Also show a toast notification unless it's a cursed notification
     if (notification.type !== 'cursed') {
       showNotificationToast(newNotification);
     }
   }, [showNotificationToast]);
 
   useEffect(() => {
-    // If there are unread notifications and the user hasn't checked in a while
     if (unreadCount > 0 && lastNotificationOpen && !hasAddedCursedRef.current) {
       const now = new Date();
       const timeSinceLastOpen = now.getTime() - lastNotificationOpen.getTime();
       
-      // If user has been ignoring notifications for the threshold period
       if (timeSinceLastOpen > IGNORED_THRESHOLD) {
-        console.log('[Notifications] User has been ignoring notifications for too long, adding cursed notification');
-        
-        // Add a special cursed notification (only if we haven't added one already)
         if (!notifications.some(n => n.type === 'cursed')) {
           addNotification({
             type: 'cursed',
@@ -193,20 +176,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [unreadCount, lastNotificationOpen, notifications, addNotification]);
 
-  // Reset the cursed flag when notifications are read
   useEffect(() => {
     if (unreadCount === 0) {
       hasAddedCursedRef.current = false;
     }
   }, [unreadCount]);
 
-  // Check for new stories periodically
   useEffect(() => {
     let lastChecked = new Date();
     
     const checkForNewStories = async () => {
       try {
-        // Check for most recent post
         const response = await fetch('/api/posts?limit=1');
         if (!response.ok) return;
         
@@ -216,8 +196,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const latestPost = data.posts[0];
         const postDate = new Date(latestPost.date);
         
-        // Only notify if the latest post is newer than our last check
-        // and we don't already have a notification for it
         if (postDate > lastChecked && !notifications.some(n => n.storyId === latestPost.id)) {
           addNotification({
             type: 'new-story',
@@ -229,15 +207,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }
         
         lastChecked = new Date();
-      } catch (error) {
-        console.error('[Notifications] Error checking for new stories:', error);
+      } catch {
+        // ignore fetch errors
       }
     };
     
-    // Check immediately on mount
     checkForNewStories();
-    
-    // Then every 5 minutes (adjust as needed)
     const interval = setInterval(checkForNewStories, 5 * 60 * 1000);
     
     return () => clearInterval(interval);
