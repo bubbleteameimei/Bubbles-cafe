@@ -2,11 +2,11 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
 import { queryClient } from './lib/queryClient';
-import { Toaster } from './components/ui/toaster';
-import { Sonner } from './components/ui/sonner';
+const Toaster = React.lazy(() => import('./components/ui/toaster').then(m => ({ default: m.Toaster })));
+const Sonner = React.lazy(() => import('./components/ui/sonner').then(m => ({ default: m.Sonner })));
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from './hooks/use-auth';
-import { CookieConsent } from './components/ui/cookie-consent';
+const CookieConsent = React.lazy(() => import('./components/ui/cookie-consent').then(m => ({ default: m.CookieConsent })));
 import { CookieConsentProvider } from './hooks/use-cookie-consent';
 import {
   GlobalErrorBoundary,
@@ -16,15 +16,13 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingScreen } from './components/ui/loading-screen';
 // Performance monitoring removed
 import { SidebarProvider } from './components/ui/sidebar';
-import ScrollToTopButton from './components/ScrollToTopButton';
-import { AnimatePresence, motion } from 'framer-motion';
+const ScrollToTopButton = React.lazy(() => import('./components/ScrollToTopButton'));
+import PageTransition from './components/PageTransition';
 // Add critical fullwidth fix stylesheet
 import './styles/fullwidth-fix.css';
 import './components/transition.css';
-// Import WordPress API preload function for enhanced reliability
-import { preloadWordPressPosts } from './lib/wordpress-api';
-// Import WordPress sync service
-import { initWordPressSync } from './lib/wordpress-sync';
+// Import WordPress API preload function for enhanced reliability (lazy-loaded below)
+// Import WordPress sync service (lazy-loaded below)
 // Import FeedbackButton component for site-wide feedback
 
 // Import our scroll effects provider for multi-speed scroll and gentle return
@@ -38,18 +36,17 @@ import ErrorToastProvider from './components/providers/error-toast-provider';
 // Import our new refresh components
 import { PullToRefresh } from './components/ui/pull-to-refresh';
 import { RefreshProvider } from './contexts/refresh-context';
-import { initCSRFProtection } from './lib/csrf-token';
 // Add global loading provider so ApiLoader can display a proper loading overlay
 import { GlobalLoadingProvider } from './components/GlobalLoadingProvider';
-import PostsPrefetcher from './components/providers/PostsPrefetcher';
+const PostsPrefetcher = React.lazy(() => import('./components/providers/PostsPrefetcher'));
 import { initSmoothScroll } from './lib/smooth-scroll';
 import { useA11y } from '@/hooks/useA11y';
 
 // Import essential pages directly
 const HomePage = React.lazy(() => import('./pages/home'));
 const StoriesPage = React.lazy(() => import('./pages/index'));
-// Import footer component
-import Footer from './components/layout/footer';
+// Import footer component lazily
+const Footer = React.lazy(() => import('./components/layout/footer'));
 
 // Eager-load all pages for faster route switching
 const ReaderPage = React.lazy(() => import('./pages/reader'));
@@ -131,18 +128,16 @@ import { usePrefersReducedMotion } from './hooks/use-prefers-reduced-motion';
 // This improves initial load time significantly
 const preloadWordPressPostsDeferred = () => {
   // Use requestIdleCallback for browsers that support it, or setTimeout as fallback
-  if (typeof window.requestIdleCallback === 'function') {
-    window.requestIdleCallback(
-      () => {
-        preloadWordPressPosts();
-      },
-      { timeout: 2000 },
-    ); // 2-second timeout
-  } else {
-    // Fallback to setTimeout with a slight delay
-    setTimeout(() => {
+  const run = async () => {
+    try {
+      const { preloadWordPressPosts } = await import('./lib/wordpress-api');
       preloadWordPressPosts();
-    }, 1000); // 1-second delay
+    } catch {}
+  };
+  if (typeof (window as any).requestIdleCallback === 'function') {
+    (window as any).requestIdleCallback(() => { void run(); }, { timeout: 2000 });
+  } else {
+    setTimeout(() => { void run(); }, 1000); // 1-second delay
   }
 };
 
@@ -363,14 +358,7 @@ const AppContent = () => {
               </Switch>
             </div>
           ) : (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={locationStr}
-                initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={prefersReducedMotion ? { opacity: 1 } : { opacity: 0.92 }}
-                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              >
+            <PageTransition>
                 <div className="page-content">
                   <Switch>
                     {/* Main Pages */}
@@ -476,8 +464,7 @@ const AppContent = () => {
                     <Route path="*" component={Error404Page} />
                   </Switch>
                 </div>
-              </motion.div>
-            </AnimatePresence>
+            </PageTransition>
           )}
         </main>
         {/* Footer at page bottom */}
@@ -503,22 +490,20 @@ function App() {
     setupGlobalErrorHandlers();
   }, []);
 
-  // Initialize CSRF protection early in app lifecycle
-  useEffect(() => {
-    // Fire and forget; subsequent API requests will reuse the token
-    void initCSRFProtection();
-  }, []);
+  // CSRF protection is initialized in main.tsx via dynamic import
 
   // The page transition loading will be handled by AppContent component
   // where useLoading will be called after LoadingProvider is mounted
 
   // Initialize WordPress sync service and defer content preloading
   useEffect(() => {
-    // Initialize the sync service first
-    initWordPressSync();
-
-    // Defer preloading content until after the initial render
-    preloadWordPressPostsDeferred();
+    (async () => {
+      try {
+        const { initWordPressSync } = await import('./lib/wordpress-sync');
+        initWordPressSync();
+      } catch {}
+      preloadWordPressPostsDeferred();
+    })();
   }, []);
 
   
@@ -542,7 +527,9 @@ function App() {
                       <ErrorToastProvider>
                         <RefreshProvider>
                           {/* Warm the cache for posts to make navigation instant */}
-                          <PostsPrefetcher />
+                          <React.Suspense fallback={null}>
+                            <PostsPrefetcher />
+                          </React.Suspense>
                           {/* Wrap AppContent with PullToRefresh */}
                           <PullToRefresh onRefresh={handleDataRefresh}>
                             {/* Performance monitor overlay removed */}
@@ -574,14 +561,22 @@ function App() {
                             </div>
                           </PullToRefresh>
                           {/* Site-wide elements outside of the main layout */}
-                          <CookieConsent />
+                          <React.Suspense fallback={null}>
+                            <CookieConsent />
+                          </React.Suspense>
                           {location !== '/' && (
-                            <ScrollToTopButton position="bottom-right" />
+                            <React.Suspense fallback={null}>
+                              <ScrollToTopButton position="bottom-right" />
+                            </React.Suspense>
                           )}
                           
                           {/* Toast notifications */}
-                          <Toaster />
-                          <Sonner position="bottom-left" className="fixed-sonner" />
+                          <React.Suspense fallback={null}>
+                            <Toaster />
+                          </React.Suspense>
+                          <React.Suspense fallback={null}>
+                            <Sonner position="bottom-left" className="fixed-sonner" />
+                          </React.Suspense>
                         </RefreshProvider>
                       </ErrorToastProvider>
                     </ScrollEffectsProvider>
