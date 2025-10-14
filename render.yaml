@@ -22,7 +22,7 @@ services:
       - key: CSRF_SECRET
         generateValue: true
       - key: FRONTEND_URL
-        sync: false
+        value: "https://bubblescafe.space"
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
