@@ -75,7 +75,46 @@ try {
         <App />
       </React.StrictMode>
     );
-  } catch {}
+  } catch (e) {
+    // Fail-safe boot fallback so users never see a blank screen
+    try {
+      const msg =
+        e instanceof Error ? e.message : typeof e === "string" ? e : "Unknown boot error";
+      fetch("/api/errors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: "boot-failure", message: String(msg) }),
+      }).catch(() => {});
+    } catch {}
+
+    try {
+      document.body.classList.remove("content-hidden");
+      const fallback = document.createElement("main");
+      fallback.setAttribute("id", "main-content");
+      fallback.setAttribute("role", "main");
+      fallback.style.position = "fixed";
+      fallback.style.inset = "0";
+      fallback.style.display = "flex";
+      fallback.style.alignItems = "center";
+      fallback.style.justifyContent = "center";
+      fallback.style.background = "#0a0a0a";
+      fallback.style.color = "#fff";
+      fallback.style.fontFamily = "system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif";
+      fallback.style.padding = "16px";
+      fallback.innerHTML = `
+        <div style="max-width:720px;text-align:center;">
+          <div style="font-size:18px;line-height:1.6;margin-bottom:12px;">The app failed to load.</div>
+          <div style="opacity:.8;font-size:14px;margin-bottom:16px;">Please refresh the page. If the issue persists, check the backend health.</div>
+          <div style="display:flex;gap:8px;justify-content:center;">
+            <button id="retry-btn" style="appearance:none;border:0;background:#2a2a2a;color:#fff;padding:10px 14px;border-radius:8px;cursor:pointer;">Refresh</button>
+            <a href="/api/health" style="display:inline-block;background:#1f2937;color:#fff;padding:10px 14px;border-radius:8px;text-decoration:none;">Backend health</a>
+          </div>
+        </div>`;
+      const retry = fallback.querySelector("#retry-btn");
+      retry?.addEventListener("click", () => location.reload());
+      root.replaceChildren(fallback);
+    } catch {}
+  }
 })();
 
 // Dev-only accessibility checks via dynamic import
