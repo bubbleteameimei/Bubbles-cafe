@@ -8,15 +8,19 @@ import { createRoot } from "react-dom/client";
 import React from "react";
 
 // Minimal runtime bootstrap without debug logs
+import { getApiBaseUrl } from "@/lib/asset-path";
 
 // Global unhandled promise rejection handler
 window.addEventListener("unhandledrejection", (event) => {
   try {
     const msg = event?.reason instanceof Error ? event.reason.message : String(event?.reason ?? "Unknown");
-    fetch("/api/errors", {
+    const API_BASE = getApiBaseUrl();
+    const url = API_BASE ? `${API_BASE}/api/errors` : "/api/errors";
+    fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: "unhandledrejection", message: msg }),
+      credentials: "include",
     }).catch(() => {});
   } catch {}
 });
@@ -80,10 +84,13 @@ try {
     try {
       const msg =
         e instanceof Error ? e.message : typeof e === "string" ? e : "Unknown boot error";
-      fetch("/api/errors", {
+      const API_BASE = getApiBaseUrl();
+      const url = API_BASE ? `${API_BASE}/api/errors` : "/api/errors";
+      fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: "boot-failure", message: String(msg) }),
+        credentials: "include",
       }).catch(() => {});
     } catch {}
 
@@ -113,11 +120,18 @@ try {
           <div style="opacity:.8;font-size:14px;margin-bottom:16px;">Please refresh the page. If the issue persists, check the backend health.</div>
           <div style="display:flex;gap:8px;justify-content:center;">
             <button id="retry-btn" style="appearance:none;border:0;background:#2a2a2a;color:#fff;padding:10px 14px;border-radius:8px;cursor:pointer;">Refresh</button>
-            <a href="/api/health" style="display:inline-block;background:#1f2937;color:#fff;padding:10px 14px;border-radius:8px;text-decoration:none;">Backend health</a>
+            <a id="health-link" href="#" style="display:inline-block;background:#1f2937;color:#fff;padding:10px 14px;border-radius:8px;text-decoration:none;">Backend health</a>
           </div>
         </div>`;
       const retry = fallback.querySelector("#retry-btn");
       retry?.addEventListener("click", () => location.reload());
+      // Set health link to absolute API health endpoint when frontend and backend are split
+      try {
+        const API_BASE = getApiBaseUrl();
+        const healthUrl = API_BASE ? `${API_BASE}/api/health` : "/api/health";
+        const healthLink = fallback.querySelector("#health-link") as HTMLAnchorElement | null;
+        healthLink?.setAttribute("href", healthUrl);
+      } catch {}
       root.replaceChildren(fallback);
     } catch {}
   }

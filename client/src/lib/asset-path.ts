@@ -9,13 +9,25 @@
  * Get the proper base URL for asset loading depending on the environment
  */
 export function getApiBaseUrl(): string {
-  // In production with split deployment, use the VITE_API_URL
-  if (import.meta.env.PROD && import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL as string;
+  // In development, prefer relative paths to use Vite proxy
+  if (import.meta.env.DEV) return '';
+
+  // In production with split deployment, prefer explicit env
+  const explicit = (import.meta.env.VITE_API_URL as string | undefined) || undefined;
+  if (explicit) return explicit.replace(/\/+$/, '');
+
+  // Derive from current hostname: map bubblescafe.space -> api.bubblescafe.space
+  try {
+    const { protocol, hostname } = window.location;
+    if (hostname.startsWith('api.')) {
+      return `${protocol}//${hostname}`;
+    }
+    // Handle common www. subdomain
+    const host = hostname.startsWith('www.') ? hostname.slice(4) : hostname;
+    return `${protocol}//api.${host}`;
+  } catch {
+    return '';
   }
-  
-  // In development or single-domain deployment, use relative paths
-  return '';
 }
 
 /**

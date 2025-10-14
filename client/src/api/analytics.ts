@@ -5,6 +5,7 @@
  */
 
 import { ReadingTimeAnalytics } from '@/types/analytics';
+import { getApiBaseUrl } from '@/lib/asset-path';
 
 export interface SiteAnalytics {
   totalViews: number;
@@ -23,11 +24,14 @@ export interface DeviceDistribution {
  * Fetches reading time analytics data - uses public endpoint that doesn't require authentication
  */
 export async function getReadingTimeAnalytics(): Promise<ReadingTimeAnalytics> {
-  const response = await fetch('/api/analytics/reading-time-test', {
+  const API_BASE = getApiBaseUrl();
+  const url = API_BASE ? `${API_BASE}/api/analytics/reading-time-test` : '/api/analytics/reading-time-test';
+  const response = await fetch(url, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -41,11 +45,14 @@ export async function getReadingTimeAnalytics(): Promise<ReadingTimeAnalytics> {
  * Fetches device analytics data - uses public endpoint that doesn't require authentication
  */
 export async function getDeviceAnalytics(): Promise<any> {
-  const response = await fetch('/api/analytics/devices-test', {
+  const API_BASE = getApiBaseUrl();
+  const url = API_BASE ? `${API_BASE}/api/analytics/devices-test` : '/api/analytics/devices-test';
+  const response = await fetch(url, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -59,11 +66,14 @@ export async function getDeviceAnalytics(): Promise<any> {
  * Fetches site-wide analytics data
  */
 export async function getSiteAnalytics(): Promise<SiteAnalytics> {
-  const response = await fetch('/api/analytics/site-test', {
+  const API_BASE = getApiBaseUrl();
+  const url = API_BASE ? `${API_BASE}/api/analytics/site-test` : '/api/analytics/site-test';
+  const response = await fetch(url, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -77,11 +87,14 @@ export async function getSiteAnalytics(): Promise<SiteAnalytics> {
  * Fetches device distribution analytics
  */
 export async function getDeviceDistribution(): Promise<DeviceDistribution> {
-  const response = await fetch('/api/analytics/device-distribution-test', {
+  const API_BASE = getApiBaseUrl();
+  const url = API_BASE ? `${API_BASE}/api/analytics/device-distribution-test` : '/api/analytics/device-distribution-test';
+  const response = await fetch(url, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -95,12 +108,15 @@ export async function getDeviceDistribution(): Promise<DeviceDistribution> {
  * Submits client-side performance metrics to the server
  */
 export async function submitPerformanceMetrics(metrics: Record<string, any>): Promise<void> {
-  const response = await fetch('/api/analytics/vitals', {
+  const API_BASE = getApiBaseUrl();
+  const url = API_BASE ? `${API_BASE}/api/analytics/vitals` : '/api/analytics/vitals';
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(metrics),
+    credentials: 'include',
   });
   
   if (!response.ok) {
@@ -118,9 +134,11 @@ export async function recordPageView(
   referrer: string = document.referrer
 ): Promise<void> {
   try {
+    const API_BASE = getApiBaseUrl();
+    const url = API_BASE ? `${API_BASE}/api/analytics/pageview` : '/api/analytics/pageview';
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), 4000);
-    await fetch('/api/analytics/pageview', {
+    await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -134,6 +152,8 @@ export async function recordPageView(
         screenHeight: window.innerHeight,
       }),
       signal: controller.signal,
+      credentials: 'include',
+      keepalive: true,
     });
     clearTimeout(t);
   } catch (error) {
@@ -149,7 +169,9 @@ export async function recordInteraction(
   details: Record<string, any> = {}
 ): Promise<void> {
   try {
-    await fetch('/api/analytics/interaction', {
+    const API_BASE = getApiBaseUrl();
+    const url = API_BASE ? `${API_BASE}/api/analytics/interaction` : '/api/analytics/interaction';
+    await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -160,6 +182,8 @@ export async function recordInteraction(
         timestamp: new Date().toISOString(),
         path: window.location.pathname,
       }),
+      credentials: 'include',
+      keepalive: true,
     });
   } catch (error) {
     console.warn(`Failed to record ${interactionType} interaction:`, error);
@@ -170,11 +194,14 @@ export async function recordInteraction(
  * Fetches engagement metrics - uses public endpoint that doesn't require authentication
  */
 export async function getEngagementMetrics(): Promise<any> {
-  const response = await fetch('/api/analytics/engagement-test', {
+  const API_BASE = getApiBaseUrl();
+  const url = API_BASE ? `${API_BASE}/api/analytics/engagement-test` : '/api/analytics/engagement-test';
+  const response = await fetch(url, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
   });
   
   if (!response.ok) {
