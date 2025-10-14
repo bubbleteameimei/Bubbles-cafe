@@ -103,253 +103,308 @@ async function createMissingTables(existingTables: string[], client: any) {
     }
   }
   
-  // Create reading_streaks table if it doesn't exist
+  // Create reading_streaks table if it doesn't exist (depends on users)
   if (!existingTables.includes('reading_streaks')) {
-    try {
-      log("[Migrations] Creating reading_streaks table");
-      await client.query(`
-        CREATE TABLE reading_streaks (
-          id SERIAL PRIMARY KEY,
-          user_id INTEGER NOT NULL REFERENCES users(id),
-          current_streak INTEGER NOT NULL DEFAULT 0,
-          longest_streak INTEGER NOT NULL DEFAULT 0,
-          last_read_at TIMESTAMP NOT NULL DEFAULT NOW(),
-          total_reads INTEGER NOT NULL DEFAULT 0
-        )
-      `);
-      log("[Migrations] reading_streaks table created");
-      creationAttempts['reading_streaks'] = true;
-    } catch (error) {
-      log("[Migrations] Error creating reading_streaks table:", error);
+    if (!existingTables.includes('users')) {
+      log("[Migrations] Skipping reading_streaks table: users table missing");
       creationAttempts['reading_streaks'] = false;
+    } else {
+      try {
+        log("[Migrations] Creating reading_streaks table");
+        await client.query(`
+          CREATE TABLE reading_streaks (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            current_streak INTEGER NOT NULL DEFAULT 0,
+            longest_streak INTEGER NOT NULL DEFAULT 0,
+            last_read_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            total_reads INTEGER NOT NULL DEFAULT 0
+          )
+        `);
+        log("[Migrations] reading_streaks table created");
+        creationAttempts['reading_streaks'] = true;
+      } catch (error) {
+        log("[Migrations] Error creating reading_streaks table:", error);
+        creationAttempts['reading_streaks'] = false;
+      }
     }
   }
   
-  // Create author_stats table if it doesn't exist
+  // Create author_stats table if it doesn't exist (depends on users)
   if (!existingTables.includes('author_stats')) {
-    try {
-      log("[Migrations] Creating author_stats table");
-      await client.query(`
-        CREATE TABLE author_stats (
-          id SERIAL PRIMARY KEY,
-          author_id INTEGER NOT NULL REFERENCES users(id),
-          total_posts INTEGER NOT NULL DEFAULT 0,
-          total_likes INTEGER NOT NULL DEFAULT 0,
-          total_tips TEXT NOT NULL DEFAULT '0',
-          updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )
-      `);
-      log("[Migrations] author_stats table created");
-      creationAttempts['author_stats'] = true;
-    } catch (error) {
-      log("[Migrations] Error creating author_stats table:", error);
+    if (!existingTables.includes('users')) {
+      log("[Migrations] Skipping author_stats table: users table missing");
       creationAttempts['author_stats'] = false;
+    } else {
+      try {
+        log("[Migrations] Creating author_stats table");
+        await client.query(`
+          CREATE TABLE author_stats (
+            id SERIAL PRIMARY KEY,
+            author_id INTEGER NOT NULL REFERENCES users(id),
+            total_posts INTEGER NOT NULL DEFAULT 0,
+            total_likes INTEGER NOT NULL DEFAULT 0,
+            total_tips TEXT NOT NULL DEFAULT '0',
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+          )
+        `);
+        log("[Migrations] author_stats table created");
+        creationAttempts['author_stats'] = true;
+      } catch (error) {
+        log("[Migrations] Error creating author_stats table:", error);
+        creationAttempts['author_stats'] = false;
+      }
     }
   }
   
-  // Create post_likes table if it doesn't exist
+  // Create post_likes table if it doesn't exist (depends on posts, users)
   if (!existingTables.includes('post_likes')) {
-    try {
-      log("[Migrations] Creating post_likes table");
-      await client.query(`
-        CREATE TABLE post_likes (
-          id SERIAL PRIMARY KEY,
-          post_id INTEGER NOT NULL REFERENCES posts(id),
-          user_id INTEGER NOT NULL REFERENCES users(id),
-          is_like BOOLEAN NOT NULL,
-          created_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )
-      `);
-      log("[Migrations] post_likes table created");
-      creationAttempts['post_likes'] = true;
-    } catch (error) {
-      log("[Migrations] Error creating post_likes table:", error);
+    if (!existingTables.includes('posts') || !existingTables.includes('users')) {
+      log("[Migrations] Skipping post_likes table: posts/users table missing");
       creationAttempts['post_likes'] = false;
+    } else {
+      try {
+        log("[Migrations] Creating post_likes table");
+        await client.query(`
+          CREATE TABLE post_likes (
+            id SERIAL PRIMARY KEY,
+            post_id INTEGER NOT NULL REFERENCES posts(id),
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            is_like BOOLEAN NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+          )
+        `);
+        log("[Migrations] post_likes table created");
+        creationAttempts['post_likes'] = true;
+      } catch (error) {
+        log("[Migrations] Error creating post_likes table:", error);
+        creationAttempts['post_likes'] = false;
+      }
     }
   }
   
-  // Create reading_progress table if it doesn't exist
+  // Create reading_progress table if it doesn't exist (depends on posts, users)
   if (!existingTables.includes('reading_progress')) {
-    try {
-      log("[Migrations] Creating reading_progress table");
-      await client.query(`
-        CREATE TABLE reading_progress (
-          id SERIAL PRIMARY KEY,
-          post_id INTEGER NOT NULL REFERENCES posts(id),
-          user_id INTEGER NOT NULL REFERENCES users(id),
-          progress DECIMAL NOT NULL,
-          last_read_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )
-      `);
-      log("[Migrations] reading_progress table created");
-      creationAttempts['reading_progress'] = true;
-    } catch (error) {
-      log("[Migrations] Error creating reading_progress table:", error);
+    if (!existingTables.includes('posts') || !existingTables.includes('users')) {
+      log("[Migrations] Skipping reading_progress table: posts/users table missing");
       creationAttempts['reading_progress'] = false;
+    } else {
+      try {
+        log("[Migrations] Creating reading_progress table");
+        await client.query(`
+          CREATE TABLE reading_progress (
+            id SERIAL PRIMARY KEY,
+            post_id INTEGER NOT NULL REFERENCES posts(id),
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            progress DECIMAL NOT NULL,
+            last_read_at TIMESTAMP NOT NULL DEFAULT NOW()
+          )
+        `);
+        log("[Migrations] reading_progress table created");
+        creationAttempts['reading_progress'] = true;
+      } catch (error) {
+        log("[Migrations] Error creating reading_progress table:", error);
+        creationAttempts['reading_progress'] = false;
+      }
     }
   }
   
-  // Create comment_votes table if it doesn't exist
+  // Create comment_votes table if it doesn't exist (depends on comments)
   if (!existingTables.includes('comment_votes')) {
-    try {
-      log("[Migrations] Creating comment_votes table");
-      await client.query(`
-        CREATE TABLE comment_votes (
-          id SERIAL PRIMARY KEY,
-          comment_id INTEGER NOT NULL REFERENCES comments(id),
-          user_id TEXT NOT NULL,
-          is_upvote BOOLEAN NOT NULL,
-          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-          UNIQUE(comment_id, user_id)
-        )
-      `);
-      log("[Migrations] comment_votes table created");
-      creationAttempts['comment_votes'] = true;
-    } catch (error) {
-      log("[Migrations] Error creating comment_votes table:", error);
+    if (!existingTables.includes('comments')) {
+      log("[Migrations] Skipping comment_votes table: comments table missing");
       creationAttempts['comment_votes'] = false;
+    } else {
+      try {
+        log("[Migrations] Creating comment_votes table");
+        await client.query(`
+          CREATE TABLE comment_votes (
+            id SERIAL PRIMARY KEY,
+            comment_id INTEGER NOT NULL REFERENCES comments(id),
+            user_id TEXT NOT NULL,
+            is_upvote BOOLEAN NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            UNIQUE(comment_id, user_id)
+          )
+        `);
+        log("[Migrations] comment_votes table created");
+        creationAttempts['comment_votes'] = true;
+      } catch (error) {
+        log("[Migrations] Error creating comment_votes table:", error);
+        creationAttempts['comment_votes'] = false;
+      }
     }
   }
   
-  // Create comment_reactions table if it doesn't exist
+  // Create comment_reactions table if it doesn't exist (depends on comments)
   if (!existingTables.includes('comment_reactions')) {
-    try {
-      log("[Migrations] Creating comment_reactions table");
-      await client.query(`
-        CREATE TABLE comment_reactions (
-          id SERIAL PRIMARY KEY,
-          comment_id INTEGER NOT NULL REFERENCES comments(id),
-          user_id TEXT NOT NULL,
-          emoji TEXT NOT NULL,
-          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-          UNIQUE(comment_id, user_id, emoji)
-        )
-      `);
-      log("[Migrations] comment_reactions table created");
-      creationAttempts['comment_reactions'] = true;
-    } catch (error) {
-      log("[Migrations] Error creating comment_reactions table:", error);
+    if (!existingTables.includes('comments')) {
+      log("[Migrations] Skipping comment_reactions table: comments table missing");
       creationAttempts['comment_reactions'] = false;
+    } else {
+      try {
+        log("[Migrations] Creating comment_reactions table");
+        await client.query(`
+          CREATE TABLE comment_reactions (
+            id SERIAL PRIMARY KEY,
+            comment_id INTEGER NOT NULL REFERENCES comments(id),
+            user_id TEXT NOT NULL,
+            emoji TEXT NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            UNIQUE(comment_id, user_id, emoji)
+          )
+        `);
+        log("[Migrations] comment_reactions table created");
+        creationAttempts['comment_reactions'] = true;
+      } catch (error) {
+        log("[Migrations] Error creating comment_reactions table:", error);
+        creationAttempts['comment_reactions'] = false;
+      }
     }
   }
   
-  // Create user_feedback table if it doesn't exist
+  // Create user_feedback table if it doesn't exist (depends on users for FK)
   if (!existingTables.includes('user_feedback')) {
-    try {
-      log("[Migrations] Creating user_feedback table");
-      await client.query(`
-        CREATE TABLE user_feedback (
-          id SERIAL PRIMARY KEY,
-          type TEXT NOT NULL DEFAULT 'general',
-          content TEXT NOT NULL,
-          page TEXT DEFAULT 'unknown',
-          status TEXT NOT NULL DEFAULT 'pending',
-          user_id INTEGER REFERENCES users(id),
-          browser TEXT DEFAULT 'unknown',
-          operating_system TEXT DEFAULT 'unknown',
-          screen_resolution TEXT DEFAULT 'unknown',
-          user_agent TEXT DEFAULT 'unknown', 
-          category TEXT DEFAULT 'general',
-          metadata JSONB DEFAULT '{}',
-          created_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )
-      `);
-      log("[Migrations] user_feedback table created");
-      creationAttempts['user_feedback'] = true;
-    } catch (error) {
-      log("[Migrations] Error creating user_feedback table:", error);
+    if (!existingTables.includes('users')) {
+      log("[Migrations] Skipping user_feedback table: users table missing");
       creationAttempts['user_feedback'] = false;
+    } else {
+      try {
+        log("[Migrations] Creating user_feedback table");
+        await client.query(`
+          CREATE TABLE user_feedback (
+            id SERIAL PRIMARY KEY,
+            type TEXT NOT NULL DEFAULT 'general',
+            content TEXT NOT NULL,
+            page TEXT DEFAULT 'unknown',
+            status TEXT NOT NULL DEFAULT 'pending',
+            user_id INTEGER REFERENCES users(id),
+            browser TEXT DEFAULT 'unknown',
+            operating_system TEXT DEFAULT 'unknown',
+            screen_resolution TEXT DEFAULT 'unknown',
+            user_agent TEXT DEFAULT 'unknown', 
+            category TEXT DEFAULT 'general',
+            metadata JSONB DEFAULT '{}',
+            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+          )
+        `);
+        log("[Migrations] user_feedback table created");
+        creationAttempts['user_feedback'] = true;
+      } catch (error) {
+        log("[Migrations] Error creating user_feedback table:", error);
+        creationAttempts['user_feedback'] = false;
+      }
     }
   }
   
-  // Create analytics table if it doesn't exist
+  // Create analytics table if it doesn't exist (depends on posts)
   if (!existingTables.includes('analytics')) {
-    try {
-      log("[Migrations] Creating analytics table");
-      await client.query(`
-        CREATE TABLE analytics (
-          id SERIAL PRIMARY KEY,
-          post_id INTEGER NOT NULL REFERENCES posts(id),
-          page_views INTEGER NOT NULL DEFAULT 0,
-          unique_visitors INTEGER NOT NULL DEFAULT 0,
-          average_read_time DOUBLE PRECISION NOT NULL DEFAULT 0,
-          bounce_rate DOUBLE PRECISION NOT NULL DEFAULT 0,
-          device_stats JSONB NOT NULL DEFAULT '{}',
-          updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )
-      `);
-      log("[Migrations] analytics table created");
-      creationAttempts['analytics'] = true;
-    } catch (error) {
-      log("[Migrations] Error creating analytics table:", error);
+    if (!existingTables.includes('posts')) {
+      log("[Migrations] Skipping analytics table: posts table missing");
       creationAttempts['analytics'] = false;
+    } else {
+      try {
+        log("[Migrations] Creating analytics table");
+        await client.query(`
+          CREATE TABLE analytics (
+            id SERIAL PRIMARY KEY,
+            post_id INTEGER NOT NULL REFERENCES posts(id),
+            page_views INTEGER NOT NULL DEFAULT 0,
+            unique_visitors INTEGER NOT NULL DEFAULT 0,
+            average_read_time DOUBLE PRECISION NOT NULL DEFAULT 0,
+            bounce_rate DOUBLE PRECISION NOT NULL DEFAULT 0,
+            device_stats JSONB NOT NULL DEFAULT '{}',
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+          )
+        `);
+        log("[Migrations] analytics table created");
+        creationAttempts['analytics'] = true;
+      } catch (error) {
+        log("[Migrations] Error creating analytics table:", error);
+        creationAttempts['analytics'] = false;
+      }
     }
   }
   
-  // Create user_notifications table if it doesn't exist
+  // Create user_notifications table if it doesn't exist (depends on users)
   if (!existingTables.includes('user_notifications')) {
-    try {
-      log("[Migrations] Creating user_notifications table");
-      await client.query(`
-        CREATE TABLE user_notifications (
-          id SERIAL PRIMARY KEY,
-          user_id INTEGER NOT NULL REFERENCES users(id),
-          type TEXT NOT NULL,
-          title TEXT NOT NULL,
-          message TEXT NOT NULL,
-          is_read BOOLEAN NOT NULL DEFAULT false,
-          data JSONB DEFAULT '{}',
-          created_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )
-      `);
-      log("[Migrations] user_notifications table created");
-      creationAttempts['user_notifications'] = true;
-    } catch (error) {
-      log("[Migrations] Error creating user_notifications table:", error);
+    if (!existingTables.includes('users')) {
+      log("[Migrations] Skipping user_notifications table: users table missing");
       creationAttempts['user_notifications'] = false;
+    } else {
+      try {
+        log("[Migrations] Creating user_notifications table");
+        await client.query(`
+          CREATE TABLE user_notifications (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            message TEXT NOT NULL,
+            is_read BOOLEAN NOT NULL DEFAULT false,
+            data JSONB DEFAULT '{}',
+            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+          )
+        `);
+        log("[Migrations] user_notifications table created");
+        creationAttempts['user_notifications'] = true;
+      } catch (error) {
+        log("[Migrations] Error creating user_notifications table:", error);
+        creationAttempts['user_notifications'] = false;
+      }
     }
   }
 
-  // Create tag_relations table if it doesn't exist
+  // Create tag_relations table if it doesn't exist (depends on posts)
   if (!existingTables.includes('tag_relations')) {
-    try {
-      log("[Migrations] Creating tag_relations table");
-      await client.query(`
-        CREATE TABLE tag_relations (
-          id SERIAL PRIMARY KEY,
-          post_id INTEGER NOT NULL REFERENCES posts(id),
-          tag_name TEXT NOT NULL,
-          created_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )
-      `);
-      log("[Migrations] tag_relations table created");
-      creationAttempts['tag_relations'] = true;
-    } catch (error) {
-      log("[Migrations] Error creating tag_relations table:", error);
+    if (!existingTables.includes('posts')) {
+      log("[Migrations] Skipping tag_relations table: posts table missing");
       creationAttempts['tag_relations'] = false;
+    } else {
+      try {
+        log("[Migrations] Creating tag_relations table");
+        await client.query(`
+          CREATE TABLE tag_relations (
+            id SERIAL PRIMARY KEY,
+            post_id INTEGER NOT NULL REFERENCES posts(id),
+            tag_name TEXT NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+          )
+        `);
+        log("[Migrations] tag_relations table created");
+        creationAttempts['tag_relations'] = true;
+      } catch (error) {
+        log("[Migrations] Error creating tag_relations table:", error);
+        creationAttempts['tag_relations'] = false;
+      }
     }
   }
 
-  // Create user_preferences table if it doesn't exist
+  // Create user_preferences table if it doesn't exist (depends on users)
   if (!existingTables.includes('user_preferences')) {
-    try {
-      log("[Migrations] Creating user_preferences table");
-      await client.query(`
-        CREATE TABLE user_preferences (
-          id SERIAL PRIMARY KEY,
-          user_id INTEGER NOT NULL REFERENCES users(id),
-          preference_name TEXT NOT NULL,
-          preference_value TEXT,
-          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-          updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-          UNIQUE(user_id, preference_name)
-        )
-      `);
-      log("[Migrations] user_preferences table created");
-      creationAttempts['user_preferences'] = true;
-    } catch (error) {
-      log("[Migrations] Error creating user_preferences table:", error);
+    if (!existingTables.includes('users')) {
+      log("[Migrations] Skipping user_preferences table: users table missing");
       creationAttempts['user_preferences'] = false;
+    } else {
+      try {
+        log("[Migrations] Creating user_preferences table");
+        await client.query(`
+          CREATE TABLE user_preferences (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            preference_name TEXT NOT NULL,
+            preference_value TEXT,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            UNIQUE(user_id, preference_name)
+          )
+        `);
+        log("[Migrations] user_preferences table created");
+        creationAttempts['user_preferences'] = true;
+      } catch (error) {
+        log("[Migrations] Error creating user_preferences table:", error);
+        creationAttempts['user_preferences'] = false;
+      }
     }
   }
   
@@ -377,6 +432,20 @@ async function createMissingTables(existingTables: string[], client: any) {
 async function fixPostsTableColumns(client: any) {
   try {
     log("[Migrations] Checking posts table columns for isAdminPost naming issue");
+
+    // Ensure posts table exists before attempting column operations
+    const postsTableExistsQuery = `
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'posts'
+      ) AS exists
+    `;
+    const existsResult = await client.query(postsTableExistsQuery);
+    const postsTableExists = !!existsResult.rows?.[0]?.exists;
+    if (!postsTableExists) {
+      log("[Migrations] Posts table does not exist. Skipping isAdminPost column fix.");
+      return false;
+    }
     
     // First check if is_admin_post column exists
     const checkOldColumnQuery = `

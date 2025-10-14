@@ -480,16 +480,29 @@ export class DatabaseStorage implements IStorage {
       `);
 
       // Only add primary key if it doesn't exist
-      try {
-        await compatiblePool.query(`
-          ALTER TABLE "session"
-          ADD CONSTRAINT "session_pkey"
-          PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
-        `);
-      } catch (error: any) {
-        // Ignore error if constraint already exists
-        if (!error.message.includes('already exists')) {
-          throw error;
+      // Check constraint existence via information_schema before attempting to add
+      const pkCheck = await compatiblePool.query(`
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_schema = 'public'
+          AND table_name = 'session'
+          AND constraint_type = 'PRIMARY KEY'
+      `);
+      const hasPrimaryKey = Array.isArray(pkCheck.rows) && pkCheck.rows.length > 0;
+
+      if (!hasPrimaryKey) {
+        try {
+          await compatiblePool.query(`
+            ALTER TABLE "session"
+            ADD CONSTRAINT "session_pkey"
+            PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
+          `);
+        } catch (error: any) {
+          // Ignore if constraint exists or PG complains about multiple primary keys
+          const msg = String(error?.message || '');
+          if (!(msg.includes('already exists') || msg.includes('multiple primary keys'))) {
+            throw error;
+          }
         }
       }
 
@@ -1629,15 +1642,15 @@ export class DatabaseStorage implements IStorage {
           title,
           content,
           slug,
-          authorId,
+          author_id,
           excerpt,
           metadata,
-          isSecret,
+          is_secret,
           "isAdminPost",
-          matureContent,
-          themeCategory,
-          createdAt,
-          readingTimeMinutes
+          mature_content,
+          theme_category,
+          created_at,
+          reading_time_minutes
         ) VALUES (
           ${basePost.title},
           ${basePost.content},

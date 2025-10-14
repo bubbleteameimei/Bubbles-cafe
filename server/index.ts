@@ -326,13 +326,38 @@ async function startServer() {
             await pushSchema();
             serverLogger.info('Schema created successfully');
 
-            serverLogger.info('Seeding from WordPress API after schema creation...');
+            // Ensure post-schema migrations (including column renames) are applied
+            serverLogger.info('Running migrations after schema creation...');
             try {
-              await seedFromWordPressAPI();
-              serverLogger.info('API seeding completed after schema creation');
-            } catch (seedErr) {
-              serverLogger.error('API seeding failed after schema creation', {
-                error: seedErr instanceof Error ? seedErr.message : 'Unknown error'
+              await runMigrations();
+              serverLogger.info('Post-schema migrations completed');
+            } catch (migErr) {
+              serverLogger.error('Post-schema migrations failed', {
+                error: migErr instanceof Error ? migErr.message : 'Unknown error'
+              });
+            }
+
+            // Re-check posts count before deciding to seed
+            try {
+              const [{ value: postsCountAfter }] = await db.select({ value: count() }).from(posts);
+              serverLogger.info('Database connected after schema creation', { postsCount: postsCountAfter });
+
+              if (postsCountAfter === 0) {
+                serverLogger.info('Seeding from WordPress API after schema creation...');
+                try {
+                  await seedFromWordPressAPI();
+                  serverLogger.info('API seeding completed after schema creation');
+                } catch (seedErr) {
+                  serverLogger.error('API seeding failed after schema creation', {
+                    error: seedErr instanceof Error ? seedErr.message : 'Unknown error'
+                  });
+                }
+              } else {
+                serverLogger.info('Skipping seeding: posts already present');
+              }
+            } catch (countErr) {
+              serverLogger.error('Failed to read posts count after schema creation', {
+                error: countErr instanceof Error ? countErr.message : 'Unknown error'
               });
             }
           } catch (finalError) {
