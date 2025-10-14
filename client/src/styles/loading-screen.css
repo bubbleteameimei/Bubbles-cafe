@@ -9,10 +9,8 @@
 }
 
 .loading-active {
-  overflow: hidden !important;
-  position: fixed !important;
-  width: 100% !important;
-  height: 100% !important;
+  /* Visual state only; scroll lock handled via html.disable-scroll + JS compensation */
+  cursor: wait !important;
 }
 
 /* Main loading overlay - Always visible and on top */

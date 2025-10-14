@@ -54,12 +54,35 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     };
   }, []);
   
+  // Scroll lock helpers with scrollbar compensation to prevent layout shift
+  const applyScrollLock = useCallback(() => {
+    try {
+      const docEl = document.documentElement;
+      const body = document.body;
+      const scrollbarWidth = Math.max(0, window.innerWidth - docEl.clientWidth);
+      // Lock scroll on root
+      docEl.classList.add('disable-scroll');
+      // Compensate for scrollbar removal
+      body.style.paddingRight = scrollbarWidth ? `${scrollbarWidth}px` : '';
+      // Backward-compat class (visual only; CSS shouldn't set position fixed)
+      body.classList.add('loading-active');
+    } catch {}
+  }, []);
+
+  const releaseScrollLock = useCallback(() => {
+    try {
+      const body = document.body;
+      document.documentElement.classList.remove('disable-scroll');
+      body.classList.remove('loading-active');
+      body.style.paddingRight = '';
+    } catch {}
+  }, []);
+
   // Handle animation completion from loading screen
   const handleAnimationComplete = useCallback(() => {
     setIsLoading(false);
     try {
-      document.documentElement.classList.remove('disable-scroll');
-      document.body.classList.remove('loading-active');
+      releaseScrollLock();
       sessionStorage.removeItem('app_loading');
     } catch {
       // Ignore storage errors
@@ -67,7 +90,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     setTimeout(() => {
       preventRapidShowRef.current = false;
     }, PREVENT_RAPID_SHOW_DURATION);
-  }, []);
+  }, [releaseScrollLock]);
   
   // Show loading screen with smart prevention of multiple triggers
   const showLoading = useCallback((newMessage?: string) => {
@@ -82,15 +105,14 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     
     setIsLoading(true);
     
-    // Lock scroll and set persistence flag
+    // Lock scroll (with compensation) and set persistence flag
     try {
-      document.documentElement.classList.add('disable-scroll');
-      document.body.classList.add('loading-active');
+      applyScrollLock();
       sessionStorage.setItem('app_loading', 'true');
     } catch {
       // Ignore storage errors
     }
-  }, [isLoading]);
+  }, [isLoading, applyScrollLock]);
   
   // Hide loading screen
   const hideLoading = useCallback(() => {
@@ -103,8 +125,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     
     // Clear scroll lock and storage
     try {
-      document.documentElement.classList.remove('disable-scroll');
-      document.body.classList.remove('loading-active');
+      releaseScrollLock();
       sessionStorage.removeItem('app_loading');
     } catch {
       // Ignore storage errors
@@ -113,7 +134,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     setTimeout(() => {
       preventRapidShowRef.current = false;
     }, PREVENT_RAPID_SHOW_DURATION);
-  }, []);
+  }, [releaseScrollLock]);
   
   // Utility to wrap promises with loading state
   const withLoading = useCallback(function<T>(promise: Promise<T>, loadingMessage?: string): Promise<T> {
@@ -140,13 +161,12 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     try {
       if (sessionStorage.getItem('app_loading') === 'true') {
         setIsLoading(true);
-        document.documentElement.classList.add('disable-scroll');
-        document.body.classList.add('loading-active');
+        applyScrollLock();
       }
     } catch {
       // Ignore storage errors
     }
-  }, []);
+  }, [applyScrollLock]);
   
   return (
     <LoadingContext.Provider 
