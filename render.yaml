@@ -16,7 +16,7 @@ services:
       - key: NPM_CONFIG_PRODUCTION
         value: 'false'
       - key: DATABASE_URL
-        value: "postgresql://postgres:9yyVDmYjUHmn7Wkt@143.110.234.78:5432/postgres?sslmode=require"
+        sync: false
       - key: SESSION_SECRET
         generateValue: true
       - key: CSRF_SECRET
@@ -40,7 +40,7 @@ services:
         value: "10000"
       # Disable background WordPress scheduler by default in production
       - key: ENABLE_WORDPRESS_SCHEDULER
-        value: "false"
+        value: "true"
       # Public site and backend base URLs used by sitemap generation during build
       - key: SITE_URL
         value: "https://bubblescafe.space"
