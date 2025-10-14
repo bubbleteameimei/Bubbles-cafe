@@ -12,7 +12,7 @@ services:
       - key: NODE_VERSION
         value: '22'
       - key: NODE_OPTIONS
-        value: '--enable-source-maps'
+        value: '--enable-source-maps --dns-result-order=ipv4first'
       - key: NPM_CONFIG_PRODUCTION
         value: 'false'
       - key: DATABASE_URL
