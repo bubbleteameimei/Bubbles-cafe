@@ -117,7 +117,14 @@ try {
     params.delete('channel_binding');
     return base + '?' + params.toString();
   };
-  const sanitizedUrl = sanitizeUrl(process.env.DATABASE_URL);
+  // Prefer Supabase pooler URL if provided
+  const preferredUrl = sanitizeUrl(
+    process.env.SUPABASE_POOLER_URL ||
+    process.env.SUPABASE_CONNECTION_POOLER_URL ||
+    process.env.DB_POOLER_URL ||
+    process.env.DATABASE_URL
+  );
+  const sanitizedUrl = preferredUrl;
 
   pool = new Pool({
     connectionString: sanitizedUrl,

@@ -58,7 +58,13 @@ function sanitizeDatabaseUrl(url?: string): string | undefined {
 }
 
 // Resolve database URL from environment with sanitization
-const DATABASE_URL = sanitizeDatabaseUrl(process.env.DATABASE_URL);
+// Prefer Supabase connection pooler URL if provided
+const DATABASE_URL = sanitizeDatabaseUrl(
+  process.env.SUPABASE_POOLER_URL ||
+  process.env.SUPABASE_CONNECTION_POOLER_URL ||
+  process.env.DB_POOLER_URL ||
+  process.env.DATABASE_URL
+);
 
 // Create pool with connection retry logic using node-postgres
 let pool: pkg.Pool | undefined;

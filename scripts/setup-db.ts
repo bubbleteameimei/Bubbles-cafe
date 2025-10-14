@@ -12,6 +12,15 @@ async function setupDatabase() {
   console.log('🔄 Setting up database connection...');
   
   try {
+    // Prefer Supabase connection pooler URL if provided
+    try {
+      const poolerUrl = (process.env.SUPABASE_POOLER_URL || process.env.SUPABASE_CONNECTION_POOLER_URL || process.env.DB_POOLER_URL || '').trim();
+      if (poolerUrl) {
+        process.env.DATABASE_URL = poolerUrl;
+        console.log('🔗 Using Supabase pooler URL from environment');
+      }
+    } catch {}
+
     // Check if DATABASE_URL exists
     if (!process.env.DATABASE_URL) {
       console.error('❌ DATABASE_URL environment variable is not available');
