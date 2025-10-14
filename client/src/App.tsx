@@ -27,9 +27,9 @@ import './components/transition.css';
 
 // Import our scroll effects provider for multi-speed scroll and gentle return
 import ScrollEffectsProvider from './components/ScrollEffectsProvider';
-import SEO from '@/components/SEO';
+const SEO = React.lazy(() => import('@/components/SEO'));
 
-import AutoHideNavbar from './components/layout/AutoHideNavbar';
+const AutoHideNavbar = React.lazy(() => import('./components/layout/AutoHideNavbar'));
 // Import our notification system components
 import { NotificationProvider } from './contexts/notification-context';
 import ErrorToastProvider from './components/providers/error-toast-provider';
@@ -56,9 +56,9 @@ const PrivacyPage = React.lazy(() => import('./pages/privacy'));
 const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
 const InstallAppPage = React.lazy(() => import('./pages/install-app'));
 
-import AuthPage from './pages/auth';
-import AuthSuccessPage from './pages/auth-success';
-import AuthCallbackPage from './pages/auth-callback';
+const AuthPage = React.lazy(() => import('./pages/auth'));
+const AuthSuccessPage = React.lazy(() => import('./pages/auth-success'));
+const AuthCallbackPage = React.lazy(() => import('./pages/auth-callback'));
 const ProfilePage = React.lazy(() => import('./pages/profile'));
 const BookmarksPage = React.lazy(() => import('./pages/bookmarks'));
 const SearchResultsPage = React.lazy(() => import('./pages/search-results'));
@@ -76,14 +76,12 @@ const CookieManagementPage = React.lazy(() => import('./pages/settings/cookie-ma
 const QuickSettingsPage = React.lazy(() => import('./pages/settings/quick-settings'));
 const PreviewSettingsPage = React.lazy(() => import('./pages/settings/preview'));
 
-// Demo pages - lazy loaded
-// Admin pages - eager loaded
+// Admin pages - lazy loaded
 const AdminPage = React.lazy(() => import('./pages/admin'));
 const AdminAnalyticsPage = React.lazy(() => import('./pages/admin/analytics'));
 const AdminAnalyticsDashboardPage = React.lazy(() => import('./pages/admin/analytics-dashboard'));
 const AdminUsersPage = React.lazy(() => import('./pages/admin/users'));
 const AdminSettingsPage = React.lazy(() => import('./pages/admin/settings'));
-
 const AdminManagePostsPage = React.lazy(() => import('./pages/admin/manage-posts'));
 const AdminFeedbackPage = React.lazy(() => import('./pages/admin/feedback'));
 const AdminFeedbackManagementPage = React.lazy(() => import('./pages/admin/FeedbackAdmin'));
@@ -98,22 +96,20 @@ const AdminContentManagementPage = React.lazy(() => import('./pages/admin/conten
 const AdminThemesPage = React.lazy(() => import('./pages/admin/themes'));
 const ResetPasswordPage = React.lazy(() => import('./pages/reset-password'));
 
-// Placeholder for discontinued features removed
+// Error pages - lazy loaded
+const Error403Page = React.lazy(() => import('./pages/errors/403'));
+const Error404Page = React.lazy(() => import('./pages/errors/404'));
+const Error429Page = React.lazy(() => import('./pages/errors/429'));
+const Error500Page = React.lazy(() => import('./pages/errors/500'));
+const Error503Page = React.lazy(() => import('./pages/errors/503'));
+const Error504Page = React.lazy(() => import('./pages/errors/504'));
 
-// Error pages - eager loaded
-import Error403Page from './pages/errors/403';
-import Error404Page from './pages/errors/404';
-import Error429Page from './pages/errors/429';
-import Error500Page from './pages/errors/500';
-import Error503Page from './pages/errors/503';
-import Error504Page from './pages/errors/504';
+// Legal Pages - lazy loaded
+const CopyrightPage = React.lazy(() => import('./pages/legal/copyright'));
+const TermsPage = React.lazy(() => import('./pages/legal/terms'));
+const CookiePolicyPage = React.lazy(() => import('./pages/legal/cookie-policy'));
 
-// Legal Pages - eager loaded
-import CopyrightPage from './pages/legal/copyright';
-import TermsPage from './pages/legal/terms';
-import CookiePolicyPage from './pages/legal/cookie-policy';
-
-// Community Pages - eager loaded
+// Community Pages - lazy loaded
 const CommunityPage = React.lazy(() => import('./pages/community'));
 const SubmitStoryPage = React.lazy(() => import('./pages/submit-story'));
 const EditStoryPage = React.lazy(() => import('./pages/edit-story'));
@@ -249,7 +245,9 @@ const AppContent = () => {
   return (
     <ErrorBoundary>
       {/* Global SEO defaults; pages can override with their own SEO if desired */}
-      <SEO title={undefined} canonical={canonical} />
+      <React.Suspense fallback={null}>
+        <SEO title={undefined} canonical={canonical} />
+      </React.Suspense>
       {/* Skip to content: hidden until focused, not intrusive */}
       <a href="#main-content" className="skip-link">
         Skip to content
@@ -259,7 +257,9 @@ const AppContent = () => {
           m-0 p-0 px-0 mx-0`}
          style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: isReaderLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)' }}>
         {/* Main navigation bar */}
-        <AutoHideNavbar />
+        <React.Suspense fallback={null}>
+          <AutoHideNavbar />
+        </React.Suspense>
         {/* Main content landmark for accessibility */}
         <main id="main-content" tabIndex={-1} className="flex-1 min-h-screen">
           {isReaderLike ? (
