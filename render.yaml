@@ -52,6 +52,9 @@ services:
         sync: false
       - key: DISABLE_LOCAL_AUTH
         value: "true"
+      # Manual WordPress sync key for secure triggers via header
+      - key: WORDPRESS_SYNC_KEY
+        sync: false
       # Public site and backend base URLs used by sitemap generation during build
       - key: SITE_URL
         value: "https://bubblescafe.space"

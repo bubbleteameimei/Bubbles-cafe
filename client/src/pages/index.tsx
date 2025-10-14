@@ -1,10 +1,9 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { type posts } from "@shared/schema";
 
 type Post = typeof posts.$inferSelect;
 import { useLocation } from "wouter";
 import React, { useMemo, useState, useEffect, lazy, Suspense } from "react";
-import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -18,8 +17,9 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { type CarouselApi } from "@/components/ui/carousel";
 
 
-import { getReadingTime, extractHorrorExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";
-import { convertWordPressPost, type WordPressPost, fetchAllWordPressPosts } from "@/services/wordpress";
+import { getReadingTime, extractExcerpt } from "@/lib/excerpt-lite";
+import { THEME_CATEGORIES } from "@/lib/themes-lite";
+import type { WordPressPost } from "@/lib/wordpress-api";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 
 interface WordPressResponse {
@@ -28,6 +28,23 @@ interface WordPressResponse {
   page: number;
   totalPages?: number;
   total?: number;
+}
+
+// Lightweight converter from WordPress API post to local Post shape
+function wpToPost(post: WordPressPost): Post {
+  const title = post?.title?.rendered?.trim() || "Untitled Story";
+  const content = post?.content?.rendered || "";
+  const slug = post?.slug || `post-${post?.id ?? Date.now()}`;
+  const createdAt = post?.date ? new Date(post.date) : new Date();
+  return {
+    id: post.id ?? Math.floor(Math.random() * 100000),
+    title,
+    content,
+    slug,
+    createdAt,
+    // minimal metadata; real fields may be added by backend
+    metadata: {}
+  } as unknown as Post;
 }
 
 import { ErrorBoundary } from '@/components/ui/error-boundary';
@@ -94,25 +111,7 @@ export default function IndexView() {
     }
   };
   
-  // Query to fetch all WordPress posts for better display
-  const allPostsQuery = useQuery({
-    queryKey: ["wordpress", "all-posts"],
-    queryFn: async () => {
-      console.log('[Index] Fetching all WordPress posts');
-      try {
-        const wpPosts = await fetchAllWordPressPosts();
-        console.log(`[Index] Received ${wpPosts.length} total posts`);
-        const posts = wpPosts.map((post: WordPressPost) => convertWordPressPost(post)) as Post[];
-        return posts;
-      } catch (error) {
-        console.error('[Index] Error fetching all posts:', error);
-        return [];
-      }
-    },
-    staleTime: 5 * 60 * 1000,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true
-  });
+  
   
   // Fallback to infinite query with pagination if the all posts query fails
   const {
@@ -131,8 +130,8 @@ export default function IndexView() {
       });
       const wpPosts = wpResponse.posts || [];
       console.log('[Index] Received posts:', wpPosts.length);
-      // Use proper type for the post parameter
-      const posts = wpPosts.map((post: WordPressPost) => convertWordPressPost(post)) as Post[];
+      // Convert WP posts to local Post shape
+      const posts = wpPosts.map((post: WordPressPost) => wpToPost(post)) as Post[];
       return {
         posts,
         hasMore: wpPosts.length === 100, // If we got the full amount, there might be more
@@ -143,27 +142,22 @@ export default function IndexView() {
     staleTime: 5 * 60 * 1000,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    initialPageParam: 1,
-    enabled: !allPostsQuery.data || allPostsQuery.data.length === 0 // Only enable if allPostsQuery failed
+    initialPageParam: 1
   });
 
   // Determine which data source to use
-  const isLoading = allPostsQuery.isLoading || isPaginatedLoading;
-  const error = allPostsQuery.error || paginatedError;
+  const isLoading = isPaginatedLoading;
+  const error = paginatedError;
   
-  // Always declare these variables regardless of loading state
-  const hasAllPosts = allPostsQuery.data && allPostsQuery.data.length > 0;
   const hasPaginatedPosts = data?.pages && data.pages.length > 0 && data.pages[0]?.posts?.length > 0;
   
   // Initialize posts array with memoization for stable reference in dependencies
   const allPosts: Post[] = useMemo(() => {
-    if (hasAllPosts) {
-      return allPostsQuery.data as Post[];
-    } else if (hasPaginatedPosts) {
+    if (hasPaginatedPosts) {
       return data!.pages.flatMap(page => page.posts) as Post[];
     }
     return [] as Post[];
-  }, [hasAllPosts, hasPaginatedPosts, allPostsQuery.data, data]);
+  }, [hasPaginatedPosts, data]);
   
   // Always initialize these variables, even if they're empty
   const sortedPosts = [...allPosts].sort((a: Post, b: Post) => 
@@ -401,7 +395,7 @@ export default function IndexView() {
     );
   }
   
-  if (!hasAllPosts && !hasPaginatedPosts) {
+  if (!hasPaginatedPosts) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center overflow-x-hidden">
         <div className="text-center space-y-4">
@@ -467,13 +461,13 @@ export default function IndexView() {
                     {featuredStory.title}
                   </button>
                   <p className="text-sm text-muted-foreground leading-6 mt-2 line-clamp-3 font-serif">
-                    {extractHorrorExcerpt(featuredStory.content, 220)}
+                    {extractExcerpt(featuredStory.content, 220)}
                   </p>
                   <div className="mt-3 flex items-center justify-between">
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        <time>{format(new Date(featuredStory.createdAt), 'MMM d, yyyy')}</time>
+                        <time>{new Date(featuredStory.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -548,7 +542,7 @@ export default function IndexView() {
               // Add extra debug logging
               console.log(`[Excerpt Debug] Processing post: ${post.title} (ID: ${post.id})`);
               console.log(`[Excerpt Debug] Content length: ${post.content.length} characters`);
-              const excerpt = extractHorrorExcerpt(post.content);
+              const excerpt = extractExcerpt(post.content);
               console.log(`[Excerpt Debug] Generated horror excerpt: "${excerpt.substring(0, 50)}..."`);
               
               const globalIndex = index; // Since we're not paginating, index is the global index
@@ -589,7 +583,7 @@ export default function IndexView() {
                         <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
                           <div className="flex items-center gap-1 justify-end">
                             <Calendar className="h-3 w-3" />
-                            <time>{format(new Date(post.createdAt), 'MMM d, yyyy')}</time>
+                            <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
                           </div>
                           <div className="flex items-center gap-1 justify-end">
                             <Clock className="h-3 w-3" />
