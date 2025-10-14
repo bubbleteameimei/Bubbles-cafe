@@ -12,7 +12,7 @@ services:
       - key: NODE_VERSION
         value: '22'
       - key: NODE_OPTIONS
-        value: '--enable-source-maps'
+        value: '--enable-source-maps --dns-result-order=ipv4first'
       - key: NPM_CONFIG_PRODUCTION
         value: 'false'
       - key: DATABASE_URL
@@ -22,7 +22,7 @@ services:
       - key: CSRF_SECRET
         generateValue: true
       - key: FRONTEND_URL
-        sync: false
+        value: "https://bubblescafe.space"
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
@@ -41,6 +41,11 @@ services:
       # Disable background WordPress scheduler by default in production
       - key: ENABLE_WORDPRESS_SCHEDULER
         value: "false"
+      # Public site and backend base URLs used by sitemap generation during build
+      - key: SITE_URL
+        value: "https://bubblescafe.space"
+      - key: BACKEND_BASE_URL
+        value: "https://api.bubblescafe.space"
       
     autoDeploy: true
 

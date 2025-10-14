@@ -1,10 +1,14 @@
 import 'dotenv/config';
+import dns from 'node:dns';
 import pkg from 'pg';
 const { Pool } = pkg;
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '@shared/schema';
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
+
+// Prefer IPv4 to avoid ENETUNREACH in IPv6-only resolutions
+try { dns.setDefaultResultOrder?.('ipv4first'); } catch {}
 
 // Load environment variables from .env file if it exists
 if (existsSync(path.join(process.cwd(), '.env'))) {

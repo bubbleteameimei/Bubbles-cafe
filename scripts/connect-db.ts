@@ -4,6 +4,7 @@
  * This script handles explicitly initializing the database connection
  * before any database operations are performed.
  */
+import dns from 'node:dns';
 import pkg from 'pg';
 const { Pool } = pkg;
 import type { Pool as PgPool } from 'pg';
@@ -11,6 +12,9 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '../shared/schema';
 import fs from 'fs';
 import path from 'path';
+
+// Prefer IPv4 to avoid ENETUNREACH when IPv6 is unreachable
+try { dns.setDefaultResultOrder?.('ipv4first'); } catch {}
 
 // Sanitize potentially malformed DATABASE_URL values
 function sanitizeDatabaseUrl(url?: string): string | undefined {
