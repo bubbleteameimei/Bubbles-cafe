@@ -81,9 +81,9 @@ try {
     );
   } catch (e) {
     // Fail-safe boot fallback so users never see a blank screen
+    let msg = "Unknown boot error";
     try {
-      const msg =
-        e instanceof Error ? e.message : typeof e === "string" ? e : "Unknown boot error";
+      msg = e instanceof Error ? e.message : typeof e === "string" ? e : "Unknown boot error";
       const API_BASE = getApiBaseUrl();
       const url = API_BASE ? `${API_BASE}/api/errors` : "/api/errors";
       fetch(url, {
@@ -118,6 +118,7 @@ try {
         <div style="max-width:720px;text-align:center;">
           <div style="font-size:18px;line-height:1.6;margin-bottom:12px;">The app failed to load.</div>
           <div style="opacity:.8;font-size:14px;margin-bottom:16px;">Please refresh the page. If the issue persists, check the backend health.</div>
+          <div style="opacity:.6;font-size:12px;margin-bottom:16px;"><code>${String(msg).slice(0, 240)}</code></div>
           <div style="display:flex;gap:8px;justify-content:center;">
             <button id="retry-btn" style="appearance:none;border:0;background:#2a2a2a;color:#fff;padding:10px 14px;border-radius:8px;cursor:pointer;">Refresh</button>
             <a id="health-link" href="#" style="display:inline-block;background:#1f2937;color:#fff;padding:10px 14px;border-radius:8px;text-decoration:none;">Backend health</a>
