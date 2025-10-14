@@ -1,6 +1,5 @@
 import 'dotenv/config';
-import dns from 'node:dns';
-import { promises as dnsPromises } from 'node:dns';
+import dns, { promises as dnsPromises } from 'node:dns';
 import pkg from 'pg';
 const { Pool } = pkg;
 import { drizzle } from 'drizzle-orm/node-postgres';
