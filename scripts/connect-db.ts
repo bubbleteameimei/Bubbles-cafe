@@ -55,27 +55,35 @@ function parsePgUrl(url: string) {
 }
 
 /**
+ * Determine if SSL should be used based on connection string parameters and host.
+ * Treat any sslmode except "disable" as requiring SSL for node-postgres.
+ */
+function wantsSSL(connString: string): boolean {
+  try {
+    const u = new URL(connString.replace(/^postgresql:/i, 'http:'));
+    const params = new URLSearchParams(u.search);
+    const mode = (params.get('sslmode') || '').toLowerCase();
+    if (mode) return mode !== 'disable';
+    const host = u.hostname;
+    // Heuristic for common hosted providers
+    return host.endsWith('supabase.co') || host.endsWith('neon.tech') || host.includes('render');
+  } catch {
+    const s = connString.toLowerCase();
+    if (s.includes('sslmode=disable')) return false;
+    return s.includes('sslmode=') || s.includes('supabase.co') || (process.env.NODE_ENV === 'production');
+  }
+}
+
+/**
  * Build a connection config object for pg Pool, optionally overriding host
+ * Always supply discrete fields to ensure our ssl options are respected.
  */
 function buildPgConfig(connString: string, hostOverride?: string) {
-  const useSSL = connString.toLowerCase().includes('sslmode=require');
-
-  if (!hostOverride) {
-    return {
-      connectionString: connString,
-      max: 10,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
-      maxUses: 5000,
-      keepAlive: true,
-      ssl: useSSL ? { rejectUnauthorized: false } : undefined
-    } as pkg.PoolConfig;
-  }
-
-  // When overriding host, construct discrete fields to avoid re-resolution
   const p = parsePgUrl(connString);
+  const useSSL = wantsSSL(connString);
+
   return {
-    host: hostOverride,
+    host: hostOverride || p.host,
     port: p.port,
     user: p.user,
     password: p.password || undefined,

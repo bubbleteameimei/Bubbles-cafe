@@ -96,13 +96,35 @@ if (!DATABASE_URL) {
   });
 } else {
   try {
-    const useSSL = DATABASE_URL.includes('sslmode=require');
+    // Decide SSL usage: treat any sslmode except "disable" as SSL
+    const wantsSSL = (url: string): boolean => {
+      try {
+        const u = new URL(url.replace(/^postgresql:/i, 'http:'));
+        const params = new URLSearchParams(u.search);
+        const mode = (params.get('sslmode') || '').toLowerCase();
+        if (mode) return mode !== 'disable';
+        const host = u.hostname;
+        return host.endsWith('supabase.co') || host.endsWith('neon.tech') || host.includes('render');
+      } catch {
+        const s = url.toLowerCase();
+        if (s.includes('sslmode=disable')) return false;
+        return s.includes('sslmode=') || s.includes('supabase.co') || (process.env.NODE_ENV === 'production');
+      }
+    };
+
+    const useSSL = wantsSSL(DATABASE_URL);
     const maxClients = Number(process.env.DB_POOL_MAX || 5);
     const idleMs = Number(process.env.DB_POOL_IDLE_MS || 5000);
     const connTimeoutMs = Number(process.env.DB_POOL_CONN_TIMEOUT_MS || 10000);
 
+    // Build discrete config to ensure our ssl options are respected
+    const parsedForPrimary = parsePgUrl(DATABASE_URL);
     pool = new Pool({
-      connectionString: DATABASE_URL,
+      host: parsedForPrimary.host,
+      port: parsedForPrimary.port,
+      user: parsedForPrimary.user,
+      password: parsedForPrimary.password || undefined,
+      database: parsedForPrimary.database,
       max: maxClients,
       idleTimeoutMillis: idleMs,
       connectionTimeoutMillis: connTimeoutMs,
@@ -132,7 +154,7 @@ if (!DATABASE_URL) {
         try {
           const msg = String(error instanceof Error ? error.message : error);
           if (msg.includes('ENETUNREACH') || msg.includes('EAI_AGAIN') || msg.includes('ETIMEDOUT')) {
-            const parsed = parsePgUrl(DATABASE_URL);
+            const parsed = parsedForPrimary;
             // If host is not an IPv4 literal or IPv6 literal, attempt IPv4 resolution
             if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(parsed.host) && !/^[0-9a-fA-F:]+$/.test(parsed.host)) {
               const { address } = await dnsPromises.lookup(parsed.host, { family: 4 });
