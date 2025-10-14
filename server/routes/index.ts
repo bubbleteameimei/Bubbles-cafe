@@ -3,6 +3,7 @@ import { createSecureLogger } from '../utils/secure-logger';
 import { postsRouter } from './posts';
 import { commentsRouter } from './comments';
 import { authRouter } from './auth';
+import { supabaseAuthRouter } from './supabase-auth';
 import { adminRoutes } from './admin';
 import searchRoutes from './search';
 import newsletterRoutes from './newsletter';
@@ -41,6 +42,7 @@ export function registerModularRoutes(app: Express) {
 
     // Authentication routes
     app.use('/api/auth', authRouter);
+    app.use('/api/auth', supabaseAuthRouter);
     routesLogger.info('Auth routes registered');
 
     // Posts routes

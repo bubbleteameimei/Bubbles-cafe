@@ -90,6 +90,10 @@ const envSchema = z.object({
   
   // Scheduler toggles
   ENABLE_WORDPRESS_SCHEDULER: z.string().optional(),
+
+  // Supabase Auth
+  SUPABASE_URL: z.string().url().optional(),
+  SUPABASE_ANON_KEY: z.string().optional(),
 });
 
 // Validate environment variables
