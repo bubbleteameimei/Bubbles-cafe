@@ -17,6 +17,9 @@ services:
         value: 'false'
       - key: DATABASE_URL
         sync: false
+      # Prefer Supabase connection pooler URL when provided; set this secret to your pooler connection string
+      - key: SUPABASE_POOLER_URL
+        sync: false
       - key: SESSION_SECRET
         generateValue: true
       - key: CSRF_SECRET

@@ -15,10 +15,11 @@ Both Neon and Supabase run standard PostgreSQL. The migration is primarily about
 ## 1) Prepare Supabase
 
 1. Create a new Supabase project.
-2. Go to Project Settings → Database and copy the connection string (it looks like):
+2. Go to Project Settings → Database → Connection Pooling and copy the pooler connection string (recommended for application runtime):
    ```
-   postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT_REF.supabase.co:5432/postgres?sslmode=require
+   postgresql://postgres:YOUR_PASSWORD@REGION.pooler.supabase.com:5432/postgres?sslmode=require
    ```
+   Note: For bulk operations (pg_restore, long-running migrations), you may use the direct database host `db.<PROJECT_REF>.supabase.co`. For your app runtime, prefer the pooler host.
 3. Make sure the SQL editor works and you can connect via psql locally (optional).
 
 ---
@@ -80,14 +81,14 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
 ## 4) Point the app to Supabase
 
-- Update your environment (Render/Vercel/Local `.env`) with the Supabase connection string:
+- Update your environment (Render/Vercel/Local `.env`) with the Supabase pooler connection string:
   ```
-  DATABASE_URL=postgresql://postgres:<PASSWORD>@db.<PROJECT_REF>.supabase.co:5432/postgres?sslmode=require
+  DATABASE_URL=postgresql://postgres:<PASSWORD>@REGION.pooler.supabase.com:5432/postgres?sslmode=require
   ```
 
 - In this repo:
-  - `drizzle.config.ts` reads `DATABASE_URL` → works unchanged.
-  - `server/db.ts` and `scripts/connect-db.ts` will connect via `pg` and Drizzle. We’ve removed the Neon fallback and made SSL explicit.
+  - `drizzle.config.ts` reads `SUPABASE_POOLER_URL` (or `DATABASE_URL`) → pooler is preferred for app runtime.
+  - `server/db.ts` and `scripts/connect-db.ts` connect via `pg` and Drizzle, preferring the pooler URL when present. SSL (`sslmode=require`) is enforced.
 
 ---
 

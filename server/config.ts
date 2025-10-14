@@ -62,6 +62,17 @@ function loadEnvFile() {
 // Load environment variables before validation
 loadEnvFile();
 
+// Prefer Supabase connection pooler URL if provided to populate DATABASE_URL
+try {
+  if (!process.env.DATABASE_URL) {
+    const poolerUrl = (process.env.SUPABASE_POOLER_URL || process.env.SUPABASE_CONNECTION_POOLER_URL || process.env.DB_POOLER_URL || '').trim();
+    if (poolerUrl) {
+      process.env.DATABASE_URL = poolerUrl;
+      try { process.stderr.write('[Config] Using Supabase pooler URL for DATABASE_URL\\n'); } catch {}
+    }
+  }
+} catch {}
+
 // Environment variable validation schema
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

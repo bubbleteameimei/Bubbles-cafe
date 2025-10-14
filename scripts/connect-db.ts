@@ -107,6 +107,16 @@ async function resolveIPv4Host(connString: string): Promise<string | undefined> 
   }
 }
 
+// Prefer Supabase connection pooler URL if provided via environment
+const POOLER_URL = sanitizeDatabaseUrl(
+  process.env.SUPABASE_POOLER_URL ||
+  process.env.SUPABASE_CONNECTION_POOLER_URL ||
+  process.env.DB_POOLER_URL
+);
+if (POOLER_URL) {
+  process.env.DATABASE_URL = POOLER_URL;
+}
+
 // Do not set a default DATABASE_URL here. It must be provided by the environment (.env or platform).
 if (process.env.DATABASE_URL) {
   process.env.DATABASE_URL = sanitizeDatabaseUrl(process.env.DATABASE_URL)!;
