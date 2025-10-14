@@ -41,6 +41,11 @@ services:
       # Disable background WordPress scheduler by default in production
       - key: ENABLE_WORDPRESS_SCHEDULER
         value: "false"
+      # Public site and backend base URLs used by sitemap generation during build
+      - key: SITE_URL
+        value: "https://bubblescafe.space"
+      - key: BACKEND_BASE_URL
+        value: "https://api.bubblescafe.space"
       
     autoDeploy: true
 

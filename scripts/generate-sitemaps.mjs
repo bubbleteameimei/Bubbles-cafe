@@ -12,7 +12,23 @@ const distPublicDir = path.resolve(__dirname, '..', 'dist', 'public');
 
 // Config
 const SITE_URL = process.env.SITE_URL || 'https://bubblescafe.space';
-const BACKEND_BASE_URL = process.env.BACKEND_BASE_URL || 'https://bubbles-cafe.onrender.com';
+
+// Compute backend base URL robustly:
+// 1) Use BACKEND_BASE_URL if provided
+// 2) Derive https://api.<site-host> from SITE_URL
+// 3) Fallback to the known custom domain
+function computeBackendBaseUrl() {
+  if (process.env.BACKEND_BASE_URL) return process.env.BACKEND_BASE_URL;
+  try {
+    const u = new URL(SITE_URL);
+    const host = u.host;
+    const apiHost = host.startsWith('www.') ? host.replace(/^www\./, 'api.') : `api.${host}`;
+    return `${u.protocol}//${apiHost}`;
+  } catch {
+    return 'https://api.bubblescafe.space';
+  }
+}
+const BACKEND_BASE_URL = computeBackendBaseUrl();
 
 // Helpers
 const fmtDate = (d) => {
@@ -83,7 +99,11 @@ async function generateStoriesSitemap() {
   const stories = [];
 
   // Regular posts
-  const regular = await safeFetchJson(`${BACKEND_BASE_URL}/api/posts?limit=1000`);
+  let regular = await safeFetchJson(`${BACKEND_BASE_URL}/api/posts?limit=1000`);
+  // If fetch failed due to wrong domain, try known fallback once
+  if (!regular && BACKEND_BASE_URL !== 'https://api.bubblescafe.space') {
+    regular = await safeFetchJson(`https://api.bubblescafe.space/api/posts?limit=1000`);
+  }
   if (regular?.posts?.length) {
     for (const post of regular.posts) {
       const slug = post?.slug || (post?.id ? `post-${post.id}` : null);
@@ -99,7 +119,10 @@ async function generateStoriesSitemap() {
   }
 
   // Community posts
-  const community = await safeFetchJson(`${BACKEND_BASE_URL}/api/posts/community?limit=1000`);
+  let community = await safeFetchJson(`${BACKEND_BASE_URL}/api/posts/community?limit=1000`);
+  if (!community && BACKEND_BASE_URL !== 'https://api.bubblescafe.space') {
+    community = await safeFetchJson(`https://api.bubblescafe.space/api/posts/community?limit=1000`);
+  }
   if (community?.posts?.length) {
     for (const post of community.posts) {
       const slug = post?.slug || (post?.id ? `post-${post.id}` : null);
