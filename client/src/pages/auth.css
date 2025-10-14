@@ -64,11 +64,14 @@
 .auth-input {
   width: 100%;
   padding: 10px 15px;
+  padding-right: 40px; /* ensure room for eye icon inside the box */
   background-color: hsl(var(--card));
   border: 1px solid hsl(var(--border));
-  border-radius: 4px;
+  border-radius: 6px;
   transition: border-color 0.3s;
   color: hsl(var(--foreground));
+  font-size: 16px; /* prevent mobile Safari zoom on focus */
+  line-height: 1.25;
 }
 
 .auth-input:focus {
