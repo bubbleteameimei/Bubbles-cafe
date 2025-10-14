@@ -14,18 +14,19 @@ export function CreepyTextGlitch({
 }) {
   const [glitchText, setGlitchText] = useState(text);
   const [glitchActive, setGlitchActive] = useState(true);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<number | null>(null);
   
   useEffect(() => {
     if (intervalRef.current) {
-      clearInterval(intervalRef.current);
+      window.clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
     
     const startTime = Date.now();
     const glitchInterval = Math.max(50, 150 - intensityFactor * 15); 
     
-    const glitchChars = '!@#$%^&*()-_=+[]{}|;:,.<>/?`~\\\\¡™£¢∞§¶•ªº–≠åß∂ƒ©˙∆˚¬…æ÷≥≤œ∑´®†¥øπ\"\\'\\\\~`↵¥↑↓→←⟨⟩⟪⟫«»‹›⁂⁘⁙⁚⁛⁜⁝⁞⁎⁕⁑≡≣';
+    // Keep character set simple to avoid escaping issues in TypeScript
+    const glitchChars = "!@#$%^&*()-_=+[]{}|;:,.<>/?`~\\¡™£¢∞§¶•ªº–≠åß∂ƒ©˙∆˚¬…æ÷≥≤œ∑´®†¥øπ\\\"'↵¥↑↓→←⟨⟩⟪⟫«»‹›⁂⁘⁙⁚⁛⁜⁝⁞⁎⁕⁑≡≣";
     
     const randomGlitchText = () => {
       let result = '';
@@ -52,7 +53,7 @@ export function CreepyTextGlitch({
     setGlitchText(randomGlitchText());
     setGlitchActive(true);
     
-    intervalRef.current = setInterval(() => {
+    intervalRef.current = window.setInterval(() => {
       const elapsed = Date.now() - startTime;
       
       if (permanent || elapsed < duration) {
@@ -62,7 +63,7 @@ export function CreepyTextGlitch({
         setGlitchActive(false);
         
         if (intervalRef.current) {
-          clearInterval(intervalRef.current);
+          window.clearInterval(intervalRef.current);
           intervalRef.current = null;
         }
       }
@@ -70,7 +71,7 @@ export function CreepyTextGlitch({
     
     return () => {
       if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+        window.clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
     };
