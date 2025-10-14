@@ -1552,7 +1552,7 @@ export class DatabaseStorage implements IStorage {
             const result = await db.execute(sql`
               SELECT
                 id, title, content, slug, excerpt, author_id,
-                metadata, created_at, is_secret, mature_content,
+                metadata, created_at, is_secret, "isAdminPost", mature_content,
                 theme_category, reading_time_minutes,
                 likes_count, dislikes_count
               FROM posts
@@ -1573,7 +1573,7 @@ export class DatabaseStorage implements IStorage {
               excerpt: post.excerpt as string | null,
               authorId: Number(post.author_id),
               isSecret: Boolean(post.is_secret),
-              isAdminPost: (post.is_admin_post === true ? true : (post.is_admin_post === false ? false : null)),
+              isAdminPost: (post.isAdminPost === true ? true : (post.isAdminPost === false ? false : null)),
               matureContent: Boolean(post.mature_content),
               themeCategory: post.theme_category as string | null,
               metadata: (post.metadata || {}) as unknown,
