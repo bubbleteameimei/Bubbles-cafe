@@ -22,7 +22,7 @@ import { THEME_CATEGORIES } from "@/lib/themes-lite";
 import type { WordPressPost } from "@/lib/wordpress-api";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 
-import { ErrorBoundary } from '@/components/ui/error-boundary';
+
 
 // Lightweight converter from WordPress API post to local Post shape
 function wpToPost(post: WordPressPost): Post {
@@ -266,7 +266,6 @@ export default function StoriesIndexContent() {
   }
 
   return (
-    <ErrorBoundary>
       <div className="min-h-screen bg-background flex flex-col overflow-x-hidden overflow-y-auto">
         <div className="w-full pb-12 pt-0 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 mb-4 px-2 sm:px-4">
@@ -480,6 +479,5 @@ export default function StoriesIndexContent() {
           )}
         </div>
       </div>
-    </ErrorBoundary>
   );
 }
