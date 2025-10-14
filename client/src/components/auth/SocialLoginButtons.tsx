@@ -27,7 +27,14 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
   return (
     <div className="social-auth-buttons">
       <button className="social-button google-button" type="button" onClick={handleGoogleLogin}>
-        Continue with Google
+        <img
+          src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png"
+          alt=""
+          width={18}
+          height={18}
+          style={{ marginRight: 8 }}
+        />
+        Sign in with Google
       </button>
     </div>
   );

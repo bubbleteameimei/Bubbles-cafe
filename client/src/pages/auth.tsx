@@ -329,6 +329,7 @@ export default function AuthPage() {
                 {/* Sign in form with email/password + social login options */}
                 
                 <div className="mb-4 space-y-2">
+                  <h2 className="text-center text-2xl font-semibold mb-2">Sign In</h2>
                   <SocialLoginButtons 
                     onSuccess={handleSocialLoginSuccess}
                     onError={(err: Error) => toast({
@@ -339,7 +340,7 @@ export default function AuthPage() {
                   />
                   <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                     <span className="h-px flex-1 bg-muted" />
-                    <span>OR</span>
+                    <span>or continue with email</span>
                     <span className="h-px flex-1 bg-muted" />
                   </div>
                 </div>

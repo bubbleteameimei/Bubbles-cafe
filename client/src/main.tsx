@@ -21,25 +21,7 @@ import { startWebVitals, trackPageView, schedulePerformanceSummary } from '@/lib
 import { enableAxeInDev } from '@/lib/a11y-dev';
 import { lazyLoadImages } from '@/lib/image-lazy';
 
-// Dynamically initialize Google Identity Services onload dataset from env when available
-(() => {
-  try {
-    const el = document.getElementById('g_id_onload') as HTMLDivElement | null;
-    if (!el) return;
-    const env: Record<string, any> = (import.meta as any)?.env || {};
-    const clientId = env.VITE_GOOGLE_CLIENT_ID as string | undefined;
-    const loginUri = env.VITE_GOOGLE_LOGIN_URI as string | undefined;
-    const uxMode = env.VITE_GOOGLE_UX_MODE as string | undefined;
-    const autoPrompt = env.VITE_GOOGLE_AUTO_PROMPT as string | undefined;
 
-    if (clientId) el.dataset.clientId = clientId;
-    if (loginUri) el.dataset.loginUri = loginUri;
-    if (uxMode) el.dataset.uxMode = uxMode;
-    el.dataset.autoPrompt = autoPrompt ?? el.dataset.autoPrompt ?? 'false';
-  } catch (e) {
-    // Non-fatal; GIS will still initialize with defaults
-  }
-})();
 
 logger.info("Starting application...");
 

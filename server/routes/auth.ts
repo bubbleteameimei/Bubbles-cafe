@@ -9,6 +9,7 @@ import passport from "passport";
 import bcrypt from 'bcryptjs';
 import { storage } from "../storage";
 import { OAuth2Client } from "google-auth-library";
+import { createSupabaseServerClient } from '../utils/supabase';
 
 const authLogger = createSecureLogger('AuthRoutes');
 const router = Router();
@@ -196,86 +197,10 @@ router.post('/social-login',
     code: zod.string().optional(),
     redirectUri: zod.string().optional()
   })),
-  asyncHandler(async (req: Request, res: Response) => {
-    let { provider, grantType, email, socialId, username, photoURL, token, code, redirectUri } = req.body as any;
-
-    try {
-      const expectedClientId = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
-
-      // Handle Google code flow if requested
-      if (provider === 'google' && grantType === 'authorization_code' && (code || token)) {
-        const clientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.VITE_GOOGLE_CLIENT_SECRET;
-        const redirect = redirectUri || process.env.GOOGLE_REDIRECT_URI || `${process.env.API_URL || ''}/api/auth/callback`;
-        const authCode = code || token; // support both field names
-
-        if (!expectedClientId || !clientSecret) {
-          throw createError.internal('Google OAuth client credentials not configured');
-        }
-
-        const tokenResp = await exchangeGoogleCode(authCode, redirect, expectedClientId, clientSecret);
-        // Expect id_token with user claims
-        const idToken = tokenResp.id_token as string | undefined;
-        if (!idToken) {
-          throw createError.unauthorized('No ID token received from Google');
-        }
-        // Reuse the ID token branch below
-        token = idToken;
-        grantType = undefined;
-      }
-
-      // For Google, if an ID token is provided, verify it locally (fallback to tokeninfo if needed)
-      if (provider === 'google' && token) {
-        const payload = await verifyGoogleIdToken(token, expectedClientId);
-
-        // Extract fields
-        email = (payload.email || email || '').toLowerCase();
-        socialId = payload.sub || socialId;
-        username = username || payload.name || (email ? email.split('@')[0] : undefined);
-        photoURL = photoURL || payload.picture || undefined;
-
-        if (!email || !socialId) {
-          throw createError.badRequest('Missing required user info from Google token');
-        }
-      }
-
-      if (!email || !socialId) {
-        throw createError.badRequest('Missing email or socialId for social login');
-      }
-
-      let user = await storage.getUserByEmail(email);
-      if (!user) {
-        const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
-        const password_hash = await bcrypt.hash(randomPassword, 12);
-        user = await storage.createUser({
-          username: username || email.split('@')[0],
-          email,
-          password_hash,
-          isAdmin: false,
-          metadata: {
-            email,
-            socialId,
-            provider,
-            lastLogin: new Date().toISOString(),
-            displayName: username || null,
-            photoURL: photoURL || null
-          }
-        });
-      } else {
-        const existing = user.metadata || {};
-        await storage.updateUser(user.id, {
-          metadata: { ...existing, socialId, provider, lastLogin: new Date().toISOString(), displayName: username || (existing as any).displayName || null, photoURL: photoURL || (existing as any).photoURL || null }
-        });
-      }
-      const { password_hash, ...safeUser } = user;
-      req.login(safeUser as any, (err) => {
-        if (err) return res.status(500).json({ message: 'Session error' });
-        return res.json({ success: true, user: safeUser, message: 'Login successful' });
-      });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      authLogger.error('Social login error', { provider, error: msg });
-      throw (e as any);
-    }
+  asyncHandler(async (_req: Request, res: Response) => {
+    // Legacy social login route disabled in favor of Supabase Auth
+    res.status(403).json({ error: 'Legacy social login is disabled. Use Supabase auth.' });
+    return;
   })
 );
 
@@ -329,29 +254,51 @@ router.post('/forgot-password',
   validateBody(passwordResetRequestSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const { email } = req.body;
+
+    // If local auth is disabled, delegate to Supabase password reset flow
+    if ((process.env.DISABLE_LOCAL_AUTH ?? 'false') === 'true') {
+      try {
+        const supabase = createSupabaseServerClient();
+        const frontend = (process.env.FRONTEND_URL || 'https://bubblescafe.space').replace(/\/$/, '');
+        const redirectTo = `${frontend}/reset-password`;
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+        if (error) {
+          authLogger.warn('Supabase reset request failed', { email, error: error.message });
+        } else {
+          authLogger.info('Supabase reset request sent', { email });
+        }
+        // Always return neutral message
+        return res.json({
+          success: true,
+          message: 'If an account with that email exists, a password reset link has been sent.'
+        });
+      } catch (e) {
+        authLogger.error('Supabase reset request error', { email, error: e instanceof Error ? e.message : String(e) });
+        // Still return neutral message
+        return res.json({
+          success: true,
+          message: 'If an account with that email exists, a password reset link has been sent.'
+        });
+      }
+    }
     
     try {
       const user = await storage.getUserByEmail(email);
       
       if (!user) {
         authLogger.warn('Password reset requested for non-existent email');
-        // Don't reveal if email exists - security best practice
         return res.json({
           success: true,
           message: 'If an account with that email exists, a password reset link has been sent.'
         });
       }
       
-      // Generate reset token
       const resetToken = await storage.createResetToken({
         userId: user.id,
         token: require('crypto').randomBytes(32).toString('hex'),
         expiresAt: new Date(Date.now() + 60 * 60 * 1000),
         used: false
       });
-      
-      // Send reset email (implement email service)
-      // await emailService.sendPasswordResetEmail(email, resetToken);
       
       authLogger.info('Password reset token created', { userId: user.id });
       
@@ -362,8 +309,6 @@ router.post('/forgot-password',
     } catch (error) {
       authLogger.error('Password reset request error', { email, error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Password reset request failed');
-      // unreachable but keeps TS satisfied
-      return;
     }
   })
 );
@@ -372,61 +317,25 @@ router.post('/forgot-password',
 router.post('/reset-password',
   sensitiveOperationsRateLimiter,
   validateBody(passwordResetSchema),
-  asyncHandler(async (req: Request, res: Response) => {
-    const { token, newPassword } = req.body;
-    
-    try {
-      // Verify reset token
-      const resetToken = await storage.getResetTokenByToken(token);
-      if (!resetToken) {
-        throw createError.badRequest('Invalid or expired reset token');
-      }
-      
-      // Hash new password
-      const hashedPassword = await bcrypt.hash(newPassword, 12);
-      
-      // Update user password
-      await storage.updateUser(resetToken.userId, { password_hash: hashedPassword });
-      
-      // Delete used token
-      await storage.markResetTokenAsUsed(token);
-      
-      authLogger.info('Password reset successful', { userId: resetToken.userId });
-      
-      return res.json({
-        success: true,
-        message: 'Password reset successful'
-      });
-    } catch (error) {
-      const anyError = error as any;
-      if (anyError?.statusCode) throw anyError;
-      authLogger.error('Password reset error', { error: error instanceof Error ? error.message : String(error) });
-      throw createError.internal('Password reset failed');
-      // unreachable but keeps TS satisfied
+  asyncHandler(async (_req: Request, res: Response) => {
+    if ((process.env.DISABLE_LOCAL_AUTH ?? 'false') === 'true') {
+      // With Supabase, the client performs password update using supabase.auth.updateUser().
+      // This endpoint is disabled.
+      res.status(403).json({ error: 'Password reset via server token is disabled. Use Supabase reset flow.' });
       return;
     }
+    res.status(501).json({ error: 'Not implemented' });
   })
 );
 
 // GET /api/auth/verify-reset-token/:token - Verify reset token validity
 router.get('/verify-reset-token/:token',
-  asyncHandler(async (req: Request, res: Response) => {
-    const { token } = req.params;
-
-    try {
-      const resetToken = await storage.getResetTokenByToken(token);
-      if (!resetToken) {
-        throw createError.badRequest('Invalid or expired reset token');
-      }
-
-      // Token is valid
-      return res.json({ success: true, message: 'Token is valid' });
-    } catch (error) {
-      const anyError = error as any;
-      if (anyError?.statusCode) throw anyError;
-      authLogger.error('Reset token verification error', { error: error instanceof Error ? error.message : String(error) });
-      throw createError.internal('Token verification failed');
+  asyncHandler(async (_req: Request, res: Response) => {
+    if ((process.env.DISABLE_LOCAL_AUTH ?? 'false') === 'true') {
+      res.status(403).json({ error: 'Token verification disabled. Use Supabase reset flow.' });
+      return;
     }
+    res.status(501).json({ error: 'Not implemented' });
   })
 );
 

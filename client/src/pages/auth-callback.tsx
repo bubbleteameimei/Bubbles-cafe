@@ -3,36 +3,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
-
-/**
- * Utility to decode a JWT (base64url) payload without verification.
- * Used to extract email, sub, name, and picture from Google's id_token.
- */
-function decodeJwtPayload(token: string): Record<string, any> | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const json = atob(base64);
-    return JSON.parse(json);
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Extract CSRF token from cookie to satisfy backend CSRF protection.
- */
-function getCsrfTokenFromCookie(): string {
-  try {
-    return document.cookie.replace(
-      /(?:(?:^|.*;\s*)XSRF-TOKEN\s*=\s*([^;]*).*$)|^.*$/,
-      "$1"
-    );
-  } catch {
-    return "";
-  }
-}
+import { supabase } from "@/lib/supabase";
 
 export default function AuthCallbackPage() {
   const [, navigate] = useLocation();
@@ -43,119 +14,36 @@ export default function AuthCallbackPage() {
     const run = async () => {
       try {
         setError(null);
-
-        const url = new URL(window.location.href);
-        const code = url.searchParams.get("code");
-        const credential = url.searchParams.get("credential");
-        const idToken = url.searchParams.get("id_token") || credential;
-        const accessToken = url.searchParams.get("access_token");
-
-        // Show debug info only in development
-        if (import.meta.env?.DEV) {
-          console.log("[AuthCallback] Params:", { code, idToken, accessToken });
+        const { data } = await supabase.auth.getSession();
+        const access_token = data.session?.access_token;
+        if (!access_token) {
+          throw new Error("No session found from OAuth provider.");
         }
-
-        // Prefer using id_token (contains user claims)
-        if (idToken) {
-          const claims = decodeJwtPayload(idToken);
-          if (!claims) {
-            throw new Error("Invalid ID token received from Google.");
-          }
-
-          const email =
-            (claims.email as string | undefined) ||
-            (claims.emails?.[0] as string | undefined);
-          const socialId = claims.sub as string | undefined;
-          const username =
-            (claims.name as string | undefined) ||
-            (email ? email.split("@")[0] : undefined);
-          const photoURL = claims.picture as string | undefined;
-
-          if (!email || !socialId) {
-            throw new Error(
-              "Missing required user info in ID token (email/sub)."
-            );
-          }
-
-          const csrfToken = getCsrfTokenFromCookie();
-          const resp = await fetch("/api/auth/social-login", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
-            },
-            credentials: "include",
-            body: JSON.stringify({
-              provider: "google",
-              email,
-              socialId,
-              username,
-              photoURL,
-              token: idToken,
-            }),
-          });
-
-          if (!resp.ok) {
-            let msg = `Social login failed (status ${resp.status})`;
-            try {
-              const data = await resp.json();
-              msg = data?.message || data?.error || msg;
-            } catch {}
-            throw new Error(msg);
-          }
-
-          // Update auth state and redirect to home
-          await checkAuth().catch(() => {});
-          navigate("/", { replace: true });
-          return;
+        const resp = await fetch("/api/auth/supabase/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${access_token}`,
+          },
+          credentials: "include",
+          body: JSON.stringify({ access_token }),
+        });
+        if (!resp.ok) {
+          let msg = `Login failed (status ${resp.status})`;
+          try {
+            const json = await resp.json();
+            msg = json?.message || json?.error || msg;
+          } catch {}
+          throw new Error(msg);
         }
-
-        // Fallback: if only authorization code is present, send it to backend (if supported)
-        if (code) {
-          const csrfToken = getCsrfTokenFromCookie();
-          const resp = await fetch("/api/auth/social-login", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
-            },
-            credentials: "include",
-            body: JSON.stringify({
-              provider: "google",
-              token: code,
-              grantType: "authorization_code",
-            }),
-          });
-
-          if (!resp.ok) {
-            let msg =
-              "Authorization code received, but backend verification is not configured.";
-            try {
-              const data = await resp.json();
-              msg = data?.message || data?.error || msg;
-            } catch {}
-            throw new Error(msg);
-          }
-
-          await checkAuth().catch(() => {});
-          navigate("/", { replace: true });
-          return;
-        }
-
-        // No recognizable token
-        throw new Error(
-          "No authorization code or ID token found in the URL. Please try signing in again."
-        );
+        await checkAuth().catch(() => {});
+        navigate("/", { replace: true });
       } catch (e) {
         const message =
           e instanceof Error ? e.message : "Authentication failed.";
         setError(message);
-        if (import.meta.env?.DEV) {
-          console.error("[AuthCallback] Error:", e);
-        }
       }
     };
-
     run();
   }, [navigate, checkAuth]);
 
