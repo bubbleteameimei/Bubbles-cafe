@@ -94,6 +94,9 @@ const envSchema = z.object({
   // Supabase Auth
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_ANON_KEY: z.string().optional(),
+
+  // Disable legacy local auth endpoints when using Supabase
+  DISABLE_LOCAL_AUTH: z.string().optional(),
 });
 
 // Validate environment variables
@@ -152,6 +155,7 @@ export const config = {
       clientSecret: env.GOOGLE_CLIENT_SECRET,
       redirectUri: env.GOOGLE_REDIRECT_URI
     },
+    disableLocal: (env.DISABLE_LOCAL_AUTH ?? 'false') === 'true',
   },
   email: {
     gmail: {

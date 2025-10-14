@@ -100,29 +100,26 @@ router.post('/register',
   authRateLimiter,
   validateBody(userRegistrationSchema),
   asyncHandler(async (req: Request, res: Response) => {
+    if ((process.env.DISABLE_LOCAL_AUTH ?? 'false') === 'true') {
+      res.status(403).json({ error: 'Local registration disabled. Use Supabase auth.' });
+      return;
+    }
+
     const { email, username, password } = req.body;
     
     try {
-      // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         throw createError.conflict('User with this email already exists');
       }
-      
-      // Hash password
       const hashedPassword = await bcrypt.hash(password, 12);
-      
-      // Create user
       const newUser = await storage.createUser({
         email,
         username,
         password_hash: hashedPassword,
         metadata: {}
       });
-      
       authLogger.info('User registered successfully', { userId: newUser.id });
-      
-      // Return user without password
       const { password_hash, ...safeUser } = newUser;
       res.status(201).json({
         success: true,
@@ -143,6 +140,11 @@ router.post('/login',
   authRateLimiter,
   validateBody(userLoginSchema),
   asyncHandler(async (req: Request, res: Response, next: (err?: any) => void) => {
+    if ((process.env.DISABLE_LOCAL_AUTH ?? 'false') === 'true') {
+      res.status(403).json({ error: 'Local login disabled. Use Supabase auth.' });
+      return;
+    }
+
     passport.authenticate('local', (err: any, user: any, info: any) => {
       if (err) {
         authLogger.error('Login authentication error', { error: err instanceof Error ? err.message : String(err) });
@@ -169,7 +171,7 @@ router.post('/login',
           authLogger.debug('Extended session set for remember me');
         }
         
-                res.json({
+        res.json({
           success: true,
           user,
           message: 'Login successful'
