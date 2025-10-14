@@ -49,7 +49,7 @@ async function verifySupabaseToken(token: string): Promise<{ email?: string; sub
  * Body: { access_token?: string }
  * Header: Authorization: Bearer <token>
  */
-router.post('/supabase/login', async (req: Request, res: Response) => {
+router.post('/supabase/login', async (req: Request, res: Response): Promise<void> => {
   try {
     const header = req.get('Authorization') || '';
     const bearer = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : undefined;
@@ -57,7 +57,8 @@ router.post('/supabase/login', async (req: Request, res: Response) => {
     const token = bearer || bodyToken;
 
     if (!token) {
-      return res.status(400).json({ error: 'Missing access_token (Bearer or body)' });
+      res.status(400).json({ error: 'Missing access_token (Bearer or body)' });
+      return;
     }
 
     const claims = await verifySupabaseToken(token);
@@ -67,7 +68,8 @@ router.post('/supabase/login', async (req: Request, res: Response) => {
     const userMeta = (claims as any)?.user_metadata || {};
 
     if (!email || !sub) {
-      return res.status(401).json({ error: 'Invalid token claims (missing email or sub)' });
+      res.status(401).json({ error: 'Invalid token claims (missing email or sub)' });
+      return;
     }
 
     // Find or create local user mapped to Supabase user
@@ -107,13 +109,16 @@ router.post('/supabase/login', async (req: Request, res: Response) => {
     req.login(safeUser as any, (err) => {
       if (err) {
         logger.error('Session creation failed', { error: err });
-        return res.status(500).json({ error: 'Session creation failed' });
+        res.status(500).json({ error: 'Session creation failed' });
+        return;
       }
-      return res.json({ success: true, user: safeUser });
+      res.json({ success: true, user: safeUser });
     });
+    return;
   } catch (error) {
     logger.error('Supabase login error', { error: error instanceof Error ? error.message : String(error) });
-    return res.status(401).json({ error: 'Invalid Supabase token' });
+    res.status(401).json({ error: 'Invalid Supabase token' });
+    return;
   }
 });
 
@@ -123,7 +128,7 @@ router.post('/supabase/login', async (req: Request, res: Response) => {
  * Query: ?access_token=...
  * Body: { access_token?: string }
  */
-async function callbackHandler(req: Request, res: Response) {
+async function callbackHandler(req: Request, res: Response): Promise<void> {
   try {
     const qToken = typeof req.query.access_token === 'string' ? req.query.access_token : undefined;
     const bToken = typeof req.body?.access_token === 'string' ? req.body.access_token : undefined;
@@ -132,7 +137,8 @@ async function callbackHandler(req: Request, res: Response) {
     const token = qToken || bToken || hToken;
 
     if (!token) {
-      return res.status(400).json({ error: 'Missing access_token' });
+      res.status(400).json({ error: 'Missing access_token' });
+      return;
     }
 
     const claims = await verifySupabaseToken(token);
@@ -142,7 +148,8 @@ async function callbackHandler(req: Request, res: Response) {
     const userMeta = (claims as any)?.user_metadata || {};
 
     if (!email || !sub) {
-      return res.status(401).json({ error: 'Invalid token claims (missing email or sub)' });
+      res.status(401).json({ error: 'Invalid token claims (missing email or sub)' });
+      return;
     }
 
     let user = await storage.getUserByEmail(email);
@@ -181,19 +188,22 @@ async function callbackHandler(req: Request, res: Response) {
     req.login(safeUser as any, (err) => {
       if (err) {
         logger.error('Session creation failed (callback)', { error: err });
-        return res.status(500).json({ error: 'Session creation failed' });
+        res.status(500).json({ error: 'Session creation failed' });
+        return;
       }
       const baseFrontend = (process.env.FRONTEND_URL || 'https://bubblescafe.space').replace(/\/+$/, '');
       const redirectTo = process.env.FRONTEND_SUCCESS_URL || `${baseFrontend}/auth/success`;
       try {
-        return res.redirect(redirectTo);
+        res.redirect(redirectTo);
       } catch {
-        return res.json({ success: true, user: safeUser });
+        res.json({ success: true, user: safeUser });
       }
     });
+    return;
   } catch (error) {
     logger.error('Supabase callback error', { error: error instanceof Error ? error.message : String(error) });
-    return res.status(401).json({ error: 'Invalid Supabase token' });
+    res.status(401).json({ error: 'Invalid Supabase token' });
+    return;
   }
 }
 
