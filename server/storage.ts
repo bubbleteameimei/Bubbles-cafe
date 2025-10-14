@@ -60,9 +60,12 @@ import {
 
 import { db } from "./db";
 import pkg from 'pg';
+import dns from 'node:dns';
 import { createHash } from 'crypto';
 import bcrypt from 'bcryptjs';
 const { Pool } = pkg;
+// Prefer IPv4 to avoid ENETUNREACH when IPv6 AAAA is returned
+try { dns.setDefaultResultOrder?.('ipv4first'); } catch {}
 
 // Helper function to safely create Date objects
 function safeCreateDate(value: unknown): Date {
