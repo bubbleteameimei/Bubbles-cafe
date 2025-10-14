@@ -89,6 +89,12 @@ try {
 
     try {
       document.body.classList.remove("content-hidden");
+      // Remove any preloader overlay that might obscure the fallback
+      try {
+        const overlay = document.querySelector(".initial-loading-overlay") as HTMLElement | null;
+        overlay?.classList.add("hidden");
+        overlay?.remove();
+      } catch {}
       const fallback = document.createElement("main");
       fallback.setAttribute("id", "main-content");
       fallback.setAttribute("role", "main");

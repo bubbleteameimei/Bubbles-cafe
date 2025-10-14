@@ -19,8 +19,11 @@ async function main() {
     if (fs.existsSync(p)) { sourcePath = p; break; }
   }
   if (!sourcePath) {
-    console.error('No suitable source image found in client/public');
-    process.exit(1);
+    console.warn('[icons] No suitable source image found in client/public – skipping icon generation.');
+    // Continue without generating icons to avoid failing the build.
+    // Ensure the icons directory exists so manifest references don't 404 to a missing folder.
+    await ensureDir(iconsDir);
+    return;
   }
 
   // Generate PWA icons
