@@ -126,8 +126,14 @@ try {
   );
   const sanitizedUrl = preferredUrl;
 
+  // Parse URL to build discrete config so our SSL options are respected
+  const u = new URL((sanitizedUrl || '').replace(/^postgresql:/i, 'http:'));
   pool = new Pool({
-    connectionString: sanitizedUrl,
+    host: u.hostname,
+    port: u.port ? parseInt(u.port, 10) : 5432,
+    user: decodeURIComponent(u.username || ''),
+    password: decodeURIComponent(u.password || ''),
+    database: u.pathname.replace(/^\//, ''),
     max: maxClients, // Reduced maximum number of clients in the pool
     min: minClients, // Minimum number of clients in the pool
     idleTimeoutMillis: idleMs, // Close idle clients quickly to reduce Neon compute
