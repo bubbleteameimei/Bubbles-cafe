@@ -16,7 +16,7 @@ services:
       - key: NPM_CONFIG_PRODUCTION
         value: 'false'
       - key: DATABASE_URL
-        sync: false
+        value: "postgresql://postgres:9yyVDmYjUHmn7Wkt@143.110.234.78:5432/postgres?sslmode=require"
       - key: SESSION_SECRET
         generateValue: true
       - key: CSRF_SECRET
