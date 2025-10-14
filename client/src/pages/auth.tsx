@@ -325,25 +325,26 @@ export default function AuthPage() {
 
           <div className="login-form">
             <form onSubmit={handleSubmit} noValidate>
+              <div className="mb-4 space-y-2">
+                <h2 className="text-center text-2xl font-semibold mb-2">{isSignIn ? 'Sign In' : 'Sign Up'}</h2>
+                <SocialLoginButtons 
+                  onSuccess={handleSocialLoginSuccess}
+                  onError={(err: Error) => toast({
+                    title: 'Social Authentication Error',
+                    description: err.message,
+                    variant: 'destructive'
+                  })}
+                />
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <span className="h-px flex-1 bg-muted" />
+                  <span>or continue with email</span>
+                  <span className="h-px flex-1 bg-muted" />
+                </div>
+              </div>
               <div style={{ display: isSignIn ? "block" : "none" }}>
                 {/* Sign in form with email/password + social login options */}
                 
-                <div className="mb-4 space-y-2">
-                  <h2 className="text-center text-2xl font-semibold mb-2">Sign In</h2>
-                  <SocialLoginButtons 
-                    onSuccess={handleSocialLoginSuccess}
-                    onError={(err: Error) => toast({
-                      title: 'Social Authentication Error',
-                      description: err.message,
-                      variant: 'destructive'
-                    })}
-                  />
-                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                    <span className="h-px flex-1 bg-muted" />
-                    <span>or continue with email</span>
-                    <span className="h-px flex-1 bg-muted" />
-                  </div>
-                </div>
+                
 
                 {/* Email Field */}
                 <div className="group">
@@ -447,21 +448,7 @@ export default function AuthPage() {
               <div style={{ display: isSignIn ? "none" : "block" }}>
                 {/* Sign up form with email/password + social login options */}
 
-                <div className="mb-4 space-y-2">
-                  <SocialLoginButtons 
-                    onSuccess={handleSocialLoginSuccess}
-                    onError={(err: Error) => toast({
-                      title: 'Social Authentication Error',
-                      description: err.message,
-                      variant: 'destructive'
-                    })}
-                  />
-                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                    <span className="h-px flex-1 bg-muted" />
-                    <span>OR</span>
-                    <span className="h-px flex-1 bg-muted" />
-                  </div>
-                </div>
+                
 
                 {/* Username Field */}
                 <div className="group">
