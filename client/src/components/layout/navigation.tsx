@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,17 @@ export default function Navigation() {
   const { user } = useAuth();
   const { notifications } = useNotifications();
   const { theme, setTheme } = useTheme();
+
+  // Close the sidebar drawer proactively on route changes to avoid layout reflow
+  useEffect(() => {
+    if (isOpen) {
+      setIsOpen(false);
+    }
+    // Also clear any temporary body styles a drawer might have applied
+    try {
+      document.body.style.paddingRight = '';
+    } catch {}
+  }, [location]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <header
@@ -114,7 +125,12 @@ export default function Navigation() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setLocation("/auth")}
+              onClick={() => {
+                // Ensure the sidebar is closed before navigating to prevent reflow
+                if (isOpen) setIsOpen(false);
+                try { document.body.style.paddingRight = ''; } catch {}
+                setLocation("/auth");
+              }}
               className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
               aria-label="Sign in"
               noOutline
@@ -138,7 +154,7 @@ export default function Navigation() {
       <div
         aria-hidden="true"
         className="border-b border-border/40"
-        style={{ width: "var(--viewport-width, 100vw)", position: "relative", left: "50%", transform: "translateX(-50%)" }}
+        style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
       />
     </header>
   );

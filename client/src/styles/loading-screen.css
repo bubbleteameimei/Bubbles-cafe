@@ -5,14 +5,12 @@
 /* Global scroll disable classes */
 .disable-scroll {
   overflow: hidden !important;
-  height: 100vh !important;
+  /* Avoid forcing 100vh which can cause layout jumps; let the document height remain natural */
 }
 
 .loading-active {
-  overflow: hidden !important;
-  position: fixed !important;
-  width: 100% !important;
-  height: 100% !important;
+  /* Visual state only; scroll lock handled via html.disable-scroll + JS compensation */
+  cursor: wait !important;
 }
 
 /* Main loading overlay - Always visible and on top */

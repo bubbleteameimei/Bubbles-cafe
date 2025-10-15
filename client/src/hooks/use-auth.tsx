@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
+import { getApiBaseUrl } from '@/lib/asset-path';
 
 interface User {
   id: number;
@@ -44,7 +45,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/auth/status', {
+      const API_BASE = getApiBaseUrl();
+      const url = API_BASE ? `${API_BASE}/api/auth/status` : '/api/auth/status';
+      const response = await fetch(url, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -68,7 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const finalizeServerSession = async (access_token: string) => {
-    const resp = await fetch('/api/auth/supabase/login', {
+    const API_BASE = getApiBaseUrl();
+    const url = API_BASE ? `${API_BASE}/api/auth/supabase/login` : '/api/auth/supabase/login';
+    const resp = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -158,7 +163,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear Supabase session
       await supabase.auth.signOut();
       // Clear server session
-      const response = await fetch('/api/auth/logout', {
+      const API_BASE = getApiBaseUrl();
+      const url = API_BASE ? `${API_BASE}/api/auth/logout` : '/api/auth/logout';
+      const response = await fetch(url, {
         method: 'POST',
         credentials: 'include',
       });

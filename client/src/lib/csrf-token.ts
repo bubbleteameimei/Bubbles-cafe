@@ -5,6 +5,7 @@
  * CSRF tokens to API requests for enhanced security.
  */
 import logger from '@/utils/secure-client-logger';
+import { getApiBaseUrl } from '@/lib/asset-path';
 
 // Constants for CSRF token handling
 export const CSRF_HEADER_NAME = 'X-CSRF-Token';
@@ -46,9 +47,12 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
   if (csrfToken) return csrfToken;
 
   try {
+    const API_BASE = getApiBaseUrl();
+
     // Attempt to get a token directly
     const getToken = async (): Promise<string | null> => {
-      const resp = await fetch('/api/csrf-token', {
+      const url = API_BASE ? `${API_BASE}/api/csrf-token` : '/api/csrf-token';
+      const resp = await fetch(url, {
         method: 'GET',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -66,7 +70,8 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
     }
 
     // If token is missing, ping health to initialize session token, then retry
-    await fetch('/api/health', {
+    const healthUrl = API_BASE ? `${API_BASE}/api/health` : '/api/health';
+    await fetch(healthUrl, {
       method: 'GET',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -92,7 +97,9 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
  */
 export async function refreshCsrfToken(): Promise<string | null> {
   try {
-    const resp = await fetch('/api/csrf-token', {
+    const API_BASE = getApiBaseUrl();
+    const url = API_BASE ? `${API_BASE}/api/csrf-token` : '/api/csrf-token';
+    const resp = await fetch(url, {
       method: 'GET',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },

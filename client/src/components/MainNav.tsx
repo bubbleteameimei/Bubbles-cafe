@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Menu, Search, Bell, User, Moon, Sun, Settings } from "lucide-react";
 import { Button } from "./ui/button";
 import { useTheme } from "./theme-provider";
@@ -13,6 +13,7 @@ export default function MainNav() {
   const [scrolled, setScrolled] = useState(false);
   const [deviceType, setDeviceType] = useState<'mobile' | 'tablet' | 'laptop' | 'desktop'>('desktop');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [location, setLocation] = useLocation();
   
   // Effect to detect scroll position for conditional styling
   useEffect(() => {
@@ -50,6 +51,16 @@ export default function MainNav() {
       window.removeEventListener('resize', handleResize);
     };
   }, []);
+
+  // Close sidebar on route changes to prevent layout reflow and clear any transient body styles
+  useEffect(() => {
+    if (sidebarOpen) {
+      setSidebarOpen(false);
+    }
+    try {
+      document.body.style.paddingRight = '';
+    } catch {}
+  }, [location]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
@@ -143,6 +154,14 @@ export default function MainNav() {
                         transition-all duration-200 ease-in-out
                         focus:outline-none focus:ring-0 focus-visible:ring-0"
               aria-label="Account"
+              onClick={() => {
+                // If no user, navigate to auth; ensure sidebar closes first to avoid reflow
+                if (!user) {
+                  if (sidebarOpen) setSidebarOpen(false);
+                  try { document.body.style.paddingRight = ''; } catch {}
+                  setLocation('/auth');
+                }
+              }}
             >
               {user ? (
                 <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-primary-foreground text-xs font-medium">

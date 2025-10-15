@@ -3,12 +3,15 @@
 // - Page views and interactions via existing analytics API helpers
 
 import { recordPageView, recordInteraction } from '@/api/analytics';
+import { getApiBaseUrl } from '@/lib/asset-path';
 
 type ReportHandler = (metric: any) => void;
 
 function sendVitals(metric: any) {
   try {
-    fetch('/api/analytics/vitals', {
+    const API_BASE = getApiBaseUrl();
+    const url = API_BASE ? `${API_BASE}/api/analytics/vitals` : '/api/analytics/vitals';
+    fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -75,7 +78,9 @@ export function sendPerformanceSummary() {
       path: window.location.pathname,
     };
 
-    fetch('/api/analytics/performance', {
+    const API_BASE = getApiBaseUrl();
+    const url = API_BASE ? `${API_BASE}/api/analytics/performance` : '/api/analytics/performance';
+    fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
