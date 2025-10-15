@@ -1055,7 +1055,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         <div
           aria-hidden="true"
           className="border-b border-border/20"
-          style={{ width: 'var(--viewport-width, 100vw)', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
+          style={{ width: '100%' }}
         />
       
         <article
@@ -1068,7 +1068,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             <div
               aria-hidden="true"
               className="border-b border-border/20"
-              style={{ width: 'var(--viewport-width, 100vw)', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
+              style={{ width: '100%' }}
             />
 
             <div className="flex flex-col items-center mb-2 mt-0">
@@ -1570,7 +1570,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             <div
               aria-hidden="true"
               className="border-b border-border/20"
-              style={{ width: 'var(--viewport-width, 100vw)', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
+              style={{ width: '100%' }}
             />
            
             <div className="mt-2 pt-3">

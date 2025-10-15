@@ -8,6 +8,8 @@ html, body, #root {
   overflow-x: hidden !important;
   /* Always reserve vertical scrollbar space to prevent horizontal shifts */
   overflow-y: scroll !important;
+  /* Prefer native gutter reservation where supported (Chrome/Edge/Firefox) */
+  scrollbar-gutter: stable;
 }
 
 body > div#root,

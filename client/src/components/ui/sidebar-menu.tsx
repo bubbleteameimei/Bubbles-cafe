@@ -361,8 +361,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       delay: 0.2,
                       ease: [0.25, 0.46, 0.45, 0.94]
                     }}
-                    whileHover={{ x: 3 }}
-                    whileTap={{ scale: 0.98 }}
                   >
                     <SidebarMenuButton
                       isActive={location === '/'}
@@ -397,8 +395,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       delay: 0.25,
                       ease: [0.25, 0.46, 0.45, 0.94]
                     }}
-                    whileHover={{ x: 3 }}
-                    whileTap={{ scale: 0.98 }}
                   >
                     <SidebarMenuButton
                       isActive={location === '/stories'}
@@ -434,8 +430,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       delay: 0.3,
                       ease: [0.25, 0.46, 0.45, 0.94]
                     }}
-                    whileHover={{ x: 3 }}
-                    whileTap={{ scale: 0.98 }}
                   >
                     <SidebarMenuButton
                       isActive={location === '/reader'}
@@ -471,8 +465,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       delay: 0.35,
                       ease: [0.25, 0.46, 0.45, 0.94]
                     }}
-                    whileHover={{ x: 3 }}
-                    whileTap={{ scale: 0.98 }}
                   >
                     <SidebarMenuButton
                       isActive={location === '/community'}
@@ -508,8 +500,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       delay: 0.4,
                       ease: [0.25, 0.46, 0.45, 0.94]
                     }}
-                    whileHover={{ x: 3 }}
-                    whileTap={{ scale: 0.98 }}
                   >
                     <SidebarMenuButton
                       isActive={location === '/bookmarks'}
@@ -1118,10 +1108,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           </Button>
         )}
 
-        <motion.button
+        <button
           onClick={() => handleNavigation('/report-bug')}
-          whileHover={{ scale: 1.02, translateX: 2 }}
-          whileTap={{ scale: 0.98 }}
           className={cn(
             "mt-2 mb-0 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
             location === '/report-bug'
@@ -1133,7 +1121,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         >
           <Bug className="h-4 w-4" aria-hidden="true" />
           <span className="uppercase tracking-wider font-medium">Report Bug</span>
-        </motion.button>
+        </button>
       </div>
       </div>
     </motion.div>
