@@ -372,7 +372,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       className={menuItemClass}
                       aria-current={location === '/' ? 'page' : undefined}
                     >
-                      <Home className="sidebar-icon-enhanced h-4 w-4 group-hover:scale-110 transition-transform duration-200_code                      <span className="sidebar-menu-text-enhanced">HOME</span>
+                      <Home className="sidebar-icon-enhanced h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                      <span className="sidebar-menu-text-enhanced">HOME</span>
                       {location === '/' && (
                         <motion.div
                           initial={{ scale: 0 }}
@@ -407,7 +408,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       aria-current={location === '/stories' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/stories')}
-                      <Scroll className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      <Scroll className="sidebar-icon-enhanced h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
                       <span className="sidebar-menu-text-enhanced">STORY INDEX</span>
                       {location === '/stories' && (
                         <motion.div
@@ -441,8 +442,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       size="sm"
                       className={menuItemClass}
                       aria-current={location === '/reader' ? 'page' : undefined}
-                 _code  new </>
->
+
                       {renderActiveIndicator('/reader')}
                       <Book className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
                       <span className="sidebar-menu-text-enhanced">READER</span>
