@@ -71,10 +71,10 @@ export default function Navigation() {
             <Link
               key={href}
               href={href}
-              className={`relative px-3 py-1.5 text-sm font-medium rounded-full transition-colors
+              className={`relative px-3 py-1.5 text-sm font-medium rounded-full transition-colors border
                 ${location === href
-                  ? "bg-primary/20 text-primary font-semibold"
-                  : "text-white hover:text-white/80 hover:bg-accent/10"
+                  ? "bg-primary/20 text-primary font-semibold border-primary/30"
+                  : "text-white hover:text-white/80 hover:bg-accent/10 border-border/40"
                 }`}
               aria-current={location === href ? "page" : undefined}
             >

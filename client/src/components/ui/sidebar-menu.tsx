@@ -368,11 +368,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       onMouseEnter={() => prefetchRoute('/')}
                       onFocus={() => prefetchRoute('/')}
                       tooltip="Home"
+                      size="sm"
                       className={menuItemClass}
                       aria-current={location === '/' ? 'page' : undefined}
                     >
-                      <Home className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
-                      <span className="sidebar-menu-text-enhanced">HOME</span>
+                      <Home className="sidebar-icon-enhanced h-4 w-4 group-hover:scale-110 transition-transform duration-200_code                      <span className="sidebar-menu-text-enhanced">HOME</span>
                       {location === '/' && (
                         <motion.div
                           initial={{ scale: 0 }}
@@ -402,6 +402,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       onMouseEnter={() => prefetchRoute('/stories')}
                       onFocus={() => prefetchRoute('/stories')}
                       tooltip="Story Index"
+                      size="sm"
                       className={menuItemClass}
                       aria-current={location === '/stories' ? 'page' : undefined}
                     >
@@ -437,11 +438,13 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       onMouseEnter={() => prefetchRoute('/reader')}
                       onFocus={() => prefetchRoute('/reader')}
                       tooltip="Interactive Reader"
+                      size="sm"
                       className={menuItemClass}
                       aria-current={location === '/reader' ? 'page' : undefined}
-                    >
+                 _code  new </>
+>
                       {renderActiveIndicator('/reader')}
-                      <Book className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      <Book className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
                       <span className="sidebar-menu-text-enhanced">READER</span>
                       {location === '/reader' && (
                         <motion.div
@@ -472,11 +475,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       onMouseEnter={() => prefetchRoute('/community')}
                       onFocus={() => prefetchRoute('/community')}
                       tooltip="Community Hub"
+                      size="sm"
                       className={menuItemClass}
                       aria-current={location === '/community' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/community')}
-                      <Users className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      <Users className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
                       <span className="sidebar-menu-text-enhanced">COMMUNITY</span>
                       {location === '/community' && (
                         <motion.div
@@ -507,11 +511,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       onMouseEnter={() => prefetchRoute('/bookmarks')}
                       onFocus={() => prefetchRoute('/bookmarks')}
                       tooltip="Saved Stories"
+                      size="sm"
                       className={menuItemClass}
                       aria-current={location === '/bookmarks' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/bookmarks')}
-                      <BookmarkIcon className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      <BookmarkIcon className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
                       <span className="sidebar-menu-text-enhanced">BOOKMARKS</span>
                       {location === '/bookmarks' && (
                         <motion.div
