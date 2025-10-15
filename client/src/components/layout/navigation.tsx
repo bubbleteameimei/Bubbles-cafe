@@ -60,7 +60,7 @@ export default function Navigation() {
         </div>
 
         {/* Center nav */}
-        <nav aria-label="Main" className="hidden lg:flex items-center justify-center flex-1 space-x-4">
+        <nav aria-label="Main" className="hidden lg:flex items-center justify-center flex-1 space-x-2">
           {[
             { href: "/", label: "Home" },
             { href: "/stories", label: "Stories" },
@@ -71,10 +71,10 @@ export default function Navigation() {
             <Link
               key={href}
               href={href}
-              className={`relative px-4 py-2 text-sm font-medium transition-colors
+              className={`relative px-3 py-1.5 text-sm font-medium rounded-full transition-colors
                 ${location === href
-                  ? "text-primary font-semibold after:absolute after:left-3 after:right-3 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary"
-                  : "text-white hover:text-white/80"
+                  ? "bg-primary/20 text-primary font-semibold"
+                  : "text-white hover:text-white/80 hover:bg-accent/10"
                 }`}
               aria-current={location === href ? "page" : undefined}
             >
@@ -150,11 +150,11 @@ export default function Navigation() {
         </div>
       </div>
 
-      {/* Full-width separator - stable width without viewport hacks */}
+      {/* Full-width separator - end-to-end using stable viewport width */}
       <div
         aria-hidden="true"
         className="border-b border-border/40"
-        style={{ width: "100%" }}
+        style={{ width: 'var(--viewport-width, 100%)', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
       />
     </header>
   );

@@ -723,7 +723,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       <div 
         style={{ 
           position: 'fixed',
-          top: 'var(--navbar-height, 56px)',
+          top: 'calc(var(--navbar-height, 56px) + 1px)',
           left: 0,
           right: 0,
           width: '100%',
@@ -1514,15 +1514,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </div>
             </SwipeNavigation>
             
-            {/* Simple pagination at bottom of story content - extremely compact */}
-            <div className={`flex items-center justify-center gap-3 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <div className="flex items-center gap-3 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1.5 px-3 shadow-md">
+            {/* Simple pagination at bottom of story content - refined pill sizing */}
+            <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+              <div className="flex items-center gap-2 bg-background/95 backdrop-blur-md border border-border/50 rounded-full py-1 px-2 shadow-sm">
                 {/* Previous story button */}
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   onClick={goToPreviousStory}
-                  className={`h-8 w-8 rounded-full group relative transition-all duration-200 ${
+                  className={`h-7 w-7 rounded-full group relative transition-colors ${
                     isFirstStory 
                       ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
@@ -1530,16 +1530,16 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   aria-label="Previous story"
                   disabled={posts.length <= 1 || isFirstStory}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
                     <path d="m15 18-6-6 6-6"/>
                   </svg>
-                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-                    Previous Story
+                  <span className="absolute -top-9 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                    Previous
                   </span>
                 </Button>
                 
                 {/* Story counter */}
-                <div className="px-2 text-xs text-muted-foreground font-medium">
+                <div className="px-1.5 text-[11px] text-muted-foreground font-medium">
                   {currentIndex + 1} of {posts.length}
                 </div>
                 
@@ -1548,7 +1548,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   variant="ghost" 
                   size="icon" 
                   onClick={goToNextStory}
-                  className={`h-8 w-8 rounded-full group relative transition-all duration-200 ${
+                  className={`h-7 w-7 rounded-full group relative transition-colors ${
                     isLastStory 
                       ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
                       : 'text-slate-700 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
@@ -1556,11 +1556,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   aria-label="Next story"
                   disabled={posts.length <= 1 || isLastStory}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
                     <path d="m9 18 6-6-6-6"/>
                   </svg>
-                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-                    Next Story
+                  <span className="absolute -top-9 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                    Next
                   </span>
                 </Button>
               </div>

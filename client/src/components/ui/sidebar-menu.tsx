@@ -288,7 +288,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   // Enhanced menu item class with modern UX principles
   const menuItemClass = cn(
     "sidebar-menu-button-enhanced",
-    "group relative flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium",
+    "group relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium",
     "text-sidebar-foreground/80 hover:text-sidebar-foreground",
     "transition-all duration-200 ease-out",
     "hover:bg-sidebar-accent hover:shadow-sm",
