@@ -719,14 +719,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         wordCount={wordCount}
       />
       
-      {/* Reading Progress Bar - fixed to the header demarcation line, full-bleed end-to-end */}
+      {/* Reading Progress Bar - fixed under the header, full-width without viewport hacks */}
       <div 
         style={{ 
           position: 'fixed',
           top: 'var(--navbar-height, 56px)',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 'var(--viewport-width, 100vw)',
+          left: 0,
+          right: 0,
+          width: '100%',
           height: '3px',
           backgroundColor: 'transparent',
           zIndex: 39, // below the fixed header (z-40) to avoid overlapping/cropping

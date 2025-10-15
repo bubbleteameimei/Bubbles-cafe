@@ -150,11 +150,11 @@ export default function Navigation() {
         </div>
       </div>
 
-      {/* Full-width separator - match footer HR style */}
+      {/* Full-width separator - stable width without viewport hacks */}
       <div
         aria-hidden="true"
         className="border-b border-border/40"
-        style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
+        style={{ width: "100%" }}
       />
     </header>
   );
