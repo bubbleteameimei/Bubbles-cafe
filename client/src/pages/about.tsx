@@ -74,9 +74,9 @@ export default function AboutPage() {
           <div className="mt-6 flex justify-center">
             <SocialButtons
               links={{
-                wordpress: "https://bubbleteameimei.wordpress.com",
-                twitter: "https://x.com/Bubbleteameimei",
-                instagram: "https://www.instagram.com/bubbleteameimei?igsh=dHRxNzM0YnpwanJw"
+                wordpress: "https://bubbleteameimei.wordpress.com/",
+                twitter: "https://twitter.com/Bubbleteameimei",
+                instagram: "https://instagram.com/Bubbleteameimei"
               }}
               className="text-2xl"
             />
