@@ -1,4 +1,9 @@
 :root {
+  /* Layout tokens - set before first paint to avoid reflow */
+  --navbar-height: 56px; /* matches header .h-14 (56px) */
+  --progress-top-offset: var(--navbar-height);
+  --viewport-width: 100vw;
+
   /* Colors */
   --color-bg: hsl(var(--background));
   --color-fg: hsl(var(--foreground));
