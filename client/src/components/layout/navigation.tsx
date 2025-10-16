@@ -86,33 +86,44 @@ export default function Navigation() {
   }, [isReaderRoute]);
 
   return (
-    <header
-      className="w-full bg-background/40 backdrop-blur-sm shadow-sm"
-      style={{ position: 'relative', left: 0, right: 0, margin: 0, padding: 0, width: '100%' }}
-    >
-      <div className="main-header flex items-center justify-between h-14 px-4">
-        
-        {/* Left: menu */}
-        <div className="flex items-center">
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
-                aria-label="Open menu"
-                onClick={() => setIsOpen((v) => !v)}
-                noOutline
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-[280px] max-w-[85vw] h-full">
-              <div className="border-b border-border/30" />
-              <SidebarNavigation onNavigate={() => setIsOpen(false)} />
-            </SheetContent>
-          </Sheet>
-        </div>
+    <>
+      <header
+        className="w-full bg-background/40 backdrop-blur-sm shadow-sm"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          margin: 0,
+          padding: 0,
+          width: '100%',
+          zIndex: 50,
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+        }}
+      >
+        <div className="main-header flex items-center justify-between h-14 px-4">
+          
+          {/* Left: menu */}
+          <div className="flex items-center">
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+                  aria-label="Open menu"
+                  onClick={() => setIsOpen((v) => !v)}
+                  noOutline
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-[280px] max-w-[85vw] h-full">
+                <div className="border-b border-border/30" />
+                <SidebarNavigation onNavigate={() => setIsOpen(false)} />
+              </SheetContent>
+            </Sheet>
+          </div>
 
         {/* Center nav */}
         <nav aria-label="Main" className="hidden lg:flex items-center justify-center flex-1 space-x-4">
@@ -243,5 +254,8 @@ export default function Navigation() {
         </div>
       )}
     </header>
+    {/* Spacer to offset fixed header height (56px = h-14) + safe-area inset */}
+    <div aria-hidden="true" style={{ height: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }} />
+  </>
   );
 }
