@@ -81,14 +81,14 @@
   padding: 6px;
   border-radius: 6px;
   background-color: transparent;
-  border: 1px solid var(--border);
-  color: var(--foreground);
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
   transition: all 0.15s ease;
 }
 
 .theme-toggle-icon:hover {
-  background-color: var(--accent);
-  color: var(--accent-foreground);
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
 }
 
 .theme-toggle-full {
@@ -98,13 +98,13 @@
   padding: 6px 12px;
   border-radius: 6px;
   background-color: transparent;
-  border: 1px solid var(--border);
-  color: var(--foreground);
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
   font-size: 14px;
   transition: all 0.15s ease;
 }
 
 .theme-toggle-full:hover {
-  background-color: var(--accent);
-  color: var(--accent-foreground);
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
 }

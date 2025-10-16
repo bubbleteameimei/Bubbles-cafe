@@ -748,15 +748,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           top: 5px;
           left: 50%;
           transform: translateX(-50%);
-          background-color: var(--background);
-          color: var(--muted-foreground);
+          background-color: hsl(var(--background));
+          color: hsl(var(--muted-foreground));
           font-size: 0.65rem;
           padding: 1px 6px;
           border-radius: 4px;
           opacity: 0.6;
           pointer-events: none;
           z-index: 30;
-          border: 1px solid var(--border);
+          border: 1px solid hsl(var(--border));
           box-shadow: 0 1px 1px rgba(0,0,0,0.05);
         }
         
