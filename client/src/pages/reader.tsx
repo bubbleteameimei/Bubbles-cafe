@@ -1498,7 +1498,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   className="pointer-events-none absolute inset-0 rounded-full"
                   style={{ border: '1px solid', borderColor: 'hsl(var(--border) / 0.4)', transform: 'translateY(-1px)' }}
                 />
-                <div className="flex items-center gap-1 translate-y-1">
+                <div className="flex items-center gap-1 translate-y-2">
                   {/* Previous story button */}
                   <Button 
                     variant="ghost" 
@@ -1521,7 +1521,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   </Button>
                   
                   {/* Story counter */}
-                  <div className="px-1 text-[10px] text-muted-foreground font-medium">
+                  <div className="px-1 h-5 flex items-center text-[10px] leading-none text-muted-foreground font-medium">
                     {currentIndex + 1} of {posts.length}
                   </div>
                   
