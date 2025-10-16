@@ -1492,7 +1492,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             
             {/* Simple pagination at bottom of story content - extremely compact */}
             <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <div className="relative overflow-visible flex items-center justify-center gap-1 bg-background/90 backdrop-blur-md border border-transparent rounded-full h-8 px-1.5 shadow-sm">
+              <div className="relative overflow-visible flex items-center justify-center gap-1 bg-background/90 backdrop-blur-md border border-transparent rounded-full h-12 px-1.5 shadow-sm">
                 <span
                   aria-hidden="true"
                   className="pointer-events-none absolute inset-0 rounded-full"
@@ -1617,17 +1617,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       </Button>
                       
                       {/* Instagram */}
-                      <Button
-                        asChild
-                        variant="outline"
-                        size="icon"
-                        className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                      <a
+                        href="https://www.instagram.com/Bubbleteameimei/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-9 w-9 rounded-full inline-flex items-center justify-center bg-background border hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
                       >
-                        <a href="https://www.instagram.com/Bubbleteameimei/" target="_blank" rel="noopener">
-                          <FaInstagram className="h-4 w-4" />
-                          <span className="sr-only">Follow on Instagram</span>
-                        </a>
-                      </Button>
+                        <FaInstagram className="h-4 w-4" />
+                        <span className="sr-only">Follow on Instagram</span>
+                      </a>
                     </div>
                   </div>
                 </div>
