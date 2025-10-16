@@ -723,7 +723,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       <div 
         style={{ 
           position: 'fixed',
-          top: 'var(--navbar-height, 56px)',
+          top: 'calc(var(--navbar-height, 56px) + 1px)',
           left: '50%',
           transform: 'translateX(-50%)',
           width: 'var(--viewport-width, 100vw)',
@@ -1516,13 +1516,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             
             {/* Simple pagination at bottom of story content - extremely compact */}
             <div className={`flex items-center justify-center gap-3 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <div className="flex items-center gap-3 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1.5 px-3 shadow-md">
+              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1 px-2 shadow-md">
                 {/* Previous story button */}
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   onClick={goToPreviousStory}
-                  className={`h-8 w-8 rounded-full group relative transition-all duration-200 ${
+                  className={`h-7 w-7 rounded-full group relative transition-all duration-200 ${
                     isFirstStory 
                       ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
@@ -1548,7 +1548,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   variant="ghost" 
                   size="icon" 
                   onClick={goToNextStory}
-                  className={`h-8 w-8 rounded-full group relative transition-all duration-200 ${
+                  className={`h-7 w-7 rounded-full group relative transition-all duration-200 ${
                     isLastStory 
                       ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
                       : 'text-slate-700 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
