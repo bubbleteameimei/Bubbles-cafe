@@ -63,14 +63,17 @@ jobs:
             npm install --no-audit --no-fund
           fi
 
-      - name: Start dev server
+      - name: Build app (client)
+        run: npm run build
+
+      - name: Start server (production, no Vite)
         run: |
-          nohup bash -lc "PORT=$PORT npm run dev" > server.log 2>&1 &
+          nohup bash -lc "NODE_ENV=production PORT=$PORT npm run start" > server.log 2>&1 &
           echo $! > server.pid
 
       - name: Wait for server readiness
         run: |
-          for i in {1..60}; do
+          for i in {1..120}; do
             if curl -sf "http://localhost:${PORT}/health" >/dev/null; then
               echo "Server is up"; exit 0;
             fi
