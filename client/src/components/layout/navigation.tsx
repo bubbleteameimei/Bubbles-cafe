@@ -37,6 +37,10 @@ export default function Navigation() {
   const { notifications } = useNotifications();
   const { theme, setTheme } = useTheme();
 
+  // Reader route progress state (for in-header progress bar)
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const isReaderRoute = typeof location === "string" && location.includes("/reader");
+
   // Close the sidebar drawer proactively on route changes to avoid layout reflow
   useEffect(() => {
     if (isOpen) {
@@ -52,6 +56,34 @@ export default function Navigation() {
   useEffect(() => {
     prefetchAuthPages();
   }, []);
+
+  // Track page scroll to drive the in-header progress bar on reader routes
+  useEffect(() => {
+    if (!isReaderRoute) return;
+    let ticking = false;
+    const update = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight;
+      const winHeight = window.innerHeight;
+      const maxScrollable = Math.max(docHeight - winHeight, 1);
+      const pct = Math.min(100, Math.max(0, (scrollTop / maxScrollable) * 100));
+      setScrollProgress(pct);
+      ticking = false;
+    };
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(update);
+        ticking = true;
+      }
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true } as any);
+    window.addEventListener("resize", onScroll, { passive: true } as any);
+    return () => {
+      window.removeEventListener("scroll", onScroll as any);
+      window.removeEventListener("resize", onScroll as any);
+    };
+  }, [isReaderRoute]);
 
   return (
     <header
@@ -183,6 +215,33 @@ export default function Navigation() {
         className="border-b border-border/40"
         style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
       />
+
+      {/* Reader-only in-header progress bar, aligned to the bottom demarcation line */}
+      {isReaderRoute && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            bottom: '-1px', // sit directly under the separator line
+            width: 'var(--viewport-width, 100vw)',
+            height: '3px',
+            zIndex: 41,
+            pointerEvents: 'none'
+          }}
+        >
+          <div
+            style={{
+              height: '100%',
+              width: `${scrollProgress}%`,
+              background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
+              willChange: 'transform',
+              transform: 'translateZ(0)'
+            }}
+          />
+        </div>
+      )}
     </header>
   );
 }

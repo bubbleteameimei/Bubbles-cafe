@@ -719,31 +719,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         wordCount={wordCount}
       />
       
-      {/* Reading Progress Bar - fixed to the header demarcation line, full-bleed end-to-end */}
-      <div 
-        style={{ 
-          position: 'fixed',
-          top: 'calc(var(--navbar-height, 56px) + 1px)',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 'var(--viewport-width, 100vw)',
-          height: '3px',
-          backgroundColor: 'transparent',
-          zIndex: 39, // below the fixed header (z-40) to avoid overlapping/cropping
-          pointerEvents: 'none'
-        }}
-      >
-        <div 
-          style={{ 
-            height: '100%',
-            width: '100%',
-            background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
-            transform: `scaleX(${animatedProgress / 100}) translateZ(0)`,
-            transformOrigin: '0 0',
-            willChange: 'transform'
-          }}
-        />
-      </div>
+      
       
       {/* Reader tooltip for distraction-free mode instructions */}
       <ReaderTooltip show={showTooltip} />
@@ -1515,14 +1491,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </SwipeNavigation>
             
             {/* Simple pagination at bottom of story content - extremely compact */}
-            <div className={`flex items-center justify-center gap-3 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1 px-2 shadow-md">
+            <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+              <div className="flex items-center gap-1 bg-background/90 backdrop-blur-md border border-border/40 rounded-full py-0.5 px-1 shadow-sm">
                 {/* Previous story button */}
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   onClick={goToPreviousStory}
-                  className={`h-7 w-7 rounded-full group relative transition-all duration-200 ${
+                  className={`h-6 w-6 rounded-full group relative transition-all duration-200 ${
                     isFirstStory 
                       ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
@@ -1539,7 +1515,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 </Button>
                 
                 {/* Story counter */}
-                <div className="px-2 text-xs text-muted-foreground font-medium">
+                <div className="px-1 text-[10px] text-muted-foreground font-medium">
                   {currentIndex + 1} of {posts.length}
                 </div>
                 
