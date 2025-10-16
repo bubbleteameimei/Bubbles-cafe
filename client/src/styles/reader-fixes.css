@@ -118,7 +118,7 @@
   color: hsl(var(--muted-foreground));
   background-color: hsl(var(--background));
   border-radius: 0.25rem;
-  quotes: """ """;
+  quotes: "“" "”" "‘" "’";
 }
 
 .story-content blockquote::before {
