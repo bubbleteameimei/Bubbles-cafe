@@ -40,14 +40,20 @@ export async function waitForPoolInitialization(timeoutMs: number = 5000): Promi
 initializationPromise = (async () => {
   try {
     console.log('Initializing database connection for server...');
-    
+
+    // If no DATABASE_URL is present, skip initialization gracefully.
+    if (!process.env.DATABASE_URL) {
+      console.warn('DATABASE_URL not set; skipping server DB initialization');
+      return;
+    }
+
     // Initialize the database connection using the shared module
     const connection = await initializeDatabaseConnection();
-    
+
     // Assign the real pool and db to our exported variables
     pool = connection.pool;
     db = connection.db;
-    
+
     // Set up event handlers
     pool.on('error', (err: Error) => {
       console.error('Unexpected error on idle client', {
@@ -55,21 +61,21 @@ initializationPromise = (async () => {
         stack: err.stack
       });
     });
-    
+
     pool.on('connect', () => {
       console.log('New client connected to database');
     });
-    
+
     pool.on('remove', () => {
       console.log('Client connection removed from pool');
     });
-    
+
     console.log('Database connection initialized successfully');
     isInitialized = true;
   } catch (err) {
     console.error('Critical error during database initialization:', err);
     console.error('Database operations will fail until connection is established');
-    
+
     // Attempt to recover and reconnect periodically
     setTimeout(() => {
       console.log('Attempting to reconnect to database...');

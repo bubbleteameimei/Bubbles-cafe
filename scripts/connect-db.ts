@@ -143,7 +143,7 @@ export async function initializeDatabaseConnection(): Promise<{ pool: PgPool, db
       if (fs.existsSync(envPath)) {
         console.log('📄 Found .env file, checking for DATABASE_URL...');
         const envContent = fs.readFileSync(envPath, 'utf8');
-        const dbUrlMatch = envContent.match(/DATABASE_URL["']?=(.*?)[\"']?$/m);
+        const dbUrlMatch = envContent.match(/DATABASE_URL["']?=(.*?)["']?$/m);
 
         if (dbUrlMatch && dbUrlMatch[1]) {
           process.env.DATABASE_URL = sanitizeDatabaseUrl(dbUrlMatch[1])!;
@@ -155,8 +155,8 @@ export async function initializeDatabaseConnection(): Promise<{ pool: PgPool, db
     }
 
     if (!process.env.DATABASE_URL) {
-      console.error("❌ DATABASE_URL environment variable is still not set");
-      process.exit(1);
+      // Do not terminate the process in server/CI contexts; let callers handle absence.
+      throw new Error("DATABASE_URL not set");
     }
   }
 
