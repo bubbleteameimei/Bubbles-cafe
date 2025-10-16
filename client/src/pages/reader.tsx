@@ -1521,7 +1521,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   </Button>
                   
                   {/* Story counter */}
-                  <div className="px-1 h-5 flex items-center text-[10px] leading-none text-muted-foreground font-medium">
+                  <div className="px-1 h-5 flex items-center -translate-y-1 text-[10px] leading-none text-muted-foreground font-medium">
                     {currentIndex + 1} of {posts.length}
                   </div>
                   
