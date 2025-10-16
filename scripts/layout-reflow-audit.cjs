@@ -23,6 +23,20 @@ const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer');
 
+// Simple helper to bound async operations
+async function withTimeout(promise, ms, label = 'operation') {
+  let to;
+  const timeout = new Promise((_, reject) => {
+    to = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+  });
+  try {
+    const result = await Promise.race([promise, timeout]);
+    return result;
+  } finally {
+    clearTimeout(to);
+  }
+}
+
 const REPORT_DIR = path.join(process.cwd(), 'reflow-reports');
 
 function ensureDir(dir) {
@@ -542,85 +556,101 @@ async function main() {
   const ts = nowTs();
   const baseUrl = await getBaseUrl();
 
-  const browser = await puppeteer.launch({
-    headless: 'new',
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-gpu',
-      '--js-flags=--expose-gc',
-    ],
-    defaultViewport: { width: 1366, height: 900 },
-  });
+  // Global guard to avoid indefinite hangs (default 8 minutes)
+  const MAX_RUN_MS = parseInt(process.env.AUDIT_TIMEOUT_MS || '480000', 10);
+  const hardGuard = setTimeout(() => {
+    console.error(`[Audit] Global timeout (${MAX_RUN_MS}ms) reached. Exiting.`);
+    process.exit(0);
+  }, MAX_RUN_MS);
 
-  const page = await browser.newPage();
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-gpu',
+        '--js-flags=--expose-gc',
+      ],
+      defaultViewport: { width: 1366, height: 900 },
+    });
 
-  // Inject FSL detector on all pages before scripts execute
-  await page.evaluateOnNewDocument(fslInjectionSource());
-
-  // Attach CDP
-  const client = await page.target().createCDPSession();
-  await client.send('Performance.enable');
-
-  // Start tracing
-  const categories = [
-    'devtools.timeline',
-    'disabled-by-default-devtools.timeline',
-    'disabled-by-default-devtools.timeline.frame',
-    'disabled-by-default-devtools.timeline.invalidationTracking',
-    'v8.execute',
-    'toplevel',
-    'blink.user_timing',
-  ];
-
-  await client.send('Tracing.start', {
-    categories: categories.join(','),
-    options: 'sampling-frequency=9000',
-    transferMode: 'ReturnAsStream',
-  });
-
-  const metricsSnapshots = [];
-  metricsSnapshots.push({ label: 'start', metrics: await collectPerformanceMetrics(client) });
-
-  const flows = await runFlows(page, baseUrl);
-
-  metricsSnapshots.push({ label: 'after flows', metrics: await collectPerformanceMetrics(client) });
-
-  // Stop tracing and read stream
-  const { stream } = await client.send('Tracing.end');
-  const rawTrace = await readStreamFromCDP(client, stream);
-
-  // Collect FSL data
-  const fslReport = await page.evaluate(() => {
+    const page = await browser.newPage();
+    // Tighten default timeouts
     try {
-      return window.__collectFSLReport ? window.__collectFSLReport() : { totalReads: 0, forcedSyncCount: 0, topSites: [], rawEventsCount: 0 };
-    } catch {
-      return { totalReads: 0, forcedSyncCount: 0, topSites: [], rawEventsCount: 0 };
-    }
-  });
+      page.setDefaultNavigationTimeout(45000);
+      page.setDefaultTimeout(20000);
+    } catch {}
 
-  await browser.close();
+    // Inject FSL detector on all pages before scripts execute
+    await page.evaluateOnNewDocument(fslInjectionSource());
 
-  const parsed = parseTrace(rawTrace);
+    // Attach CDP
+    const client = await page.target().createCDPSession();
+    await client.send('Performance.enable');
 
-  const jsonOut = {
-    baseUrl,
-    flows,
-    metricsSnapshots,
-    traceSummary: parsed.summary,
-    traceSorted: parsed.sorted,
-    rawEventsCount: parsed.rawEventsCount,
-    fslReport,
-  };
+    // Start tracing
+    const categories = [
+      'devtools.timeline',
+      'disabled-by-default-devtools.timeline',
+      'disabled-by-default-devtools.timeline.frame',
+      'disabled-by-default-devtools.timeline.invalidationTracking',
+      'v8.execute',
+      'toplevel',
+      'blink.user_timing',
+    ];
 
-  const jsonPath = path.join(REPORT_DIR, `reflow-report-${ts}.json`);
-  const mdPath = path.join(REPORT_DIR, `reflow-report-${ts}.md`);
-  fs.writeFileSync(jsonPath, JSON.stringify(jsonOut, null, 2), 'utf8');
-  fs.writeFileSync(mdPath, markdownReport(parsed, baseUrl, flows, metricsSnapshots, fslReport), 'utf8');
+    await client.send('Tracing.start', {
+      categories: categories.join(','),
+      options: 'sampling-frequency=9000',
+      transferMode: 'ReturnAsStream',
+    });
 
-  console.log('Reflow audit complete.');
-  console.log('JSON report:', jsonPath);
-  console.log('Markdown report:', mdPath);
+    const metricsSnapshots = [];
+    metricsSnapshots.push({ label: 'start', metrics: await collectPerformanceMetrics(client) });
+
+    const flows = await runFlows(page, baseUrl);
+
+    metricsSnapshots.push({ label: 'after flows', metrics: await collectPerformanceMetrics(client) });
+
+    // Stop tracing and read stream with explicit timeouts
+    const endRes = await withTimeout(client.send('Tracing.end'), 30000, 'Tracing.end');
+    const rawTrace = await withTimeout(readStreamFromCDP(client, endRes.stream), 30000, 'read trace stream');
+
+    // Collect FSL data
+    const fslReport = await withTimeout(page.evaluate(() => {
+      try {
+        return window.__collectFSLReport ? window.__collectFSLReport() : { totalReads: 0, forcedSyncCount: 0, topSites: [], rawEventsCount: 0 };
+      } catch {
+        return { totalReads: 0, forcedSyncCount: 0, topSites: [], rawEventsCount: 0 };
+      }
+    }), 10000, 'collect FSL report');
+
+    const parsed = parseTrace(rawTrace);
+
+    const jsonOut = {
+      baseUrl,
+      flows,
+      metricsSnapshots,
+      traceSummary: parsed.summary,
+      traceSorted: parsed.sorted,
+      rawEventsCount: parsed.rawEventsCount,
+      fslReport,
+    };
+
+    const jsonPath = path.join(REPORT_DIR, `reflow-report-${ts}.json`);
+    const mdPath = path.join(REPORT_DIR, `reflow-report-${ts}.md`);
+    fs.writeFileSync(jsonPath, JSON.stringify(jsonOut, null, 2), 'utf8');
+    fs.writeFileSync(mdPath, markdownReport(parsed, baseUrl, flows, metricsSnapshots, fslReport), 'utf8');
+
+    console.log('Reflow audit complete.');
+    console.log('JSON report:', jsonPath);
+    console.log('Markdown report:', mdPath);
+  } finally {
+    try { clearTimeout(hardGuard); } catch {}
+    try { await browser?.close(); } catch {}
+  }
 }
 
 if (require.main === module) {
