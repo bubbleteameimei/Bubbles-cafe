@@ -27,7 +27,7 @@ import { useAuth } from "@/hooks/use-auth";
 import ApiLoader from "@/components/api-loader";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import { useToast } from "@/hooks/use-toast";
-import useReaderGentleScroll from "@/hooks/useReaderGentleScroll";
+
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import SEO from "@/components/SEO";
 import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
@@ -127,15 +127,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [overrideThemeCategory, setOverrideThemeCategory] = useState<string | null>(null);
   const [overrideThemeIcon, setOverrideThemeIcon] = useState<string | null>(null);
   
-  // Detect if this is a refresh using Performance API
-  const isRefreshRef = useRef<boolean>(
-    typeof window !== 'undefined' &&
-    window.performance && 
-    ((window.performance.navigation?.type === 1) || // Old API
-     (performance.getEntriesByType('navigation').some(
-       nav => (nav as PerformanceNavigationTiming).type === 'reload'
-     )))
-  );
+  
   
   // Helper function to close dialogs safely
   const safeCloseDialog = () => {
@@ -392,15 +384,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     refetchOnWindowFocus: true
   });
 
-  // Initialize the reader-specific gentle scroll memory
-  // This will only work on the reader page and community-story page
-  const { positionRestored, isRefresh } = useReaderGentleScroll({
-    enabled: !isLoading && postsData?.posts && postsData.posts.length > 0,
-    slug: autoSaveSlug || routeSlug || '',
-    showToast: true,
-    autoSave: true,
-    autoSaveInterval: 2000
-  });
+  
 
   // Validate and update currentIndex when posts data changes
   useEffect(() => {
