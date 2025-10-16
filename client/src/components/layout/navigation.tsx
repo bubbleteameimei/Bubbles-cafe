@@ -12,6 +12,24 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/contexts/notification-context";
 
+function prefetchAuthPages() {
+  try {
+    const run = () => {
+      // Warm the chunks for auth routes so Suspense doesn't show layout-changing fallbacks
+      void import("@/pages/auth");
+      void import("@/pages/auth-success");
+      void import("@/pages/auth-callback");
+      void import("@/pages/reset-password");
+    };
+    const ric = (window as any)?.requestIdleCallback as any;
+    if (typeof ric === "function") {
+      ric(() => run(), { timeout: 1500 });
+    } else {
+      setTimeout(run, 300);
+    }
+  } catch {}
+}
+
 export default function Navigation() {
   const [location, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
@@ -29,6 +47,11 @@ export default function Navigation() {
       document.body.style.paddingRight = '';
     } catch {}
   }, [location]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Idle prefetch auth-related routes to avoid Suspense flashes
+  useEffect(() => {
+    prefetchAuthPages();
+  }, []);
 
   return (
     <header
@@ -125,10 +148,14 @@ export default function Navigation() {
             <Button
               variant="ghost"
               size="icon"
+              onMouseEnter={prefetchAuthPages}
+              onFocus={prefetchAuthPages}
               onClick={() => {
                 // Ensure the sidebar is closed before navigating to prevent reflow
                 if (isOpen) setIsOpen(false);
                 try { document.body.style.paddingRight = ''; } catch {}
+                // Aggressively ensure auth chunks are loaded before navigation
+                prefetchAuthPages();
                 setLocation("/auth");
               }}
               className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
