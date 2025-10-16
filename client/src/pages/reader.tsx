@@ -1498,52 +1498,54 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   className="pointer-events-none absolute inset-0 rounded-full"
                   style={{ border: '1px solid', borderColor: 'hsl(var(--border) / 0.4)', transform: 'translateY(-1px)' }}
                 />
-                {/* Previous story button */}
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={goToPreviousStory}
-                  className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
-                    isFirstStory 
-                      ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
-                  }`}
-                  aria-label="Previous story"
-                  disabled={posts.length <= 1 || isFirstStory}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
-                    <path d="m15 18-6-6 6-6"/>
-                  </svg>
-                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-                    Previous Story
-                  </span>
-                </Button>
-                
-                {/* Story counter */}
-                <div className="px-1 text-[10px] text-muted-foreground font-medium">
-                  {currentIndex + 1} of {posts.length}
+                <div className="flex items-center gap-1 translate-y-1">
+                  {/* Previous story button */}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={goToPreviousStory}
+                    className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
+                      isFirstStory 
+                        ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
+                    }`}
+                    aria-label="Previous story"
+                    disabled={posts.length <= 1 || isFirstStory}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                      <path d="m15 18-6-6 6-6"/>
+                    </svg>
+                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                      Previous Story
+                    </span>
+                  </Button>
+                  
+                  {/* Story counter */}
+                  <div className="px-1 text-[10px] text-muted-foreground font-medium">
+                    {currentIndex + 1} of {posts.length}
+                  </div>
+                  
+                  {/* Next story button */}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={goToNextStory}
+                    className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
+                      isLastStory 
+                        ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
+                        : 'text-slate-700 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
+                    }`}
+                    aria-label="Next story"
+                    disabled={posts.length <= 1 || isLastStory}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                      <path d="m9 18 6-6-6-6"/>
+                    </svg>
+                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                      Next Story
+                    </span>
+                  </Button>
                 </div>
-                
-                {/* Next story button */}
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={goToNextStory}
-                  className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
-                    isLastStory 
-                      ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
-                      : 'text-slate-700 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
-                  }`}
-                  aria-label="Next story"
-                  disabled={posts.length <= 1 || isLastStory}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
-                    <path d="m9 18 6-6-6-6"/>
-                  </svg>
-                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-                    Next Story
-                  </span>
-                </Button>
               </div>
             </div>
 
