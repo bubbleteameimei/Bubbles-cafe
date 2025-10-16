@@ -281,7 +281,9 @@
   background: linear-gradient(135deg, hsl(var(--primary) / 0.15) 0%, hsl(var(--primary) / 0.05) 100%);
   color: hsl(var(--primary));
   font-weight: 600;
-  box-shadow: 0 2px 8px hsl(var(--primary) / 0.2_code
+  box-shadow: 0 2px 8px hsl(var(--primary) / 0.2);
+}
+
 /* Icon animation enhancements */
 .sidebar-icon-enhanced {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -316,7 +318,7 @@
   left: 0;
   right: 0;
   height: 12px;
-  background: linear-gradient(0deg, rgba(var(--background), 0.95) 0%, rgba(var(--background), 0) 100%);
+  background: linear-gradient(0deg, hsl(var(--background) / 0.95) 0%, hsl(var(--background) / 0) 100%);
   pointer-events: none;
   z-index: 5;
   opacity: 0.8;
