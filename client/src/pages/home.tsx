@@ -12,7 +12,6 @@ import ApiLoader from "@/components/api-loader";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 
-
 export default function Home() {
   const [, setLocation] = useLocation();
   const heroRef = useRef<HTMLDivElement | null>(null);
@@ -94,8 +93,6 @@ export default function Home() {
     refetchOnWindowFocus: false,
   });
   
-
-
   // Format date helper
   const formatDate = (date: string) => {
     try {
@@ -118,11 +115,7 @@ export default function Home() {
           <h2 className="text-xl font-bold mb-4">Unable to load latest story</h2>
           <p className="mb-4">The database connection is currently unavailable, but you can still explore the site.</p>
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            >
+            <div>
               <Button 
                 onClick={() => setLocation('/reader')}
                 className="group w-full px-6 py-3 bg-gradient-to-r from-slate-600 via-slate-700 to-gray-700 hover:from-slate-500 hover:via-slate-600 hover:to-gray-600 text-white shadow-lg transition-all duration-300 hover:shadow-xl font-medium text-lg text-center"
@@ -144,12 +137,8 @@ export default function Home() {
                   <Book className="h-4 w-4 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300" />
                 </motion.div>
               </Button>
-            </motion.div>
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            >
+            </div>
+            <div>
               <Button 
                 onClick={() => window.location.reload()}
                 className="group w-full px-6 py-3 bg-[#444444] hover:bg-[#505050] text-white shadow-lg transition-all duration-300 hover:shadow-xl font-medium text-lg text-center"
@@ -169,7 +158,7 @@ export default function Home() {
                   <ArrowRight className="h-6 w-6 group-hover:translate-x-2 transition-transform duration-300" />
                 </motion.div>
               </Button>
-            </motion.div>
+            </div>
           </div>
         </div>
       ) : (
@@ -184,8 +173,6 @@ export default function Home() {
             backgroundAttachment: 'fixed'
           }}
         >
-          {/* Background overlay removed per request */}
-          
           {/* Invisible barrier removed to standardize content start */}
           <div className="relative w-full h-0" aria-hidden="true"></div>
           
@@ -225,11 +212,7 @@ export default function Home() {
                 className="w-full mt-8 sm:mt-10"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-[2px] w-full max-w-xl mx-auto px-4">
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  >
+                  <div>
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
@@ -251,13 +234,9 @@ export default function Home() {
                         <Book className="h-4 w-4 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300" />
                       </motion.div>
                     </Button>
-                  </motion.div>
+                  </div>
                   
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  >
+                  <div>
                     <Button
                       size="lg"
                       variant="secondary"
@@ -277,10 +256,9 @@ export default function Home() {
                         <ChevronRight className="h-8 w-8 group-hover:translate-x-2 transition-transform duration-300" />
                       </motion.div>
                     </Button>
-                  </motion.div>
+                  </div>
                 </div>
               </motion.div>
-              {/* Monthly readers pill removed by request */}
               
               {/* Buy Me a Coffee button positioned above Latest Story (always visible) */}
               <div className="flex justify-center mt-8 sm:mt-10 mb-2 sm:mb-3 w-full px-4 max-w-4xl mx-auto">
@@ -293,21 +271,6 @@ export default function Home() {
                   <motion.div 
                     onClick={() => setLocation('/reader')} 
                     className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl bg-white/5 dark:bg-white/10 backdrop-blur-md border border-white/15 transition-all duration-300"
-                    whileHover={{ 
-                      y: -8, 
-                      scale: 1.02,
-                      boxShadow: "0 20px 40px -12px rgba(0,0,0,0.7)",
-                      borderColor: "rgba(255,255,255,0.4)"
-                    }}
-                    whileTap={{ 
-                      scale: 0.98,
-                      y: -4
-                    }}
-                    transition={{ 
-                      type: "spring", 
-                      stiffness: 300, 
-                      damping: 20 
-                    }}
                   >
                     <h2 
                       className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 text-white px-2 sm:px-3"
@@ -334,23 +297,9 @@ export default function Home() {
                   </motion.div>
 
                   {/* App install CTA card */}
-                  <motion.div
+                  <div
                     onClick={() => setLocation('/install')}
                     className="group cursor-pointer w-full p-5 sm:p-6 md:p-7 rounded-xl bg-white/5 dark:bg-white/10 backdrop-blur-md border border-white/15 transition-all duration-300 mt-6"
-                    whileHover={{ 
-                      y: -6, 
-                      scale: 1.01,
-                      borderColor: "rgba(255,255,255,0.4)"
-                    }}
-                    whileTap={{ 
-                      scale: 0.98,
-                      y: -3
-                    }}
-                    transition={{ 
-                      type: "spring", 
-                      stiffness: 280, 
-                      damping: 22 
-                    }}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
@@ -359,6 +308,34 @@ export default function Home() {
                         setLocation('/install');
                       }
                     }}
+                  >
+                    <div className="flex items-center justify-center gap-3">
+                      <h3 className="text-xl sm:text-2xl font-semibold text-white">
+                        Try the Bubble’s Cafe App!
+                      </h3>
+                      <motion.div
+                        animate={{ x: [0, 4, 0] }}
+                        transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+                      >
+                        <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8 group-hover:translate-x-1 transition-transform duration-300 text-white" />
+                      </motion.div>
+                    </div>
+                    <p className="text-white/80 mt-2 text-center text-sm sm:text-base">
+                      Install on your phone for a fast, immersive reading experience.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Continue Reading floating banner */}
+          <ContinueReadingBanner />
+        </>
+        )}
+    </div>
+  );
+}
                   >
                     <div className="flex items-center justify-center gap-3">
                       <h3 className="text-xl sm:text-2xl font-semibold text-white">

@@ -76,7 +76,7 @@ export function CookieConsent() {
             onClick={handleAccept}
             className={cn(
               "px-6 py-2 rounded-full bg-primary text-primary-foreground font-medium",
-              "transition-all duration-300 hover:opacity-90 hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
+              "transition-all duration-300 hover:opacity-90 hover:shadow-lg hover:shadow-primary/20"
             )}
           >
             Accept
@@ -85,7 +85,7 @@ export function CookieConsent() {
             onClick={handleDecline}
             className={cn(
               "px-6 py-2 rounded-full bg-muted text-muted-foreground font-medium",
-              "transition-all duration-300 hover:bg-muted/80 hover:scale-105 hover:shadow-lg"
+              "transition-all duration-300 hover:bg-muted/80 hover:shadow-lg"
             )}
           >
             Decline

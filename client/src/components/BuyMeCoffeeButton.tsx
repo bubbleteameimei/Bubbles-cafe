@@ -76,14 +76,6 @@ export const BuyMeCoffeeButton = () => {
     <>
       {/* Main Button */}
       <motion.div
-        whileHover={{ 
-          scale: 1.1,
-          rotate: [0, -1, 1, 0],
-          transition: { 
-            scale: { type: "spring", stiffness: 300, damping: 10 },
-            rotate: { duration: 0.5, repeat: Infinity, repeatType: "reverse" }
-          }
-        }}
         onHoverStart={() => setIsHovered(true)}
         onHoverEnd={() => setIsHovered(false)}
         className="relative"
@@ -285,12 +277,7 @@ export const BuyMeCoffeeButton = () => {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.3, type: "spring", stiffness: 200, damping: 20 }}
           >
-            <motion.div
-              whileHover={{ 
-                scale: 1.08,
-                boxShadow: "0 10px 25px rgba(0,0,0,0.2)"
-              }}
-              whileTap={{ scale: 0.95 }}
+            <div
               className="w-full text-center"
             >
               <Button

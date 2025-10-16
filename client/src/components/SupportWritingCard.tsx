@@ -161,14 +161,6 @@ export const SupportWritingCard = ({ className = "" }: SupportWritingCardProps) 
         </p>
         
         <motion.div
-          whileHover={{ 
-            scale: 1.05,
-            rotate: [0, -0.5, 0.5, 0],
-            transition: { 
-              scale: { type: "spring", stiffness: 300, damping: 10 },
-              rotate: { duration: 0.4, repeat: Infinity, repeatType: "reverse" }
-            }
-          }}
           className="relative"
           style={{ contain: 'layout paint', isolation: 'isolate' }}
         >
@@ -326,14 +318,7 @@ export const SupportWritingCard = ({ className = "" }: SupportWritingCardProps) 
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.3, type: "spring", stiffness: 200, damping: 20 }}
           >
-            <motion.div
-              whileHover={{ 
-                scale: 1.06,
-                boxShadow: "0 8px 20px rgba(0,0,0,0.15)"
-              }}
-              whileTap={{ scale: 0.96 }}
-              className="w-full"
-            >
+            <div className="w-full">
               <Button
                 onClick={handleTip}
                 disabled={isProcessing}
