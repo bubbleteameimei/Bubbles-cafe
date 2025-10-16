@@ -40,7 +40,9 @@
     "validate:all": "npm run check && npm run lint && npm run security:scan && tsx scripts/check-public-images.ts",
     "budget": "node scripts/bundle-budget.cjs",
     "test": "vitest run --coverage",
-    "e2e": "playwright test --config=playwright.config.ts"
+    "e2e": "playwright test --config=playwright.config.ts",
+    "reflow:audit": "node scripts/layout-reflow-audit.cjs",
+    "reflow:scan": "node scripts/reflow-static-scan.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",
