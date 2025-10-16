@@ -1,0 +1,131 @@
+name: Layout Reflow Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      port:
+        description: 'Port to run and probe the dev server on'
+        required: false
+        default: '3002'
+      fsl_threshold:
+        description: 'Max allowed forced sync layout reads before flagging'
+        required: false
+        default: '10'
+      layout_total_ms_threshold:
+        description: 'Max allowed total Layout time (ms) before flagging'
+        required: false
+        default: '150'
+      fail_on_threshold:
+        description: "Fail the job when thresholds are exceeded ('true'/'false')"
+        required: false
+        default: 'false'
+  pull_request:
+    paths:
+      - 'client/**'
+      - 'server/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NODE_ENV: development
+      PORT: ${{ inputs.port || '3002' }}
+      ENABLE_WORDPRESS_SCHEDULER: 'false'
+      ENABLE_API_CACHE: 'false'
+      ENABLE_BROWSER_CACHE: 'false'
+      NODE_OPTIONS: --max_old_space_size=2048
+      # Thresholds for flagging in logs (non-fatal by default)
+      FSL_THRESHOLD: ${{ inputs.fsl_threshold || '10' }}
+      LAYOUT_TOTAL_MS_THRESHOLD: ${{ inputs.layout_total_ms_threshold || '150' }}
+      FAIL_ON_THRESHOLD: ${{ inputs.fail_on_threshold || 'false' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start dev server
+        run: |
+          nohup bash -lc "PORT=$PORT npm run dev" > server.log 2>&1 &
+          echo $! > server.pid
+
+      - name: Wait for server readiness
+        run: |
+          for i in {1..60}; do
+            if curl -sf "http://localhost:${PORT}/health" >/dev/null; then
+              echo "Server is up"; exit 0;
+            fi
+            sleep 2
+          done
+          echo "Server failed to start"
+          echo "::error::Server did not become ready"
+          echo "---- last 200 lines of server.log ----"
+          tail -n 200 server.log || true
+          exit 1
+
+      - name: Static scan (fast)
+        run: npm run reflow:scan
+
+      - name: Dynamic audit (Puppeteer + CDP)
+        run: npm run reflow:audit
+
+      - name: Flag findings (thresholds)
+        run: |
+          node -e "const fs=require('fs');const path=require('path');const dir='reflow-reports';let f;try{f=fs.readdirSync(dir).filter(n=>n.startsWith('reflow-report-')&&n.endsWith('.json')).map(n=>({n,t:fs.statSync(path.join(dir,n)).mtimeMs})).sort((a,b)=>b.t-a.t)[0].n;}catch(e){process.exit(0)};const d=JSON.parse(fs.readFileSync(path.join(dir,f),'utf8'));const fsl=d.fslReport||{};const sum=d.traceSummary||{};const layoutMs=(sum.totalMs||{}).Layout||0;const forced=fsl.forcedSyncCount||0;const thF=parseInt(process.env.FSL_THRESHOLD||'10',10);const thL=parseInt(process.env.LAYOUT_TOTAL_MS_THRESHOLD||'150',10);const fail=(process.env.FAIL_ON_THRESHOLD||'false')==='true';console.log('ForcedSyncLayout:',forced,'LayoutTotalMs:',layoutMs);let bad=false;if(forced>thF){console.log('::warning::Forced sync layout reads exceed threshold ('+forced+'>'+thF+')');bad=true;}if(layoutMs>thL){console.log('::warning::Total Layout time exceeds threshold ('+layoutMs+'>'+thL+' ms)');bad=true;}if(bad&&fail){process.exit(1);} else {process.exit(0);} "
+
+      - name: Upload reflow reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: reflow-reports
+          path: reflow-reports
+
+      - name: Append report to Job Summary
+        if: always()
+        run: |
+          echo "## Layout Reflow Audit Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -d reflow-reports ]; then
+            latest_static=$(ls -t reflow-reports/static-scan-*.md 2>/dev/null | head -n 1 || true)
+            latest_dynamic=$(ls -t reflow-reports/reflow-report-*.md 2>/dev/null | head -n 1 || true)
+            if [ -n "$latest_static" ]; then
+              echo "### Static Scan" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              cat "$latest_static" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "_No static scan report found._" >> $GITHUB_STEP_SUMMARY
+            fi
+            if [ -n "$latest_dynamic" ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### Dynamic Audit" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              cat "$latest_dynamic" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "_No dynamic audit report found._" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "_No reports directory found._" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+          fi
+          sleep 1
+          pkill -f "tsx server/index.ts" || true
+          echo "---- tail server.log ----"
+          tail -n 200 server.log || true
