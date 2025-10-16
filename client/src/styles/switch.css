@@ -44,11 +44,11 @@
 
 /* State: Hover */
 .switch-base:hover:not([disabled]) {
-  background-color: hsl(var(--muted-foreground/30));
+  background-color: hsl(var(--muted-foreground) / 0.3);
 }
 
 .switch-base[data-state="checked"]:hover:not([disabled]) {
-  background-color: hsl(var(--primary/90));
+  background-color: hsl(var(--primary) / 0.9);
 }
 
 /* State: Disabled */

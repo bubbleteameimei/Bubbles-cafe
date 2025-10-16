@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Navigation from './navigation';
 
 interface AutoHideNavbarProps {
@@ -13,56 +13,26 @@ interface AutoHideNavbarProps {
  * 1. Path-based conditional rendering of navigation
  * 2. Device-specific layout adjustments
  * 3. Navigation visibility based on page context
- * */
+ * 
+ * Note: To prevent layout reflow on first paint, navbar height related CSS variables
+ * are now defined in CSS (see design-tokens.css). We avoid JS-driven updates that
+ * would change layout after initial render.
+ */
 const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 	// Do not hide on any path by default
 	hideOnPaths = [] 
 }) => {
 	const [currentPath, setCurrentPath] = useState('');
-	const [isScrolled, setIsScrolled] = useState(false);
 	const [hidden] = useState(false);
-	const containerRef = useRef<HTMLDivElement | null>(null);
-	const [navbarHeight, setNavbarHeight] = useState<number>(56);
 
-	// Helper to update CSS variables for progress positioning and viewport width
-	const updateCssVars = (isHidden: boolean, heightPx: number) => {
-		const root = document.documentElement;
-		// Use clientWidth (excludes scrollbar) which stays stable with scrollbar-gutter.
-		const vw = Math.max(0, document.documentElement.clientWidth);
-		root.style.setProperty('--navbar-height', `${heightPx}px`);
-		root.style.setProperty('--progress-top-offset', isHidden ? '0px' : `${heightPx}px`);
-		root.style.setProperty('--viewport-width', `${vw}px`);
-		root.toggleAttribute('data-nav-hidden', isHidden);
-	};
-
-	// Track scroll state only for styling (no auto-hide)
+	// Track scroll state only for potential styling (no auto-hide)
 	useEffect(() => {
 		const handleScroll = () => {
-			setIsScrolled(window.scrollY > 20);
+			// no-op for now; keep hook minimal to avoid reflows
 		};
-		handleScroll();
 		window.addEventListener('scroll', handleScroll, { passive: true } as any);
 		return () => window.removeEventListener('scroll', handleScroll as any);
 	}, []);
-
-	// Measure navbar height and keep CSS variables in sync before first paint to avoid layout shifts
-	useLayoutEffect(() => {
-		const measure = () => {
-			const el = containerRef.current;
-			const rect = el?.getBoundingClientRect();
-			const height = Math.max(1, Math.round(rect?.height || 56));
-			setNavbarHeight(height);
-			updateCssVars(hidden, height);
-		};
-		measure();
-		window.addEventListener('resize', measure, { passive: true } as any);
-		return () => window.removeEventListener('resize', measure as any);
-	}, [hidden]);
-
-	// Keep CSS vars updated when hidden state changes
-	useEffect(() => {
-		updateCssVars(hidden, navbarHeight);
-	}, [hidden, navbarHeight]);
 
 	useEffect(() => {
 		// Update current path when component mounts
@@ -93,7 +63,7 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 
 	// Return navigation with responsive class for device optimization
 	return (
-		<div ref={containerRef} className={`navbar-container transition-transform duration-300 fixed top-0 left-0 right-0 z-40 w-full ${hidden ? '-translate-y-full' : 'translate-y-0'}`}
+		<div className={`navbar-container transition-transform duration-300 fixed top-0 left-0 right-0 z-40 w-full ${hidden ? '-translate-y-full' : 'translate-y-0'}`}
 			style={{ width: "100%", margin: 0, padding: 0 }}>
 			<div className="bg-transparent">
 				<Navigation />

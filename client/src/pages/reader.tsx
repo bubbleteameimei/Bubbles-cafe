@@ -27,7 +27,7 @@ import { useAuth } from "@/hooks/use-auth";
 import ApiLoader from "@/components/api-loader";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import { useToast } from "@/hooks/use-toast";
-import useReaderGentleScroll from "@/hooks/useReaderGentleScroll";
+
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import SEO from "@/components/SEO";
 import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
@@ -127,15 +127,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [overrideThemeCategory, setOverrideThemeCategory] = useState<string | null>(null);
   const [overrideThemeIcon, setOverrideThemeIcon] = useState<string | null>(null);
   
-  // Detect if this is a refresh using Performance API
-  const isRefreshRef = useRef<boolean>(
-    typeof window !== 'undefined' &&
-    window.performance && 
-    ((window.performance.navigation?.type === 1) || // Old API
-     (performance.getEntriesByType('navigation').some(
-       nav => (nav as PerformanceNavigationTiming).type === 'reload'
-     )))
-  );
+  
   
   // Helper function to close dialogs safely
   const safeCloseDialog = () => {
@@ -392,15 +384,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     refetchOnWindowFocus: true
   });
 
-  // Initialize the reader-specific gentle scroll memory
-  // This will only work on the reader page and community-story page
-  const { positionRestored, isRefresh } = useReaderGentleScroll({
-    enabled: !isLoading && postsData?.posts && postsData.posts.length > 0,
-    slug: autoSaveSlug || routeSlug || '',
-    showToast: true,
-    autoSave: true,
-    autoSaveInterval: 2000
-  });
+  
 
   // Validate and update currentIndex when posts data changes
   useEffect(() => {
@@ -703,7 +687,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // The theme and toggleTheme functions are already declared at the top of the component
   
   return (
-    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-0 pb-8 flex flex-col"
+    <div className="relative min-h-screen bg-background reader-page overflow-x-hidden overflow-y-visible pt-0 pb-8 flex flex-col"
       data-reader-page="true" 
       data-distraction-free={isUIHidden ? "true" : "false"}>
       
@@ -719,31 +703,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         wordCount={wordCount}
       />
       
-      {/* Reading Progress Bar - fixed to the header demarcation line, full-bleed end-to-end */}
-      <div 
-        style={{ 
-          position: 'fixed',
-          top: 'var(--navbar-height, 56px)',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 'var(--viewport-width, 100vw)',
-          height: '3px',
-          backgroundColor: 'transparent',
-          zIndex: 39, // below the fixed header (z-40) to avoid overlapping/cropping
-          pointerEvents: 'none'
-        }}
-      >
-        <div 
-          style={{ 
-            height: '100%',
-            width: '100%',
-            background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
-            transform: `scaleX(${animatedProgress / 100}) translateZ(0)`,
-            transformOrigin: '0 0',
-            willChange: 'transform'
-          }}
-        />
-      </div>
+      
       
       {/* Reader tooltip for distraction-free mode instructions */}
       <ReaderTooltip show={showTooltip} />
@@ -788,15 +748,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           top: 5px;
           left: 50%;
           transform: translateX(-50%);
-          background-color: var(--background);
-          color: var(--muted-foreground);
+          background-color: hsl(var(--background));
+          color: hsl(var(--muted-foreground));
           font-size: 0.65rem;
           padding: 1px 6px;
           border-radius: 4px;
           opacity: 0.6;
           pointer-events: none;
           z-index: 30;
-          border: 1px solid var(--border);
+          border: 1px solid hsl(var(--border));
           box-shadow: 0 1px 1px rgba(0,0,0,0.05);
         }
         
@@ -1055,7 +1015,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         <div
           aria-hidden="true"
           className="border-b border-border/20"
-          style={{ width: 'var(--viewport-width, 100vw)', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
+          style={{ width: '100%', position: 'relative', left: 0, transform: 'none' }}
         />
       
         <article
@@ -1068,7 +1028,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             <div
               aria-hidden="true"
               className="border-b border-border/20"
-              style={{ width: 'var(--viewport-width, 100vw)', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
+              style={{ width: '100%', position: 'relative', left: 0, transform: 'none' }}
             />
 
             <div className="flex flex-col items-center mb-2 mt-0">
@@ -1515,54 +1475,61 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </SwipeNavigation>
             
             {/* Simple pagination at bottom of story content - extremely compact */}
-            <div className={`flex items-center justify-center gap-3 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <div className="flex items-center gap-3 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1.5 px-3 shadow-md">
-                {/* Previous story button */}
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={goToPreviousStory}
-                  className={`h-8 w-8 rounded-full group relative transition-all duration-200 ${
-                    isFirstStory 
-                      ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
-                  }`}
-                  aria-label="Previous story"
-                  disabled={posts.length <= 1 || isFirstStory}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                    <path d="m15 18-6-6 6-6"/>
-                  </svg>
-                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-                    Previous Story
-                  </span>
-                </Button>
-                
-                {/* Story counter */}
-                <div className="px-2 text-xs text-muted-foreground font-medium">
-                  {currentIndex + 1} of {posts.length}
+            <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+              <div className="relative overflow-visible flex items-center justify-center gap-1 bg-background/90 backdrop-blur-md border border-transparent rounded-full h-16 px-1.5 shadow-sm">
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 rounded-full"
+                  style={{ border: '1px solid', borderColor: 'hsl(var(--border) / 0.4)', transform: 'translateY(-1px)' }}
+                />
+                <div className="flex items-center gap-1 translate-y-2">
+                  {/* Previous story button */}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={goToPreviousStory}
+                    className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
+                      isFirstStory 
+                        ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
+                    }`}
+                    aria-label="Previous story"
+                    disabled={posts.length <= 1 || isFirstStory}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                      <path d="m15 18-6-6 6-6"/>
+                    </svg>
+                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                      Previous Story
+                    </span>
+                  </Button>
+                  
+                  {/* Story counter */}
+                  <div className="px-1 h-5 flex items-center -translate-y-2.5 text-[10px] leading-none text-muted-foreground font-medium">
+                    {currentIndex + 1} of {posts.length}
+                  </div>
+                  
+                  {/* Next story button */}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={goToNextStory}
+                    className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
+                      isLastStory 
+                        ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
+                        : 'text-slate-700 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
+                    }`}
+                    aria-label="Next story"
+                    disabled={posts.length <= 1 || isLastStory}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                      <path d="m9 18 6-6-6-6"/>
+                    </svg>
+                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                      Next Story
+                    </span>
+                  </Button>
                 </div>
-                
-                {/* Next story button */}
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={goToNextStory}
-                  className={`h-8 w-8 rounded-full group relative transition-all duration-200 ${
-                    isLastStory 
-                      ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
-                      : 'text-slate-700 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
-                  }`}
-                  aria-label="Next story"
-                  disabled={posts.length <= 1 || isLastStory}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                    <path d="m9 18 6-6-6-6"/>
-                  </svg>
-                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-                    Next Story
-                  </span>
-                </Button>
               </div>
             </div>
 
@@ -1570,7 +1537,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             <div
               aria-hidden="true"
               className="border-b border-border/20"
-              style={{ width: 'var(--viewport-width, 100vw)', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
+              style={{ width: '100%', position: 'relative', left: 0, transform: 'none' }}
             />
            
             <div className="mt-2 pt-3">
@@ -1614,8 +1581,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         variant="outline"
                         size="icon"
                         onClick={() => {
-                          const tweetText = `Check out this story: ${currentPost.title?.rendered || currentPost.title || 'Story'} ${window.location.href}`;
-                          window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`, '_blank', 'noopener,noreferrer');
+                          window.open('https://twitter.com/Bubbleteameimei', '_blank', 'noopener,noreferrer');
                         }}
                         className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
                       >
@@ -1628,8 +1594,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         variant="outline"
                         size="icon"
                         onClick={() => {
-                          const wpUrl = `https://wordpress.com/wp-admin/press-this.php?u=${encodeURIComponent(window.location.href)}&t=${encodeURIComponent(currentPost.title?.rendered || currentPost.title || 'Story')}`;
-                          window.open(wpUrl, '_blank', 'noopener,noreferrer');
+                          window.open('https://bubbleteameimei.wordpress.com/', '_blank', 'noopener,noreferrer');
                         }}
                         className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
                       >
@@ -1639,19 +1604,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       
                       {/* Instagram */}
                       <Button
+                        asChild
                         variant="outline"
                         size="icon"
-                        onClick={() => {
-                          navigator.clipboard.writeText(window.location.href);
-                          toast({
-                            title: "Link Copied",
-                            description: "Story link copied to clipboard for Instagram sharing!"
-                          });
-                        }}
                         className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
                       >
-                        <FaInstagram className="h-4 w-4" />
-                        <span className="sr-only">Follow on Instagram</span>
+                        <a href="https://www.instagram.com/Bubbleteameimei/" target="_blank" rel="noreferrer">
+                          <FaInstagram className="h-4 w-4" />
+                          <span className="sr-only">Follow on Instagram</span>
+                        </a>
                       </Button>
                     </div>
                   </div>

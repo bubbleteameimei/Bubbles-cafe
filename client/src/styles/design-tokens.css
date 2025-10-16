@@ -1,4 +1,9 @@
 :root {
+  /* Layout tokens - set before first paint to avoid reflow */
+  --navbar-height: 56px; /* matches header .h-14 (56px) */
+  --progress-top-offset: var(--navbar-height);
+  --viewport-width: 100vw;
+
   /* Colors */
   --color-bg: hsl(var(--background));
   --color-fg: hsl(var(--foreground));
@@ -21,6 +26,86 @@
 }
 
 .dark {
+  /* Dark theme palette using provided surface and status colors */
+
+  /** Base colors */
+  --clr-dark-a0: #000000;
+  --clr-light-a0: #ffffff;
+
+  /** Theme surface colors */
+  --clr-surface-a0: #121212; /* L=7%  */
+  --clr-surface-a10: #282828;/* L=16% */
+  --clr-surface-a20: #3f3f3f;/* L=25% */
+  --clr-surface-a30: #575757;/* L=34% */
+  --clr-surface-a40: #717171;/* L=44% */
+  --clr-surface-a50: #8b8b8b;/* L=55% */
+
+  /** Status colors (hex provided) */
+  --clr-success-a0: #22946e;
+  --clr-success-a10: #47d5a6;
+  --clr-success-a20: #9ae8ce;
+
+  --clr-warning-a0: #a87a2a;
+  --clr-warning-a10: #d7ac61;
+  --clr-warning-a20: #ecd7b2;
+
+  --clr-danger-a0: #9c2121;
+  --clr-danger-a10: #d94a4a;
+  --clr-danger-a20: #eb9e9e;
+
+  --clr-info-a0: #21498a;
+  --clr-info-a10: #4077d1;
+  --clr-info-a20: #92b2e5;
+
+  /* Map to shadcn/tailwind tokens (HSL channels) */
+  --background: 0 0% 7%;                 /* surface a0 (#121212) */
+  --foreground: 0 0% 100%;               /* #ffffff */
+
+  --card: 0 0% 16%;                      /* surface a10 (#282828) */
+  --card-foreground: 0 0% 100%;
+
+  --popover: 0 0% 16%;                   /* surface a10 (#282828) */
+  --popover-foreground: 0 0% 100%;
+
+  /* Use Info palette for primary accent */
+  --primary: 217 61% 54%;                /* info a10 (#4077d1) */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 0 0% 25%;                 /* surface a20 (#3f3f3f) */
+  --secondary-foreground: 0 0% 100%;
+
+  --muted: 0 0% 16%;                     /* surface a10 (#282828) */
+  --muted-foreground: 0 0% 55%;          /* surface a50 (#8b8b8b) */
+
+  /* Subtle accent using lighter info */
+  --accent: 217 62% 74%;                 /* info a20 (#92b2e5) */
+  --accent-foreground: 0 0% 7%;
+
+  /* Status mappings */
+  --destructive: 0 65% 57%;              /* danger a10 (#d94a4a) */
+  --destructive-foreground: 0 0% 100%;
+  --success: 160 63% 36%;                /* success a0 (#22946e) */
+  --success-foreground: 0 0% 100%;
+  --warning: 38 60% 61%;                 /* warning a10 (#d7ac61) */
+  --warning-foreground: 0 0% 7%;
+  --info: 217 61% 54%;                   /* info a10 (#4077d1) */
+  --info-foreground: 0 0% 100%;
+
+  --border: 0 0% 34%;                    /* surface a30 (#575757) */
+  --input: 0 0% 34%;                     /* surface a30 (#575757) */
+  --ring: 217 61% 54%;                   /* match primary */
+
+  /* Sidebar tokens */
+  --sidebar-background: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: 0 0% 16%;            /* surface a10 */
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 0 0% 25%;            /* surface a20 */
+  --sidebar-ring: var(--ring);
+
+  /* Convenience aliases for computed colors */
   --color-bg: hsl(var(--background));
   --color-fg: hsl(var(--foreground));
 }

@@ -536,24 +536,19 @@ function App() {
                             <div className="app-content">
                               <React.Suspense
                                 fallback={
-                                  <main
-                                    id="main-content"
-                                    role="main"
-                                    tabIndex={-1}
-                                    className="w-full flex items-center justify-center py-12 min-h-screen"
+                                  <div
+                                    aria-live="polite"
+                                    aria-busy="true"
+                                    className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none"
                                   >
-                                    <div
-                                      className="inline-flex items-center gap-3 text-sm text-muted-foreground"
-                                      role="status"
-                                      aria-live="polite"
-                                    >
+                                    <div className="inline-flex items-center gap-3 text-sm text-muted-foreground bg-background/70 backdrop-blur-sm rounded-md px-3 py-2 border border-border/50 pointer-events-auto">
                                       <span
                                         className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2"
                                         aria-hidden="true"
                                       />
                                       Loading…
                                     </div>
-                                  </main>
+                                  </div>
                                 }
                               >
                                 <AppContent />

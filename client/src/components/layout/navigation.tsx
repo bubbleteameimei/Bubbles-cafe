@@ -12,12 +12,34 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/contexts/notification-context";
 
+function prefetchAuthPages() {
+  try {
+    const run = () => {
+      // Warm the chunks for auth routes so Suspense doesn't show layout-changing fallbacks
+      void import("@/pages/auth");
+      void import("@/pages/auth-success");
+      void import("@/pages/auth-callback");
+      void import("@/pages/reset-password");
+    };
+    const ric = (window as any)?.requestIdleCallback as any;
+    if (typeof ric === "function") {
+      ric(() => run(), { timeout: 1500 });
+    } else {
+      setTimeout(run, 300);
+    }
+  } catch {}
+}
+
 export default function Navigation() {
   const [location, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
   const { notifications } = useNotifications();
   const { theme, setTheme } = useTheme();
+
+  // Reader route progress state (for in-header progress bar)
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const isReaderRoute = typeof location === "string" && location.includes("/reader");
 
   // Close the sidebar drawer proactively on route changes to avoid layout reflow
   useEffect(() => {
@@ -30,34 +52,78 @@ export default function Navigation() {
     } catch {}
   }, [location]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Idle prefetch auth-related routes to avoid Suspense flashes
+  useEffect(() => {
+    prefetchAuthPages();
+  }, []);
+
+  // Track page scroll to drive the in-header progress bar on reader routes
+  useEffect(() => {
+    if (!isReaderRoute) return;
+    let ticking = false;
+    const update = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight;
+      const winHeight = window.innerHeight;
+      const maxScrollable = Math.max(docHeight - winHeight, 1);
+      const pct = Math.min(100, Math.max(0, (scrollTop / maxScrollable) * 100));
+      setScrollProgress(pct);
+      ticking = false;
+    };
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(update);
+        ticking = true;
+      }
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true } as any);
+    window.addEventListener("resize", onScroll, { passive: true } as any);
+    return () => {
+      window.removeEventListener("scroll", onScroll as any);
+      window.removeEventListener("resize", onScroll as any);
+    };
+  }, [isReaderRoute]);
+
   return (
-    <header
-      className="w-full bg-background/40 backdrop-blur-sm shadow-sm"
-      style={{ position: 'relative', left: 0, right: 0, margin: 0, padding: 0, width: '100%' }}
-    >
-      <div className="main-header flex items-center justify-between h-14 px-4">
-        
-        {/* Left: menu */}
-        <div className="flex items-center">
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
-                aria-label="Open menu"
-                onClick={() => setIsOpen((v) => !v)}
-                noOutline
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-[280px] max-w-[85vw] h-full">
-              <div className="border-b border-border/30" />
-              <SidebarNavigation onNavigate={() => setIsOpen(false)} />
-            </SheetContent>
-          </Sheet>
-        </div>
+    <>
+      <header
+        className="w-full bg-background/40 backdrop-blur-sm shadow-sm"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          margin: 0,
+          padding: 0,
+          width: '100%',
+          zIndex: 50,
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+        }}
+      >
+        <div className="main-header flex items-center justify-between h-14 px-4">
+          
+          {/* Left: menu */}
+          <div className="flex items-center">
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+                  aria-label="Open menu"
+                  onClick={() => setIsOpen((v) => !v)}
+                  noOutline
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-[280px] max-w-[85vw] h-full">
+                <div className="border-b border-border/30" />
+                <SidebarNavigation onNavigate={() => setIsOpen(false)} />
+              </SheetContent>
+            </Sheet>
+          </div>
 
         {/* Center nav */}
         <nav aria-label="Main" className="hidden lg:flex items-center justify-center flex-1 space-x-4">
@@ -125,10 +191,14 @@ export default function Navigation() {
             <Button
               variant="ghost"
               size="icon"
+              onMouseEnter={prefetchAuthPages}
+              onFocus={prefetchAuthPages}
               onClick={() => {
                 // Ensure the sidebar is closed before navigating to prevent reflow
                 if (isOpen) setIsOpen(false);
                 try { document.body.style.paddingRight = ''; } catch {}
+                // Aggressively ensure auth chunks are loaded before navigation
+                prefetchAuthPages();
                 setLocation("/auth");
               }}
               className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
@@ -154,8 +224,38 @@ export default function Navigation() {
       <div
         aria-hidden="true"
         className="border-b border-border/40"
-        style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
+        style={{ width: "100%", position: "relative", left: 0, transform: "none" }}
       />
+
+      {/* Reader-only in-header progress bar, aligned to the bottom demarcation line */}
+      {isReaderRoute && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: 0,
+            transform: 'none',
+            bottom: '-1px', // sit directly under the separator line
+            width: '100%',
+            height: '3px',
+            zIndex: 41,
+            pointerEvents: 'none'
+          }}
+        >
+          <div
+            style={{
+              height: '100%',
+              width: `${scrollProgress}%`,
+              background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
+              willChange: 'transform',
+              transform: 'translateZ(0)'
+            }}
+          />
+        </div>
+      )}
     </header>
+    {/* Spacer to offset fixed header height (56px = h-14) + safe-area inset */}
+    <div aria-hidden="true" style={{ height: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }} />
+  </>
   );
 }
