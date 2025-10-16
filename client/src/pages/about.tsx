@@ -76,7 +76,7 @@ export default function AboutPage() {
               links={{
                 wordpress: "https://bubbleteameimei.wordpress.com/",
                 twitter: "https://twitter.com/Bubbleteameimei",
-                instagram: "https://instagram.com/Bubbleteameimei"
+                instagram: "https://www.instagram.com/Bubbleteameimei/"
               }}
               className="text-2xl"
             />

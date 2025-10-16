@@ -1492,7 +1492,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             
             {/* Simple pagination at bottom of story content - extremely compact */}
             <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <div className="flex items-center gap-1 bg-background/90 backdrop-blur-md border border-border/40 rounded-full py-0 px-1 shadow-sm">
+              <div className="relative overflow-visible flex items-center gap-1 bg-background/90 backdrop-blur-md border border-transparent rounded-full py-0 px-1 shadow-sm">
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 rounded-full"
+                  style={{ border: '1px solid', borderColor: 'hsl(var(--border) / 0.4)', transform: 'translateY(-1px)' }}
+                />
                 {/* Previous story button */}
                 <Button 
                   variant="ghost" 
