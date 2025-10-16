@@ -703,7 +703,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // The theme and toggleTheme functions are already declared at the top of the component
   
   return (
-    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-0 pb-8 flex flex-col"
+    <div className="relative min-h-screen bg-background reader-page overflow-x-hidden overflow-y-visible pt-0 pb-8 flex flex-col"
       data-reader-page="true" 
       data-distraction-free={isUIHidden ? "true" : "false"}>
       
@@ -1031,7 +1031,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         <div
           aria-hidden="true"
           className="border-b border-border/20"
-          style={{ width: 'var(--viewport-width, 100vw)', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
+          style={{ width: '100%', position: 'relative', left: 0, transform: 'none' }}
         />
       
         <article
@@ -1044,7 +1044,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             <div
               aria-hidden="true"
               className="border-b border-border/20"
-              style={{ width: 'var(--viewport-width, 100vw)', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
+              style={{ width: '100%', position: 'relative', left: 0, transform: 'none' }}
             />
 
             <div className="flex flex-col items-center mb-2 mt-0">
@@ -1521,7 +1521,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   </Button>
                   
                   {/* Story counter */}
-                  <div className="px-1 h-5 flex items-center -translate-y-1.5 text-[10px] leading-none text-muted-foreground font-medium">
+                  <div className="px-1 h-5 flex items-center -translate-y-2.5 text-[10px] leading-none text-muted-foreground font-medium">
                     {currentIndex + 1} of {posts.length}
                   </div>
                   
@@ -1553,7 +1553,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             <div
               aria-hidden="true"
               className="border-b border-border/20"
-              style={{ width: 'var(--viewport-width, 100vw)', position: 'relative', left: '50%', transform: 'translateX(-50%)' }}
+              style={{ width: '100%', position: 'relative', left: 0, transform: 'none' }}
             />
            
             <div className="mt-2 pt-3">
@@ -1625,7 +1625,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         size="icon"
                         className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
                       >
-                        <a href="https://www.instagram.com/Bubbleteameimei/" target="_blank" rel="noopener">
+                        <a href="https://www.instagram.com/Bubbleteameimei/" target="_blank" rel="noreferrer">
                           <FaInstagram className="h-4 w-4" />
                           <span className="sr-only">Follow on Instagram</span>
                         </a>
