@@ -332,35 +332,8 @@ export default function Home() {
           {/* Continue Reading floating banner */}
           <ContinueReadingBanner />
         </>
-        )}
+      )}
     </div>
   );
-}
-                  >
-                    <div className="flex items-center justify-center gap-3">
-                      <h3 className="text-xl sm:text-2xl font-semibold text-white">
-                        Try the Bubble’s Cafe App!
-                      </h3>
-                      <motion.div
-                        animate={{ x: [0, 4, 0] }}
-                        transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
-                      >
-                        <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8 group-hover:translate-x-1 transition-transform duration-300 text-white" />
-                      </motion.div>
-                    </div>
-                    <p className="text-white/80 mt-2 text-center text-sm sm:text-base">
-                      Install on your phone for a fast, immersive reading experience.
-                    </p>
-                  </motion.div>
-                </div>
-              )}
-            </div>
-          </div>
 
-          {/* Continue Reading floating banner */}
-          <ContinueReadingBanner />
-        </>
-        )}
-    </div>
-  );
-}
+                  
