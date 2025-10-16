@@ -1492,11 +1492,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             
             {/* Simple pagination at bottom of story content - extremely compact */}
             <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <div className="relative overflow-visible flex items-center gap-1 bg-background/90 backdrop-blur-md border border-transparent rounded-full py-0 px-1 shadow-sm">
+              <div className="relative overflow-visible flex items-center justify-center gap-1 bg-background/90 backdrop-blur-md border border-transparent rounded-full h-6 px-1 shadow-sm">
                 <span
                   aria-hidden="true"
                   className="pointer-events-none absolute inset-0 rounded-full"
-                  style={{ border: '1px solid', borderColor: 'hsl(var(--border) / 0.4)', transform: 'translateY(-1px)' }}
+                  style={{ border: '1px solid', borderColor: 'hsl(var(--border) / 0.4)', transform: 'translateY(-0.5px)' }}
                 />
                 {/* Previous story button */}
                 <Button 
@@ -1621,7 +1621,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         variant="outline"
                         size="icon"
                         onClick={() => {
-                          window.open('https://instagram.com/Bubbleteameimei', '_blank', 'noopener,noreferrer');
+                          window.open('https://www.instagram.com/Bubbleteameimei/', '_blank', 'noopener,noreferrer');
                         }}
                         className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
                       >
