@@ -413,3 +413,8 @@ html.theme-smooth * {
     z-index: 9999;
   }
 }
+
+/* Sidebar: ensure glass panel by overriding global container background */
+div.sidebar-menu-container {
+  background-color: transparent !important;
+}
