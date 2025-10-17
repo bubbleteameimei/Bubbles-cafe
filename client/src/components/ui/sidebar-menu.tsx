@@ -300,7 +300,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   );
 
   // Enhanced submenu styling - increased clickable area to the RIGHT and faster animations
-  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-100 ease-out text-sm font-medium py-2 px-3 pr-12 whitespace-nowrap overflow-hidden min-h-[36px] flex items-center -mb-1 rounded-sm hover:bg-[hsl(var(--sidebar-accent))] focus:bg-[hsl(var(--sidebar-accent))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:font-medium transition-all duration-150 ease-out text-sm font-medium py-1.5 px-2 whitespace-nowrap overflow-hidden min-h-[36px] flex items-center -mb-1 rounded-sm border-l-2 border-transparent hover:border-l-primary/20 focus:outline-none focus:ring-0 focus-visible:ring-0";
+  const submenuItemClass = "px-3 py-2 pr-12 text-sm font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[36px] flex items-center -mb-1 rounded-sm transition-colors duration-150 ease-out hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 focus:bg-background/30 supports-[backdrop-filter]:focus:bg-background/20 border-l-2 border-transparent hover:border-l-primary/20 focus:outline-none focus:ring-0 focus-visible:ring-0";
 
 
 
@@ -575,7 +575,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               <SidebarMenuItem>
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen} className="sidebar-dropdown-container">
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap"
+                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 data-[ar(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap"
                       aria-expanded={adminOpen}
                       aria-controls="admin-controls-content"
                     >
@@ -979,7 +979,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen} className="sidebar-dropdown-container">
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap"
+                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bgate=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap"
                   aria-expanded={supportOpen}
                   aria-controls="support-legal-content"
                 >

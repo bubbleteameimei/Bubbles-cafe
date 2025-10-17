@@ -225,7 +225,8 @@ export default function Home() {
                 transition={{ duration: 0.4, delay: 0.22, ease: 'easeOut' }}
                 className="w-full mt-2 sm:mt-3"
               >
-                <div className="flex flex-col sm:flex-row gap-0 w-full max-w-xl mx-auto px-4 rounded-xl overflow-hidden ring-1 ring-border/15 shadow-lg bg-background/10 supports-[backdrop-filter]:bg-background/5">
+                <div className="w-full max-w-xl mx-auto px-4">
+                  <div className="flex flex-col sm:flex-row gap-2">
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -266,7 +267,7 @@ export default function Home() {
                       variant="secondary"
                       onClick={() => setLocation('/reader')}
                       aria-label="Start reading now"
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-none backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-none flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-md backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       <span className="text-center mr-2">Start Reading</span>
                       <motion.div
@@ -281,8 +282,8 @@ export default function Home() {
                       </motion.div>
                     </Button>
                   </motion.div>
-                </div>
-              </motion.div>
+                </didiv>
+              </tion.div>
               {/* Monthly readers pill removed by request */}
               
               {/* Buy Me a Coffee button positioned above Latest Story (always visible) */}
