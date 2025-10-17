@@ -645,7 +645,7 @@ SidebarMenuSkeleton.displayName = "SidebarMenuSkeleton"
 
 export const SidebarMenuSub = React.forwardRef<
   HTMLUListElement,
-  React.ComponentProp<<"ul">
+  React.ComponentProps<"ul">
 >(({ className, ...props }, ref) => (
   <ul
     ref={ref}
@@ -653,7 +653,7 @@ export const SidebarMenuSub = React.forwardRef<
     role="menu"
     aria-orientation="vertical"
     className={cn(
-      "mx-2 sm:mx-3.5 flex min-w-0 translate-x-px flex-col gap-2 sm:gap-3 border-l border-sidebar-border px-1.5 sm:px-2.5 py-1",
+      "mx-2 sm:mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 sm:gap-2 border-l border-sidebar-border px-1 sm:px-2 py-1",
       "group-data-[collapsible=icon]:hidden",
       className
     )}
