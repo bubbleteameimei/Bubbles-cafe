@@ -41,9 +41,9 @@ services:
         value: "0"
       - key: DB_POOL_CONN_TIMEOUT_MS
         value: "10000"
-      # Disable background WordPress scheduler by default in production
+      # Disable background WordPress scheduler in production to avoid any periodic DB activity
       - key: ENABLE_WORDPRESS_SCHEDULER
-        value: "true"
+        value: "false"
       # Supabase Auth config
       - key: SUPABASE_URL
         value: "https://rqoqtusrlsapcbdimwpn.supabase.co"
@@ -65,9 +65,3 @@ services:
         value: "https://api.bubblescafe.space"
       
     autoDeploy: true
-
-databases:
-  - name: bubbles-cafe-db
-    databaseName: bubbles_cafe
-    plan: starter
-    postgresMajorVersion: 14
