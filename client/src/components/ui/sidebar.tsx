@@ -452,13 +452,13 @@ export const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-1 overflow-hidden rounded-md p-0.5 sm:p-1 text-left text-[12px] outline-none transition-[width,height,padding] hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 hover:text-sidebar-foreground focus:outline-none active:bg-background/10 active:text-sidebar-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-transparent data-[active=true]:font-semibold data-[active=true]:text-sidebar-foreground data-[state=open]:hover:bg-background/8 data-[state=open]:hover:text-sidebar-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>svg]:size-3 [&>svg]:sm:size-4 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full items-center gap-1 overflow-hidden rounded-md p-0.5 sm:p-1 text-left text-[12px] outline-none transition-[width,height,padding] hover:bg-transparent hover:text-sidebar-foreground focus:outline-none active:bg-transparent active:text-sidebar-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-transparent data-[active=true]:font-semibold data-[active=true]:text-sidebar-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>svg]:size-3 [&>svg]:sm:size-4 [&>svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 hover:text-sidebar-foreground",
+        default: "hover:bg-transparent hover:text-sidebar-foreground",
         outline:
-          "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 hover:text-sidebar-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-border))]",
+          "bg-background shadow-none hover:bg-transparent hover:text-sidebar-foreground",
       },
       size: {
         default: "h-auto text-[12px]",
@@ -697,7 +697,7 @@ export const SidebarMenuSubButton = React.forwardRef<
       aria-label={ariaLabel}
       tabIndex={0}
       className={cn(
-        "relative flex h-5 sm:h-6 min-w-0 -translate-x-px items-center gap-1 sm:gap-2 overflow-hidden rounded-md px-1 sm:px-2 text-sidebar-foreground outline-none hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 hover:text-sidebar-foreground focus:outline-none active:bg-background/10 active:text-sidebar-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>svg]:size-3 [&>svg]:sm:size-4 [&>svg]:shrink-0 touch-manipulation transition-all duration-150 ease-out",
+        "relative flex h-5 sm:h-6 min-w-0 -translate-x-px items-center gap-1 sm:gap-2 overflow-hidden rounded-md px-1 sm:px-2 text-sidebar-foreground outline-none hover:bg-transparent hover:text-sidebar-foreground focus:outline-none active:bg-transparent active:text-sidebar-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>svg]:size-3 [&>svg]:sm:size-4 [&>svg]:shrink-0 touch-manipulation transition-all duration-150 ease-out",
         "data-[active=true]:bg-transparent data-[active=true]:text-sidebar-foreground",
         size === "sm" && "text-[10px] sm:text-xs",
         size === "md" && "text-xs sm:text-sm",

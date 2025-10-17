@@ -424,3 +424,25 @@ html.theme-smooth * {
 div.sidebar-menu-container {
   background-color: transparent !important;
 }
+
+/* Global: remove button/link shadows and underline glow */
+@layer base {
+  a, button, [role="button"] {
+    text-decoration: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  /* Disable pseudo-element underline/glow effects */
+  a::after, a::before, button::after, button::before {
+    display: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    background: none !important;
+    border: none !important;
+  }
+  /* Hide sidebar button overlay spans (used for hover glow) */
+  [data-sidebar="menu-button"] span.absolute.inset-0,
+  [data-sidebar="menu-sub-button"] span.absolute.inset-0 {
+    display: none !important;
+  }
+}

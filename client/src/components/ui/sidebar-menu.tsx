@@ -292,8 +292,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     "group relative flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[12px] font-medium",
     "text-sidebar-foreground/85 hover:text-sidebar-foreground",
     "transition-all duration-150 ease-out",
-    // very soft hover background
-    "hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 hover:shadow-none",
+    // fully transparent hover
+    "hover:bg-transparent hover:shadow-none",
     "focus:outline-none focus:ring-0 focus-visible:ring-0",
     // simple active state: no box/backgrounds
     "data-[active=true]:bg-transparent data-[active=true]:text-sidebar-foreground data-[active=true]:font-semibold",
@@ -302,7 +302,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   );
 
   // Submenu styling - transparent, subtle active (no boxes)
-  const submenuItemClass = "px-2 py-1 pr-8 text-[12px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[28px] flex items-center -mb-0.5 rounded-sm transition-colors duration-150 ease-out hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 focus:bg-background/8 supports-[backdrop-filter]:focus:bg-background/6 border-l border-transparent data-[active=true]:border-l-primary/30 focus:outline-none focus:ring-0 focus-visible:ring-0";
+  const submenuItemClass = "px-2 py-1 pr-8 text-[12px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[28px] flex items-center -mb-0.5 rounded-sm transition-colors duration-150 ease-out hover:bg-transparent focus:bg-transparent border-l border-transparent data-[active=true]:border-l-primary/40 focus:outline-none focus:ring-0 focus-visible:ring-0";
 
 
 
@@ -537,7 +537,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               <SidebarMenuItem>
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen} className="sidebar-dropdown-container">
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 data-[state=open]:bg-background/10 data-[state=open]:text-[hsl(var(--sidebar-foreground))] whitespace-nowrap"
+                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bg-transparent data-[state=open]:bg-transparent data-[state=open]:text-[hsl(var(--sidebar-foreground))] whitespace-nowrap"
                       aria-expanded={adminOpen}
                       aria-controls="admin-controls-content"
                     >
@@ -751,7 +751,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               >
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton
-                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-background/10 data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 whitespace-nowrap sidebar-collapsible-trigger"
+                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-transparent data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-transparent whitespace-nowrap sidebar-collapsible-trigger"
                     aria-expanded={displayOpen}
                     aria-controls="accessibility-settings-content"
                   >
@@ -841,7 +841,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={accountOpen} onOpenChange={setAccountOpen} className="sidebar-dropdown-container">
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-background/10 data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 whitespace-nowrap"
+                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-transparent data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-transparent whitespace-nowrap"
                   aria-expanded={accountOpen}
                   aria-controls="account-settings-content"
                 >
