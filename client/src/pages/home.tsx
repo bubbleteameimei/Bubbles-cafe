@@ -191,7 +191,7 @@ export default function Home() {
           
           {/* Content container with proper z-index to appear above background - full width */}
           <div ref={heroRef} className="relative z-20 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start pt-0 pb-10 sm:pb-12 md:pb-16 lg:pb-20 text-center w-full min-h-screen">
-            <div className="h-8 sm:h-10 md:h-14" aria-hidden="true"></div>
+            <div className="h-2 sm:h-3 md:h-4" aria-hidden="true"></div>
             <div className="relative">
               <motion.h1
                 initial={{ opacity: 0, y: 12 }}
@@ -225,7 +225,7 @@ export default function Home() {
                 transition={{ duration: 0.4, delay: 0.22, ease: 'easeOut' }}
                 className="w-full mt-2 sm:mt-3"
               >
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-0 sm:-space-x-px w-full max-w-xl mx-auto px-4">
+                <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xl mx-auto px-4">
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -235,7 +235,7 @@ export default function Home() {
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white sm:shadow-none sm:hover:shadow-none shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg sm:rounded-l-lg sm:rounded-r-none flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       data-testid="home-browse-stories"
                     >
                       <span className="text-center mr-2">Browse Stories</span>
@@ -266,7 +266,7 @@ export default function Home() {
                       variant="secondary"
                       onClick={() => setLocation('/reader')}
                       aria-label="Start reading now"
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white sm:shadow-none sm:hover:shadow-none shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg sm:rounded-r-lg sm:rounded-l-none flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       <span className="text-center mr-2">Start Reading</span>
                       <motion.div

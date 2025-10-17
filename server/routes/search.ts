@@ -242,13 +242,20 @@ router.get('/', async (req, res) => {
             excerpt = plainContent.substring(0, 150) + '...';
           }
           
+          // Determine community vs reader based on metadata flag
+          let isCommunity = false;
+          try {
+            const meta: any = (post as any).metadata || {};
+            isCommunity = Boolean(meta?.isCommunityPost);
+          } catch {}
+
           const result = {
             id: post.id,
             title: post.title,
             excerpt,
             type: 'post',
-            // Use slug when available so the reader can resolve correctly
-            url: `/reader/${post.slug || post.id}`,
+            // Prefer slug for proper routing; route differs for community content
+            url: `${isCommunity ? '/community-story' : '/reader'}/${post.slug || post.id}`,
             matches,
             createdAt: post.createdAt
           };

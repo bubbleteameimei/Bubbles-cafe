@@ -139,7 +139,7 @@ export default function Navigation() {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-[280px] max-w-[85vw] h-full">
+              <SheetContent side="left" className="p-0 w-[300px] max-w-[85vw] h-full bg-background/70 supports-[backdrop-filter]:bg-background/40 backdrop-blur-md border-r border-border/50 shadow-2xl">
                 <div className="border-b border-border/30" />
                 <SidebarNavigation onNavigate={() => setIsOpen(false)} />
               </SheetContent>

@@ -3,7 +3,6 @@ import { useLocation, Link } from "wouter";
 import { Loader2, Search, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiJson } from "@/lib/api";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
@@ -40,8 +39,7 @@ export default function SearchResultsPage() {
   const [category, setCategory] = useState<string>("all");
   const [from, setFrom] = useState<string>("all");
   const [recent, setRecent] = useState<string[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
+  
 
   // Perform search across all content
   const performSearch = useCallback(async (query: string, pageNum = 1) => {
@@ -52,12 +50,11 @@ export default function SearchResultsPage() {
     try {
       const qs = new URLSearchParams();
       qs.set('q', query);
-      qs.set('types', 'posts,pages,comments');
+      qs.set('types', 'posts'); // focus on stories
       qs.set('limit', '10');
       qs.set('page', String(pageNum));
       if (from !== 'all') qs.set('from', from);
       if (category !== 'all') qs.set('category', category);
-      if (tags.length > 0) qs.set('tags', tags.join(','));
       const { results, meta } = await apiJson<any>('GET', `/api/search?${qs.toString()}`);
       const mapped: SearchResult[] = (results || []).map((r: any) => ({
         id: r.id,
@@ -90,7 +87,7 @@ export default function SearchResultsPage() {
     } finally {
       setIsSearching(false);
     }
-  }, [toast, from, category, tags]);
+  }, [toast, from, category]);
 
   // Extract search query from URL
   useEffect(() => {
@@ -212,41 +209,7 @@ export default function SearchResultsPage() {
               </div>
             )}
           </div>
-          {/* Tags filter */}
-          <div className="flex flex-wrap items-center gap-2">
-            {tags.map((t) => (
-              <Badge key={t} variant="secondary" className="px-2 py-1">
-                <span className="mr-1">{t}</span>
-                <button
-                  type="button"
-                  aria-label={`Remove tag ${t}`}
-                  className="ml-1 rounded hover:bg-accent px-1"
-                  onClick={() => setTags(tags.filter((x) => x !== t))}
-                >
-                  ×
-                </button>
-              </Badge>
-            ))}
-            <Input
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ',') {
-                  e.preventDefault();
-                  const v = tagInput.trim().replace(/,$/, '');
-                  if (v && !tags.includes(v)) setTags([...tags, v]);
-                  setTagInput('');
-                }
-              }}
-              placeholder="Add tag and press Enter"
-              className="w-48"
-            />
-            {tags.length > 0 && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => setTags([])}>
-                Clear
-              </Button>
-            )}
-          </div>
+          
           <div className="flex items-center gap-2">
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger className="w-[180px]"><SelectValue placeholder="Category" /></SelectTrigger>
@@ -307,41 +270,96 @@ export default function SearchResultsPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : searchResults.length > 0 ? (
-        <div className="space-y-8">
-          {searchResults.map(result => (
-            <div key={`${result.type}-${result.id}`} className="border rounded-lg p-4 shadow-sm">
-              <h2 className="text-xl font-semibold mb-2">
-                <Link href={result.url}>
-                  {highlightText(result.title, searchQuery)}
-                </Link>
-              </h2>
-              
-              {/* Content matches */}
-              <div className="space-y-2 mt-3">
-                {result.matches
-                  .filter(m => m.field === 'content')
-                  .slice(0, 3) // Limit to 3 matches per result
-                  .map((match, idx) => (
-                    <div key={idx} className="text-sm text-gray-700 dark:text-gray-300 bg-muted/50 p-2 rounded">
-                      ...{highlightText(match.context || match.text, searchQuery)}...
+        <>
+          {/* Split into Reader vs Community */}
+          {(() => {
+            const readerResults = searchResults.filter(r => r.url?.startsWith('/reader/'));
+            const communityResults = searchResults.filter(r => r.url?.startsWith('/community-story/'));
+            return (
+              <div className="space-y-10">
+                <section>
+                  <h2 className="text-lg font-semibold mb-3">Reader Stories</h2>
+                  {readerResults.length > 0 ? (
+                    <div className="space-y-6">
+                      {readerResults.map(result => (
+                        <div key={`reader-${result.id}`} className="border rounded-lg p-4 shadow-sm">
+                          <h3 className="text-xl font-semibold mb-2">
+                            <Link href={result.url}>
+                              {highlightText(result.title, searchQuery)}
+                            </Link>
+                          </h3>
+                          <div className="space-y-2 mt-3">
+                            {result.matches
+                              .filter(m => m.field === 'content')
+                              .slice(0, 3)
+                              .map((match, idx) => (
+                                <div key={idx} className="text-sm text-gray-700 dark:text-gray-300 bg-muted/50 p-2 rounded">
+                                  ...{highlightText(match.context || match.text, searchQuery)}...
+                                </div>
+                              ))}
+                          </div>
+                          <div className="mt-3 flex justify-between items-center">
+                            <span className="text-xs text-gray-500">
+                              {result.matches.length} {result.matches.length === 1 ? 'match' : 'matches'}
+                            </span>
+                            <Button variant="outline" size="sm" asChild>
+                              <Link href={result.url} className="inline-flex items-center">
+                                <BookOpen className="mr-1 h-4 w-4" />
+                                Read More
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : (
+                    <p className="text-sm text-foreground/60">No reader stories matched.</p>
+                  )}
+                </section>
+
+                <section>
+                  <h2 className="text-lg font-semibold mb-3">Community Stories</h2>
+                  {communityResults.length > 0 ? (
+                    <div className="space-y-6">
+                      {communityResults.map(result => (
+                        <div key={`community-${result.id}`} className="border rounded-lg p-4 shadow-sm">
+                          <h3 className="text-xl font-semibold mb-2">
+                            <Link href={result.url}>
+                              {highlightText(result.title, searchQuery)}
+                            </Link>
+                          </h3>
+                          <div className="space-y-2 mt-3">
+                            {result.matches
+                              .filter(m => m.field === 'content')
+                              .slice(0, 3)
+                              .map((match, idx) => (
+                                <div key={idx} className="text-sm text-gray-700 dark:text-gray-300 bg-muted/50 p-2 rounded">
+                                  ...{highlightText(match.context || match.text, searchQuery)}...
+                                </div>
+                              ))}
+                          </div>
+                          <div className="mt-3 flex justify-between items-center">
+                            <span className="text-xs text-gray-500">
+                              {result.matches.length} {result.matches.length === 1 ? 'match' : 'matches'}
+                            </span>
+                            <Button variant="outline" size="sm" asChild>
+                              <Link href={result.url} className="inline-flex items-center">
+                                <BookOpen className="mr-1 h-4 w-4" />
+                                Read More
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-foreground/60">No community stories matched.</p>
+                  )}
+                </section>
               </div>
-              
-              <div className="mt-3 flex justify-between items-center">
-                <span className="text-xs text-gray-500">
-                  {result.matches.length} {result.matches.length === 1 ? 'match' : 'matches'}
-                </span>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={result.url} className="inline-flex items-center">
-                    <BookOpen className="mr-1 h-4 w-4" />
-                    Read More
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+            );
+          })()}
+        </>
       ) : searchQuery ? (
         <div className="text-center py-12">
           <p className="text-lg text-gray-600 dark:text-gray-400">
