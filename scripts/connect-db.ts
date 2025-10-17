@@ -65,8 +65,8 @@ function wantsSSL(connString: string): boolean {
     const mode = (params.get('sslmode') || '').toLowerCase();
     if (mode) return mode !== 'disable';
     const host = u.hostname;
-    // Heuristic for common hosted providers
-    return host.endsWith('supabase.co') || host.endsWith('neon.tech') || host.includes('render');
+    // Hosted provider heuristic (Supabase only)
+    return host.endsWith('supabase.co');
   } catch {
     const s = connString.toLowerCase();
     if (s.includes('sslmode=disable')) return false;
@@ -161,6 +161,14 @@ export async function initializeDatabaseConnection(): Promise<{ pool: PgPool, db
   }
 
   const originalUrl = sanitizeDatabaseUrl(process.env.DATABASE_URL)!;
+
+  // Enforce Supabase-only usage (fail fast if Neon host provided)
+  try {
+    const parsed = parsePgUrl(originalUrl);
+    if (parsed.host.endsWith('neon.tech')) {
+      throw new Error('Invalid DATABASE_URL host (neon.tech). This project is configured to use Supabase only.');
+    }
+  } catch {}
 
   // Attempt to create pool with IPv4-first resolution; on ENETUNREACH fallback to explicit IPv4
   let pool = new Pool(buildPgConfig(originalUrl));

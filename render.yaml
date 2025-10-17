@@ -41,9 +41,9 @@ services:
         value: "0"
       - key: DB_POOL_CONN_TIMEOUT_MS
         value: "10000"
-      # Disable background WordPress scheduler in production to avoid any periodic DB activity
+      # Re-enable background WordPress scheduler in production (runs hourly) using Supabase
       - key: ENABLE_WORDPRESS_SCHEDULER
-        value: "false"
+        value: "true"
       # Supabase Auth config
       - key: SUPABASE_URL
         value: "https://rqoqtusrlsapcbdimwpn.supabase.co"
@@ -63,5 +63,12 @@ services:
         value: "https://bubblescafe.space"
       - key: BACKEND_BASE_URL
         value: "https://api.bubblescafe.space"
+      # App warm pings (keep service and DB warm without spamming)
+      - key: ENABLE_WARM_PINGS
+        value: "true"
+      - key: WARM_PING_INTERVAL_SECONDS
+        value: "600"
+      - key: HEALTH_PING_URL
+        value: "https://api.bubblescafe.space/api/health/detailed"
       
     autoDeploy: true

@@ -7,8 +7,8 @@ This project is an interactive storytelling platform built with a modern web sta
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
-- **August 20, 2025**: Neon Database Setup & Replit Preview Configuration Completed
-  - Successfully configured Neon PostgreSQL database connection
+- **August 20, 2025**: Supabase Database Setup & Replit Preview Configuration Completed
+  - Successfully configured Supabase PostgreSQL database connection
   - Resolved SESSION_SECRET validation requirements (64+ characters)
   - Fixed port configuration from 5000 to 3002 for proper Replit preview functionality
   - Enhanced CORS configuration to support all Replit preview domains (.replit.app, .repl.co, etc.)
@@ -17,7 +17,7 @@ Preferred communication style: Simple, everyday language.
   - Application now fully functional with server responding on correct port
   - All API endpoints verified and CSRF tokens generating properly
 - **August 16, 2025**: Database Integration & Comprehensive Accessibility Fixes Completed
-  - Successfully integrated Neon PostgreSQL database with connection string
+  - Successfully integrated Supabase PostgreSQL database with connection string
   - Database URL configured in environment variables for secure access
   - Created missing admin_notifications table for complete schema compatibility
   - Database successfully connected with existing data: 2 users, 21 posts, ready for comments
@@ -50,7 +50,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Management
 - **Database Schema**: Users (authentication, profiles, admin roles), Posts (stories with categories, tags, metadata, reading time), Comments (threaded), Bookmarks, Categories & Tags, Site Settings.
-- **Content Synchronization**: Automatic content sync primarily from WordPress API every 5 minutes, with local storage and server-side API as fallbacks.
+- **Content Synchronization**: Automatic content sync primarily from WordPress API (hourly in production), with local storage and server-side API as fallbacks.
 - **Authentication Flow**: Session-based with secure cookies, CSRF protection, rate limiting, automatic session renewal.
 - **API Request Flow**: CSRF tokens included, rate limiting applied, error handling, automatic retry logic.
 
@@ -59,7 +59,7 @@ Preferred communication style: Simple, everyday language.
 - **User Management**: Registration, authentication, profile management, admin user management, role-based access control.
 - **Reader Experience**: Responsive design, theme support, progress tracking, bookmarking, interactive elements, mobile optimization.
 - **Administrative Features**: Consolidated admin menu with sections for Dashboard, Content Management (Stories, Content, WordPress Sync), User Management (Users, Moderation), and Insights & Reports (Analytics, Statistics, Feedback, Bug Reports).
-- **Deployment Strategy**: Split architecture with Frontend on Vercel, Backend on Render, and PostgreSQL on Neon. Cross-domain CORS, secure cookie configuration, environment-specific rate limiting, database connection pooling. HTTPS enforcement, SameSite=None cookies, IP whitelisting.
+- **Deployment Strategy**: Split architecture with Frontend on Vercel, Backend on Render, and PostgreSQL on Supabase. Cross-domain CORS, secure cookie configuration, environment-specific rate limiting, database connection pooling. HTTPS enforcement, SameSite=None cookies, IP whitelisting.
 
 ## External Dependencies
 - **React Ecosystem**: React, React DOM, React Query

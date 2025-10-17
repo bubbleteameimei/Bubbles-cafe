@@ -2,7 +2,7 @@
 /**
  * Database Schema Fix Script
  * 
- * This script adds missing columns to the existing Neon database
+ * This script adds missing columns to the existing database
  * to ensure compatibility with the application
  */
 import { initializeDatabaseConnection } from './connect-db';
