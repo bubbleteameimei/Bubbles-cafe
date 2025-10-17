@@ -452,17 +452,17 @@ export const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-1 sm:gap-2 overflow-hidden rounded-md p-1 sm:p-1.5 text-left text-xs sm:text-sm outline-none transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:outline-none active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>svg]:size-3 [&>svg]:sm:size-4 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full items-center gap-1 sm:gap-2 overflow-hidden rounded-md p-1 sm:p-1.5 text-left text-xs sm:text-sm outline-none transition-[width,height,padding] hover:bg-background/12 supports-[backdrop-filter]:hover:bg-background/8 hover:text-sidebar-foreground focus:outline-none active:bg-background/15 active:text-sidebar-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-background/20 data-[active=true]:font-medium data-[active=true]:text-sidebar-foreground data-[state=open]:hover:bg-background/12 data-[state=open]:hover:text-sidebar-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>svg]:size-3 [&>svg]:sm:size-4 [&>svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        default: "hover:bg-background/12 supports-[backdrop-filter]:hover:bg-background/8 hover:text-sidebar-foreground",
         outline:
-          "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
+          "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-background/12 supports-[backdrop-filter]:hover:bg-background/8 hover:text-sidebar-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-border))]",
       },
       size: {
-        default: "h-6 text-sm",
-        sm: "h-5 text-xs",
+        default: "h-5 text-[13px]",
+        sm: "h-4 text-[12px]",
         lg: "h-9 text-sm group-data-[collapsible=icon]:!p-0",
       },
     },
@@ -645,7 +645,7 @@ SidebarMenuSkeleton.displayName = "SidebarMenuSkeleton"
 
 export const SidebarMenuSub = React.forwardRef<
   HTMLUListElement,
-  React.ComponentProps<"ul">
+  React.ComponentProp<<"ul">
 >(({ className, ...props }, ref) => (
   <ul
     ref={ref}
@@ -697,8 +697,8 @@ export const SidebarMenuSubButton = React.forwardRef<
       aria-label={ariaLabel}
       tabIndex={0}
       className={cn(
-        "relative flex h-5 sm:h-6 min-w-0 -translate-x-px items-center gap-1 sm:gap-2 overflow-hidden rounded-md px-1.5 sm:px-2 text-sidebar-foreground outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>svg]:size-3 [&>svg]:sm:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground touch-manipulation transition-all duration-150 ease-out",
-        "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground",
+        "relative flex h-5 sm:h-6 min-w-0 -translate-x-px items-center gap-1 sm:gap-2 overflow-hidden rounded-md px-1 sm:px-2 text-sidebar-foreground outline-none hover:bg-background/12 supports-[backdrop-filter]:hover:bg-background/8 hover:text-sidebar-foreground focus:outline-none active:bg-background/15 active:text-sidebar-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>svg]:size-3 [&>svg]:sm:size-4 [&>svg]:shrink-0 touch-manipulation transition-all duration-150 ease-out",
+        "data-[active=true]:bg-background/15 data-[active=true]:text-sidebar-foreground",
         size === "sm" && "text-[10px] sm:text-xs",
         size === "md" && "text-xs sm:text-sm",
         "group-data-[collapsible=icon]:hidden",

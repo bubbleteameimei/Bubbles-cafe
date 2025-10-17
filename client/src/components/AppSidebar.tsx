@@ -65,7 +65,7 @@ export function AppSidebar() {
             size="icon"
             onClick={handleToggle}
             className="ml-auto h-8 w-8 text-[hsl(var(--sidebar-foreground))] 
-                      hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]
+                      hover:bg-background/12 supports-[backdrop-filter]:hover:bg-background/8 hover:text-[hsl(var(--sidebar-foreground))]
                       transition-all duration-200 ease-in-out
                       focus:outline-none focus:ring-0 focus-visible:ring-0"
             aria-label="Close sidebar"

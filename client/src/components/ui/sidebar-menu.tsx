@@ -306,7 +306,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   );
 
   // Submenu styling - transparent look with subtle active indicator
-  const submenuItemClass = "px-2.5 py-1.5 pr-10 text-[13px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[30px] flex items-center -mb-0.s-center -mb-1 rounded-sm transition-colors duration-150 ease-out hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 focus:bg-background/30 supports-[backdrop-filter]:focus:bg-background/20 border-l-2 border-transparent hover:border-l-primary/20 focus:outline-none focus:ring-0 focus-visible:ring-0";
+  const submenuItemClass = "px-2.5 py-1.5 pr-10 text-[13px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[30px] flex items-center -mb-0.5 rounded-sm transition-colors duration-150 ease-out hover:bg-out hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 focus:bg-background/30 supports-[backdrop-filter]:focus:bg-background/20 border-l-2 border-transparent hover:border-l-primary/20 focus:outline-none focus:ring-0 focus-visible:ring-0";
 
 
 
@@ -372,6 +372,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     <SidebarMenuButton
                       isActive={location === '/'}
+                      size="sm"
                       onClick={() => handleNavigation('/')}
                       onMouseEnter={() => prefetchRoute('/')}
                       onFocus={() => prefetchRoute('/')}
@@ -379,17 +380,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       className={menuItemClass}
                       aria-current={location === '/' ? 'page' : undefined}
                     >
-                      <Home className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      <Home className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-105 transition-transform duration-150" />
                       <span className="sidebar-menu-text-enhanced">HOME</span>
-                      {location === '/' && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="ml-auto"
-                        >
-                          <Star className="h-3 w-3 text-primary fill-current" />
-                        </motion.div>
-                      )}
                     </SidebarMenuButton>
                   </motion.div>
                 </SidebarMenuItem>
@@ -408,6 +400,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     <SidebarMenuButton
                       isActive={location === '/stories'}
+                      size="sm"
                       onClick={() => handleNavigation('/stories')}
                       onMouseEnter={() => prefetchRoute('/stories')}
                       onFocus={() => prefetchRoute('/stories')}
@@ -416,17 +409,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       aria-current={location === '/stories' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/stories')}
-                      <Scroll className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      <Scroll className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-105 transition-transform duration-150" />
                       <span className="sidebar-menu-text-enhanced">STORY INDEX</span>
-                      {location === '/stories' && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="ml-auto"
-                        >
-                          <Star className="h-3 w-3 text-primary fill-current" />
-                        </motion.div>
-                      )}
                     </SidebarMenuButton>
                   </motion.div>
                 </SidebarMenuItem>
