@@ -111,14 +111,10 @@ export default function Navigation() {
       <header
         className={`w-full bg-transparent supports-[backdrop-filter]:bg-transparent backdrop-blur-md shadow-sm`}
         style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
+          position: 'relative',
           margin: 0,
           padding: 0,
           width: '100%',
-          zIndex: 50,
           paddingTop: 'env(safe-area-inset-top, 0px)',
         }}
       >
@@ -297,8 +293,6 @@ export default function Navigation() {
         </div>
       )}
     </header>
-    {/* Spacer to offset fixed header height (56px = h-14) + safe-area inset */}
-    <div aria-hidden="true" style={{ height: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }} />
   </>
   );
 }

@@ -225,7 +225,7 @@ export default function Home() {
                 transition={{ duration: 0.4, delay: 0.22, ease: 'easeOut' }}
                 className="w-full mt-2 sm:mt-3"
               >
-                <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xl mx-auto px-4">
+                <div className="flex flex-col sm:flex-row gap-2 w-full max-w-xl mx-auto px-4">
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
