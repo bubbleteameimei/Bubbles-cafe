@@ -148,7 +148,6 @@ const AppContent = () => {
   const canonical = locationStr || '/';
   const isReaderLike = locationStr.includes('/reader');
   const isHome = locationStr === '/';
-  const isHome = locationStr === '/';
   const prefersReducedMotion =
     typeof window !== 'undefined' && typeof window.matchMedia === 'function'
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -257,7 +256,7 @@ const AppContent = () => {
       <div
         className={`page-transition-container min-h-screen w-full min-w-full max-w-full overflow-x-hidden bg-background text-foreground 
           m-0 p-0 px-0 mx-0`}
-         style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: isReaderLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)' }}>
+         style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: isHome ? 0 : (isReaderLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)') }}>
         {/* Main navigation bar */}
         <React.Suspense fallback={null}>
           <AutoHideNavbar />
