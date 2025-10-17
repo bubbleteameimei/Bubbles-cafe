@@ -225,62 +225,64 @@ export default function Home() {
                 transition={{ duration: 0.4, delay: 0.22, ease: 'easeOut' }}
                 className="w-full mt-2 sm:mt-3"
               >
-                <div className="flex flex-col sm:flex-row gap-1 sm:gap-0 w-full max-w-xl mx-auto px-4 sm:rounded-xl sm:overflow-hidden sm:ring-1 sm:ring-border/15 sm:shadow-lg sm:bg-background/10 supports-[backdrop-filter]:sm:bg-background/5">
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                    className="flex-1"
-                  >
-                    <Button
-                      size="lg"
-                      onClick={() => setLocation('/stories')}
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg sm:shadow-none backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg sm:rounded-none flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                      data-testid="home-browse-stories"
+                <div className="w-full max-w-xl mx-auto px-4">
+                  <div className="flex flex-col sm:flex-row gap-0 rounded-xl overflow-hidden ring-1 ring-border/15 shadow-lg bg-background/10 supports-[backdrop-filter]:bg-background/5">
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                      className="flex-1"
                     >
-                      <span className="text-center mr-2">Browse Stories</span>
-                      <motion.div
-                        animate={inView ? {
-                          rotate: [0, 10, -6, 4, 0],
-                          scale: [1, 1.06, 0.98, 1.03, 1]
-                        } : undefined}
-                        transition={{ 
-                          duration: 1.2,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
+                      <Button
+                        size="lg"
+                        onClick={() => setLocation('/stories')}
+                        className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-none backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-none flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        data-testid="home-browse-stories"
                       >
-                        <Book className="h-4 w-4 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300" />
-                      </motion.div>
-                    </Button>
-                  </motion.div>
-                  
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                    className="flex-1"
-                  >
-                    <Button
-                      size="lg"
-                      variant="secondary"
-                      onClick={() => setLocation('/reader')}
-                      aria-label="Start reading now"
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg sm:shadow-none backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg sm:rounded-none flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        <span className="text-center mr-2">Browse Stories</span>
+                        <motion.div
+                          animate={inView ? {
+                            rotate: [0, 10, -6, 4, 0],
+                            scale: [1, 1.06, 0.98, 1.03, 1]
+                          } : undefined}
+                          transition={{ 
+                            duration: 1.2,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                          }}
+                        >
+                          <Book className="h-4 w-4 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300" />
+                        </motion.div>
+                      </Button>
+                    </motion.div>
+                    
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                      className="flex-1"
                     >
-                      <span className="text-center mr-2">Start Reading</span>
-                      <motion.div
-                        animate={inView ? { x: [0, 4, 0] } : undefined}
-                        transition={{ 
-                          duration: 0.6,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
+                      <Button
+                        size="lg"
+                        variant="secondary"
+                        onClick={() => setLocation('/reader')}
+                        aria-label="Start reading now"
+                        className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-none backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-none flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       >
-                        <ChevronRight className="h-12 w-12 group-hover:translate-x-2 transition-transform duration-300" />
-                      </motion.div>
-                    </Button>
-                  </motion.div>
+                        <span className="text-center mr-2">Start Reading</span>
+                        <motion.div
+                          animate={inView ? { x: [0, 4, 0] } : undefined}
+                          transition={{ 
+                            duration: 0.6,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                          }}
+                        >
+                          <ChevronRight className="h-12 w-12 group-hover:translate-x-2 transition-transform duration-300" />
+                        </motion.div>
+                      </Button>
+                    </motion.div>
+                  </div>
                 </div>
               </motion.div>
               {/* Monthly readers pill removed by request */}

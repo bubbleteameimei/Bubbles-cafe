@@ -188,7 +188,7 @@ export default function MainNav() {
         </div>
       </header>
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side="left" className="p-0 w-[300px] max-w-[85vw] h-full overflow-y-auto">
+        <SheetContent side="left" className="p-0 w-[300px] max-w-[85vw] h-full bg-background/70 supports-[backdrop-filter]:bg-background/40 backdrop-blur-md border-r border-border/50 shadow-2xl overflow-y-auto">
           <SidebarNavigation onNavigate={() => setSidebarOpen(false)} />
         </SheetContent>
       </Sheet>
