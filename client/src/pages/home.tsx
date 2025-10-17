@@ -234,7 +234,7 @@ export default function Home() {
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg sm:rounded-r-none rounded-b-none sm:rounded-b-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       data-testid="home-browse-stories"
                     >
                       <span className="text-center mr-2">Browse Stories</span>
@@ -244,7 +244,7 @@ export default function Home() {
                           scale: [1, 1.06, 0.98, 1.03, 1]
                         } : undefined}
                         transition={{ 
-                          duration: 1.8,
+                          duration: 1.2,
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
@@ -258,14 +258,14 @@ export default function Home() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                    className="-mt-1 sm:mt-0 sm:-ml-1"
+                    className="-mt-px sm:-ml-2 sm:mt-0"
                   >
                     <Button
                       size="lg"
                       variant="secondary"
                       onClick={() => setLocation('/reader')}
                       aria-label="Start reading now"
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg sm:rounded-l-none rounded-t-none sm:rounded-t-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       <span className="text-center mr-2">Start Reading</span>
                       <motion.div
@@ -276,7 +276,7 @@ export default function Home() {
                           ease: "easeInOut"
                         }}
                       >
-                        <ChevronRight className="h-11 w-11 group-hover:translate-x-2 transition-transform duration-300" />
+                        <ChevronRight className="h-12 w-12 group-hover:translate-x-2 transition-transform duration-300" />
                       </motion.div>
                     </Button>
                   </motion.div>

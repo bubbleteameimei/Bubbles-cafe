@@ -170,6 +170,7 @@ export const BuyMeCoffeeButton = () => {
           <span className="relative flex items-center gap-3 text-base font-medium leading-none z-10">
             <motion.div 
               animate={{ 
+                y: [0, -4, 0],
                 rotate: [0, 10, -10, 0]
               }} 
               transition={{ 
