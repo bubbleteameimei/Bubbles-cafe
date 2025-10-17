@@ -302,7 +302,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   );
 
   // Submenu styling - transparent, subtle active (no boxes)
-  const submenuItemClass = "px-2 py-px-2.5 py-1.5 pr-10 text-[13px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[30px] flex items-center -mb-0.5 rounded-sm transition-colors duration-150 ease-out hover:bg-out hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 focus:bg-background/30 supports-[backdrop-filter]:focus:bg-background/20 border-l-2 border-transparent hover:border-l-primary/20 focus:outline-none focus:ring-0 focus-visible:ring-0";
+  const submenuItemClass = "px-2 py-1 pr-8 text-[12px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[28px] flex items-center -mb-0.5 rounded-sm transition-colors duration-150 ease-out hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 focus:bg-background/8 supports-[backdrop-filter]:focus:bg-background/6 border-l border-transparent data-[active=true]:border-l-primary/30 focus:outline-none focus:ring-0 focus-visible:ring-0";
 
 
 
@@ -425,6 +425,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     <SidebarMenuButton
                       isActive={location === '/reader'}
+                      size="sm"
                       onClick={() => handleNavigation('/reader')}
                       onMouseEnter={() => prefetchRoute('/reader')}
                       onFocus={() => prefetchRoute('/reader')}
@@ -433,17 +434,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       aria-current={location === '/reader' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/reader')}
-                      <Book className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      <Book className="h-5 w-5 group-hover:scale-105 transition-transform duration-150" />
                       <span className="sidebar-menu-text-enhanced">READER</span>
-                      {location === '/reader' && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="ml-auto"
-                        >
-                          <Star className="h-3 w-3 text-primary fill-current" />
-                        </motion.div>
-                      )}
                     </SidebarMenuButton>
                   </motion.div>
                 </SidebarMenuItem>
