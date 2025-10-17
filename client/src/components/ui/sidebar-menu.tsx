@@ -315,7 +315,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         duration: 0.3, 
         ease: [0.25, 0.46, 0.45, 0.94]
       }}
-      className="flex flex-col h-full sidebar-menu-container relative"
+      className="flex flex-col h-full sidebar-menu-container relative bg-transparent"
       role="navigation"
       aria-label="Main navigation"
       style={{
@@ -326,11 +326,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       {/* Removed gradient overlay that was interfering with bottom buttons */}
 
       {/* Scrollable content area */}
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-2 pb-6 scroll-smooth sidebar-menu-container focus:outline-none focus-visible:outline-none"
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-2 pb-6 scroll-smooth sidebar-menu-container focus:outline-none focus-visible:outline-none bg-transparent"
            style={{
              scrollBehavior: 'smooth',
-             scrollbarWidth: 'thin',
-             msOverflowStyle: 'none',
+             scrollbarWidth: 'thin msOverflowStyle: 'none',
              WebkitOverflowScrolling: 'touch',
              overscrollBehavior: 'contain'
            }}>

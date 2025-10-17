@@ -225,7 +225,7 @@ export default function Home() {
                 transition={{ duration: 0.4, delay: 0.22, ease: 'easeOut' }}
                 className="w-full mt-2 sm:mt-3"
               >
-                <div className="flex flex-col sm:flex-row gap-2 w-full max-w-xl mx-auto px-4">
+                <div className="flex flex-col sm:flex-row gap-1 sm:gap-0 w-full max-w-xl mx-auto px-4 sm:rounded-xl sm:overflow-hidden sm:ring-1 sm:ring-border/15 sm:shadow-lg sm:bg-background/10 supports-[backdrop-filter]:sm:bg-background/5">
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -235,7 +235,7 @@ export default function Home() {
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg sm:shadow-none backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg sm:rounded-none flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       data-testid="home-browse-stories"
                     >
                       <span className="text-center mr-2">Browse Stories</span>
@@ -266,7 +266,7 @@ export default function Home() {
                       variant="secondary"
                       onClick={() => setLocation('/reader')}
                       aria-label="Start reading now"
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg sm:shadow-none backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg sm:rounded-none flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       <span className="text-center mr-2">Start Reading</span>
                       <motion.div
