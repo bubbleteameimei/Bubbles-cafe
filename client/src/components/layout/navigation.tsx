@@ -181,9 +181,8 @@ export default function Navigation() {
                 aria-label="Search"
                 noOutline
               >
-               < Search className="h-5 w-5" />
-            </  Button</>
-
+                <Search className="h-5 w-5" />
+              </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-72 p-3 bg-background/70 supports-[backdrop-filter]:bg-background/40 backdrop-blur-sm border border-border/50">
               <div className="flex items-center gap-2">
@@ -215,8 +214,8 @@ export default function Navigation() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+            onClick={smoothThemeToggle}
+            className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             noOutline
           >
