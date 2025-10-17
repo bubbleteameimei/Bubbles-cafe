@@ -234,7 +234,7 @@ export default function Home() {
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg sm:rounded-r-none rounded-b-none sm:rounded-b-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg sm:rounded-r-none flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       data-testid="home-browse-stories"
                     >
                       <span className="text-center mr-2">Browse Stories</span>
@@ -258,14 +258,14 @@ export default function Home() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                    className="-mt-px sm:-ml-2 sm:mt-0"
+                    className="sm:-ml-px"
                   >
                     <Button
                       size="lg"
                       variant="secondary"
                       onClick={() => setLocation('/reader')}
                       aria-label="Start reading now"
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg sm:rounded-l-none rounded-t-none sm:rounded-t-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg sm:rounded-l-none flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       <span className="text-center mr-2">Start Reading</span>
                       <motion.div
