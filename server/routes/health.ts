@@ -7,46 +7,12 @@ const logger = createLogger('Health');
 
 const router = Router();
 
-// Basic health check (touches DB lightly to keep Supabase warm)
-// Always returns 200 OK, with status indicating DB state
-router.get('/', async (_req: Request, res: Response) => {
-  let dbStatus: 'connected' | 'degraded' = 'degraded';
-  let dbResponseTime = 0;
-
-  try {
-    const t0 = Date.now();
-    // Perform a very light query
-    await db.select().from(posts).limit(1);
-    dbResponseTime = Date.now() - t0;
-    dbStatus = 'connected';
-  } catch (_err) {
-    dbStatus = 'degraded';
-  }
-
-  const health = {
-    status: 'ok',
-    services: {
-      database: {
-        status: dbStatus,
-        responseTime: dbResponseTime
-      }
-    },
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
-    version: process.env.npm_package_version || '1.0.0',
-    memory: {
-      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-      external: Math.round(process.memoryUsage().external / 1024 / 1024)
-    }
-  };
-
-  // Always 200, even if DB is degraded; callers can inspect payload
-  res.status(200).json(health);
+// Basic health check: minimal, stateless, no DB access
+router.get('/', (_req: Request, res: Response) => {
+  res.json({ status: 'ok' });
 });
 
-// Detailed health check with database connectivity
+// Detailed health check with database connectivity (for diagnostics)
 router.get('/detailed', async (req: Request, res: Response) => {
   try {
     const startTime = Date.now();

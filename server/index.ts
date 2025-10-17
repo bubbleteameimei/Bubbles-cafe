@@ -77,22 +77,19 @@ app.get('/health', (_req, res) => {
     environment: process.env.NODE_ENV || 'development'
   });
 });
-app.get('/api/health', async (_req, res) => {
-  // Touch DB lightly to keep Supabase warm; always return 200
-  let dbStatus: 'connected' | 'degraded' = 'degraded';
+app.get('/api/health', (_req, res) => {
+  // Minimal, stateless response for platform health checks
+  res.json({ status: 'ok' });
+});
+
+// Warm endpoint: touches DB but returns minimal payload; used by keep-warm pings
+app.get('/api/health/warm', async (_req, res) => {
   try {
     await db.select().from(posts).limit(1);
-    dbStatus = 'connected';
   } catch {
-    dbStatus = 'degraded';
+    // swallow: warm endpoint should not fail health checks
   }
-  res.json({
-    status: 'ok',
-    services: { database: { status: dbStatus } },
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development'
-  });
+  res.json({ status: 'ok' });
 });
 
 // Session
@@ -110,7 +107,7 @@ app.use(session({
 }));
 
 // CSRF protection (skip health endpoints to avoid touching session)
-app.use(setCsrfToken(!isDev, { ignorePaths: ['/health', '/api/health'] }));
+app.use(setCsrfToken(!isDev, { ignorePaths: ['/health', '/api/health', '/api/health/warm'] }));
 app.use(csrfTokenToLocals);
 
 app.use(validateCsrfToken({
@@ -284,7 +281,7 @@ async function startServer() {
           if (enabled) {
             const intervalSec = Number(process.env.WARM_PING_INTERVAL_SECONDS || 600); // default 10 minutes
             const healthUrl = (process.env.HEALTH_PING_URL || '').trim() ||
-              `http://127.0.0.1:${PORT}/api/health/detailed`;
+              `http://127.0.0.1:${PORT}/api/health/warm`;
             serverLogger.info('Warm pings enabled', { intervalSec, healthUrl });
 
             setInterval(async () => {
