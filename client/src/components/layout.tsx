@@ -2,6 +2,7 @@ import React, { ReactNode, useEffect, useState } from "react";
 import MainNav from "./MainNav";
 import { SidebarProvider } from "./ui/sidebar";
 import { EnvironmentIndicator } from "./ui/environment-indicator";
+import { AppSidebar } from "./AppSidebar";
 
 interface LayoutProps {
   children: ReactNode;
@@ -44,10 +45,10 @@ export function Layout({ children }: LayoutProps) {
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <div className="flex min-h-[100dvh]" data-device-type={deviceType}>
-        {/* Desktop Sidebar - Now hidden by default, only accessible via menu button */}
-        {/* Removing fixed sidebar to ensure menu button works on all screen sizes */}
+        {/* Fixed sidebar on desktop; offcanvas on mobile via provider */}
+        <AppSidebar />
 
-        {/* Main Content Area - Full width since we removed fixed sidebar */}
+        {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0 bg-background 
                         transition-all duration-300 ease-in-out">
           <MainNav />

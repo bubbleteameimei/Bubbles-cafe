@@ -285,22 +285,24 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     } catch {}
   }, []);
 
-  // Enhanced menu item class with modern UX principles
+  // Compact, minimal top-level menu styling
   const menuItemClass = cn(
     "sidebar-menu-button-enhanced",
-    "group relative flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium",
-    "text-sidebar-foreground/80 hover:text-sidebar-foreground",
-    "transition-all duration-200 ease-out",
-    "hover:bg-sidebar-accent hover:shadow-sm",
+    // much tighter spacing
+    "group relative flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[12px] font-medium",
+    "text-sidebar-foreground/85 hover:text-sidebar-foreground",
+    "transition-all duration-150 ease-out",
+    // fully transparent hover
+    "hover:bg-transparent hover:shadow-none",
     "focus:outline-none focus:ring-0 focus-visible:ring-0",
-    "data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/10 data-[active=true]:to-primary/5",
-    "data-[active=true]:text-primary data-[active=true]:shadow-sm",
+    // simple active state: no box/backgrounds
+    "data-[active=true]:bg-transparent data-[active=true]:text-sidebar-foreground data-[active=true]:font-semibold",
     "whitespace-nowrap overflow-hidden",
     "font-sans"
   );
 
-  // Enhanced submenu styling - increased clickable area to the RIGHT and faster animations
-  const submenuItemClass = "px-3 py-2 pr-12 text-sm font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[36px] flex items-center -mb-1 rounded-sm transition-colors duration-150 ease-out hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 focus:bg-background/30 supports-[backdrop-filter]:focus:bg-background/20 border-l-2 border-transparent hover:border-l-primary/20 focus:outline-none focus:ring-0 focus-visible:ring-0";
+  // Submenu styling - transparent, subtle active (no boxes)
+  const submenuItemClass = "px-2 py-1 pr-8 text-[12px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[28px] flex items-center -mb-0.5 rounded-sm transition-colors duration-150 ease-out hover:bg-transparent focus:bg-transparent border-l border-transparent data-[active=true]:border-l-primary/40 focus:outline-none focus:ring-0 focus-visible:ring-0";
 
 
 
@@ -366,6 +368,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     <SidebarMenuButton
                       isActive={location === '/'}
+                      size="sm"
                       onClick={() => handleNavigation('/')}
                       onMouseEnter={() => prefetchRoute('/')}
                       onFocus={() => prefetchRoute('/')}
@@ -373,17 +376,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       className={menuItemClass}
                       aria-current={location === '/' ? 'page' : undefined}
                     >
-                      <Home className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      <Home className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-105 transition-transform duration-150" />
                       <span className="sidebar-menu-text-enhanced">HOME</span>
-                      {location === '/' && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="ml-auto"
-                        >
-                          <Star className="h-3 w-3 text-primary fill-current" />
-                        </motion.div>
-                      )}
                     </SidebarMenuButton>
                   </motion.div>
                 </SidebarMenuItem>
@@ -402,6 +396,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     <SidebarMenuButton
                       isActive={location === '/stories'}
+                      size="sm"
                       onClick={() => handleNavigation('/stories')}
                       onMouseEnter={() => prefetchRoute('/stories')}
                       onFocus={() => prefetchRoute('/stories')}
@@ -410,17 +405,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       aria-current={location === '/stories' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/stories')}
-                      <Scroll className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      <Scroll className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-105 transition-transform duration-150" />
                       <span className="sidebar-menu-text-enhanced">STORY INDEX</span>
-                      {location === '/stories' && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="ml-auto"
-                        >
-                          <Star className="h-3 w-3 text-primary fill-current" />
-                        </motion.div>
-                      )}
                     </SidebarMenuButton>
                   </motion.div>
                 </SidebarMenuItem>
@@ -439,6 +425,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     <SidebarMenuButton
                       isActive={location === '/reader'}
+                      size="sm"
                       onClick={() => handleNavigation('/reader')}
                       onMouseEnter={() => prefetchRoute('/reader')}
                       onFocus={() => prefetchRoute('/reader')}
@@ -447,17 +434,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       aria-current={location === '/reader' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/reader')}
-                      <Book className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      <Book className="h-5 w-5 group-hover:scale-105 transition-transform duration-150" />
                       <span className="sidebar-menu-text-enhanced">READER</span>
-                      {location === '/reader' && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="ml-auto"
-                        >
-                          <Star className="h-3 w-3 text-primary fill-current" />
-                        </motion.div>
-                      )}
                     </SidebarMenuButton>
                   </motion.div>
                 </SidebarMenuItem>
@@ -476,6 +454,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     <SidebarMenuButton
                       isActive={location === '/community'}
+                      size="sm"
                       onClick={() => handleNavigation('/community')}
                       onMouseEnter={() => prefetchRoute('/community')}
                       onFocus={() => prefetchRoute('/community')}
@@ -484,17 +463,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       aria-current={location === '/community' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/community')}
-                      <Users className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      <Users className="h-5 w-5 group-hover:scale-105 transition-transform duration-150" />
                       <span className="sidebar-menu-text-enhanced">COMMUNITY</span>
-                      {location === '/community' && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="ml-auto"
-                        >
-                          <Star className="h-3 w-3 text-primary fill-current" />
-                        </motion.div>
-                      )}
                     </SidebarMenuButton>
                   </motion.div>
                 </SidebarMenuItem>
@@ -513,6 +483,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     <SidebarMenuButton
                       isActive={location === '/bookmarks'}
+                      size="sm"
                       onClick={() => handleNavigation('/bookmarks')}
                       onMouseEnter={() => prefetchRoute('/bookmarks')}
                       onFocus={() => prefetchRoute('/bookmarks')}
@@ -521,17 +492,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       aria-current={location === '/bookmarks' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/bookmarks')}
-                      <BookmarkIcon className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      <BookmarkIcon className="h-5 w-5 group-hover:scale-105 transition-transform duration-150" />
                       <span className="sidebar-menu-text-enhanced">BOOKMARKS</span>
-                      {location === '/bookmarks' && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="ml-auto"
-                        >
-                          <Star className="h-3 w-3 text-primary fill-current" />
-                        </motion.div>
-                      )}
                     </SidebarMenuButton>
                   </motion.div>
                 </SidebarMenuItem>
@@ -575,7 +537,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               <SidebarMenuItem>
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen} className="sidebar-dropdown-container">
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 data-[ar(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap"
+                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bg-transparent data-[state=open]:bg-transparent data-[state=open]:text-[hsl(var(--sidebar-foreground))] whitespace-nowrap"
                       aria-expanded={adminOpen}
                       aria-controls="admin-controls-content"
                     >
@@ -789,7 +751,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               >
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton
-                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap sidebar-collapsible-trigger"
+                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-transparent data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-transparent whitespace-nowrap sidebar-collapsible-trigger"
                     aria-expanded={displayOpen}
                     aria-controls="accessibility-settings-content"
                   >
@@ -879,7 +841,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={accountOpen} onOpenChange={setAccountOpen} className="sidebar-dropdown-container">
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap"
+                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-transparent data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-transparent whitespace-nowrap"
                   aria-expanded={accountOpen}
                   aria-controls="account-settings-content"
                 >
@@ -979,18 +941,21 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen} className="sidebar-dropdown-container">
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bgate=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap"
-                  aria-expanded={supportOpen}
-                  aria-controls="support-legal-content"
-                >
+                  <SidebarMenuButton
+                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 data-[state=open]:bg-background/10 data-[state=open]:text-[hsl(var(--sidebar-foreground))] whitespace-nowrap"
+                    aria-expanded={supportOpen}
+                    aria-controls="support-legal-content"
+                  >
                     <div className="flex items-center">
                       <HelpCircle className="h-4 w-4 mr-2" />
                       <span>Support & Legal</span>
                     </div>
-                    <ChevronDown className={cn(
-                      "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
-                      supportOpen && "rotate-180"
-                    )} />
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
+                        supportOpen && "rotate-180"
+                      )}
+                    />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
                 <CollapsibleContent id="support-legal-content" className="overflow-hidden sidebar-collapsible-content">

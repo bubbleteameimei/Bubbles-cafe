@@ -7,34 +7,12 @@ const logger = createLogger('Health');
 
 const router = Router();
 
-// Basic health check
-router.get('/', async (req: Request, res: Response) => {
-  try {
-    const health = {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      environment: process.env.NODE_ENV || 'development',
-      version: process.env.npm_package_version || '1.0.0',
-      memory: {
-        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-        external: Math.round(process.memoryUsage().external / 1024 / 1024)
-      }
-    };
-
-    res.json(health);
-  } catch (error) {
-    logger.error('Health check failed', { error });
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Health check failed',
-      timestamp: new Date().toISOString()
-    });
-  }
+// Basic health check: minimal, stateless, no DB access
+router.get('/', (_req: Request, res: Response) => {
+  res.json({ status: 'ok' });
 });
 
-// Detailed health check with database connectivity
+// Detailed health check with database connectivity (for diagnostics)
 router.get('/detailed', async (req: Request, res: Response) => {
   try {
     const startTime = Date.now();
@@ -112,7 +90,7 @@ router.get('/ready', async (req: Request, res: Response) => {
 });
 
 // Liveness check for Kubernetes
-router.get('/live', (req: Request, res: Response) => {
+router.get('/live', (_req: Request, res: Response) => {
   res.json({ 
     status: 'alive',
     timestamp: new Date().toISOString(),

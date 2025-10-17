@@ -11,8 +11,8 @@ export class WordPressScheduler {
       return;
     }
 
-    // Run sync every 6 hours
-    this.syncJob = cron.schedule('0 */6 * * *', async () => {
+    // Run sync every hour
+    this.syncJob = cron.schedule('0 * * * *', async () => {
       if (this.isRunning) {
         console.log('[WordPress Scheduler] Sync already in progress, skipping');
         return;

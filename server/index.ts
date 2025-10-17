@@ -68,7 +68,7 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Lightweight, static health endpoints BEFORE session/CSRF to avoid DB writes
+// Health endpoints
 app.get('/health', (_req, res) => {
   res.json({
     status: 'ok',
@@ -78,12 +78,18 @@ app.get('/health', (_req, res) => {
   });
 });
 app.get('/api/health', (_req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development'
-  });
+  // Minimal, stateless response for platform health checks
+  res.json({ status: 'ok' });
+});
+
+// Warm endpoint: touches DB but returns minimal payload; used by keep-warm pings
+app.get('/api/health/warm', async (_req, res) => {
+  try {
+    await db.select().from(posts).limit(1);
+  } catch {
+    // swallow: warm endpoint should not fail health checks
+  }
+  res.json({ status: 'ok' });
 });
 
 // Session
@@ -101,7 +107,7 @@ app.use(session({
 }));
 
 // CSRF protection (skip health endpoints to avoid touching session)
-app.use(setCsrfToken(!isDev, { ignorePaths: ['/health', '/api/health'] }));
+app.use(setCsrfToken(!isDev, { ignorePaths: ['/health', '/api/health', '/api/health/warm'] }));
 app.use(csrfTokenToLocals);
 
 app.use(validateCsrfToken({
@@ -267,6 +273,30 @@ async function startServer() {
             });
           } catch {}
           serverLogger.debug('Sent port readiness signal', { port: PORT });
+        }
+
+        // Keep-warm pings to avoid cold starts and keep Supabase connection hot
+        try {
+          const enabled = (process.env.ENABLE_WARM_PINGS ?? (config.isProd ? 'true' : 'false')) === 'true';
+          if (enabled) {
+            const intervalSec = Number(process.env.WARM_PING_INTERVAL_SECONDS || 600); // default 10 minutes
+            const healthUrl = (process.env.HEALTH_PING_URL || '').trim() ||
+              `http://127.0.0.1:${PORT}/api/health/warm`;
+            serverLogger.info('Warm pings enabled', { intervalSec, healthUrl });
+
+            setInterval(async () => {
+              try {
+                const res = await fetch(healthUrl, { method: 'GET' });
+                if (!res.ok) {
+                  serverLogger.warn('Warm ping returned non-200', { status: res.status });
+                }
+              } catch (e) {
+                serverLogger.warn('Warm ping failed', { error: e instanceof Error ? e.message : String(e) });
+              }
+            }, Math.max(60, intervalSec) * 1000); // do not allow < 60s to avoid spamming
+          }
+        } catch (e) {
+          serverLogger.warn('Failed to set up warm pings', { error: e instanceof Error ? e.message : String(e) });
         }
 
         resolve();

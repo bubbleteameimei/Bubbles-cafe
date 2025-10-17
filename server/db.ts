@@ -96,6 +96,12 @@ if (!DATABASE_URL) {
   });
 } else {
   try {
+    // Enforce Supabase-only hosts (fail fast if a Neon host is detected)
+    const parsedForPrimary = parsePgUrl(DATABASE_URL);
+    if (parsedForPrimary.host.endsWith('neon.tech')) {
+      throw new Error('Invalid DATABASE_URL host (neon.tech). This project is configured to use Supabase only.');
+    }
+
     // Decide SSL usage: treat any sslmode except "disable" as SSL
     const wantsSSL = (url: string): boolean => {
       try {
@@ -104,7 +110,7 @@ if (!DATABASE_URL) {
         const mode = (params.get('sslmode') || '').toLowerCase();
         if (mode) return mode !== 'disable';
         const host = u.hostname;
-        return host.endsWith('supabase.co') || host.endsWith('neon.tech') || host.includes('render');
+        return host.endsWith('supabase.co');
       } catch {
         const s = url.toLowerCase();
         if (s.includes('sslmode=disable')) return false;
@@ -118,7 +124,6 @@ if (!DATABASE_URL) {
     const connTimeoutMs = Number(process.env.DB_POOL_CONN_TIMEOUT_MS || 10000);
 
     // Build discrete config to ensure our ssl options are respected
-    const parsedForPrimary = parsePgUrl(DATABASE_URL);
     pool = new Pool({
       host: parsedForPrimary.host,
       port: parsedForPrimary.port,

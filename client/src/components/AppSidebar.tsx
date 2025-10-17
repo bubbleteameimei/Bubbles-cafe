@@ -65,7 +65,7 @@ export function AppSidebar() {
             size="icon"
             onClick={handleToggle}
             className="ml-auto h-8 w-8 text-[hsl(var(--sidebar-foreground))] 
-                      hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]
+                      hover:bg-background/12 supports-[backdrop-filter]:hover:bg-background/8 hover:text-[hsl(var(--sidebar-foreground))]
                       transition-all duration-200 ease-in-out
                       focus:outline-none focus:ring-0 focus-visible:ring-0"
             aria-label="Close sidebar"
@@ -74,8 +74,8 @@ export function AppSidebar() {
           </Button>
         </div>
 
-        {/* Scrollable content area with improved padding for different device sizes */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+        {/* Content area (scroll handled inside SidebarNavigation to avoid nested scrolls) */}
+        <div className="flex-1 min-h-0">
           <div className="p-2 sm:p-3 md:p-4 lg:p-5 xl:p-6">
             <SidebarNavigation onNavigate={handleToggle} />
           </div>

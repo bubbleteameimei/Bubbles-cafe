@@ -136,7 +136,7 @@ try {
     database: u.pathname.replace(/^\//, ''),
     max: maxClients, // Reduced maximum number of clients in the pool
     min: minClients, // Minimum number of clients in the pool
-    idleTimeoutMillis: idleMs, // Close idle clients quickly to reduce Neon compute
+    idleTimeoutMillis: idleMs, // Close idle clients quickly to reduce database compute
     connectionTimeoutMillis: connTimeoutMs, // Reduced timeout for faster failures
     maxUses: 1000, // Reduced max uses to prevent memory issues
     allowExitOnIdle: false, // Keep pool available; connections close via idle timeout
