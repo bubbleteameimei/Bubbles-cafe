@@ -537,7 +537,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               <SidebarMenuItem>
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen} className="sidebar-dropdown-container">
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bg-background/12 supports-[backdrop-filter]:hover:bg-background/8 data-[state=open]:bg-background/15 data-[state=open]:text-[hsl(var(--sidebar-foreground))] whitespace-nowrap"
+                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 data-[state=open]:bg-background/10 data-[state=open]:text-[hsl(var(--sidebar-foreground))] whitespace-nowrap"
                       aria-expanded={adminOpen}
                       aria-controls="admin-controls-content"
                     >
@@ -751,7 +751,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               >
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton
-                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-background/15 data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-background/12 supports-[backdrop-filter]:hover:bg-background/8 whitespace-nowrap sidebar-collapsible-trigger"
+                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-background/10 data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 whitespace-nowrap sidebar-collapsible-trigger"
                     aria-expanded={displayOpen}
                     aria-controls="accessibility-settings-content"
                   >
@@ -841,7 +841,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={accountOpen} onOpenChange={setAccountOpen} className="sidebar-dropdown-container">
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-background/15 data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-background/12 supports-[backdrop-filter]:hover:bg-background/8 whitespace-nowrap"
+                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-background/10 data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 whitespace-nowrap"
                   aria-expanded={accountOpen}
                   aria-controls="account-settings-content"
                 >

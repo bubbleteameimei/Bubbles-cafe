@@ -241,6 +241,12 @@ body {
       z-index: 1 !important;
     }
 
+    /* Sidebar menu buttons should remain compact even on touch devices */
+    [data-sidebar="menu-button"] {
+      min-height: 24px !important;
+      min-width: auto !important;
+    }
+
     /* Ensure sidebar trigger button is always accessible */
     .fixed.bottom-6.left-6 {
       touch-action: manipulation !important;
