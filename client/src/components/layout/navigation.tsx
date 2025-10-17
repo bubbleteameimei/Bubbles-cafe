@@ -85,10 +85,11 @@ export default function Navigation() {
     };
   }, [isReaderRoute]);
 
+  
   return (
     <>
       <header
-        className="w-full bg-background/50 backdrop-blur-md supports-[backdrop-filter]:bg-background/30 shadow-sm"
+        className={`w-full bg-transparent supports-[backdrop-filter]:bg-transparent backdrop-blur-md shadow-sm`}
         style={{
           position: 'fixed',
           top: 0,

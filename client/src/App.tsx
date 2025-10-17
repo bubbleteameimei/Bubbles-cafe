@@ -147,6 +147,7 @@ const AppContent = () => {
   // Basic SEO: set canonical and defaults site-wide
   const canonical = locationStr || '/';
   const isReaderLike = locationStr.includes('/reader');
+  const isHome = locationStr === '/';
   const prefersReducedMotion =
     typeof window !== 'undefined' && typeof window.matchMedia === 'function'
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
