@@ -191,6 +191,7 @@ export default function Home() {
           
           {/* Content container with proper z-index to appear above background - full width */}
           <div ref={heroRef} className="relative z-20 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start pt-0 pb-10 sm:pb-12 md:pb-16 lg:pb-20 text-center w-full min-h-screen">
+            <div className="h-6 sm:h-8 md:h-12" aria-hidden="true"></div>
             <div className="relative">
               <motion.h1
                 initial={{ opacity: 0, y: 12 }}
@@ -203,8 +204,8 @@ export default function Home() {
               </motion.h1>
             </div>
           
-            {/* Tighten spacing between logo and tagline */}
-            <div className="h-1 sm:h-2 md:h-2"></div>
+            {/* Increased spacing between logo and tagline */}
+            <div className="h-6 sm:h-8 md:h-10"></div>
           
             <motion.div
               initial={{ opacity: 0, y: 8 }}
@@ -224,7 +225,7 @@ export default function Home() {
                 transition={{ duration: 0.4, delay: 0.22, ease: 'easeOut' }}
                 className="w-full mt-2 sm:mt-3"
               >
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-px w-full max-w-xl mx-auto px-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-0 w-full max-w-xl mx-auto px-4">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -283,12 +284,12 @@ export default function Home() {
               {/* Monthly readers pill removed by request */}
               
               {/* Buy Me a Coffee button positioned above Latest Story (always visible) */}
-              <div className="flex justify-center mt-2 sm:mt-3 mb-2 sm:mb-2 w-full px-4 max-w-4xl mx-auto">
+              <div className="flex justify-center mt-1 sm:mt-2 mb-1 sm:mb-1 w-full px-4 max-w-4xl mx-auto">
                 <BuyMeCoffeeButton />
               </div>
 
               {posts.length > 0 && (
-                <div className="mt-3 sm:mt-4 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
+                <div className="mt-2 sm:mt-3 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <motion.div 
                     onClick={() => setLocation('/reader')} 

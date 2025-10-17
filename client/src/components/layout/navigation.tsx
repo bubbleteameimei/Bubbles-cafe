@@ -88,7 +88,7 @@ export default function Navigation() {
   return (
     <>
       <header
-        className="w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 shadow-sm"
+        className="w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 shadow-sm"
         style={{
           position: 'fixed',
           top: 0,
