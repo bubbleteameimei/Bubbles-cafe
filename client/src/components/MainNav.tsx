@@ -65,10 +65,9 @@ export default function MainNav() {
   return (
     <>
       <header 
-        className={`sticky top-0 z-40 w-full border-b
-                  bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
+        className={`sticky top-0 z-40 w-full border-b border-border/70
+                  bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70
                   transition-all duration-300 ease-in-out 
-                  dark:border-gray-800
                   ${scrolled ? 'shadow-sm' : ''}`}
         data-device-type={deviceType}
       >
@@ -189,7 +188,7 @@ export default function MainNav() {
         </div>
       </header>
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side="left" className="p-0 w-[300px] max-w-[85vw] h-full overflow-y-auto">
+        <SheetContent side="left" className="p-0 w-[300px] max-w-[85vw] h-full bg-background/70 supports-[backdrop-filter]:bg-background/40 backdrop-blur-md border-r border-border/50 shadow-2xl overflow-y-auto">
           <SidebarNavigation onNavigate={() => setSidebarOpen(false)} />
         </SheetContent>
       </Sheet>

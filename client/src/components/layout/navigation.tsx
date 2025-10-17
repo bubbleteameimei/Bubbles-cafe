@@ -36,6 +36,7 @@ export default function Navigation() {
   const { user } = useAuth();
   const { notifications } = useNotifications();
   const { theme, setTheme } = useTheme();
+  const [searchValue, setSearchValue] = useState("");
 
   // Reader route progress state (for in-header progress bar)
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -85,19 +86,35 @@ export default function Navigation() {
     };
   }, [isReaderRoute]);
 
+  
+  const handleSearch = () => {
+    const q = searchValue.trim();
+    if (!q) return;
+    try {
+      setLocation(`/search?q=${encodeURIComponent(q)}`);
+    } catch {
+      window.location.href = `/search?q=${encodeURIComponent(q)}`;
+    }
+  };
+
+  const smoothThemeToggle = () => {
+    try {
+      const root = document.documentElement;
+      root.classList.add('theme-smooth');
+      setTimeout(() => root.classList.remove('theme-smooth'), 300);
+    } catch {}
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+  
   return (
     <>
       <header
-        className="w-full bg-background/40 backdrop-blur-sm shadow-sm"
+        className={`w-full bg-transparent supports-[backdrop-filter]:bg-transparent backdrop-blur-md shadow-sm`}
         style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
+          position: 'relative',
           margin: 0,
           padding: 0,
           width: '100%',
-          zIndex: 50,
           paddingTop: 'env(safe-area-inset-top, 0px)',
         }}
       >
@@ -110,7 +127,7 @@ export default function Navigation() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+                  className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
                   aria-label="Open menu"
                   onClick={() => setIsOpen((v) => !v)}
                   noOutline
@@ -118,7 +135,7 @@ export default function Navigation() {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-[280px] max-w-[85vw] h-full">
+              <SheetContent side="left" className="p-0 w-[300px] max-w-[85vw] h-full bg-transparent backdrop-blur-md border-r border-border/50 shadow-2xl">
                 <div className="border-b border-border/30" />
                 <SidebarNavigation onNavigate={() => setIsOpen(false)} />
               </SheetContent>
@@ -156,31 +173,45 @@ export default function Navigation() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+                className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
                 aria-label="Search"
                 noOutline
               >
                 <Search className="h-5 w-5" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-64 p-3">
+            <PopoverContent align="end" className="w-72 p-3 bg-background/70 supports-[backdrop-filter]:bg-background/40 backdrop-blur-sm border border-border/50">
               <div className="flex items-center gap-2">
-                <Input placeholder="Search stories…" className="h-9 text-sm bg-background/70 border-border/40 flex-1" />
-                <Button variant="default" size="sm" className="h-9">Go</Button>
+                <Input
+                  placeholder="Search stories…"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                  className="h-9 text-sm bg-background/40 supports-[backdrop-filter]:bg-background/20 border-border/40 flex-1"
+                />
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-9 bg-background/40 supports-[backdrop-filter]:bg-background/20 hover:bg-background/30 transition-colors"
+                  onClick={handleSearch}
+                  disabled={!searchValue.trim()}
+                >
+                  Go
+                </Button>
               </div>
             </PopoverContent>
           </Popover>
 
           <NotificationIcon
-            className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+            className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
             noOutline
           />
 
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+            onClick={smoothThemeToggle}
+            className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             noOutline
           >
@@ -201,7 +232,7 @@ export default function Navigation() {
                 prefetchAuthPages();
                 setLocation("/auth");
               }}
-              className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+              className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
               aria-label="Sign in"
               noOutline
             >
@@ -211,7 +242,7 @@ export default function Navigation() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+              className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
               noOutline
             >
               <User className="h-5 w-5" />
@@ -220,11 +251,19 @@ export default function Navigation() {
         </div>
       </div>
 
-      {/* Full-width separator - match footer HR style */}
+      {/* Full-bleed demarcation line (exactly like footer) */}
       <div
         aria-hidden="true"
-        className="border-b border-border/40"
-        style={{ width: "100%", position: "relative", left: 0, transform: "none" }}
+        className="pointer-events-none"
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: "50%",
+          width: "100vw",
+          transform: "translateX(-50%)",
+          borderTop: "1px solid hsl(var(--border) / 0.70)",
+          zIndex: 40
+        }}
       />
 
       {/* Reader-only in-header progress bar, aligned to the bottom demarcation line */}
@@ -254,8 +293,6 @@ export default function Navigation() {
         </div>
       )}
     </header>
-    {/* Spacer to offset fixed header height (56px = h-14) + safe-area inset */}
-    <div aria-hidden="true" style={{ height: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }} />
   </>
   );
 }

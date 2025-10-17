@@ -396,6 +396,12 @@ body:has(main:has([data-reader-page])) .page-transition-container {
   --bg-overlay-light: linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.2) 100%);
 }
 
+/* Smoothen theme toggle transitions */
+html.theme-smooth,
+html.theme-smooth * {
+  transition: background-color 250ms ease, color 250ms ease, border-color 250ms ease, fill 250ms ease, stroke 250ms ease !important;
+}
+
 /* Loading screen styles are now handled in loading-screen.css */
 
 /* Scroll to top button styles */
@@ -406,4 +412,9 @@ body:has(main:has([data-reader-page])) .page-transition-container {
            hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50;
     z-index: 9999;
   }
+}
+
+/* Sidebar: ensure glass panel by overriding global container background */
+div.sidebar-menu-container {
+  background-color: transparent !important;
 }

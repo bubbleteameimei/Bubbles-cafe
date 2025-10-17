@@ -191,20 +191,21 @@ export default function Home() {
           
           {/* Content container with proper z-index to appear above background - full width */}
           <div ref={heroRef} className="relative z-20 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start pt-0 pb-10 sm:pb-12 md:pb-16 lg:pb-20 text-center w-full min-h-screen">
+            <div className="h-2 sm:h-3 md:h-4" aria-hidden="true"></div>
             <div className="relative">
               <motion.h1
                 initial={{ opacity: 0, y: 12 }}
                 animate={inView ? { opacity: 1, y: 0 } : undefined}
                 transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
-                className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-6 sm:mb-8 md:mb-10 tracking-wider text-white flex flex-col items-center"
+                className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-white flex flex-col items-center"
               >
                 <span>BUBBLES</span>
                 <span className="mt-1 md:mt-2 text-red-700 relative">CAFE</span>
               </motion.h1>
             </div>
           
-            {/* Increased spacing */}
-            <div className="h-6 sm:h-8 md:h-10 lg:h-12 xl:h-14"></div>
+            {/* Increased spacing between logo and tagline */}
+            <div className="h-8 sm:h-10 md:h-12"></div>
           
             <motion.div
               initial={{ opacity: 0, y: 8 }}
@@ -222,18 +223,20 @@ export default function Home() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={inView ? { opacity: 1, y: 0 } : undefined}
                 transition={{ duration: 0.4, delay: 0.22, ease: 'easeOut' }}
-                className="w-full mt-8 sm:mt-10"
+                className="w-full mt-2 sm:mt-3"
               >
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-[2px] w-full max-w-xl mx-auto px-4">
+                <div className="w-full max-w-xl mx-auto px-4">
+                  <div className="flex flex-col sm:flex-row gap-2">
                   <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                    className="flex-1"
                   >
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       data-testid="home-browse-stories"
                     >
                       <span className="text-center mr-2">Browse Stories</span>
@@ -243,7 +246,7 @@ export default function Home() {
                           scale: [1, 1.06, 0.98, 1.03, 1]
                         } : undefined}
                         transition={{ 
-                          duration: 3.6,
+                          duration: 1.2,
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
@@ -254,41 +257,43 @@ export default function Home() {
                   </motion.div>
                   
                   <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                    className="flex-1"
                   >
                     <Button
                       size="lg"
                       variant="secondary"
                       onClick={() => setLocation('/reader')}
                       aria-label="Start reading now"
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       <span className="text-center mr-2">Start Reading</span>
                       <motion.div
                         animate={inView ? { x: [0, 4, 0] } : undefined}
                         transition={{ 
-                          duration: 1.1,
+                          duration: 0.6,
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
                       >
-                        <ChevronRight className="h-8 w-8 group-hover:translate-x-2 transition-transform duration-300" />
+                        <ChevronRight className="h-12 w-12 group-hover:translate-x-2 transition-transform duration-300" />
                       </motion.div>
                     </Button>
                   </motion.div>
+                </div>
                 </div>
               </motion.div>
               {/* Monthly readers pill removed by request */}
               
               {/* Buy Me a Coffee button positioned above Latest Story (always visible) */}
-              <div className="flex justify-center mt-8 sm:mt-10 mb-2 sm:mb-3 w-full px-4 max-w-4xl mx-auto">
+              <div className="flex justify-center mt-1 sm:mt-2 mb-1 sm:mb-1 w-full px-4 max-w-4xl mx-auto">
                 <BuyMeCoffeeButton />
               </div>
 
               {posts.length > 0 && (
-                <div className="mt-8 sm:mt-10 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
+                <div className="mt-2 sm:mt-3 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <motion.div 
                     onClick={() => setLocation('/reader')} 
