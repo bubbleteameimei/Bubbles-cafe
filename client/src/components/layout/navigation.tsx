@@ -88,7 +88,7 @@ export default function Navigation() {
   return (
     <>
       <header
-        className="w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 shadow-sm"
+        className="w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 shadow-sm"
         style={{
           position: 'fixed',
           top: 0,
@@ -220,11 +220,11 @@ export default function Navigation() {
         </div>
       </div>
 
-      {/* Full-width separator - match footer HR style */}
-      <div
+      {/* Full-width separator - EXACTLY match footer HR style */}
+      <hr
         aria-hidden="true"
-        className="border-b border-border/70"
-        style={{ width: "100%", position: "relative", left: 0, transform: "none" }}
+        className="border-t border-border/70"
+        style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
       />
 
       {/* Reader-only in-header progress bar, aligned to the bottom demarcation line */}

@@ -191,7 +191,7 @@ export default function Home() {
           
           {/* Content container with proper z-index to appear above background - full width */}
           <div ref={heroRef} className="relative z-20 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start pt-0 pb-10 sm:pb-12 md:pb-16 lg:pb-20 text-center w-full min-h-screen">
-            <div className="h-6 sm:h-8 md:h-12" aria-hidden="true"></div>
+            <div className="h-8 sm:h-10 md:h-14" aria-hidden="true"></div>
             <div className="relative">
               <motion.h1
                 initial={{ opacity: 0, y: 12 }}
@@ -205,7 +205,7 @@ export default function Home() {
             </div>
           
             {/* Increased spacing between logo and tagline */}
-            <div className="h-6 sm:h-8 md:h-10"></div>
+            <div className="h-8 sm:h-10 md:h-12"></div>
           
             <motion.div
               initial={{ opacity: 0, y: 8 }}
@@ -244,7 +244,7 @@ export default function Home() {
                           scale: [1, 1.06, 0.98, 1.03, 1]
                         } : undefined}
                         transition={{ 
-                          duration: 3.6,
+                          duration: 2.6,
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
@@ -258,6 +258,7 @@ export default function Home() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    className="sm:-ml-px"
                   >
                     <Button
                       size="lg"
@@ -270,12 +271,12 @@ export default function Home() {
                       <motion.div
                         animate={inView ? { x: [0, 4, 0] } : undefined}
                         transition={{ 
-                          duration: 1.1,
+                          duration: 0.8,
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
                       >
-                        <ChevronRight className="h-8 w-8 group-hover:translate-x-2 transition-transform duration-300" />
+                        <ChevronRight className="h-9 w-9 group-hover:translate-x-2 transition-transform duration-300" />
                       </motion.div>
                     </Button>
                   </motion.div>
