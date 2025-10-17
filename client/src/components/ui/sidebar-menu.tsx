@@ -285,22 +285,28 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     } catch {}
   }, []);
 
-  // Enhanced menu item class with modern UX principles
+  // Compact, subtle top-level menu styling
   const menuItemClass = cn(
     "sidebar-menu-button-enhanced",
-    "group relative flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium",
-    "text-sidebar-foreground/80 hover:text-sidebar-foreground",
-    "transition-all duration-200 ease-out",
-    "hover:bg-sidebar-accent hover:shadow-sm",
+    // tighter padding and gap
+    "group relative flex items-center gap-1.5 px-2 py-1 rounded-md text-[13px] font-medium",
+    "text-sidebar-foreground/85 hover:text-sidebar-foreground",
+    "transition-all duration-150 ease-out",
+    // softer hover background (transparent look)
+    "hover:bg-background/15 supports-[backdrop-filter]:hover:bg-background/10 hover:shadow-none",
     "focus:outline-none focus:ring-0 focus-visible:ring-0",
-    "data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/10 data-[active=true]:to-primary/5",
-    "data-[active=true]:text-primary data-[active=true]:shadow-sm",
+    // simplified active state (no loud gradient/colors)
+    "data-[active=true]:bg-background/20 supports-[backdrop-filter]:data-[active=true]:bg-background/10",
+    "data-[active=true]:text-sidebar-foreground data-[active=true]:shadow-none",
+    // subtle left indicator when active
+    "before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[2px] before:rounded-full before:bg-primary/40 before:opacity-0",
+    "data-[active=true]:before:opacity-100 group-hover:before:opacity-100",
     "whitespace-nowrap overflow-hidden",
     "font-sans"
   );
 
-  // Enhanced submenu styling - increased clickable area to the RIGHT and faster animations
-  const submenuItemClass = "px-3 py-2 pr-12 text-sm font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[36px] flex items-center -mb-1 rounded-sm transition-colors duration-150 ease-out hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 focus:bg-background/30 supports-[backdrop-filter]:focus:bg-background/20 border-l-2 border-transparent hover:border-l-primary/20 focus:outline-none focus:ring-0 focus-visible:ring-0";
+  // Submenu styling - transparent look with subtle active indicator
+  const submenuItemClass = "px-2.5 py-1.5 pr-10 text-[13px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[30px] flex items-center -mb-0.s-center -mb-1 rounded-sm transition-colors duration-150 ease-out hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 focus:bg-background/30 supports-[backdrop-filter]:focus:bg-background/20 border-l-2 border-transparent hover:border-l-primary/20 focus:outline-none focus:ring-0 focus-visible:ring-0";
 
 
 
@@ -476,6 +482,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     <SidebarMenuButton
                       isActive={location === '/community'}
+                      size="sm"
                       onClick={() => handleNavigation('/community')}
                       onMouseEnter={() => prefetchRoute('/community')}
                       onFocus={() => prefetchRoute('/community')}
@@ -484,17 +491,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       aria-current={location === '/community' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/community')}
-                      <Users className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      <Users className="h-5 w-5 group-hover:scale-105 transition-transform duration-150" />
                       <span className="sidebar-menu-text-enhanced">COMMUNITY</span>
-                      {location === '/community' && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="ml-auto"
-                        >
-                          <Star className="h-3 w-3 text-primary fill-current" />
-                        </motion.div>
-                      )}
                     </SidebarMenuButton>
                   </motion.div>
                 </SidebarMenuItem>
@@ -513,6 +511,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     <SidebarMenuButton
                       isActive={location === '/bookmarks'}
+                      size="sm"
                       onClick={() => handleNavigation('/bookmarks')}
                       onMouseEnter={() => prefetchRoute('/bookmarks')}
                       onFocus={() => prefetchRoute('/bookmarks')}
@@ -521,17 +520,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       aria-current={location === '/bookmarks' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/bookmarks')}
-                      <BookmarkIcon className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      <BookmarkIcon className="h-5 w-5 group-hover:scale-105 transition-transform duration-150" />
                       <span className="sidebar-menu-text-enhanced">BOOKMARKS</span>
-                      {location === '/bookmarks' && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="ml-auto"
-                        >
-                          <Star className="h-3 w-3 text-primary fill-current" />
-                        </motion.div>
-                      )}
                     </SidebarMenuButton>
                   </motion.div>
                 </SidebarMenuItem>
@@ -575,7 +565,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               <SidebarMenuItem>
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen} className="sidebar-dropdown-container">
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 data-[ar(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap"
+                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bg-background/12 supports-[backdrop-filter]:hover:bg-background/8 data-[state=open]:bg-background/15 data-[state=open]:text-[hsl(var(--sidebar-foreground))] whitespace-nowrap"
                       aria-expanded={adminOpen}
                       aria-controls="admin-controls-content"
                     >
@@ -789,7 +779,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               >
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton
-                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap sidebar-collapsible-trigger"
+                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-background/15 data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-background/12 supports-[backdrop-filter]:hover:bg-background/8 whitespace-nowrap sidebar-collapsible-trigger"
                     aria-expanded={displayOpen}
                     aria-controls="accessibility-settings-content"
                   >
@@ -879,7 +869,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={accountOpen} onOpenChange={setAccountOpen} className="sidebar-dropdown-container">
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap"
+                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-background/15 data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-background/12 supports-[backdrop-filter]:hover:bg-background/8 whitespace-nowrap"
                   aria-expanded={accountOpen}
                   aria-controls="account-settings-content"
                 >

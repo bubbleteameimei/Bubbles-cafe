@@ -154,8 +154,8 @@
 
 /* Smooth transitions for all collapsible elements */
 .sidebar-collapsible-trigger[data-state="open"] {
-  background-color: hsl(var(--sidebar-accent));
-  color: hsl(var(--sidebar-accent-foreground));
+  background-color: transparent;
+  color: inherit;
 }
 
 /* Mobile-specific improvements */
