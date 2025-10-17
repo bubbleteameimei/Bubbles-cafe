@@ -196,7 +196,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={inView ? { opacity: 1, y: 0 } : undefined}
                 transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
-                className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-3 sm:mb-4 md:mb-5 tracking-wider text-white flex flex-col items-center"
+                className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-white flex flex-col items-center"
               >
                 <span>BUBBLES</span>
                 <span className="mt-1 md:mt-2 text-red-700 relative">CAFE</span>
@@ -204,7 +204,7 @@ export default function Home() {
             </div>
           
             {/* Tighten spacing between logo and tagline */}
-            <div className="h-2 sm:h-3 md:h-4"></div>
+            <div className="h-1 sm:h-2 md:h-2"></div>
           
             <motion.div
               initial={{ opacity: 0, y: 8 }}
@@ -222,7 +222,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={inView ? { opacity: 1, y: 0 } : undefined}
                 transition={{ duration: 0.4, delay: 0.22, ease: 'easeOut' }}
-                className="w-full mt-3 sm:mt-4"
+                className="w-full mt-2 sm:mt-3"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-px w-full max-w-xl mx-auto px-4">
                   <motion.div
@@ -283,12 +283,12 @@ export default function Home() {
               {/* Monthly readers pill removed by request */}
               
               {/* Buy Me a Coffee button positioned above Latest Story (always visible) */}
-              <div className="flex justify-center mt-3 sm:mt-4 mb-2 sm:mb-2 w-full px-4 max-w-4xl mx-auto">
+              <div className="flex justify-center mt-2 sm:mt-3 mb-2 sm:mb-2 w-full px-4 max-w-4xl mx-auto">
                 <BuyMeCoffeeButton />
               </div>
 
               {posts.length > 0 && (
-                <div className="mt-4 sm:mt-5 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
+                <div className="mt-3 sm:mt-4 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <motion.div 
                     onClick={() => setLocation('/reader')} 

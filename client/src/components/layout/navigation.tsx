@@ -88,7 +88,7 @@ export default function Navigation() {
   return (
     <>
       <header
-        className="w-full bg-background/40 backdrop-blur-sm shadow-sm"
+        className="w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 shadow-sm"
         style={{
           position: 'fixed',
           top: 0,
@@ -223,7 +223,7 @@ export default function Navigation() {
       {/* Full-width separator - match footer HR style */}
       <div
         aria-hidden="true"
-        className="border-b border-border/40"
+        className="border-b border-border/70"
         style={{ width: "100%", position: "relative", left: 0, transform: "none" }}
       />
 
