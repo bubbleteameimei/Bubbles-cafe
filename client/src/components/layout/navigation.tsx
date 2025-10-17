@@ -36,6 +36,7 @@ export default function Navigation() {
   const { user } = useAuth();
   const { notifications } = useNotifications();
   const { theme, setTheme } = useTheme();
+  const [searchValue, setSearchValue] = useState("");
 
   // Reader route progress state (for in-header progress bar)
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -86,6 +87,25 @@ export default function Navigation() {
   }, [isReaderRoute]);
 
   
+  const handleSearch = () => {
+    const q = searchValue.trim();
+    if (!q) return;
+    try {
+      setLocation(`/search?q=${encodeURIComponent(q)}`);
+    } catch {
+      window.location.href = `/search?q=${encodeURIComponent(q)}`;
+    }
+  };
+
+  const smoothThemeToggle = () => {
+    try {
+      const root = document.documentElement;
+      root.classList.add('theme-smooth');
+      setTimeout(() => root.classList.remove('theme-smooth'), 300);
+    } catch {}
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+  
   return (
     <>
       <header
@@ -111,7 +131,7 @@ export default function Navigation() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+                  className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
                   aria-label="Open menu"
                   onClick={() => setIsOpen((v) => !v)}
                   noOutline
@@ -157,23 +177,38 @@ export default function Navigation() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+                className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
                 aria-label="Search"
                 noOutline
               >
-                <Search className="h-5 w-5" />
-              </Button>
+               < Search className="h-5 w-5" />
+            </  Button</>
+
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-64 p-3">
+            <PopoverContent align="end" className="w-72 p-3 bg-background/70 supports-[backdrop-filter]:bg-background/40 backdrop-blur-sm border border-border/50">
               <div className="flex items-center gap-2">
-                <Input placeholder="Search stories…" className="h-9 text-sm bg-background/70 border-border/40 flex-1" />
-                <Button variant="default" size="sm" className="h-9">Go</Button>
+                <Input
+                  placeholder="Search stories…"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                  className="h-9 text-sm bg-background/40 supports-[backdrop-filter]:bg-background/20 border-border/40 flex-1"
+                />
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-9 bg-background/40 supports-[backdrop-filter]:bg-background/20 hover:bg-background/30 transition-colors"
+                  onClick={handleSearch}
+                  disabled={!searchValue.trim()}
+                >
+                  Go
+                </Button>
               </div>
             </PopoverContent>
           </Popover>
 
           <NotificationIcon
-            className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+            className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
             noOutline
           />
 
@@ -202,7 +237,7 @@ export default function Navigation() {
                 prefetchAuthPages();
                 setLocation("/auth");
               }}
-              className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+              className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
               aria-label="Sign in"
               noOutline
             >
@@ -212,7 +247,7 @@ export default function Navigation() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-12 w-12 rounded-md border border-border/30 text-white hover:text-white hover:bg-accent/10"
+              className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
               noOutline
             >
               <User className="h-5 w-5" />

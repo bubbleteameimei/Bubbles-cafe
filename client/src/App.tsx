@@ -148,6 +148,7 @@ const AppContent = () => {
   const canonical = locationStr || '/';
   const isReaderLike = locationStr.includes('/reader');
   const isHome = locationStr === '/';
+  const isHome = locationStr === '/';
   const prefersReducedMotion =
     typeof window !== 'undefined' && typeof window.matchMedia === 'function'
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
