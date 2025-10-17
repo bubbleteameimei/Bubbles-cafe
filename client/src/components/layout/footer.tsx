@@ -71,9 +71,11 @@ export default function Footer() {
             </ul>
           </div>
         </div>
+      </div>
 
-        <hr className="mt-4 border-t border-border/40" style={{ width: "100%", position: "relative", left: 0, transform: "none" }} />
+      <hr className="mt-0 border-t border-border/40" style={{ width: "100%", position: "relative", left: 0, transform: "none" }} />
 
+      <div className="container mx-auto max-w-5xl px-6 py-4">
         {/* Bottom strip */}
         <div className="mt-3 w-full flex flex-col items-center justify-center">
           <div className="text-xs font-medium text-foreground/80 whitespace-nowrap mb-1.5">
