@@ -85,7 +85,7 @@ export default function Footer() {
         style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
       />
 
-      <div className="container mx-auto max-w-5xl px-6 pb-4 pt-0">
+      <div className="container mx-auto max-w-5xl px-6 pb-4 pt-2">
         {/* Bottom strip */}
         <div className="mt-0 w-full flex flex-col items-center justify-center">
           <div className="text-xs font-medium text-foreground/80 whitespace-nowrap mb-1.5">

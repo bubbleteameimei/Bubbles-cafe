@@ -167,10 +167,9 @@ export const BuyMeCoffeeButton = () => {
             )}
           </AnimatePresence>
 
-          <span className="relative flex items-center gap-3 text-base font-medium z-10">
+          <span className="relative flex items-center gap-3 text-base font-medium leading-none z-10">
             <motion.div 
               animate={{ 
-                y: [0, -4, 0],
                 rotate: [0, 10, -10, 0]
               }} 
               transition={{ 
@@ -179,10 +178,10 @@ export const BuyMeCoffeeButton = () => {
                 repeatType: "reverse",
                 ease: "easeInOut"
               }}
-              className="relative"
+              className="relative inline-flex items-center"
             >
               <Coffee className="w-6 h-6" />
-              {/* Coffee steam effect */}
+              {/* Coffee steam effect (doesn't affect layout) */}
               <motion.div
                 animate={{ 
                   opacity: [0.4, 0.8, 0.4],
@@ -202,6 +201,7 @@ export const BuyMeCoffeeButton = () => {
                 color: isHovered ? "#fef3c7" : "#ffffff"
               }}
               transition={{ duration: 0.3 }}
+              className="inline-flex items-center"
             >
               Buy me a coffee
             </motion.span>

@@ -220,11 +220,19 @@ export default function Navigation() {
         </div>
       </div>
 
-      {/* Full-width separator - EXACTLY match footer HR style */}
-      <hr
+      {/* Full-bleed demarcation line (exactly like footer) */}
+      <div
         aria-hidden="true"
-        className="border-t border-border/70"
-        style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
+        className="pointer-events-none"
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: "50%",
+          width: "100vw",
+          transform: "translateX(-50%)",
+          borderTop: "1px solid hsl(var(--border) / 0.70)",
+          zIndex: 40
+        }}
       />
 
       {/* Reader-only in-header progress bar, aligned to the bottom demarcation line */}
