@@ -285,28 +285,24 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     } catch {}
   }, []);
 
-  // Compact, subtle top-level menu styling
+  // Compact, minimal top-level menu styling
   const menuItemClass = cn(
     "sidebar-menu-button-enhanced",
-    // tighter padding and gap
-    "group relative flex items-center gap-1.5 px-2 py-1 rounded-md text-[13px] font-medium",
+    // much tighter spacing
+    "group relative flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[12px] font-medium",
     "text-sidebar-foreground/85 hover:text-sidebar-foreground",
     "transition-all duration-150 ease-out",
-    // softer hover background (transparent look)
-    "hover:bg-background/15 supports-[backdrop-filter]:hover:bg-background/10 hover:shadow-none",
+    // very soft hover background
+    "hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 hover:shadow-none",
     "focus:outline-none focus:ring-0 focus-visible:ring-0",
-    // simplified active state (no loud gradient/colors)
-    "data-[active=true]:bg-background/20 supports-[backdrop-filter]:data-[active=true]:bg-background/10",
-    "data-[active=true]:text-sidebar-foreground data-[active=true]:shadow-none",
-    // subtle left indicator when active
-    "before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[2px] before:rounded-full before:bg-primary/40 before:opacity-0",
-    "data-[active=true]:before:opacity-100 group-hover:before:opacity-100",
+    // simple active state: no box/backgrounds
+    "data-[active=true]:bg-transparent data-[active=true]:text-sidebar-foreground data-[active=true]:font-semibold",
     "whitespace-nowrap overflow-hidden",
     "font-sans"
   );
 
-  // Submenu styling - transparent look with subtle active indicator
-  const submenuItemClass = "px-2.5 py-1.5 pr-10 text-[13px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[30px] flex items-center -mb-0.5 rounded-sm transition-colors duration-150 ease-out hover:bg-out hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 focus:bg-background/30 supports-[backdrop-filter]:focus:bg-background/20 border-l-2 border-transparent hover:border-l-primary/20 focus:outline-none focus:ring-0 focus-visible:ring-0";
+  // Submenu styling - transparent, subtle active (no boxes)
+  const submenuItemClass = "px-2 py-px-2.5 py-1.5 pr-10 text-[13px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[30px] flex items-center -mb-0.5 rounded-sm transition-colors duration-150 ease-out hover:bg-out hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 focus:bg-background/30 supports-[backdrop-filter]:focus:bg-background/20 border-l-2 border-transparent hover:border-l-primary/20 focus:outline-none focus:ring-0 focus-visible:ring-0";
 
 
 
@@ -953,18 +949,21 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen} className="sidebar-dropdown-container">
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bgate=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap"
-                  aria-expanded={supportOpen}
-                  aria-controls="support-legal-content"
-                >
+                  <SidebarMenuButton
+                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 data-[state=open]:bg-background/10 data-[state=open]:text-[hsl(var(--sidebar-foreground))] whitespace-nowrap"
+                    aria-expanded={supportOpen}
+                    aria-controls="support-legal-content"
+                  >
                     <div className="flex items-center">
                       <HelpCircle className="h-4 w-4 mr-2" />
                       <span>Support & Legal</span>
                     </div>
-                    <ChevronDown className={cn(
-                      "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
-                      supportOpen && "rotate-180"
-                    )} />
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
+                        supportOpen && "rotate-180"
+                      )}
+                    />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
                 <CollapsibleContent id="support-legal-content" className="overflow-hidden sidebar-collapsible-content">
