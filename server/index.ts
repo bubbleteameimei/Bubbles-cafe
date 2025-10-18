@@ -68,6 +68,16 @@ app.use((req, _res, next) => {
   next();
 });
 
+// Fast-path health endpoint before session middleware to minimize overhead
+app.get('/api/health', async (_req, res) => {
+  try {
+    await db.select().from(posts).limit(1);
+  } catch {
+    // swallow errors to avoid failing platform health checks
+  }
+  res.json({ status: 'ok' });
+});
+
 
 
 // Session

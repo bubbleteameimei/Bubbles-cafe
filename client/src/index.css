@@ -88,11 +88,18 @@ body {
 
 /* Global responsive design fixes */
 @layer base {
-  /* Completely disable the skeleton loading animation by overriding Tailwind's animate-pulse */
+  /* Disable Tailwind's animate-pulse to reduce motion; custom skeleton adds shimmer respecting reduced motion */
   .animate-pulse {
     animation: none !important;
     background-color: hsl(var(--muted)) !important;
     opacity: 0.3 !important;
+  }
+
+  /* Reduce motion: disable spin animations for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-spin {
+      animation: none !important;
+    }
   }
 
   /* Prevent black box flash during page transitions */
