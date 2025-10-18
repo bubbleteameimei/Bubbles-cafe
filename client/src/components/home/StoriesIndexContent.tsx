@@ -81,30 +81,29 @@ export default function StoriesIndexContent() {
   };
 
   // Paginated query
-  const {
-    data,
-  } = useSuspenseInfiniteQuery<{ posts: Post[];: boolean; page: number; }>({
+  const { data } = useSuspenseInfiniteQuery<
+    { posts: Post[]; hasMore: boolean; page: number }
+  >({
     queryKey: ["wordpress", "posts"],
     queryFn: async ({ pageParam = 1 }) => {
       const page = typeof pageParam === 'number' ? pageParam : 1;
-      const wpResponse = await fetchWordPressPosts({ 
-        page, 
-        perPage: 100
+      const wpResponse = await fetchWordPressPosts({
+        page,
+        perPage: 100,
       });
       const wpPosts = wpResponse.posts || [];
       const posts = wpPosts.map((post: WordPressPost) => wpToPost(post)) as Post[];
       return {
         posts,
         hasMore: wpPosts.length === 100,
-        page
+        page,
       };
     },
-    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     staleTime: 5 * 60 * 1000,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     initialPageParam: 1,
-    suspense: true
   });
 
   const hasPaginatedPosts = data?.pages && data.pages.length > 0 && data.pages[0]?.posts?.length > 0;
