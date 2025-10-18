@@ -4,6 +4,10 @@ import React, { useEffect, useState } from 'react';
  * IntroLoader
  * Shows the Megrim intro loading screen on every app start
  * for a minimum of ~2.6 seconds to complete an animation cycle.
+ * - Centers text perfectly via flexbox
+ * - Attempts to load Megrim via FontFace API; falls back to rendering immediately with sans-serif fallback (no cursive)
+ * - Uses staggered blur keyframes (one letter pulsing at a time)
+ * - Reduced blur, tighter spacing, medium text (34px)
  */
 const INTRO_MIN_MS = 2600;
 
@@ -32,7 +36,7 @@ const IntroLoader: React.FC = () => {
       {/* Accessible live region for screen readers */}
       <div className="sr-only">Loading content, please wait…</div>
 
-      {/* Inline CSS adapted to our framework without excessive !important flags */}
+      {/* Inline CSS adapted to our framework: centered, reduced blur, tighter spacing, medium text */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -43,52 +47,40 @@ const IntroLoader: React.FC = () => {
             height: 100%;
             background: #000;
             z-index: 99999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
 
           .loader {
-            position: absolute;
-            top: 0; bottom: 0; left: 0; right: 0;
-            margin: auto;
-            text-align: center;
-            width: 100%;
-            height: 100px;
-            line-height: 100px;
-            font-family: 'Megrim', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Megrim', system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', Helvetica, Arial, sans-serif;
             font-size: 34px;
             color: #fff;
           }
 
           .loader span {
             display: inline-block;
-            margin: 0 5px;
-            opacity: 0.85;
-            transition: transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
-            will-change: transform, opacity, filter;
-            animation: letterPulse 2s ease-in-out infinite;
+            margin: 0 2px;
+            opacity: 0.95;
+            will-change: filter, opacity;
+            animation: blurText 1.5s linear infinite alternate;
           }
 
           .loader span:nth-child(1) { animation-delay: 0s; }
-          .loader span:nth-child(2) { animation-delay: 0.1s; }
-          .loader span:nth-child(3) { animation-delay: 0.2s; }
-          .loader span:nth-child(4) { animation-delay: 0.3s; }
-          .loader span:nth-child(5) { animation-delay: 0.4s; }
-          .loader span:nth-child(6) { animation-delay: 0.5s; }
-          .loader span:nth-child(7) { animation-delay: 0.6s; }
+          .loader span:nth-child(2) { animation-delay: 0.2s; }
+          .loader span:nth-child(3) { animation-delay: 0.4s; }
+          .loader span:nth-child(4) { animation-delay: 0.6s; }
+          .loader span:nth-child(5) { animation-delay: 0.8s; }
+          .loader span:nth-child(6) { animation-delay: 1.0s; }
+          .loader span:nth-child(7) { animation-delay: 1.2s; }
 
-          @keyframes letterPulse {
-            0%, 100% {
-              opacity: 0.85;
-              transform: scale(1);
-              filter: blur(0px);
-              text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
-            }
-            50% {
-              opacity: 1;
-              transform: scale(1.08);
-              filter: blur(4px);
-              text-shadow: 0 0 30px rgba(255, 255, 255, 0.85),
-                           0 0 40px rgba(255, 255, 255, 0.65);
-            }
+          /* Blur effect is inside keyframes only; reduced intensity */
+          @keyframes blurText {
+            0%   { filter: blur(0px);   opacity: 1; }
+            100% { filter: blur(1.5px); opacity: 0.86; }
           }
 
           @media (prefers-reduced-motion: reduce) {
@@ -98,7 +90,8 @@ const IntroLoader: React.FC = () => {
           }
 
           @media (max-width: 640px) {
-            .loader { font-size: 28px; }
+            .loader { font-size: 30px; }
+            .loader span { margin: 0 1.5px; }
           }
         `,
         }}
