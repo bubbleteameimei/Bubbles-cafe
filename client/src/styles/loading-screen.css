@@ -106,6 +106,16 @@
   pointer-events: none;
 }
 
+/* Reduced motion: disable animations */
+@media (prefers-reduced-motion: reduce) {
+  .loading-screen {
+    animation: none !important;
+  }
+  .loader span {
+    animation: none !important;
+  }
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .loader {

@@ -4,12 +4,18 @@ import { memo } from 'react';
 // Visibility is controlled by the parent (GlobalLoadingProvider/AppContent).
 export const LoadingScreen = memo(
   ({ onAnimationComplete }: { onAnimationComplete?: () => void }) => {
+    // Respect reduced motion preference
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     return (
-      <main
-        id="main-content"
+      <div
         className="loading-screen"
-        aria-label="Loading screen"
+        role="status"
         aria-live="polite"
+        aria-label="Loading"
         style={{
           position: 'fixed',
           top: 0,
@@ -19,12 +25,17 @@ export const LoadingScreen = memo(
           background:
             'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 25%, #0f0f0f 50%, #1a1a1a 75%, #0a0a0a 100%)',
           backgroundSize: '200% 200%',
-          animation: 'backgroundShift 4s ease-in-out infinite',
+          animation: reduceMotion ? undefined : 'backgroundShift 4s ease-in-out infinite',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
           zIndex: 99999999,
           overflow: 'hidden',
+        }}
+        onAnimationEnd={() => {
+          try {
+            onAnimationComplete?.();
+          } catch {}
         }}
       >
         <div
@@ -42,76 +53,19 @@ export const LoadingScreen = memo(
             letterSpacing: '0.2em',
           }}
         >
-          <span
-            style={{
-              display: 'inline-block',
-              animation: 'letterPulse 2s ease-in-out infinite',
-              animationDelay: '0s',
-              opacity: 0.7,
-            }}
-          >
-            L
-          </span>
-          <span
-            style={{
-              display: 'inline-block',
-              animation: 'letterPulse 2s ease-in-out infinite',
-              animationDelay: '0.1s',
-              opacity: 0.7,
-            }}
-          >
-            O
-          </span>
-          <span
-            style={{
-              display: 'inline-block',
-              animation: 'letterPulse 2s ease-in-out infinite',
-              animationDelay: '0.2s',
-              opacity: 0.7,
-            }}
-          >
-            A
-          </span>
-          <span
-            style={{
-              display: 'inline-block',
-              animation: 'letterPulse 2s ease-in-out infinite',
-              animationDelay: '0.3s',
-              opacity: 0.7,
-            }}
-          >
-            D
-          </span>
-          <span
-            style={{
-              display: 'inline-block',
-              animation: 'letterPulse 2s ease-in-out infinite',
-              animationDelay: '0.4s',
-              opacity: 0.7,
-            }}
-          >
-            I
-          </span>
-          <span
-            style={{
-              display: 'inline-block',
-              animation: 'letterPulse 2s ease-in-out infinite',
-              animationDelay: '0.5s',
-              opacity: 0.7,
-            }}
-          >
-            N
-          </span>
-          <span
-            style={{
-              display: 'inline-block',
-              animation: 'letterPulse 2s ease-in-out infinite',
-              animationDelay: '0.6s',
-              opacity: 0.7,
-            }}
-          >
-            G
-          </span>
+          {['L', 'O', 'A', 'D', 'I', 'N', 'G'].map((ch, i) => (
+            <span
+              key={i}
+              style={{
+                display: 'inline-block',
+                animation: reduceMotion ? undefined : 'letterPulse 2s ease-in-out infinite',
+                animationDelay: reduceMotion ? undefined : `${i * 0.1}s`,
+                opacity: 0.7,
+              }}
+            >
+              {ch}
+            </span>
+          ))}
         </div>
 
         <style
@@ -156,7 +110,7 @@ export const LoadingScreen = memo(
         `,
           }}
         />
-      </main>
+      </div>
     );
   },
 );

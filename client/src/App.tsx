@@ -160,43 +160,11 @@ const AppContent = () => {
     locationStr.includes('/errors/503') ||
     locationStr.includes('/errors/504');
 
-  // Check if we should show loading screen for current page
-  const shouldShowLoadingScreen = (path: string) => {
-    const isAuthRoute = path.startsWith('/auth') || path.includes('/auth');
-    return !path.includes('/reader') && 
-           !path.includes('/stories') && 
-           !isAuthRoute &&
-           path !== '/' && 
-           path !== '/index';
-  };
+  
 
-  // Handle initial load
-  useEffect(() => {
-    if (isInitialLoad) {
-      const timer = setTimeout(() => {
-        setIsInitialLoad(false);
-      }, 1500); // Show loading screen for 1.5 seconds on initial load
+  
 
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, [isInitialLoad]);
-
-  // Handle page transitions
-  useEffect(() => {
-    if (!isInitialLoad && previousLocation && previousLocation !== locationStr) {
-      if (shouldShowLoadingScreen(locationStr)) {
-        setIsPageTransition(true);
-        const timer = setTimeout(() => {
-          setIsPageTransition(false);
-        }, 800); // Shorter duration for page transitions
-
-        return () => clearTimeout(timer);
-      }
-    }
-    setPreviousLocation(locationStr);
-    return undefined;
-  }, [locationStr, previousLocation, isInitialLoad]);
+  
 
   // Simplified location tracking - no loading delays
   useEffect(() => {
@@ -212,17 +180,7 @@ const AppContent = () => {
     }
   }, [location, isErrorPage]);
 
-  // Show loading screen on initial load or page transitions (excluding specified pages)
-  if (isInitialLoad || (isPageTransition && shouldShowLoadingScreen(locationStr))) {
-    return (
-      <LoadingScreen
-        onAnimationComplete={() => {
-          setIsInitialLoad(false);
-          setIsPageTransition(false);
-        }}
-      />
-    );
-  }
+  
 
   // If we're on an error page, render only the error page with proper landmark structure
   if (isErrorPage) {
@@ -536,18 +494,12 @@ function App() {
                             <div className="app-content">
                               <React.Suspense
                                 fallback={
-                                  <div
-                                    aria-live="polite"
-                                    aria-busy="true"
-                                    className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none"
-                                  >
-                                    <div className="inline-flex items-center gap-3 text-sm text-muted-foreground bg-background/70 backdrop-blur-sm rounded-md px-3 py-2 border border-border/50 pointer-events-auto">
-                                      <span
-                                        className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2"
-                                        aria-hidden="true"
-                                      />
-                                      Loading…
-                                    </div>
+                                  <div className="flex items-center justify-center p-4" aria-live="polite" aria-busy="true">
+                                    <span
+                                      className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2"
+                                      aria-hidden="true"
+                                    />
+                                    <span className="ml-2 text-sm text-muted-foreground">Loading…</span>
                                   </div>
                                 }
                               >

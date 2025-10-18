@@ -31,6 +31,7 @@ export const useLoading = () => {
 
 // Prevent rapid re-show window
 const PREVENT_RAPID_SHOW_DURATION = 400;
+const SHOW_DELAY_MS = 400;
 
 /**
  * GlobalLoadingProvider - unified controller for the loading overlay.
@@ -43,6 +44,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
   
   // Refs for tracking state between renders
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const showDelayTimerRef = useRef<NodeJS.Timeout | null>(null);
   const preventRapidShowRef = useRef(false);
   
   // Clean up timers on unmount
@@ -50,6 +52,10 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     return () => {
       if (loadingTimerRef.current) {
         clearTimeout(loadingTimerRef.current);
+      }
+      if (showDelayTimerRef.current) {
+        clearTimeout(showDelayTimerRef.current);
+        showDelayTimerRef.current = null;
       }
     };
   }, []);
@@ -92,20 +98,26 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
       return;
     }
     preventRapidShowRef.current = true;
-    
+
     if (newMessage) {
       setMessage(newMessage);
     }
-    
-    setIsLoading(true);
-    
-    // Lock scroll (with compensation) and set persistence flag
-    try {
-      applyScrollLock();
-      sessionStorage.setItem('app_loading', 'true');
-    } catch {
-      // Ignore storage errors
+
+    // Delay showing to avoid flicker for fast operations
+    if (showDelayTimerRef.current) {
+      clearTimeout(showDelayTimerRef.current);
     }
+    showDelayTimerRef.current = setTimeout(() => {
+      setIsLoading(true);
+
+      // Lock scroll (visual state) and set persistence flag
+      try {
+        applyScrollLock();
+        sessionStorage.setItem('app_loading', 'true');
+      } catch {
+        // Ignore storage errors
+      }
+    }, SHOW_DELAY_MS);
   }, [isLoading, applyScrollLock]);
   
   // Hide loading screen
@@ -114,9 +126,13 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
       clearTimeout(loadingTimerRef.current);
       loadingTimerRef.current = null;
     }
-    
+    if (showDelayTimerRef.current) {
+      clearTimeout(showDelayTimerRef.current);
+      showDelayTimerRef.current = null;
+    }
+
     setIsLoading(false);
-    
+
     // Clear scroll lock and storage
     try {
       releaseScrollLock();
@@ -124,7 +140,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     } catch {
       // Ignore storage errors
     }
-    
+
     setTimeout(() => {
       preventRapidShowRef.current = false;
     }, PREVENT_RAPID_SHOW_DURATION);

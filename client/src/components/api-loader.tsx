@@ -12,6 +12,8 @@ interface ApiLoaderProps {
   debug?: boolean;
   shouldRedirectOnTimeout?: boolean;
   overlayZIndex?: number;
+  /** If true, block the entire UI with the global overlay (delayed to avoid flicker) */
+  blockUi?: boolean;
 }
 
 /**
@@ -25,12 +27,13 @@ const ApiLoader: React.FC<ApiLoaderProps> = ({
   children,
   message,
   debug: _debug = false,
-  // All other props are ignored
+  blockUi = false,
 }) => {
   const { showLoading, hideLoading } = useLoading();
   
-  // Synchronize the isLoading prop with the global loading state
+  // Optionally synchronize the isLoading prop with the global loading state (block UI)
   useEffect(() => {
+    if (!blockUi) return;
     if (isLoading) {
       showLoading();
     } else {
@@ -41,7 +44,7 @@ const ApiLoader: React.FC<ApiLoaderProps> = ({
       // Clean up by hiding loading when component unmounts
       hideLoading();
     };
-  }, [isLoading, showLoading, hideLoading]);
+  }, [isLoading, blockUi, showLoading, hideLoading]);
 
   // If children are provided, render them. Otherwise, render a minimal spinner when loading.
   if (children) {

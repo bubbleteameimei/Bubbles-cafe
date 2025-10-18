@@ -1,8 +1,21 @@
 
 // Skeleton component that returns absolutely nothing
-function Skeleton(_props: React.HTMLAttributes<HTMLDivElement>) {
-  // Return null - completely removing all skeleton placeholders
-  return null;
+import React from 'react';
+
+type SkeletonProps = React.HTMLAttributes<HTMLDivElement>;
+
+/**
+ * Lightweight skeleton placeholder with minimal styles.
+ * Use for inline loading states instead of global overlays.
+ */
+function Skeleton({ className = '', style, ...props }: SkeletonProps) {
+  return (
+    <div
+      className={`animate-pulse rounded-md bg-muted ${className}`}
+      style={style}
+      {...props}
+    />
+  );
 }
 
 export { Skeleton }
