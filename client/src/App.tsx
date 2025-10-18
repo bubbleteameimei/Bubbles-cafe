@@ -492,22 +492,7 @@ function App() {
                           <PullToRefresh onRefresh={handleDataRefresh}>
                             {/* Performance monitor overlay removed */}
                             <div className="app-content">
-                              <React.Suspense
-                                fallback={
-                                  // Avoid double spinners on the story index page; let its own fallback render.
-                                  location?.startsWith('/stories')
-                                    ? null
-                                    : (
-                                      <div className="flex items-center justify-center p-4" aria-live="polite" aria-busy="true">
-                                        <span
-                                          className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2"
-                                          aria-hidden="true"
-                                        />
-                                        <span className="ml-2 text-sm text-muted-foreground">Loading…</span>
-                                      </div>
-                                    )
-                                }
-                              >
+                              <React.Suspense fallback={<LoadingScreen />}>
                                 <AppContent />
                               </React.Suspense>
                             </div>

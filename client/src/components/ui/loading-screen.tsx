@@ -1,10 +1,11 @@
 import { memo } from 'react';
 
-// Presentational loading screen only; no timers or side effects.
-// Visibility is controlled by the parent (GlobalLoadingProvider/AppContent).
+/**
+ * Full Megrim intro loading screen with animated "LOADING" letters.
+ * Presentational only (no side effects); parent controls visibility.
+ */
 export const LoadingScreen = memo(
   ({ onAnimationComplete }: { onAnimationComplete?: () => void }) => {
-    // Respect reduced motion preference
     const reduceMotion =
       typeof window !== 'undefined' &&
       typeof window.matchMedia === 'function' &&
@@ -31,6 +32,7 @@ export const LoadingScreen = memo(
           alignItems: 'center',
           zIndex: 99999999,
           overflow: 'hidden',
+          pointerEvents: 'all',
         }}
         onAnimationEnd={() => {
           try {
@@ -38,6 +40,18 @@ export const LoadingScreen = memo(
           } catch {}
         }}
       >
+        {/* Radial vignette overlay */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background:
+              'radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.3) 100%)',
+            pointerEvents: 'none',
+          }}
+        />
+        {/* Megrim LOADING text */}
         <div
           className="loader"
           role="status"
@@ -45,12 +59,15 @@ export const LoadingScreen = memo(
           style={{
             display: 'flex',
             gap: '0.5rem',
+            position: 'relative',
+            zIndex: 10,
             fontFamily: '"Megrim", cursive',
             fontSize: '3rem',
             fontWeight: 400,
             color: '#ffffff',
             textShadow: '0 0 20px rgba(255, 255, 255, 0.5)',
             letterSpacing: '0.2em',
+            textTransform: 'uppercase',
           }}
         >
           {['L', 'O', 'A', 'D', 'I', 'N', 'G'].map((ch, i) => (
@@ -58,9 +75,10 @@ export const LoadingScreen = memo(
               key={i}
               style={{
                 display: 'inline-block',
-                animation: reduceMotion ? undefined : 'letterPulse 2s ease-in-out infinite',
-                animationDelay: reduceMotion ? undefined : `${i * 0.1}s`,
-                opacity: 0.7,
+                opacity: 0.9,
+                willChange: 'transform, opacity, filter',
+                animation: reduceMotion ? undefined : 'blur 2s linear infinite',
+                animationDelay: reduceMotion ? undefined : `${i * 0.2}s`,
               }}
             >
               {ch}
@@ -68,30 +86,24 @@ export const LoadingScreen = memo(
           ))}
         </div>
 
+        {/* Accessible live region */}
+        <div className="sr-only" role="status" aria-live="polite">
+          Loading content, please wait...
+        </div>
+
+        {/* Inline keyframes to avoid external CSS dependency */}
         <style
           dangerouslySetInnerHTML={{
             __html: `
-          @keyframes letterPulse {
-            0%, 100% {
-              opacity: 0.7 !important;
-              transform: scale(1) !important;
-              text-shadow: 0 0 20px rgba(255, 255, 255, 0.5) !important;
-            }
-            50% {
-              opacity: 1 !important;
-              transform: scale(1.1) !important;
-              text-shadow: 0 0 30px rgba(255, 255, 255, 0.8) !important,
-                           0 0 40px rgba(255, 255, 255, 0.6) !important;
-            }
+          @keyframes blur {
+            0%   { filter: blur(0px);   opacity: 1;   transform: scale(1); }
+            50%  { filter: blur(6px);   opacity: 0.55; transform: scale(1.06); }
+            100% { filter: blur(0px);   opacity: 1;   transform: scale(1); }
           }
 
           @keyframes backgroundShift {
-            0%, 100% {
-              background-position: 0% 50%;
-            }
-            50% {
-              background-position: 100% 50%;
-            }
+            0%, 100% { background-position: 0% 50%; }
+            50%      { background-position: 100% 50%; }
           }
 
           @media (max-width: 768px) {
@@ -103,7 +115,7 @@ export const LoadingScreen = memo(
 
           @media (max-width: 480px) {
             .loader {
-              font-size: 1.5rem !important;
+              font-size: 1.6rem !important;
               gap: 0.2rem !important;
             }
           }
