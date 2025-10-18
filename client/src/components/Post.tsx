@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { extractHorrorExcerpt } from "@/lib/content-analysis";
 import { sanitizeHtmlContent } from "@/lib/sanitize-content";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function Post() {
   const { slug } = useParams<{ slug: string }>();
@@ -28,8 +29,13 @@ function Post() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-[200px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container mx-auto p-4">
+        <Card className="p-6 space-y-4">
+          <Skeleton className="h-8 w-2/3" />
+          <Skeleton className="h-5 w-full" />
+          <Skeleton className="h-5 w-11/12" />
+          <Skeleton className="h-5 w-10/12" />
+        </Card>
       </div>
     );
   }

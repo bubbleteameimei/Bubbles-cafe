@@ -494,13 +494,18 @@ function App() {
                             <div className="app-content">
                               <React.Suspense
                                 fallback={
-                                  <div className="flex items-center justify-center p-4" aria-live="polite" aria-busy="true">
-                                    <span
-                                      className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2"
-                                      aria-hidden="true"
-                                    />
-                                    <span className="ml-2 text-sm text-muted-foreground">Loading…</span>
-                                  </div>
+                                  // Avoid double spinners on the story index page; let its own fallback render.
+                                  location?.startsWith('/stories')
+                                    ? null
+                                    : (
+                                      <div className="flex items-center justify-center p-4" aria-live="polite" aria-busy="true">
+                                        <span
+                                          className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2"
+                                          aria-hidden="true"
+                                        />
+                                        <span className="ml-2 text-sm text-muted-foreground">Loading…</span>
+                                      </div>
+                                    )
                                 }
                               >
                                 <AppContent />

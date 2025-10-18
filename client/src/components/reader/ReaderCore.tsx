@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { cachedFetch } from "@/utils/api-cache";
 import logger from "@/utils/secure-client-logger";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ReaderCoreProps {
   slug: string;
@@ -98,8 +99,20 @@ export function ReaderCore({ slug, onPostLoad, onError }: ReaderCoreProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        <div className="mb-8">
+          <Skeleton className="h-10 w-3/4 mb-3" />
+          <Skeleton className="h-5 w-full mb-2" />
+          <Skeleton className="h-5 w-11/12 mb-2" />
+          <Skeleton className="h-5 w-10/12" />
+        </div>
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-11/12" />
+          <Skeleton className="h-4 w-10/12" />
+          <Skeleton className="h-4 w-9/12" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
       </div>
     );
   }
