@@ -41,6 +41,7 @@ import { GlobalLoadingProvider } from './components/GlobalLoadingProvider';
 const PostsPrefetcher = React.lazy(() => import('./components/providers/PostsPrefetcher'));
 import { initSmoothScroll } from './lib/smooth-scroll';
 import { useA11y } from '@/hooks/useA11y';
+import IntroLoader from './components/providers/IntroLoader';
 
 // Import essential pages directly
 const HomePage = React.lazy(() => import('./pages/home'));
@@ -488,11 +489,28 @@ function App() {
                           <React.Suspense fallback={null}>
                             <PostsPrefetcher />
                           </React.Suspense>
+                          {/* Intro Megrim loader once per session */}
+                          <IntroLoader />
                           {/* Wrap AppContent with PullToRefresh */}
                           <PullToRefresh onRefresh={handleDataRefresh}>
                             {/* Performance monitor overlay removed */}
                             <div className="app-content">
-                              <React.Suspense fallback={<LoadingScreen />}>
+                              <React.Suspense
+                                fallback={
+                                  // Avoid double spinners on the story index page; let its own fallback render.
+                                  location?.startsWith('/stories')
+                                    ? null
+                                    : (
+                                      <div className="flex items-center justify-center p-4" aria-live="polite" aria-busy="true">
+                                        <span
+                                          className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2"
+                                          aria-hidden="true"
+                                        />
+                                        <span className="ml-2 text-sm text-muted-foreground">Loading…</span>
+                                      </div>
+                                    )
+                                }
+                              >
                                 <AppContent />
                               </React.Suspense>
                             </div>
