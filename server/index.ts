@@ -68,40 +68,7 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Health endpoints
-app.get('/health', async (_req, res) => {
-  // Touch the DB so this endpoint isn't static and helps keep connections warm
-  let dbOk = true;
-  try {
-    await db.select().from(posts).limit(1);
-  } catch {
-    dbOk = false;
-  }
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
-    db: dbOk ? 'ok' : 'error'
-  });
-});
-app.get('/api/health', async (_req, res) => {
-  // Touch the DB to keep connections warm while keeping response minimal
-  try {
-    await db.select().from(posts).limit(1);
-  } catch {
-    // swallow errors to avoid failing platform health checks
- );
 
-// Warm endpoint: touches DB but returns minimal payload; used by keep-warm pings
-app.get('/api/health/warm', async (_req, res) => {
-  try {
-    await db.select().from(posts).limit(1);
-  } catch {
-    // swallow: warm endpoint should not fail health checks
-  }
-  res.json({ status: 'ok' });
-});
 
 // Session
 app.use(session({
@@ -118,12 +85,11 @@ app.use(session({
 }));
 
 // CSRF protection (skip health endpoints to avoid touching session)
-app.use(setCsrfToken(!isDev, { ignorePaths: ['/health', '/api/health', '/api/health/warm'] }));
+app.use(setCsrfToken(!isDev, { ignorePaths: ['/api/health'] }));
 app.use(csrfTokenToLocals);
 
 app.use(validateCsrfToken({
   ignorePaths: [
-    '/health',
     '/api/health',
     '/api/auth/status',
     '/api/auth/login',
@@ -290,9 +256,9 @@ async function startServer() {
         try {
           const enabled = (process.env.ENABLE_WARM_PINGS ?? (config.isProd ? 'true' : 'false')) === 'true';
           if (enabled) {
-            const intervalSec = Number(process.env.WARM_PING_INTERVAL_SECONDS || 600); // default 10 minutes
+            const intervalSec = Number(process.env.WARM_PING_INTERVAL_SECONDS || 900); // default 15 minutes
             const healthUrl = (process.env.HEALTH_PING_URL || '').trim() ||
-              `http://127.0.0.1:${PORT}/api/health/warm`;
+              `http://127.0.0.1:${PORT}/api/health`;
             serverLogger.info('Warm pings enabled', { intervalSec, healthUrl });
 
             setInterval(async () => {
