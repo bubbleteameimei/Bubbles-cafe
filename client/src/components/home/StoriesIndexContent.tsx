@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, lazy, Suspense } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { type posts } from "@shared/schema";
 type Post = typeof posts.$inferSelect;
 import { useLocation } from "wouter";
@@ -83,7 +83,7 @@ export default function StoriesIndexContent() {
   // Paginated query
   const {
     data,
-  } = useInfiniteQuery<{ posts: Post[]; hasMore: boolean; page: number; }>({
+  } = useSuspenseInfiniteQuery<{ posts: Post[];: boolean; page: number; }>({
     queryKey: ["wordpress", "posts"],
     queryFn: async ({ pageParam = 1 }) => {
       const page = typeof pageParam === 'number' ? pageParam : 1;
