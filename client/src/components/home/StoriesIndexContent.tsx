@@ -83,8 +83,6 @@ export default function StoriesIndexContent() {
   // Paginated query
   const {
     data,
-    isLoading: isPaginatedLoading,
-    error: paginatedError,
   } = useInfiniteQuery<{ posts: Post[]; hasMore: boolean; page: number; }>({
     queryKey: ["wordpress", "posts"],
     queryFn: async ({ pageParam = 1 }) => {
@@ -105,11 +103,9 @@ export default function StoriesIndexContent() {
     staleTime: 5 * 60 * 1000,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    initialPageParam: 1
+    initialPageParam: 1,
+    suspense: true
   });
-
-  const isLoading = isPaginatedLoading;
-  const error = paginatedError;
 
   const hasPaginatedPosts = data?.pages && data.pages.length > 0 && data.pages[0]?.posts?.length > 0;
 
@@ -237,23 +233,12 @@ export default function StoriesIndexContent() {
     return sortedByEngagement[0];
   }, [currentPosts]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading stories...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (!hasPaginatedPosts) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center overflow-x-hidden">
         <div className="text-center space-y-4">
           <h2 className="text-xl font-semibold text-foreground">Unable to load stories</h2>
-          <p className="text-muted-foreground">{error instanceof Error ? error.message : "Please try again later"}</p>
+          <p className="text-muted-foreground">Please try again later</p>
           <Button
             variant="outline"
             onClick={() => window.location.reload()}

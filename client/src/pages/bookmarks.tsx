@@ -19,6 +19,7 @@ export default function BookmarksPage() {
           minimumLoadTime={800}
           debug={true}
           overlayZIndex={100}
+          blockUi={true}
         >
           <div className="invisible">
             <div className="h-[200px] w-full flex items-center justify-center">
