@@ -69,18 +69,29 @@ app.use((req, _res, next) => {
 });
 
 // Health endpoints
-app.get('/health', (_req, res) => {
+app.get('/health', async (_req, res) => {
+  // Touch the DB so this endpoint isn't static and helps keep connections warm
+  let dbOk = true;
+  try {
+    await db.select().from(posts).limit(1);
+  } catch {
+    dbOk = false;
+  }
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    db: dbOk ? 'ok' : 'error'
   });
 });
-app.get('/api/health', (_req, res) => {
-  // Minimal, stateless response for platform health checks
-  res.json({ status: 'ok' });
-});
+app.get('/api/health', async (_req, res) => {
+  // Touch the DB to keep connections warm while keeping response minimal
+  try {
+    await db.select().from(posts).limit(1);
+  } catch {
+    // swallow errors to avoid failing platform health checks
+ );
 
 // Warm endpoint: touches DB but returns minimal payload; used by keep-warm pings
 app.get('/api/health/warm', async (_req, res) => {
