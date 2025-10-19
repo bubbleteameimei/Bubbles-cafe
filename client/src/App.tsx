@@ -483,11 +483,9 @@ function App() {
                         <React.Suspense fallback={null}>
                           <CookieConsent />
                         </React.Suspense>
-                        {location !== '/' && (
-                          <React.Suspense fallback={null}>
-                            <ScrollToTopButton position="bottom-right" />
-                          </React.Suspense>
-                        )}
+                        <React.Suspense fallback={null}>
+                          <ScrollToTopButton position="bottom-right" />
+                        </React.Suspense>
                         {/* Toast notifications */}
                         <React.Suspense fallback={null}>
                           <Toaster />

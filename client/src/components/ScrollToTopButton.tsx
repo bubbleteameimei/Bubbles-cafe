@@ -12,15 +12,40 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
   const [isVisible, setIsVisible] = useState(false);
   const lastVisible = useRef(false);
   const ticking = useRef(false);
+  const lastScrollEl = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    const handleScroll = () => {
+    const getScrollTop = (e?: Event) => {
+      const tops: number[] = [];
+      // Window/document scroll
+      tops.push(window.pageYOffset || 0);
+      if (document.documentElement) tops.push(document.documentElement.scrollTop || 0);
+      if (document.body) tops.push(document.body.scrollTop || 0);
+
+      // Main content container if scrollable
+      const main = document.getElementById('main-content') as HTMLElement | null;
+      if (main && main.scrollHeight > main.clientHeight) {
+        tops.push(main.scrollTop || 0);
+      }
+
+      // Any scrollable target that fired the event (capture phase)
+      if (e && e.target && e.target instanceof HTMLElement) {
+        const t = e.target;
+        if (t.scrollHeight > t.clientHeight) {
+          tops.push(t.scrollTop || 0);
+          lastScrollEl.current = t;
+        }
+      }
+
+      return Math.max(...tops);
+    };
+
+    const handleScroll = (e?: Event) => {
       if (ticking.current) return;
       ticking.current = true;
 
       requestAnimationFrame(() => {
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const visible = scrollTop > 300;
+        const visible = getScrollTop(e) > 300;
 
         if (visible !== lastVisible.current) {
           setIsVisible(visible);
@@ -31,13 +56,33 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
       });
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    // Listen on window and capture scrolls from any scrollable element
+    window.addEventListener('scroll', handleScroll as EventListener, { passive: true } as any);
+    document.addEventListener('scroll', handleScroll as EventListener, { passive: true, capture: true } as any);
+
     handleScroll(); // initialize visibility
 
-    return () => window.removeEventListener('scroll', handleScroll as EventListener);
+    return () => {
+      window.removeEventListener('scroll', handleScroll as EventListener);
+      // Must pass the same capture option for removal
+      document.removeEventListener('scroll', handleScroll as EventListener, true as any);
+    };
   }, []);
 
   const scrollToTop = () => {
+    // Scroll the last scrolled element if available, else window
+    const target = lastScrollEl.current || document.getElementById('main-content');
+    if (target && target.scrollHeight > target.clientHeight) {
+      try {
+        target.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      } catch {
+        // fall back to immediate scroll
+        target.scrollTop = 0;
+        return;
+      }
+    }
+
     window.scrollTo({
       top: 0,
       behavior: 'smooth'
@@ -55,7 +100,7 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
       variant="default"
       size="icon"
       onClick={scrollToTop}
-      className={`fixed bottom-5 ${positionClasses} z-50 shadow-lg scroll-to-top opacity-100`}
+      className={`fixed bottom-5 ${positionClasses} shadow-lg scroll-to-top opacity-100`}
       aria-label="Scroll to top"
       noOutline
     >
