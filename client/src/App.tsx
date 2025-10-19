@@ -13,7 +13,6 @@ import {
   setupGlobalErrorHandlers,
 } from './components/error-boundary/global-error-boundary';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { LoadingScreen } from './components/ui/loading-screen';
 // Performance monitoring removed
 import { SidebarProvider } from './components/ui/sidebar';
 const ScrollToTopButton = React.lazy(() => import('./components/ScrollToTopButton'));
@@ -34,14 +33,10 @@ const AutoHideNavbar = React.lazy(() => import('./components/layout/AutoHideNavb
 import { NotificationProvider } from './contexts/notification-context';
 import ErrorToastProvider from './components/providers/error-toast-provider';
 // Import our new refresh components
-import { PullToRefresh } from './components/ui/pull-to-refresh';
 import { RefreshProvider } from './contexts/refresh-context';
-// Add global loading provider so ApiLoader can display a proper loading overlay
-import { GlobalLoadingProvider } from './components/GlobalLoadingProvider';
 const PostsPrefetcher = React.lazy(() => import('./components/providers/PostsPrefetcher'));
 import { initSmoothScroll } from './lib/smooth-scroll';
 import { useA11y } from '@/hooks/useA11y';
-import IntroLoader from './components/providers/IntroLoader';
 
 // Import essential pages directly
 const HomePage = React.lazy(() => import('./pages/home'));
@@ -451,9 +446,6 @@ function App() {
 
   // CSRF protection is initialized in main.tsx via dynamic import
 
-  // The page transition loading will be handled by AppContent component
-  // where useLoading will be called after LoadingProvider is mounted
-
   // Initialize WordPress sync service and defer content preloading
   useEffect(() => {
     (async () => {
@@ -467,80 +459,50 @@ function App() {
 
   
 
-  // Function to handle data refresh
-  const handleDataRefresh = async () => {
-    // Invalidate all queries to refresh data
-    await queryClient.invalidateQueries();
-  };
-
   return (
     <GlobalErrorBoundary level="critical">
       <QueryClientProvider client={queryClient}>
-        <GlobalLoadingProvider>
-          <AuthProvider>
-            <CookieConsentProvider>
-              <ThemeProvider>
-                <SidebarProvider>
-                  <NotificationProvider>
-                    <ScrollEffectsProvider>
-                      <ErrorToastProvider>
-                        <RefreshProvider>
-                          {/* Warm the cache for posts to make navigation instant */}
+        <AuthProvider>
+          <CookieConsentProvider>
+            <ThemeProvider>
+              <SidebarProvider>
+                <NotificationProvider>
+                  <ScrollEffectsProvider>
+                    <ErrorToastProvider>
+                      <RefreshProvider>
+                        {/* Warm the cache for posts to make navigation instant */}
+                        <React.Suspense fallback={null}>
+                          <PostsPrefetcher />
+                        </React.Suspense>
+                        <div className="app-content">
                           <React.Suspense fallback={null}>
-                            <PostsPrefetcher />
+                            <AppContent />
                           </React.Suspense>
-                          {/* Intro Megrim loader once per session */}
-                          <IntroLoader />
-                          {/* Wrap AppContent with PullToRefresh */}
-                          <PullToRefresh onRefresh={handleDataRefresh}>
-                            {/* Performance monitor overlay removed */}
-                            <div className="app-content">
-                              <React.Suspense
-                                fallback={
-                                  // Avoid double spinners on the story index page; let its own fallback render.
-                                  location?.startsWith('/stories')
-                                    ? null
-                                    : (
-                                      <div className="flex items-center justify-center p-4" aria-live="polite" aria-busy="true">
-                                        <span
-                                          className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2"
-                                          aria-hidden="true"
-                                        />
-                                        <span className="ml-2 text-sm text-muted-foreground">Loading…</span>
-                                      </div>
-                                    )
-                                }
-                              >
-                                <AppContent />
-                              </React.Suspense>
-                            </div>
-                          </PullToRefresh>
-                          {/* Site-wide elements outside of the main layout */}
+                        </div>
+                        {/* Site-wide elements outside of the main layout */}
+                        <React.Suspense fallback={null}>
+                          <CookieConsent />
+                        </React.Suspense>
+                        {location !== '/' && (
                           <React.Suspense fallback={null}>
-                            <CookieConsent />
+                            <ScrollToTopButton position="bottom-right" />
                           </React.Suspense>
-                          {location !== '/' && (
-                            <React.Suspense fallback={null}>
-                              <ScrollToTopButton position="bottom-right" />
-                            </React.Suspense>
-                          )}
-                          
-                          {/* Toast notifications */}
-                          <React.Suspense fallback={null}>
-                            <Toaster />
-                          </React.Suspense>
-                          <React.Suspense fallback={null}>
-                            <Sonner position="bottom-left" className="fixed-sonner" />
-                          </React.Suspense>
-                        </RefreshProvider>
-                      </ErrorToastProvider>
-                    </ScrollEffectsProvider>
-                  </NotificationProvider>
-                </SidebarProvider>
-              </ThemeProvider>
-            </CookieConsentProvider>
-          </AuthProvider>
-        </GlobalLoadingProvider>
+                        )}
+                        {/* Toast notifications */}
+                        <React.Suspense fallback={null}>
+                          <Toaster />
+                        </React.Suspense>
+                        <React.Suspense fallback={null}>
+                          <Sonner position="bottom-left" className="fixed-sonner" />
+                        </React.Suspense>
+                      </RefreshProvider>
+                    </ErrorToastProvider>
+                  </ScrollEffectsProvider>
+                </NotificationProvider>
+              </SidebarProvider>
+            </ThemeProvider>
+          </CookieConsentProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </GlobalErrorBoundary>
   );

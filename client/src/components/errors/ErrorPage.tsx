@@ -1,11 +1,10 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useLocation } from 'wouter';
 import SilentMovieEffect from './SilentMovieEffect';
 import { useTheme } from '@/components/theme-provider';
 import CreepyTextGlitch from './CreepyTextGlitch';
-import { useLoading } from '@/components/GlobalLoadingProvider';
 
 export interface ErrorPageProps {
   code: string;
@@ -16,13 +15,7 @@ export interface ErrorPageProps {
 export function ErrorPage({ code, title, message }: ErrorPageProps) {
   const [_, setLocation] = useLocation();
   const { theme } = useTheme();
-  const { hideLoading } = useLoading();
   const isDarkMode = theme === 'dark';
-
-  // Ensure loading screen is hidden when error page is displayed
-  useEffect(() => {
-    hideLoading();
-  }, [hideLoading]);
 
   const handleReturnHome = () => {
     setLocation('/');
