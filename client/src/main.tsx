@@ -1,5 +1,4 @@
 // Import critical CSS early
-import "./styles/preloader.css";
 import "./styles/scroll-effects.css";
 import "./styles/reader-fixes.css";
 import "./index.css";
@@ -29,15 +28,6 @@ const root = document.getElementById("root");
 if (!root) {
   throw new Error("Root element not found");
 }
-
-// Add initial loading indicator and setup style preloader via dynamic import
-(async () => {
-  try {
-    const { addInitialLoadingIndicator, setupStylePreloader } = await import("./styles/preloader");
-    addInitialLoadingIndicator();
-    setupStylePreloader();
-  } catch {}
-})();
 
 // Optimize images and enable lazy hints via dynamic import
 (async () => {
@@ -95,13 +85,6 @@ try {
     } catch {}
 
     try {
-      document.body.classList.remove("content-hidden");
-      // Remove any preloader overlay that might obscure the fallback
-      try {
-        const overlay = document.querySelector(".initial-loading-overlay") as HTMLElement | null;
-        overlay?.classList.add("hidden");
-        overlay?.remove();
-      } catch {}
       const fallback = document.createElement("main");
       fallback.setAttribute("id", "main-content");
       fallback.setAttribute("role", "main");

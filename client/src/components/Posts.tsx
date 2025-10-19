@@ -8,6 +8,7 @@ import { Loader2, AlertCircle, RefreshCw, WifiOff } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { sanitizeHtmlContent } from "@/lib/sanitize-content";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function Posts() {
   const [page, setPage] = useState(1);
@@ -86,9 +87,18 @@ function Posts() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-[300px] gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">Loading stories...</p>
+      <div className="grid gap-4 sm:gap-5 md:gap-6 lg:gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="p-4 sm:p-5 md:p-6 transition-all duration-300">
+            <Skeleton className="h-6 w-3/4 mb-3" />
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-4 w-11/12 mb-2" />
+            <Skeleton className="h-4 w-10/12 mb-4" />
+            <div className="mt-auto pt-2 sm:pt-3 border-t border-border/30">
+              <Skeleton className="h-9 w-28" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }

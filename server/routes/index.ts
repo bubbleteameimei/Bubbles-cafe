@@ -28,7 +28,6 @@ const routesLogger = createSecureLogger('RoutesIndex');
 export function registerModularRoutes(app: Express) {
   try {
     // Health check routes (should be first for load balancers)
-    app.use('/health', healthRoutes);
     app.use('/api/health', healthRoutes);
     routesLogger.info('Health check routes registered');
 

@@ -13,7 +13,6 @@ import {
   setupGlobalErrorHandlers,
 } from './components/error-boundary/global-error-boundary';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { LoadingScreen } from './components/ui/loading-screen';
 // Performance monitoring removed
 import { SidebarProvider } from './components/ui/sidebar';
 const ScrollToTopButton = React.lazy(() => import('./components/ScrollToTopButton'));
@@ -34,10 +33,7 @@ const AutoHideNavbar = React.lazy(() => import('./components/layout/AutoHideNavb
 import { NotificationProvider } from './contexts/notification-context';
 import ErrorToastProvider from './components/providers/error-toast-provider';
 // Import our new refresh components
-import { PullToRefresh } from './components/ui/pull-to-refresh';
 import { RefreshProvider } from './contexts/refresh-context';
-// Add global loading provider so ApiLoader can display a proper loading overlay
-import { GlobalLoadingProvider } from './components/GlobalLoadingProvider';
 const PostsPrefetcher = React.lazy(() => import('./components/providers/PostsPrefetcher'));
 import { initSmoothScroll } from './lib/smooth-scroll';
 import { useA11y } from '@/hooks/useA11y';
@@ -160,43 +156,11 @@ const AppContent = () => {
     locationStr.includes('/errors/503') ||
     locationStr.includes('/errors/504');
 
-  // Check if we should show loading screen for current page
-  const shouldShowLoadingScreen = (path: string) => {
-    const isAuthRoute = path.startsWith('/auth') || path.includes('/auth');
-    return !path.includes('/reader') && 
-           !path.includes('/stories') && 
-           !isAuthRoute &&
-           path !== '/' && 
-           path !== '/index';
-  };
+  
 
-  // Handle initial load
-  useEffect(() => {
-    if (isInitialLoad) {
-      const timer = setTimeout(() => {
-        setIsInitialLoad(false);
-      }, 1500); // Show loading screen for 1.5 seconds on initial load
+  
 
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, [isInitialLoad]);
-
-  // Handle page transitions
-  useEffect(() => {
-    if (!isInitialLoad && previousLocation && previousLocation !== locationStr) {
-      if (shouldShowLoadingScreen(locationStr)) {
-        setIsPageTransition(true);
-        const timer = setTimeout(() => {
-          setIsPageTransition(false);
-        }, 800); // Shorter duration for page transitions
-
-        return () => clearTimeout(timer);
-      }
-    }
-    setPreviousLocation(locationStr);
-    return undefined;
-  }, [locationStr, previousLocation, isInitialLoad]);
+  
 
   // Simplified location tracking - no loading delays
   useEffect(() => {
@@ -212,17 +176,7 @@ const AppContent = () => {
     }
   }, [location, isErrorPage]);
 
-  // Show loading screen on initial load or page transitions (excluding specified pages)
-  if (isInitialLoad || (isPageTransition && shouldShowLoadingScreen(locationStr))) {
-    return (
-      <LoadingScreen
-        onAnimationComplete={() => {
-          setIsInitialLoad(false);
-          setIsPageTransition(false);
-        }}
-      />
-    );
-  }
+  
 
   // If we're on an error page, render only the error page with proper landmark structure
   if (isErrorPage) {
@@ -492,9 +446,6 @@ function App() {
 
   // CSRF protection is initialized in main.tsx via dynamic import
 
-  // The page transition loading will be handled by AppContent component
-  // where useLoading will be called after LoadingProvider is mounted
-
   // Initialize WordPress sync service and defer content preloading
   useEffect(() => {
     (async () => {
@@ -508,79 +459,50 @@ function App() {
 
   
 
-  // Function to handle data refresh
-  const handleDataRefresh = async () => {
-    // Invalidate all queries to refresh data
-    await queryClient.invalidateQueries();
-  };
-
   return (
     <GlobalErrorBoundary level="critical">
       <QueryClientProvider client={queryClient}>
-        <GlobalLoadingProvider>
-          <AuthProvider>
-            <CookieConsentProvider>
-              <ThemeProvider>
-                <SidebarProvider>
-                  <NotificationProvider>
-                    <ScrollEffectsProvider>
-                      <ErrorToastProvider>
-                        <RefreshProvider>
-                          {/* Warm the cache for posts to make navigation instant */}
+        <AuthProvider>
+          <CookieConsentProvider>
+            <ThemeProvider>
+              <SidebarProvider>
+                <NotificationProvider>
+                  <ScrollEffectsProvider>
+                    <ErrorToastProvider>
+                      <RefreshProvider>
+                        {/* Warm the cache for posts to make navigation instant */}
+                        <React.Suspense fallback={null}>
+                          <PostsPrefetcher />
+                        </React.Suspense>
+                        <div className="app-content">
                           <React.Suspense fallback={null}>
-                            <PostsPrefetcher />
+                            <AppContent />
                           </React.Suspense>
-                          {/* Wrap AppContent with PullToRefresh */}
-                          <PullToRefresh onRefresh={handleDataRefresh}>
-                            {/* Performance monitor overlay removed */}
-                            <div className="app-content">
-                              <React.Suspense
-                                fallback={
-                                  <div
-                                    aria-live="polite"
-                                    aria-busy="true"
-                                    className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none"
-                                  >
-                                    <div className="inline-flex items-center gap-3 text-sm text-muted-foreground bg-background/70 backdrop-blur-sm rounded-md px-3 py-2 border border-border/50 pointer-events-auto">
-                                      <span
-                                        className="inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] w-6 h-6 border-2"
-                                        aria-hidden="true"
-                                      />
-                                      Loading…
-                                    </div>
-                                  </div>
-                                }
-                              >
-                                <AppContent />
-                              </React.Suspense>
-                            </div>
-                          </PullToRefresh>
-                          {/* Site-wide elements outside of the main layout */}
+                        </div>
+                        {/* Site-wide elements outside of the main layout */}
+                        <React.Suspense fallback={null}>
+                          <CookieConsent />
+                        </React.Suspense>
+                        {location !== '/' && (
                           <React.Suspense fallback={null}>
-                            <CookieConsent />
+                            <ScrollToTopButton position="bottom-right" />
                           </React.Suspense>
-                          {location !== '/' && (
-                            <React.Suspense fallback={null}>
-                              <ScrollToTopButton position="bottom-right" />
-                            </React.Suspense>
-                          )}
-                          
-                          {/* Toast notifications */}
-                          <React.Suspense fallback={null}>
-                            <Toaster />
-                          </React.Suspense>
-                          <React.Suspense fallback={null}>
-                            <Sonner position="bottom-left" className="fixed-sonner" />
-                          </React.Suspense>
-                        </RefreshProvider>
-                      </ErrorToastProvider>
-                    </ScrollEffectsProvider>
-                  </NotificationProvider>
-                </SidebarProvider>
-              </ThemeProvider>
-            </CookieConsentProvider>
-          </AuthProvider>
-        </GlobalLoadingProvider>
+                        )}
+                        {/* Toast notifications */}
+                        <React.Suspense fallback={null}>
+                          <Toaster />
+                        </React.Suspense>
+                        <React.Suspense fallback={null}>
+                          <Sonner position="bottom-left" className="fixed-sonner" />
+                        </React.Suspense>
+                      </RefreshProvider>
+                    </ErrorToastProvider>
+                  </ScrollEffectsProvider>
+                </NotificationProvider>
+              </SidebarProvider>
+            </ThemeProvider>
+          </CookieConsentProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </GlobalErrorBoundary>
   );

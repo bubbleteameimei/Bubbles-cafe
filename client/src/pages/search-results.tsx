@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiJson } from "@/lib/api";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 interface SearchResult {
@@ -266,8 +267,46 @@ export default function SearchResultsPage() {
 
       {/* Search results */}
       {isSearching ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="space-y-10">
+          <section>
+            <h2 className="text-lg font-semibold mb-3">Reader Stories</h2>
+            <div className="space-y-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="border rounded-lg p-4 shadow-sm">
+                  <Skeleton className="h-6 w-2/3 mb-2" />
+                  <div className="space-y-2 mt-3">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-11/12" />
+                    <Skeleton className="h-4 w-10/12" />
+                  </div>
+                  <div className="mt-3 flex justify-between items-center">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-9 w-24" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold mb-3">Community Stories</h2>
+            <div className="space-y-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="border rounded-lg p-4 shadow-sm">
+                  <Skeleton className="h-6 w-2/3 mb-2" />
+                  <div className="space-y-2 mt-3">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-11/12" />
+                    <Skeleton className="h-4 w-10/12" />
+                  </div>
+                  <div className="mt-3 flex justify-between items-center">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-9 w-24" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
       ) : searchResults.length > 0 ? (
         <>

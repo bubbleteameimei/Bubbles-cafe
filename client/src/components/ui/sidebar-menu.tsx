@@ -219,6 +219,46 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     return null;
   };
 
+  // Prefetch data endpoints to speed up first navigation
+  const prefetchDataForRoute = React.useCallback(async (href: string) => {
+    try {
+      switch (href) {
+        case '/stories': {
+          // Warm stories list
+          await fetch('/api/posts?limit=100', { credentials: 'include' }).catch(() => {});
+          break;
+        }
+        case '/community': {
+          await fetch('/api/posts/community?limit=50', { credentials: 'include' }).catch(() => {});
+          break;
+        }
+        case '/bookmarks': {
+          // Try user bookmarks, fall back to anonymous
+          const res = await fetch('/api/bookmarks', { credentials: 'include' }).catch(() => null);
+          if (!res || !res.ok) {
+            await fetch('/api/reader/bookmarks', { credentials: 'include' }).catch(() => {});
+          }
+          break;
+        }
+        case '/profile': {
+          await fetch('/api/auth/status', { credentials: 'include' }).catch(() => {});
+          break;
+        }
+        case '/search': {
+          await fetch('/api/search/suggest?limit=8', { credentials: 'include' }).catch(() => {});
+          break;
+        }
+        case '/reader': {
+          // Prefetch first page of posts as a heuristic
+          await fetch('/api/posts?page=1&limit=9', { credentials: 'include' }).catch(() => {});
+          break;
+        }
+        default:
+          break;
+      }
+    } catch {}
+  }, []);
+
   // Prefetch route chunks on hover/focus for faster navigations
   const prefetchRoute = React.useCallback((href: string) => {
     try {
@@ -282,8 +322,26 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         default:
           break;
       }
+      // Also warm likely data endpoints for the route
+      void prefetchDataForRoute(href);
     } catch {}
-  }, []);
+  }, [prefetchDataForRoute]);
+
+  // Opportunistically prefetch the story index once per session for faster first navigation
+  React.useEffect(() => {
+    try {
+      const DONE_KEY = 'bc_prefetch_stories_done';
+      if (!sessionStorage.getItem(DONE_KEY)) {
+        const id = setTimeout(() => {
+          prefetchRoute('/stories');
+          void prefetchDataForRoute('/stories');
+          sessionStorage.setItem(DONE_KEY, '1');
+        }, 600);
+        return () => clearTimeout(id);
+      }
+    } catch {}
+    return;
+  }, [prefetchRoute, prefetchDataForRoute]);
 
   // Compact, minimal top-level menu styling
   const menuItemClass = cn(

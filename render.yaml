@@ -67,8 +67,8 @@ services:
       - key: ENABLE_WARM_PINGS
         value: "true"
       - key: WARM_PING_INTERVAL_SECONDS
-        value: "600"
+        value: "900"
       - key: HEALTH_PING_URL
-        value: "https://api.bubblescafe.space/api/health/warm"
+        value: "https://api.bubblescafe.space/api/health"
       
     autoDeploy: true

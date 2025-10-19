@@ -82,7 +82,7 @@ export function setupStylePreloader() {
       console.warn('[Preloader] Timeout: forcing styles as loaded');
       markStylesLoaded();
     }
-  }, 3000);
+  }, 1500);
   
   // Add load event listeners to stylesheets
   const stylesheets = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));

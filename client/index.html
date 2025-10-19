@@ -17,14 +17,22 @@
     <!-- Cross-Origin Error Suppressor - Load before any other scripts -->
     <script src="/js/error-polyfill.js" crossorigin="anonymous" defer></script>
     
-    <!-- Optimized font loading with display=swap for better performance -->
+    <!-- Optimized font loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Primary site fonts with display=swap -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap" rel="stylesheet">
+    <!-- Megrim loaded with display=swap to avoid FOIT black screen -->
+    <link href="https://fonts.googleapis.com/css2?family=Megrim:wght@400&display=swap" rel="stylesheet">
     
     <!-- Critical resource hints for performance -->
     <link rel="dns-prefetch" href="//fonts.googleapis.com">
     <link rel="dns-prefetch" href="//fonts.gstatic.com">
+    <!-- Preconnect to API and Supabase to speed up first fetches -->
+    <link rel="preconnect" href="https://api.bubblescafe.space" crossorigin>
+    <link rel="dns-prefetch" href="//api.bubblescafe.space">
+    <link rel="preconnect" href="https://rqoqtusrlsapcbdimwpn.supabase.co" crossorigin>
+    <link rel="dns-prefetch" href="//rqoqtusrlsapcbdimwpn.supabase.co">
     
     <!-- Background images removed -->
     

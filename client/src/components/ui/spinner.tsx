@@ -17,10 +17,16 @@ export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
     xl: 'w-12 h-12 border-4',
   };
 
+  const reduceMotion =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   return (
     <div 
-      className={`inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] ${sizeClasses[size]} ${className}`}
+      className={`inline-block ${reduceMotion ? '' : 'animate-spin'} rounded-full border-solid border-primary border-r-transparent align-[-0.125em] ${sizeClasses[size]} ${className}`}
       role="status"
+      style={reduceMotion ? { animation: 'none' } : undefined}
     >
       <span className="sr-only">Loading...</span>
     </div>

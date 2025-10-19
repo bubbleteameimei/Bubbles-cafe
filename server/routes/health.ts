@@ -8,8 +8,15 @@ const logger = createLogger('Health');
 const router = Router();
 
 // Basic health check: minimal, stateless, no DB access
-router.get('/', (_req: Request, res: Response) => {
-  res.json({ status: 'ok' });
+router.get('/', async (_req: Request, res: Response) => {
+  // Consolidated health endpoint: minimal payload but touches DB to keep it warm
+  let dbStatus: 'connected' | 'error' = 'connected';
+  try {
+    await db.select().from(posts).limit(1);
+  } catch {
+    dbStatus = 'error';
+  }
+  res.json({ status: 'ok', db: dbStatus });
 });
 
 // Detailed health check with database connectivity (for diagnostics)

@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, lazy, Suspense } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { type posts } from "@shared/schema";
 type Post = typeof posts.$inferSelect;
 import { useLocation } from "wouter";
@@ -81,35 +81,30 @@ export default function StoriesIndexContent() {
   };
 
   // Paginated query
-  const {
-    data,
-    isLoading: isPaginatedLoading,
-    error: paginatedError,
-  } = useInfiniteQuery<{ posts: Post[]; hasMore: boolean; page: number; }>({
+  const { data } = useSuspenseInfiniteQuery<
+    { posts: Post[]; hasMore: boolean; page: number }
+  >({
     queryKey: ["wordpress", "posts"],
     queryFn: async ({ pageParam = 1 }) => {
       const page = typeof pageParam === 'number' ? pageParam : 1;
-      const wpResponse = await fetchWordPressPosts({ 
-        page, 
-        perPage: 100
+      const wpResponse = await fetchWordPressPosts({
+        page,
+        perPage: 100,
       });
       const wpPosts = wpResponse.posts || [];
       const posts = wpPosts.map((post: WordPressPost) => wpToPost(post)) as Post[];
       return {
         posts,
         hasMore: wpPosts.length === 100,
-        page
+        page,
       };
     },
-    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     staleTime: 5 * 60 * 1000,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    initialPageParam: 1
+    initialPageParam: 1,
   });
-
-  const isLoading = isPaginatedLoading;
-  const error = paginatedError;
 
   const hasPaginatedPosts = data?.pages && data.pages.length > 0 && data.pages[0]?.posts?.length > 0;
 
@@ -237,23 +232,12 @@ export default function StoriesIndexContent() {
     return sortedByEngagement[0];
   }, [currentPosts]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading stories...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (!hasPaginatedPosts) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center overflow-x-hidden">
         <div className="text-center space-y-4">
           <h2 className="text-xl font-semibold text-foreground">Unable to load stories</h2>
-          <p className="text-muted-foreground">{error instanceof Error ? error.message : "Please try again later"}</p>
+          <p className="text-muted-foreground">Please try again later</p>
           <Button
             variant="outline"
             onClick={() => window.location.reload()}
