@@ -15,7 +15,7 @@ import {
 import { ErrorBoundary } from './components/ErrorBoundary';
 // Performance monitoring removed
 import { SidebarProvider } from './components/ui/sidebar';
-const ScrollToTopButton = React.lazy(() => import('./components/ScrollToTopButton'));
+
 import PageTransition from './components/PageTransition';
 // Add critical fullwidth fix stylesheet
 import './styles/fullwidth-fix.css';
@@ -483,9 +483,7 @@ function App() {
                         <React.Suspense fallback={null}>
                           <CookieConsent />
                         </React.Suspense>
-                        <React.Suspense fallback={null}>
-                          <ScrollToTopButton position="bottom-right" />
-                        </React.Suspense>
+                        
                         {/* Toast notifications */}
                         <React.Suspense fallback={null}>
                           <Toaster />
