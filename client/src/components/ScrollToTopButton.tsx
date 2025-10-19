@@ -55,7 +55,7 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
       variant="default"
       size="icon"
       onClick={scrollToTop}
-      className={`fixed bottom-5 ${positionClasses} z-50 shadow-lg scroll-to-top`}
+      className={`fixed bottom-5 ${positionClasses} z-50 shadow-lg scroll-to-top opacity-100`}
       aria-label="Scroll to top"
       noOutline
     >
