@@ -36,7 +36,7 @@ import ErrorToastProvider from './components/providers/error-toast-provider';
 import { RefreshProvider } from './contexts/refresh-context';
 const PostsPrefetcher = React.lazy(() => import('./components/providers/PostsPrefetcher'));
 import { initSmoothScroll } from './lib/smooth-scroll';
-import { useA11y } from '@/hooks/useA11y');
+import { useA11y } from '@/hooks/useA11y';
 
 // New: BackToTopButton (scroll-to-top)
 const BackToTopButton = React.lazy(() => import('./components/BackToTopButton'));
@@ -483,10 +483,13 @@ function App() {
                           </React.Suspense>
                         </div>
                         {/* Site-wide elements outside of the main layout */}
-                       <<React.Suspense fallback={null}>
+                        <React.Suspense fallback={null}>
                           <CookieConsent />
                         </React.Suspense>
-                        
+                        {/* BackToTop floating action button */}
+                        <React.Suspense fallback={null}>
+                          <BackToTopButton />
+                        </React.Suspense>
                         {/* Toast notifications */}
                         <React.Suspense fallback={null}>
                           <Toaster />
