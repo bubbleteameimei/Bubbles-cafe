@@ -444,3 +444,15 @@ div.sidebar-menu-container {
     display: none !important;
   }
 }
+
+/* BackToTop fixed placement helper to escape layout overrides */
+.back-to-top-fixed {
+  position: fixed !important;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+  right: calc(24px + env(safe-area-inset-right, 0px)) !important;
+  left: auto !important;
+  z-index: 2147483647 !important; /* Max practical z-index */
+  pointer-events: auto !important;
+  contain: layout paint style;
+  will-change: transform;
+}

@@ -74,7 +74,7 @@ const BackToTopButton: React.FC = () => {
       ticking.current = true;
       requestAnimationFrame(() => {
         const top = computeTop(e);
-        setVisible(top > 160);
+        setVisible(top > 120);
         ticking.current = false;
       });
     };
@@ -164,9 +164,8 @@ const BackToTopButton: React.FC = () => {
       type="button"
       aria-label="Scroll to top"
       title="Scroll to top"
-      className={`${baseClasses} ${stateClasses}`}
+      className={`${baseClasses} back-to-top-fixed ${stateClasses}`}
       onClick={handleClick}
-      style={posStyle}
     >
       <ArrowUp className="h-4 w-4 md:h-5 md:w-5" strokeWidth={2} />
       <span className="sr-only">Back to top</span>
