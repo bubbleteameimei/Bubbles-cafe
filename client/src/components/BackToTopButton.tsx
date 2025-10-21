@@ -74,27 +74,16 @@ const BackToTopButton: React.FC = () => {
       ticking.current = true;
       requestAnimationFrame(() => {
         const top = computeTop(e);
-        setVisible(top > 300);
+        setVisible(top > 200);
         ticking.current = false;
       });
     };
 
-    // Heuristic update based on content height in case we miss scroll events
-    const heuristicUpdate = () => {
-      const maxDoc = Math.max(
-        document.documentElement?.scrollHeight || 0,
-        document.body?.scrollHeight || 0
-      );
-      const diff = maxDoc - window.innerHeight;
-      if (diff > 1500) {
-        // If page is very long, show control even before the first scroll event
-        setVisible(prev => prev || true);
-      }
-    };
+    
 
     // Always listen to window/document
     window.addEventListener('scroll', onScroll as EventListener, { passive: true } as any);
-    window.addEventListener('resize', heuristicUpdate, { passive: true } as any);
+    
     if (main) main.addEventListener('scroll', onScroll as EventListener, { passive: true } as any);
 
     // Attach to candidate scrollable containers
@@ -122,11 +111,11 @@ const BackToTopButton: React.FC = () => {
 
     // Initialize state
     onScroll();
-    heuristicUpdate();
+    
 
     return () => {
       window.removeEventListener('scroll', onScroll as EventListener);
-      window.removeEventListener('resize', heuristicUpdate as EventListener);
+      
       if (main) main.removeEventListener('scroll', onScroll as EventListener);
       containerListeners.current.forEach(el => {
         el.removeEventListener('scroll', onScroll as EventListener);
@@ -155,14 +144,21 @@ const BackToTopButton: React.FC = () => {
   };
 
   const baseClasses =
-    'fixed bottom-6 right-6 md:bottom-8 md:right-8 z-[2147483647] flex items-center justify-center rounded-full ' + // max practical z-index
-    'h-12 w-12 md:h-14 md:w-14 bg-primary text-primary-foreground shadow-xl ' +
+    'fixed z-[2147483647] flex items-center justify-center rounded-full ' + // max practical z-index
+    'h-10 w-10 md:h-12 md:w-12 bg-primary text-primary-foreground shadow-xl ' +
     'ring-2 ring-primary/30 hover:ring-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ' +
     'transition-transform transition-opacity duration-300 ease-out will-change-transform';
 
   const stateClasses = visible
     ? 'opacity-100 translate-y-0 pointer-events-auto'
     : 'opacity-0 translate-y-2 pointer-events-none';
+
+  const posStyle: React.CSSProperties = {
+    position: 'fixed',
+    bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
+    right: 'calc(24px + env(safe-area-inset-right, 0px))',
+    left: 'auto',
+  };
 
   const button = (
     <button
@@ -171,8 +167,9 @@ const BackToTopButton: React.FC = () => {
       title="Scroll to top"
       className={`${baseClasses} ${stateClasses}`}
       onClick={handleClick}
+      style={posStyle}
     >
-      <ArrowUp className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2} />
+      <ArrowUp className="h-4 w-4 md:h-5 md:w-5" strokeWidth={2} />
       <span className="sr-only">Back to top</span>
     </button>
   );
