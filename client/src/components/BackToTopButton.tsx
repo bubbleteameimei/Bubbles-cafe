@@ -74,7 +74,7 @@ const BackToTopButton: React.FC = () => {
       ticking.current = true;
       requestAnimationFrame(() => {
         const top = computeTop(e);
-        setVisible(top > 200);
+        setVisible(top > 160);
         ticking.current = false;
       });
     };
@@ -83,7 +83,7 @@ const BackToTopButton: React.FC = () => {
 
     // Always listen to window/document
     window.addEventListener('scroll', onScroll as EventListener, { passive: true } as any);
-    
+    document.addEventListener('scroll', onScroll as EventListener, { passive: true, capture: true } as any);
     if (main) main.addEventListener('scroll', onScroll as EventListener, { passive: true } as any);
 
     // Attach to candidate scrollable containers
@@ -115,7 +115,7 @@ const BackToTopButton: React.FC = () => {
 
     return () => {
       window.removeEventListener('scroll', onScroll as EventListener);
-      
+      document.removeEventListener('scroll', onScroll as EventListener, true as any);
       if (main) main.removeEventListener('scroll', onScroll as EventListener);
       containerListeners.current.forEach(el => {
         el.removeEventListener('scroll', onScroll as EventListener);
@@ -144,7 +144,7 @@ const BackToTopButton: React.FC = () => {
   };
 
   const baseClasses =
-    'fixed z-[2147483647] flex items-center justify-center rounded-full ' + // max practical z-index
+    'fixed bottom-6 right-6 md:bottom-8 md:right-8 left-auto z-[2147483647] flex items-center justify-center rounded-full pointer-events-auto touch-manipulation select-none ' +
     'h-10 w-10 md:h-12 md:w-12 bg-primary text-primary-foreground shadow-xl ' +
     'ring-2 ring-primary/30 hover:ring-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ' +
     'transition-transform transition-opacity duration-300 ease-out will-change-transform';
@@ -155,9 +155,8 @@ const BackToTopButton: React.FC = () => {
 
   const posStyle: React.CSSProperties = {
     position: 'fixed',
-    bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
-    right: 'calc(24px + env(safe-area-inset-right, 0px))',
-    left: 'auto',
+    bottom: '24px',
+    right: '24px',
   };
 
   const button = (
