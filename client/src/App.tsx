@@ -141,6 +141,8 @@ const AppContent = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isPageTransition, setIsPageTransition] = useState(false);
   const [previousLocation, setPreviousLocation] = useState('');
+  // Gate footer display until page content paints to avoid "footer-first" flash
+  const [footerReady, setFooterReady] = useState(false);
 
   // Basic SEO: set canonical and defaults site-wide
   const canonical = locationStr || '/';
@@ -178,6 +180,32 @@ const AppContent = () => {
       trackPageView(location);
     }
   }, [location, isErrorPage]);
+
+  // Footer readiness gating: reveal footer only after main content has painted
+  useEffect(() => {
+    if (isErrorPage) {
+      setFooterReady(false);
+      return;
+    }
+    setFooterReady(false);
+    let rafId = 0;
+    let attempts = 0;
+    const check = () => {
+      attempts++;
+      const page = document.querySelector('#main-content .page-content') as HTMLElement | null;
+      const ready = page && page.childElementCount > 0 && page.getBoundingClientRect().height > 160;
+      if (ready) {
+        setFooterReady(true);
+      } else if (attempts < 5) {
+        rafId = requestAnimationFrame(check);
+      } else {
+        // Small time cap to avoid prolonged hiding if content is lightweight
+        setTimeout(() => setFooterReady(true), 60);
+      }
+    };
+    rafId = requestAnimationFrame(check);
+    return () => cancelAnimationFrame(rafId);
+  }, [locationStr, isErrorPage]);
 
   // Prefetch the current route component to avoid Suspense blank frames
   useEffect(() => {
@@ -523,8 +551,8 @@ const AppContent = () => {
               </PageTransition>
             )}
           </main>
-          {/* Footer at page bottom (all non-error pages) */}
-          <Footer />
+          {/* Footer at page bottom (all non-error pages), gated to avoid early flash */}
+          {footerReady ? <Footer /> : null}
         </React.Suspense>
       </div>
     </ErrorBoundary>

@@ -144,13 +144,12 @@ export function CookieConsent() {
           >
             Accept
           </button>
-          {/* Decline matches Browse Stories button (dark gray) */}
+          {/* Decline matches Start Reading button color, no hover effects */}
           <button
             onClick={handleDecline}
             className={cn(
               "px-6 py-2 rounded-full bg-[#1A1A1A] text-white font-medium",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A1A1A]/30",
-              "transition-all duration-300 hover:bg-[#2A2A2A] hover:scale-105 hover:shadow-lg hover:shadow-black/20"
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A1A1A]/30"
             )}
           >
             Decline
