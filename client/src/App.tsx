@@ -425,12 +425,10 @@ const AppContent = () => {
             </PageTransition>
           )}
         </main>
-        {/* Footer at page bottom (homepage only) */}
-        {isHome && (
-          <React.Suspense fallback={null}>
-            <Footer />
-          </React.Suspense>
-        )}
+        {/* Footer at page bottom (all non-error pages) */}
+        <React.Suspense fallback={null}>
+          <Footer />
+        </React.Suspense>
       </div>
     </ErrorBoundary>
   );
