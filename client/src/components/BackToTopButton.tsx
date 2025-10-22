@@ -79,7 +79,8 @@ const BackToTopButton: React.FC = () => {
       });
     };
 
-    
+    // Snapshot the listener set reference for cleanup per lint rule
+    const listenersSet = containerListeners.current;
 
     // Always listen to window/document
     window.addEventListener('scroll', onScroll as EventListener, { passive: true } as any);
@@ -90,16 +91,16 @@ const BackToTopButton: React.FC = () => {
     const attachToCandidates = () => {
       const candidates = getScrollableCandidates();
       candidates.forEach(el => {
-        if (!containerListeners.current.has(el)) {
+        if (!listenersSet.has(el)) {
           el.addEventListener('scroll', onScroll as EventListener, { passive: true } as any);
-          containerListeners.current.add(el);
+          listenersSet.add(el);
         }
       });
       // Remove listeners from elements no longer in DOM or no longer scrollable
-      containerListeners.current.forEach(el => {
+      listenersSet.forEach(el => {
         if (!document.body.contains(el) || el.scrollHeight <= el.clientHeight) {
           el.removeEventListener('scroll', onScroll as EventListener);
-          containerListeners.current.delete(el);
+          listenersSet.delete(el);
         }
       });
     };
@@ -111,16 +112,15 @@ const BackToTopButton: React.FC = () => {
 
     // Initialize state
     onScroll();
-    
 
     return () => {
       window.removeEventListener('scroll', onScroll as EventListener);
       document.removeEventListener('scroll', onScroll as EventListener, true as any);
       if (main) main.removeEventListener('scroll', onScroll as EventListener);
-      containerListeners.current.forEach(el => {
+      listenersSet.forEach(el => {
         el.removeEventListener('scroll', onScroll as EventListener);
       });
-      containerListeners.current.clear();
+      listenersSet.clear();
       clearInterval(interval);
     };
   }, []);

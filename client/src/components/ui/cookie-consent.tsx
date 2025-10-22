@@ -9,14 +9,12 @@ export function CookieConsent() {
   // Use our enhanced cookie consent hook
   const { showConsentBanner, acceptAll, acceptEssentialOnly } = useCookieConsent();
 
-  // Return null if the banner shouldn't be shown
-  if (!showConsentBanner) return null;
-
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const acceptBtnRef = useRef<HTMLButtonElement | null>(null);
 
-  // Lock body scroll and handle focus when shown
+  // Lock body scroll and handle focus only when banner is visible
   useEffect(() => {
+    if (!showConsentBanner) return;
     const prevOverflow = document.body.style.overflow;
     const prevPaddingRight = document.body.style.paddingRight;
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
@@ -34,10 +32,11 @@ export function CookieConsent() {
       document.body.style.paddingRight = prevPaddingRight;
       cancelAnimationFrame(id);
     };
-  }, []);
+  }, [showConsentBanner]);
 
-  // Basic focus trap within the overlay
+  // Basic focus trap within the overlay (active only when banner visible)
   useEffect(() => {
+    if (!showConsentBanner) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "Tab") return;
       const root = overlayRef.current;
@@ -68,7 +67,7 @@ export function CookieConsent() {
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, []);
+  }, [showConsentBanner]);
 
   // Handle accepting all cookies (3 month expiry)
   const handleAccept = () => {
@@ -79,6 +78,8 @@ export function CookieConsent() {
   const handleDecline = () => {
     acceptEssentialOnly();
   };
+
+  if (!showConsentBanner) return null;
 
   const overlay = (
     <motion.div
