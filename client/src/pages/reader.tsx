@@ -26,6 +26,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
 import ApiLoader from "@/components/api-loader";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
+import SimplifiedErrorPage from "@/components/errors/SimplifiedErrorPage";
 import { useToast } from "@/hooks/use-toast";
 
 import { SupportWritingCard } from "@/components/SupportWritingCard";
