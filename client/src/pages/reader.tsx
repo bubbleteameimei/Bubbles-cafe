@@ -430,27 +430,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         }
         setAutoSaveSlug(newSlug);
         
-        // Check if we've reloaded but the post has been deleted
-        if (routeSlug && currentPost.id && currentIndex === 0) {
-          // Verify the post exists by making a direct check using the improved endpoint
-          // that handles both slugs and IDs
-          fetch(`/api/posts/${currentPost.id}`)
-            .then(response => {
-              if (response.status === 404) {
-                console.log('[Reader] Post may have been deleted, redirecting to community page');
-                // Post might have been deleted, redirect to community page
-                // No delay to prevent showing deleted content
-                setLocation('/community');
-                toast({
-                  title: 'Post Not Available',
-                  description: 'This post is no longer available, redirecting to community page.'
-                });
-              }
-            })
-            .catch(err => {
-              console.error('[Reader] Error checking post existence:', err);
-            });
-        }
+        
       }
     }
   }, [currentIndex, postsData?.posts, routeSlug, queryClient, setLocation, toast]);

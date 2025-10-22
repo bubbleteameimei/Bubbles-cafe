@@ -379,7 +379,7 @@ export default function Home() {
                         <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8 group-hover:translate-x-1 transition-transform duration-300 text-white" />
                       </motion.div>
                     </div>
-                    <p className="text-white/80 mt-2 text-center text-[10px] sm:text-[11px]">
+                    <p className="text-white/80 mt-2 text-center text-[12px] sm:text-[13px]">
                       Install on your phone for a fast, immersive reading experience.
                     </p>
                   </motion.div>

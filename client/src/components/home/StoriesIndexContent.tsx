@@ -246,7 +246,7 @@ export default function StoriesIndexContent() {
   const currentPosts = filteredPosts;
 
   const featuredStory = useMemo(() => {
-    const all = [...sortedPosts];
+    const all = [...currentPosts];
     if (!all || all.length === 0) return null;
 
     const q = search.trim().toLowerCase();
@@ -401,35 +401,37 @@ export default function StoriesIndexContent() {
               <div className="lg:col-span-1">
                 <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
                   <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Award className="h-4 w-4 text-primary" />
-                      <h2 className="text-lg font-decorative">Featured Story</h2>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Award className="h-4 w-4 text-primary" />
+                        <h2 className="text-lg font-decorative">Featured Story</h2>
+                      </div>
+                      <div className="flex items-center">
+                        <Select
+                          value={sort}
+                          onValueChange={(value: string) =>
+                            setSort(value as 'newest' | 'oldest' | 'popular' | 'shortest')
+                          }
+                        >
+                          <SelectTrigger className="w-28 h-7 text-[11px]" aria-label="Sort stories">
+                            <SelectValue placeholder="Sort" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="newest">Newest</SelectItem>
+                            <SelectItem value="oldest">Oldest</SelectItem>
+                            <SelectItem value="popular">Popular</SelectItem>
+                            <SelectItem value="shortest">Shortest</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                     <button className="text-left text-lg font-castoro hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
                       {featuredStory.title}
                     </button>
-                    <p className="text-sm text-muted-foreground leading-6 mt-2 line-clamp-3 font-serif">
+                    <p className="text-sm text-muted-foreground leading-6 mt-2 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
                       {extractEngagingExcerpt(featuredStory.content, 220)}
                     </p>
-                    {/* Moved sort dropdown inside featured card for better UX */}
-                    <div className="mt-2 flex justify-end">
-                      <Select
-                        value={sort}
-                        onValueChange={(value: string) =>
-                          setSort(value as 'newest' | 'oldest' | 'popular' | 'shortest')
-                        }
-                      >
-                        <SelectTrigger className="w-40 h-8 text-xs" aria-label="Sort stories">
-                          <SelectValue placeholder="Sort stories" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="newest">Newest</SelectItem>
-                          <SelectItem value="oldest">Oldest</SelectItem>
-                          <SelectItem value="popular">Most popular</SelectItem>
-                          <SelectItem value="shortest">Shortest</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    
                     <div className="mt-3 flex items-center justify-between">
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
@@ -489,7 +491,7 @@ export default function StoriesIndexContent() {
             >
               <div className="w-full">
                 <Book className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 text-primary/40 mb-3 sm:mb-4 mt-3 sm:mt-4" />
-                <h3 className="text-lg sm:text-xl font-decorative mb-2 sm:mb-3">No Stories Found</h3>
+                
                 {search.trim() ? (
                   <>
                     <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-5 leading-relaxed px-2">
@@ -576,16 +578,10 @@ export default function StoriesIndexContent() {
                   </>
                 ) : (
                   <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed px-2">
-                    No stories are available at the moment. Check back soon or try refreshing the page.
+                    Explore popular stories below.
                   </p>
                 )}
-                <Button 
-                  variant="default"
-                  onClick={() => window.location.reload()}
-                  className="shadow-sm text-sm sm:text-base h-9 sm:h-10"
-                >
-                  Refresh
-                </Button>
+                
               </div>
             </div>
           ) : (
@@ -643,7 +639,7 @@ export default function StoriesIndexContent() {
                         )}
                       </CardHeader>
                       <CardContent className="px-4 pt-0 pb-3">
-                        <p className="text-sm text-muted-foreground leading-6 line-clamp-3 font-serif">
+                        <p className="text-sm text-muted-foreground leading-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
                           {extractEngagingExcerpt(post.content, 200)}
                         </p>
                       </CardContent>
