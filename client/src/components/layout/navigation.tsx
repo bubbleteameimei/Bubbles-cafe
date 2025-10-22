@@ -125,6 +125,40 @@ export default function Navigation() {
       }
     } catch {}
   };
+
+  // Async prefetch that returns the import promise (used on click)
+  const prefetchRouteAsync = (href: string): Promise<any> => {
+    try {
+      switch (href) {
+        case '/': return import('../../pages/home');
+        case '/stories': return import('../../pages/index');
+        case '/reader': return import('../../pages/reader');
+        case '/community': return import('../../pages/community');
+        case '/about': return import('../../pages/about');
+        case '/search': return import('../../pages/search-results');
+        case '/bookmarks': return import('../../pages/bookmarks');
+        case '/profile': return import('../../pages/profile');
+        default: return Promise.resolve();
+      }
+    } catch {
+      return Promise.resolve();
+    }
+  };
+
+  // Click handler that waits briefly for the chunk to be ready before navigating
+  const handleNav = (href: string, e?: React.MouseEvent) => {
+    try {
+      if (e) e.preventDefault();
+      const done = prefetchRouteAsync(href).catch(() => {});
+      const cap = new Promise<void>((resolve) => setTimeout(resolve, 150));
+      Promise.race([done, cap]).then(() => {
+        setLocation(href);
+      });
+    } catch {
+      // Fallback navigation
+      window.location.href = href;
+    }
+  };
   
   return (
     <>
@@ -183,6 +217,7 @@ export default function Navigation() {
               aria-current={location === href ? "page" : undefined}
               onMouseEnter={() => prefetchRoute(href)}
               onFocus={() => prefetchRoute(href)}
+              onClick={(e) => handleNav(href, e)}
             >
               {label}
             </Link>
@@ -216,7 +251,15 @@ export default function Navigation() {
                   variant="default"
                   size="sm"
                   className="h-9 bg-background/40 supports-[backdrop-filter]:bg-background/20 hover:bg-background/30 transition-colors"
-                  onClick={handleSearch}
+                  onClick={() => {
+                    if (!searchValue.trim()) return;
+                    const href = '/search';
+                    const done = prefetchRouteAsync(href).catch(() => {});
+                    const cap = new Promise<void>((resolve) => setTimeout(resolve, 150));
+                    Promise.race([done, cap]).then(() => {
+                      setLocation(href);
+                    });
+                  }}
                   disabled={!searchValue.trim()}
                 >
                   Go
