@@ -226,7 +226,7 @@ export default function Home() {
                 className="w-full mt-2 sm:mt-3"
               >
                 <div className="w-full max-w-xl mx-auto px-4">
-                  <div className="flex flex-col sm:flex-row gap-1">
+                  <div className="flex flex-col sm:flex-row gap-0">
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -239,7 +239,7 @@ export default function Home() {
                       className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       data-testid="home-browse-stories"
                     >
-                      <span className="text-center mr-2">Browse Stories</span>
+                      <span className="text-center mr-1">Browse Stories</span>
                       <motion.div
                         animate={inView ? {
                           rotate: [0, 10, -6, 4, 0],
@@ -269,7 +269,7 @@ export default function Home() {
                       aria-label="Start reading now"
                       className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
-                      <span className="text-center mr-2">Start Reading</span>
+                      <span className="text-center mr-1">Start Reading</span>
                       <motion.div
                         animate={inView ? { x: [0, 4, 0] } : undefined}
                         transition={{ 
