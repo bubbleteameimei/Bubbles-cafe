@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MousePointer, EyeOff, ArrowUp } from 'lucide-react';
 
@@ -8,7 +8,11 @@ interface ReaderTooltipProps {
 
 const ReaderTooltip = ({ show }: ReaderTooltipProps) => {
   if (!show) return null;
-  
+
+  // Position the tooltip near the bottom of the viewport, just above where the BackToTop button sits.
+  // BackToTop sits at ~24px from the bottom and is ~40-48px tall, so offset ~72px keeps a clear gap.
+  const bottomOffset = 'calc(env(safe-area-inset-bottom, 0px) + 72px)';
+
   return (
     <AnimatePresence>
       {show && (
@@ -17,8 +21,8 @@ const ReaderTooltip = ({ show }: ReaderTooltipProps) => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 10 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="fixed inset-x-0 z-[1000] pointer-events-none"
-          style={{ top }}
+          className="fixed inset-x-0 bottom-0 z-[1000] pointer-events-none"
+          style={{ bottom: bottomOffset }}
         >
           {/* Use the exact same container class as the About page to ensure consistent width */}
           <div className="container max-w-4xl mx-auto px-4">

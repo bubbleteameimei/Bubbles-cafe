@@ -211,15 +211,15 @@ const AppContent = () => {
         Skip to content
       </a>
       <div
-        className={`page-transition-container min-h-screen w-full min-w-full max-w-full overflow-x-hidden bg-background text-foreground 
+        className={`page-transition-container w-full min-w-full max-w-full overflow-x-hidden bg-background text-foreground 
           m-0 p-0 px-0 mx-0 flex flex-col`}
-         style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: isReaderLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)' }}>
+         style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto', paddingTop: isReaderLike ? 'calcrLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)' }}>
         {/* Main navigation bar */}
         <React.Suspense fallback={null}>
           <AutoHideNavbar />
         </React.Suspense>
         {/* Main content landmark for accessibility */}
-        <main id="main-content" tabIndex={-1} className="flex-1 min-h-screen">
+        <main id="main-content" tabIndex={-1} className="flex-1">
           {isReaderLike ? (
             <div key={locationStr} className="page-content">
               <Switch>
