@@ -10,7 +10,7 @@ export default function Footer() {
 
   return (
     <footer
-      className="site-footer w-full mt-10 bg-background shadow-inner"
+      className="site-footer w-full mt-10 bg-background border-t border-border/70"
       style={{
         position: "relative",
         left: 0,
@@ -23,12 +23,6 @@ export default function Footer() {
       role="contentinfo"
       aria-label="Site footer"
     >
-      {/* Full-bleed top divider (first footer demarcation) */}
-      <hr
-        className="border-t border-border/70"
-        style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
-      />
-
       <div className="container mx-auto max-w-5xl px-6 py-4">
         <div className="grid grid-cols-2 gap-4 items-start">
           {/* Brand + Contact (Left) */}
@@ -78,12 +72,6 @@ export default function Footer() {
           </div>
         </div>
       </div>
-
-      {/* Full-bleed divider line (same as header and bottom) */}
-      <hr
-        className="border-t border-border/70"
-        style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
-      />
 
       <div className="container mx-auto max-w-5xl px-6 pb-4 pt-2">
         {/* Bottom strip */}
