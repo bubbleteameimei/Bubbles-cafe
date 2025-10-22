@@ -731,14 +731,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           width: 100%;
         }
         
-        /* Only target the navigation header and not the controls in distraction-free mode */
+        /* Distraction-free mode: keep navbar visible but subtle */
         .reader-page[data-distraction-free="true"] header.main-header {
-          opacity: 0;
-          visibility: hidden;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          pointer-events: none; /* Prevent interaction with hidden header */
-          transform: translateY(-100%);
-          will-change: opacity, transform, visibility;
+          opacity: 0.65;
+          visibility: visible;
+          transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          pointer-events: auto;
+          transform: none;
+          will-change: opacity;
         }
         
         /* Tiny indicator for mobile when in distraction-free mode */

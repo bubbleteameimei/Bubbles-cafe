@@ -61,10 +61,12 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 		return null;
 	}
 
-	// Return navigation with responsive class for device optimization
+	// Return navigation fixed at the top with no translate transforms
 	return (
-		<div className={`navbar-root transition-transform duration-300 fixed top-0 left-0 right-0 z-40 w-full ${hidden ? '-translate-y-full' : 'translate-y-0'}`}
-			style={{ width: "100%", margin: 0, padding: 0 }}>
+		<div
+			className="navbar-root fixed top-0 left-0 right-0 z-[100] w-full"
+			style={{ width: "100%", margin: 0, padding: 0 }}
+		>
 			<div className="bg-transparent">
 				<Navigation />
 			</div>

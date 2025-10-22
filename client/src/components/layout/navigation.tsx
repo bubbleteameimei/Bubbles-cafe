@@ -266,7 +266,7 @@ export default function Navigation() {
         }}
       />
 
-      {/* Reader-only in-header progress bar, aligned to the bottom demarcation line */}
+      {/* Reader-only in-header progress bar (GPU-accelerated via transform) */}
       {isReaderRoute && (
         <div
           aria-hidden="true"
@@ -278,16 +278,18 @@ export default function Navigation() {
             width: '100%',
             height: '3px',
             zIndex: 41,
-            pointerEvents: 'none'
+            pointerEvents: 'none',
+            background: 'transparent'
           }}
         >
           <div
             style={{
               height: '100%',
-              width: `${scrollProgress}%`,
-              background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
+              width: '100%',
+              transformOrigin: 'left center',
+              transform: `scaleX(${Math.max(0, Math.min(1, scrollProgress / 100))}) translateZ(0)`,
               willChange: 'transform',
-              transform: 'translateZ(0)'
+              background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)'
             }}
           />
         </div>

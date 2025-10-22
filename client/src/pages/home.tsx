@@ -226,7 +226,7 @@ export default function Home() {
                 className="w-full mt-2 sm:mt-3"
               >
                 <div className="w-full max-w-xl mx-auto px-4">
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex flex-col sm:flex-row gap-1">
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -278,7 +278,7 @@ export default function Home() {
                           ease: "easeInOut"
                         }}
                       >
-                        <ChevronRight className="h-12 w-12 group-hover:translate-x-2 transition-transform duration-300" />
+                        <ChevronRight className="h-5 w-5 group-hover:translate-x-2 transition-transform duration-300" />
                       </motion.div>
                     </Button>
                   </motion.div>
