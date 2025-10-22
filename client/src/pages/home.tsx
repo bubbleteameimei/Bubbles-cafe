@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronRight, Book } from "lucide-react";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { getExcerpt } from "@/lib/content-analysis";
-import { sanitizeHtmlContent } from "@/lib/sanitize-content";
+import { sanitizeHtml } from "@/lib/sanitize";
 import ApiLoader from "@/components/api-loader";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
@@ -315,7 +315,7 @@ export default function Home() {
                   >
                     <h2 
                       className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 text-white px-2 sm:px-3"
-                      dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(posts[0]?.title?.rendered || 'Featured Story') }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(posts[0]?.title?.rendered || 'Featured Story') }}
                     />
                     <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 w-full mb-4 sm:mb-5 md:mb-6 line-clamp-2 px-2 sm:px-3 leading-relaxed md:leading-relaxed">
                       {posts[0]?.content?.rendered && (

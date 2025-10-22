@@ -26,7 +26,7 @@ export default function Footer() {
       {/* Full-bleed top divider (first footer demarcation) */}
       <hr
         className="border-t border-border/70"
-        style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
+        style={{ width: "100%", position: "relative", left: 0, transform: "none" }}
       />
       <div className="container mx-auto max-w-5xl px-6 py-4">
         <div className="grid grid-cols-2 gap-4 items-start">
@@ -81,7 +81,7 @@ export default function Footer() {
       {/* Full-bleed divider line (same as header and bottom) */}
       <hr
         className="border-t border-border/70"
-        style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
+        style={{ width: "100%", position: "relative", left: 0, transform: "none" }}
       />
 
       <div className="container mx-auto max-w-5xl px-6 pb-4 pt-2">

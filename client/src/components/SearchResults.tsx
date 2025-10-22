@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { getExcerpt } from '@/lib/content-analysis';
-import { sanitizeHtmlContent } from '@/lib/sanitize-content';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 interface SearchResultsProps {
   query: string;
@@ -99,7 +99,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query, onSelect }) => {
           tabIndex={0}
           data-testid={`search-result-${post.id}`}
         >
-          <div className="font-medium" dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.title.rendered) }} />
+          <div className="font-medium" dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.title.rendered) }} />
           <div className="text-sm text-muted-foreground line-clamp-2 mt-1">
             {getExcerpt(post.content.rendered)}
           </div>
