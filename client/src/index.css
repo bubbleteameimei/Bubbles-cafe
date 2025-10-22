@@ -327,19 +327,7 @@ body.body-home div[class*="container"] {
   background-color: transparent !important;
 }
 
-/* Footer standardization: ensure consistent padding and background across all routes */
-footer.site-footer .container {
-  padding-left: 1.5rem !important;
-  padding-right: 1.5rem !important;
-  background-color: hsl(var(--background)) !important;
-}
 
-
-
-/* Remove transparent container rule for homepage footer only */
-.home-page footer .container {
-  background-color: hsl(var(--background)) !important;
-}
 
 /* Exception for reader container - needs to be controlled by reader-fixes.css */
 .reader-container.story-content,

@@ -10,7 +10,7 @@ export default function Footer() {
 
   return (
     <footer
-      className="site-footer w-full mt-10 bg-background border-t border-border/70"
+      className="site-footer w-full mt-10 bg-background/40 backdrop-blur-sm shadow-inner"
       style={{
         position: "relative",
         left: 0,
@@ -23,6 +23,11 @@ export default function Footer() {
       role="contentinfo"
       aria-label="Site footer"
     >
+      {/* Full-bleed top divider (first footer demarcation) */}
+      <hr
+        className="border-t border-border/70"
+        style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
+      />
       <div className="container mx-auto max-w-5xl px-6 py-4">
         <div className="grid grid-cols-2 gap-4 items-start">
           {/* Brand + Contact (Left) */}
@@ -73,6 +78,12 @@ export default function Footer() {
         </div>
       </div>
 
+      {/* Full-bleed divider line (same as header and bottom) */}
+      <hr
+        className="border-t border-border/70"
+        style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
+      />
+
       <div className="container mx-auto max-w-5xl px-6 pb-4 pt-2">
         {/* Bottom strip */}
         <div className="mt-0 w-full flex flex-col items-center justify-center">
@@ -87,7 +98,7 @@ export default function Footer() {
             <Link href="/about" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">About</Link>
             <Link href="/privacy" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Privacy</Link>
             <Link href="/legal/terms" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Terms</Link>
-            <Link href="/legal/cookie-policy" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Cookies</Link>
+            <Link href="/legal/cookie-policy" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted-foreground hover:border-primary/40 transition-colors">Cookies</Link>
             <Link href="/legal/copyright" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Copyright</Link>
           </nav>
         </div>
