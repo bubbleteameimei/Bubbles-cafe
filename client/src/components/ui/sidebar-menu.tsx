@@ -1126,17 +1126,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         <span>Contact Me</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/report-bug'}
-                        onClick={() => handleNavigation('/report-bug')}
-                        className={submenuItemClass}
-                        aria-current={location === '/report-bug' ? 'page' : undefined}
-                      >
-                        <Bug className="h-7 w-7 mr-2" />
-                        <span>Report a Bug</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
+                    
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/legal/terms'}
