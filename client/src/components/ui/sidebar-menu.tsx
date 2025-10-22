@@ -175,6 +175,37 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
   // Simplified navigation - no state needed for instant switching
 
+  // Async route prefetch map (returns a promise to await before navigating)
+  const prefetchRouteAsync = React.useCallback((href: string): Promise<any> => {
+    try {
+      switch (href) {
+        case '/':
+          return import('../../pages/home');
+        case '/stories':
+          return import('../../pages/index');
+        case '/reader':
+          return import('../../pages/reader');
+        case '/community':
+          return import('../../pages/community');
+        case '/about':
+          return import('../../pages/about');
+        case '/bookmarks':
+          return import('../../pages/bookmarks');
+        case '/profile':
+          return import('../../pages/profile');
+        case '/search':
+          return import('../../pages/search-results');
+        case '/admin':
+        case '/admin/dashboard':
+          return import('../../pages/admin/dashboard');
+        default:
+          return Promise.resolve();
+      }
+    } catch {
+      return Promise.resolve();
+    }
+  }, []);
+
   const handleNavigation = React.useCallback((path: string) => {
     // Prevent duplicate navigation
     if (location === path) {
@@ -203,15 +234,22 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       if (sidebar) {
         sidebar.setOpenMobile(false);
       }
-      // 4. Navigate immediately
-      setLocation(path);
+
+      // 4. Prefetch route chunk, but cap wait to avoid sluggishness
+      const done = prefetchRouteAsync(path).catch(() => {});
+      const cap = new Promise<void>((resolve) => setTimeout(resolve, 150));
+      Promise.race([done, cap]).then(() => {
+        setLocation(path);
+        // Warm likely data endpoints after navigation
+        void prefetchDataForRoute(path);
+      });
 
     } catch (error) {
       console.error("Navigation error:", error);
-      // Fallback to direct location navigation as last resort
+      // Fallback: navigate directly if anything unexpected happens
       window.location.href = path;
     }
-  }, [location, onNavigate, sidebar, setLocation, scrollToTop]);
+  }, [location, onNavigate, sidebar, setLocation, scrollToTop, prefetchRouteAsync, prefetchDataForRoute]);
 
   // Function to render the active indicator for menu items
   const renderActiveIndicator = (_path: string) => {
@@ -869,17 +907,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
 
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/settings/preview'}
-                        onClick={() => handleNavigation('/settings/preview')}
-                        className={submenuItemClass}
-                        aria-current={location === '/settings/preview' ? 'page' : undefined}
-                      >
-                        <Eye className="h-7 w-7 mr-2" />
-                        <span>Preview</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
+                    
                     </SidebarMenuSub>
                   </motion.div>
                 </CollapsibleContent>
