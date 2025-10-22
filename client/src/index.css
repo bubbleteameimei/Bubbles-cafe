@@ -327,6 +327,11 @@ body.body-home div[class*="container"] {
   background-color: transparent !important;
 }
 
+/* Homepage footer container should match standard background */
+.home-page footer .container {
+  background-color: hsl(var(--background)) !important;
+}
+
 /* Exception for reader container - needs to be controlled by reader-fixes.css */
 .reader-container.story-content,
 .reader-page .reader-container,

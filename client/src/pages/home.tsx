@@ -260,7 +260,7 @@ export default function Home() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                    className="flex-1"
+                    className="flex-1 mt-2 sm:mt-0 sm:ml-3"
                   >
                     <Button
                       size="lg"
