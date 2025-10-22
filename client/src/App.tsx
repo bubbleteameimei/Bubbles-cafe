@@ -219,7 +219,32 @@ const AppContent = () => {
           m-0 p-0 px-0 mx-0 flex flex-col`}
          style={{ width: '100%', minWidth: '100%', maxWidth: '100%', margin: '0 auto', paddingTop: isReaderLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)' }}>
         {/* Main navigation bar */}
-        <React.Suspense fallback={null}>
+        <React.Suspense fallback={
+          <header
+            className="w-full shadow-sm"
+            style={{
+              position: 'relative',
+              width: '100%',
+              height: 'calc(var(--navbar-height, 56px) + 8px)',
+            }}
+            aria-hidden="true"
+          >
+            <div className="main-header h-14 px-4 flex items-center justify-between" />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none"
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: '50%',
+                width: '100vw',
+                transform: 'translateX(-50%)',
+                borderTop: '1px solid hsl(var(--border) / 0.70)',
+                zIndex: 40
+              }}
+            />
+          </header>
+        }>
           <AutoHideNavbar />
         </React.Suspense>
         {/* Main content and footer with a lightweight skeleton fallback for smoothness */}
@@ -496,9 +521,7 @@ function App() {
                           <PostsPrefetcher />
                         </React.Suspense>
                         <div className="app-content">
-                          <React.Suspense fallback={null}>
-                            <AppContent />
-                          </React.Suspense>
+                          <AppContent />
                         </div>
                         {/* Site-wide elements outside of the main layout */}
                         <React.Suspense fallback={null}>

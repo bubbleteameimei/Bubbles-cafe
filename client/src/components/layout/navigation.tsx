@@ -109,13 +109,14 @@ export default function Navigation() {
   return (
     <>
       <header
-        className={`w-full bg-transparent supports-[backdrop-filter]:bg-transparent backdrop-blur-md shadow-sm pb-1`}
+        className={`w-full bg-transparent supports-[backdrop-filter]:bg-transparent backdrop-blur-md shadow-sm`}
         style={{
           position: 'relative',
           margin: 0,
           padding: 0,
           width: '100%',
           paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingBottom: '8px', // subtle extra space between icons row and demarcation line
         }}
       >
         <div className="main-header flex items-center justify-between h-14 px-4">
