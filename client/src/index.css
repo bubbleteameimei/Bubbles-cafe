@@ -476,3 +476,8 @@ body:not(:has(.home-page)) .page-content {
 body:not(:has(.home-page)) {
   background-color: transparent !important;
 }
+
+/* Hide the footer on error pages */
+body.error-page-active footer.site-footer {
+  display: none !important;
+}

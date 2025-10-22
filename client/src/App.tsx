@@ -142,6 +142,7 @@ const AppContent = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isPageTransition, setIsPageTransition] = useState(false);
   const [previousLocation, setPreviousLocation] = useState('');
+  const [showFooter, setShowFooter] = useState(false);
 
   // Basic SEO: set canonical and defaults site-wide
   const canonical = locationStr || '/';
@@ -179,6 +180,13 @@ const AppContent = () => {
       trackPageView(location);
     }
   }, [location, isErrorPage]);
+
+  // Defer footer display until after initial content paints for current route
+  useEffect(() => {
+    setShowFooter(false);
+    const id = requestAnimationFrame(() => setShowFooter(true));
+    return () => cancelAnimationFrame(id);
+  }, [locationStr]);
 
   
 
@@ -425,10 +433,12 @@ const AppContent = () => {
             </PageTransition>
           )}
         </main>
-        {/* Footer at page bottom (all non-error pages) */}
-        <React.Suspense fallback={null}>
-          <Footer />
-        </React.Suspense>
+        {/* Footer at page bottom (all non-error pages), shown after content paint */}
+        {showFooter && (
+          <React.Suspense fallback={null}>
+            <Footer />
+          </React.Suspense>
+        )}
       </div>
     </ErrorBoundary>
   );

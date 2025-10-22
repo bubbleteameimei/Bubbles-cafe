@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'wouter';
 import '@/styles/eyeball-loader.css';
 
@@ -23,6 +23,14 @@ const SimplifiedErrorPage: React.FC<SimplifiedErrorPageProps> = ({
   actionText = 'Go Home',
   actionLink = '/'
 }) => {
+  // Mark body so global layout can hide non-error-only elements like the footer
+  useEffect(() => {
+    document.body.classList.add('error-page-active');
+    return () => {
+      document.body.classList.remove('error-page-active');
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center text-center bg-background/90 z-50">
       <div className="space-y-4">
