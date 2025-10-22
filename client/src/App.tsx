@@ -142,7 +142,6 @@ const AppContent = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isPageTransition, setIsPageTransition] = useState(false);
   const [previousLocation, setPreviousLocation] = useState('');
-  const [showFooter, setShowFooter] = useState(false);
 
   // Basic SEO: set canonical and defaults site-wide
   const canonical = locationStr || '/';
@@ -181,47 +180,7 @@ const AppContent = () => {
     }
   }, [location, isErrorPage]);
 
-  // Gate footer to avoid "flash" before content paints
-  useEffect(() => {
-    if (isErrorPage) {
-      setShowFooter(false);
-      return;
-    }
-    setShowFooter(false);
-
-    let rafId = 0;
-    let attempts = 0;
-
-    const checkReady = () => {
-      attempts++;
-      const main = document.getElementById('main-content');
-      const hasHeight = !!main && main.getBoundingClientRect().height > 180;
-
-      if (hasHeight) {
-        setShowFooter(true);
-      } else if (attempts < 120) {
-        rafId = requestAnimationFrame(checkReady);
-      } else {
-        // Safety: ensure footer eventually appears
-        setShowFooter(true);
-      }
-    };
-
-    const onLoad = () => setShowFooter(true);
-
-    if (document.readyState === 'complete') {
-      // Already loaded: wait a couple frames for layout
-      requestAnimationFrame(() => requestAnimationFrame(checkReady));
-    } else {
-      window.addEventListener('load', onLoad, { once: true } as any);
-      rafId = requestAnimationFrame(checkReady);
-    }
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener('load', onLoad as any);
-    };
-  }, [locationStr, isErrorPage]);
+  
 
   
 
@@ -263,8 +222,19 @@ const AppContent = () => {
         <React.Suspense fallback={null}>
           <AutoHideNavbar />
         </React.Suspense>
-        {/* Main content and footer wrapped together to avoid footer flashing before route content */}
-        <React.Suspense fallback={null}>
+        {/* Main content and footer with a lightweight skeleton fallback for smoothness */}
+        <React.Suspense fallback={
+          <main id="main-content" tabIndex={-1} className="flex-1">
+            <div className="page-content px-6 py-10">
+              <div className="max-w-4xl mx-auto space-y-4">
+                <div className="h-6 w-2/3 bg-muted rounded" />
+                <div className="h-4 w-full bg-muted rounded" />
+                <div className="h-4 w-11/12 bg-muted rounded" />
+                <div className="h-4 w-10/12 bg-muted rounded" />
+              </div>
+            </div>
+          </main>
+        }>
           {/* Main content landmark for accessibility */}
           <main id="main-content" tabIndex={-1} className="flex-1">
             {isReaderLike ? (
@@ -472,7 +442,7 @@ const AppContent = () => {
             )}
           </main>
           {/* Footer at page bottom (all non-error pages) */}
-          {showFooter ? <Footer /> : null}
+          <Footer />
         </React.Suspense>
       </div>
     </ErrorBoundary>
