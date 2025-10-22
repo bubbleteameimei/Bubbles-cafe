@@ -891,7 +891,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Account Settings */}
       <SidebarGroup className="-mt-4">
-        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+        <SidebarGroupLabel data-tooltip-anchor="account-settings" className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
           ACCOUNT SETTINGS
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">

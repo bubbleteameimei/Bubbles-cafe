@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MousePointer, EyeOff, ArrowUp } from 'lucide-react';
 
@@ -16,8 +17,8 @@ const ReaderTooltip = ({ show }: ReaderTooltipProps) => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 10 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="fixed inset-x-0 bottom-0 z-[1000] pointer-events-none"
-          style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12vh)' }}
+          className="fixed inset-x-0 z-[1000] pointer-events-none"
+          style={{ top }}
         >
           {/* Use the exact same container class as the About page to ensure consistent width */}
           <div className="container max-w-4xl mx-auto px-4">
