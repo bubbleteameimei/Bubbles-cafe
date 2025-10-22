@@ -30,9 +30,9 @@ export default function Footer() {
         style={{
           position: "absolute",
           top: 0,
-          left: 0,
-          width: "100%",
-          transform: "none",
+          left: "50%",
+          width: "100vw",
+          transform: "translateX(-50%)",
           borderTop: "1px solid hsl(var(--border) / 0.70)",
           zIndex: 1
         }}
@@ -91,10 +91,10 @@ export default function Footer() {
       <div
         aria-hidden="true"
         style={{
-          width: "100%",
+          width: "100vw",
           position: "relative",
-          left: 0,
-          transform: "none",
+          left: "50%",
+          transform: "translateX(-50%)",
           borderTop: "1px solid hsl(var(--border) / 0.70)"
         }}
       />
@@ -113,7 +113,7 @@ export default function Footer() {
             <Link href="/about" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">About</Link>
             <Link href="/privacy" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Privacy</Link>
             <Link href="/legal/terms" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Terms</Link>
-            <Link href="/legal/cookie-policy" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted-foreground hover:border-primary/40 transition-colors">Cookies</Link>
+            <Link href="/legal/cookie-policy" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Cookies</Link>
             <Link href="/legal/copyright" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Copyright</Link>
           </nav>
         </div>
