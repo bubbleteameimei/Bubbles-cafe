@@ -231,8 +231,6 @@ const AppContent = () => {
             void import('./pages/settings/cookie-management');
           } else if (path.includes('/quick-settings')) {
             void import('./pages/settings/quick-settings');
-          } else if (path.includes('/preview')) {
-            void import('./pages/settings/preview');
           } else if (path.includes('/connected-accounts')) {
             void import('./pages/settings/connected-accounts');
           } else {
@@ -358,7 +356,6 @@ const AppContent = () => {
                   <Route path="/settings/privacy" component={PrivacySettingsPage} />
                   <Route path="/settings/cookie-management" component={CookieManagementPage} />
                   <Route path="/settings/quick-settings" component={QuickSettingsPage} />
-                  <Route path="/settings/preview" component={PreviewSettingsPage} />
 
                   {/* Community Pages */}
                   <Route path="/community" component={CommunityPage} />
@@ -453,7 +450,6 @@ const AppContent = () => {
                       <Route path="/settings/privacy" component={PrivacySettingsPage} />
                       <Route path="/settings/cookie-management" component={CookieManagementPage} />
                       <Route path="/settings/quick-settings" component={QuickSettingsPage} />
-                      <Route path="/settings/preview" component={PreviewSettingsPage} />
 
                       {/* Community Pages */}
                       <Route path="/community" component={CommunityPage} />

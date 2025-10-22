@@ -175,6 +175,46 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
   // Simplified navigation - no state needed for instant switching
 
+  // Prefetch data endpoints to speed up first navigation
+  const prefetchDataForRouteEarly = React.useCallback(async (href: string) => {
+    try {
+      switch (href) {
+        case '/stories': {
+          // Warm stories list
+          await fetch('/api/posts?limit=100', { credentials: 'include' }).catch(() => {});
+          break;
+        }
+        case '/community': {
+          await fetch('/api/posts/community?limit=50', { credentials: 'include' }).catch(() => {});
+          break;
+        }
+        case '/bookmarks': {
+          // Try user bookmarks, fall back to anonymous
+          const res = await fetch('/api/bookmarks', { credentials: 'include' }).catch(() => null);
+          if (!res || !res.ok) {
+            await fetch('/api/reader/bookmarks', { credentials: 'include' }).catch(() => {});
+          }
+          break;
+        }
+        case '/profile': {
+          await fetch('/api/auth/status', { credentials: 'include' }).catch(() => {});
+          break;
+        }
+        case '/search': {
+          await fetch('/api/search/suggest?limit=8', { credentials: 'include' }).catch(() => {});
+          break;
+        }
+        case '/reader': {
+          // Prefetch first page of posts as a heuristic
+          await fetch('/api/posts?page=1&limit=9', { credentials: 'include' }).catch(() => {});
+          break;
+        }
+        default:
+          break;
+      }
+    } catch {}
+  }, []);
+
   // Async route prefetch map (returns a promise to await before navigating)
   const prefetchRouteAsync = React.useCallback((href: string): Promise<any> => {
     try {
@@ -241,7 +281,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       Promise.race([done, cap]).then(() => {
         setLocation(path);
         // Warm likely data endpoints after navigation
-        void prefetchDataForRoute(path);
+        void prefetchDataForRouteEarly(path);
       });
 
     } catch (error) {
@@ -249,7 +289,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       // Fallback: navigate directly if anything unexpected happens
       window.location.href = path;
     }
-  }, [location, onNavigate, sidebar, setLocation, scrollToTop, prefetchRouteAsync, prefetchDataForRoute]);
+  }, [location, onNavigate, sidebar, setLocation, scrollToTop, prefetchRouteAsync, prefetchDataForRouteEarly]);
 
   // Function to render the active indicator for menu items
   const renderActiveIndicator = (_path: string) => {
