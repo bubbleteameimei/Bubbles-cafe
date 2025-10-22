@@ -120,7 +120,8 @@ body {
     overflow-x: hidden;
     padding: 0;
     width: 100%;
-    min-height: 100vh;
+    /* Avoid forcing full viewport height on non-home pages to prevent bottom band */
+    min-height: auto;
     overflow-x: hidden;
     overflow-y: auto;
     position: relative;
@@ -307,6 +308,7 @@ div[class*="container"] {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
   box-sizing: border-box !important;
+  /* Keep solid backgrounds for readability */
   background-color: hsl(var(--background)) !important;
   border: none !important;
 }
@@ -460,6 +462,7 @@ div.sidebar-menu-container {
 }
 
 /* Non-homepages: remove forced full-height that can create a visible bottom band */
+/* Non-homepages: remove forced full-height that can create a visible bottom band */
 body:not(:has(.home-page)) .min-h-screen {
   min-height: auto !important;
 }
@@ -469,8 +472,7 @@ body:not(:has(.home-page)) .page-content {
   min-height: auto !important;
 }
 
-/* Ensure non-home pages don't accrue stray container backgrounds that appear as a bottom box */
-body:not(:has(.home-page)) .page-transition-container,
-body:not(:has(.home-page)) .container {
-  background-color: hsl(var(--background)) !important;
+/* On non-home pages, avoid painting the viewport background so short pages don't show a dark band */
+body:not(:has(.home-page)) {
+  background-color: transparent !important;
 }

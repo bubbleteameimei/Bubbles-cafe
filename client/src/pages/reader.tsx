@@ -687,7 +687,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // The theme and toggleTheme functions are already declared at the top of the component
   
   return (
-    <div className="relative bg-background reader-page overflow-x-hidden overflow-y-visible pt-0 pb-8 flex flex-col"
+    <div className="relative bg-background reader-page overflow-x-hidden overflow-y-visible pt-0 pb-0 flex flex-col"
       data-reader-page="true" 
       data-distraction-free={isUIHidden ? "true" : "false"}>
       
