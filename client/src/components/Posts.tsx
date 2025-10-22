@@ -243,7 +243,7 @@ function Posts() {
           >
             <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3 line-clamp-2 group hover:text-primary transition-colors">
               <Link href={`/reader/${post.slug}`} onMouseEnter={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }} onFocus={() => { prefetchReaderCode(); prefetchPostBySlug(post.slug as any); }}>
-                <span dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(post.title.rendered) }} />
+                <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.title.rendered) }} />
               </Link>
             </h2>
             {post.excerpt?.rendered ? (

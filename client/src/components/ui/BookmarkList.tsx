@@ -281,7 +281,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
           <p className="text-sm text-muted-foreground mb-4">
             Create a free account to bookmark stories and track your reading progress.
           </p>
-          <Link to="/auth">
+          <Link href="/auth">
             <Button variant="default" size="sm">Sign in to get started</Button>
           </Link>
         </div>
@@ -319,7 +319,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
                     <div className="flex justify-between items-start">
                       <div>
                         <CardTitle className="text-lg">
-                          <Link to={`/reader/${bookmark.post.slug}`} className="hover:underline">
+                          <Link href={`/reader/${bookmark.post.slug}`} className="hover:underline">
                             {bookmark.post.title}
                           </Link>
                         </CardTitle>
@@ -365,7 +365,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
                   </CardContent>
                 
                   <CardFooter>
-                    <Link to={`/reader/${bookmark.post.slug}`}>
+                    <Link href={`/reader/${bookmark.post.slug}`}>
                       <Button variant="outline" size="sm" className="w-full">
                         Continue Reading
                         <ChevronRight className="h-4 w-4 ml-1" />
@@ -385,7 +385,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
                 <Card key={story.id} className="overflow-hidden">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg">
-                      <Link to={`/reader/${story.slug}`} className="hover:underline">
+                      <Link href={`/reader/${story.slug}`} className="hover:underline">
                         {story.title}
                       </Link>
                     </CardTitle>
@@ -404,7 +404,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
                   </CardContent>
                   
                   <CardFooter>
-                    <Link to={`/reader/${story.slug}`}>
+                    <Link href={`/reader/${story.slug}`}>
                       <Button variant="outline" size="sm" className="w-full">
                         Read Story
                         <ChevronRight className="h-4 w-4 ml-1" />
@@ -526,7 +526,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
                 <div className="flex justify-between items-start">
                   <div>
                     <CardTitle className="text-lg">
-                      <Link to={`/reader/${bookmark.post.slug}`} className="hover:underline">
+                      <Link href={`/reader/${bookmark.post.slug}`} className="hover:underline">
                         {bookmark.post.title}
                       </Link>
                     </CardTitle>
@@ -568,7 +568,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
               </CardContent>
               
               <CardFooter>
-                <Link to={`/reader/${bookmark.post.slug}`}>
+                <Link href={`/reader/${bookmark.post.slug}`}>
                   <Button variant="outline" size="sm" className="w-full">
                     Continue Reading
                     <ChevronRight className="h-4 w-4 ml-1" />
@@ -580,7 +580,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
           
           {limit && filteredBookmarks.length > limit && (
             <div className="text-center pt-2">
-              <Link to="/bookmarks">
+              <Link href="/bookmarks">
                 <Button variant="link">View all bookmarks</Button>
               </Link>
             </div>

@@ -154,12 +154,12 @@ export default function UserFeedbackPage() {
           <CardContent className="pt-4">
             <div className="flex gap-4 mt-2">
               <Button variant="outline" className="flex-1 border-primary/20" asChild>
-                <Link to="/login" className="inline-flex items-center justify-center">
+                <Link href="/login" className="inline-flex items-center justify-center">
                   Sign in
                 </Link>
               </Button>
               <Button className="flex-1" asChild>
-                <Link to="/register" className="inline-flex items-center justify-center">
+                <Link href="/register" className="inline-flex items-center justify-center">
                   Create account
                 </Link>
               </Button>

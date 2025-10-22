@@ -344,18 +344,19 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
             <Button type="submit" onClick={handleAddBookmark} disabled={createMutation.isPending}>
               Add Bookmark with Details
             </Button>
-            <Link to="/bookmarks">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => {
-                  // Close the dialog
-                  setOpen(false);
-                }}
-              >
-                View All Bookmarks
-              </Button>
-            </Link>
+            <Link href="/bookmarks">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    // Close the dialog
+                    setOpen(false);
+                  }}
+                  data-testid="bookmark-view-all"
+                >
+                  View All Bookmarks
+                </Button>
+              </Link>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -476,7 +477,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
               <Button type="submit" onClick={handleAddBookmark} disabled={createMutation.isPending} data-testid={`bookmark-add-details-default-${postId}`}>
                 Add Bookmark with Details
               </Button>
-              <Link to="/bookmarks">
+              <Link href="/bookmarks">
                 <Button 
                   type="button" 
                   variant="outline" 
@@ -484,7 +485,6 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
                     // Close the dialog
                     setOpen(false);
                   }}
-                  data-testid="bookmark-view-all"
                 >
                   View All Bookmarks
                 </Button>

@@ -258,9 +258,9 @@ export default function Navigation() {
         style={{
           position: "absolute",
           bottom: 0,
-          left: "50%",
-          width: "100vw",
-          transform: "translateX(-50%)",
+          left: 0,
+          width: "100%",
+          transform: "none",
           borderTop: "1px solid hsl(var(--border) / 0.70)",
           zIndex: 40
         }}

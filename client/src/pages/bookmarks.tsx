@@ -37,7 +37,7 @@ export default function BookmarksPage() {
       <div className="container max-w-4xl mx-auto py-12 px-4">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Bookmarks</h1>
-          <Link to="/stories">
+          <Link href="/stories">
             <Button variant="outline" size="sm">Browse Stories</Button>
           </Link>
         </div>
@@ -57,7 +57,7 @@ export default function BookmarksPage() {
     <div className="container max-w-4xl mx-auto py-12 px-4">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Your Bookmarks</h1>
-        <Link to="/stories">
+        <Link href="/stories">
           <Button variant="outline" size="sm">Browse Stories</Button>
         </Link>
       </div>
