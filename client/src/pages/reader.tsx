@@ -361,20 +361,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     queryKey: ["wordpress", "reader", routeSlug ?? "", isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
       if (import.meta.env?.DEV) {
-        console.log('[Reader] Fetching WordPress posts...', { routeSlug });
+        console.log('[Reader] Fetching WordPress posts list...', { routeSlug });
       }
 
       try {
-        if (routeSlug) {
-          // Use server-proxied WordPress API to avoid CORS
-          const post = await fetchWordPressPostBySlug(routeSlug);
-          return { posts: [post], totalPages: 1, total: 1 };
-        } else {
-          // Fetch a list of WordPress posts via proxy
-          const result = await fetchWordPressPosts({ perPage: 100, includeContent: true });
-          const posts = Array.isArray(result.posts) ? result.posts : [];
-          return { posts, totalPages: result.totalPages ?? 1, total: result.total ?? posts.length };
-        }
+        // Always fetch a list of posts to preserve global navigation context
+        const result = await fetchWordPressPosts({ perPage: 100, includeContent: true });
+        const posts = Array.isArray(result.posts) ? result.posts : [];
+        return { posts, totalPages: result.totalPages ?? 1, total: result.total ?? posts.length };
       } catch (error) {
         console.error('[Reader] Error fetching WordPress posts via proxy:', error);
         throw error;
@@ -387,53 +381,36 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   
 
-  // Validate and update currentIndex when posts data changes
+  // Validate and update currentIndex when posts data changes; align index by slug if present
   useEffect(() => {
     if (postsData?.posts && postsData.posts.length > 0) {
-      if (import.meta.env?.DEV) {
-        console.log('[Reader] Validating current index:', {
-          currentIndex,
-          totalPosts: postsData.posts.length,
-          savedIndex: sessionStorage.getItem('selectedStoryIndex')
-        });
+      // If we have a slug in the route, align the index to that post
+      if (routeSlug) {
+        const bySlug = postsData.posts.findIndex((p: any) => String(p.slug || '') === String(routeSlug));
+        if (bySlug >= 0 && bySlug !== currentIndex) {
+          setCurrentIndex(bySlug);
+          sessionStorage.setItem('selectedStoryIndex', String(bySlug));
+        }
       }
 
       // Ensure currentIndex is within bounds
       if (currentIndex >= postsData.posts.length) {
-        if (import.meta.env?.DEV) {
-          console.log('[Reader] Current index out of bounds, resetting to 0');
-        }
         setCurrentIndex(0);
         sessionStorage.setItem('selectedStoryIndex', '0');
       } else {
-        if (import.meta.env?.DEV) {
-          console.log('[Reader] Current index is valid:', currentIndex);
-        }
         sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
       }
 
       // Log current post details
       const currentPost = postsData.posts[currentIndex];
-      if (import.meta.env?.DEV) {
-        console.log('[Reader] Selected post:', currentPost ? {
-          id: currentPost.id,
-          title: currentPost.title?.rendered || currentPost.title || 'Story',
-          date: currentPost.date
-        } : 'No post found');
-      }
-      
+
       // Now that we have the post data, update our slug for auto-saving
       if (currentPost) {
         const newSlug = routeSlug || (currentPost.slug || `post-${currentPost.id}`);
-        if (import.meta.env?.DEV) {
-          console.log('[Reader] Setting auto-save slug:', newSlug);
-        }
         setAutoSaveSlug(newSlug);
-        
-        
       }
     }
-  }, [currentIndex, postsData?.posts, routeSlug, queryClient, setLocation, toast]);
+  }, [currentIndex, postsData?.posts, routeSlug]);
 
   // Position restoration notification has been removed as requested
 

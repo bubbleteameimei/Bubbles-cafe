@@ -262,10 +262,10 @@ export default function StoriesIndexContent() {
     };
 
     if (q) {
-      // Score and sort by similarity; filter minimal matches
+      // Score and sort by similarity; filter minimal matches (stricter to avoid random picks)
       list = list
         .map(p => ({ p, score: similarityScore(p, q) }))
-        .filter(x => x.score > 0.12)
+        .filter(x => x.score > 0.22)
         .sort((a, b) => b.score - a.score)
         .map(x => x.p);
     }
@@ -295,6 +295,125 @@ export default function StoriesIndexContent() {
   }, [sortedPosts, categoryFilter, search, sort]);
 
   const currentPosts = filteredPosts;
+
+  // Latest Stories list - always sorted newest->oldest regardless of dropdown, but respects search/category
+  const latestPosts = useMemo(() => {
+    let list = [...sortedPosts];
+    if (categoryFilter !== 'all') {
+      list = list.filter(p => {
+        const md = (p.metadata || {}) as Record<string, any>;
+        return String(md.themeCategory || '').toLowerCase() === categoryFilter.toLowerCase();
+      });
+    }
+    const q = search.trim().toLowerCase();
+    if (q) {
+      // Reuse similarity scoring from above (inline duplication to avoid refactor)
+      const tokenize = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+      const jaccard = (a: string[], b: string[]) => {
+        if (!a.length || !b.length) return 0;
+        const setA = new Set(a);
+        const setB = new Set(b);
+        const inter = [...setA].filter(x => setB.has(x)).length;
+        const union = new Set([...a, ...b]).size;
+        return inter / union;
+      };
+      const editDistance = (a: string, b: string) => {
+        const m = a.length, n = b.length;
+        if (!m) return n;
+        if (!n) return m;
+        const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+        for (let i = 0; i <= m; i++) dp[i][0] = i;
+        for (let j = 0; j <= n; j++) dp[0][j] = j;
+        for (let i = 1; i <= m; i++) {
+          for (let j = 1; j <= n; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            dp[i][j] = Math.min(
+              dp[i - 1][j] + 1,
+              dp[i][j - 1] + 1,
+              dp[i - 1][j - 1] + cost
+            );
+          }
+        }
+        return dp[m][n];
+      };
+      const synonyms: Record<string, string[]> = {
+        ghost: ['spirit','phantom','specter','wraith'],
+        curse: ['hex','jinx','spell'],
+        witch: ['hag','sorceress'],
+        demon: ['fiend','devil'],
+        monster: ['creature','beast'],
+        blood: ['bleed','bloody'],
+        scream: ['yell','shriek'],
+        dark: ['night','gloom','black'],
+        shadow: ['shade','silhouette'],
+        grave: ['tomb','burial'],
+        dead: ['deceased','lifeless'],
+        fear: ['terror','dread'],
+        knife: ['blade','dagger'],
+        eyes: ['gaze','stare'],
+        footsteps: ['steps','treads'],
+        whisper: ['murmur','hiss'],
+        door: ['gate','entry'],
+        basement: ['cellar'],
+        closet: ['wardrobe','cupboard'],
+        window: ['pane','glass'],
+        bone: ['skeleton'],
+        cold: ['chill','freezing'],
+        haunted: ['possessed','cursed'],
+        night: ['darkness']
+      };
+      const boostedKeywords = [
+        'blood','scream','shadow','dark','fear','dead','grave','curse','witch','ghost','monster',
+        'door','basement','closet','window','footsteps','whisper','knife','bone','eyes','cold','haunted','night'
+      ];
+      const expandWithSynonyms = (tokens: string[]) => {
+        const set = new Set(tokens);
+        for (const t of tokens) {
+          const syns = synonyms[t];
+          if (syns) for (const s of syns) set.add(s);
+        }
+        return Array.from(set);
+      };
+      const similarityScore = (post: Post, query: string) => {
+        const qTokens = tokenize(query);
+        const qExpanded = expandWithSynonyms(qTokens);
+        const title = String(post.title || "");
+        const content = String(post.content || "");
+        const titleTokens = tokenize(title);
+        const contentTokens = tokenize(content).slice(0, 500);
+        const jTitle = jaccard(qExpanded, titleTokens);
+        let directTitle = 0;
+        for (const qt of qExpanded) {
+          if (title.toLowerCase().includes(qt)) directTitle += 0.5;
+        }
+        const jContent = jaccard(qExpanded, contentTokens) * 0.55;
+        let typoBonus = 0;
+        for (const qt of qExpanded) {
+          let best = Infinity;
+          for (const tt of titleTokens) {
+            const d = editDistance(qt, tt);
+            if (d < best) best = d;
+          }
+          if (best <= 2) typoBonus += 0.4;
+        }
+        let keywordBoost = 0;
+        for (const kw of boostedKeywords) {
+          if (titleTokens.includes(kw)) keywordBoost += 0.25;
+          if (contentTokens.includes(kw)) keywordBoost += 0.1;
+        }
+        return (jTitle * 2.2) + directTitle + jContent + typoBonus + keywordBoost;
+      };
+
+      list = list
+        .map(p => ({ p, score: similarityScore(p, q) }))
+        .filter(x => x.score > 0.22)
+        .map(x => x.p);
+    }
+
+    // Always newest -> oldest
+    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return list;
+  }, [sortedPosts, categoryFilter, search]);
 
   const featuredStory = useMemo(() => {
     const all = [...currentPosts];
@@ -561,7 +680,7 @@ export default function StoriesIndexContent() {
 
           <div className="flex justify-between items-center mb-3 mt-2">
             <h1 className="text-3xl md:text-4xl font-decorative">Latest Stories</h1>
-            <div className="text-sm text-muted-foreground">{filteredPosts.length} stories</div>
+            <div className="text-sm text-muted-foreground">{latestPosts.length} stories</div>
           </div>
           {/* Optional category filter if categories exist */}
           {availableCategories.length > 0 && (
@@ -581,7 +700,7 @@ export default function StoriesIndexContent() {
           )}
 
           {/* Stories Grid */}
-          {currentPosts.length === 0 ? (
+          {latestPosts.length === 0 ? (
             <div
               className="text-center py-8 sm:py-10 md:py-12 border-2 border-dashed rounded-lg bg-card/50 px-3 sm:px-4"
             >
@@ -784,7 +903,7 @@ export default function StoriesIndexContent() {
             <div
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
             >
-              {currentPosts.map((post: Post) => {
+              {latestPosts.map((post: Post) => {
                 
                 const metadata = post.metadata || {};
                 let themeCategory = "";

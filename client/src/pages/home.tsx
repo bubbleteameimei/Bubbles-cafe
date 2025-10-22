@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronRight, Book } from "lucide-react";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { getExcerpt } from "@/lib/content-analysis";
+import { extractEngagingExcerpt } from "@/lib/excerpt-lite";
 import { sanitizeHtml } from "@/lib/sanitize";
 import ApiLoader from "@/components/api-loader";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
