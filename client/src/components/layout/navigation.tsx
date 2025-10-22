@@ -109,7 +109,7 @@ export default function Navigation() {
   return (
     <>
       <header
-        className={`w-full bg-transparent supports-[backdrop-filter]:bg-transparent backdrop-blur-md shadow-sm`}
+        className={`w-full bg-transparent supports-[backdrop-filter]:bg-transparent backdrop-blur-md shadow-sm pb-[2px]`}
         style={{
           position: 'relative',
           margin: 0,

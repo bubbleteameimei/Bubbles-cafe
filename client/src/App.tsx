@@ -142,6 +142,7 @@ const AppContent = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isPageTransition, setIsPageTransition] = useState(false);
   const [previousLocation, setPreviousLocation] = useState('');
+  const [showFooter, setShowFooter] = useState(false);
 
   // Basic SEO: set canonical and defaults site-wide
   const canonical = locationStr || '/';
@@ -179,6 +180,48 @@ const AppContent = () => {
       trackPageView(location);
     }
   }, [location, isErrorPage]);
+
+  // Gate footer to avoid "flash" before content paints
+  useEffect(() => {
+    if (isErrorPage) {
+      setShowFooter(false);
+      return;
+    }
+    setShowFooter(false);
+
+    let rafId = 0;
+    let attempts = 0;
+
+    const checkReady = () => {
+      attempts++;
+      const main = document.getElementById('main-content');
+      const hasHeight = !!main && main.getBoundingClientRect().height > 180;
+
+      if (hasHeight) {
+        setShowFooter(true);
+      } else if (attempts < 120) {
+        rafId = requestAnimationFrame(checkReady);
+      } else {
+        // Safety: ensure footer eventually appears
+        setShowFooter(true);
+      }
+    };
+
+    const onLoad = () => setShowFooter(true);
+
+    if (document.readyState === 'complete') {
+      // Already loaded: wait a couple frames for layout
+      requestAnimationFrame(() => requestAnimationFrame(checkReady));
+    } else {
+      window.addEventListener('load', onLoad, { once: true } as any);
+      rafId = requestAnimationFrame(checkReady);
+    }
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('load', onLoad as any);
+    };
+  }, [locationStr, isErrorPage]);
 
   
 
@@ -429,7 +472,7 @@ const AppContent = () => {
             )}
           </main>
           {/* Footer at page bottom (all non-error pages) */}
-          <Footer />
+          {showFooter ? <Footer /> : null}
         </React.Suspense>
       </div>
     </ErrorBoundary>
