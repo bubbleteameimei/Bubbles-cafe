@@ -458,3 +458,19 @@ div.sidebar-menu-container {
   contain: layout paint style;
   will-change: transform;
 }
+
+/* Non-homepages: remove forced full-height that can create a visible bottom band */
+body:not(:has(.home-page)) .min-h-screen {
+  min-height: auto !important;
+}
+body:not(:has(.home-page)) .page-transition-container,
+body:not(:has(.home-page)) main#main-content,
+body:not(:has(.home-page)) .page-content {
+  min-height: auto !important;
+}
+
+/* Ensure non-home pages don't accrue stray container backgrounds that appear as a bottom box */
+body:not(:has(.home-page)) .page-transition-container,
+body:not(:has(.home-page)) .container {
+  background-color: hsl(var(--background)) !important;
+}

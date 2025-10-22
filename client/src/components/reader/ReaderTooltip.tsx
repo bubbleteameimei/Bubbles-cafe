@@ -11,7 +11,7 @@ const ReaderTooltip = ({ show }: ReaderTooltipProps) => {
 
   // Position the tooltip near the bottom of the viewport, just above where the BackToTop button sits.
   // BackToTop sits at ~24px from the bottom and is ~40-48px tall, so offset ~72px keeps a clear gap.
-  const bottomOffset = 'calc(env(safe-area-inset-bottom, 0px) + 72px)';
+  const bottomOffset = 'calc(env(safe-area-inset-bottom, 0px) + 160px)';
 
   return (
     <AnimatePresence>
