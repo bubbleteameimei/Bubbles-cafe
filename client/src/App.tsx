@@ -427,11 +427,10 @@ const AppContent = () => {
         </main>
         {/* Footer at page bottom (homepage only) */}
         {isHome && (
-         < React.Suspense fallback={null}>
-           < Footer />
-        </  React.Suspense>
-      _code  new)</}
-/>
+          <React.Suspense fallback={null}>
+            <Footer />
+          </React.Suspense>
+        )}
       </div>
     </ErrorBoundary>
   );
