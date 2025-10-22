@@ -12,12 +12,12 @@ const ReaderTooltip = ({ show }: ReaderTooltipProps) => {
     <AnimatePresence>
       {show && (
         <motion.div
-          initial={{ opacity: 0, y: -10, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -10, scale: 0.95 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="fixed inset-x-0 top-0 z-[100] pointer-events-none"
-          style={{ top: 'calc(env(safe-area-inset-top, 0px) + var(--navbar-height, 56px) + 8px)' }}
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.98 }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
+          className="fixed inset-x-0 z-[100] pointer-events-none"
+          style={{ top: '50%', transform: 'translateY(-50%)' }}
         >
           {/* Use the exact same container class as the About page to ensure consistent width */}
           <div className="container max-w-4xl mx-auto px-4">

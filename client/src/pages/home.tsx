@@ -226,12 +226,11 @@ export default function Home() {
                 className="w-full mt-2 sm:mt-3"
               >
                 <div className="w-full max-w-xl mx-auto px-4">
-                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 sm:gap-y-0 sm:gap-x-3">
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                    className="flex-1"
                   >
                     <Button
                       size="lg"
@@ -260,7 +259,6 @@ export default function Home() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                    className="flex-1"
                   >
                     <Button
                       size="lg"

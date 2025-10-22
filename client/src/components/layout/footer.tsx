@@ -10,7 +10,7 @@ export default function Footer() {
 
   return (
     <footer
-      className="site-footer w-full mt-10 bg-background/40 backdrop-blur-sm shadow-inner"
+      className="site-footer w-full mt-10 bg-background shadow-inner"
       style={{
         position: "relative",
         left: 0,
