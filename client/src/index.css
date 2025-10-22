@@ -327,7 +327,20 @@ body.body-home div[class*="container"] {
   background-color: transparent !important;
 }
 
-/* Homepage footer container should match standard background */
+/* Footer standardization: ensure consistent padding and background across all routes */
+footer.site-footer .container {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+  background-color: hsl(var(--background)) !important;
+}
+
+/* Reader page should not alter footer styling */
+.reader-page footer.site-footer,
+[data-reader-page="true"] footer.site-footer {
+  background-color: hsl(var(--background) / 0.4) !important; /* match component class bg-background/40 */
+}
+
+/* Remove transparent container rule for homepage footer only */
 .home-page footer .container {
   background-color: hsl(var(--background)) !important;
 }
