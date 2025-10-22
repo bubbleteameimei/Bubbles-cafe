@@ -95,13 +95,13 @@ const AdminContentManagementPage = React.lazy(() => import('./pages/admin/conten
 const AdminThemesPage = React.lazy(() => import('./pages/admin/themes'));
 const ResetPasswordPage = React.lazy(() => import('./pages/reset-password'));
 
-// Error pages - lazy loaded
-const Error403Page = React.lazy(() => import('./pages/errors/403'));
-const Error404Page = React.lazy(() => import('./pages/errors/404'));
-const Error429Page = React.lazy(() => import('./pages/errors/429'));
-const Error500Page = React.lazy(() => import('./pages/errors/500'));
-const Error503Page = React.lazy(() => import('./pages/errors/503'));
-const Error504Page = React.lazy(() => import('./pages/errors/504'));
+// Error pages - eagerly loaded to avoid Suspense blank states
+import Error403Page from './pages/errors/403';
+import Error404Page from './pages/errors/404';
+import Error429Page from './pages/errors/429';
+import Error500Page from './pages/errors/500';
+import Error503Page from './pages/errors/503';
+import Error504Page from './pages/errors/504';
 
 // Legal Pages - lazy loaded
 const CopyrightPage = React.lazy(() => import('./pages/legal/copyright'));
@@ -181,11 +181,30 @@ const AppContent = () => {
     }
   }, [location, isErrorPage]);
 
-  // Defer footer display until after initial content paints for current route
+  // Defer footer display until the main content for the route has rendered
   useEffect(() => {
     setShowFooter(false);
-    const id = requestAnimationFrame(() => setShowFooter(true));
-    return () => cancelAnimationFrame(id);
+    let rafId = 0;
+    let attempts = 0;
+
+    const checkReady = () => {
+      attempts++;
+      const main = document.getElementById('main-content');
+      const hasPageContent = !!main && !!main.querySelector('.page-content');
+      const hasHeight = !!main && main.getBoundingClientRect().height > 120;
+
+      if (hasPageContent && hasHeight) {
+        setShowFooter(true);
+      } else if (attempts < 90) {
+        rafId = requestAnimationFrame(checkReady);
+      } else {
+        // Fallback: show after ~1.5s to avoid footer never appearing
+        setShowFooter(true);
+      }
+    };
+
+    rafId = requestAnimationFrame(checkReady);
+    return () => cancelAnimationFrame(rafId);
   }, [locationStr]);
 
   
