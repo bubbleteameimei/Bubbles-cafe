@@ -116,7 +116,7 @@ export default function Navigation() {
           padding: 0,
           width: '100%',
           paddingTop: 'env(safe-area-inset-top, 0px)',
-          paddingBottom: '8px', // subtle extra space between icons row and demarcation line
+          paddingBottom: '6px', // slightly reduced extra space
         }}
       >
         <div className="main-header flex items-center justify-between h-14 px-4">

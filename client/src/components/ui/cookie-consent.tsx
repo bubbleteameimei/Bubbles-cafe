@@ -136,9 +136,9 @@ export function CookieConsent() {
             ref={acceptBtnRef}
             onClick={handleAccept}
             className={cn(
-              "px-6 py-2 rounded-full bg-blue-600 text-white font-medium",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30",
-              "transition-all duration-300 hover:bg-blue-600/90 hover:scale-105 hover:shadow-lg hover:shadow-blue-600/15"
+              "px-6 py-2 rounded-full bg-sky-400 text-white font-medium",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/30",
+              "transition-all duration-300 hover:bg-sky-400/90 hover:scale-105 hover:shadow-lg hover:shadow-sky-400/15"
             )}
           >
             Accept
@@ -146,9 +146,9 @@ export function CookieConsent() {
           <button
             onClick={handleDecline}
             className={cn(
-              "px-6 py-2 rounded-full bg-gray-600 text-white font-medium",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-600/30",
-              "transition-all duration-300 hover:bg-gray-600/90 hover:scale-105 hover:shadow-lg hover:shadow-gray-600/15"
+              "px-6 py-2 rounded-full bg-gray-700 text-white font-medium",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-700/30",
+              "transition-all duration-300 hover:bg-gray-700/90 hover:scale-105 hover:shadow-lg hover:shadow-gray-700/15"
             )}
           >
             Decline

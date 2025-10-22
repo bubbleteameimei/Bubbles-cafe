@@ -28,7 +28,7 @@ import './components/transition.css';
 import ScrollEffectsProvider from './components/ScrollEffectsProvider';
 const SEO = React.lazy(() => import('@/components/SEO'));
 
-const AutoHideNavbar = React.lazy(() => import('./components/layout/AutoHideNavbar'));
+import AutoHideNavbar from './components/layout/AutoHideNavbar';
 // Import our notification system components
 import { NotificationProvider } from './contexts/notification-context';
 import ErrorToastProvider from './components/providers/error-toast-provider';
@@ -45,7 +45,7 @@ const BackToTopButton = React.lazy(() => import('./components/BackToTopButton'))
 const HomePage = React.lazy(() => import('./pages/home'));
 const StoriesPage = React.lazy(() => import('./pages/index'));
 // Import footer component lazily
-const Footer = React.lazy(() => import('./components/layout/footer'));
+import Footer from './components/layout/footer';
 
 // Eager-load all pages for faster route switching
 const ReaderPage = React.lazy(() => import('./pages/reader'));
@@ -180,6 +180,102 @@ const AppContent = () => {
     }
   }, [location, isErrorPage]);
 
+  // Prefetch the current route component to avoid Suspense blank frames
+  useEffect(() => {
+    const run = () => {
+      try {
+        const path = locationStr;
+        if (path === '/') {
+          void import('./pages/home');
+        } else if (path.startsWith('/stories')) {
+          void import('./pages/index');
+        } else if (path === '/reader' || path.startsWith('/reader/')) {
+          void import('./pages/reader');
+        } else if (path.startsWith('/community-story/')) {
+          void import('./pages/reader');
+        } else if (path.startsWith('/story/')) {
+          void import('./pages/reader');
+        } else if (path.startsWith('/about')) {
+          void import('./pages/about');
+        } else if (path.startsWith('/contact')) {
+          void import('./pages/contact');
+        } else if (path.startsWith('/privacy')) {
+          void import('./pages/privacy');
+        } else if (path.startsWith('/report-bug')) {
+          void import('./pages/report-bug');
+        } else if (path.startsWith('/install')) {
+          void import('./pages/install-app');
+        } else if (path.startsWith('/auth')) {
+          void import('./pages/auth');
+          void import('./pages/auth-success');
+          void import('./pages/auth-callback');
+        } else if (path.startsWith('/reset-password')) {
+          void import('./pages/reset-password');
+        } else if (path.startsWith('/profile')) {
+          void import('./pages/profile');
+        } else if (path.startsWith('/bookmarks')) {
+          void import('./pages/bookmarks');
+        } else if (path.startsWith('/notifications')) {
+          void import('./pages/notifications');
+        } else if (path.startsWith('/recommendations')) {
+          void import('./pages/recommendations');
+        } else if (path.startsWith('/settings/')) {
+          if (path.includes('/fonts')) {
+            void import('./pages/settings/fonts');
+          } else if (path.includes('/accessibility')) {
+            void import('./pages/settings/accessibility');
+          } else if (path.includes('/notifications')) {
+            void import('./pages/settings/notifications');
+          } else if (path.includes('/privacy')) {
+            void import('./pages/settings/privacy');
+          } else if (path.includes('/cookie-management')) {
+            void import('./pages/settings/cookie-management');
+          } else if (path.includes('/quick-settings')) {
+            void import('./pages/settings/quick-settings');
+          } else if (path.includes('/preview')) {
+            void import('./pages/settings/preview');
+          } else if (path.includes('/connected-accounts')) {
+            void import('./pages/settings/connected-accounts');
+          } else {
+            void import('./pages/settings/profile');
+          }
+        } else if (path.startsWith('/community')) {
+          void import('./pages/community');
+        } else if (path.startsWith('/submit-story')) {
+          void import('./pages/submit-story');
+        } else if (path.startsWith('/edit-story')) {
+          void import('./pages/edit-story');
+        } else if (path.startsWith('/feedback')) {
+          void import('./pages/feedback');
+        } else if (path.startsWith('/user/feedback-dashboard')) {
+          void import('./pages/user/feedback-dashboard');
+        } else if (path.startsWith('/support/guidelines')) {
+          void import('./pages/support/guidelines');
+        } else if (path.startsWith('/legal/copyright')) {
+          void import('./pages/legal/copyright');
+        } else if (path.startsWith('/legal/terms')) {
+          void import('./pages/legal/terms');
+        } else if (path.startsWith('/legal/cookie-policy')) {
+          void import('./pages/legal/cookie-policy');
+        } else if (path.startsWith('/admin')) {
+          // Preload common admin screens for snappy nav
+          void import('./pages/admin');
+          void import('./pages/admin/dashboard');
+          void import('./pages/admin/content');
+        } else if (path.startsWith('/search')) {
+          void import('./pages/search-results');
+        }
+      } catch {}
+    };
+
+    const ric = (window as any)?.requestIdleCallback as any;
+    if (typeof ric === 'function') {
+      ric(() => run(), { timeout: 1200 });
+    } else {
+      setTimeout(run, 50);
+    }
+  }, [locationStr]);
+
   
 
   
@@ -219,47 +315,9 @@ const AppContent = () => {
           m-0 p-0 px-0 mx-0 flex flex-col`}
          style={{ width: '100%', minWidth: '100%', maxWidth: '100%', margin: '0 auto', paddingTop: isReaderLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)' }}>
         {/* Main navigation bar */}
-        <React.Suspense fallback={
-          <header
-            className="w-full shadow-sm"
-            style={{
-              position: 'relative',
-              width: '100%',
-              height: 'calc(var(--navbar-height, 56px) + 8px)',
-            }}
-            aria-hidden="true"
-          >
-            <div className="main-header h-14 px-4 flex items-center justify-between" />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none"
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                left: '50%',
-                width: '100vw',
-                transform: 'translateX(-50%)',
-                borderTop: '1px solid hsl(var(--border) / 0.70)',
-                zIndex: 40
-              }}
-            />
-          </header>
-        }>
-          <AutoHideNavbar />
-        </React.Suspense>
-        {/* Main content and footer with a lightweight skeleton fallback for smoothness */}
-        <React.Suspense fallback={
-          <main id="main-content" tabIndex={-1} className="flex-1">
-            <div className="page-content px-6 py-10">
-              <div className="max-w-4xl mx-auto space-y-4">
-                <div className="h-6 w-2/3 bg-muted rounded" />
-                <div className="h-4 w-full bg-muted rounded" />
-                <div className="h-4 w-11/12 bg-muted rounded" />
-                <div className="h-4 w-10/12 bg-muted rounded" />
-              </div>
-            </div>
-          </main>
-        }>
+        <AutoHideNavbar />
+        {/* Main content and footer Suspense without skeleton for smoother perception */}
+        <React.Suspense fallback={null}>
           {/* Main content landmark for accessibility */}
           <main id="main-content" tabIndex={-1} className="flex-1">
             {isReaderLike ? (
