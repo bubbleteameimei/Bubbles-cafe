@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { type CarouselApi } from "@/components/ui/carousel";
 
-import { getReadingTime, extractExcerpt } from "@/lib/excerpt-lite";
+import { getReadingTime, extractEngagingExcerpt } from "@/lib/excerpt-lite";
 import { THEME_CATEGORIES } from "@/lib/themes-lite";
 import type { WordPressPost } from "@/lib/wordpress-api";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
@@ -68,15 +68,12 @@ export default function StoriesIndexContent() {
   // Navigation functions
   const navigateToReader = (slugOrId: string | number) => {
     try {
-      sessionStorage.removeItem('selectedStoryIndex');
-      sessionStorage.setItem('selectedPostSlug', String(slugOrId));
-      setLocation('/reader');
-    } catch (error) {
-      try {
-        sessionStorage.clear();
-        sessionStorage.setItem('selectedPostSlug', String(slugOrId));
-        setLocation('/reader');
-      } catch {}
+      const slugStr = String(slugOrId);
+      // Navigate directly to the story's reader route to ensure correct story opens
+      setLocation(`/reader/${encodeURIComponent(slugStr)}`);
+    } catch {
+      // Fallback
+      window.location.href = `/reader/${encodeURIComponent(String(slugOrId))}`;
     }
   };
 
@@ -141,14 +138,87 @@ export default function StoriesIndexContent() {
         return String(md.themeCategory || '').toLowerCase() === categoryFilter.toLowerCase();
       });
     }
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(p => {
-        const title = String(p.title || '').toLowerCase();
-        const content = String(p.content || '').toLowerCase();
-        return title.includes(q) || content.includes(q);
-      });
+
+    // Fuzzy search scoring (title-weighted, content secondary, typo tolerant)
+    const q = search.trim().toLowerCase();
+    const tokenize = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+    const jaccard = (a: string[], b: string[]) => {
+      if (!a.length || !b.length) return 0;
+      const setA = new Set(a);
+      const setB = new Set(b);
+      const inter = [...setA].filter(x => setB.has(x)).length;
+      const union = new Set([...a, ...b]).size;
+      return inter / union;
+    };
+    const editDistance = (a: string, b: string) => {
+      const m = a.length, n = b.length;
+      if (!m) return n;
+      if (!n) return m;
+      const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+      for (let i = 0; i <= m; i++) dp[i][0] = i;
+      for (let j = 0; j <= n; j++) dp[0][j] = j;
+      for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          dp[i][j] = Math.min(
+            dp[i - 1][j] + 1,
+            dp[i][j - 1] + 1,
+            dp[i - 1][j - 1] + cost
+          );
+        }
+      }
+      return dp[m][n];
+    };
+    const similarityScore = (post: Post, query: string) => {
+      if (!query) return 0;
+      const qTokens = tokenize(query);
+      const title = String(post.title || "");
+      const content = String(post.content || "");
+      const titleTokens = tokenize(title);
+      const contentTokens = tokenize(content).slice(0, 500); // cap for perf
+
+      // Title Jaccard + direct includes
+      const jTitle = jaccard(qTokens, titleTokens);
+      let directTitle = 0;
+      for (const qt of qTokens) {
+        if (title.toLowerCase().includes(qt)) directTitle += 0.6;
+      }
+
+      // Content token overlap (lighter weight)
+      const jContent = jaccard(qTokens, contentTokens) * 0.6;
+
+      // Typo tolerance: nearest word in title
+      let typoBonus = 0;
+      for (const qt of qTokens) {
+        let best = Infinity;
+        for (const tt of titleTokens) {
+          const d = editDistance(qt, tt);
+          if (d < best) best = d;
+        }
+        if (best <= 2) typoBonus += 0.5;
+      }
+
+      // Recency and engagement mild bonuses
+      const createdAt = new Date(post.createdAt).getTime();
+      const ageDays = Math.max(0, (Date.now() - createdAt) / (24 * 60 * 60 * 1000));
+      const recency = Math.max(0, 1 - (ageDays / 30)) * 0.2;
+
+      const likes = typeof post.likesCount === 'number' ? post.likesCount : 0;
+      const views = post.metadata && (post.metadata as any).pageViews ? Number((post.metadata as any).pageViews) : 0;
+      const engagement = Math.min(1, (likes * 0.01) + (views * 0.0005)) * 0.2;
+
+      return (jTitle * 2.2) + directTitle + jContent + typoBonus + recency + engagement;
+    };
+
+    if (q) {
+      // Score and sort by similarity; filter minimal matches
+      list = list
+        .map(p => ({ p, score: similarityScore(p, q) }))
+        .filter(x => x.score > 0.15)
+        .sort((a, b) => b.score - a.score)
+        .map(x => x.p);
     }
+
     switch (sort) {
       case 'oldest':
         list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -176,8 +246,72 @@ export default function StoriesIndexContent() {
   const currentPosts = filteredPosts;
 
   const featuredStory = useMemo(() => {
-    if (!currentPosts || currentPosts.length === 0) return null;
-    const sortedByEngagement = [...currentPosts].sort((a, b) => {
+    const all = [...sortedPosts];
+    if (!all || all.length === 0) return null;
+
+    const q = search.trim().toLowerCase();
+    // If searching, pick best match as featured (smooth, accurate)
+    if (q) {
+      const tokenize = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+      const jaccard = (a: string[], b: string[]) => {
+        if (!a.length || !b.length) return 0;
+        const setA = new Set(a);
+        const setB = new Set(b);
+        const inter = [...setA].filter(x => setB.has(x)).length;
+        const union = new Set([...a, ...b]).size;
+        return inter / union;
+      };
+      const editDistance = (a: string, b: string) => {
+        const m = a.length, n = b.length;
+        if (!m) return n;
+        if (!n) return m;
+        const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+        for (let i = 0; i <= m; i++) dp[i][0] = i;
+        for (let j = 0; j <= n; j++) dp[0][j] = j;
+        for (let i = 1; i <= m; i++) {
+          for (let j = 1; j <= n; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            dp[i][j] = Math.min(
+              dp[i - 1][j] + 1,
+              dp[i][j - 1] + 1,
+              dp[i - 1][j - 1] + cost
+            );
+          }
+        }
+        return dp[m][n];
+      };
+      const qTokens = tokenize(q);
+      const score = (p: Post) => {
+        const title = String(p.title || "");
+        const content = String(p.content || "");
+        const tTok = tokenize(title);
+        const cTok = tokenize(content).slice(0, 400);
+        const jTitle = jaccard(qTokens, tTok) * 2.2;
+        let directTitle = 0;
+        for (const qt of qTokens) if (title.toLowerCase().includes(qt)) directTitle += 0.6;
+        const jContent = jaccard(qTokens, cTok) * 0.6;
+        let typoBonus = 0;
+        for (const qt of qTokens) {
+          let best = Infinity;
+          for (const tt of tTok) {
+            const d = editDistance(qt, tt);
+            if (d < best) best = d;
+          }
+          if (best <= 2) typoBonus += 0.5;
+        }
+        return jTitle + directTitle + jContent + typoBonus;
+      };
+
+      const sortedBySearch = all
+        .map(p => ({ p, s: score(p) }))
+        .sort((a, b) => b.s - a.s)
+        .map(x => x.p);
+
+      return sortedBySearch[0] || all[0];
+    }
+
+    // Otherwise, pick by engagement/recency
+    const sortedByEngagement = all.sort((a, b) => {
       const aDate = new Date(a.createdAt).getTime();
       const bDate = new Date(b.createdAt).getTime();
       const now = Date.now();
@@ -223,14 +357,8 @@ export default function StoriesIndexContent() {
       return bScore - aScore;
     });
 
-    if (sortedByEngagement.length >= 5) {
-      const dayOfYear = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
-      const rotationIndex = dayOfYear % 5;
-      return sortedByEngagement[rotationIndex];
-    }
-
     return sortedByEngagement[0];
-  }, [currentPosts]);
+  }, [sortedPosts, search]);
 
   if (!hasPaginatedPosts) {
     return (
@@ -253,7 +381,7 @@ export default function StoriesIndexContent() {
       <div className="min-h-screen bg-background flex flex-col overflow-x-hidden overflow-y-auto">
         <div className="w-full pb-12 pt-0 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 mb-4 px-2 sm:px-4">
-            {/* Story index controls: search and filters */}
+            {/* Story index controls: search only; sort moved into the featured story card */}
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <div className="relative w-full sm:w-72">
                 <Input
@@ -264,22 +392,6 @@ export default function StoriesIndexContent() {
                 />
                 <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">⏎</span>
               </div>
-              <Select
-                value={sort}
-                onValueChange={(value: string) =>
-                  setSort(value as 'newest' | 'oldest' | 'popular' | 'shortest')
-                }
-              >
-                <SelectTrigger className="w-36" aria-label="Sort stories (changes story cards)" title="Sort stories (changes story cards)">
-                  <SelectValue placeholder="Sort by (updates story cards)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Newest</SelectItem>
-                  <SelectItem value="oldest">Oldest</SelectItem>
-                  <SelectItem value="popular">Most popular</SelectItem>
-                  <SelectItem value="shortest">Shortest</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
 
@@ -297,8 +409,27 @@ export default function StoriesIndexContent() {
                       {featuredStory.title}
                     </button>
                     <p className="text-sm text-muted-foreground leading-6 mt-2 line-clamp-3 font-serif">
-                      {extractExcerpt(featuredStory.content, 220)}
+                      {extractEngagingExcerpt(featuredStory.content, 220)}
                     </p>
+                    {/* Moved sort dropdown inside featured card for better UX */}
+                    <div className="mt-2 flex justify-end">
+                      <Select
+                        value={sort}
+                        onValueChange={(value: string) =>
+                          setSort(value as 'newest' | 'oldest' | 'popular' | 'shortest')
+                        }
+                      >
+                        <SelectTrigger className="w-40 h-8 text-xs" aria-label="Sort stories">
+                          <SelectValue placeholder="Sort stories" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="newest">Newest</SelectItem>
+                          <SelectItem value="oldest">Oldest</SelectItem>
+                          <SelectItem value="popular">Most popular</SelectItem>
+                          <SelectItem value="shortest">Shortest</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="mt-3 flex items-center justify-between">
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
@@ -359,9 +490,95 @@ export default function StoriesIndexContent() {
               <div className="w-full">
                 <Book className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 text-primary/40 mb-3 sm:mb-4 mt-3 sm:mt-4" />
                 <h3 className="text-lg sm:text-xl font-decorative mb-2 sm:mb-3">No Stories Found</h3>
-                <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed px-2">
-                  No stories are available at the moment. Check back soon or try refreshing the page.
-                </p>
+                {search.trim() ? (
+                  <>
+                    <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-5 leading-relaxed px-2">
+                      Did you mean…
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-5">
+                      {(() => {
+                        // Build suggestions from all posts using the same scoring as filteredPosts
+                        const q = search.trim().toLowerCase();
+                        const tokenize = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+                        const jaccard = (a: string[], b: string[]) => {
+                          if (!a.length || !b.length) return 0;
+                          const setA = new Set(a);
+                          const setB = new Set(b);
+                          const inter = [...setA].filter(x => setB.has(x)).length;
+                          const union = new Set([...a, ...b]).size;
+                          return inter / union;
+                        };
+                        const editDistance = (a: string, b: string) => {
+                          const m = a.length, n = b.length;
+                          if (!m) return n;
+                          if (!n) return m;
+                          const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+                          for (let i = 0; i <= m; i++) dp[i][0] = i;
+                          for (let j = 0; j <= n; j++) dp[0][j] = j;
+                          for (let i = 1; i <= m; i++) {
+                            for (let j = 1; j <= n; j++) {
+                              const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                              dp[i][j] = Math.min(
+                                dp[i - 1][j] + 1,
+                                dp[i][j - 1] + 1,
+                                dp[i - 1][j - 1] + cost
+                              );
+                            }
+                          }
+                          return dp[m][n];
+                        };
+                        const qTokens = tokenize(q);
+                        const score = (p: Post) => {
+                          const title = String(p.title || "");
+                          const content = String(p.content || "");
+                          const tTok = tokenize(title);
+                          const cTok = tokenize(content).slice(0, 300);
+                          const jTitle = jaccard(qTokens, tTok) * 2.2;
+                          let directTitle = 0;
+                          for (const qt of qTokens) if (title.toLowerCase().includes(qt)) directTitle += 0.6;
+                          const jContent = jaccard(qTokens, cTok) * 0.6;
+                          let typoBonus = 0;
+                          for (const qt of qTokens) {
+                            let best = Infinity;
+                            for (const tt of tTok) {
+                              const d = editDistance(qt, tt);
+                              if (d < best) best = d;
+                            }
+                            if (best <= 2) typoBonus += 0.5;
+                          }
+                          return jTitle + directTitle + jContent + typoBonus;
+                        };
+                        const suggestions = [...sortedPosts]
+                          .map(p => ({ p, s: score(p) }))
+                          .filter(x => x.s > 0.12)
+                          .sort((a, b) => b.s - a.s)
+                          .slice(0, 4)
+                          .map(x => x.p);
+
+                        return suggestions.length ? suggestions.map(s => (
+                          <Button
+                            key={s.id}
+                            variant="outline"
+                            size="sm"
+                            className="px-3 py-1 text-xs"
+                            onClick={() => navigateToReader(s.slug || s.id)}
+                          >
+                            {s.title}
+                          </Button>
+                        )) : (
+                          <span className="text-sm text-muted-foreground">No close matches found.</span>
+                        );
+                      })()}
+                    </div>
+                    <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed px-2">
+                      Or check out some of our most popular stories instead.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed px-2">
+                    No stories are available at the moment. Check back soon or try refreshing the page.
+                  </p>
+                )}
                 <Button 
                   variant="default"
                   onClick={() => window.location.reload()}
@@ -427,7 +644,7 @@ export default function StoriesIndexContent() {
                       </CardHeader>
                       <CardContent className="px-4 pt-0 pb-3">
                         <p className="text-sm text-muted-foreground leading-6 line-clamp-3 font-serif">
-                          {excerpt}
+                          {extractEngagingExcerpt(post.content, 200)}
                         </p>
                       </CardContent>
                       <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">

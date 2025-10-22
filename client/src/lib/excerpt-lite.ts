@@ -37,3 +37,89 @@ export function extractExcerpt(content: string, maxLength: number = 250): string
   const lastSpace = truncated.lastIndexOf(" ");
   return lastSpace > 0 ? truncated.slice(0, lastSpace) + "..." : truncated + "...";
 }
+
+/**
+ * Extract a more engaging excerpt by selecting the highest scoring sentence(s).
+ * Heuristics:
+ *  - Prefer sentences with emotion/action words (e.g., scream, blood, shadow, door, heartbeat)
+ *  - Prefer exclamations/questions and mid-story sentences over very first ones
+ *  - Aim for length between ~120 and maxLength characters
+ */
+export function extractEngagingExcerpt(content: string, maxLength: number = 250): string {
+  const text = stripHtml(content);
+  if (!text) return "";
+
+  // Split into sentences (basic split on punctuation)
+  const sentences = text
+    .split(/(?<=[.!?])\s+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  if (sentences.length === 0) return extractExcerpt(content, maxLength);
+
+  const keywords = [
+    "blood","scream","screamed","shadow","shadows","dark","door","knock","whisper","whispered",
+    "heartbeat","footsteps","cold","fear","teeth","eyes","dead","death","grave","night","silence",
+    "alone","behind","stairs","window","closet","basement","crawl","cry","cried","knife","bone",
+    "dread","sweat","breath","breathing","creak","creaked","ghost","monster","hag","witch","curse"
+  ];
+
+  const scoreSentence = (s: string, idx: number): number => {
+    let score = 0;
+    const lower = s.toLowerCase();
+
+    // Emotion/action keywords
+    for (const kw of keywords) {
+      if (lower.includes(kw)) score += 4;
+    }
+
+    // Punctuation cues
+    if (/[!?]/.test(s)) score += 3;
+
+    // Prefer mid-story sentences over first two
+    if (idx > 1) score += 2;
+
+    // Length heuristics
+    const len = s.length;
+    if (len >= 110 && len <= maxLength) score += 3;
+    else if (len >= 70 && len <= maxLength + 30) score += 2;
+
+    // Avoid overly short or excessively long
+    if (len < 40) score -= 2;
+    if (len > maxLength + 60) score -= 2;
+
+    return score;
+  };
+
+  // Select best sentence by score
+  let bestIdx = 0;
+  let bestScore = -Infinity;
+  sentences.forEach((s, idx) => {
+    const sc = scoreSentence(s, idx);
+    if (sc > bestScore) {
+      bestScore = sc;
+      bestIdx = idx;
+    }
+  });
+
+  const chosen = sentences[bestIdx];
+
+  // Try to append the next sentence if it fits and improves engagement
+  let excerpt = chosen;
+  if (bestIdx + 1 < sentences.length) {
+    const next = sentences[bestIdx + 1];
+    const combined = `${chosen} ${next}`.trim();
+    if (combined.length <= maxLength) {
+      excerpt = combined;
+    }
+  }
+
+  // Fallback to simple truncation if still too long
+  if (excerpt.length > maxLength) {
+    const truncated = excerpt.slice(0, maxLength);
+    const lastSpace = truncated.lastIndexOf(" ");
+    excerpt = lastSpace > 0 ? truncated.slice(0, lastSpace) + "..." : truncated + "...";
+  }
+
+  return excerpt;
+}
