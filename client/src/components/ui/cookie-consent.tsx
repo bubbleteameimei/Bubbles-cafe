@@ -22,23 +22,20 @@ export function CookieConsent() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95, y: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95, y: 20 }}
-      transition={
-        {
-          duration: 0.5,
-          ease: [0.4, 0, 0.2, 1],
-          y: { type: "spring", stiffness: 300, damping: 30 }
-        }
-      }
-      className="fixed inset-0 flex items-start justify-center pt-[25vh] z-50 bg-background/80 backdrop-blur-sm pointer-events-auto"
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{
+        duration: 0.3,
+        ease: [0.4, 0, 0.2, 1]
+      }}
+      className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm pointer-events-auto flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="cookie-consent-title"
       aria-describedby="cookie-consent-description"
     >
-      <div className="max-w-[300px] w-full mx-auto bg-card rounded-lg shadow-xl border border-border/50 p-6 space-y-4">
+      <div className="max-w-[320px] w-full mx-auto bg-card rounded-lg shadow-xl border border-border/50 p-6 space-y-4">
         <div className="flex justify-center relative">
           <svg
             className="w-[50px] h-[50px] transition-all duration-300 hover:rotate-12 hover:scale-110"

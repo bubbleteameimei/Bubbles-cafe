@@ -1,35 +1,19 @@
-import React from 'react';
-import { useAuth } from '@/hooks/use-auth';
-import { Spinner } from '@/components/ui/spinner';
-import { useToast } from '@/hooks/use-toast';
+import React, { useEffect } from 'react';
+import SimplifiedErrorPage from '@/components/errors/SimplifiedErrorPage';
 
 export default function ConnectedAccountsPage() {
-  const { checkAuth } = useAuth();
-  const { toast } = useToast();
-  const [loading, setLoading] = React.useState<boolean>(true);
-
-  React.useEffect(() => {
-    const loadAccounts = async () => {
-      try {
-        await checkAuth();
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Unknown error';
-        toast({ title: 'Connection failed', description: msg, variant: 'destructive' });
-      }
-    };
-
-    loadAccounts();
-  }, [checkAuth, toast]);
-
-  if (loading) {
-    return <Spinner />;
-  }
+  // This page is intentionally an error page (feature unavailable)
+  useEffect(() => {
+    document.title = '503 - Service Unavailable | Bubble’s Cafe';
+  }, []);
 
   return (
-    <div>
-      <h1>Connected Accounts</h1>
-      <p>Manage your connected accounts here.</p>
-      {/* Add other account management UI here */}
-    </div>
+    <SimplifiedErrorPage
+      statusCode={503}
+      title="Service Unavailable"
+      message="Connected accounts are not available right now. Please check back later."
+      actionText="Go Home"
+      actionLink="/"
+    />
   );
 }

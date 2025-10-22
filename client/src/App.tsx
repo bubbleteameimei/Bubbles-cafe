@@ -182,6 +182,7 @@ const AppContent = () => {
   }, [location, isErrorPage]);
 
   // Defer footer display until the main content for the route has rendered
+  // On reader pages, wait for the actual article content to be present to avoid footer flashing
   useEffect(() => {
     setShowFooter(false);
     let rafId = 0;
@@ -190,22 +191,23 @@ const AppContent = () => {
     const checkReady = () => {
       attempts++;
       const main = document.getElementById('main-content');
-      const hasPageContent = !!main && !!main.querySelector('.page-content');
-      const hasHeight = !!main && main.getBoundingClientRect().height > 120;
+      const isReader = isReaderLike;
+      const readerReady = !!document.querySelector('.reader-page article.prose .story-content');
+      const hasHeight = !!main && main.getBoundingClientRect().height > (isReader ? 240 : 180);
 
-      if (hasPageContent && hasHeight) {
+      if ((isReader && readerReady) || (!isReader && hasHeight)) {
         setShowFooter(true);
-      } else if (attempts < 90) {
+      } else if (attempts < 120) {
         rafId = requestAnimationFrame(checkReady);
       } else {
-        // Fallback: show after ~1.5s to avoid footer never appearing
+        // Fallback: show after ~2s to avoid footer never appearing
         setShowFooter(true);
       }
     };
 
     rafId = requestAnimationFrame(checkReady);
     return () => cancelAnimationFrame(rafId);
-  }, [locationStr]);
+  }, [locationStr, isReaderLike]);
 
   
 

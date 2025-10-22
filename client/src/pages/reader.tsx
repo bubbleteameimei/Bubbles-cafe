@@ -534,14 +534,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold text-red-600">Error Loading Stories</h2>
-          <p className="text-muted-foreground">
-            {error instanceof Error ? error.message : 'An unexpected error occurred'}
-          </p>
-        </div>
-      </div>
+      <SimplifiedErrorPage
+        statusCode={404}
+        title="Story Not Found"
+        message={error instanceof Error ? error.message : 'The requested story could not be found.'}
+        actionText="Browse Stories"
+        actionLink="/reader"
+      />
     );
   }
 
@@ -553,12 +552,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   if (posts.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold">No Stories Available</h2>
-          <p className="text-muted-foreground">Check back later for new content!</p>
-        </div>
-      </div>
+      <SimplifiedErrorPage
+        statusCode={404}
+        title="Story Not Found"
+        message="The requested story could not be found."
+        actionText="Browse Stories"
+        actionLink="/reader"
+      />
     );
   }
 
@@ -583,12 +583,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // If post doesn't exist, show error
   if (!currentPost) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold">Story Not Found</h2>
-          <p className="text-muted-foreground">The requested story could not be found.</p>
-        </div>
-      </div>
+      <SimplifiedErrorPage
+        statusCode={404}
+        title="Story Not Found"
+        message="The requested story could not be found."
+        actionText="Browse Stories"
+        actionLink="/reader"
+      />
     );
   }
 
