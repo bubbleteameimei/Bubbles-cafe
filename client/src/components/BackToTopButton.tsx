@@ -167,7 +167,7 @@ const BackToTopButton: React.FC = () => {
       className={`${baseClasses} back-to-top-fixed ${stateClasses}`}
       onClick={handleClick}
     >
-      <ArrowUp className="h-4 w-4 md:h-5 md:w-5" strokeWidth={2} />
+      <ArrowUp className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2} />
       <span className="sr-only">Back to top</span>
     </button>
   );
