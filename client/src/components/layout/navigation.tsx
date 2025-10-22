@@ -105,6 +105,26 @@ export default function Navigation() {
     } catch {}
     setTheme(theme === "dark" ? "light" : "dark");
   };
+
+  // Prefetch route chunks for top nav to avoid Suspense blanks
+  const prefetchRoute = (href: string) => {
+    try {
+      switch (href) {
+        case '/':
+          void import('../../pages/home'); break;
+        case '/stories':
+          void import('../../pages/index'); break;
+        case '/reader':
+          void import('../../pages/reader'); break;
+        case '/community':
+          void import('../../pages/community'); break;
+        case '/about':
+          void import('../../pages/about'); break;
+        default:
+          break;
+      }
+    } catch {}
+  };
   
   return (
     <>
@@ -161,6 +181,8 @@ export default function Navigation() {
                   : "text-white hover:text-white/80"
                 }`}
               aria-current={location === href ? "page" : undefined}
+              onMouseEnter={() => prefetchRoute(href)}
+              onFocus={() => prefetchRoute(href)}
             >
               {label}
             </Link>

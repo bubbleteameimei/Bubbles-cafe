@@ -41,26 +41,25 @@ import { useA11y } from '@/hooks/useA11y';
 // New: BackToTopButton (scroll-to-top)
 const BackToTopButton = React.lazy(() => import('./components/BackToTopButton'));
 
-// Import essential pages directly
-const HomePage = React.lazy(() => import('./pages/home'));
-const StoriesPage = React.lazy(() => import('./pages/index'));
-// Import footer component lazily
+// Import essential pages directly (eager for smooth navigation)
+import HomePage from './pages/home';
+import StoriesPage from './pages/index';
 import Footer from './components/layout/footer';
 
-// Eager-load all pages for faster route switching
-const ReaderPage = React.lazy(() => import('./pages/reader'));
-const AboutPage = React.lazy(() => import('./pages/about'));
-const ContactPage = React.lazy(() => import('./pages/contact'));
-const PrivacyPage = React.lazy(() => import('./pages/privacy'));
-const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
-const InstallAppPage = React.lazy(() => import('./pages/install-app'));
+// Eager-load core pages to avoid Suspense blanks
+import ReaderPage from './pages/reader';
+import AboutPage from './pages/about';
+import ContactPage from './pages/contact';
+import PrivacyPage from './pages/privacy';
+import ReportBugPage from './pages/report-bug';
+import InstallAppPage from './pages/install-app';
 
 const AuthPage = React.lazy(() => import('./pages/auth'));
 const AuthSuccessPage = React.lazy(() => import('./pages/auth-success'));
 const AuthCallbackPage = React.lazy(() => import('./pages/auth-callback'));
 const ProfilePage = React.lazy(() => import('./pages/profile'));
 const BookmarksPage = React.lazy(() => import('./pages/bookmarks'));
-const SearchResultsPage = React.lazy(() => import('./pages/search-results'));
+import SearchResultsPage from './pages/search-results';
 const NotificationsPage = React.lazy(() => import('./pages/notifications'));
 const RecommendationsPage = React.lazy(() => import('./pages/recommendations'));
 
@@ -109,7 +108,7 @@ const TermsPage = React.lazy(() => import('./pages/legal/terms'));
 const CookiePolicyPage = React.lazy(() => import('./pages/legal/cookie-policy'));
 
 // Community Pages - lazy loaded
-const CommunityPage = React.lazy(() => import('./pages/community'));
+import CommunityPage from './pages/community';
 const SubmitStoryPage = React.lazy(() => import('./pages/submit-story'));
 const EditStoryPage = React.lazy(() => import('./pages/edit-story'));
 const FeedbackPage = React.lazy(() => import('./pages/feedback'));
@@ -316,8 +315,7 @@ const AppContent = () => {
          style={{ width: '100%', minWidth: '100%', maxWidth: '100%', margin: '0 auto', paddingTop: isReaderLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)' }}>
         {/* Main navigation bar */}
         <AutoHideNavbar />
-        {/* Main content and footer Suspense without skeleton for smoother perception */}
-        <React.Suspense fallback={null}>
+        {/* Main content and footer (no Suspense) */}
           {/* Main content landmark for accessibility */}
           <main id="main-content" tabIndex={-1} className="flex-1">
             {isReaderLike ? (
@@ -526,7 +524,6 @@ const AppContent = () => {
           </main>
           {/* Footer at page bottom (all non-error pages) */}
           <Footer />
-        </React.Suspense>
       </div>
     </ErrorBoundary>
   );

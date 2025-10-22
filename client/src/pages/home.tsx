@@ -235,6 +235,8 @@ export default function Home() {
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
+                      onMouseEnter={() => { try { void import('@/pages/index'); } catch {} }}
+                      onFocus={() => { try { void import('@/pages/index'); } catch {} }}
                       className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       data-testid="home-browse-stories"
                     >
@@ -265,6 +267,8 @@ export default function Home() {
                       size="lg"
                       variant="secondary"
                       onClick={() => setLocation('/reader')}
+                      onMouseEnter={() => { try { void import('@/pages/reader'); } catch {} }}
+                      onFocus={() => { try { void import('@/pages/reader'); } catch {} }}
                       aria-label="Start reading now"
                       className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >

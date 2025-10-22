@@ -132,23 +132,25 @@ export function CookieConsent() {
         </div>
 
         <div className="flex justify-center gap-4">
+          {/* Accept matches footer Email button color (bg-primary) */}
           <button
             ref={acceptBtnRef}
             onClick={handleAccept}
             className={cn(
-              "px-6 py-2 rounded-full bg-sky-400 text-white font-medium",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/30",
-              "transition-all duration-300 hover:bg-sky-400/90 hover:scale-105 hover:shadow-lg hover:shadow-sky-400/15"
+              "px-6 py-2 rounded-full bg-primary text-primary-foreground font-medium",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+              "transition-all duration-300 hover:bg-primary/90 hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
             )}
           >
             Accept
           </button>
+          {/* Decline matches Browse Stories button (dark gray) */}
           <button
             onClick={handleDecline}
             className={cn(
-              "px-6 py-2 rounded-full bg-gray-700 text-white font-medium",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-700/30",
-              "transition-all duration-300 hover:bg-gray-700/90 hover:scale-105 hover:shadow-lg hover:shadow-gray-700/15"
+              "px-6 py-2 rounded-full bg-[#1A1A1A] text-white font-medium",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A1A1A]/30",
+              "transition-all duration-300 hover:bg-[#2A2A2A] hover:scale-105 hover:shadow-lg hover:shadow-black/20"
             )}
           >
             Decline
