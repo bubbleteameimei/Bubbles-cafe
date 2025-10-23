@@ -28,19 +28,14 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
         {topLiked.map((p) => (
           <article
             key={p.id}
-            className="group rounded-lg border border-border/60 bg-card/70 hover:bg-card transition hover:-translate-y-0.5 shadow-sm hover:shadow-md cursor-pointer"
-            role="button"
-            tabIndex={0}
-            onClick={() => onNavigate(p.slug || p.id)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onNavigate(p.slug || p.id);
-              }
-            }}
-            aria-label={`Open ${p.title}`}
+            className="group rounded-lg border border-border/60 bg-card/70 hover:bg-card transition hover:-translate-y-0.5 shadow-sm hover:shadow-md"
           >
-            <div className="p-3">
+            <a
+              href={`/reader/${encodeURIComponent(String(p.slug || p.id))}`}
+              onClick={(e) => { e.preventDefault(); onNavigate(p.slug || p.id); }}
+              className="block p-3 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-lg"
+              aria-label={`Open ${p.title}`}
+            >
               <div
                 className="text-left text-sm font-medium group-hover:text-primary line-clamp-2"
                 title={p.title}
@@ -63,7 +58,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                   <time>{new Date(p.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
                 </div>
               </div>
-            </div>
+            </a>
           </article>
         ))}
         {topLiked.length === 0 && (
