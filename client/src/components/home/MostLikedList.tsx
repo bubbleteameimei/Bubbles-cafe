@@ -29,16 +29,24 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
           <article
             key={p.id}
             className="group rounded-lg border border-border/60 bg-card/70 hover:bg-card transition hover:-translate-y-0.5 shadow-sm hover:shadow-md cursor-pointer"
+            role="button"
+            tabIndex={0}
             onClick={() => onNavigate(p.slug || p.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onNavigate(p.slug || p.id);
+              }
+            }}
+            aria-label={`Open ${p.title}`}
           >
             <div className="p-3">
-              <button
-                className="text-left text-sm font-medium hover:text-primary line-clamp-2"
-                onClick={(e) => { e.stopPropagation(); onNavigate(p.slug || p.id); }}
+              <div
+                className="text-left text-sm font-medium group-hover:text-primary line-clamp-2"
                 title={p.title}
               >
                 {p.title}
-              </button>
+              </div>
               <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center gap-1">
