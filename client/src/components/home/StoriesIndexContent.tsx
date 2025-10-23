@@ -265,7 +265,7 @@ export default function StoriesIndexContent() {
       // Score and sort by similarity; filter minimal matches (stricter to avoid random picks)
       list = list
         .map(p => ({ p, score: similarityScore(p, q) }))
-        .filter(x => x.score > 0.22)
+        .filter(x => x.score > 0.32)
         .sort((a, b) => b.score - a.score)
         .map(x => x.p);
     }
@@ -406,7 +406,7 @@ export default function StoriesIndexContent() {
 
       list = list
         .map(p => ({ p, score: similarityScore(p, q) }))
-        .filter(x => x.score > 0.22)
+        .filter(x => x.score > 0.32)
         .map(x => x.p);
     }
 
@@ -517,7 +517,7 @@ export default function StoriesIndexContent() {
         return jTitle + directTitle + jContent + typoBonus + keywordBoost;
       };
 
-      const sortedBySearch = all
+      const scoredBySearch = all
         .map(p => ({ p, s: score(p) }))
         .sort((a, b) => b.s - a.s)
         .map(x => x.p);
@@ -946,7 +946,7 @@ export default function StoriesIndexContent() {
                         </div>
                         {themeCategory && themeInfo && (
                           <div className="mt-2">
-                            <Badge className="w-fit text-[11px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1">
+                            <Badge className="w-fit text-[12px] sm:text-sm font-medium tracking-wide px-2 py-0.5 flex items-center gap-1">
                               <Book className="h-3 w-3" />
                               {displayName}
                             </Badge>

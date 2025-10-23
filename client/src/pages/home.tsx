@@ -322,14 +322,14 @@ export default function Home() {
                       className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 text-white px-2 sm:px-3"
                       dangerouslySetInnerHTML={{ __html: sanitizeHtml(posts[0]?.title?.rendered || 'Featured Story') }}
                     />
-                    <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 w-full mb-4 sm:mb-5 md:mb-6 line-clamp-2 px-2 sm:px-3 leading-relaxed md:leading-relaxed">
+                    <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 w-full mb-4 sm:mb-5 md:mb-6 line-clamp-2 px-2 sm:px-3 leading-relaxed md:leading-relaxed font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
                       {posts[0]?.content?.rendered && (
                         <motion.span
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.3, delay: 0.1 }}
                         >
-                          {getExcerpt(posts[0].content.rendered)}
+                          {extractEngagingExcerpt(posts[0].content.rendered, 240)}
                         </motion.span>
                       )}
                     </div>

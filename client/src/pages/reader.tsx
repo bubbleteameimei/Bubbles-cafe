@@ -956,6 +956,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     );
                     if (foundIndex >= 0) {
                       setCurrentIndex(foundIndex);
+                      // Keep URL in sync with selected story to fix TOC routing
+                      setLocation(`/reader/${encodeURIComponent(String(posts[foundIndex].slug || posts[foundIndex].id))}`);
                       // Scroll to top for a clean transition
                       window.scrollTo({ top: 0, behavior: 'auto' });
                     }
@@ -1171,7 +1173,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         return (
                           <>
                             <ThemeIcon className="h-4 w-4 text-primary" />
-                            <span className="text-xs font-medium">{themeLabel}</span>
+                            <span className="text-sm font-medium">{themeLabel}</span>
                           </>
                         );
                       })()}
@@ -1179,7 +1181,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   ) : (
                     <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded-md border border-primary/20">
                       <Ghost className="h-4 w-4 text-primary" />
-                      <span className="text-xs font-medium">Horror Fiction</span>
+                      <span className="text-sm font-medium">Horror Fiction</span>
                     </div>
                   )}
                   
