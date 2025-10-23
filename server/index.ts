@@ -81,6 +81,17 @@ app.get('/api/health', async (_req, res) => {
   res.json({ status: 'ok', db: dbStatus });
 });
 
+// Alias for platforms expecting `/health` at root (no /api prefix)
+app.get('/health', async (_req, res) => {
+  let dbStatus: 'connected' | 'error' = 'connected';
+  try {
+    await db.select().from(posts).limit(1);
+  } catch {
+    dbStatus = 'error';
+  }
+  res.json({ status: 'ok', db: dbStatus });
+});
+
 
 
 // Session

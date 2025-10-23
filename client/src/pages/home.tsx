@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronRight, Book } from "lucide-react";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { getExcerpt } from "@/lib/content-analysis";
-import { sanitizeHtmlContent } from "@/lib/sanitize-content";
+import { extractEngagingExcerpt } from "@/lib/excerpt-lite";
+import { sanitizeHtml } from "@/lib/sanitize";
 import ApiLoader from "@/components/api-loader";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
@@ -226,20 +227,21 @@ export default function Home() {
                 className="w-full mt-2 sm:mt-3"
               >
                 <div className="w-full max-w-xl mx-auto px-4">
-                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-0 sm:gap-y-0 sm:gap-x-8">
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                    className="flex-1"
                   >
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
+                      onMouseEnter={() => { try { void import('@/pages/index'); } catch {} }}
+                      onFocus={() => { try { void import('@/pages/index'); } catch {} }}
                       className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       data-testid="home-browse-stories"
                     >
-                      <span className="text-center mr-2">Browse Stories</span>
+                      <span className="text-center mr-1">Browse Stories</span>
                       <motion.div
                         animate={inView ? {
                           rotate: [0, 10, -6, 4, 0],
@@ -260,16 +262,18 @@ export default function Home() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                    className="flex-1"
+                    className="-mt-[8px] sm:mt-0 sm:ml-0"
                   >
                     <Button
                       size="lg"
                       variant="secondary"
                       onClick={() => setLocation('/reader')}
+                      onMouseEnter={() => { try { void import('@/pages/reader'); } catch {} }}
+                      onFocus={() => { try { void import('@/pages/reader'); } catch {} }}
                       aria-label="Start reading now"
                       className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
-                      <span className="text-center mr-2">Start Reading</span>
+                      <span className="text-center mr-1">Start Reading</span>
                       <motion.div
                         animate={inView ? { x: [0, 4, 0] } : undefined}
                         transition={{ 
@@ -278,7 +282,7 @@ export default function Home() {
                           ease: "easeInOut"
                         }}
                       >
-                        <ChevronRight className="h-12 w-12 group-hover:translate-x-2 transition-transform duration-300" />
+                        <ChevronRight className="h-5 w-5 group-hover:translate-x-2 transition-transform duration-300" />
                       </motion.div>
                     </Button>
                   </motion.div>
@@ -316,16 +320,16 @@ export default function Home() {
                   >
                     <h2 
                       className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 text-white px-2 sm:px-3"
-                      dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(posts[0]?.title?.rendered || 'Featured Story') }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(posts[0]?.title?.rendered || 'Featured Story') }}
                     />
-                    <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 w-full mb-4 sm:mb-5 md:mb-6 line-clamp-2 px-2 sm:px-3 leading-relaxed md:leading-relaxed">
+                    <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 w-full mb-4 sm:mb-5 md:mb-6 line-clamp-2 px-2 sm:px-3 leading-relaxed md:leading-relaxed font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
                       {posts[0]?.content?.rendered && (
                         <motion.span
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.3, delay: 0.1 }}
                         >
-                          {getExcerpt(posts[0].content.rendered)}
+                          {extractEngagingExcerpt(posts[0].content.rendered, 240)}
                         </motion.span>
                       )}
                     </div>
@@ -376,7 +380,7 @@ export default function Home() {
                         <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8 group-hover:translate-x-1 transition-transform duration-300 text-white" />
                       </motion.div>
                     </div>
-                    <p className="text-white/80 mt-2 text-center text-sm sm:text-base">
+                    <p className="text-white/80 mt-2 text-center text-[12px] sm:text-[13px]">
                       Install on your phone for a fast, immersive reading experience.
                     </p>
                   </motion.div>

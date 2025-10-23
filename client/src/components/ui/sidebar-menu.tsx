@@ -175,6 +175,77 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
   // Simplified navigation - no state needed for instant switching
 
+  // Prefetch data endpoints to speed up first navigation
+  const prefetchDataForRouteEarly = React.useCallback(async (href: string) => {
+    try {
+      switch (href) {
+        case '/stories': {
+          // Warm stories list
+          await fetch('/api/posts?limit=100', { credentials: 'include' }).catch(() => {});
+          break;
+        }
+        case '/community': {
+          await fetch('/api/posts/community?limit=50', { credentials: 'include' }).catch(() => {});
+          break;
+        }
+        case '/bookmarks': {
+          // Try user bookmarks, fall back to anonymous
+          const res = await fetch('/api/bookmarks', { credentials: 'include' }).catch(() => null);
+          if (!res || !res.ok) {
+            await fetch('/api/reader/bookmarks', { credentials: 'include' }).catch(() => {});
+          }
+          break;
+        }
+        case '/profile': {
+          await fetch('/api/auth/status', { credentials: 'include' }).catch(() => {});
+          break;
+        }
+        case '/search': {
+          await fetch('/api/search/suggest?limit=8', { credentials: 'include' }).catch(() => {});
+          break;
+        }
+        case '/reader': {
+          // Prefetch first page of posts as a heuristic
+          await fetch('/api/posts?page=1&limit=9', { credentials: 'include' }).catch(() => {});
+          break;
+        }
+        default:
+          break;
+      }
+    } catch {}
+  }, []);
+
+  // Async route prefetch map (returns a promise to await before navigating)
+  const prefetchRouteAsync = React.useCallback((href: string): Promise<any> => {
+    try {
+      switch (href) {
+        case '/':
+          return import('../../pages/home');
+        case '/stories':
+          return import('../../pages/index');
+        case '/reader':
+          return import('../../pages/reader');
+        case '/community':
+          return import('../../pages/community');
+        case '/about':
+          return import('../../pages/about');
+        case '/bookmarks':
+          return import('../../pages/bookmarks');
+        case '/profile':
+          return import('../../pages/profile');
+        case '/search':
+          return import('../../pages/search-results');
+        case '/admin':
+        case '/admin/dashboard':
+          return import('../../pages/admin/dashboard');
+        default:
+          return Promise.resolve();
+      }
+    } catch {
+      return Promise.resolve();
+    }
+  }, []);
+
   const handleNavigation = React.useCallback((path: string) => {
     // Prevent duplicate navigation
     if (location === path) {
@@ -203,15 +274,22 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       if (sidebar) {
         sidebar.setOpenMobile(false);
       }
-      // 4. Navigate immediately
-      setLocation(path);
+
+      // 4. Prefetch route chunk, but cap wait to avoid sluggishness
+      const done = prefetchRouteAsync(path).catch(() => {});
+      const cap = new Promise<void>((resolve) => setTimeout(resolve, 150));
+      Promise.race([done, cap]).then(() => {
+        setLocation(path);
+        // Warm likely data endpoints after navigation
+        void prefetchDataForRouteEarly(path);
+      });
 
     } catch (error) {
       console.error("Navigation error:", error);
-      // Fallback to direct location navigation as last resort
+      // Fallback: navigate directly if anything unexpected happens
       window.location.href = path;
     }
-  }, [location, onNavigate, sidebar, setLocation, scrollToTop]);
+  }, [location, onNavigate, sidebar, setLocation, scrollToTop, prefetchRouteAsync, prefetchDataForRouteEarly]);
 
   // Function to render the active indicator for menu items
   const renderActiveIndicator = (_path: string) => {
@@ -869,17 +947,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
 
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/settings/preview'}
-                        onClick={() => handleNavigation('/settings/preview')}
-                        className={submenuItemClass}
-                        aria-current={location === '/settings/preview' ? 'page' : undefined}
-                      >
-                        <Eye className="h-7 w-7 mr-2" />
-                        <span>Preview</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
+                    
                     </SidebarMenuSub>
                   </motion.div>
                 </CollapsibleContent>
@@ -891,7 +959,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Account Settings */}
       <SidebarGroup className="-mt-4">
-        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+        <SidebarGroupLabel data-tooltip-anchor="account-settings" className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
           ACCOUNT SETTINGS
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">
@@ -1058,17 +1126,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         <span>Contact Me</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/report-bug'}
-                        onClick={() => handleNavigation('/report-bug')}
-                        className={submenuItemClass}
-                        aria-current={location === '/report-bug' ? 'page' : undefined}
-                      >
-                        <Bug className="h-7 w-7 mr-2" />
-                        <span>Report a Bug</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
+                    
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/legal/terms'}

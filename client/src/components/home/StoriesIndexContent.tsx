@@ -15,9 +15,9 @@ const MostLikedList = lazy(() => import("@/components/home/MostLikedList"));
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { type CarouselApi } from "@/components/ui/carousel";
+import { type CarouselApi, Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 
-import { getReadingTime, extractExcerpt } from "@/lib/excerpt-lite";
+import { getReadingTime, extractEngagingExcerpt } from "@/lib/excerpt-lite";
 import { THEME_CATEGORIES } from "@/lib/themes-lite";
 import type { WordPressPost } from "@/lib/wordpress-api";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
@@ -68,15 +68,12 @@ export default function StoriesIndexContent() {
   // Navigation functions
   const navigateToReader = (slugOrId: string | number) => {
     try {
-      sessionStorage.removeItem('selectedStoryIndex');
-      sessionStorage.setItem('selectedPostSlug', String(slugOrId));
-      setLocation('/reader');
-    } catch (error) {
-      try {
-        sessionStorage.clear();
-        sessionStorage.setItem('selectedPostSlug', String(slugOrId));
-        setLocation('/reader');
-      } catch {}
+      const slugStr = String(slugOrId);
+      // Navigate directly to the story's reader route to ensure correct story opens
+      setLocation(`/reader/${encodeURIComponent(slugStr)}`);
+    } catch {
+      // Fallback
+      window.location.href = `/reader/${encodeURIComponent(String(slugOrId))}`;
     }
   };
 
@@ -141,14 +138,138 @@ export default function StoriesIndexContent() {
         return String(md.themeCategory || '').toLowerCase() === categoryFilter.toLowerCase();
       });
     }
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(p => {
-        const title = String(p.title || '').toLowerCase();
-        const content = String(p.content || '').toLowerCase();
-        return title.includes(q) || content.includes(q);
-      });
+
+    // Stronger fuzzy search with synonyms and keyword boosts
+    const q = search.trim().toLowerCase();
+    const tokenize = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+    const jaccard = (a: string[], b: string[]) => {
+      if (!a.length || !b.length) return 0;
+      const setA = new Set(a);
+      const setB = new Set(b);
+      const inter = [...setA].filter(x => setB.has(x)).length;
+      const union = new Set([...a, ...b]).size;
+      return inter / union;
+    };
+    const editDistance = (a: string, b: string) => {
+      const m = a.length, n = b.length;
+      if (!m) return n;
+      if (!n) return m;
+      const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+      for (let i = 0; i <= m; i++) dp[i][0] = i;
+      for (let j = 0; j <= n; j++) dp[0][j] = j;
+      for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          dp[i][j] = Math.min(
+            dp[i - 1][j] + 1,
+            dp[i][j - 1] + 1,
+            dp[i - 1][j - 1] + cost
+          );
+        }
+      }
+      return dp[m][n];
+    };
+
+    const synonyms: Record<string, string[]> = {
+      ghost: ['spirit','phantom','specter','wraith'],
+      curse: ['hex','jinx','spell'],
+      witch: ['hag','sorceress'],
+      demon: ['fiend','devil'],
+      monster: ['creature','beast'],
+      blood: ['bleed','bloody'],
+      scream: ['yell','shriek'],
+      dark: ['night','gloom','black'],
+      shadow: ['shade','silhouette'],
+      grave: ['tomb','burial'],
+      dead: ['deceased','lifeless'],
+      fear: ['terror','dread'],
+      knife: ['blade','dagger'],
+      eyes: ['gaze','stare'],
+      footsteps: ['steps','treads'],
+      whisper: ['murmur','hiss'],
+      door: ['gate','entry'],
+      basement: ['cellar'],
+      closet: ['wardrobe','cupboard'],
+      window: ['pane','glass'],
+      bone: ['skeleton'],
+      cold: ['chill','freezing'],
+      haunted: ['possessed','cursed'],
+      night: ['darkness']
+    };
+
+    const boostedKeywords = [
+      'blood','scream','shadow','dark','fear','dead','grave','curse','witch','ghost','monster',
+      'door','basement','closet','window','footsteps','whisper','knife','bone','eyes','cold','haunted','night'
+    ];
+
+    const expandWithSynonyms = (tokens: string[]) => {
+      const set = new Set(tokens);
+      for (const t of tokens) {
+        const syns = synonyms[t];
+        if (syns) for (const s of syns) set.add(s);
+      }
+      return Array.from(set);
+    };
+
+    const similarityScore = (post: Post, query: string) => {
+      if (!query) return 0;
+      const qTokens = tokenize(query);
+      const qExpanded = expandWithSynonyms(qTokens);
+
+      const title = String(post.title || "");
+      const content = String(post.content || "");
+      const titleTokens = tokenize(title);
+      const contentTokens = tokenize(content).slice(0, 500); // cap for perf
+
+      // Title overlap (expanded) + direct includes
+      const jTitle = jaccard(qExpanded, titleTokens);
+      let directTitle = 0;
+      for (const qt of qExpanded) {
+        if (title.toLowerCase().includes(qt)) directTitle += 0.5;
+      }
+
+      // Content token overlap (lighter weight)
+      const jContent = jaccard(qExpanded, contentTokens) * 0.55;
+
+      // Typo tolerance: nearest word in title (expanded)
+      let typoBonus = 0;
+      for (const qt of qExpanded) {
+        let best = Infinity;
+        for (const tt of titleTokens) {
+          const d = editDistance(qt, tt);
+          if (d < best) best = d;
+        }
+        if (best <= 2) typoBonus += 0.4;
+      }
+
+      // Keyword boosts if title/content contain boosted keywords
+      let keywordBoost = 0;
+      for (const kw of boostedKeywords) {
+        if (titleTokens.includes(kw)) keywordBoost += 0.25;
+        if (contentTokens.includes(kw)) keywordBoost += 0.1;
+      }
+
+      // Recency and engagement mild bonuses
+      const createdAt = new Date(post.createdAt).getTime();
+      const ageDays = Math.max(0, (Date.now() - createdAt) / (24 * 60 * 60 * 1000));
+      const recency = Math.max(0, 1 - (ageDays / 30)) * 0.18;
+
+      const likes = typeof post.likesCount === 'number' ? post.likesCount : 0;
+      const views = post.metadata && (post.metadata as any).pageViews ? Number((post.metadata as any).pageViews) : 0;
+      const engagement = Math.min(1, (likes * 0.01) + (views * 0.0005)) * 0.18;
+
+      return (jTitle * 2.2) + directTitle + jContent + typoBonus + keywordBoost + recency + engagement;
+    };
+
+    if (q) {
+      // Score and sort by similarity; filter minimal matches (stricter to avoid random picks)
+      list = list
+        .map(p => ({ p, score: similarityScore(p, q) }))
+        .filter(x => x.score > 0.32)
+        .sort((a, b) => b.score - a.score)
+        .map(x => x.p);
     }
+
     switch (sort) {
       case 'oldest':
         list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -175,9 +296,237 @@ export default function StoriesIndexContent() {
 
   const currentPosts = filteredPosts;
 
+  // Latest Stories list - always sorted newest->oldest regardless of dropdown, but respects search/category
+  const latestPosts = useMemo(() => {
+    let list = [...sortedPosts];
+    if (categoryFilter !== 'all') {
+      list = list.filter(p => {
+        const md = (p.metadata || {}) as Record<string, any>;
+        return String(md.themeCategory || '').toLowerCase() === categoryFilter.toLowerCase();
+      });
+    }
+    const q = search.trim().toLowerCase();
+    if (q) {
+      // Reuse similarity scoring from above (inline duplication to avoid refactor)
+      const tokenize = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+      const jaccard = (a: string[], b: string[]) => {
+        if (!a.length || !b.length) return 0;
+        const setA = new Set(a);
+        const setB = new Set(b);
+        const inter = [...setA].filter(x => setB.has(x)).length;
+        const union = new Set([...a, ...b]).size;
+        return inter / union;
+      };
+      const editDistance = (a: string, b: string) => {
+        const m = a.length, n = b.length;
+        if (!m) return n;
+        if (!n) return m;
+        const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+        for (let i = 0; i <= m; i++) dp[i][0] = i;
+        for (let j = 0; j <= n; j++) dp[0][j] = j;
+        for (let i = 1; i <= m; i++) {
+          for (let j = 1; j <= n; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            dp[i][j] = Math.min(
+              dp[i - 1][j] + 1,
+              dp[i][j - 1] + 1,
+              dp[i - 1][j - 1] + cost
+            );
+          }
+        }
+        return dp[m][n];
+      };
+      const synonyms: Record<string, string[]> = {
+        ghost: ['spirit','phantom','specter','wraith'],
+        curse: ['hex','jinx','spell'],
+        witch: ['hag','sorceress'],
+        demon: ['fiend','devil'],
+        monster: ['creature','beast'],
+        blood: ['bleed','bloody'],
+        scream: ['yell','shriek'],
+        dark: ['night','gloom','black'],
+        shadow: ['shade','silhouette'],
+        grave: ['tomb','burial'],
+        dead: ['deceased','lifeless'],
+        fear: ['terror','dread'],
+        knife: ['blade','dagger'],
+        eyes: ['gaze','stare'],
+        footsteps: ['steps','treads'],
+        whisper: ['murmur','hiss'],
+        door: ['gate','entry'],
+        basement: ['cellar'],
+        closet: ['wardrobe','cupboard'],
+        window: ['pane','glass'],
+        bone: ['skeleton'],
+        cold: ['chill','freezing'],
+        haunted: ['possessed','cursed'],
+        night: ['darkness']
+      };
+      const boostedKeywords = [
+        'blood','scream','shadow','dark','fear','dead','grave','curse','witch','ghost','monster',
+        'door','basement','closet','window','footsteps','whisper','knife','bone','eyes','cold','haunted','night'
+      ];
+      const expandWithSynonyms = (tokens: string[]) => {
+        const set = new Set(tokens);
+        for (const t of tokens) {
+          const syns = synonyms[t];
+          if (syns) for (const s of syns) set.add(s);
+        }
+        return Array.from(set);
+      };
+      const similarityScore = (post: Post, query: string) => {
+        const qTokens = tokenize(query);
+        const qExpanded = expandWithSynonyms(qTokens);
+        const title = String(post.title || "");
+        const content = String(post.content || "");
+        const titleTokens = tokenize(title);
+        const contentTokens = tokenize(content).slice(0, 500);
+        const jTitle = jaccard(qExpanded, titleTokens);
+        let directTitle = 0;
+        for (const qt of qExpanded) {
+          if (title.toLowerCase().includes(qt)) directTitle += 0.5;
+        }
+        const jContent = jaccard(qExpanded, contentTokens) * 0.55;
+        let typoBonus = 0;
+        for (const qt of qExpanded) {
+          let best = Infinity;
+          for (const tt of titleTokens) {
+            const d = editDistance(qt, tt);
+            if (d < best) best = d;
+          }
+          if (best <= 2) typoBonus += 0.4;
+        }
+        let keywordBoost = 0;
+        for (const kw of boostedKeywords) {
+          if (titleTokens.includes(kw)) keywordBoost += 0.25;
+          if (contentTokens.includes(kw)) keywordBoost += 0.1;
+        }
+        return (jTitle * 2.2) + directTitle + jContent + typoBonus + keywordBoost;
+      };
+
+      list = list
+        .map(p => ({ p, score: similarityScore(p, q) }))
+        .filter(x => x.score > 0.32)
+        .map(x => x.p);
+    }
+
+    // Always newest -> oldest
+    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return list;
+  }, [sortedPosts, categoryFilter, search]);
+
   const featuredStory = useMemo(() => {
-    if (!currentPosts || currentPosts.length === 0) return null;
-    const sortedByEngagement = [...currentPosts].sort((a, b) => {
+    const all = [...currentPosts];
+    if (!all || all.length === 0) return null;
+
+    const q = search.trim().toLowerCase();
+    // If searching, pick best match as featured (smooth, accurate) with synonyms/boosts
+    if (q) {
+      const tokenize = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+      const jaccard = (a: string[], b: string[]) => {
+        if (!a.length || !b.length) return 0;
+        const setA = new Set(a);
+        const setB = new Set(b);
+        const inter = [...setA].filter(x => setB.has(x)).length;
+        const union = new Set([...a, ...b]).size;
+        return inter / union;
+      };
+      const editDistance = (a: string, b: string) => {
+        const m = a.length, n = b.length;
+        if (!m) return n;
+        if (!n) return m;
+        const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+        for (let i = 0; i <= m; i++) dp[i][0] = i;
+        for (let j = 0; j <= n; j++) dp[0][j] = j;
+        for (let i = 1; i <= m; i++) {
+          for (let j = 1; j <= n; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            dp[i][j] = Math.min(
+              dp[i - 1][j] + 1,
+              dp[i][j - 1] + 1,
+              dp[i - 1][j - 1] + cost
+            );
+          }
+        }
+        return dp[m][n];
+      };
+      const synonyms: Record<string, string[]> = {
+        ghost: ['spirit','phantom','specter','wraith'],
+        curse: ['hex','jinx','spell'],
+        witch: ['hag','sorceress'],
+        demon: ['fiend','devil'],
+        monster: ['creature','beast'],
+        blood: ['bleed','bloody'],
+        scream: ['yell','shriek'],
+        dark: ['night','gloom','black'],
+        shadow: ['shade','silhouette'],
+        grave: ['tomb','burial'],
+        dead: ['deceased','lifeless'],
+        fear: ['terror','dread'],
+        knife: ['blade','dagger'],
+        eyes: ['gaze','stare'],
+        footsteps: ['steps','treads'],
+        whisper: ['murmur','hiss'],
+        door: ['gate','entry'],
+        basement: ['cellar'],
+        closet: ['wardrobe','cupboard'],
+        window: ['pane','glass'],
+        bone: ['skeleton'],
+        cold: ['chill','freezing'],
+        haunted: ['possessed','cursed'],
+        night: ['darkness']
+      };
+      const boostedKeywords = [
+        'blood','scream','shadow','dark','fear','dead','grave','curse','witch','ghost','monster',
+        'door','basement','closet','window','footsteps','whisper','knife','bone','eyes','cold','haunted','night'
+      ];
+      const expandWithSynonyms = (tokens: string[]) => {
+        const set = new Set(tokens);
+        for (const t of tokens) {
+          const syns = synonyms[t];
+          if (syns) for (const s of syns) set.add(s);
+        }
+        return Array.from(set);
+      };
+
+      const qTokens = tokenize(q);
+      const qExpanded = expandWithSynonyms(qTokens);
+      const score = (p: Post) => {
+        const title = String(p.title || "");
+        const content = String(p.content || "");
+        const tTok = tokenize(title);
+        const cTok = tokenize(content).slice(0, 400);
+        const jTitle = jaccard(qExpanded, tTok) * 2.2;
+        let directTitle = 0;
+        for (const qt of qExpanded) if (title.toLowerCase().includes(qt)) directTitle += 0.5;
+        const jContent = jaccard(qExpanded, cTok) * 0.55;
+        let typoBonus = 0;
+        for (const qt of qExpanded) {
+          let best = Infinity;
+          for (const tt of tTok) {
+            const d = editDistance(qt, tt);
+            if (d < best) best = d;
+          }
+          if (best <= 2) typoBonus += 0.4;
+        }
+        let keywordBoost = 0;
+        for (const kw of boostedKeywords) {
+          if (tTok.includes(kw)) keywordBoost += 0.25;
+          if (cTok.includes(kw)) keywordBoost += 0.1;
+        }
+        return jTitle + directTitle + jContent + typoBonus + keywordBoost;
+      };
+
+      const scoredBySearch = all
+        .map(p => ({ p, s: score(p) }))
+        .sort((a, b) => b.s - a.s)
+        .map(x => x.p);
+
+      return scoredBySearch[0] || all[0];
+    }
+
+    // Otherwise, pick by engagement/recency
+    const sortedByEngagement = all.sort((a, b) => {
       const aDate = new Date(a.createdAt).getTime();
       const bDate = new Date(b.createdAt).getTime();
       const now = Date.now();
@@ -223,14 +572,8 @@ export default function StoriesIndexContent() {
       return bScore - aScore;
     });
 
-    if (sortedByEngagement.length >= 5) {
-      const dayOfYear = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
-      const rotationIndex = dayOfYear % 5;
-      return sortedByEngagement[rotationIndex];
-    }
-
     return sortedByEngagement[0];
-  }, [currentPosts]);
+  }, [currentPosts, search]);
 
   if (!hasPaginatedPosts) {
     return (
@@ -253,7 +596,7 @@ export default function StoriesIndexContent() {
       <div className="min-h-screen bg-background flex flex-col overflow-x-hidden overflow-y-auto">
         <div className="w-full pb-12 pt-0 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 mb-4 px-2 sm:px-4">
-            {/* Story index controls: search and filters */}
+            {/* Story index controls: search only; sort moved into the featured story card */}
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <div className="relative w-full sm:w-72">
                 <Input
@@ -264,22 +607,6 @@ export default function StoriesIndexContent() {
                 />
                 <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">⏎</span>
               </div>
-              <Select
-                value={sort}
-                onValueChange={(value: string) =>
-                  setSort(value as 'newest' | 'oldest' | 'popular' | 'shortest')
-                }
-              >
-                <SelectTrigger className="w-36" aria-label="Sort stories (changes story cards)" title="Sort stories (changes story cards)">
-                  <SelectValue placeholder="Sort by (updates story cards)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Newest</SelectItem>
-                  <SelectItem value="oldest">Oldest</SelectItem>
-                  <SelectItem value="popular">Most popular</SelectItem>
-                  <SelectItem value="shortest">Shortest</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
 
@@ -289,16 +616,37 @@ export default function StoriesIndexContent() {
               <div className="lg:col-span-1">
                 <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
                   <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Award className="h-4 w-4 text-primary" />
-                      <h2 className="text-lg font-decorative">Featured Story</h2>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Award className="h-4 w-4 text-primary" />
+                        <h2 className="text-lg font-decorative">Featured Story</h2>
+                      </div>
+                      <div className="flex items-center">
+                        <Select
+                          value={sort}
+                          onValueChange={(value: string) =>
+                            setSort(value as 'newest' | 'oldest' | 'popular' | 'shortest')
+                          }
+                        >
+                          <SelectTrigger className="w-28 h-7 text-[11px]" aria-label="Sort stories">
+                            <SelectValue placeholder="Sort" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="newest">Newest</SelectItem>
+                            <SelectItem value="oldest">Oldest</SelectItem>
+                            <SelectItem value="popular">Popular</SelectItem>
+                            <SelectItem value="shortest">Shortest</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                     <button className="text-left text-lg font-castoro hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
                       {featuredStory.title}
                     </button>
-                    <p className="text-sm text-muted-foreground leading-6 mt-2 line-clamp-3 font-serif">
-                      {extractExcerpt(featuredStory.content, 220)}
+                    <p className="text-sm text-muted-foreground leading-6 mt-2 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                      {extractEngagingExcerpt(featuredStory.content, 220)}
                     </p>
+                    
                     <div className="mt-3 flex items-center justify-between">
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
@@ -332,7 +680,7 @@ export default function StoriesIndexContent() {
 
           <div className="flex justify-between items-center mb-3 mt-2">
             <h1 className="text-3xl md:text-4xl font-decorative">Latest Stories</h1>
-            <div className="text-sm text-muted-foreground">{filteredPosts.length} stories</div>
+            <div className="text-sm text-muted-foreground">{latestPosts.length} stories</div>
           </div>
           {/* Optional category filter if categories exist */}
           {availableCategories.length > 0 && (
@@ -352,31 +700,211 @@ export default function StoriesIndexContent() {
           )}
 
           {/* Stories Grid */}
-          {currentPosts.length === 0 ? (
+          {latestPosts.length === 0 ? (
             <div
               className="text-center py-8 sm:py-10 md:py-12 border-2 border-dashed rounded-lg bg-card/50 px-3 sm:px-4"
             >
               <div className="w-full">
                 <Book className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 text-primary/40 mb-3 sm:mb-4 mt-3 sm:mt-4" />
-                <h3 className="text-lg sm:text-xl font-decorative mb-2 sm:mb-3">No Stories Found</h3>
-                <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed px-2">
-                  No stories are available at the moment. Check back soon or try refreshing the page.
-                </p>
-                <Button 
-                  variant="default"
-                  onClick={() => window.location.reload()}
-                  className="shadow-sm text-sm sm:text-base h-9 sm:h-10"
-                >
-                  Refresh
-                </Button>
+                
+                {/* Popular right now mini carousel */}
+                <div className="mb-5">
+                  <div className="text-left sm:text-center mb-2 text-xs font-medium text-muted-foreground">
+                    Popular right now
+                  </div>
+                  <Carousel opts={{ align: "start" }}>
+                    <CarouselContent>
+                      {(() => {
+                        const popular = [...sortedPosts]
+                          .map(p => ({
+                            p,
+                            score:
+                              ((typeof p.likesCount === 'number' ? p.likesCount : 0) * 2) +
+                              (p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0)
+                          }))
+                          .sort((a, b) => b.score - a.score)
+                          .slice(0, 8)
+                          .map(x => x.p);
+                        return popular.map(pop => (
+                          <CarouselItem key={pop.id} className="basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                            <Card className="rounded-lg border border-border/50 bg-card/70 hover:bg-card transition">
+                              <CardContent className="p-3">
+                                <button
+                                  className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
+                                  onClick={() => navigateToReader(pop.slug || pop.id)}
+                                >
+                                  {pop.title}
+                                </button>
+                                <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    <time>{new Date(pop.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    <span>{getReadingTime(pop.content)}</span>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </CarouselItem>
+                        ));
+                      })()}
+                    </CarouselContent>
+                    <CarouselPrevious />
+                    <CarouselNext />
+                  </Carousel>
+                </div>
+                
+                {search.trim() ? (
+                  <>
+                    <p className="text-sm sm:text-base text-muted-foreground mb-2 sm:mb-3 leading-relaxed px-2">
+                      Did you mean…
+                    </p>
+                    {/* Alternative keyword chips from synonyms to aid discovery */}
+                    <div className="mb-3 flex flex-wrap items-center justify-center gap-1.5">
+                      {(() => {
+                        const q = search.trim().toLowerCase();
+                        const tokenize = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+                        const tokens = tokenize(q);
+                        const synonyms: Record<string, string[]> = {
+                          ghost: ['spirit','phantom','specter','wraith'],
+                          curse: ['hex','jinx','spell'],
+                          witch: ['hag','sorceress'],
+                          demon: ['fiend','devil'],
+                          monster: ['creature','beast'],
+                          blood: ['bleed','bloody'],
+                          scream: ['yell','shriek'],
+                          dark: ['night','gloom','black'],
+                          shadow: ['shade','silhouette'],
+                          grave: ['tomb','burial'],
+                          dead: ['deceased','lifeless'],
+                          fear: ['terror','dread'],
+                          knife: ['blade','dagger'],
+                          eyes: ['gaze','stare'],
+                          footsteps: ['steps','treads'],
+                          whisper: ['murmur','hiss'],
+                          door: ['gate','entry'],
+                          basement: ['cellar'],
+                          closet: ['wardrobe','cupboard'],
+                          window: ['pane','glass'],
+                          bone: ['skeleton'],
+                          cold: ['chill','freezing'],
+                          haunted: ['possessed','cursed'],
+                          night: ['darkness']
+                        };
+                        const suggestions = new Set<string>();
+                        for (const t of tokens) {
+                          const syns = synonyms[t];
+                          if (syns) syns.forEach(s => suggestions.add(s));
+                        }
+                        const chips = Array.from(suggestions).slice(0, 8);
+                        return chips.length ? chips.map(k => (
+                          <Button
+                            key={k}
+                            variant="outline"
+                            size="sm"
+                            className="px-2 py-0.5 text-xs"
+                            onClick={() => setSearch(k)}
+                          >
+                            {k}
+                          </Button>
+                        )) : null;
+                      })()}
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-5">
+                      {(() => {
+                        // Build suggestions from all posts using the same scoring as filteredPosts
+                        const q = search.trim().toLowerCase();
+                        const tokenize = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+                        const jaccard = (a: string[], b: string[]) => {
+                          if (!a.length || !b.length) return 0;
+                          const setA = new Set(a);
+                          const setB = new Set(b);
+                          const inter = [...setA].filter(x => setB.has(x)).length;
+                          const union = new Set([...a, ...b]).size;
+                          return inter / union;
+                        };
+                        const editDistance = (a: string, b: string) => {
+                          const m = a.length, n = b.length;
+                          if (!m) return n;
+                          if (!n) return m;
+                          const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+                          for (let i = 0; i <= m; i++) dp[i][0] = i;
+                          for (let j = 0; j <= n; j++) dp[0][j] = j;
+                          for (let i = 1; i <= m; i++) {
+                            for (let j = 1; j <= n; j++) {
+                              const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                              dp[i][j] = Math.min(
+                                dp[i - 1][j] + 1,
+                                dp[i][j - 1] + 1,
+                                dp[i - 1][j - 1] + cost
+                              );
+                            }
+                          }
+                          return dp[m][n];
+                        };
+                        const qTokens = tokenize(q);
+                        const score = (p: Post) => {
+                          const title = String(p.title || "");
+                          const content = String(p.content || "");
+                          const tTok = tokenize(title);
+                          const cTok = tokenize(content).slice(0, 300);
+                          const jTitle = jaccard(qTokens, tTok) * 2.2;
+                          let directTitle = 0;
+                          for (const qt of qTokens) if (title.toLowerCase().includes(qt)) directTitle += 0.6;
+                          const jContent = jaccard(qTokens, cTok) * 0.6;
+                          let typoBonus = 0;
+                          for (const qt of qTokens) {
+                            let best = Infinity;
+                            for (const tt of tTok) {
+                              const d = editDistance(qt, tt);
+                              if (d < best) best = d;
+                            }
+                            if (best <= 2) typoBonus += 0.5;
+                          }
+                          return jTitle + directTitle + jContent + typoBonus;
+                        };
+                        const suggestions = [...sortedPosts]
+                          .map(p => ({ p, s: score(p) }))
+                          .filter(x => x.s > 0.12)
+                          .sort((a, b) => b.s - a.s)
+                          .slice(0, 4)
+                          .map(x => x.p);
+
+                        return suggestions.length ? suggestions.map(s => (
+                          <Button
+                            key={s.id}
+                            variant="outline"
+                            size="sm"
+                            className="px-3 py-1 text-xs"
+                            onClick={() => navigateToReader(s.slug || s.id)}
+                          >
+                            {s.title}
+                          </Button>
+                        )) : (
+                          <span className="text-sm text-muted-foreground">No close matches found.</span>
+                        );
+                      })()}
+                    </div>
+                    <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed px-2">
+                      Or check out some of our most popular stories instead.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed px-2">
+                    Explore popular stories below.
+                  </p>
+                )}
+                
               </div>
             </div>
           ) : (
             <div
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
             >
-              {currentPosts.map((post: Post) => {
-                const excerpt = extractExcerpt(post.content);
+              {latestPosts.map((post: Post) => {
+                
                 const metadata = post.metadata || {};
                 let themeCategory = "";
                 if (typeof metadata === 'object' && metadata !== null && 
@@ -418,7 +946,7 @@ export default function StoriesIndexContent() {
                         </div>
                         {themeCategory && themeInfo && (
                           <div className="mt-2">
-                            <Badge className="w-fit text-[11px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1">
+                            <Badge className="w-fit text-[12px] sm:text-sm font-medium tracking-wide px-2 py-0.5 flex items-center gap-1">
                               <Book className="h-3 w-3" />
                               {displayName}
                             </Badge>
@@ -426,8 +954,8 @@ export default function StoriesIndexContent() {
                         )}
                       </CardHeader>
                       <CardContent className="px-4 pt-0 pb-3">
-                        <p className="text-sm text-muted-foreground leading-6 line-clamp-3 font-serif">
-                          {excerpt}
+                        <p className="text-sm text-muted-foreground leading-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                          {extractEngagingExcerpt(post.content, 200)}
                         </p>
                       </CardContent>
                       <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">

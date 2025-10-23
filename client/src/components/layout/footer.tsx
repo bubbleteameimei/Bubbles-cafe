@@ -10,9 +10,9 @@ export default function Footer() {
 
   return (
     <footer
-      className="w-full mt-10 bg-background/40 backdrop-blur-sm shadow-inner"
+      className="site-footer w-full mt-10 bg-background/40 backdrop-blur-sm shadow-inner"
       style={{
-          position: "relative",
+        position: "relative",
         left: 0,
         right: 0,
         margin: 0,
@@ -23,12 +23,20 @@ export default function Footer() {
       role="contentinfo"
       aria-label="Site footer"
     >
-      {/* Full-bleed top divider (first footer demarcation) */}
-      <hr
-        className="border-t border-border/70"
-        style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
+      {/* Full-bleed top divider (same logic as header) */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: "50%",
+          width: "100vw",
+          transform: "translateX(-50%)",
+          borderTop: "1px solid hsl(var(--border) / 0.70)",
+          zIndex: 1
+        }}
       />
-
       <div className="container mx-auto max-w-5xl px-6 py-4">
         <div className="grid grid-cols-2 gap-4 items-start">
           {/* Brand + Contact (Left) */}
@@ -79,10 +87,16 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Full-bleed divider line (same as header and bottom) */}
-      <hr
-        className="border-t border-border/70"
-        style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}
+      {/* Internal separator using same visual logic as header line */}
+      <div
+        aria-hidden="true"
+        style={{
+          width: "100vw",
+          position: "relative",
+          left: "50%",
+          transform: "translateX(-50%)",
+          borderTop: "1px solid hsl(var(--border) / 0.70)"
+        }}
       />
 
       <div className="container mx-auto max-w-5xl px-6 pb-4 pt-2">

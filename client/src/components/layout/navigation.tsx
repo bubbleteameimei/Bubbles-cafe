@@ -105,6 +105,60 @@ export default function Navigation() {
     } catch {}
     setTheme(theme === "dark" ? "light" : "dark");
   };
+
+  // Prefetch route chunks for top nav to avoid Suspense blanks
+  const prefetchRoute = (href: string) => {
+    try {
+      switch (href) {
+        case '/':
+          void import('../../pages/home'); break;
+        case '/stories':
+          void import('../../pages/index'); break;
+        case '/reader':
+          void import('../../pages/reader'); break;
+        case '/community':
+          void import('../../pages/community'); break;
+        case '/about':
+          void import('../../pages/about'); break;
+        default:
+          break;
+      }
+    } catch {}
+  };
+
+  // Async prefetch that returns the import promise (used on click)
+  const prefetchRouteAsync = (href: string): Promise<any> => {
+    try {
+      switch (href) {
+        case '/': return import('../../pages/home');
+        case '/stories': return import('../../pages/index');
+        case '/reader': return import('../../pages/reader');
+        case '/community': return import('../../pages/community');
+        case '/about': return import('../../pages/about');
+        case '/search': return import('../../pages/search-results');
+        case '/bookmarks': return import('../../pages/bookmarks');
+        case '/profile': return import('../../pages/profile');
+        default: return Promise.resolve();
+      }
+    } catch {
+      return Promise.resolve();
+    }
+  };
+
+  // Click handler that waits briefly for the chunk to be ready before navigating
+  const handleNav = (href: string, e?: React.MouseEvent) => {
+    try {
+      if (e) e.preventDefault();
+      const done = prefetchRouteAsync(href).catch(() => {});
+      const cap = new Promise<void>((resolve) => setTimeout(resolve, 150));
+      Promise.race([done, cap]).then(() => {
+        setLocation(href);
+      });
+    } catch {
+      // Fallback navigation
+      window.location.href = href;
+    }
+  };
   
   return (
     <>
@@ -116,6 +170,7 @@ export default function Navigation() {
           padding: 0,
           width: '100%',
           paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingBottom: '6px', // slightly reduced extra space
         }}
       >
         <div className="main-header flex items-center justify-between h-14 px-4">
@@ -160,6 +215,9 @@ export default function Navigation() {
                   : "text-white hover:text-white/80"
                 }`}
               aria-current={location === href ? "page" : undefined}
+              onMouseEnter={() => prefetchRoute(href)}
+              onFocus={() => prefetchRoute(href)}
+              onClick={(e) => handleNav(href, e)}
             >
               {label}
             </Link>
@@ -193,7 +251,15 @@ export default function Navigation() {
                   variant="default"
                   size="sm"
                   className="h-9 bg-background/40 supports-[backdrop-filter]:bg-background/20 hover:bg-background/30 transition-colors"
-                  onClick={handleSearch}
+                  onClick={() => {
+                    if (!searchValue.trim()) return;
+                    const href = '/search';
+                    const done = prefetchRouteAsync(href).catch(() => {});
+                    const cap = new Promise<void>((resolve) => setTimeout(resolve, 150));
+                    Promise.race([done, cap]).then(() => {
+                      setLocation(href);
+                    });
+                  }}
                   disabled={!searchValue.trim()}
                 >
                   Go
@@ -266,7 +332,7 @@ export default function Navigation() {
         }}
       />
 
-      {/* Reader-only in-header progress bar, aligned to the bottom demarcation line */}
+      {/* Reader-only in-header progress bar (GPU-accelerated via transform) */}
       {isReaderRoute && (
         <div
           aria-hidden="true"
@@ -278,16 +344,18 @@ export default function Navigation() {
             width: '100%',
             height: '3px',
             zIndex: 41,
-            pointerEvents: 'none'
+            pointerEvents: 'none',
+            background: 'transparent'
           }}
         >
           <div
             style={{
               height: '100%',
-              width: `${scrollProgress}%`,
-              background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
+              width: '100%',
+              transformOrigin: 'left center',
+              transform: `scaleX(${Math.max(0, Math.min(1, scrollProgress / 100))}) translateZ(0)`,
               willChange: 'transform',
-              transform: 'translateZ(0)'
+              background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)'
             }}
           />
         </div>

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link } from 'wouter';
+import { createPortal } from 'react-dom';
 import '@/styles/eyeball-loader.css';
 
 interface SimplifiedErrorPageProps {
@@ -15,6 +16,7 @@ interface SimplifiedErrorPageProps {
  * 
  * A consistent error page component that can be used anywhere in the application
  * without causing hook ordering issues.
+ * Renders via a portal to the document.body to avoid clipping/stacking issues.
  */
 const SimplifiedErrorPage: React.FC<SimplifiedErrorPageProps> = ({
   statusCode,
@@ -23,25 +25,98 @@ const SimplifiedErrorPage: React.FC<SimplifiedErrorPageProps> = ({
   actionText = 'Go Home',
   actionLink = '/'
 }) => {
-  return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center text-center bg-background/90 z-50">
-      <div className="space-y-4">
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const firstActionRef = useRef<HTMLAnchorElement | null>(null);
+
+  // Mark body so global layout can hide non-error-only elements like the footer
+  useEffect(() => {
+    document.body.classList.add('error-page-active');
+    // Lock scroll while overlay is visible
+    const prevOverflow = document.body.style.overflow;
+    const prevPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    // Focus the primary action for accessibility
+    const id = requestAnimationFrame(() => {
+      try {
+        firstActionRef.current?.focus();
+      } catch {}
+    });
+
+    return () => {
+      document.body.classList.remove('error-page-active');
+      document.body.style.overflow = prevOverflow;
+      document.body.style.paddingRight = prevPaddingRight;
+      cancelAnimationFrame(id);
+    };
+  }, []);
+
+  // Basic focus trapping within the overlay
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const root = overlayRef.current;
+      if (!root) return;
+      const focusables = Array.from(
+        root.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter(el => !el.hasAttribute('disabled') && el.tabIndex !== -1);
+
+      if (focusables.length === 0) return;
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (e.shiftKey) {
+        if (active === first || !root.contains(active)) {
+          last.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (active === last) {
+          first.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
+  const overlay = (
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 flex flex-col items-center justify-center text-center bg-background/95 backdrop-blur-sm z-[1200]"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="error-title"
+      aria-describedby="error-description"
+    >
+      <div className="space-y-4 px-4">
         {/* Animated eyeball loader */}
         <div className="flex justify-center mb-6">
-          <div className="eyeball-loader"></div>
+          <div className="eyeball-loader" aria-hidden="true"></div>
         </div>
-        
+
         <div className="text-9xl font-creepster text-red-600">{statusCode}</div>
-        <h1 className="text-4xl font-specialElite tracking-tighter sm:text-5xl">
+        <h1 id="error-title" className="text-4xl font-specialElite tracking-tighter sm:text-5xl">
           {title}
         </h1>
-        <p className="text-muted-foreground max-w-[42rem] leading-normal sm:text-xl sm:leading-8">
+        <p id="error-description" className="text-muted-foreground max-w-[42rem] leading-normal sm:text-xl sm:leading-8">
           {message}
         </p>
         <div className="mt-8">
           <Link
-            to={actionLink}
+            href={actionLink}
             className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+            ref={firstActionRef as any}
           >
             {actionText}
           </Link>
@@ -49,6 +124,8 @@ const SimplifiedErrorPage: React.FC<SimplifiedErrorPageProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(overlay, document.body) : overlay;
 };
 
 export default SimplifiedErrorPage;

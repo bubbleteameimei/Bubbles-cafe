@@ -116,11 +116,12 @@ body {
     padding: 0;
     width: 100%;
     min-width: 100%;
-    max-width: 100vw;
+    max-width: 100%;
     overflow-x: hidden;
     padding: 0;
     width: 100%;
-    min-height: 100vh;
+    /* Avoid forcing full viewport height on non-home pages to prevent bottom band */
+    min-height: auto;
     overflow-x: hidden;
     overflow-y: auto;
     position: relative;
@@ -307,6 +308,7 @@ div[class*="container"] {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
   box-sizing: border-box !important;
+  /* Keep solid backgrounds for readability */
   background-color: hsl(var(--background)) !important;
   border: none !important;
 }
@@ -326,6 +328,8 @@ body.body-home div[class*="layout"],
 body.body-home div[class*="container"] {
   background-color: transparent !important;
 }
+
+
 
 /* Exception for reader container - needs to be controlled by reader-fixes.css */
 .reader-container.story-content,
@@ -416,15 +420,7 @@ html.theme-smooth * {
 
 /* Loading screen styles are now handled in loading-screen.css */
 
-/* Scroll to top button styles */
-@layer components {
-  .scroll-to-top {
-    @apply fixed bottom-5 right-5 p-3 bg-primary text-white rounded-full 
-           opacity-0 transition-opacity duration-300 cursor-pointer
-           hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50;
-    z-index: 9999;
-  }
-}
+
 
 /* Sidebar: ensure glass panel by overriding global container background */
 div.sidebar-menu-container {
@@ -451,4 +447,37 @@ div.sidebar-menu-container {
   [data-sidebar="menu-sub-button"] span.absolute.inset-0 {
     display: none !important;
   }
+}
+
+/* BackToTop fixed placement helper to escape layout overrides */
+.back-to-top-fixed {
+  position: fixed !important;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+  right: calc(24px + env(safe-area-inset-right, 0px)) !important;
+  left: auto !important;
+  z-index: 2147483647 !important; /* Max practical z-index */
+  pointer-events: auto !important;
+  contain: layout paint style;
+  will-change: transform;
+}
+
+/* Non-homepages: remove forced full-height that can create a visible bottom band */
+/* Non-homepages: remove forced full-height that can create a visible bottom band */
+body:not(:has(.home-page)) .min-h-screen {
+  min-height: auto !important;
+}
+body:not(:has(.home-page)) .page-transition-container,
+body:not(:has(.home-page)) main#main-content,
+body:not(:has(.home-page)) .page-content {
+  min-height: auto !important;
+}
+
+/* On non-home pages, avoid painting the viewport background so short pages don't show a dark band */
+body:not(:has(.home-page)) {
+  background-color: transparent !important;
+}
+
+/* Hide the footer on error pages */
+body.error-page-active footer.site-footer {
+  display: none !important;
 }

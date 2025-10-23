@@ -26,6 +26,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
 import ApiLoader from "@/components/api-loader";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
+import SimplifiedErrorPage from "@/components/errors/SimplifiedErrorPage";
 import { useToast } from "@/hooks/use-toast";
 
 import { SupportWritingCard } from "@/components/SupportWritingCard";
@@ -360,20 +361,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     queryKey: ["wordpress", "reader", routeSlug ?? "", isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
       if (import.meta.env?.DEV) {
-        console.log('[Reader] Fetching WordPress posts...', { routeSlug });
+        console.log('[Reader] Fetching WordPress posts list...', { routeSlug });
       }
 
       try {
-        if (routeSlug) {
-          // Use server-proxied WordPress API to avoid CORS
-          const post = await fetchWordPressPostBySlug(routeSlug);
-          return { posts: [post], totalPages: 1, total: 1 };
-        } else {
-          // Fetch a list of WordPress posts via proxy
-          const result = await fetchWordPressPosts({ perPage: 100, includeContent: true });
-          const posts = Array.isArray(result.posts) ? result.posts : [];
-          return { posts, totalPages: result.totalPages ?? 1, total: result.total ?? posts.length };
-        }
+        // Always fetch a list of posts to preserve global navigation context
+        const result = await fetchWordPressPosts({ perPage: 100, includeContent: true });
+        const posts = Array.isArray(result.posts) ? result.posts : [];
+        return { posts, totalPages: result.totalPages ?? 1, total: result.total ?? posts.length };
       } catch (error) {
         console.error('[Reader] Error fetching WordPress posts via proxy:', error);
         throw error;
@@ -386,73 +381,36 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   
 
-  // Validate and update currentIndex when posts data changes
+  // Validate and update currentIndex when posts data changes; align index by slug if present
   useEffect(() => {
     if (postsData?.posts && postsData.posts.length > 0) {
-      if (import.meta.env?.DEV) {
-        console.log('[Reader] Validating current index:', {
-          currentIndex,
-          totalPosts: postsData.posts.length,
-          savedIndex: sessionStorage.getItem('selectedStoryIndex')
-        });
+      // If we have a slug in the route, align the index to that post
+      if (routeSlug) {
+        const bySlug = postsData.posts.findIndex((p: any) => String(p.slug || '') === String(routeSlug));
+        if (bySlug >= 0 && bySlug !== currentIndex) {
+          setCurrentIndex(bySlug);
+          sessionStorage.setItem('selectedStoryIndex', String(bySlug));
+        }
       }
 
       // Ensure currentIndex is within bounds
       if (currentIndex >= postsData.posts.length) {
-        if (import.meta.env?.DEV) {
-          console.log('[Reader] Current index out of bounds, resetting to 0');
-        }
         setCurrentIndex(0);
         sessionStorage.setItem('selectedStoryIndex', '0');
       } else {
-        if (import.meta.env?.DEV) {
-          console.log('[Reader] Current index is valid:', currentIndex);
-        }
         sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
       }
 
       // Log current post details
       const currentPost = postsData.posts[currentIndex];
-      if (import.meta.env?.DEV) {
-        console.log('[Reader] Selected post:', currentPost ? {
-          id: currentPost.id,
-          title: currentPost.title?.rendered || currentPost.title || 'Story',
-          date: currentPost.date
-        } : 'No post found');
-      }
-      
+
       // Now that we have the post data, update our slug for auto-saving
       if (currentPost) {
         const newSlug = routeSlug || (currentPost.slug || `post-${currentPost.id}`);
-        if (import.meta.env?.DEV) {
-          console.log('[Reader] Setting auto-save slug:', newSlug);
-        }
         setAutoSaveSlug(newSlug);
-        
-        // Check if we've reloaded but the post has been deleted
-        if (routeSlug && currentPost.id && currentIndex === 0) {
-          // Verify the post exists by making a direct check using the improved endpoint
-          // that handles both slugs and IDs
-          fetch(`/api/posts/${currentPost.id}`)
-            .then(response => {
-              if (response.status === 404) {
-                console.log('[Reader] Post may have been deleted, redirecting to community page');
-                // Post might have been deleted, redirect to community page
-                // No delay to prevent showing deleted content
-                setLocation('/community');
-                toast({
-                  title: 'Post Not Available',
-                  description: 'This post is no longer available, redirecting to community page.'
-                });
-              }
-            })
-            .catch(err => {
-              console.error('[Reader] Error checking post existence:', err);
-            });
-        }
       }
     }
-  }, [currentIndex, postsData?.posts, routeSlug, queryClient, setLocation, toast]);
+  }, [currentIndex, postsData?.posts, routeSlug]);
 
   // Position restoration notification has been removed as requested
 
@@ -534,14 +492,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold text-red-600">Error Loading Stories</h2>
-          <p className="text-muted-foreground">
-            {error instanceof Error ? error.message : 'An unexpected error occurred'}
-          </p>
-        </div>
-      </div>
+      <SimplifiedErrorPage
+        statusCode={404}
+        title="Story Not Found"
+        message={error instanceof Error ? error.message : 'The requested story could not be found.'}
+        actionText="Browse Stories"
+        actionLink="/reader"
+      />
     );
   }
 
@@ -553,12 +510,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   if (posts.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold">No Stories Available</h2>
-          <p className="text-muted-foreground">Check back later for new content!</p>
-        </div>
-      </div>
+      <SimplifiedErrorPage
+        statusCode={404}
+        title="Story Not Found"
+        message="The requested story could not be found."
+        actionText="Browse Stories"
+        actionLink="/reader"
+      />
     );
   }
 
@@ -583,12 +541,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // If post doesn't exist, show error
   if (!currentPost) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold">Story Not Found</h2>
-          <p className="text-muted-foreground">The requested story could not be found.</p>
-        </div>
-      </div>
+      <SimplifiedErrorPage
+        statusCode={404}
+        title="Story Not Found"
+        message="The requested story could not be found."
+        actionText="Browse Stories"
+        actionLink="/reader"
+      />
     );
   }
 
@@ -687,7 +646,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // The theme and toggleTheme functions are already declared at the top of the component
   
   return (
-    <div className="relative min-h-screen bg-background reader-page overflow-x-hidden overflow-y-visible pt-0 pb-8 flex flex-col"
+    <div className="relative bg-background reader-page overflow-x-hidden overflow-y-visible pt-0 pb-0 flex flex-col"
       data-reader-page="true" 
       data-distraction-free={isUIHidden ? "true" : "false"}>
       
@@ -731,14 +690,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           width: 100%;
         }
         
-        /* Only target the navigation header and not the controls in distraction-free mode */
+        /* Distraction-free mode: keep navbar visible but subtle */
         .reader-page[data-distraction-free="true"] header.main-header {
-          opacity: 0;
-          visibility: hidden;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          pointer-events: none; /* Prevent interaction with hidden header */
-          transform: translateY(-100%);
-          will-change: opacity, transform, visibility;
+          opacity: 0.65;
+          visibility: visible;
+          transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          pointer-events: auto;
+          transform: none;
+          will-change: opacity;
         }
         
         /* Tiny indicator for mobile when in distraction-free mode */
@@ -997,6 +956,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     );
                     if (foundIndex >= 0) {
                       setCurrentIndex(foundIndex);
+                      // Keep URL in sync with selected story to fix TOC routing
+                      setLocation(`/reader/${encodeURIComponent(String(posts[foundIndex].slug || posts[foundIndex].id))}`);
                       // Scroll to top for a clean transition
                       window.scrollTo({ top: 0, behavior: 'auto' });
                     }
@@ -1212,7 +1173,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         return (
                           <>
                             <ThemeIcon className="h-4 w-4 text-primary" />
-                            <span className="text-xs font-medium">{themeLabel}</span>
+                            <span className="text-sm font-medium">{themeLabel}</span>
                           </>
                         );
                       })()}
@@ -1220,7 +1181,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   ) : (
                     <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded-md border border-primary/20">
                       <Ghost className="h-4 w-4 text-primary" />
-                      <span className="text-xs font-medium">Horror Fiction</span>
+                      <span className="text-sm font-medium">Horror Fiction</span>
                     </div>
                   )}
                   
