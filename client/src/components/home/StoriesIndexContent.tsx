@@ -522,7 +522,7 @@ export default function StoriesIndexContent() {
         .sort((a, b) => b.s - a.s)
         .map(x => x.p);
 
-      return sortedBySearch[0] || all[0];
+      return scoredBySearch[0] || all[0];
     }
 
     // Otherwise, pick by engagement/recency
