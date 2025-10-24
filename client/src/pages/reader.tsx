@@ -454,14 +454,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Fire a WordPress.com stats pixel once per session when:
   // - user has scrolled at least 30%
-  // - at least 5 seconds have elapsed on the current post
+  // - at least 2 seconds have elapsed on the current post
   useEffect(() => {
     try {
       if (!currentPostId) return;
       const key = `wp_read_tracked_${currentPostId}`;
       const already = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(key) : null;
       const elapsedMs = Date.now() - readStartTimeRef.current;
-      if (readingProgress >= 30 && elapsedMs >= 5000 && !already) {
+      if (readingProgress >= 30 && elapsedMs >= 2000 && !already) {
         trackWordPressRead(currentPostId, currentPostLink);
       }
     } catch {
