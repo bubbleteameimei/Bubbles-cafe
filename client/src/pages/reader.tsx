@@ -33,6 +33,7 @@ import { SupportWritingCard } from "@/components/SupportWritingCard";
 import SEO from "@/components/SEO";
 import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { trackWordPressRead } from "@/lib/wp-reads";
 
 
 import {
@@ -522,6 +523,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Get current post
   const currentPost = posts[validCurrentIndex];
+
+  // Count a WordPress read when the reader reaches 50% scroll depth (once per post)
+  useEffect(() => {
+    if (!currentPost?.id) return;
+    const already = sessionStorage.getItem(`wp_read_tracked_${currentPost.id}`);
+    if (readingProgress >= 50 && !already];
 
   // SEO values for this story
   const stripHtml = (s: string) => s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '';
