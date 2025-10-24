@@ -168,8 +168,21 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (created: any) => {
+      // Ensure immediate visibility for owner replies
+      const createdForList = { ...created, approved: (created.approved === true) || (created.isOwner === true) };
+
+      // Optimistically insert the reply into the list cache
+      queryClient.setQueryData([`/api/posts/${postId}/comments`], (prev) => {
+        if (Array.isArray(prev)) {
+          return [createdForList, ...prev];
+        }
+        return prev;
+      });
+
+      // Invalidate to refetch and ensure eventual consistency
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+
       setContent("");
       onCancel();
       toast({
@@ -447,7 +460,20 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
       };
     },
     onSuccess: (result) => {
-      console.log('Comment posted successfully:', result.data);
+      const created = result.data as Comment;
+      // Ensure the owner sees their own comment immediately even if pending
+      const clientVisibleApproved = (created.approved === true) || (created.isOwner === true);
+      const createdForList = { ...created, approved: clientVisibleApproved };
+
+      // Optimistically update the comments list to include the new comment at the top
+      queryClient.setQueryData([`/api/posts/${postId}/comments`], (prev) => {
+        if (Array.isArray(prev)) {
+          return [createdForList, ...prev];
+        }
+        return prev;
+      });
+
+      // Also invalidate to refetch from server for eventual consistency
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
       
       // Clear localStorage draft
@@ -470,10 +496,12 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         });
       }
     },
-    onError: () => {
+    onError: (error: any) => {
+      // Show more informative error message when available
+      const message = (error && typeof error.message === 'string') ? error.message : "Failed to post comment. Please try again.";
       toast({
         title: "Error",
-        description: "Failed to post comment. Please try again.",
+        description: message,
         variant: "destructive"
       });
     }
