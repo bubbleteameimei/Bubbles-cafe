@@ -6,6 +6,7 @@ import { z } from "zod";
 import { insertCommentSchema, updateCommentSchema } from "@shared/schema";
 import { apiRateLimiter } from '../middlewares/rate-limiter';
 import { moderateComment } from "../utils/comment-moderation";
+import { clearCacheItem } from '../middlewares/api-cache';
 
 const router = Router();
 
@@ -54,14 +55,19 @@ router.get(
 
 		const comments = await storage.getComments(postId);
 
-		const enhanced = comments.map((c: any) => ({
-			...c,
-			// Back-compat field for clients that read `approved`
-			approved: (c as any).approved === undefined ? Boolean(c.is_approved) : Boolean((c as any).approved),
-			isOwner: (c as any).metadata && (c as any).metadata.ownerKey
+		const enhanced = comments.map((c: any) => {
+			const baseApproved = (c as any).approved === undefined ? Boolean(c.is_approved) : Boolean((c as any).approved);
+			const isOwner = (c as any).metadata && (c as any).metadata.ownerKey
 				? String((c as any).metadata.ownerKey) === userKey
-				: false
-		}));
+				: false;
+			// UX: allow the owner to immediately see their own pending comment
+			const uxApproved = baseApproved || isOwner;
+			return {
+				...c,
+				approved: uxApproved,
+				isOwner
+			};
+		});
 
 		res.json(enhanced);
 	})
@@ -101,6 +107,8 @@ router.post(
 		} as z.infer<typeof insertCommentSchema>;
 
 		const created = await storage.createComment(insert as any);
+		// Invalidate cached comments list for this post so the new comment appears immediately
+		try { clearCacheItem(`/api/posts/${postId}/comments`); } catch {}
 		// Add isOwner to response for immediate UI use
 		(res as any).status(201).json({ ...created, approved: created.is_approved === true, isOwner: true });
 	})
