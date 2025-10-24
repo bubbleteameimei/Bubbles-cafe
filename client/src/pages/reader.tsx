@@ -425,6 +425,50 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   }, []);
 
+  // WordPress read tracking: compute current post id/link and gate by time-on-page and scroll depth.
+  const currentPostId = useMemo(() => {
+    try {
+      const post = postsData?.posts?.[currentIndex];
+      return post?.id as number | undefined;
+    } catch {
+      return undefined;
+    }
+  }, [postsData?.posts, currentIndex]);
+
+  const currentPostLink = useMemo(() => {
+    try {
+      const post = postsData?.posts?.[currentIndex];
+      return (post as any)?.link as string | undefined;
+    } catch {
+      return undefined;
+    }
+  }, [postsData?.posts, currentIndex]);
+
+  // Track time-on-page start per post id change
+  const readStartTimeRef = useRef<number>(Date.now());
+  useEffect(() => {
+    if (currentPostId) {
+      readStartTimeRef.current = Date.now();
+    }
+  }, [currentPostId]);
+
+  // Fire a WordPress.com stats pixel once per session when:
+  // - user has scrolled at least 30%
+  // - at least 5 seconds have elapsed on the current post
+  useEffect(() => {
+    try {
+      if (!currentPostId) return;
+      const key = `wp_read_tracked_${currentPostId}`;
+      const already = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(key) : null;
+      const elapsedMs = Date.now() - readStartTimeRef.current;
+      if (readingProgress >= 30 && elapsedMs >= 5000 && !already) {
+        trackWordPressRead(currentPostId, currentPostLink);
+      }
+    } catch {
+      // no-op
+    }
+  }, [readingProgress, currentPostId, currentPostLink]);
+
   // Create a function to generate the styles
   const generateStoryContentStyles = () => {
     // Use fixed constants for better text readability
