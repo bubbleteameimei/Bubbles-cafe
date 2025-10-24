@@ -51,9 +51,21 @@ if (!root) {
 
 // Service worker registration
 try {
-  if (import.meta.env.PROD && "serviceWorker" in navigator) {
-    const isLocalhost = ["localhost", "127.0.0.1"].includes(location.hostname);
-    if (location.protocol === "https:" || isLocalhost) {
+  const enableSWFlag = String((import.meta.env as any)?.VITE_ENABLE_SW || '').toLowerCase();
+  const swEnabled = enableSWFlag === 'true' || enableSWFlag === '1';
+
+  if (import.meta.env.PROD && swEnabled && "serviceWorker" in navigator) {
+    const hostname = location.hostname;
+    const isLocalhost = ["localhost", "127.0.0.1"].includes(hostname);
+    const isPreviewHost =
+      /\.vercel\.app$/.test(hostname) ||
+      /\.vercel\.dev$/.test(hostname) ||
+      /\.repl\.co$/.test(hostname) ||
+      /\.replit\.dev$/.test(hostname) ||
+      /\.replit\.app$/.test(hostname);
+
+    // Only register on HTTPS or localhost, and avoid ephemeral preview hosts by default
+    if (!isPreviewHost && (location.protocol === "https:" || isLocalhost)) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
   }

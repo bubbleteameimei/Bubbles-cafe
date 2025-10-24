@@ -16,13 +16,29 @@ export function getApiBaseUrl(): string {
   const explicit = (import.meta.env.VITE_API_URL as string | undefined) || undefined;
   if (explicit) return explicit.replace(/\/+$/, '');
 
-  // Derive from current hostname: map bubblescafe.space -> api.bubblescafe.space
+  // Derive from current hostname.
+  // Special-case preview platforms where an api.<host> subdomain is not provisioned.
   try {
     const { protocol, hostname } = window.location;
+
+    // If already on api.* subdomain, use it as-is
     if (hostname.startsWith('api.')) {
       return `${protocol}//${hostname}`;
     }
-    // Handle common www. subdomain
+
+    // Vercel previews (*.vercel.app, *.vercel.dev) and similar ephemeral hosts should use relative URLs
+    const isPreviewHost =
+      /\.vercel\.app$/.test(hostname) ||
+      /\.vercel\.dev$/.test(hostname) ||
+      /\.repl\.co$/.test(hostname) ||
+      /\.replit\.dev$/.test(hostname) ||
+      /\.replit\.app$/.test(hostname);
+
+    if (isPreviewHost) {
+      return ''; // rely on same-origin relative paths (rewrites/proxy handle /api/*)
+    }
+
+    // Handle common www. subdomain otherwise
     const host = hostname.startsWith('www.') ? hostname.slice(4) : hostname;
     return `${protocol}//api.${host}`;
   } catch {

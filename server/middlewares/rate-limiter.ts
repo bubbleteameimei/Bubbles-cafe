@@ -23,28 +23,19 @@ const getRequestLimit = (defaultLimit: number): number => {
   return isDev ? defaultLimit * 5 : defaultLimit; // 5x higher limits in development
 };
 
-// Custom skip function that checks whitelist and authentication status
-const createSkipFunction = (authenticatedMultiplier = 2) => {
+// Custom skip function that checks whitelist only.
+// Note: express-rate-limit does not support per-request dynamic max via skip;
+// if you need different limits for authenticated users, use separate limiter instances.
+const createSkipFunction = (_authenticatedMultiplier = 2) => {
   return (req: Request): boolean => {
-    // Get IP address safely
     const ipAddress = req.ip || '';
-    
-    // Skip rate limiting for whitelisted IPs
+
+    // Skip rate limiting for whitelisted IPs only
     if (isWhitelisted(ipAddress)) {
       logger.debug(`Rate limiting skipped for whitelisted IP: ${ipAddress}`);
       return true;
     }
-    
-    // Skip or use higher limits for authenticated users
-    if (req.isAuthenticated && req.isAuthenticated()) {
-      // Could implement different tiers based on user roles
-      // For now, just use the multiplier for all authenticated users
-      const userLimit = getRequestLimit(authenticatedMultiplier * 100);
-      if ((req as any)._rateLimit && (req as any)._rateLimit.current < userLimit) {
-        return false; // Don't skip, but use higher limit
-      }
-    }
-    
+
     return false;
   };
 };

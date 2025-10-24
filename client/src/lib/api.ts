@@ -36,8 +36,14 @@ export async function apiRequest(
 
   // Apply CSRF token for non-GET requests
   if (method !== 'GET') {
-    // Ensure we have a fresh token first
-    await fetchCsrfTokenIfNeeded();
+    // Skip CSRF token fetch for comment operations (server allows these without CSRF)
+    const isCommentOp =
+      (endpoint.startsWith('/api/posts/') && endpoint.includes('/comments')) ||
+      (endpoint.startsWith('/api/comments/'));
+    if (!isCommentOp) {
+      // Ensure we have a fresh token first
+      await fetchCsrfTokenIfNeeded();
+    }
     
     try {
       const response = await fetch(url, applyCSRFToken(options));

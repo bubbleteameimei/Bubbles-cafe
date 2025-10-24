@@ -150,26 +150,31 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
     mutationFn: async () => {
       // Use authenticated user's username if available, otherwise let the server handle author assignment
       const replyAuthor = isAuthenticated && user ? user.username : undefined;
-      await fetchCsrfTokenIfNeeded();
-      
-      // Post reply via /api/posts/:postId/comments with parentId
-      const response = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ content: content.trim(), author: replyAuthor, parentId: commentId })
-      }));
-      
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Error response:', errorData);
-        throw new Error('Failed to post reply: ' + errorData);
-      }
-      
-      return response.json();
+
+      // Post reply via /api/posts/:postId/comments with parentId (server exempts comments from CSRF)
+      const created = await apiJson<any>('POST', `/api/posts/${postId}/comments`, {
+        content: content.trim(),
+        author: replyAuthor,
+        parentId: commentId
+      });
+
+      return created;
     },
-    onSuccess: () => {
+    onSuccess: (created: any) => {
+      // Ensure immediate visibility for owner replies
+      const createdForList = { ...created, approved: (created.approved === true) || (created.isOwner === true) };
+
+      // Optimistically insert the reply into the list cache
+      queryClient.setQueryData([`/api/posts/${postId}/comments`], (prev) => {
+        if (Array.isArray(prev)) {
+          return [createdForList, ...prev];
+        }
+        return prev;
+      });
+
+      // Invalidate to refetch and ensure eventual consistency
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+
       setContent("");
       onCancel();
       toast({
@@ -447,7 +452,20 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
       };
     },
     onSuccess: (result) => {
-      console.log('Comment posted successfully:', result.data);
+      const created = result.data as Comment;
+      // Ensure the owner sees their own comment immediately even if pending
+      const clientVisibleApproved = (created.approved === true) || (created.isOwner === true);
+      const createdForList = { ...created, approved: clientVisibleApproved };
+
+      // Optimistically update the comments list to include the new comment at the top
+      queryClient.setQueryData([`/api/posts/${postId}/comments`], (prev) => {
+        if (Array.isArray(prev)) {
+          return [createdForList, ...prev];
+        }
+        return prev;
+      });
+
+      // Also invalidate to refetch from server for eventual consistency
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
       
       // Clear localStorage draft
@@ -470,10 +488,12 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         });
       }
     },
-    onError: () => {
+    onError: (error: any) => {
+      // Show more informative error message when available
+      const message = (error && typeof error.message === 'string') ? error.message : "Failed to post comment. Please try again.";
       toast({
         title: "Error",
-        description: "Failed to post comment. Please try again.",
+        description: message,
         variant: "destructive"
       });
     }
@@ -551,24 +571,14 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     if (!commentToFlag) return;
     
     try {
-      await fetchCsrfTokenIfNeeded();
-      const response = await fetch(`/api/comments/${commentToFlag}/flag`, applyCSRFToken({
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ reason: "inappropriate content" })
-      }));
-      
-      if (!response.ok) {
-        throw new Error("Failed to flag comment");
-      }
-      
+      await apiJson('POST', `/api/comments/${commentToFlag}/flag`, { reason: "inappropriate content" });
+
       // Add comment to flagged list to prevent multiple reports
       setFlaggedComments(prev => [...prev, commentToFlag]);
-      
+
       // Save flagged comments to localStorage to persist between sessions
       localStorage.setItem('flaggedComments_' + postId, JSON.stringify([...flaggedComments, commentToFlag]));
-      
+
       toast({
         title: "Comment reported",
         description: "Thank you for flagging this comment. Our moderators will review it.",

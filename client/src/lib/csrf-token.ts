@@ -47,7 +47,16 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
   if (csrfToken) return csrfToken;
 
   try {
-    const API_BASE = getApiBaseUrl();
+    // Determine base URL intelligently; on Vercel preview, prefer relative paths
+    const API_BASE_RAW = getApiBaseUrl();
+    let API_BASE = API_BASE_RAW;
+    try {
+      const host = typeof window !== 'undefined' ? (window.location?.hostname || '') : '';
+      const isVercelPreview = /\.vercel\.app$|\.vercel\.dev$/.test(host);
+      if (isVercelPreview) {
+        API_BASE = ''; // use relative endpoints through Vercel rewrite/proxy
+      }
+    } catch { /* no-op */ }
 
     // Attempt to get a token directly
     const getToken = async (): Promise<string | null> => {
@@ -97,7 +106,17 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
  */
 export async function refreshCsrfToken(): Promise<string | null> {
   try {
-    const API_BASE = getApiBaseUrl();
+    // Prefer relative paths on Vercel preview
+    const API_BASE_RAW = getApiBaseUrl();
+    let API_BASE = API_BASE_RAW;
+    try {
+      const host = typeof window !== 'undefined' ? (window.location?.hostname || '') : '';
+      const isVercelPreview = /\.vercel\.app$|\.vercel\.dev$/.test(host);
+      if (isVercelPreview) {
+        API_BASE = '';
+      }
+    } catch { /* no-op */ }
+
     const url = API_BASE ? `${API_BASE}/api/csrf-token` : '/api/csrf-token';
     const resp = await fetch(url, {
       method: 'GET',

@@ -240,8 +240,7 @@ async function startServer() {
         wordpressScheduler.start();
       }
 
-      app.use(browserCache());
-      app.use(etagCache());
+      
 
       const { serveStatic } = await import('./vite');
       serveStatic(app);
