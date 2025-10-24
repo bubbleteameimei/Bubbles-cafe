@@ -150,23 +150,15 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
     mutationFn: async () => {
       // Use authenticated user's username if available, otherwise let the server handle author assignment
       const replyAuthor = isAuthenticated && user ? user.username : undefined;
-      await fetchCsrfTokenIfNeeded();
-      
-      // Post reply via /api/posts/:postId/comments with parentId
-      const response = await fetch(`/api/posts/${postId}/comments`, applyCSRFToken({
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ content: content.trim(), author: replyAuthor, parentId: commentId })
-      }));
-      
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Error response:', errorData);
-        throw new Error('Failed to post reply: ' + errorData);
-      }
-      
-      return response.json();
+
+      // Post reply via /api/posts/:postId/comments with parentId (server exempts comments from CSRF)
+      const created = await apiJson<any>('POST', `/api/posts/${postId}/comments`, {
+        content: content.trim(),
+        author: replyAuthor,
+        parentId: commentId
+      });
+
+      return created;
     },
     onSuccess: (created: any) => {
       // Ensure immediate visibility for owner replies
@@ -579,24 +571,14 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     if (!commentToFlag) return;
     
     try {
-      await fetchCsrfTokenIfNeeded();
-      const response = await fetch(`/api/comments/${commentToFlag}/flag`, applyCSRFToken({
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ reason: "inappropriate content" })
-      }));
-      
-      if (!response.ok) {
-        throw new Error("Failed to flag comment");
-      }
-      
+      await apiJson('POST', `/api/comments/${commentToFlag}/flag`, { reason: "inappropriate content" });
+
       // Add comment to flagged list to prevent multiple reports
       setFlaggedComments(prev => [...prev, commentToFlag]);
-      
+
       // Save flagged comments to localStorage to persist between sessions
       localStorage.setItem('flaggedComments_' + postId, JSON.stringify([...flaggedComments, commentToFlag]));
-      
+
       toast({
         title: "Comment reported",
         description: "Thank you for flagging this comment. Our moderators will review it.",

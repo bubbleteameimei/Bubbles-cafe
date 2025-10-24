@@ -22,8 +22,16 @@ export const apiCache = (duration: number = DEFAULT_EXPIRY) => {
       return next();
     }
 
-    // Skip caching for authenticated requests with dynamic content
-    if (req.session?.user) {
+    // Skip caching for authenticated requests and user-specific endpoints
+    // Use req.user (Passport) rather than req.session.user
+    const reqPath = req.originalUrl || req.url;
+
+    // Do not cache per-user content like comments, or any authenticated requests
+    const isCommentsEndpoint =
+      reqPath.startsWith('/api/comments') ||
+      /^\/api\/posts\/\d+\/comments(?:\?.*)?$/.test(reqPath);
+
+    if (req.user || isCommentsEndpoint) {
       return next();
     }
 
