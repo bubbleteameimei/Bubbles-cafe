@@ -526,9 +526,16 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Count a WordPress read when the reader reaches 50% scroll depth (once per post)
   useEffect(() => {
-    if (!currentPost?.id) return;
-    const already = sessionStorage.getItem(`wp_read_tracked_${currentPost.id}`);
-    if (readingProgress >= 50 && !already];
+    try {
+      if (!currentPost?.id) return;
+      const already = sessionStorage.getItem(`wp_read_tracked_${currentPost.id}`);
+      if (readingProgress >= 50 && !already) {
+        trackWordPressRead(currentPost.id, (currentPost as any)?.link);
+      }
+    } catch {
+      // no-op
+    }
+  }, [readingProgress, currentPost?.id]);
 
   // SEO values for this story
   const stripHtml = (s: string) => s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '';
