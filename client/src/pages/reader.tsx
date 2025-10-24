@@ -524,12 +524,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Get current post
   const currentPost = posts[validCurrentIndex];
 
-  // Count a WordPress read when the reader reaches 50% scroll depth (once per post)
+  // Track time-on-page start per post
+  const readStartTimeRef = useRef<number>(Date.now());
+  useEffect(() => {
+    readStartTimeRef.current = Date.now();
+  }, [currentPost?.id]);
+
+  // Count a WordPress read when the reader reaches 30% scroll depth and at least 5s on page (once per post)
   useEffect(() => {
     try {
       if (!currentPost?.id) return;
       const already = sessionStorage.getItem(`wp_read_tracked_${currentPost.id}`);
-      if (readingProgress >= 50 && !already) {
+      const elapsedMs = Date.now() - readStartTimeRef.current;
+      if (readingProgress >= 30 && elapsedMs >= 5000 && !already) {
         trackWordPressRead(currentPost.id, (currentPost as any)?.link);
       }
     } catch {
