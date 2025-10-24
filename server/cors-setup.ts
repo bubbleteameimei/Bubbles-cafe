@@ -29,6 +29,11 @@ export function setupCors(app: Express) {
     /\.repl\.co$/.test(o) || /\.replit\.dev$/.test(o) || /\.replit\.app$/.test(o) || o.includes('.replit.') || o.includes('repl.co')
   );
 
+  // Vercel preview domains (*.vercel.app, *.vercel.dev)
+  const isVercelOrigin = (o?: string) => !!o && (
+    /\.vercel\.app$/.test(o) || /\.vercel\.dev$/.test(o)
+  );
+
   // CORS middleware
   app.use((req: Request, res: Response, next: NextFunction) => {
     const origin = req.headers.origin;
@@ -46,6 +51,12 @@ export function setupCors(app: Express) {
       res.setHeader("Access-Control-Allow-Origin", origin as string);
       res.setHeader("Access-Control-Allow-Credentials", "true");
       console.log(`[CORS] Allowed Replit domain: ${origin}`);
+    }
+    // Allow Vercel preview domains (works in production previews)
+    else if (isVercelOrigin(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin as string);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      console.log(`[CORS] Allowed Vercel preview domain: ${origin}`);
     }
     // If no match but we're not in production, allow the origin anyway for development convenience
     else if (origin && process.env.NODE_ENV !== 'production') {
