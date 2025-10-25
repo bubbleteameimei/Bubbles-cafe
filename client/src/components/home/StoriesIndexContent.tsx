@@ -605,10 +605,12 @@ export default function StoriesIndexContent() {
 
         const aLikes = Number(aTotals?.totals?.likes ?? (baselineLikesFor(a) + (a.likesCount || 0)));
         const bLikes = Number(bTotals?.totals?.likes ?? (baselineLikesFor(b) + (b.likesCount || 0)));
-        const aViews = a.metadata && typeof a.metadata === 'object' && 'pageViews' in (a.metadata as Record<string, unknown])
-          ? Number((a.metadata as Record<string, unknown>).pageViews || 0) : 0;
-        const bViews = b.metadata && typeof b.metadata === 'object' && 'pageViews' in (b.metadata as Record<string, unknown])
-          ? Number((b.metadata as Record<string, unknown>).pageViews || 0) : 0;
+        const aViews = a.metadata && (a.metadata as any).pageViews
+          ? Number((a.metadata as any).pageViews)
+          : 0;
+        const bViews = b.metadata && (b.metadata as any).pageViews
+          ? Number((b.metadata as any).pageViews)
+          : 0;
 
         const aAgeDays = Math.max(0, (Date.now() - new Date(a.createdAt).getTime()) / (24 * 60 * 60 * 1000));
         const bAgeDays = Math.max(0, (Date.now() - new Date(b.createdAt).getTime()) / (24 * 60 * 60 * 1000));
@@ -636,12 +638,12 @@ export default function StoriesIndexContent() {
       const bLikes = typeof b.likesCount === 'number' ? b.likesCount : 0;
       const aDislikes = typeof a.dislikesCount === 'number' ? a.dislikesCount : 0;
       const bDislikes = typeof b.dislikesCount === 'number' ? b.dislikesCount : 0;
-      const aViews = a.metadata && typeof a.metadata === 'object' && 
-        'pageViews' in (a.metadata as Record<string, unknown>) ?
-        Number((a.metadata as Record<string, unknown>).pageViews || 0) : 0;
-      const bViews = b.metadata && typeof b.metadata === 'object' && 
-        'pageViews' in (b.metadata as Record<string, unknown>) ?
-        Number((b.metadata as Record<string, unknown>).pageViews || 0) : 0;
+      const aViews = a.metadata && (a.metadata as any).pageViews
+        ? Number((a.metadata as any).pageViews)
+        : 0;
+      const bViews = b.metadata && (b.metadata as any).pageViews
+        ? Number((b.metadata as any).pageViews)
+        : 0;
       const aReadTime = a.metadata && typeof a.metadata === 'object' && 
         'averageReadTime' in (a.metadata as Record<string, unknown>) ?
         Number((a.metadata as Record<string, unknown>).averageReadTime || 0) : 0;
