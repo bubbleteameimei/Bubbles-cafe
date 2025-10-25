@@ -1,6 +1,7 @@
 import { db } from './db';
 import { posts, users } from '@shared/schema';
 import { eq, sql } from 'drizzle-orm';
+import { determineThemeCategory as determineSharedThemeCategory } from '@shared/theme-categories';
 
 interface WordPressPost {
   id: number;
@@ -133,8 +134,8 @@ export class WordPressAPISync {
     const baseSlug = wpPost.slug || this.generateSlug(cleanTitle);
     const uniqueSlug = await this.ensureUniqueSlug(baseSlug, wpPost.id);
 
-    // Determine theme category based on content and tags
-    const themeCategory = this.determineThemeCategory(cleanContent, cleanTitle);
+    // Determine theme category using shared categories (uppercase keys)
+    const themeCategory = determineSharedThemeCategory(cleanTitle, cleanContent);
 
     // Check if post already exists
     const existingPost = await db.select().from(posts)
@@ -148,7 +149,7 @@ export class WordPressAPISync {
       slug: uniqueSlug,
       authorId: authorId,
       isSecret: false,
-      isAdminPost: false,
+      isAdminPost: true,
       matureContent: this.detectMatureContent(cleanContent),
       themeCategory,
       readingTimeMinutes,

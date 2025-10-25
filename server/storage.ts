@@ -1962,10 +1962,12 @@ export class DatabaseStorage implements IStorage {
           content: "This is a placeholder for a WordPress post",
           slug: placeholderSlug,
           authorId: 1,
+          isAdminPost: true,
           createdAt: new Date(),
           metadata: {
             wordpressId: postId,
-            isPlaceholder: true
+            isPlaceholder: true,
+            source: 'wordpress_api'
           },
           baselineLikes,
           baselineDislikes

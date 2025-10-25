@@ -65,11 +65,40 @@ export function LikeDislike({
   initialTotals = null
 }: LikeDislikeProps) {
   const { toast: _toast } = useToast();
-  const [liked, setLiked] = useState(userLikeStatus === 'like');
-  const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
+
+  // Initialize from localStorage to avoid flicker and preserve user state across pages
+  const initialLocalState = (() => {
+    try { return readLocalReaction(getStorageKey(postId, slug, source)); } catch { return 'none'; }
+  })();
+
+  const [liked, setLiked] = useState(userLikeStatus ? userLikeStatus === 'like' : initialLocalState === 'like');
+  const [disliked, setDisliked] = useState(userLikeStatus ? userLikeStatus === 'dislike' : initialLocalState === 'dislike');
+
+  // Deterministic baseline for immediate non-zero display before server fetch
+  const initialBaseline = (() => {
+    try {
+      const seedFrom = (slug && slug.trim().length > 0) ? slug.trim() : String(postId);
+      let h = 0;
+      for (let i = 0; i < seedFrom.length; i++) {
+        h = (h << 5) - h + seedFrom.charCodeAt(i);
+        h |= 0;
+      }
+      const seededRandom = (n: number) => {
+        const x = Math.sin(n) * 10000;
+        return x - Math.floor(x);
+      };
+      const seed = Math.abs(h) * 12345;
+      const baseLikes = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
+      const baseDislikes = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
+      return { baseLikes, baseDislikes };
+    } catch {
+      return { baseLikes: 120, baseDislikes: 12 };
+    }
+  })();
+
   const [stats, setStats] = useState<Stats>({
-    likes: 0,
-    dislikes: 0,
+    likes: initialBaseline.baseLikes,
+    dislikes: initialBaseline.baseDislikes,
     baseStats: { likes: 0, dislikes: 0 },
     userInteracted: false
   });
@@ -170,8 +199,8 @@ export function LikeDislike({
 
     hideTimerRef.current = window.setTimeout(() => {
       setIsToastVisible(false);
-      removeTimerRef.current = window.setTimeout(() => setInlineToast(null), 300);
-    }, 3500);
+      removeTimerRef.current = window.setTimeout(() => setInlineToast(null), 200);
+    }, 2000);
   };
 
   const applyServerTotals = (data: any) => {

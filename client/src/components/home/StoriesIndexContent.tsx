@@ -3,6 +3,7 @@ import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { type posts } from "@shared/schema";
 type Post = typeof posts.$inferSelect;
 import { useLocation } from "wouter";
+import SEO from "@/components/SEO";
 
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -622,6 +623,13 @@ export default function StoriesIndexContent() {
 
   return (
       <div className="min-h-screen bg-background flex flex-col overflow-x-hidden overflow-y-auto">
+        {/* Canonical for stories index */}
+        <SEO
+          title="Stories"
+          description="Browse dark, psychological, and gothic fiction stories at Bubble’s Cafe."
+          canonical="/stories"
+          type="website"
+        />
         <div className="w-full pb-12 pt-0 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 mb-4 px-2 sm:px-4">
             {/* Story index controls: search only; sort moved into the featured story card */}
@@ -972,7 +980,7 @@ export default function StoriesIndexContent() {
                             </div>
                           </div>
                         </div>
-                        {themeCategory && themeInfo && (
+                        {themeCategory && (
                           <div className="mt-2">
                             <Badge className="w-fit text-[12px] sm:text-sm font-medium tracking-wide px-2 py-0.5 flex items-center gap-1">
                               <Book className="h-3 w-3" />
