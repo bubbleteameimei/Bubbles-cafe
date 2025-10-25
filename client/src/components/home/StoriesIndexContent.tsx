@@ -938,7 +938,7 @@ export default function StoriesIndexContent() {
             <div
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
             >
-              {latestPosts.map((post: Post) => {
+              {latestPosts.map((post) => {
                 
                 const metadata = post.metadata || {};
                 // Prefer metadata theme; otherwise detect from title/content for WordPress API posts
