@@ -48,10 +48,93 @@ export default function StoriesIndexContent() {
   const [carouselApi] = useState<CarouselApi | null>(null);
 
   useEffect(() => {
+    if (!carouselApi) return;
+    const update = () => {
+      try {
+        (carouselApi as any).selectedScrollSnap?.();
+      } catch {}
+    };
+    update();
+    (carouselApi as any).on?.("select", update);
+    (carouselApi as any).on?.("reInit", update);
+    return () => {
+      try {
+        (carouselApi as any).off?.("select", update);
+        (carouselApi as any).off?.("reInit", update);
+      } catch {}
+    };
+  }, [carouselApi]);
+
+  // Navigation function
+  const navigateToReader = (slugOrId: string | number) => {
+    try {
+      const slugStr = String(slugOrId);
+      setLocation(`/reader/${encodeURIComponent(slugStr)}`);
+    } catch {
+      window.location.href = `/reader/${encodeURIComponent(String(slugOrId))}`;
+    }
+  };
+
+  // Paginated query
+  const { data } = useSuspenseInfiniteQuery<
+    { posts: Post[]; hasMore: boolean; page: number }
+  >({
+    queryKey: ["wordpress", "posts"],
+    queryFn: async ({ pageParam = 1 }) => {
+      const page = typeof pageParam === 'number' ? pageParam : 1;
+      const wpResponse = await fetchWordPressPosts({
+        page,
+        perPage: 100,
+      });
+      const wpPosts = wpResponse.posts || [];
+      const posts = wpPosts.map((post: WordPressPost) => wpToPost(post)) as Post[];
+      return {
+        posts,
+        hasMore: wpPosts.length === 100,
+        page,
+      };
+    },
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    initialPageParam: 1,
+  });
+
+  const hasPaginatedPosts = data?.pages && data.pages.length > 0 && data.pages[0]?.posts?.length > 0;
+
+  // Initialize posts array with memoization
+  const allPosts: Post[] = useMemo(() => {
+    if (hasPaginatedPosts) {
+      return data!.pages.flatMap(page => page.posts) as Post[];
+    }
+    return [] as Post[];
+  }, [hasPaginatedPosts, data]);
+
+  const sortedPosts = [...allPosts].sort((a: Post, b: Post) =>
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  // Available theme categories present in posts
+  const availableCategories = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of allPosts) {
+      const md = (p.metadata || {}) as Record<string, any>;
+      if (typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
+        set.add(md.themeCategory);
+      }
+    }
+    return Array.from(set);
+  }, [allPosts]);
+
+  // Reaction totals map for posts (batch fetched)
+  const [reactionTotals, setReactionTotals] = useState<Record<number, import("@/api/reactions").ReactionTotals>>({});
+
+  useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const ids = allPosts.map(p => Number(p.id)).filter(n => Number.isFinite(n));
+        const ids = allPosts.map((p: Post) => Number(p.id)).filter((n: number) => Number.isFinite(n));
         if (ids.length === 0) return;
         const { fetchReactionsBatch } = await import("@/api/reactions");
         const totals = await fetchReactionsBatch(ids.slice(0, 150));
@@ -68,7 +151,7 @@ export default function StoriesIndexContent() {
     const onUpdate = (e: Event) => {
       const detail = (e as CustomEvent).detail as { postId: number; totals: import("@/api/reactions").ReactionTotals };
       if (!detail || typeof detail.postId !== 'number') return;
-      setReactionTotals(prev => ({ ...prev, [detail.postId]: detail.totals }));
+      setReactionTotals((prev: Record<number, import("@/api/reactions").ReactionTotals>) => ({ ...prev, [detail.postId]: detail.totals }));
     };
     window.addEventListener('reaction:updated', onUpdate as EventListener);
     return () => { mounted = false; window.removeEventListener('reaction:updated', onUpdate as EventListener); };
@@ -915,7 +998,8 @@ export default function StoriesIndexContent() {
                                 variant="index"
                                 initialTotals={reactionTotals[post.id] || null}
                                 onLike={() => {}}
-                                onUpdate  />
+                                onUpdate={(likes: number, _dislikes: number) => {}}
+                              />
                             </Suspense>
                           )}
                           <Button

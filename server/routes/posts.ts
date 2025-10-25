@@ -381,7 +381,7 @@ router.get('/:id/reactions',
         }
       }
 
-      res.json({
+      return res.json({
         postId: Number(id),
         baselineLikes,
         baselineDislikes,
@@ -481,7 +481,7 @@ router.get('/reactions-batch',
         }
       }
 
-      res.json({ results });
+      return res.json({ results });
     } catch (error) {
       postsLogger.error('Error getting reactions batch', { error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Failed to fetch reactions batch');
@@ -544,7 +544,7 @@ router.post('/:id/reaction',
         }
       }
 
-      res.json({
+      return res.json({
         success: true,
         postId: Number(id),
         baselineLikes,

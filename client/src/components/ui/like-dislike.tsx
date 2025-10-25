@@ -61,7 +61,8 @@ export function LikeDislike({
   onDislike,
   onUpdate,
   className,
-  variant = 'index'
+  variant = 'index',
+  initialTotals = null
 }: LikeDislikeProps) {
   const { toast: _toast } = useToast();
   const [liked, setLiked] = useState(userLikeStatus === 'like');
@@ -115,7 +116,7 @@ export function LikeDislike({
         setLiked(localState === 'like');
         setDisliked(localState === 'dislike');
 
-        onUpdate?.(stats.likes, stats.dislikes);
+        onUpdate?.(newStats.likes, newStats.dislikes);
       } catch (error) {
         console.warn('[LikeDislike] Failed to load reactions, applying deterministic baseline fallback:', error);
         // Compute deterministic baseline locally (preview-safe)
