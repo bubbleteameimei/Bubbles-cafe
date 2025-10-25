@@ -121,12 +121,39 @@ export function LikeDislike({
           if (!mounted) return;
         }
 
+        let likes = Number(data?.totals?.likes ?? 0);
+        let dislikes = Number(data?.totals?.dislikes ?? 0);
+        let baseLikes = Number(data?.baselineLikes ?? 0);
+        let baseDislikes = Number(data?.baselineDislikes ?? 0);
+
+        // Fallback if API returned zeros (preview/db unavailable): compute deterministic baseline
+        if ((likes === 0 && dislikes === 0) && (baseLikes === 0 || baseDislikes === 0)) {
+          const seedFrom = (slug && slug.trim().length > 0) ? slug.trim() : String(postId);
+          const hash = (s: string) => {
+            let h = 0;
+            for (let i = 0; i < s.length; i++) {
+              h = (h << 5) - h + s.charCodeAt(i);
+              h |= 0;
+            }
+            return Math.abs(h);
+          };
+          const seededRandom = (n: number) => {
+            const x = Math.sin(n) * 10000;
+            return x - Math.floor(x);
+          };
+          const seed = hash(seedFrom) * 12345;
+          baseLikes = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
+          baseDislikes = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
+          likes = baseLikes;
+          dislikes = baseDislikes;
+        }
+
         const computedStats: Stats = {
-          likes: Number(data.totals?.likes ?? 0),
-          dislikes: Number(data.totals?.dislikes ?? 0),
+          likes,
+          dislikes,
           baseStats: {
-            likes: Number(data.baselineLikes ?? 0),
-            dislikes: Number(data.baselineDislikes ?? 0)
+            likes: baseLikes,
+            dislikes: baseDislikes
           },
           userInteracted: false
         };
@@ -138,6 +165,18 @@ export function LikeDislike({
         setDisliked(localState === 'dislike');
 
         onUpdate?.(computedStats.likes, computedStats.dislikes);
+        // Broadcast initial totals so index/most liked can sync immediately
+        try {
+          const detail = {
+            postId,
+            baselineLikes: Number(computedStats.baseStats.likes || 0),
+            baselineDislikes: Number(computedStats.baseStats.dislikes || 0),
+            likesCount: Math.max(0, Number(computedStats.likes) - Number(computedStats.baseStats.likes || 0)),
+            dislikesCount: Math.max(0, Number(computedStats.dislikes) - Number(computedStats.baseStats.dislikes || 0)),
+            totals: { likes: Number(computedStats.likes), dislikes: Number(computedStats.dislikes) }
+          };
+          window.dispatchEvent(new CustomEvent('reaction:updated', { detail }));
+        } catch {}
       } catch (error) {
         console.warn('[LikeDislike] Failed to load reactions, applying deterministic baseline fallback:', error);
         // Compute deterministic baseline locally (preview-safe)
@@ -172,6 +211,18 @@ export function LikeDislike({
         setDisliked(localState === 'dislike');
 
         onUpdate?.(fallbackStats.likes, fallbackStats.dislikes);
+        // Broadcast fallback totals as well
+        try {
+          const detail = {
+            postId,
+            baselineLikes: Number(fallbackStats.baseStats.likes || 0),
+            baselineDislikes: Number(fallbackStats.baseStats.dislikes || 0),
+            likesCount: Math.max(0, Number(fallbackStats.likes) - Number(fallbackStats.baseStats.likes || 0)),
+            dislikesCount: Math.max(0, Number(fallbackStats.dislikes) - Number(fallbackStats.baseStats.dislikes || 0)),
+            totals: { likes: Number(fallbackStats.likes), dislikes: Number(fallbackStats.dislikes) }
+          };
+          window.dispatchEvent(new CustomEvent('reaction:updated', { detail }));
+        } catch {}
       }
     })();
 
@@ -199,8 +250,8 @@ export function LikeDislike({
 
     hideTimerRef.current = window.setTimeout(() => {
       setIsToastVisible(false);
-      removeTimerRef.current = window.setTimeout(() => setInlineToast(null), 200);
-    }, 2000);
+      removeTimerRef.current = window.setTimeout(() => setInlineToast(null), 150);
+    }, 1200);
   };
 
   const applyServerTotals = (data: any) => {

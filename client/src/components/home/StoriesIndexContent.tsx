@@ -22,6 +22,7 @@ import { getReadingTime, extractEngagingExcerpt } from "@/lib/excerpt-lite";
 import { THEME_CATEGORIES } from "@/lib/themes-lite";
 import type { WordPressPost } from "@/lib/wordpress-api";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
+import { determineThemeCategory as sharedDetermineThemeCategory } from "@shared/theme-categories";
 
 
 
@@ -942,10 +943,17 @@ export default function StoriesIndexContent() {
               {latestPosts.map((post: Post) => {
                 
                 const metadata = post.metadata || {};
+                // Prefer metadata theme; otherwise detect from title/content for WordPress API posts
                 let themeCategory = "";
                 if (typeof metadata === 'object' && metadata !== null && 
-                  'themeCategory' in (metadata as Record<string, unknown>)) {
+                  'themeCategory' in (metadata as Record<string, unknown)) {
                   themeCategory = String((metadata as Record<string, unknown>).themeCategory || "");
+                } else {
+                  try {
+                    // Use sharedDetermineThemeCategory to derive a sensible theme label
+                    const derived = sharedDetermineThemeCategory(String(post.title || ''), String(post.content || ''));
+                    themeCategory = String(derived || '');
+                  } catch {}
                 }
                 const themeInfo = themeCategory ? THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] : null;
                 let displayName = '';
