@@ -64,8 +64,8 @@ const generateBaseStats = (postId: number, slug?: string) => {
     return x - Math.floor(x);
   };
 
-  const likesBase = Math.floor(seededRandom(seed) * (150 - 80 + 1)) + 80;
-  const dislikesBase = Math.floor(seededRandom(seed + 999) * (20 - 8 + 1)) + 8;
+  const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80; // 80–200
+  const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2; // 2–13
 
   if (import.meta.env?.DEV) {
     console.log(`Generated base stats for key (${slug ?? postId}): likes=${likesBase}, dislikes=${dislikesBase}`);
