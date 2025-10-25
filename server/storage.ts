@@ -1558,13 +1558,14 @@ export class DatabaseStorage implements IStorage {
               queryError.message.includes("does not exist"))) {
             console.log("Using fallback SQL query for getPost.");
 
-            // Fallback to raw SQL query that only selects columns we know exist
+            // Fallback to raw SQL query that includes baseline fields
             const result = await db.execute(sql`
               SELECT
                 id, title, content, slug, excerpt, author_id,
                 metadata, created_at, is_secret, "isAdminPost", mature_content,
                 theme_category, reading_time_minutes,
-                likes_count, dislikes_count
+                likes_count, dislikes_count,
+                baseline_likes, baseline_dislikes
               FROM posts
               WHERE slug = ${slug}
               LIMIT 1
@@ -1590,8 +1591,10 @@ export class DatabaseStorage implements IStorage {
               createdAt: safeCreateDate(post.created_at),
               readingTimeMinutes: Number(post.reading_time_minutes ?? Math.ceil(String(post.content || '').length / 1000)),
               likesCount: Number(post.likes_count || 0),
-              dislikesCount: Number(post.dislikes_count || 0)
-            };
+              dislikesCount: Number(post.dislikes_count || 0),
+              baselineLikes: Number((post.baseline_likes ?? (post as any).baselineLikes ?? 0)),
+              baselineDislikes: Number((post.baseline_dislikes ?? (post as any).baselineDislikes ?? 0))
+            } as Post;
           } else {
             // If it's another type of error, rethrow it
             throw queryError;
