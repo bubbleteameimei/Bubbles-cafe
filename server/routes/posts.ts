@@ -323,86 +323,86 @@ router.put('/:id/hide',
 
 // POST /api/posts/:id/like - Simple like endpoint (uses session-based reaction for anonymous users)
 router.post('/:id/like',
-\tapiRateLimiter,
-\tvalidateParams(postIdSchema),
-\tasyncHandler(async (req: Request, res: Response) => {
-\t\tconst { id } = req.params;
-\t\ttry {
-\t\t\tawait (storage as any).updatePostReaction(Number(id), { isLike: true, sessionId: req.sessionID });
-\t\t\tconst counts = await (storage as any).getPostLikeCounts(Number(id));
-\t\t\tres.json({ success: true, ...counts });
-\t\t} catch (error) {
-\t\t\tpostsLogger.error('Error liking post', { postId: id, error: error instanceof Error ? error.message : String(error) });
-\t\t\tthrow createError.internal('Failed to like post');
-\t\t}
-\t})
+  apiRateLimiter,
+  validateParams(postIdSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    try {
+      await (storage as any).updatePostReaction(Number(id), { isLike: true, sessionId: req.sessionID });
+      const counts = await (storage as any).getPostLikeCounts(Number(id));
+      res.json({ success: true, ...counts });
+    } catch (error) {
+      postsLogger.error('Error liking post', { postId: id, error: error instanceof Error ? error.message : String(error) });
+      throw createError.internal('Failed to like post');
+    }
+  })
 );
 
 // GET /api/posts/:id/reactions - Return baseline + live counts with totals
 router.get('/:id/reactions',
-\tapiRateLimiter,
-\tvalidateParams(postIdSchema),
-\tasyncHandler(async (req: Request, res: Response) => {
-\t\tconst { id } = req.params;
-\t\ttry {
-\t\t\tconst post = await (storage as any).getPostById(Number(id));
-\t\t\tif (!post) throw createError.notFound('Post not found');
-\t\t\tconst counts = await (storage as any).getPostLikeCounts(Number(id));
-\t\t\tconst baselineLikes = Number((post as any).baselineLikes ?? 0);
-\t\t\tconst baselineDislikes = Number((post as any).baselineDislikes ?? 0);
-\t\t\tres.json({
-\t\t\t\tpostId: Number(id),
-\t\t\t\tbaselineLikes,
-\t\t\t\tbaselineDislikes,
-\t\t\t\tlikesCount: Number(counts.likesCount ?? 0),
-\t\t\t\tdislikesCount: Number(counts.dislikesCount ?? 0),
-\t\t\t\ttotals: {
-\t\t\t\t\tlikes: baselineLikes + Number(counts.likesCount ?? 0),
-\t\t\t\t\tdislikes: baselineDislikes + Number(counts.dislikesCount ?? 0)
-\t\t\t\t}
-\t\t\t});
-\t\t} catch (error) {
-\t\t\tpostsLogger.error('Error getting reactions', { postId: id, error: error instanceof Error ? error.message : String(error) });
-\t\t\tthrow createError.internal('Failed to fetch reactions');
-\t\t}
-\t})
+  apiRateLimiter,
+  validateParams(postIdSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    try {
+      const post = await (storage as any).getPostById(Number(id));
+      if (!post) throw createError.notFound('Post not found');
+      const counts = await (storage as any).getPostLikeCounts(Number(id));
+      const baselineLikes = Number((post as any).baselineLikes ?? 0);
+      const baselineDislikes = Number((post as any).baselineDislikes ?? 0);
+      res.json({
+        postId: Number(id),
+        baselineLikes,
+        baselineDislikes,
+        likesCount: Number(counts.likesCount ?? 0),
+        dislikesCount: Number(counts.dislikesCount ?? 0),
+        totals: {
+          likes: baselineLikes + Number(counts.likesCount ?? 0),
+          dislikes: baselineDislikes + Number(counts.dislikesCount ?? 0)
+        }
+      });
+    } catch (error) {
+      postsLogger.error('Error getting reactions', { postId: id, error: error instanceof Error ? error.message : String(error) });
+      throw createError.internal('Failed to fetch reactions');
+    }
+  })
 );
 
 // POST /api/posts/:id/reaction - Toggle like/dislike with session tracking
 const reactionBodySchema = z.object({
-\tisLike: z.boolean()
+  isLike: z.boolean()
 });
 router.post('/:id/reaction',
-\tapiRateLimiter,
-\tvalidateParams(postIdSchema),
-\tvalidateBody(reactionBodySchema),
-\tasyncHandler(async (req: Request, res: Response) => {
-\t\tconst { id } = req.params;
-\t\tconst { isLike } = req.body as any;
-\t\ttry {
-\t\t\tawait (storage as any).updatePostReaction(Number(id), { isLike: !!isLike, sessionId: req.sessionID });
-\t\t\tconst post = await (storage as any).getPostById(Number(id));
-\t\t\tif (!post) throw createError.notFound('Post not found');
-\t\t\tconst counts = await (storage as any).getPostLikeCounts(Number(id));
-\t\t\tconst baselineLikes = Number((post as any).baselineLikes ?? 0);
-\t\t\tconst baselineDislikes = Number((post as any).baselineDislikes ?? 0);
-\t\t\tres.json({
-\t\t\t\tsuccess: true,
-\t\t\t\tpostId: Number(id),
-\t\t\t\tbaselineLikes,
-\t\t\t\tbaselineDislikes,
-\t\t\t\tlikesCount: Number(counts.likesCount ?? 0),
-\t\t\t\tdislikesCount: Number(counts.dislikesCount ?? 0),
-\t\t\t\ttotals: {
-\t\t\t\t\tlikes: baselineLikes + Number(counts.likesCount ?? 0),
-\t\t\t\t\tdislikes: baselineDislikes + Number(counts.dislikesCount ?? 0)
-\t\t\t\t}
-\t\t\t});
-\t\t} catch (error) {
-\t\t\tpostsLogger.error('Error updating reaction', { postId: id, error: error instanceof Error ? error.message : String(error) });
-\t\t\tthrow createError.internal('Failed to update reaction');
-\t\t}
-\t})
+  apiRateLimiter,
+  validateParams(postIdSchema),
+  validateBody(reactionBodySchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { isLike } = req.body as any;
+    try {
+      await (storage as any).updatePostReaction(Number(id), { isLike: !!isLike, sessionId: req.sessionID });
+      const post = await (storage as any).getPostById(Number(id));
+      if (!post) throw createError.notFound('Post not found');
+      const counts = await (storage as any).getPostLikeCounts(Number(id));
+      const baselineLikes = Number((post as any).baselineLikes ?? 0);
+      const baselineDislikes = Number((post as any).baselineDislikes ?? 0);
+      res.json({
+        success: true,
+        postId: Number(id),
+        baselineLikes,
+        baselineDislikes,
+        likesCount: Number(counts.likesCount ?? 0),
+        dislikesCount: Number(counts.dislikesCount ?? 0),
+        totals: {
+          likes: baselineLikes + Number(counts.likesCount ?? 0),
+          dislikes: baselineDislikes + Number(counts.dislikesCount ?? 0)
+        }
+      });
+    } catch (error) {
+      postsLogger.error('Error updating reaction', { postId: id, error: error instanceof Error ? error.message : String(error) });
+      throw createError.internal('Failed to update reaction');
+    }
+  })
 );
 
 // POST /api/posts/:id/flag - Report content
