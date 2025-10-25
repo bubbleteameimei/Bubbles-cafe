@@ -6,6 +6,9 @@ import "./index.css";
 import { createRoot } from "react-dom/client";
 import React from "react";
 
+// Patch window.fetch to auto-apply CSRF to non-GET requests
+import "@/lib/fetch-csrf";
+
 // Minimal runtime bootstrap without debug logs
 import { getApiBaseUrl } from "@/lib/asset-path";
 

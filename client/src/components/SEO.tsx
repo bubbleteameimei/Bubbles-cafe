@@ -161,6 +161,9 @@ export default function SEO({
     // Preconnect to external domains for performance
     setLinkTag('preconnect', 'https://fonts.googleapis.com');
     setLinkTag('preconnect', 'https://fonts.gstatic.com', { crossorigin: 'anonymous' });
+    // Preconnect/dns-prefetch for WordPress stats pixel endpoint
+    setLinkTag('preconnect', 'https://pixel.wp.com');
+    setLinkTag('dns-prefetch', 'https://pixel.wp.com');
     
     // Favicon and app icons (use provided PNG favicon)
     setLinkTag('icon', '/img_9653.png', { type: 'image/png' });

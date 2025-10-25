@@ -1263,7 +1263,9 @@ export class DatabaseStorage implements IStorage {
             isAdminPost: postsTable.isAdminPost,
             readingTimeMinutes: postsTable.readingTimeMinutes,
             likesCount: postsTable.likesCount,
-            dislikesCount: postsTable.dislikesCount
+            dislikesCount: postsTable.dislikesCount,
+            baselineLikes: (postsTable as any).baselineLikes,
+            baselineDislikes: (postsTable as any).baselineDislikes
           })
           .from(postsTable);
 
@@ -1302,7 +1304,9 @@ export class DatabaseStorage implements IStorage {
               themeCategory: (post.themeCategory || (metadata as any).themeCategory || null) as string | null,
               readingTimeMinutes: (post.readingTimeMinutes as number | null) ?? Math.ceil(String(post.content || '').split(/\s+/).length / 200),
               likesCount: Number((post.likesCount as number | null) ?? 0),
-              dislikesCount: Number((post.dislikesCount as number | null) ?? 0)
+              dislikesCount: Number((post.dislikesCount as number | null) ?? 0),
+              baselineLikes: Number(((post as any).baselineLikes as number | null) ?? 0),
+              baselineDislikes: Number(((post as any).baselineDislikes as number | null) ?? 0)
             } as Post;
           });
 
@@ -1371,13 +1375,13 @@ export class DatabaseStorage implements IStorage {
         themeCategory: postsTable.themeCategory,
         readingTimeMinutes: postsTable.readingTimeMinutes,
         likesCount: postsTable.likesCount,
-        dislikesCount: postsTable.dislikesCount
+        dislikesCount: postsTable.dislikesCount,
+        baselineLikes: (postsTable as any).baselineLikes,
+        baselineDislikes: (postsTable as any).baselineDislikes
       })
       .from(postsTable)
       .where(eq(postsTable.isSecret, false))
       .orderBy(desc(postsTable.createdAt))
-      .limit(limit + 1)
-      .offset(offset);
 
       // Now apply the filtering based on metadata fields
       let filteredPosts = simplePosts;
@@ -1513,6 +1517,8 @@ export class DatabaseStorage implements IStorage {
               readingTimeMinutes: postsTable.readingTimeMinutes,
               likesCount: postsTable.likesCount,
               dislikesCount: postsTable.dislikesCount,
+              baselineLikes: (postsTable as any).baselineLikes,
+              baselineDislikes: (postsTable as any).baselineDislikes,
               metadata: postsTable.metadata,
               createdAt: postsTable.createdAt
             })
@@ -1522,6 +1528,8 @@ export class DatabaseStorage implements IStorage {
 
           if (!post) return undefined;
 
+          const metadata: Record<string, any> = (post.metadata as any) || {};
+
           return {
             id: Number(post.id),
             title: String(post.title),
@@ -1529,15 +1537,17 @@ export class DatabaseStorage implements IStorage {
             slug: String(post.slug),
             excerpt: post.excerpt as string | null,
             authorId: Number(post.authorId),
-            isSecret: Boolean(post.isSecret),
-            isAdminPost: (post.isAdminPost === true ? true : (post.isAdminPost === false ? false : null)),
-            matureContent: Boolean(post.matureContent),
-            themeCategory: (post.themeCategory as string | null),
-            metadata: (post.metadata || {}) as unknown,
             createdAt: safeCreateDate(post.createdAt),
+            metadata: metadata as unknown,
+            isAdminPost: (post.isAdminPost === true ? true : (post.isAdminPost === false ? false : null)),
+            isSecret: Boolean(post.isSecret),
+            matureContent: Boolean(post.matureContent),
+            themeCategory: (post.themeCategory || (metadata as any).themeCategory || null) as string | null,
             readingTimeMinutes: (post.readingTimeMinutes as number | null) ?? Math.ceil(String(post.content || '').split(/\s+/).length / 200),
-            likesCount: (post.likesCount as number | null) ?? 0,
-            dislikesCount: (post.dislikesCount as number | null) ?? 0
+            likesCount: Number((post.likesCount as number | null) ?? 0),
+            dislikesCount: Number((post.dislikesCount as number | null) ?? 0),
+            baselineLikes: Number(((post as any).baselineLikes as number | null) ?? 0),
+            baselineDislikes: Number(((post as any).baselineDislikes as number | null) ?? 0)
           } as Post;
         } catch (queryError: any) {
           console.log("Initial getPost query failed, trying fallback.", queryError.message);
@@ -1548,13 +1558,14 @@ export class DatabaseStorage implements IStorage {
               queryError.message.includes("does not exist"))) {
             console.log("Using fallback SQL query for getPost.");
 
-            // Fallback to raw SQL query that only selects columns we know exist
+            // Fallback to raw SQL query that includes baseline fields
             const result = await db.execute(sql`
               SELECT
                 id, title, content, slug, excerpt, author_id,
                 metadata, created_at, is_secret, "isAdminPost", mature_content,
                 theme_category, reading_time_minutes,
-                likes_count, dislikes_count
+                likes_count, dislikes_count,
+                baseline_likes, baseline_dislikes
               FROM posts
               WHERE slug = ${slug}
               LIMIT 1
@@ -1580,8 +1591,10 @@ export class DatabaseStorage implements IStorage {
               createdAt: safeCreateDate(post.created_at),
               readingTimeMinutes: Number(post.reading_time_minutes ?? Math.ceil(String(post.content || '').length / 1000)),
               likesCount: Number(post.likes_count || 0),
-              dislikesCount: Number(post.dislikes_count || 0)
-            };
+              dislikesCount: Number(post.dislikes_count || 0),
+              baselineLikes: Number((post.baseline_likes ?? (post as any).baselineLikes ?? 0)),
+              baselineDislikes: Number((post.baseline_dislikes ?? (post as any).baselineDislikes ?? 0))
+            } as Post;
           } else {
             // If it's another type of error, rethrow it
             throw queryError;
@@ -1621,7 +1634,6 @@ export class DatabaseStorage implements IStorage {
       });
 
       // Extract specific fields that we know exist in the database
-      // This avoids issues with missing columns
       const basePost = {
         title: post.title,
         content: post.content,
@@ -1635,6 +1647,24 @@ export class DatabaseStorage implements IStorage {
         themeCategory: post.themeCategory || (post.metadata as any)?.themeCategory || null,
         matureContent: false // Default value for mature_content
       };
+
+      // Compute deterministic baseline using slug (fixed once per post)
+      const hashSlug = (s: string): number => {
+        let hash = 0;
+        for (let i = 0; i < s.length; i++) {
+          hash = (hash << 5) - hash + s.charCodeAt(i);
+          hash |= 0;
+        }
+        return Math.abs(hash);
+      };
+      const seededRandom = (n: number) => {
+        const x = Math.sin(n) * 10000;
+        return x - Math.floor(x);
+      };
+      const seedNumber = basePost.slug ? hashSlug(basePost.slug) : Math.floor(Math.random() * 1e6);
+      const seed = seedNumber * 12345;
+      const baselineLikes = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80; // 80–200
+      const baselineDislikes = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2; // 2–13
 
       // Use raw SQL to avoid schema mismatches, only including fields that actually exist
       const result = await db.execute(sql`
@@ -1650,7 +1680,9 @@ export class DatabaseStorage implements IStorage {
           mature_content,
           theme_category,
           created_at,
-          reading_time_minutes
+          reading_time_minutes,
+          baseline_likes,
+          baseline_dislikes
         ) VALUES (
           ${basePost.title},
           ${basePost.content},
@@ -1663,7 +1695,9 @@ export class DatabaseStorage implements IStorage {
           ${basePost.matureContent || false},
           ${basePost.themeCategory || null},
           ${basePost.createdAt},
-          ${basePost.readingTimeMinutes}
+          ${basePost.readingTimeMinutes},
+          ${baselineLikes},
+          ${baselineDislikes}
         )
         RETURNING *;
       `);
@@ -1690,8 +1724,10 @@ export class DatabaseStorage implements IStorage {
         metadata: (newPost.metadata || {}) as unknown,
         createdAt: safeCreateDate(newPost.createdAt ?? newPost.created_at),
         readingTimeMinutes: (newPost.readingTimeMinutes as number | null) ?? Math.ceil(String(newPost.content || '').split(/\s+/).length / 200),
-        likesCount: (newPost.likesCount as number | null) ?? 0,
-        dislikesCount: (newPost.dislikesCount as number | null) ?? 0
+        likesCount: Number((newPost.likesCount as number | null) ?? 0),
+        dislikesCount: Number((newPost.dislikesCount as number | null) ?? 0),
+        baselineLikes: Number((newPost.baselineLikes as number | null) ?? (newPost.baseline_likes as number | null) ?? 0),
+        baselineDislikes: Number((newPost.baselineDislikes as number | null) ?? (newPost.baseline_dislikes as number | null) ?? 0)
       } as Post;
     } catch (error) {
       console.error("Error in createPost:", error);
@@ -1900,19 +1936,41 @@ export class DatabaseStorage implements IStorage {
 
       console.log(`[Storage] Post ${postId} doesn't exist, creating placeholder for WordPress post`);
 
-      // Create a placeholder post for WordPress posts that don't exist in our DB yet
+      // Compute deterministic baseline for placeholder using slug
+      const placeholderSlug = `wordpress-post-${postId}`;
+      const hashSlug = (s: string): number => {
+        let hash = 0;
+        for (let i = 0; i < s.length; i++) {
+          hash = (hash << 5) - hash + s.charCodeAt(i);
+          hash |= 0;
+        }
+        return Math.abs(hash);
+      };
+      const seededRandom = (n: number) => {
+        const x = Math.sin(n) * 10000;
+        return x - Math.floor(x);
+      };
+      const seedNumber = hashSlug(placeholderSlug);
+      const seed = seedNumber * 12345;
+      const baselineLikes = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
+      const baselineDislikes = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
+
       const [placeholderPost] = await db.insert(postsTable)
         .values({
-          id: postId, // Use the WordPress ID
+          id: postId,
           title: `WordPress Post ${postId}`,
           content: "This is a placeholder for a WordPress post",
-          slug: `wordpress-post-${postId}`,
-          authorId: 1, // Default to admin user
+          slug: placeholderSlug,
+          authorId: 1,
+          isAdminPost: true,
           createdAt: new Date(),
           metadata: {
             wordpressId: postId,
-            isPlaceholder: true
-          }
+            isPlaceholder: true,
+            source: 'wordpress_api'
+          },
+          baselineLikes,
+          baselineDislikes
         })
         .returning();
 

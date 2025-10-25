@@ -8,6 +8,7 @@ import { insertPostSchema, updatePostSchema , posts as postsTable } from "@share
 import { apiRateLimiter } from '../middlewares/rate-limiter';
 // DB helpers imported where needed
 import { db } from '../db';
+import { eq } from "drizzle-orm";
 
 const postsLogger = createSecureLogger('PostsRoutes');
 const router = Router();
@@ -323,19 +324,243 @@ router.put('/:id/hide',
 
 // POST /api/posts/:id/like - Simple like endpoint (uses session-based reaction for anonymous users)
 router.post('/:id/like',
-	apiRateLimiter,
-	validateParams(postIdSchema),
-	asyncHandler(async (req: Request, res: Response) => {
-		const { id } = req.params;
-		try {
-			await (storage as any).updatePostReaction(Number(id), { isLike: true, sessionId: req.sessionID });
-			const counts = await (storage as any).getPostLikeCounts(Number(id));
-			res.json({ success: true, ...counts });
-		} catch (error) {
-			postsLogger.error('Error liking post', { postId: id, error: error instanceof Error ? error.message : String(error) });
-			throw createError.internal('Failed to like post');
-		}
-	})
+  apiRateLimiter,
+  validateParams(postIdSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    try {
+      await (storage as any).updatePostReaction(Number(id), { isLike: true, sessionId: req.sessionID });
+      const counts = await (storage as any).getPostLikeCounts(Number(id));
+      res.json({ success: true, ...counts });
+    } catch (error) {
+      postsLogger.error('Error liking post', { postId: id, error: error instanceof Error ? error.message : String(error) });
+      throw createError.internal('Failed to like post');
+    }
+  })
+);
+
+// GET /api/posts/:id/reactions - Return baseline + live counts with totals
+router.get('/:id/reactions',
+  apiRateLimiter,
+  validateParams(postIdSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    try {
+      let post = await (storage as any).getPostById(Number(id));
+      // Ensure placeholder exists for WordPress posts if missing
+      if (!post && (storage as any).ensurePostExists) {
+        await (storage as any).ensurePostExists(Number(id));
+        post = await (storage as any).getPostById(Number(id));
+      }
+      if (!post) throw createError.notFound('Post not found');
+
+      const counts = await (storage as any).getPostLikeCounts(Number(id));
+      let baselineLikes = Number((post as any).baselineLikes ?? 0);
+      let baselineDislikes = Number((post as any).baselineDislikes ?? 0);
+
+      // Fallback seeding: if baselines are zero, compute deterministic values and persist
+      if (baselineLikes === 0 || baselineDislikes === 0) {
+        const slug = String((post as any).slug || '');
+        const seedNumber = slug ? (() => { let h = 0; for (let i = 0; i < slug.length; i++) { h = (h << 5) - h + slug.charCodeAt(i); h |= 0; } return Math.abs(h); })() : Number(id);
+        const seed = seedNumber * 12345;
+        const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
+        const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80; // 80–200
+        const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2; // 2–13
+
+        // Persist once so everyone sees the same baseline
+        try {
+          await db.update(postsTable)
+            .set({ baselineLikes: likesBase, baselineDislikes: dislikesBase })
+            .where(eq(postsTable.id, Number(id)));
+          baselineLikes = likesBase;
+          baselineDislikes = dislikesBase;
+        } catch (_) {
+          // If persistence fails, still use computed values in response
+          baselineLikes = baselineLikes || likesBase;
+          baselineDislikes = baselineDislikes || dislikesBase;
+        }
+      }
+
+      return res.json({
+        postId: Number(id),
+        baselineLikes,
+        baselineDislikes,
+        likesCount: Number(counts.likesCount ?? 0),
+        dislikesCount: Number(counts.dislikesCount ?? 0),
+        totals: {
+          likes: baselineLikes + Number(counts.likesCount ?? 0),
+          dislikes: baselineDislikes + Number(counts.dislikesCount ?? 0)
+        }
+      });
+    } catch (error) {
+      postsLogger.error('Error getting reactions', { postId: id, error: error instanceof Error ? error.message : String(error) });
+      throw createError.internal('Failed to fetch reactions');
+    }
+  })
+);
+
+// GET /api/posts/reactions-batch?ids=1,2,3 - Batch baseline + live totals for multiple posts
+router.get('/reactions-batch',
+  apiRateLimiter,
+  asyncHandler(async (req: Request, res: Response) => {
+    try {
+      const raw = (req.query.ids || req.query.id || '') as string | string[];
+      const list = Array.isArray(raw)
+        ? raw.join(',').split(',').map(s => Number(s.trim())).filter(n => Number.isFinite(n))
+        : String(raw || '').split(',').map(s => Number(s.trim())).filter(n => Number.isFinite(n));
+
+      if (!list.length) {
+        return res.json({ results: [] });
+      }
+
+      const results: any[] = [];
+      for (const id of list.slice(0, 200)) { // cap to 200 ids per call
+        try {
+          let post = await (storage as any).getPostById(Number(id));
+          if (!post && (storage as any).ensurePostExists) {
+            await (storage as any).ensurePostExists(Number(id));
+            post = await (storage as any).getPostById(Number(id));
+          }
+          if (!post) {
+            results.push({
+              postId: id,
+              baselineLikes: 0,
+              baselineDislikes: 0,
+              likesCount: 0,
+              dislikesCount: 0,
+              totals: { likes: 0, dislikes: 0 }
+            });
+            continue;
+          }
+
+          const counts = await (storage as any).getPostLikeCounts(Number(id));
+          let baselineLikes = Number((post as any).baselineLikes ?? 0);
+          let baselineDislikes = Number((post as any).baselineDislikes ?? 0);
+
+          if (baselineLikes === 0 || baselineDislikes === 0) {
+            const slug = String((post as any).slug || '');
+            const seedNumber = slug ? (() => { let h = 0; for (let i = 0; i < slug.length; i++) { h = (h << 5) - h + slug.charCodeAt(i); h |= 0; } return Math.abs(h); })() : Number(id);
+            const seed = seedNumber * 12345;
+            const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
+            const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
+            const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
+
+            try {
+              await db.update(postsTable)
+                .set({ baselineLikes: likesBase, baselineDislikes: dislikesBase })
+                .where(eq(postsTable.id, Number(id)));
+              baselineLikes = likesBase;
+              baselineDislikes = dislikesBase;
+            } catch (_) {
+              baselineLikes = baselineLikes || likesBase;
+              baselineDislikes = baselineDislikes || dislikesBase;
+            }
+          }
+
+          results.push({
+            postId: id,
+            baselineLikes,
+            baselineDislikes,
+            likesCount: Number(counts.likesCount ?? 0),
+            dislikesCount: Number(counts.dislikesCount ?? 0),
+            totals: {
+              likes: baselineLikes + Number(counts.likesCount ?? 0),
+              dislikes: baselineDislikes + Number(counts.dislikesCount ?? 0)
+            }
+          });
+        } catch (e) {
+          postsLogger.warn('Batch reaction calc failed for post', { postId: id, error: e instanceof Error ? e.message : String(e) });
+          results.push({
+            postId: id,
+            baselineLikes: 0,
+            baselineDislikes: 0,
+            likesCount: 0,
+            dislikesCount: 0,
+            totals: { likes: 0, dislikes: 0 }
+          });
+        }
+      }
+
+      return res.json({ results });
+    } catch (error) {
+      postsLogger.error('Error getting reactions batch', { error: error instanceof Error ? error.message : String(error) });
+      throw createError.internal('Failed to fetch reactions batch');
+    }
+  })
+);
+
+// POST /api/posts/:id/reaction - Toggle like/dislike with session tracking
+const reactionBodySchema = z.object({
+  isLike: z.boolean()
+});
+router.post('/:id/reaction',
+  apiRateLimiter,
+  validateParams(postIdSchema),
+  validateBody(reactionBodySchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { isLike } = req.body as any;
+    try {
+      // Ensure the post exists (create placeholder if needed)
+      let post = await (storage as any).getPostById(Number(id));
+      if (!post && (storage as any).ensurePostExists) {
+        await (storage as any).ensurePostExists(Number(id));
+        post = await (storage as any).getPostById(Number(id));
+      }
+      if (!post) throw createError.notFound('Post not found');
+
+      // Attempt DB-backed reaction update; tolerate failures in preview environments
+      try {
+        await (storage as any).updatePostReaction(Number(id), { isLike: !!isLike, sessionId: req.sessionID });
+      } catch (e) {
+        postsLogger.warn('Non-fatal: updatePostReaction failed, continuing with baseline totals', {
+          postId: id,
+          error: e instanceof Error ? e.message : String(e)
+        });
+      }
+
+      const counts = await (storage as any).getPostLikeCounts(Number(id));
+      let baselineLikes = Number((post as any).baselineLikes ?? 0);
+      let baselineDislikes = Number((post as any).baselineDislikes ?? 0);
+
+      // Fallback seeding: if baselines are zero, compute deterministic values and persist
+      if (baselineLikes === 0 || baselineDislikes === 0) {
+        const slug = String((post as any).slug || '');
+        const seedNumber = slug ? (() => { let h = 0; for (let i = 0; i < slug.length; i++) { h = (h << 5) - h + slug.charCodeAt(i); h |= 0; } return Math.abs(h); })() : Number(id);
+        const seed = seedNumber * 12345;
+        const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
+        const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80; // 80–200
+        const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2; // 2–13
+
+        try {
+          await db.update(postsTable)
+            .set({ baselineLikes: likesBase, baselineDislikes: dislikesBase })
+            .where(eq(postsTable.id, Number(id)));
+          baselineLikes = likesBase;
+          baselineDislikes = dislikesBase;
+        } catch (_) {
+          baselineLikes = baselineLikes || likesBase;
+          baselineDislikes = baselineDislikes || dislikesBase;
+        }
+      }
+
+      return res.json({
+        success: true,
+        postId: Number(id),
+        baselineLikes,
+        baselineDislikes,
+        likesCount: Number(counts.likesCount ?? 0),
+        dislikesCount: Number(counts.dislikesCount ?? 0),
+        totals: {
+          likes: baselineLikes + Number(counts.likesCount ?? 0),
+          dislikes: baselineDislikes + Number(counts.dislikesCount ?? 0)
+        }
+      });
+    } catch (error) {
+      postsLogger.error('Error updating reaction', { postId: id, error: error instanceof Error ? error.message : String(error) });
+      throw createError.internal('Failed to update reaction');
+    }
+  })
 );
 
 // POST /api/posts/:id/flag - Report content

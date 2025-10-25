@@ -3,6 +3,7 @@ import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { type posts } from "@shared/schema";
 type Post = typeof posts.$inferSelect;
 import { useLocation } from "wouter";
+import SEO from "@/components/SEO";
 
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import { getReadingTime, extractEngagingExcerpt } from "@/lib/excerpt-lite";
 import { THEME_CATEGORIES } from "@/lib/themes-lite";
 import type { WordPressPost } from "@/lib/wordpress-api";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
+import { determineThemeCategory as sharedDetermineThemeCategory } from "@shared/theme-categories";
 
 
 
@@ -65,22 +67,18 @@ export default function StoriesIndexContent() {
     };
   }, [carouselApi]);
 
-  // Navigation functions
+  // Navigation function
   const navigateToReader = (slugOrId: string | number) => {
     try {
       const slugStr = String(slugOrId);
-      // Navigate directly to the story's reader route to ensure correct story opens
       setLocation(`/reader/${encodeURIComponent(slugStr)}`);
     } catch {
-      // Fallback
       window.location.href = `/reader/${encodeURIComponent(String(slugOrId))}`;
     }
   };
 
   // Paginated query
-  const { data } = useSuspenseInfiniteQuery<
-    { posts: Post[]; hasMore: boolean; page: number }
-  >({
+  const { data } = useSuspenseInfiniteQuery<{ posts: Post[]; hasMore: boolean; page: number }>({
     queryKey: ["wordpress", "posts"],
     queryFn: async ({ pageParam = 1 }) => {
       const page = typeof pageParam === 'number' ? pageParam : 1;
@@ -113,7 +111,7 @@ export default function StoriesIndexContent() {
     return [] as Post[];
   }, [hasPaginatedPosts, data]);
 
-  const sortedPosts = [...allPosts].sort((a: Post, b: Post) => 
+  const sortedPosts = [...allPosts].sort((a: Post, b: Post) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
@@ -127,6 +125,36 @@ export default function StoriesIndexContent() {
       }
     }
     return Array.from(set);
+  }, [allPosts]);
+
+  // Reaction totals map for posts (batch fetched)
+  const [reactionTotals, setReactionTotals] = useState<Record<number, import("@/api/reactions").ReactionTotals>>({});
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const ids = allPosts.map((p: Post) => Number(p.id)).filter((n: number) => Number.isFinite(n));
+        if (ids.length === 0) return;
+        const { fetchReactionsBatch } = await import("@/api/reactions");
+        const totals = await fetchReactionsBatch(ids.slice(0, 150));
+        if (!mounted) return;
+        const map: Record<number, import("@/api/reactions").ReactionTotals> = {};
+        for (const t of totals) map[t.postId] = t;
+        setReactionTotals(map);
+      } catch {
+        // Ignore failures; UI continues with local fallback logic
+      }
+    })();
+
+    // Listen for reaction updates from LikeDislike
+    const onUpdate = (e: Event) => {
+      const detail = (e as CustomEvent).detail as import("@/api/reactions").ReactionTotals;
+      if (!detail || typeof detail.postId !== 'number') return;
+      setReactionTotals((prev: Record<number, import("@/api/reactions").ReactionTotals>) => ({ ...prev, [detail.postId]: detail }));
+    };
+    window.addEventListener('reaction:updated', onUpdate as EventListener);
+    return () => { mounted = false; window.removeEventListener('reaction:updated', onUpdate as EventListener); };
   }, [allPosts]);
 
   // Filter and sort posts for display
@@ -594,6 +622,13 @@ export default function StoriesIndexContent() {
 
   return (
       <div className="min-h-screen bg-background flex flex-col overflow-x-hidden overflow-y-auto">
+        {/* Canonical for stories index */}
+        <SEO
+          title="Stories"
+          description="Browse dark, psychological, and gothic fiction stories at Bubble’s Cafe."
+          canonical="/stories"
+          type="website"
+        />
         <div className="w-full pb-12 pt-0 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 mb-4 px-2 sm:px-4">
             {/* Story index controls: search only; sort moved into the featured story card */}
@@ -624,7 +659,7 @@ export default function StoriesIndexContent() {
                       <div className="flex items-center">
                         <Select
                           value={sort}
-                          onValueChange={(value: string) =>
+                          onValueChange={(value) =>
                             setSort(value as 'newest' | 'oldest' | 'popular' | 'shortest')
                           }
                         >
@@ -716,12 +751,12 @@ export default function StoriesIndexContent() {
                     <CarouselContent>
                       {(() => {
                         const popular = [...sortedPosts]
-                          .map(p => ({
-                            p,
-                            score:
-                              ((typeof p.likesCount === 'number' ? p.likesCount : 0) * 2) +
-                              (p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0)
-                          }))
+                          .map(p => {
+                            const totals = reactionTotals[p.id];
+                            const likesTotal = totals?.totals?.likes ?? (((p as any).baselineLikes || 0) + (p.likesCount || 0));
+                            const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
+                            return { p, score: (Number(likesTotal) * 2) + views };
+                          })
                           .sort((a, b) => b.score - a.score)
                           .slice(0, 8)
                           .map(x => x.p);
@@ -903,19 +938,23 @@ export default function StoriesIndexContent() {
             <div
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
             >
-              {latestPosts.map((post: Post) => {
+              {latestPosts.map((post) => {
                 
-                const metadata = post.metadata || {};
+                const md: any = post.metadata || {};
+                // Prefer metadata theme; otherwise detect from title/content for WordPress API posts
                 let themeCategory = "";
-                if (typeof metadata === 'object' && metadata !== null && 
-                  'themeCategory' in (metadata as Record<string, unknown>)) {
-                  themeCategory = String((metadata as Record<string, unknown>).themeCategory || "");
+                if (md && typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
+                  themeCategory = String(md.themeCategory);
+                } else {
+                  try {
+                    const derived = sharedDetermineThemeCategory(String(post.title || ''), String(post.content || ''));
+                    themeCategory = String(derived || '');
+                  } catch {}
                 }
                 const themeInfo = themeCategory ? THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] : null;
-                let displayName = '';
-                if (themeCategory) {
-                  displayName = themeCategory.charAt(0) + themeCategory.slice(1).toLowerCase().replace(/_/g, ' ');
-                }
+                const displayName = themeCategory
+                  ? themeCategory.charAt(0) + themeCategory.slice(1).toLowerCase().replace(/_/g, ' ')
+                  : '';
 
                 return (
                   <article
@@ -944,7 +983,7 @@ export default function StoriesIndexContent() {
                             </div>
                           </div>
                         </div>
-                        {themeCategory && themeInfo && (
+                        {themeCategory && (
                           <div className="mt-2">
                             <Badge className="w-fit text-[12px] sm:text-sm font-medium tracking-wide px-2 py-0.5 flex items-center gap-1">
                               <Book className="h-3 w-3" />
@@ -968,8 +1007,7 @@ export default function StoriesIndexContent() {
                                 slug={post.slug}
                                 source="wp"
                                 variant="index"
-                                onLike={() => {}}
-                                onUpdate={() => {}}
+                                initialTotals={reactionTotals[post.id] || null}
                               />
                             </Suspense>
                           )}

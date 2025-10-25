@@ -68,6 +68,8 @@ export const posts = pgTable("posts", {
   readingTimeMinutes: integer("reading_time_minutes"),
   likesCount: integer("likes_count").default(0),
   dislikesCount: integer("dislikes_count").default(0),
+  baselineLikes: integer("baseline_likes").default(0),
+  baselineDislikes: integer("baseline_dislikes").default(0),
   metadata: json("metadata").default({}).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 }, (table) => ({
