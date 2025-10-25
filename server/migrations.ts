@@ -492,6 +492,67 @@ async function fixPostsTableColumns(client: any) {
       // Only isAdminPost exists, which is what we want
       log("[Migrations] Column isAdminPost already exists. No changes needed.");
     }
+
+    // Ensure baseline columns exist
+    const checkBaselineLikes = `
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'posts' AND column_name = 'baseline_likes'
+    `;
+    const checkBaselineDislikes = `
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'posts' AND column_name = 'baseline_dislikes'
+    `;
+    const blRes = await client.query(checkBaselineLikes);
+    const bdRes = await client.query(checkBaselineDislikes);
+    const blExists = blRes.rows.length > 0;
+    const bdExists = bdRes.rows.length > 0;
+
+    if (!blExists) {
+      log("[Migrations] Adding baseline_likes column");
+      await client.query(`ALTER TABLE posts ADD COLUMN baseline_likes INTEGER NOT NULL DEFAULT 0`);
+    }
+    if (!bdExists) {
+      log("[Migrations] Adding baseline_dislikes column");
+      await client.query(`ALTER TABLE posts ADD COLUMN baseline_dislikes INTEGER NOT NULL DEFAULT 0`);
+    }
+
+    // Initialize baseline values once, for rows that are still zero
+    // Baseline logic mirrors client deterministic generation but stored permanently
+    const rowsRes = await client.query(`SELECT id, slug FROM posts`);
+    const rows = rowsRes.rows || [];
+
+    const seededRandom = (s: number) => {
+      const x = Math.sin(s) * 10000;
+      return x - Math.floor(x);
+    };
+    const hashSlug = (slug: string): number => {
+      let hash = 0;
+      for (let i = 0; i < slug.length; i++) {
+        hash = (hash << 5) - hash + slug.charCodeAt(i);
+        hash |= 0;
+      }
+      return Math.abs(hash);
+    };
+
+    for (const row of rows) {
+      const id = Number(row.id);
+      const slug = String(row.slug || '');
+      const seedNumber = slug ? hashSlug(slug) : id;
+      const seed = seedNumber * 12345;
+      const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80; // 80–200
+      const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2; // 2–13
+
+      await client.query(
+        `UPDATE posts SET baseline_likes = CASE WHEN baseline_likes = 0 THEN $1 ELSE baseline_likes END,
+                          baseline_dislikes = CASE WHEN baseline_dislikes = 0 THEN $2 ELSE baseline_dislikes END
+         WHERE id = $3`,
+        [likesBase, dislikesBase, id]
+      );
+    }
+
+    log("[Migrations] Baseline columns verified and initialized where needed.");
     
     return true;
   } catch (error) {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { fetchReactions, submitReaction } from "@/api/reactions";
 
 interface LikeDislikeProps {
   postId: number;
@@ -24,107 +25,29 @@ interface Stats {
   userInteracted: boolean;
 }
 
-function isValidStats(obj: any): obj is Stats {
-  return obj
-    && typeof obj.likes === 'number'
-    && !isNaN(obj.likes)
-    && typeof obj.dislikes === 'number'
-    && !isNaN(obj.dislikes)
-    && obj.baseStats
-    && typeof obj.baseStats.likes === 'number'
-    && !isNaN(obj.baseStats.likes)
-    && typeof obj.baseStats.dislikes === 'number'
-    && !isNaN(obj.baseStats.dislikes)
-    && typeof obj.userInteracted === 'boolean';
-}
-
 const getStorageKey = (postId: number, slug?: string, source: 'local' | 'wp' = 'local') =>
   slug && slug.trim()
     ? `reaction-${source}:${slug.trim()}`
-    : `post-stats-${postId}`;
+    : `reaction-${source}:post-${postId}`;
 
-// Generate consistent random numbers based on postId
-const generateBaseStats = (postId: number, slug?: string) => {
-  // Use slug hash when available for consistent generation across pages
-  const seedNumber = (() => {
-    if (slug && slug.length) {
-      let hash = 0;
-      for (let i = 0; i < slug.length; i++) {
-        hash = (hash << 5) - hash + slug.charCodeAt(i);
-        hash |= 0; // 32-bit integer
-      }
-      return Math.abs(hash);
-    }
-    return postId;
-  })();
-
-  const seed = seedNumber * 12345;
-  const seededRandom = (s: number) => {
-    const x = Math.sin(s) * 10000;
-    return x - Math.floor(x);
-  };
-
-  const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80; // 80–200
-  const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2; // 2–13
-
-  if (import.meta.env?.DEV) {
-    console.log(`Generated base stats for key (${slug ?? postId}): likes=${likesBase}, dislikes=${dislikesBase}`);
-  }
-  return { likes: likesBase, dislikes: dislikesBase };
-};
-
-const getOrCreateStats = (postId: number, slug?: string, source: 'local' | 'wp' = 'local'): Stats => {
+function readLocalReaction(storageKey: string): 'like' | 'dislike' | 'none' {
   try {
-    const primaryKey = getStorageKey(postId, slug, source);
-    const legacyKey = getStorageKey(postId, undefined, source);
-
-    const existingStats = localStorage.getItem(primaryKey) ?? localStorage.getItem(legacyKey);
-    const fromLegacy = !localStorage.getItem(primaryKey) && !!localStorage.getItem(legacyKey);
-
-    if (existingStats) {
-      const parsed = JSON.parse(existingStats);
-      if (isValidStats(parsed)) {
-        // Migrate legacy key to slug-based key if needed
-        if (fromLegacy) {
-          try {
-            localStorage.setItem(primaryKey, JSON.stringify(parsed));
-            // Optional: keep legacy for backward-compat temporarily
-            // localStorage.removeItem(legacyKey);
-          } catch {}
-        }
-        return parsed;
-      }
-    }
-
-    // Generate consistent base stats using slug when available
-    const baseStats = generateBaseStats(postId, slug);
-
-    const newStats: Stats = {
-      likes: baseStats.likes,
-      dislikes: baseStats.dislikes,
-      baseStats: {
-        likes: baseStats.likes,
-        dislikes: baseStats.dislikes
-      },
-      userInteracted: false
-    };
-
-    localStorage.setItem(primaryKey, JSON.stringify(newStats));
-    return newStats;
-  } catch (error) {
-    console.error(`[LikeDislike] Error managing stats for key (${slug ?? postId}):`, error);
-    const fallbackBase = generateBaseStats(postId, slug);
-    return {
-      likes: fallbackBase.likes,
-      dislikes: fallbackBase.dislikes,
-      baseStats: {
-        likes: fallbackBase.likes,
-        dislikes: fallbackBase.dislikes
-      },
-      userInteracted: false
-    };
+    const v = localStorage.getItem(storageKey);
+    if (!v) return 'none';
+    const parsed = JSON.parse(v);
+    const state = parsed?.state;
+    if (state === 'like' || state === 'dislike') return state;
+    return 'none';
+  } catch {
+    return 'none';
   }
-};
+}
+
+function writeLocalReaction(storageKey: string, state: 'like' | 'dislike' | 'none', stats: Stats) {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify({ state, stats }));
+  } catch {}
+}
 
 export function LikeDislike({
   postId,
@@ -140,71 +63,50 @@ export function LikeDislike({
   const { toast: _toast } = useToast();
   const [liked, setLiked] = useState(userLikeStatus === 'like');
   const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
-  const [stats, setStats] = useState<Stats>(() => getOrCreateStats(postId, slug, source));
+  const [stats, setStats] = useState<Stats>({
+    likes: 0,
+    dislikes: 0,
+    baseStats: { likes: 0, dislikes: 0 },
+    userInteracted: false
+  });
   const [inlineToast, setInlineToast] = useState<{ message: string; type: 'like' | 'dislike' | 'error' | null } | null>(null);
   const [isToastVisible, setIsToastVisible] = useState(false);
   const storageKey = getStorageKey(postId, slug, source);
   const hideTimerRef = useRef<number | null>(null);
   const removeTimerRef = useRef<number | null>(null);
 
-  // Listen for stats updates from other components and reset events
+  // Initial load: fetch baseline + live counts from server
   useEffect(() => {
-    const handleStatsUpdate = (event: CustomEvent<{ postId: number; stats: Stats }>) => {
-      if (event.detail.postId === postId) {
-        const newStats = event.detail.stats;
+    let mounted = true;
+    (async () => {
+      try {
+        const data = await fetchReactions(postId);
+        if (!mounted) return;
+        const newStats: Stats = {
+          likes: Number(data.totals?.likes ?? 0),
+          dislikes: Number(data.totals?.dislikes ?? 0),
+          baseStats: {
+            likes: Number(data.baselineLikes ?? 0),
+            dislikes: Number(data.baselineDislikes ?? 0)
+          },
+          userInteracted: false
+        };
         setStats(newStats);
-        
-        // Update UI states based on current stats vs base stats
-        const userLiked = newStats.likes > newStats.baseStats.likes;
-        const userDisliked = newStats.dislikes > newStats.baseStats.dislikes;
-        
-        setLiked(userLiked);
-        setDisliked(userDisliked);
-        
+
+        // Restore local reaction UI state
+        const localState = readLocalReaction(storageKey);
+        setLiked(localState === 'like');
+        setDisliked(localState === 'dislike');
+
         onUpdate?.(newStats.likes, newStats.dislikes);
+      } catch (error) {
+        // Keep silent UI; optionally we could show a small error toast
+        console.warn('[LikeDislike] Failed to load reactions:', error);
       }
-    };
+    })();
 
-    const handleStatsReset = () => {
-      // Clear all post stats and regenerate
-      const keys = Object.keys(localStorage).filter(key => key.startsWith('post-stats-') || key.startsWith('reaction-'));
-      keys.forEach(key => localStorage.removeItem(key));
-      
-      // Regenerate stats for this component
-      const freshStats = getOrCreateStats(postId, slug, source);
-      setStats(freshStats);
-      setLiked(false);
-      setDisliked(false);
-      onUpdate?.(freshStats.likes, freshStats.dislikes);
-    };
-
-    window.addEventListener('statsUpdated', handleStatsUpdate as EventListener);
-    window.addEventListener('resetAllStats', handleStatsReset as EventListener);
-    
     return () => {
-      window.removeEventListener('statsUpdated', handleStatsUpdate as EventListener);
-      window.removeEventListener('resetAllStats', handleStatsReset as EventListener);
-    };
-  }, [postId, slug, source, onUpdate]);
-
-  // Load existing stats or create new ones consistently
-  useEffect(() => {
-    const currentStats = getOrCreateStats(postId, slug, source);
-    if (import.meta.env?.DEV) {
-      console.log(`Loading stats for key (${slug ?? postId}):`, currentStats);
-    }
-    setStats(currentStats);
-    
-    // Determine user state from current stats vs base stats
-    const userLiked = currentStats.likes > currentStats.baseStats.likes;
-    const userDisliked = currentStats.dislikes > currentStats.baseStats.dislikes;
-    
-    setLiked(userLiked);
-    setDisliked(userDisliked);
-    onUpdate?.(currentStats.likes, currentStats.dislikes);
-
-    // Cleanup any pending inline toast timers on unmount
-    return () => {
+      mounted = false;
       if (hideTimerRef.current) {
         window.clearTimeout(hideTimerRef.current);
         hideTimerRef.current = null;
@@ -218,96 +120,76 @@ export function LikeDislike({
 
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
     setInlineToast({ message, type });
-    // Small delay for smooth entrance animation
     requestAnimationFrame(() => {
       setIsToastVisible(true);
     });
-    
-    // Start fade out after 4 seconds (managed via refs so we can clean up on unmount)
+
     if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
     if (removeTimerRef.current) window.clearTimeout(removeTimerRef.current);
 
     hideTimerRef.current = window.setTimeout(() => {
       setIsToastVisible(false);
-      // Remove from DOM after fade out completes
       removeTimerRef.current = window.setTimeout(() => setInlineToast(null), 300);
-    }, 4000);
+    }, 3500);
   };
 
-  const updateStats = (newStats: Stats) => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(newStats));
-      setStats(newStats);
-      onUpdate?.(newStats.likes, newStats.dislikes);
-      
-      // Dispatch custom event to sync across all components
-      window.dispatchEvent(new CustomEvent('statsUpdated', {
-        detail: { postId, stats: newStats }
-      }));
-      
-      if (import.meta.env?.DEV) {
-        console.log('Stats updated:', newStats);
-      }
-    } catch (error) {
-      console.error(`[LikeDislike] Error updating stats for key (${slug ?? postId}):`, error);
-      showInlineToast("Error updating reaction - please try again later", 'error');
-    }
+  const applyServerTotals = (data: any) => {
+    const newStats: Stats = {
+      likes: Number(data?.totals?.likes ?? 0),
+      dislikes: Number(data?.totals?.dislikes ?? 0),
+      baseStats: {
+        likes: Number(data?.baselineLikes ?? 0),
+        dislikes: Number(data?.baselineDislikes ?? 0)
+      },
+      userInteracted: true
+    };
+    setStats(newStats);
+    onUpdate?.(newStats.likes, newStats.dislikes);
+    writeLocalReaction(storageKey, liked ? 'like' : (disliked ? 'dislike' : 'none'), newStats);
   };
 
-  const handleLike = () => {
-    const newLiked = !liked;
+  const handleLike = async () => {
     try {
-      if (newLiked) {
-        setLiked(true);
-        setDisliked(false);
-        updateStats({
-          ...stats,
-          likes: stats.likes + 1,
-          dislikes: disliked ? stats.dislikes - 1 : stats.dislikes,
-          baseStats: stats.baseStats,
-          userInteracted: true
-        });
-        showInlineToast("Thanks for liking! 🥰", 'like');
+      // Decide the next UI state
+      const nextLiked = !liked;
+      const nextDisliked = nextLiked ? false : disliked;
+
+      // Submit to server (server toggles off if same state in this session)
+      const data = await submitReaction(postId, true);
+
+      setLiked(nextLiked);
+      setDisliked(nextDisliked);
+      applyServerTotals(data);
+
+      if (nextLiked) {
+        showInlineToast("Thanks for liking!", 'like');
+        onLike?.(true);
       } else {
-        setLiked(false);
-        updateStats({
-          ...stats,
-          likes: stats.likes - 1,
-          baseStats: stats.baseStats,
-          userInteracted: false
-        });
+        onLike?.(false);
       }
-      onLike?.(newLiked);
     } catch (error) {
       console.error(`[LikeDislike] Error handling like for post ${postId}:`, error);
       showInlineToast("Error updating like - please try again", 'error');
     }
   };
 
-  const handleDislike = () => {
-    const newDisliked = !disliked;
+  const handleDislike = async () => {
     try {
-      if (newDisliked) {
-        setDisliked(true);
-        setLiked(false);
-        updateStats({
-          ...stats,
-          dislikes: stats.dislikes + 1,
-          likes: liked ? stats.likes - 1 : stats.likes,
-          baseStats: stats.baseStats,
-          userInteracted: true
-        });
-        showInlineToast("Thanks for the feedback! 😔", 'dislike');
+      const nextDisliked = !disliked;
+      const nextLiked = nextDisliked ? false : liked;
+
+      const data = await submitReaction(postId, false);
+
+      setDisliked(nextDisliked);
+      setLiked(nextLiked);
+      applyServerTotals(data);
+
+      if (nextDisliked) {
+        showInlineToast("Thanks for the feedback!", 'dislike');
+        onDislike?.(true);
       } else {
-        setDisliked(false);
-        updateStats({
-          ...stats,
-          dislikes: stats.dislikes - 1,
-          baseStats: stats.baseStats,
-          userInteracted: false
-        });
+        onDislike?.(false);
       }
-      onDislike?.(newDisliked);
     } catch (error) {
       console.error(`[LikeDislike] Error handling dislike for post ${postId}:`, error);
       showInlineToast("Error updating dislike - please try again", 'error');
@@ -318,7 +200,7 @@ export function LikeDislike({
     <div className={`relative ${className}`} data-toast-container>
       {variant === 'reader' && (
         <p className="text-center text-sm font-medium mb-4 text-white/80 uppercase tracking-wide font-sans">
-          Loved this story? Let me know with a like🥹—or a dislike if you must 😔
+          Loved this story? Let me know with a like—or a dislike if you must
         </p>
       )}
       <div className={`flex items-center gap-3 ${variant === 'reader' ? 'justify-center' : 'justify-start'}`}>
@@ -365,7 +247,6 @@ export function LikeDislike({
         </button>
       </div>
       
-      {/* Inline Toast Notification */}
       {inlineToast && (
         <div className={`
           mt-3 px-3 py-2 rounded-md text-center font-sans text-xs font-medium 
