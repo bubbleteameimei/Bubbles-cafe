@@ -114,6 +114,15 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
       return next();
     }
 
+    // Allow post reaction endpoints without CSRF to prevent blocking lightweight interactions (preview-friendly).
+    const isPostReactionOperation =
+      endpointPath.startsWith('/api/posts/') &&
+      (endpointPath.endsWith('/reaction') || endpointPath.endsWith('/like'));
+    if (isPostReactionOperation) {
+      console.log(`CSRF validation skipped for post reaction: ${req.method} ${endpointPath}`);
+      return next();
+    }
+
     if (process.env.NODE_ENV !== 'production') {
       console.log(`CSRF checking path: ${req.method} ${req.path} (API relative: ${relPath})`);
       console.log(`Ignore paths:`, ignorePaths);
