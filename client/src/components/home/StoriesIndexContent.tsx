@@ -1014,7 +1014,7 @@ export default function StoriesIndexContent() {
                                 variant="index"
                                 initialTotals={reactionTotals[post.id] || null}
                                 onLike={() => {}}
-                                onUpdate={(likes: number, _dislikes: number) => {}}
+                                onUpdate={(likes, _dislikes) => {}}
                               />
                             </Suspense>
                           )}
