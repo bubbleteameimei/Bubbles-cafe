@@ -1011,7 +1011,6 @@ export default function StoriesIndexContent() {
                                 source="wp"
                                 variant="index"
                                 initialTotals={reactionTotals[post.id] || null}
-                                onLike={() => {}}
                               />
                             </Suspense>
                           )}
