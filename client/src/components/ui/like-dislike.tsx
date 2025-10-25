@@ -84,39 +84,31 @@ export function LikeDislike({
     let mounted = true;
     (async () => {
       try {
+        let data: ReactionTotals;
         if (initialTotals && typeof initialTotals === 'object') {
-          const data = initialTotals;
-          const newStats: Stats = {
-            likes: Number(data.totals?.likes ?? 0),
-            dislikes: Number(data.totals?.dislikes ?? 0),
-            baseStats: {
-              likes: Number(data.baselineLikes ?? 0),
-              dislikes: Number(data.baselineDislikes ?? 0)
-            },
-            userInteracted: false
-          };
-          setStats(newStats);
+          data = initialTotals;
         } else {
-          const data = await fetchReactions(postId);
+          data = await fetchReactions(postId);
           if (!mounted) return;
-          const newStats: Stats = {
-            likes: Number(data.totals?.likes ?? 0),
-            dislikes: Number(data.totals?.dislikes ?? 0),
-            baseStats: {
-              likes: Number(data.baselineLikes ?? 0),
-              dislikes: Number(data.baselineDislikes ?? 0)
-            },
-            userInteracted: false
-          };
-          setStats(newStats);
         }
+
+        const computedStats: Stats = {
+          likes: Number(data.totals?.likes ?? 0),
+          dislikes: Number(data.totals?.dislikes ?? 0),
+          baseStats: {
+            likes: Number(data.baselineLikes ?? 0),
+            dislikes: Number(data.baselineDislikes ?? 0)
+          },
+          userInteracted: false
+        };
+        setStats(computedStats);
 
         // Restore local reaction UI state
         const localState = readLocalReaction(storageKey);
         setLiked(localState === 'like');
         setDisliked(localState === 'dislike');
 
-        onUpdate?.(newStats.likes, newStats.dislikes);
+        onUpdate?.(computedStats.likes, computedStats.dislikes);
       } catch (error) {
         console.warn('[LikeDislike] Failed to load reactions, applying deterministic baseline fallback:', error);
         // Compute deterministic baseline locally (preview-safe)
@@ -137,20 +129,20 @@ export function LikeDislike({
         const baseLikes = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
         const baseDislikes = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
 
-        const newStats: Stats = {
+        const fallbackStats: Stats = {
           likes: baseLikes,
           dislikes: baseDislikes,
           baseStats: { likes: baseLikes, dislikes: baseDislikes },
           userInteracted: false
         };
-        setStats(newStats);
+        setStats(fallbackStats);
 
         // Restore local reaction UI state
         const localState = readLocalReaction(storageKey);
         setLiked(localState === 'like');
         setDisliked(localState === 'dislike');
 
-        onUpdate?.(newStats.likes, newStats.dislikes);
+        onUpdate?.(fallbackStats.likes, fallbackStats.dislikes);
       }
     })();
 
