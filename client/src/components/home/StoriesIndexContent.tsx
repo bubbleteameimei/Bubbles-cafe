@@ -940,24 +940,21 @@ export default function StoriesIndexContent() {
             >
               {latestPosts.map((post) => {
                 
-                const metadata = post.metadata || {};
+                const md: any = post.metadata || {};
                 // Prefer metadata theme; otherwise detect from title/content for WordPress API posts
                 let themeCategory = "";
-                if (typeof metadata === 'object' && metadata !== null && 
-                  'themeCategory' in (metadata as Record<string, unknown)) {
-                  themeCategory = String((metadata as Record<string, unknown>).themeCategory || "");
+                if (md && typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
+                  themeCategory = String(md.themeCategory);
                 } else {
                   try {
-                    // Use sharedDetermineThemeCategory to derive a sensible theme label
                     const derived = sharedDetermineThemeCategory(String(post.title || ''), String(post.content || ''));
                     themeCategory = String(derived || '');
                   } catch {}
                 }
                 const themeInfo = themeCategory ? THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] : null;
-                let displayName = '';
-                if (themeCategory) {
-                  displayName = themeCategory.charAt(0) + themeCategory.slice(1).toLowerCase().replace(/_/g, ' ');
-                }
+                const displayName = themeCategory
+                  ? themeCategory.charAt(0) + themeCategory.slice(1).toLowerCase().replace(/_/g, ' ')
+                  : '';
 
                 return (
                   <article
