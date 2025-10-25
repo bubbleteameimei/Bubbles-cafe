@@ -304,11 +304,40 @@ export default function StoriesIndexContent() {
         break;
       case 'popular':
         list.sort((a, b) => {
-          const aLikes = typeof a.likesCount === 'number' ? a.likesCount : 0;
-          const bLikes = typeof b.likesCount === 'number' ? b.likesCount : 0;
+          const aTotals = reactionTotals[a.id];
+          const bTotals = reactionTotals[b.id];
+
+          // Deterministic baseline fallback for likes if totals not yet loaded
+          const baselineLikesFor = (p: Post): number => {
+            const seedFrom = String((p as any).slug || p.id);
+            let h = 0;
+            for (let i = 0; i < seedFrom.length; i++) {
+              h = (h << 5) - h + seedFrom.charCodeAt(i);
+              h |= 0;
+            }
+            const seededRandom = (n: number) => {
+              const x = Math.sin(n) * 10000;
+              return x - Math.floor(x);
+            };
+            const seed = Math.abs(h) * 12345;
+            return Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
+          };
+
+          const aLikes = Number(aTotals?.totals?.likes ?? (baselineLikesFor(a) + (a.likesCount || 0)));
+          const bLikes = Number(bTotals?.totals?.likes ?? (baselineLikesFor(b) + (b.likesCount || 0)));
           const aViews = (a.metadata && (a.metadata as any).pageViews) ? Number((a.metadata as any).pageViews) : 0;
           const bViews = (b.metadata && (b.metadata as any).pageViews) ? Number((b.metadata as any).pageViews) : 0;
-          return (bLikes * 2 + bViews) - (aLikes * 2 + aViews);
+
+          // Mild recency boost (last 30 days)
+          const aAgeDays = Math.max(0, (Date.now() - new Date(a.createdAt).getTime()) / (24 * 60 * 60 * 1000));
+          const bAgeDays = Math.max(0, (Date.now() - new Date(b.createdAt).getTime()) / (24 * 60 * 60 * 1000));
+          const aRecency = Math.max(0, 1 - (aAgeDays / 30)) * 15; // scale comparable to views
+          const bRecency = Math.max(0, 1 - (bAgeDays / 30)) * 15;
+
+          const aScore = (aLikes * 3) + aViews + aRecency;
+          const bScore = (bLikes * 3) + bViews + bRecency;
+
+          return bScore - aScore;
         });
         break;
       case 'shortest':
@@ -320,7 +349,7 @@ export default function StoriesIndexContent() {
         break;
     }
     return list;
-  }, [sortedPosts, categoryFilter, search, sort]);
+  }, [sortedPosts, categoryFilter, search, sort, reactionTotals]);
 
   const currentPosts = filteredPosts;
 
@@ -553,6 +582,47 @@ export default function StoriesIndexContent() {
       return scoredBySearch[0] || all[0];
     }
 
+    // If explicitly sorting by popular, pick highest likes + engagement using live reaction totals
+    if (sort === 'popular') {
+      const topByPopular = [...all].sort((a, b) => {
+        const aTotals = reactionTotals[a.id];
+        const bTotals = reactionTotals[b.id];
+
+        const baselineLikesFor = (p: Post): number => {
+          const seedFrom = String((p as any).slug || p.id);
+          let h = 0;
+          for (let i = 0; i < seedFrom.length; i++) {
+            h = (h << 5) - h + seedFrom.charCodeAt(i);
+            h |= 0;
+          }
+          const seededRandom = (n: number) => {
+            const x = Math.sin(n) * 10000;
+            return x - Math.floor(x);
+          };
+          const seed = Math.abs(h) * 12345;
+          return Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
+        };
+
+        const aLikes = Number(aTotals?.totals?.likes ?? (baselineLikesFor(a) + (a.likesCount || 0)));
+        const bLikes = Number(bTotals?.totals?.likes ?? (baselineLikesFor(b) + (b.likesCount || 0)));
+        const aViews = a.metadata && typeof a.metadata === 'object' && 'pageViews' in (a.metadata as Record<string, unknown])
+          ? Number((a.metadata as Record<string, unknown>).pageViews || 0) : 0;
+        const bViews = b.metadata && typeof b.metadata === 'object' && 'pageViews' in (b.metadata as Record<string, unknown])
+          ? Number((b.metadata as Record<string, unknown>).pageViews || 0) : 0;
+
+        const aAgeDays = Math.max(0, (Date.now() - new Date(a.createdAt).getTime()) / (24 * 60 * 60 * 1000));
+        const bAgeDays = Math.max(0, (Date.now() - new Date(b.createdAt).getTime()) / (24 * 60 * 60 * 1000));
+        const aRecency = Math.max(0, 1 - (aAgeDays / 30)) * 15;
+        const bRecency = Math.max(0, 1 - (bAgeDays / 30)) * 15;
+
+        const aScore = (aLikes * 3) + aViews + aRecency;
+        const bScore = (bLikes * 3) + bViews + bRecency;
+
+        return bScore - aScore;
+      });
+      return topByPopular[0] || all[0];
+    }
+
     // Otherwise, pick by engagement/recency
     const sortedByEngagement = all.sort((a, b) => {
       const aDate = new Date(a.createdAt).getTime();
@@ -601,7 +671,7 @@ export default function StoriesIndexContent() {
     });
 
     return sortedByEngagement[0];
-  }, [currentPosts, search]);
+  }, [currentPosts, search, sort, reactionTotals]);
 
   if (!hasPaginatedPosts) {
     return (

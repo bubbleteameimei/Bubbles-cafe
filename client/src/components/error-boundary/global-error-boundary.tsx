@@ -160,33 +160,44 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[240px] p-4 sm:p-6 text-center">
-      <div className="w-full max-w-md sm:max-w-lg rounded-xl border border-border/40 bg-card/90 backdrop-blur-md p-4 sm:p-6 shadow-lg">
+      <div className="w-full max-w-sm sm:max-w-md md:max-w-lg rounded-2xl border border-border/40 bg-card/90 backdrop-blur-md p-5 sm:p-6 shadow-lg">
         <div className="flex items-start gap-3">
           <div className="shrink-0 mt-0.5">
             <AlertTriangle className="h-6 w-6 text-destructive" />
           </div>
           <div className="text-left w-full">
             <h2 className="text-lg sm:text-xl font-semibold">Oops! Something went wrong</h2>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1">{getErrorMessage()}</p>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
+              {getErrorMessage()}
+            </p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-2">
+              If the issue persists, you can refresh the page, try again, or go home. You may also report the problem.
+            </p>
+
             {!isProduction && error && (
               <details className="mt-3 text-xs">
-                <summary className="cursor-pointer">Technical Details</summary>
+                <summary className="cursor-pointer">Technical details</summary>
                 <pre className="mt-2 text-left overflow-auto max-h-32 bg-muted/40 p-2 rounded">{error.message}</pre>
               </details>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4">
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
               <Button onClick={resetError} variant="default" className="w-full">
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Try Again
               </Button>
               <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
-                Refresh Page
+                Refresh
+              </Button>
+              <Button onClick={() => { try { window.location.href = '/'; } catch { window.location.assign('/'); } }} variant="outline" className="w-full">
+                Home
               </Button>
               <Button onClick={handleSendReport} variant="ghost" className="w-full">
                 <Bug className="w-4 h-4 mr-2" />
-                Report Bug
+                Report
               </Button>
             </div>
+
             {!isProduction && (
               <div className="mt-3 text-xs text-muted-foreground">
                 Error ID: {errorId}
