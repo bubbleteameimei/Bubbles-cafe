@@ -200,7 +200,8 @@ export default function Home() {
                 transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
                 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-white flex flex-col items-center"
               >
-                <span>Bubble's Cafe</span>
+                <span>BUBBLE'S</span>
+                <span className="mt-1 md:mt-2 text-red-700 relative">CAFE</span>
               </motion.h1>
             </div>
           
