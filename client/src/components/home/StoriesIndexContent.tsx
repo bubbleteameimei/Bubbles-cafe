@@ -78,9 +78,7 @@ export default function StoriesIndexContent() {
   };
 
   // Paginated query
-  const { data } = useSuspenseInfiniteQuery<
-    { posts: Post[]; hasMore: boolean; page: number }
-  >({
+  const { data } = useSuspenseInfiniteQuery<{ posts: Post[]; hasMore: boolean; page: number }>({
     queryKey: ["wordpress", "posts"],
     queryFn: async ({ pageParam = 1 }) => {
       const page = typeof pageParam === 'number' ? pageParam : 1;
@@ -661,7 +659,7 @@ export default function StoriesIndexContent() {
                       <div className="flex items-center">
                         <Select
                           value={sort}
-                          onValueChange={(value: string) =>
+                          onValueChange={(value) =>
                             setSort(value as 'newest' | 'oldest' | 'popular' | 'shortest')
                           }
                         >
