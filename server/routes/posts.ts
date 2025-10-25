@@ -399,6 +399,96 @@ router.get('/:id/reactions',
   })
 );
 
+// GET /api/posts/reactions-batch?ids=1,2,3 - Batch baseline + live totals for multiple posts
+router.get('/reactions-batch',
+  apiRateLimiter,
+  asyncHandler(async (req: Request, res: Response) => {
+    try {
+      const raw = (req.query.ids || req.query.id || '') as string | string[];
+      const list = Array.isArray(raw)
+        ? raw.join(',').split(',').map(s => Number(s.trim())).filter(n => Number.isFinite(n))
+        : String(raw || '').split(',').map(s => Number(s.trim())).filter(n => Number.isFinite(n));
+
+      if (!list.length) {
+        return res.json({ results: [] });
+      }
+
+      const results: any[] = [];
+      for (const id of list.slice(0, 200)) { // cap to 200 ids per call
+        try {
+          let post = await (storage as any).getPostById(Number(id));
+          if (!post && (storage as any).ensurePostExists) {
+            await (storage as any).ensurePostExists(Number(id));
+            post = await (storage as any).getPostById(Number(id));
+          }
+          if (!post) {
+            results.push({
+              postId: id,
+              baselineLikes: 0,
+              baselineDislikes: 0,
+              likesCount: 0,
+              dislikesCount: 0,
+              totals: { likes: 0, dislikes: 0 }
+            });
+            continue;
+          }
+
+          const counts = await (storage as any).getPostLikeCounts(Number(id));
+          let baselineLikes = Number((post as any).baselineLikes ?? 0);
+          let baselineDislikes = Number((post as any).baselineDislikes ?? 0);
+
+          if (baselineLikes === 0 || baselineDislikes === 0) {
+            const slug = String((post as any).slug || '');
+            const seedNumber = slug ? (() => { let h = 0; for (let i = 0; i < slug.length; i++) { h = (h << 5) - h + slug.charCodeAt(i); h |= 0; } return Math.abs(h); })() : Number(id);
+            const seed = seedNumber * 12345;
+            const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
+            const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
+            const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
+
+            try {
+              await db.update(postsTable)
+                .set({ baselineLikes: likesBase, baselineDislikes: dislikesBase })
+                .where(eq(postsTable.id, Number(id)));
+              baselineLikes = likesBase;
+              baselineDislikes = dislikesBase;
+            } catch (_) {
+              baselineLikes = baselineLikes || likesBase;
+              baselineDislikes = baselineDislikes || dislikesBase;
+            }
+          }
+
+          results.push({
+            postId: id,
+            baselineLikes,
+            baselineDislikes,
+            likesCount: Number(counts.likesCount ?? 0),
+            dislikesCount: Number(counts.dislikesCount ?? 0),
+            totals: {
+              likes: baselineLikes + Number(counts.likesCount ?? 0),
+              dislikes: baselineDislikes + Number(counts.dislikesCount ?? 0)
+            }
+          });
+        } catch (e) {
+          postsLogger.warn('Batch reaction calc failed for post', { postId: id, error: e instanceof Error ? e.message : String(e) });
+          results.push({
+            postId: id,
+            baselineLikes: 0,
+            baselineDislikes: 0,
+            likesCount: 0,
+            dislikesCount: 0,
+            totals: { likes: 0, dislikes: 0 }
+          });
+        }
+      }
+
+      res.json({ results });
+    } catch (error) {
+      postsLogger.error('Error getting reactions batch', { error: error instanceof Error ? error.message : String(error) });
+      throw createError.internal('Failed to fetch reactions batch');
+    }
+  })
+);
+
 // POST /api/posts/:id/reaction - Toggle like/dislike with session tracking
 const reactionBodySchema = z.object({
   isLike: z.boolean()

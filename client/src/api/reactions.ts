@@ -47,6 +47,16 @@ export async function fetchReactions(postId: number): Promise<ReactionTotals> {
   });
 }
 
+export async function fetchReactionsBatch(postIds: number[]): Promise<ReactionTotals[]> {
+  const idsParam = postIds.join(',');
+  const data = await fetchWithFallback<{ results: ReactionTotals[] }>(`/api/posts/reactions-batch?ids=${encodeURIComponent(idsParam)}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+  });
+  return Array.isArray(data?.results) ? data.results : [];
+}
+
 export async function submitReaction(postId: number, isLike: boolean): Promise<ReactionTotals> {
   return fetchWithFallback<ReactionTotals>(`/api/posts/${postId}/reaction`, {
     method: 'POST',

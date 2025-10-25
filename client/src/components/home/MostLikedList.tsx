@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Star, Calendar, Clock, Heart } from 'lucide-react';
 import { getReadingTime } from '@/lib/content-analysis';
 import { type posts } from '@shared/schema';
+import { fetchReactionsBatch, type ReactionTotals } from '@/api/reactions';
 
 type Post = typeof posts.$inferSelect;
 
@@ -11,12 +12,38 @@ interface MostLikedListProps {
 }
 
 const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigate }) => {
+  const [totalsMap, setTotalsMap] = useState<Record<number, ReactionTotals>>({});
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const ids = posts.map(p => Number(p.id)).filter(n => Number.isFinite(n));
+        if (ids.length === 0) return;
+        const totals = await fetchReactionsBatch(ids.slice(0, 100));
+        if (!mounted) return;
+        const map: Record<number, ReactionTotals> = {};
+        for (const t of totals) {
+          map[t.postId] = t;
+        }
+        setTotalsMap(map);
+      } catch {
+        // Ignore failure; UI continues with zeros
+      }
+    })();
+    return () => { mounted = false; };
+  }, [posts]);
+
   const topLiked = useMemo(() => {
     if (!Array.isArray(posts) || posts.length === 0) return [] as Post[];
     return [...posts]
-      .sort((a, b) => (Number(b.likesCount || 0)) - (Number(a.likesCount || 0)))
+      .sort((a, b) => {
+        const ta = totalsMap[a.id]?.totals?.likes ?? ((a as any).baselineLikes || 0) + (a.likesCount || 0);
+        const tb = totalsMap[b.id]?.totals?.likes ?? ((b as any).baselineLikes || 0) + (b.likesCount || 0);
+        return Number(tb) - Number(ta);
+      })
       .slice(0, 6);
-  }, [posts]);
+  }, [posts, totalsMap]);
 
   return (
     <div>
@@ -25,42 +52,46 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
         <h3 className="text-base font-semibold">Most Liked</h3>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {topLiked.map((p) => (
-          <article
-            key={p.id}
-            className="group rounded-lg border border-border/60 bg-card/70 hover:bg-card transition hover:-translate-y-0.5 shadow-sm hover:shadow-md"
-          >
-            <a
-              href={`/reader/${encodeURIComponent(String(p.slug || p.id))}`}
-              onClick={(e) => { e.preventDefault(); onNavigate(p.slug || p.id); }}
-              className="block p-3 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-lg"
-              aria-label={`Open ${p.title}`}
+        {topLiked.map((p) => {
+          const totals = totalsMap[p.id];
+          const likesDisplay = totals?.totals?.likes ?? (((p as any).baselineLikes || 0) + (p.likesCount || 0));
+          return (
+            <article
+              key={p.id}
+              className="group rounded-lg border border-border/60 bg-card/70 hover:bg-card transition hover:-translate-y-0.5 shadow-sm hover:shadow-md"
             >
-              <div
-                className="text-left text-sm font-medium group-hover:text-primary line-clamp-2"
-                title={p.title}
+              <a
+                href={`/reader/${encodeURIComponent(String(p.slug || p.id))}`}
+                onClick={(e) => { e.preventDefault(); onNavigate(p.slug || p.id); }}
+                className="block p-3 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-lg"
+                aria-label={`Open ${p.title}`}
               >
-                {p.title}
-              </div>
-              <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1">
-                    <Heart className="h-3 w-3 text-rose-500" />
-                    {Number(p.likesCount || 0)}
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {getReadingTime(p.content)}
-                  </span>
+                <div
+                  className="text-left text-sm font-medium group-hover:text-primary line-clamp-2"
+                  title={p.title}
+                >
+                  {p.title}
                 </div>
-                <div className="hidden sm:inline-flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  <time>{new Date(p.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
+                <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1">
+                      <Heart className="h-3 w-3 text-rose-500" />
+                      {Number(likesDisplay)}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {getReadingTime(p.content)}
+                    </span>
+                  </div>
+                  <div className="hidden sm:inline-flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    <time>{new Date(p.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
+                  </div>
                 </div>
-              </div>
-            </a>
-          </article>
-        ))}
+              </a>
+            </article>
+          );
+        })}
         {topLiked.length === 0 && (
           <div className="text-sm text-muted-foreground">
             No liked stories yet.
@@ -72,11 +103,10 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
 };
 
 const propsAreEqual = (prev: MostLikedListProps, next: MostLikedListProps) => {
-  // Shallow compare length and top candidates to avoid frequent re-renders
+  // Shallow compare length and ids
   if (prev.posts.length !== next.posts.length) return false;
-  // Compare first 10 post ids as a heuristic for stability
   for (let i = 0; i < Math.min(10, prev.posts.length, next.posts.length); i++) {
-    if (prev.posts[i]?.id !== next.posts[i]?.id || prev.posts[i]?.likesCount !== next.posts[i]?.likesCount) {
+    if (prev.posts[i]?.id !== next.posts[i]?.id) {
       return false;
     }
   }

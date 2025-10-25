@@ -3,6 +3,8 @@ import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { fetchReactions, submitReaction } from "@/api/reactions";
 
+import type { ReactionTotals } from "@/api/reactions";
+
 interface LikeDislikeProps {
   postId: number;
   slug?: string;
@@ -13,6 +15,7 @@ interface LikeDislikeProps {
   onUpdate?: (likes: number, dislikes: number) => void;
   className?: string;
   variant?: 'index' | 'reader';
+  initialTotals?: ReactionTotals | null;
 }
 
 interface Stats {
@@ -75,30 +78,44 @@ export function LikeDislike({
   const hideTimerRef = useRef<number | null>(null);
   const removeTimerRef = useRef<number | null>(null);
 
-  // Initial load: fetch baseline + live counts from server
+  // Initial load: fetch baseline + live counts from server OR use provided initialTotals
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const data = await fetchReactions(postId);
-        if (!mounted) return;
-        const newStats: Stats = {
-          likes: Number(data.totals?.likes ?? 0),
-          dislikes: Number(data.totals?.dislikes ?? 0),
-          baseStats: {
-            likes: Number(data.baselineLikes ?? 0),
-            dislikes: Number(data.baselineDislikes ?? 0)
-          },
-          userInteracted: false
-        };
-        setStats(newStats);
+        if (initialTotals && typeof initialTotals === 'object') {
+          const data = initialTotals;
+          const newStats: Stats = {
+            likes: Number(data.totals?.likes ?? 0),
+            dislikes: Number(data.totals?.dislikes ?? 0),
+            baseStats: {
+              likes: Number(data.baselineLikes ?? 0),
+              dislikes: Number(data.baselineDislikes ?? 0)
+            },
+            userInteracted: false
+          };
+          setStats(newStats);
+        } else {
+          const data = await fetchReactions(postId);
+          if (!mounted) return;
+          const newStats: Stats = {
+            likes: Number(data.totals?.likes ?? 0),
+            dislikes: Number(data.totals?.dislikes ?? 0),
+            baseStats: {
+              likes: Number(data.baselineLikes ?? 0),
+              dislikes: Number(data.baselineDislikes ?? 0)
+            },
+            userInteracted: false
+          };
+          setStats(newStats);
+        }
 
         // Restore local reaction UI state
         const localState = readLocalReaction(storageKey);
         setLiked(localState === 'like');
         setDisliked(localState === 'dislike');
 
-        onUpdate?.(newStats.likes, newStats.dislikes);
+        onUpdate?.(stats.likes, stats.dislikes);
       } catch (error) {
         console.warn('[LikeDislike] Failed to load reactions, applying deterministic baseline fallback:', error);
         // Compute deterministic baseline locally (preview-safe)
@@ -147,7 +164,7 @@ export function LikeDislike({
         removeTimerRef.current = null;
       }
     };
-  }, [postId, slug, source, onUpdate]);
+  }, [postId, slug, source, onUpdate, initialTotals]);
 
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
     setInlineToast({ message, type });
@@ -204,6 +221,11 @@ export function LikeDislike({
     setStats(newStats);
     onUpdate?.(newStats.likes, newStats.dislikes);
     writeLocalReaction(storageKey, liked ? 'like' : (disliked ? 'dislike' : 'none'), newStats);
+
+    // Broadcast update so lists can sync without waiting for refetch
+    try {
+      window.dispatchEvent(new CustomEvent('reaction:updated', { detail: { postId, totals: data } }));
+    } catch {}
   };
 
   const handleLike = async () => {
