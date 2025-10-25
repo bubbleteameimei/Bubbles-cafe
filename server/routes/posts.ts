@@ -8,6 +8,7 @@ import { insertPostSchema, updatePostSchema , posts as postsTable } from "@share
 import { apiRateLimiter } from '../middlewares/rate-limiter';
 // DB helpers imported where needed
 import { db } from '../db';
+import { eq } from "drizzle-orm";
 
 const postsLogger = createSecureLogger('PostsRoutes');
 const router = Router();
@@ -354,8 +355,32 @@ router.get('/:id/reactions',
       if (!post) throw createError.notFound('Post not found');
 
       const counts = await (storage as any).getPostLikeCounts(Number(id));
-      const baselineLikes = Number((post as any).baselineLikes ?? 0);
-      const baselineDislikes = Number((post as any).baselineDislikes ?? 0);
+      let baselineLikes = Number((post as any).baselineLikes ?? 0);
+      let baselineDislikes = Number((post as any).baselineDislikes ?? 0);
+
+      // Fallback seeding: if baselines are zero, compute deterministic values and persist
+      if (baselineLikes === 0 || baselineDislikes === 0) {
+        const slug = String((post as any).slug || '');
+        const seedNumber = slug ? (() => { let h = 0; for (let i = 0; i < slug.length; i++) { h = (h << 5) - h + slug.charCodeAt(i); h |= 0; } return Math.abs(h); })() : Number(id);
+        const seed = seedNumber * 12345;
+        const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
+        const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80; // 80–200
+        const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2; // 2–13
+
+        // Persist once so everyone sees the same baseline
+        try {
+          await db.update(postsTable)
+            .set({ baselineLikes: likesBase, baselineDislikes: dislikesBase })
+            .where(eq(postsTable.id, Number(id)));
+          baselineLikes = likesBase;
+          baselineDislikes = dislikesBase;
+        } catch (_) {
+          // If persistence fails, still use computed values in response
+          baselineLikes = baselineLikes || likesBase;
+          baselineDislikes = baselineDislikes || dislikesBase;
+        }
+      }
+
       res.json({
         postId: Number(id),
         baselineLikes,
@@ -397,8 +422,30 @@ router.post('/:id/reaction',
       await (storage as any).updatePostReaction(Number(id), { isLike: !!isLike, sessionId: req.sessionID });
 
       const counts = await (storage as any).getPostLikeCounts(Number(id));
-      const baselineLikes = Number((post as any).baselineLikes ?? 0);
-      const baselineDislikes = Number((post as any).baselineDislikes ?? 0);
+      let baselineLikes = Number((post as any).baselineLikes ?? 0);
+      let baselineDislikes = Number((post as any).baselineDislikes ?? 0);
+
+      // Fallback seeding: if baselines are zero, compute deterministic values and persist
+      if (baselineLikes === 0 || baselineDislikes === 0) {
+        const slug = String((post as any).slug || '');
+        const seedNumber = slug ? (() => { let h = 0; for (let i = 0; i < slug.length; i++) { h = (h << 5) - h + slug.charCodeAt(i); h |= 0; } return Math.abs(h); })() : Number(id);
+        const seed = seedNumber * 12345;
+        const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
+        const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80; // 80–200
+        const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2; // 2–13
+
+        try {
+          await db.update(postsTable)
+            .set({ baselineLikes: likesBase, baselineDislikes: dislikesBase })
+            .where(eq(postsTable.id, Number(id)));
+          baselineLikes = likesBase;
+          baselineDislikes = dislikesBase;
+        } catch (_) {
+          baselineLikes = baselineLikes || likesBase;
+          baselineDislikes = baselineDislikes || dislikesBase;
+        }
+      }
+
       res.json({
         success: true,
         postId: Number(id),
