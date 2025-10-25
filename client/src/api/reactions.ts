@@ -12,31 +12,46 @@ export interface ReactionTotals {
   };
 }
 
+function buildApiCandidates(path: string): string[] {
+  const base = getApiBaseUrl();
+  const explicit = (import.meta.env.VITE_API_URL as string | undefined) || undefined;
+  const rel = path.startsWith('/') ? path : `/${path}`;
+  const candidates: string[] = [];
+  candidates.push(base ? `${base}${rel}` : rel);
+  if (explicit) candidates.push(`${explicit.replace(/\/+$/, '')}${rel}`);
+  return candidates;
+}
+
+async function fetchWithFallback<T>(path: string, init: RequestInit): Promise<T> {
+  const urls = buildApiCandidates(path);
+  let lastErr: any;
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { ...init, credentials: init.credentials ?? 'include' });
+      if (res.ok) {
+        return (await res.json()) as T;
+      }
+      lastErr = new Error(`Request failed: ${res.status}`);
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('Request failed');
+}
+
 export async function fetchReactions(postId: number): Promise<ReactionTotals> {
-  const API_BASE = getApiBaseUrl();
-  const url = API_BASE ? `${API_BASE}/api/posts/${postId}/reactions` : `/api/posts/${postId}/reactions`;
-  const response = await fetch(url, {
+  return fetchWithFallback<ReactionTotals>(`/api/posts/${postId}/reactions`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
   });
-  if (!response.ok) {
-    throw new Error('Failed to fetch reactions');
-  }
-  return response.json();
 }
 
 export async function submitReaction(postId: number, isLike: boolean): Promise<ReactionTotals> {
-  const API_BASE = getApiBaseUrl();
-  const url = API_BASE ? `${API_BASE}/api/posts/${postId}/reaction` : `/api/posts/${postId}/reaction`;
-  const response = await fetch(url, {
+  return fetchWithFallback<ReactionTotals>(`/api/posts/${postId}/reaction`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
     body: JSON.stringify({ isLike }),
   });
-  if (!response.ok) {
-    throw new Error('Failed to update reaction');
-  }
-  return response.json();
 }

@@ -134,12 +134,39 @@ export function LikeDislike({
   };
 
   const applyServerTotals = (data: any) => {
+    let likes = Number(data?.totals?.likes ?? 0);
+    let dislikes = Number(data?.totals?.dislikes ?? 0);
+    let baseLikes = Number(data?.baselineLikes ?? 0);
+    let baseDislikes = Number(data?.baselineDislikes ?? 0);
+
+    // Preview fallback: if server returns zeros, compute deterministic baseline locally
+    if ((likes === 0 && dislikes === 0) && (baseLikes === 0 || baseDislikes === 0)) {
+      const seedFrom = (slug && slug.trim().length > 0) ? slug.trim() : String(postId);
+      const hash = (s: string) => {
+        let h = 0;
+        for (let i = 0; i < s.length; i++) {
+          h = (h << 5) - h + s.charCodeAt(i);
+          h |= 0;
+        }
+        return Math.abs(h);
+      };
+      const seededRandom = (n: number) => {
+        const x = Math.sin(n) * 10000;
+        return x - Math.floor(x);
+      };
+      const seed = hash(seedFrom) * 12345;
+      baseLikes = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
+      baseDislikes = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
+      likes = baseLikes;
+      dislikes = baseDislikes;
+    }
+
     const newStats: Stats = {
-      likes: Number(data?.totals?.likes ?? 0),
-      dislikes: Number(data?.totals?.dislikes ?? 0),
+      likes,
+      dislikes,
       baseStats: {
-        likes: Number(data?.baselineLikes ?? 0),
-        dislikes: Number(data?.baselineDislikes ?? 0)
+        likes: baseLikes,
+        dislikes: baseDislikes
       },
       userInteracted: true
     };
