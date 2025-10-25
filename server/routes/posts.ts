@@ -345,8 +345,14 @@ router.get('/:id/reactions',
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
-      const post = await (storage as any).getPostById(Number(id));
+      let post = await (storage as any).getPostById(Number(id));
+      // Ensure placeholder exists for WordPress posts if missing
+      if (!post && (storage as any).ensurePostExists) {
+        await (storage as any).ensurePostExists(Number(id));
+        post = await (storage as any).getPostById(Number(id));
+      }
       if (!post) throw createError.notFound('Post not found');
+
       const counts = await (storage as any).getPostLikeCounts(Number(id));
       const baselineLikes = Number((post as any).baselineLikes ?? 0);
       const baselineDislikes = Number((post as any).baselineDislikes ?? 0);
@@ -380,9 +386,16 @@ router.post('/:id/reaction',
     const { id } = req.params;
     const { isLike } = req.body as any;
     try {
-      await (storage as any).updatePostReaction(Number(id), { isLike: !!isLike, sessionId: req.sessionID });
-      const post = await (storage as any).getPostById(Number(id));
+      // Ensure the post exists (create placeholder if needed)
+      let post = await (storage as any).getPostById(Number(id));
+      if (!post && (storage as any).ensurePostExists) {
+        await (storage as any).ensurePostExists(Number(id));
+        post = await (storage as any).getPostById(Number(id));
+      }
       if (!post) throw createError.notFound('Post not found');
+
+      await (storage as any).updatePostReaction(Number(id), { isLike: !!isLike, sessionId: req.sessionID });
+
       const counts = await (storage as any).getPostLikeCounts(Number(id));
       const baselineLikes = Number((post as any).baselineLikes ?? 0);
       const baselineDislikes = Number((post as any).baselineDislikes ?? 0);
