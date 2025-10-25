@@ -34,12 +34,38 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
     return () => { mounted = false; };
   }, [posts]);
 
+  // Sync live updates from LikeDislike (reader/index)
+  useEffect(() => {
+    const onUpdate = (e: Event) => {
+      const detail = (e as CustomEvent).detail as ReactionTotals;
+      if (!detail || typeof detail.postId !== 'number') return;
+      setTotalsMap(prev => ({ ...prev, [detail.postId]: detail }));
+    };
+    window.addEventListener('reaction:updated', onUpdate as EventListener);
+    return () => { window.removeEventListener('reaction:updated', onUpdate as EventListener); };
+  }, []);
+
+  const baselineLikesForPost = (p: Post): number => {
+    const seedFrom = String((p as any).slug || p.id);
+    let h = 0;
+    for (let i = 0; i < seedFrom.length; i++) {
+      h = (h << 5) - h + seedFrom.charCodeAt(i);
+      h |= 0;
+    }
+    const seededRandom = (n: number) => {
+      const x = Math.sin(n) * 10000;
+      return x - Math.floor(x);
+    };
+    const seed = Math.abs(h) * 12345;
+    return Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
+  };
+
   const topLiked = useMemo(() => {
     if (!Array.isArray(posts) || posts.length === 0) return [] as Post[];
     return [...posts]
       .sort((a, b) => {
-        const ta = totalsMap[a.id]?.totals?.likes ?? ((a as any).baselineLikes || 0) + (a.likesCount || 0);
-        const tb = totalsMap[b.id]?.totals?.likes ?? ((b as any).baselineLikes || 0) + (b.likesCount || 0);
+        const ta = totalsMap[a.id]?.totals?.likes ?? (baselineLikesForPost(a) + (a.likesCount || 0));
+        const tb = totalsMap[b.id]?.totals?.likes ?? (baselineLikesForPost(b) + (b.likesCount || 0));
         return Number(tb) - Number(ta);
       })
       .slice(0, 6);
@@ -54,7 +80,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {topLiked.map((p) => {
           const totals = totalsMap[p.id];
-          const likesDisplay = totals?.totals?.likes ?? (((p as any).baselineLikes || 0) + (p.likesCount || 0));
+          const likesDisplay = totals?.totals?.likes ?? (baselineLikesForPost(p) + (p.likesCount || 0));
           return (
             <article
               key={p.id}

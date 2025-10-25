@@ -149,9 +149,9 @@ export default function StoriesIndexContent() {
 
     // Listen for reaction updates from LikeDislike
     const onUpdate = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { postId: number; totals: import("@/api/reactions").ReactionTotals };
+      const detail = (e as CustomEvent).detail as import("@/api/reactions").ReactionTotals;
       if (!detail || typeof detail.postId !== 'number') return;
-      setReactionTotals((prev: Record<number, import("@/api/reactions").ReactionTotals>) => ({ ...prev, [detail.postId]: detail.totals }));
+      setReactionTotals((prev: Record<number, import("@/api/reactions").ReactionTotals>) => ({ ...prev, [detail.postId]: detail }));
     };
     window.addEventListener('reaction:updated', onUpdate as EventListener);
     return () => { mounted = false; window.removeEventListener('reaction:updated', onUpdate as EventListener); };

@@ -217,20 +217,81 @@ export function LikeDislike({
 
     // Broadcast update so lists can sync without waiting for refetch
     try {
-      window.dispatchEvent(new CustomEvent('reaction:updated', { detail: { postId, totals: data } }));
+      window.dispatchEvent(new CustomEvent('reaction:updated', { detail: data }));
     } catch {}
   };
 
+  const deterministicBaseline = (): { baseLikes: number; baseDislikes: number } => {
+    const seedFrom = (slug && slug.trim().length > 0) ? slug.trim() : String(postId);
+    const hash = (s: string) => {
+      let h = 0;
+      for (let i = 0; i < s.length; i++) {
+        h = (h << 5) - h + s.charCodeAt(i);
+        h |= 0;
+      }
+      return Math.abs(h);
+    };
+    const seededRandom = (n: number) => {
+      const x = Math.sin(n) * 10000;
+      return x - Math.floor(x);
+    };
+    const seed = hash(seedFrom) * 12345;
+    const baseLikes = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
+    const baseDislikes = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
+    return { baseLikes, baseDislikes };
+  };
+
+  const composeTotals = (s: Stats): import("@/api/reactions").ReactionTotals => {
+    return {
+      postId,
+      baselineLikes: Number(s.baseStats.likes || 0),
+      baselineDislikes: Number(s.baseStats.dislikes || 0),
+      likesCount: Math.max(0, Number(s.likes) - Number(s.baseStats.likes || 0)),
+      dislikesCount: Math.max(0, Number(s.dislikes) - Number(s.baseStats.dislikes || 0)),
+      totals: {
+        likes: Number(s.likes),
+        dislikes: Number(s.dislikes),
+      }
+    };
+  };
+
   const handleLike = async () => {
-    // Decide the next UI state
     const nextLiked = !liked;
     const nextDisliked = nextLiked ? false : disliked;
 
+    // Optimistic UI update
+    const { baseLikes, baseDislikes } = deterministicBaseline();
+    let likes = stats.likes || baseLikes;
+    let dislikes = stats.dislikes || baseDislikes;
+
+    if (!liked && !disliked && nextLiked) {
+      likes += 1;
+    } else if (disliked && nextLiked) {
+      dislikes = Math.max(0, dislikes - 1);
+      likes += 1;
+    } else if (liked && !nextLiked) {
+      likes = Math.max(0, likes - 1);
+    }
+
+    const optimistic: Stats = {
+      likes,
+      dislikes,
+      baseStats: { likes: baseLikes, dislikes: baseDislikes },
+      userInteracted: true
+    };
+
+    setLiked(nextLiked);
+    setDisliked(nextDisliked);
+    setStats(optimistic);
+    writeLocalReaction(storageKey, nextLiked ? 'like' : (nextDisliked ? 'dislike' : 'none'), optimistic);
+    onUpdate?.(optimistic.likes, optimistic.dislikes);
+    try {
+      window.dispatchEvent(new CustomEvent('reaction:updated', { detail: composeTotals(optimistic) }));
+    } catch {}
+
+    // Server sync
     try {
       const data = await submitReaction(postId, true);
-
-      setLiked(nextLiked);
-      setDisliked(nextDisliked);
       applyServerTotals(data);
 
       if (nextLiked) {
@@ -241,52 +302,8 @@ export function LikeDislike({
       }
     } catch (error) {
       console.error(`[LikeDislike] Error handling like for post ${postId}:`, error);
-      // Fallback: apply deterministic baseline locally and update counts for UI continuity
-      const seedFrom = (slug && slug.trim().length > 0) ? slug.trim() : String(postId);
-      const hash = (s: string) => {
-        let h = 0;
-        for (let i = 0; i < s.length; i++) {
-          h = (h << 5) - h + s.charCodeAt(i);
-          h |= 0;
-        }
-        return Math.abs(h);
-      };
-      const seededRandom = (n: number) => {
-        const x = Math.sin(n) * 10000;
-        return x - Math.floor(x);
-      };
-      const seed = hash(seedFrom) * 12345;
-      const baseLikes = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
-      const baseDislikes = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
-
-      let likes = stats.likes || baseLikes;
-      let dislikes = stats.dislikes || baseDislikes;
-
-      if (!liked && !disliked && nextLiked) {
-        likes += 1;
-      } else if (disliked && nextLiked) {
-        dislikes = Math.max(0, dislikes - 1);
-        likes += 1;
-      } else if (liked && !nextLiked) {
-        likes = Math.max(0, likes - 1);
-      }
-
-      setLiked(nextLiked);
-      setDisliked(nextDisliked);
-      setStats({
-        likes,
-        dislikes,
-        baseStats: { likes: baseLikes, dislikes: baseDislikes },
-        userInteracted: true
-      });
-      onUpdate?.(likes, dislikes);
-      writeLocalReaction(storageKey, nextLiked ? 'like' : (nextDisliked ? 'dislike' : 'none'), {
-        likes,
-        dislikes,
-        baseStats: { likes: baseLikes, dislikes: baseDislikes },
-        userInteracted: true
-      });
-      showInlineToast("Thanks for liking!", 'like');
+      // Keep optimistic counts; show toast if turning on like
+      if (nextLiked) showInlineToast("Thanks for liking!", 'like');
     }
   };
 
@@ -294,6 +311,37 @@ export function LikeDislike({
     const nextDisliked = !disliked;
     const nextLiked = nextDisliked ? false : liked;
 
+    // Optimistic UI update
+    const { baseLikes, baseDislikes } = deterministicBaseline();
+    let likes = stats.likes || baseLikes;
+    let dislikes = stats.dislikes || baseDislikes;
+
+    if (!disliked && !liked && nextDisliked) {
+      dislikes += 1;
+    } else if (liked && nextDisliked) {
+      likes = Math.max(0, likes - 1);
+      dislikes += 1;
+    } else if (disliked && !nextDisliked) {
+      dislikes = Math.max(0, dislikes - 1);
+    }
+
+    const optimistic: Stats = {
+      likes,
+      dislikes,
+      baseStats: { likes: baseLikes, dislikes: baseDislikes },
+      userInteracted: true
+    };
+
+    setDisliked(nextDisliked);
+    setLiked(nextLiked);
+    setStats(optimistic);
+    writeLocalReaction(storageKey, nextDisliked ? 'dislike' : (nextLiked ? 'like' : 'none'), optimistic);
+    onUpdate?.(optimistic.likes, optimistic.dislikes);
+    try {
+      window.dispatchEvent(new CustomEvent('reaction:updated', { detail: composeTotals(optimistic) }));
+    } catch {}
+
+    // Server sync
     try {
       const data = await submitReaction(postId, false);
 
@@ -309,51 +357,8 @@ export function LikeDislike({
       }
     } catch (error) {
       console.error(`[LikeDislike] Error handling dislike for post ${postId}:`, error);
-      const seedFrom = (slug && slug.trim().length > 0) ? slug.trim() : String(postId);
-      const hash = (s: string) => {
-        let h = 0;
-        for (let i = 0; i < s.length; i++) {
-          h = (h << 5) - h + s.charCodeAt(i);
-          h |= 0;
-        }
-        return Math.abs(h);
-      };
-      const seededRandom = (n: number) => {
-        const x = Math.sin(n) * 10000;
-        return x - Math.floor(x);
-      };
-      const seed = hash(seedFrom) * 12345;
-      const baseLikes = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
-      const baseDislikes = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
-
-      let likes = stats.likes || baseLikes;
-      let dislikes = stats.dislikes || baseDislikes;
-
-      if (!disliked && !liked && nextDisliked) {
-        dislikes += 1;
-      } else if (liked && nextDisliked) {
-        likes = Math.max(0, likes - 1);
-        dislikes += 1;
-      } else if (disliked && !nextDisliked) {
-        dislikes = Math.max(0, dislikes - 1);
-      }
-
-      setDisliked(nextDisliked);
-      setLiked(nextLiked);
-      setStats({
-        likes,
-        dislikes,
-        baseStats: { likes: baseLikes, dislikes: baseDislikes },
-        userInteracted: true
-      });
-      onUpdate?.(likes, dislikes);
-      writeLocalReaction(storageKey, nextDisliked ? 'dislike' : (nextLiked ? 'like' : 'none'), {
-        likes,
-        dislikes,
-        baseStats: { likes: baseLikes, dislikes: baseDislikes },
-        userInteracted: true
-      });
-      showInlineToast("Thanks for the feedback!", 'dislike');
+      // Keep optimistic counts; show toast if turning on dislike
+      if (nextDisliked) showInlineToast("Thanks for the feedback!", 'dislike');
     }
   };
 
