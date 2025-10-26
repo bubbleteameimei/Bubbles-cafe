@@ -12,7 +12,8 @@ import "@/styles/reader-fixes.css";
 import { 
   Share2, Minus, Plus, Shuffle, ChevronLeft, ChevronRight,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
-  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog, BookText, Trash, X, Pencil
+  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog, BookText, Trash, X, Pencil,
+  Eye, Hourglass, Knife, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Alien, Trees, ForkKnife
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from 'date-fns';
@@ -1256,9 +1257,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       (SHARED_THEME_CATEGORIES as any)[themeKey]?.icon ||
                       'ghost';
 
-                    // Lucide icon mapping
+                    // Lucide icon mapping with broader coverage and theme-key fallbacks
                     const ThemeIcon = (() => {
-                      switch (String(chosenIconSlug).toLowerCase()) {
+                      const slug = String(chosenIconSlug).toLowerCase();
+                      switch (slug) {
                         case 'skull': return Skull;
                         case 'brain': return Brain;
                         case 'pill': return Pill;
@@ -1274,6 +1276,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         case 'radiation': return Radiation;
                         case 'user-minus2':
                         case 'userminus2': return UserMinus2;
+                        case 'user-plus':
+                        case 'userplus': return UserPlus;
                         case 'anchor': return Anchor;
                         case 'alert-triangle':
                         case 'alerttriangle': return AlertTriangle;
@@ -1282,6 +1286,48 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         case 'cloud': return Cloud;
                         case 'cloud-fog':
                         case 'cloudfog': return CloudFog;
+                        case 'eye': return Eye;
+                        case 'hourglass': return Hourglass;
+                        case 'knife': return Knife;
+                        case 'utensils':
+                        case 'fork-knife':
+                        case 'forkknife': return ForkKnife;
+                        case 'cat': return Cat;
+                        case 'moon': return Moon;
+                        case 'dog': return Dog;
+                        case 'radio': return Radio;
+                        case 'moon-star':
+                        case 'moonstar': return MoonStar;
+                        case 'box': return Box;
+                        case 'car': return Car;
+                        case 'alien': return Alien;
+                        case 'trees':
+                        case 'tree': return Trees;
+                      }
+                      // Fallback by theme key for diversity when slug is unknown
+                      switch (themeKey) {
+                        case 'TECHNOLOGICAL': return Cpu;
+                        case 'PSYCHOLOGICAL': return Brain;
+                        case 'SUPERNATURAL': return Ghost;
+                        case 'UNCANNY': return Eye;
+                        case 'EXISTENTIAL': return Hourglass;
+                        case 'DOPPELGANGER': return UserPlus;
+                        case 'CANNIBALISM': return ForkKnife;
+                        case 'SLASHER': return Knife;
+                        case 'MONSTER': return Cat;
+                        case 'ZOMBIE': return Footprints;
+                        case 'VAMPIRE': return Moon;
+                        case 'WEREWOLF': return Dog;
+                        case 'PARANORMAL': return Radio;
+                        case 'DREAM_HORROR': return MoonStar;
+                        case 'CURSED_OBJECT': return Box;
+                        case 'TIME_HORROR': return Clock;
+                        case 'APOCALYPTIC': return Radiation;
+                        case 'SCIENCE_HORROR': return FlaskConical;
+                        case 'FOLK_HORROR': return Trees;
+                        case 'GOTHIC': return Castle;
+                        case 'COSMIC': return Alien;
+                        case 'VEHICULAR': return Car;
                         default: return Ghost;
                       }
                     })();
@@ -1297,6 +1343,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       if (l.includes('cosmic')) return 'Cosmic Horror';
                       if (l.includes('existential')) return 'Existential Horror';
                       if (l.includes('vehicular')) return 'Vehicular Horror';
+                      if (l.includes('psychological')) return 'Psychological Horror';
+                      if (l.includes('supernatural')) return 'Supernatural Horror';
+                      if (l.includes('technological')) return 'Technological Horror';
+                      if (l.includes('uncanny')) return 'Uncanny Horror';
                       return baseLabel;
                     })();
 
