@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { 
   ArrowRight, Clock, Calendar, Book,
-  Award
+  Award, Search
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 const MostLikedList = lazy(() => import("@/components/home/MostLikedList"));
@@ -830,120 +830,21 @@ export default function StoriesIndexContent() {
 
           {/* Stories Grid */}
           {latestPosts.length === 0 ? (
-            <div
-              className="text-center py-8 sm:py-10 md:py-12 border-2 border-dashed rounded-lg bg-card/50 px-3 sm:px-4"
-            >
+            <div className="mx-auto max-w-3xl text-center py-8 sm:py-10 md:py-12 rounded-xl border border-border/60 bg-card/80 px-4 sm:px-6 shadow-sm">
               <div className="w-full">
-                <Book className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 text-primary/40 mb-3 sm:mb-4 mt-3 sm:mt-4" />
-                
-                {/* Popular right now mini carousel */}
-                <div className="mb-5">
-                  <div className="text-left sm:text-center mb-2 text-xs font-medium text-muted-foreground">
-                    Popular right now
-                  </div>
-                  <Carousel opts={{ align: "start" }}>
-                    <CarouselContent>
-                      {(() => {
-                        const popular = [...sortedPosts]
-                          .map(p => {
-                            const totals = reactionTotals[p.id];
-                            const likesTotal = totals?.totals?.likes ?? (((p as any).baselineLikes || 0) + (p.likesCount || 0));
-                            const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
-                            return { p, score: (Number(likesTotal) * 2) + views };
-                          })
-                          .sort((a, b) => b.score - a.score)
-                          .slice(0, 8)
-                          .map(x => x.p);
-                        return popular.map(pop => (
-                          <CarouselItem key={pop.id} className="basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                            <Card className="rounded-lg border border-border/50 bg-card/70 hover:bg-card transition">
-                              <CardContent className="p-3">
-                                <button
-                                  className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
-                                  onClick={() => navigateToReader(pop.slug || pop.id)}
-                                >
-                                  {pop.title}
-                                </button>
-                                <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
-                                  <div className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    <time>{new Date(pop.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    <span>{getReadingTime(pop.content)}</span>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </CarouselItem>
-                        ));
-                      })()}
-                    </CarouselContent>
-                    <CarouselPrevious />
-                    <CarouselNext />
-                  </Carousel>
+                <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4 mt-2">
+                  <Search className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg sm:text-xl font-semibold">No matches found</h2>
                 </div>
-                
+
                 {search.trim() ? (
                   <>
-                    <p className="text-sm sm:text-base text-muted-foreground mb-2 sm:mb-3 leading-relaxed px-2">
-                      Did you mean…
+                    <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4 leading-relaxed">
+                      We couldn’t find any stories matching “{search.trim()}”. Try the closest matches below or explore popular stories.
                     </p>
-                    {/* Alternative keyword chips from synonyms to aid discovery */}
-                    <div className="mb-3 flex flex-wrap items-center justify-center gap-1.5">
+
+                    <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
                       {(() => {
-                        const q = search.trim().toLowerCase();
-                        const tokenize = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
-                        const tokens = tokenize(q);
-                        const synonyms: Record<string, string[]> = {
-                          ghost: ['spirit','phantom','specter','wraith'],
-                          curse: ['hex','jinx','spell'],
-                          witch: ['hag','sorceress'],
-                          demon: ['fiend','devil'],
-                          monster: ['creature','beast'],
-                          blood: ['bleed','bloody'],
-                          scream: ['yell','shriek'],
-                          dark: ['night','gloom','black'],
-                          shadow: ['shade','silhouette'],
-                          grave: ['tomb','burial'],
-                          dead: ['deceased','lifeless'],
-                          fear: ['terror','dread'],
-                          knife: ['blade','dagger'],
-                          eyes: ['gaze','stare'],
-                          footsteps: ['steps','treads'],
-                          whisper: ['murmur','hiss'],
-                          door: ['gate','entry'],
-                          basement: ['cellar'],
-                          closet: ['wardrobe','cupboard'],
-                          window: ['pane','glass'],
-                          bone: ['skeleton'],
-                          cold: ['chill','freezing'],
-                          haunted: ['possessed','cursed'],
-                          night: ['darkness']
-                        };
-                        const suggestions = new Set<string>();
-                        for (const t of tokens) {
-                          const syns = synonyms[t];
-                          if (syns) syns.forEach(s => suggestions.add(s));
-                        }
-                        const chips = Array.from(suggestions).slice(0, 8);
-                        return chips.length ? chips.map(k => (
-                          <Button
-                            key={k}
-                            variant="outline"
-                            size="sm"
-                            className="px-2 py-0.5 text-xs"
-                            onClick={() => setSearch(k)}
-                          >
-                            {k}
-                          </Button>
-                        )) : null;
-                      })()}
-                    </div>
-                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-5">
-                      {(() => {
-                        // Build suggestions from all posts using the same scoring as filteredPosts
                         const q = search.trim().toLowerCase();
                         const tokenize = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
                         const jaccard = (a: string[], b: string[]) => {
@@ -976,56 +877,119 @@ export default function StoriesIndexContent() {
                         const qTokens = tokenize(q);
                         const score = (p: Post) => {
                           const title = String(p.title || "");
-                          const content = String(p.content || "");
                           const tTok = tokenize(title);
-                          const cTok = tokenize(content).slice(0, 300);
-                          const jTitle = jaccard(qTokens, tTok) * 2.2;
-                          let directTitle = 0;
-                          for (const qt of qTokens) if (title.toLowerCase().includes(qt)) directTitle += 0.6;
-                          const jContent = jaccard(qTokens, cTok) * 0.6;
-                          let typoBonus = 0;
+                          let minD = Infinity;
                           for (const qt of qTokens) {
-                            let best = Infinity;
                             for (const tt of tTok) {
                               const d = editDistance(qt, tt);
-                              if (d < best) best = d;
+                              if (d < minD) minD = d;
                             }
-                            if (best <= 2) typoBonus += 0.5;
                           }
-                          return jTitle + directTitle + jContent + typoBonus;
+                          const includesBonus = title.toLowerCase().includes(q) ? 3 : 0;
+                          const j = jaccard(qTokens, tTok);
+                          const distanceBoost = minD <= 2 ? (2 - minD) : -minD * 0.15;
+                          return includesBonus + (j * 2) + distanceBoost;
                         };
                         const suggestions = [...sortedPosts]
                           .map(p => ({ p, s: score(p) }))
-                          .filter(x => x.s > 0.12)
+                          .filter(x => x.s > 0.5)
                           .sort((a, b) => b.s - a.s)
-                          .slice(0, 4)
+                          .slice(0, 3)
                           .map(x => x.p);
 
                         return suggestions.length ? suggestions.map(s => (
-                          <Button
-                            key={s.id}
-                            variant="outline"
-                            size="sm"
-                            className="px-3 py-1 text-xs"
-                            onClick={() => navigateToReader(s.slug || s.id)}
-                          >
-                            {s.title}
-                          </Button>
+                          <Card key={s.id} className="rounded-lg border border-border/60 bg-card/70 hover:bg-card transition">
+                            <CardContent className="p-3">
+                              <button
+                                className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
+                                onClick={() => navigateToReader(s.slug || s.id)}
+                                title={s.title}
+                              >
+                                {s.title}
+                              </button>
+                              <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  <time>{new Date(s.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  <span>{getReadingTime(s.content)}</span>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
                         )) : (
-                          <span className="text-sm text-muted-foreground">No close matches found.</span>
+                          <div className="col-span-1 sm:col-span-2 text-sm text-muted-foreground">
+                            No close matches. Try clearing your search or exploring popular stories.
+                          </div>
                         );
                       })()}
                     </div>
-                    <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed px-2">
-                      Or check out some of our most popular stories instead.
-                    </p>
+
+                    <div className="flex items-center justify-center gap-2 mb-6">
+                      <Button variant="outline" size="sm" onClick={() => setSearch("")} className="h-9 px-3">
+                        Clear search
+                      </Button>
+                      <Button size="sm" onClick={() => setSort("popular")} className="h-9 px-3">
+                        Browse popular
+                      </Button>
+                    </div>
                   </>
                 ) : (
-                  <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed px-2">
+                  <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed">
                     Explore popular stories below.
                   </p>
                 )}
-                
+
+                {/* Popular right now mini carousel */}
+                <div className="mt-2">
+                  <div className="text-left sm:text-center mb-2 text-xs font-medium text-muted-foreground">
+                    Popular right now
+                  </div>
+                  <Carousel opts={{ align: "start" }}>
+                    <CarouselContent>
+                      {(() => {
+                        const popular = [...sortedPosts]
+                          .map(p => {
+                            const totals = reactionTotals[p.id];
+                            const likesTotal = totals?.totals?.likes ?? (((p as any).baselineLikes || 0) + (p.likesCount || 0));
+                            const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
+                            return { p, score: (Number(likesTotal) * 2) + views };
+                          })
+                          .sort((a, b) => b.score - a.score)
+                          .slice(0, 6)
+                          .map(x => x.p);
+                        return popular.map(pop => (
+                          <CarouselItem key={pop.id} className="basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                            <Card className="rounded-lg border border-border/50 bg-card/70 hover:bg-card transition">
+                              <CardContent className="p-3">
+                                <button
+                                  className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
+                                  onClick={() => navigateToReader(pop.slug || pop.id)}
+                                >
+                                  {pop.title}
+                                </button>
+                                <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    <time>{new Date(pop.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    <span>{getReadingTime(pop.content)}</span>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </CarouselItem>
+                        ));
+                      })()}
+                    </CarouselContent>
+                    <CarouselPrevious />
+                    <CarouselNext />
+                  </Carousel>
+                </div>
               </div>
             </div>
           ) : (
