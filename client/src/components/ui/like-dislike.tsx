@@ -497,7 +497,7 @@ export function LikeDislike({
       
       {inlineToast && (
         <div className={`
-          ${variant === 'index' ? 'absolute left-0 right-0 -top-6 px-2' : 'mt-3 px-3'}
+          ${variant === 'index' ? 'absolute left-0 right-0 top-0 -translate-y-full px-2' : 'mt-3 px-3'}
           py-2 rounded-md text-center font-sans text-xs font-medium 
           transform transition-all duration-300 ease-out shadow-sm
           ${isToastVisible 

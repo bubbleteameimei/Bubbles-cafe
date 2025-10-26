@@ -838,7 +838,7 @@ export default function StoriesIndexContent() {
                   aria-label="Grid view"
                   aria-pressed={viewMode === 'grid'}
                   onClick={() => setViewMode('grid')}
-                  className={`h-9 w-9 rounded-md lg:hidden ${viewMode === 'grid' ? 'border-primary text-primary' : ''}`}
+                  className={`h-9 w-9 rounded-md md:hidden ${viewMode === 'grid' ? 'border-primary text-primary' : ''}`}
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </Button>
@@ -1110,7 +1110,7 @@ export default function StoriesIndexContent() {
             viewMode === 'grid' ? (
               <>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6" ref={latestGridRef as any}>
-                  {latestPosts.slice(0, visibleCount).map((post) => {
+                  {latestPosts.slice(0, visibleCount).map((post, idx) => {
 
                     const md: any = post.metadata || {};
                     // Prefer metadata theme; otherwise detect from title/content for WordPress API posts
@@ -1131,13 +1131,14 @@ export default function StoriesIndexContent() {
                     return (
                       <article
                         key={post.id}
+                        data-idx={idx}
                         className="group story-card-container relative"
                       >
                         <Card
                           onClick={() => navigateToReader(post.slug || post.id)}
                           className="aspect-square overflow-hidden rounded-xl border border-border/60 bg-card/80 hover:bg-card transition duration-200 ease-out hover:-translate-y-0.5 shadow-sm hover:shadow-md ring-1 ring-transparent hover:ring-primary/20 cursor-pointer flex flex-col"
                         >
-                          <CardHeader className="p-3 pb-2">
+                          <CardHeader className="p-2.5 pb-1">
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 min-w-0">
                                 {themeCategory && (
@@ -1163,14 +1164,14 @@ export default function StoriesIndexContent() {
                           <CardFooter className="px-3 pb-3 pt-2 mt-auto border-t border-border/50">
                             <div className="w-full flex flex-col gap-2">
                               <button
-                                className="text-left text-base md:text-lg font-semibold tracking-tight line-clamp-2 group-hover:text-primary"
+                                className="text-left text-xl sm:text-2xl md:text-3xl leading-tight font-semibold tracking-tight line-clamp-2 group-hover:text-primary"
                                 onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
                                 title={post.title}
                               >
                                 {post.title}
                               </button>
                               <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2">
+                                <div className="relative pt-5">
                                   {post && post.id && (
                                     <Suspense fallback={<div className="text-[11px] text-muted-foreground">…</div>}>
                                       <LikeDislike 
@@ -1196,38 +1197,22 @@ export default function StoriesIndexContent() {
                     <Button
                       className="h-10 px-5 rounded-lg border border-border/60 shadow-sm"
                       onClick={() => {
-                        try {
-                          const step = window.innerWidth >= 1024 ? 9 : 6;
-                          setVisibleCount((c) => {
-                            const next = Math.min(latestPosts.length, c + step);
-                            requestAnimationFrame(() => {
-                              try {
-                                const el = latestGridRef.current;
-                                if (el) {
-                                  const rect = el.getBoundingClientRect();
-                                  const y = window.scrollY + rect.bottom - window.innerHeight * 0.25;
-                                  window.scrollTo({ top: y, behavior: 'smooth' });
-                                }
-                              } catch {}
-                            });
-                            return next;
+                        const step = window.innerWidth >= 1024 ? 9 : 6;
+                        setVisibleCount((c) => {
+                          const next = Math.min(latestPosts.length, c + step);
+                          const targetIdx = c; // first newly revealed item
+                          // Smoothly scroll to the first newly revealed tile to avoid jumpiness
+                          requestAnimationFrame(() => {
+                            try {
+                              const el = document.querySelector(`[data-idx="${targetIdx}"]`) as HTMLElement | null;
+                              if (el) {
+                                const y = el.getBoundingClientRect().top + window.scrollY - (window.innerHeight * 0.15);
+                                window.scrollTo({ top: y, behavior: 'smooth' });
+                              }
+                            } catch {}
                           });
-                        } catch {
-                          setVisibleCount((c) => {
-                            const next = Math.min(latestPosts.length, c + 6);
-                            requestAnimationFrame(() => {
-                              try {
-                                const el = latestGridRef.current;
-                                if (el) {
-                                  const rect = el.getBoundingClientRect();
-                                  const y = window.scrollY + rect.bottom - window.innerHeight * 0.25;
-                                  window.scrollTo({ top: y, behavior: 'smooth' });
-                                }
-                              } catch {}
-                            });
-                            return next;
-                          });
-                        }
+                          return next;
+                        });
                       }}
                     >
                       Read more
