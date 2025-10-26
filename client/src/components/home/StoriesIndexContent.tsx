@@ -934,7 +934,51 @@ export default function StoriesIndexContent() {
                       <Button variant="outline" size="sm" onClick={() => setSearch("")} className="h-9 px-3">
                         Clear search
                       </Button>
-                      <Button size="sm" onClick={() => setSort("popular")} className="h-9 px-3">
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          try {
+                            // Build a top-5 list by like count (using live totals when available, fallback otherwise)
+                            const topPopular = [...sortedPosts]
+                              .sort((a, b) => {
+                                const aTotals = reactionTotals[a.id];
+                                const bTotals = reactionTotals[b.id];
+
+                                const baselineLikesFor = (p: Post): number => {
+                                  const seedFrom = String((p as any).slug || p.id);
+                                  let h = 0;
+                                  for (let i = 0; i < seedFrom.length; i++) {
+                                    h = (h << 5) - h + seedFrom.charCodeAt(i);
+                                    h |= 0;
+                                  }
+                                  const seededRandom = (n: number) => {
+                                    const x = Math.sin(n) * 10000;
+                                    return x - Math.floor(x);
+                                  };
+                                  const seed = Math.abs(h) * 12345;
+                                  return Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
+                                };
+
+                                const aLikes = Number(aTotals?.totals?.likes ?? (baselineLikesFor(a) + (a.likesCount || 0)));
+                                const bLikes = Number(bTotals?.totals?.likes ?? (baselineLikesFor(b) + (b.likesCount || 0)));
+
+                                return bLikes - aLikes;
+                              })
+                              .slice(0, 5);
+
+                            if (topPopular.length > 0) {
+                              const pick = topPopular[Math.floor(Math.random() * topPopular.length)];
+                              navigateToReader(pick.slug || pick.id);
+                            } else {
+                              // Fallback: if something goes wrong, just sort to popular view
+                              setSort("popular");
+                            }
+                          } catch {
+                            setSort("popular");
+                          }
+                        }}
+                        className="h-9 px-3"
+                      >
                         Browse popular
                       </Button>
                     </div>
