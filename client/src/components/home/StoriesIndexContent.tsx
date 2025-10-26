@@ -898,27 +898,27 @@ export default function StoriesIndexContent() {
                           .map(x => x.p);
 
                         return suggestions.length ? suggestions.map(s => (
-                         <<Card key={s.id} className="rounded-lg border border-border/60 bg-card/70 hover:bg-card transition">
-                           <<CardContent className="p-3">
-                             <<button
+                          <Card key={s.id} className="rounded-lg border border-border/60 bg-card/70 hover:bg-card transition">
+                            <CardContent className="p-3">
+                              <button
                                 className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
                                 onClick={() => navigateToReader(s.slug || s.id)}
                                 title={s.title}
                               >
                                 {s.title}
-                            </ cbutton>
-                             <rp className="text-[12px] text-muted-foreground leading-5 mt-1 line-clamp-1">
+                              </button>
+                              <p className="text-[12px] text-muted-foreground leading-5 mt-1 line-clamp-1">
                                 {extractEngagingExcerpt(s.content, 100)}
-                            </clp>
-                             <adiv className="mt-2 flex items-center gap-3 text-[11px] text-muted-     <div className="flex items-center gap-1">
+                              </p>
+                              <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+                                <div className="flex items-center gap-1">
                                   <Calendar className="h-3 w-3" />
-                                  <time>{new Date(pop.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
+                                  <time>{new Date(s.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
-                                  <span>{getReadingTime(pop.content)}</span>
+                                  <span>{getReadingTime(s.content)}</span>
                                 </div>
-                              </div>
                               </div>
                             </CardContent>
                           </Card>
@@ -964,7 +964,7 @@ export default function StoriesIndexContent() {
                           .slice(0, 6)
                           .map(x => x.p);
                         return popular.map(pop => (
-                         <<CarouselItem key={pop.id} className="basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                          <CarouselItem key={pop.id} className="basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                             <Card className="rounded-lg border border-border/50 bg-card/70 hover:bg-card transition">
                               <CardContent className="p-3">
                                 <button
@@ -973,6 +973,9 @@ export default function StoriesIndexContent() {
                                 >
                                   {pop.title}
                                 </button>
+                                <p className="text-[12px] text-muted-foreground leading-5 mt-1 line-clamp-1">
+                                  {extractEngagingExcerpt(pop.content, 100)}
+                                </p>
                                 <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
                                   <div className="flex items-center gap-1">
                                     <Calendar className="h-3 w-3" />
