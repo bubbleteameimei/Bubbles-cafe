@@ -745,7 +745,7 @@ export default function StoriesIndexContent() {
           type="website"
         />
         <div className="w-full pb-12 pt-0 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 mb-4 px-0 sm:px-0 mt-8 sm:mt-12">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 mb-4 px-4 sm:px-6 mt-8 sm:mt-12">
             {/* Story index controls: search only; sort moved into the featured story card */}
             <div className="flex items-center gap-2 w-full sm:w-full">
               <div className="relative w-full">
@@ -829,7 +829,6 @@ export default function StoriesIndexContent() {
           )}
 
           <div className="mt-2 mb-3">
-            <div className="mt-2 mb-3">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl md:text-3xl font-decorative uppercase">LATEST STORIES</h1>
               <div className="inline-flex items-center gap-2" role="group" aria-label="View toggle">
