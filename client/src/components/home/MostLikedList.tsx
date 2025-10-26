@@ -68,7 +68,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
         const tb = totalsMap[b.id]?.totals?.likes ?? (baselineLikesForPost(b) + (b.likesCount || 0));
         return Number(tb) - Number(ta);
       })
-      .slice(0, 6);
+      .slice(0, 2);
   }, [posts, totalsMap]);
 
   return (

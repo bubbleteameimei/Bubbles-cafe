@@ -270,11 +270,12 @@ export default function StoriesIndexContent() {
         if (best <= 2) typoBonus += 0.4;
       }
 
-      // Keyword boosts if title/content contain boosted keywords
+      // Keyword boosts if title/content contain boosted keywords (only if query includes boosted keyword)
+      const queryContainsBoosted = qTokens.some(t => boostedKeywords.includes(t));
       let keywordBoost = 0;
       for (const kw of boostedKeywords) {
-        if (titleTokens.includes(kw)) keywordBoost += 0.25;
-        if (contentTokens.includes(kw)) keywordBoost += 0.1;
+        if (queryContainsBoosted && titleTokens.includes(kw)) keywordBoost += 0.25;
+        if (queryContainsBoosted && contentTokens.includes(kw)) keywordBoost += 0.1;
       }
 
       // Recency and engagement mild bonuses
@@ -453,10 +454,12 @@ export default function StoriesIndexContent() {
           }
           if (best <= 2) typoBonus += 0.4;
         }
+        // Only boost if query itself contains boosted keywords
+        const queryContainsBoosted = qTokens.some(t => boostedKeywords.includes(t));
         let keywordBoost = 0;
         for (const kw of boostedKeywords) {
-          if (titleTokens.includes(kw)) keywordBoost += 0.25;
-          if (contentTokens.includes(kw)) keywordBoost += 0.1;
+          if (queryContainsBoosted && titleTokens.includes(kw)) keywordBoost += 0.25;
+          if (queryContainsBoosted && contentTokens.includes(kw)) keywordBoost += 0.1;
         }
         return (jTitle * 2.2) + directTitle + jContent + typoBonus + keywordBoost;
       };
@@ -566,10 +569,12 @@ export default function StoriesIndexContent() {
           }
           if (best <= 2) typoBonus += 0.4;
         }
+        // Only boost if query itself contains boosted keywords
+        const queryContainsBoosted = qTokens.some(t => boostedKeywords.includes(t));
         let keywordBoost = 0;
         for (const kw of boostedKeywords) {
-          if (tTok.includes(kw)) keywordBoost += 0.25;
-          if (cTok.includes(kw)) keywordBoost += 0.1;
+          if (queryContainsBoosted && tTok.includes(kw)) keywordBoost += 0.25;
+          if (queryContainsBoosted && cTok.includes(kw)) keywordBoost += 0.1;
         }
         return jTitle + directTitle + jContent + typoBonus + keywordBoost;
       };
@@ -579,7 +584,24 @@ export default function StoriesIndexContent() {
         .sort((a, b) => b.s - a.s)
         .map(x => x.p);
 
-      return scoredBySearch[0] || all[0];
+      // Only feature a story if the query has a close match (typo tolerance <= 2)
+      const hasCloseMatch = (() => {
+        const qTokens = tokenize(q);
+        for (const p of all) {
+          const tTok = tokenize(String(p.title || ''));
+          for (const qt of qTokens) {
+            for (const tt of tTok) {
+              const d = editDistance(qt, tt);
+              if (d <= 2) return true;
+            }
+          }
+        }
+        return false;
+      })();
+
+      if (!hasCloseMatch) return null;
+
+      return scoredBySearch[0] || null;
     }
 
     // If explicitly sorting by popular, pick highest likes + engagement using live reaction totals
@@ -786,8 +808,8 @@ export default function StoriesIndexContent() {
           )}
 
           <div className="flex justify-between items-center mb-3 mt-2">
-            <h1 className="text-3xl md:text-4xl font-decorative">Latest Stories</h1>
-            <div className="text-sm text-muted-foreground">{latestPosts.length} stories</div>
+            <h1 className="text-3xl md:text-4xl font-decorative uppercase">LATEST STORIES</h1>
+            <div className="text-lg md:text-xl text-muted-foreground">{latestPosts.length} stories</div>
           </div>
           {/* Optional category filter if categories exist */}
           {availableCategories.length > 0 && (
