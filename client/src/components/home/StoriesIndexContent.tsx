@@ -50,8 +50,9 @@ export default function StoriesIndexContent() {
   const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
-  const [viewMode, setViewMode] = useState<'cards' | 'grid' | 'grid-minimal'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'grid'>('cards');
   const [visibleCount, setVisibleCount] = useState<number>(6);
+  const latestGridRef = React.useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!carouselApi) return;
@@ -744,7 +745,7 @@ export default function StoriesIndexContent() {
           type="website"
         />
         <div className="w-full pb-12 pt-0 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 mb-4 px-2 sm:px-4 mt-8 sm:mt-12">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 mb-4 px-0 sm:px-0 mt-8 sm:mt-12">
             {/* Story index controls: search only; sort moved into the featured story card */}
             <div className="flex items-center gap-2 w-full sm:w-full">
               <div className="relative w-full">
@@ -828,6 +829,7 @@ export default function StoriesIndexContent() {
           )}
 
           <div className="mt-2 mb-3">
+            <div className="mt-2 mb-3">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl md:text-3xl font-decorative uppercase">LATEST STORIES</h1>
               <div className="inline-flex items-center gap-2" role="group" aria-label="View toggle">
@@ -835,9 +837,9 @@ export default function StoriesIndexContent() {
                   variant="outline"
                   size="sm"
                   aria-label="Grid view"
-                  aria-pressed={viewMode !== 'cards'}
-                  onClick={() => setViewMode(prev => prev === 'grid' ? 'grid-minimal' : 'grid')}
-                  className={`h-9 w-9 rounded-md ${viewMode !== 'cards' ? 'border-primary text-primary' : ''}`}
+                  aria-pressed={viewMode === 'grid'}
+                  onClick={() => setViewMode('grid')}
+                  className={`h-9 w-9 rounded-md lg:hidden ${viewMode === 'grid' ? 'border-primary text-primary' : ''}`}
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </Button>
@@ -1108,7 +1110,7 @@ export default function StoriesIndexContent() {
           ) : (
             viewMode === 'grid' ? (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6" ref={latestGridRef as any}>
                   {latestPosts.slice(0, visibleCount).map((post) => {
 
                     const md: any = post.metadata || {};
@@ -1137,11 +1139,14 @@ export default function StoriesIndexContent() {
                           className="aspect-square overflow-hidden rounded-xl border border-border/60 bg-card/80 hover:bg-card transition duration-200 ease-out hover:-translate-y-0.5 shadow-sm hover:shadow-md ring-1 ring-transparent hover:ring-primary/20 cursor-pointer flex flex-col"
                         >
                           <CardHeader className="p-3 pb-2">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <CardTitle className="text-base md:text-lg font-semibold tracking-tight line-clamp-2 group-hover:text-primary">
-                                  {post.title}
-                                </CardTitle>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {themeCategory && (
+                                  <Badge className="w-fit text-[10px] font-medium tracking-wide px-1.5 py-0.5 flex items-center gap-1">
+                                    <Book className="h-3 w-3" />
+                                    {displayName}
+                                  </Badge>
+                                )}
                               </div>
                               <div className="text-[10px] text-muted-foreground whitespace-nowrap">
                                 <div className="flex items-center gap-1 justify-end">
@@ -1155,30 +1160,30 @@ export default function StoriesIndexContent() {
                               </div>
                             </div>
                           </CardHeader>
-                          <CardContent className="px-3 pt-0 pb-0 flex-1 min-h-0">
-                            {themeCategory && (
-                              <div className="mt-1">
-                                <Badge className="w-fit text-[10px] font-medium tracking-wide px-1.5 py-0.5 flex items-center gap-1">
-                                  <Book className="h-3 w-3" />
-                                  {displayName}
-                                </Badge>
-                              </div>
-                            )}
-                          </CardContent>
+                          <CardContent className="px-3 pt-0 pb-0 flex-1 min-h-0" />
                           <CardFooter className="px-3 pb-3 pt-2 mt-auto border-t border-border/50">
-                            <div className="w-full flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                {post && post.id && (
-                                  <Suspense fallback={<div className="text-[11px] text-muted-foreground">…</div>}>
-                                    <LikeDislike 
-                                      key={`like-${post.id}`} 
-                                      postId={post.id}
-                                      slug={post.slug}
-                                      source="wp"
-                                      variant="index"
-                                    />
-                                  </Suspense>
-                                )}
+                            <div className="w-full flex flex-col gap-2">
+                              <button
+                                className="text-left text-base md:text-lg font-semibold tracking-tight line-clamp-2 group-hover:text-primary"
+                                onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
+                                title={post.title}
+                              >
+                                {post.title}
+                              </button>
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  {post && post.id && (
+                                    <Suspense fallback={<div className="text-[11px] text-muted-foreground">…</div>}>
+                                      <LikeDislike 
+                                        key={`like-${post.id}`} 
+                                        postId={post.id}
+                                        slug={post.slug}
+                                        source="wp"
+                                        variant="index"
+                                      />
+                                    </Suspense>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </CardFooter>
@@ -1190,48 +1195,39 @@ export default function StoriesIndexContent() {
                 {latestPosts.length > visibleCount && (
                   <div className="mt-4 flex justify-center">
                     <Button
-                      className="h-9 px-4 rounded-lg border border-border/60 shadow-sm"
+                      className="h-10 px-5 rounded-lg border border-border/60 shadow-sm"
                       onClick={() => {
                         try {
                           const step = window.innerWidth >= 1024 ? 9 : 6;
-                          setVisibleCount((c) => Math.min(latestPosts.length, c + step));
+                          setVisibleCount((c) => {
+                            const next = Math.min(latestPosts.length, c + step);
+                            requestAnimationFrame(() => {
+                              try {
+                                const el = latestGridRef.current;
+                                if (el) {
+                                  const rect = el.getBoundingClientRect();
+                                  const y = window.scrollY + rect.bottom - window.innerHeight * 0.25;
+                                  window.scrollTo({ top: y, behavior: 'smooth' });
+                                }
+                              } catch {}
+                            });
+                            return next;
+                          });
                         } catch {
-                          setVisibleCount((c) => Math.min(latestPosts.length, c + 6));
-                        }
-                      }}
-                    >
-                      Read more
-                    </Button>
-                  </div>
-                )}
-              </>
-            ) : viewMode === 'grid-minimal' ? (
-              <>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-                  {latestPosts.slice(0, visibleCount).map((post) => (
-                    <button
-                      key={post.id}
-                      className="w-full rounded-lg border border-border/60 bg-card/70 hover:bg-card transition text-left p-3 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                      onClick={() => navigateToReader(post.slug || post.id)}
-                      aria-label={`Open ${post.title}`}
-                      title={post.title}
-                    >
-                      <span className="text-sm md:text-base font-medium line-clamp-1 group-hover:text-primary">
-                        {post.title}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                {latestPosts.length > visibleCount && (
-                  <div className="mt-4 flex justify-center">
-                    <Button
-                      className="h-9 px-4 rounded-lg border border-border/60 shadow-sm"
-                      onClick={() => {
-                        try {
-                          const step = window.innerWidth >= 1024 ? 9 : 6;
-                          setVisibleCount((c) => Math.min(latestPosts.length, c + step));
-                        } catch {
-                          setVisibleCount((c) => Math.min(latestPosts.length, c + 6));
+                          setVisibleCount((c) => {
+                            const next = Math.min(latestPosts.length, c + 6);
+                            requestAnimationFrame(() => {
+                              try {
+                                const el = latestGridRef.current;
+                                if (el) {
+                                  const rect = el.getBoundingClientRect();
+                                  const y = window.scrollY + rect.bottom - window.innerHeight * 0.25;
+                                  window.scrollTo({ top: y, behavior: 'smooth' });
+                                }
+                              } catch {}
+                            });
+                            return next;
+                          });
                         }
                       }}
                     >
