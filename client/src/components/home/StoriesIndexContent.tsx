@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { 
   ArrowRight, ArrowLeft, Clock, Calendar, Book,
-  Award, Search, Rows
+  Award, Search, Ghost, Skull, Brain, Pill, Cpu, Dna, Footprints, CloudRain, Castle, Bug, Radiation, Umbrella, UserMinus2, Anchor, AlertTriangle, Building, Worm, Cloud, CloudFog, Flame
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 import MostLikedList from "@/components/home/MostLikedList";
@@ -22,7 +22,7 @@ import { getReadingTime, extractEngagingExcerpt } from "@/lib/excerpt-lite";
 import { THEME_CATEGORIES } from "@/lib/themes-lite";
 import type { WordPressPost } from "@/lib/wordpress-api";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
-import { determineThemeCategory as sharedDetermineThemeCategory } from "@shared/theme-categories";
+import { determineThemeCategory as sharedDetermineThemeCategory, THEME_CATEGORIES as SHARED_THEME_CATEGORIES } from "@shared/theme-categories";
 
 
 
@@ -1159,15 +1159,39 @@ export default function StoriesIndexContent() {
                               </div>
                             </div>
                           </div>
-                          {themeCategory && (
-                            <div className="mt-2">
-                              <Badge className="w-fit text-[12px] sm:text-sm font-medium tracking-wide px-2 py-0.5 flex items-center gap-1">
-                                <Book className="h-3 w-3" />
-                                {displayName}
-                              </Badge>
-                            </div>
-                          )}
-                        </CardHeader>
+                          {themeCategory && (() => {
+                            const themeKey = (() => {
+                              const raw = themeCategory;
+                              if (!raw) return '';
+                              for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
+                                if (String(info?.label || '').toLowerCase() === raw.toLowerCase()) return key;
+                              }
+                              return raw.toUpperCase().replace(/\s+/g, '_');
+                            })();
+                            const chosenIconSlug = (md && md.themeIcon) || (SHARED_THEME_CATEGORIES as any)[themeKey]?.icon || 'ghost';
+                            const ThemeIconCmp = (() => {
+                              switch (String(chosenIconSlug).toLowerCase()) {
+                                case 'skull': return Skull;
+                                case 'brain': return Brain;
+                                case 'pill': return Pill;
+                                case 'cpu': return Cpu;
+                                case 'dna': return Dna;
+                                case 'ghost': return Ghost;
+                                case 'umbrella': return Umbrella;
+                                case 'footprints': return Footprints;
+                                case 'cloudrain': return CloudRain;
+                                case 'castle': return Castle;
+                                case 'bug': return Bug;
+                                case 'radiation': return Radiation;
+                                case 'userminus2':
+                                case 'user-minus2': return UserMinus2;
+                                case 'anchor': return Anchor;
+                                case 'alerttriangle':
+                                case 'alert-triangle': return AlertTriangle;
+                                case 'building': return Building;
+                                case 'worm': return Worm;
+                                case 'cloud': return Cloud;
+                                case 'cloud                        </CardHeader>
                         <CardContent className="px-4 pt-0 pb-3">
                           <p className="text-sm text-muted-foreground leading-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
                             {extractEngagingExcerpt(post.content, 200)}

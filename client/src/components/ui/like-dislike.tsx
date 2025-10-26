@@ -371,7 +371,7 @@ export function LikeDislike({
 
     // Immediate feedback before server sync
     if (nextLiked) {
-      showInlineToast("Thanks for liking! 💖", 'like');
+      showInlineToast("Thanks for liking! 😘", 'like');
       onLike?.(true);
     } else {
       onLike?.(false);
@@ -424,7 +424,7 @@ export function LikeDislike({
 
     // Immediate feedback before server sync
     if (nextDisliked) {
-      showInlineToast("Thanks for the feedback! 🙏", 'dislike');
+      showInlineToast("Thanks for the feedback! 😔", 'dislike');
       onDislike?.(true);
     } else {
       onDislike?.(false);
