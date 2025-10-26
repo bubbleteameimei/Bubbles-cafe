@@ -93,6 +93,13 @@ export default function StoriesIndexContent() {
     return () => window.removeEventListener('resize', compute);
   }, []);
 
+  // Ensure grid shows 5 items initially and uses "Read more" pagination in steps of 5
+  useEffect(() => {
+    if (viewMode === 'grid') {
+      setVisibleCount(5);
+    }
+  }, [viewMode]);
+
   // Navigation function
   const navigateToReader = (slugOrId: string | number) => {
     try {
@@ -1114,7 +1121,7 @@ export default function StoriesIndexContent() {
           ) : (
             viewMode === 'grid' ? (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6" ref={latestGridRef as any}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6" ref={latestGridRef as any}>
                   {latestPosts.slice(0, visibleCount).map((post, idx) => {
 
                     const md: any = post.metadata || {};
@@ -1141,56 +1148,62 @@ export default function StoriesIndexContent() {
                       >
                         <Card
                           onClick={() => navigateToReader(post.slug || post.id)}
-                          className="aspect-square overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 cursor-pointer flex flex-col"
+                          className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 hover:bg-card transition duration-200 ease-out hover:-translate-y-0.5 shadow-sm hover:shadow-md ring-1 ring-transparent hover:ring-primary/20 cursor-pointer"
                         >
-                          <CardHeader className="p-1 pb-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2 min-w-0">
-                                {themeCategory && (
-                                  <Badge className="w-fit text-[10px] font-medium tracking-wide px-1.5 py-0.5 flex items-center gap-1">
-                                    <Book className="h-3 w-3" />
-                                    {displayName}
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          <CardHeader className="p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <CardTitle
+                                className="text-lg font-semibold tracking-tight group-hover:text-primary"
+                              >
+                                {post.title}
+                              </CardTitle>
+                              <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
                                 <div className="flex items-center gap-1 justify-end">
                                   <Calendar className="h-3 w-3" />
-                                  <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
+                                  <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
                                 </div>
-                                <div className="flex items-center gap-1 justify-end mt-1">
+                                <div className="flex items-center gap-1 justify-end">
                                   <Clock className="h-3 w-3" />
                                   <span>{getReadingTime(post.content)}</span>
                                 </div>
                               </div>
                             </div>
-                          </CardHeader>
-                          <CardContent className="px-3 pt-0 pb-0 flex-1 min-h-0" />
-                          <CardFooter className="px-3 pb-3 pt-2 mt-auto">
-                            <div className="w-full flex flex-col gap-2">
-                              <button
-                                className="text-center text-4xl sm:text-5xl md:text-6xl leading-tight font-semibold tracking-tight line-clamp-2 group-hover:text-primary"
-                                onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
-                                title={post.title}
-                              >
-                                {post.title}
-                              </button>
-                              <div className="mt-3 border-t border-border/50" />
-                              <div className="flex items-center justify-between gap-2 mt-1">
-                                <div className="relative">
-                                  {post && post.id && (
-                                    <Suspense fallback={<div className="text-[11px] text-muted-foreground">…</div>}>
-                                      <LikeDislike 
-                                        key={`like-${post.id}`} 
-                                        postId={post.id}
-                                        slug={post.slug}
-                                        source="wp"
-                                        variant="index"
-                                      />
-                                    </Suspense>
-                                  )}
-                                </div>
+                            {themeCategory && (
+                              <div className="mt-2">
+                                <Badge className="w-fit text-[12px] sm:text-sm font-medium tracking-wide px-2 py-0.5 flex items-center gap-1">
+                                  <Book className="h-3 w-3" />
+                                  {displayName}
+                                </Badge>
                               </div>
+                            )}
+                          </CardHeader>
+                          <CardContent className="px-4 pt-0 pb-3">
+                            <p className="text-sm text-muted-foreground leading-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                              {extractEngagingExcerpt(post.content, 200)}
+                            </p>
+                          </CardContent>
+                          <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
+                            <div className="w-full flex items-center justify-between">
+                              {post && post.id && (
+                                <Suspense fallback={<div className="text-xs text-muted-foreground">…</div>}>
+                                  <LikeDislike 
+                                    key={`like-${post.id}`} 
+                                    postId={post.id}
+                                    slug={post.slug}
+                                    source="wp"
+                                    variant="index"
+                                    initialTotals={reactionTotals[post.id] || null}
+                                  />
+                                </Suspense>
+                              )}
+                              <Button
+                                size="sm"
+                                onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
+                                className="h-9 px-4 transition-transform active:scale-95"
+                              >
+                                Read story
+                                <ArrowRight className="h-4 w-4 ml-1" />
+                              </Button>
                             </div>
                           </CardFooter>
                         </Card>
@@ -1203,9 +1216,8 @@ export default function StoriesIndexContent() {
                     <Button
                       className="h-10 px-5 rounded-lg border border-border/60 shadow-sm"
                       onClick={() => {
-                        const step = window.innerWidth >= 1024 ? 9 : 6;
                         setVisibleCount((c) => {
-                          const next = Math.min(latestPosts.length, c + step);
+                          const next = Math.min(latestPosts.length, c + 5);
                           const targetIdx = c; // first newly revealed item
                           // Smoothly scroll to the first newly revealed tile to avoid jumpiness
                           requestAnimationFrame(() => {
