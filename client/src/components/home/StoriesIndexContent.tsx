@@ -843,19 +843,10 @@ export default function StoriesIndexContent() {
           <div className="mt-2 mb-3">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl md:text-3xl font-decorative uppercase">LATEST STORIES</h1>
-              <div className="inline-flex items-center gap-2" role="group" aria-label="View">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  aria-label="Story cards view"
-                  aria-pressed="true"
-                  className="h-9 w-9 rounded-lg border-primary text-primary"
-                >
-                  <Rows className="h-4 w-4" />
-                </Button>
+              <div className="text-lg md:text-2xl font-semibold text-foreground">
+                {latestPosts.length} stories
               </div>
             </div>
-            <div className="text-base md:text-lg text-muted-foreground mt-1">{latestPosts.length} stories</div>
           </div>
           {/* Optional category filter if categories exist */}
           {availableCategories.length > 0 && (
@@ -1164,11 +1155,11 @@ export default function StoriesIndexContent() {
                               const raw = themeCategory;
                               if (!raw) return '';
                               for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-                                if (String(info?.label || '').toLowerCase() === raw.toLowerCase()) return key;
+                                if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
                               }
                               return raw.toUpperCase().replace(/\s+/g, '_');
                             })();
-                            const chosenIconSlug = (md && md.themeIcon) || (SHARED_THEME_CATEGORIES as any)[themeKey]?.icon || 'ghost';
+                            const chosenIconSlug = (md && (md as any).themeIcon) || (SHARED_THEME_CATEGORIES as any)[themeKey]?.icon || 'ghost';
                             const ThemeIconCmp = (() => {
                               switch (String(chosenIconSlug).toLowerCase()) {
                                 case 'skull': return Skull;
@@ -1179,19 +1170,35 @@ export default function StoriesIndexContent() {
                                 case 'ghost': return Ghost;
                                 case 'umbrella': return Umbrella;
                                 case 'footprints': return Footprints;
+                                case 'cloud-rain':
                                 case 'cloudrain': return CloudRain;
                                 case 'castle': return Castle;
                                 case 'bug': return Bug;
                                 case 'radiation': return Radiation;
-                                case 'userminus2':
-                                case 'user-minus2': return UserMinus2;
+                                case 'user-minus2':
+                                case 'userminus2': return UserMinus2;
                                 case 'anchor': return Anchor;
-                                case 'alerttriangle':
-                                case 'alert-triangle': return AlertTriangle;
+                                case 'alert-triangle':
+                                case 'alerttriangle': return AlertTriangle;
                                 case 'building': return Building;
                                 case 'worm': return Worm;
                                 case 'cloud': return Cloud;
-                                case 'cloud                        </CardHeader>
+                                case 'cloud-fog':
+                                case 'cloudfog': return CloudFog;
+                                case 'flame': return Flame;
+                                default: return Ghost;
+                              }
+                            })();
+                            return (
+                              <div className="mt-2">
+                                <Badge className="w-fit text-[12px] sm:text-sm font-medium tracking-wide px-2 py-0.5 flex items-center gap-1">
+                                  <ThemeIconCmp className="h-3 w-3" />
+                                  {displayName}
+                                </Badge>
+                              </div>
+                            );
+                          })()}
+                        </CardHeader>
                         <CardContent className="px-4 pt-0 pb-3">
                           <p className="text-sm text-muted-foreground leading-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
                             {extractEngagingExcerpt(post.content, 200)}
