@@ -135,7 +135,7 @@ const Carousel = React.forwardRef<
         <div
           ref={ref}
           onKeyDownCapture={handleKeyDown}
-          className={cn("relative group w-full", className)}
+          className={cn("relative w-full", className)}
           role="region"
           aria-roledescription="carousel"
           {...props}
@@ -194,18 +194,16 @@ CarouselItem.displayName = "CarouselItem"
 
 const CarouselPrevious = React.forwardRef<
   HTMLButtonElement,
-  React.ComponentProps<typeof Button>
->(({ className, variant = "outline", size = "icon", ...props }, ref) => {
+  React.ButtonHTMLAttributes<HTMLButtonElement>
+>(({ className, ...props }, ref) => {
   const { orientation, scrollPrev, canScrollPrev } = useCarousel()
 
   return (
-    <Button
+    <button
       ref={ref}
-      variant={variant}
-      size={size}
-      noOutline
+      type="button"
       className={cn(
-        "absolute z-20 flex items-center justify-center rounded-full h-11 w-11 bg-card/90 text-foreground border border-border/60 shadow-md hover:bg-card active:bg-card disabled:opacity-0 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "absolute z-20 flex items-center justify-center rounded-full h-11 w-11 bg-card/90 text-foreground border border-border/60 shadow-md hover:bg-card disabled:opacity-0 disabled:pointer-events-none outline-none",
         orientation === "horizontal"
           ? "left-3 top-1/2 -translate-y-1/2"
           : "top-3 left-1/2 -translate-x-1/2",
@@ -218,25 +216,23 @@ const CarouselPrevious = React.forwardRef<
     >
       <ArrowLeft className="h-5 w-5" />
       <span className="sr-only">Previous slide</span>
-    </Button>
+    </button>
   )
 })
 CarouselPrevious.displayName = "CarouselPrevious"
 
 const CarouselNext = React.forwardRef<
   HTMLButtonElement,
-  React.ComponentProps<typeof Button>
->(({ className, variant = "outline", size = "icon", ...props }, ref) => {
+  React.ButtonHTMLAttributes<HTMLButtonElement>
+>(({ className, ...props }, ref) => {
   const { orientation, scrollNext, canScrollNext } = useCarousel()
 
   return (
-    <Button
+    <button
       ref={ref}
-      variant={variant}
-      size={size}
-      noOutline
+      type="button"
       className={cn(
-        "absolute z-20 flex items-center justify-center rounded-full h-11 w-11 bg-card/90 text-foreground border border-border/60 shadow-md hover:bg-card active:bg-card disabled:opacity-0 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "absolute z-20 flex items-center justify-center rounded-full h-11 w-11 bg-card/90 text-foreground border border-border/60 shadow-md hover:bg-card disabled:opacity-0 disabled:pointer-events-none outline-none",
         orientation === "horizontal"
           ? "right-3 top-1/2 -translate-y-1/2"
           : "bottom-3 left-1/2 -translate-x-1/2",
@@ -249,7 +245,7 @@ const CarouselNext = React.forwardRef<
     >
       <ArrowRight className="h-5 w-5" />
       <span className="sr-only">Next slide</span>
-    </Button>
+    </button>
   )
 })
 CarouselNext.displayName = "CarouselNext"

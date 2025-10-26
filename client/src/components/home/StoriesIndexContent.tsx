@@ -1111,24 +1111,12 @@ export default function StoriesIndexContent() {
                           )}
                         </CardHeader>
                         <CardContent className="px-3 pt-0 pb-0 flex-1 min-h-0">
-                          <p className="text-xs text-muted-foreground leading-5 line-clamp-2 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                            {extractEngagingExcerpt(post.content, 90)}
+                          <p className="text-xs text-muted-foreground leading-5 line-clamp-1 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                            {extractEngagingExcerpt(post.content, 80)}
                           </p>
                         </CardContent>
                         <CardFooter className="px-3 pb-3 pt-2 mt-auto border-t border-border/50">
-                          <div className="w-full flex flex-wrap items-center justify-between gap-2">
-                            {post && post.id && (
-                              <Suspense fallback={<div className="text-[11px] text-muted-foreground">…</div>}>
-                                <LikeDislike 
-                                  key={`like-${post.id}`} 
-                                  postId={post.id}
-                                  slug={post.slug}
-                                  source="wp"
-                                  variant="index"
-                                  initialTotals={reactionTotals[post.id] || null}
-                                />
-                              </Suspense>
-                            )}
+                          <div className="w-full flex items-center justify-between gap-2">
                             <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
@@ -1142,7 +1130,7 @@ export default function StoriesIndexContent() {
                             <Button
                               size="sm"
                               onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
-                              className="h-8 px-3 ml-2"
+                              className="h-7 px-3 ml-2"
                             >
                               Read
                               <ArrowRight className="h-4 w-4 ml-1" />
