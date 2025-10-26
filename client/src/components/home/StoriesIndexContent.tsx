@@ -830,7 +830,7 @@ export default function StoriesIndexContent() {
 
           {/* Stories Grid */}
           {latestPosts.length === 0 ? (
-            <div className="mx-auto max-w-3xl text-center py-8 sm:py-10 md:py-12 rounded-xl border border-border/60 bg-card/80 px-4 sm:px-6 shadow-sm">
+            <div className="mx-auto max-w-full sm:max-w-2xl md:max-w-3xl text-center py-8 sm:py-10 md:py-12 rounded-xl border border-border/60 bg-card/80 px-3 sm:px-6 shadow-sm overflow-hidden">
               <div className="w-full">
                 <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4 mt-2">
                   <Search className="h-5 w-5 text-primary" />
@@ -947,7 +947,7 @@ export default function StoriesIndexContent() {
                   <div className="text-left sm:text-center mb-2 text-xs font-medium text-muted-foreground">
                     Popular right now
                   </div>
-                  <Carousel opts={{ align: "start" }}>
+                  <Carousel opts={{ align: "start", containScroll: "trimSnaps" }}>
                     <CarouselContent>
                       {(() => {
                         const popular = [...sortedPosts]
