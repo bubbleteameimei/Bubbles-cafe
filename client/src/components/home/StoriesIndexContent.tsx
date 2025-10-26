@@ -51,6 +51,7 @@ export default function StoriesIndexContent() {
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
   const [viewMode, setViewMode] = useState<'cards' | 'grid' | 'grid-minimal'>('cards');
+  const [visibleCount, setVisibleCount] = useState<number>(6);
 
   useEffect(() => {
     if (!carouselApi) return;
@@ -70,6 +71,21 @@ export default function StoriesIndexContent() {
       } catch {}
     };
   }, [carouselApi]);
+
+  // Control grid visible count by viewport
+  useEffect(() => {
+    const compute = () => {
+      try {
+        const isDesktop = window.innerWidth >= 1024;
+        setVisibleCount(isDesktop ? 9 : 6);
+      } catch {
+        setVisibleCount(6);
+      }
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, []);
 
   // Navigation function
   const navigateToReader = (slugOrId: string | number) => {
@@ -728,10 +744,10 @@ export default function StoriesIndexContent() {
           type="website"
         />
         <div className="w-full pb-12 pt-0 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 mb-4 px-2 sm:px-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 mb-4 px-2 sm:px-4 mt-8 sm:mt-12">
             {/* Story index controls: search only; sort moved into the featured story card */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <div className="relative w-full sm:w-72">
+            <div className="flex items-center gap-2 w-full sm:w-full">
+              <div className="relative w-full">
                 <Input
                   placeholder="Search stories..."
                   className="pl-3 pr-10"
@@ -1091,112 +1107,139 @@ export default function StoriesIndexContent() {
             </div>
           ) : (
             viewMode === 'grid' ? (
-              <div className="grid grid-cols-2 gap-4 md:gap-6">
-                {latestPosts.map((post) => {
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                  {latestPosts.slice(0, visibleCount).map((post) => {
 
-                  const md: any = post.metadata || {};
-                  // Prefer metadata theme; otherwise detect from title/content for WordPress API posts
-                  let themeCategory = "";
-                  if (md && typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
-                    themeCategory = String(md.themeCategory);
-                  } else {
-                    try {
-                      const derived = sharedDetermineThemeCategory(String(post.title || ''), String(post.content || ''));
-                      themeCategory = String(derived || '');
-                    } catch {}
-                  }
-                  const themeInfo = themeCategory ? THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] : null;
-                  const displayName = themeCategory
-                    ? themeCategory.charAt(0) + themeCategory.slice(1).toLowerCase().replace(/_/g, ' ')
-                    : '';
+                    const md: any = post.metadata || {};
+                    // Prefer metadata theme; otherwise detect from title/content for WordPress API posts
+                    let themeCategory = "";
+                    if (md && typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
+                      themeCategory = String(md.themeCategory);
+                    } else {
+                      try {
+                        const derived = sharedDetermineThemeCategory(String(post.title || ''), String(post.content || ''));
+                        themeCategory = String(derived || '');
+                      } catch {}
+                    }
+                    const themeInfo = themeCategory ? THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] : null;
+                    const displayName = themeCategory
+                      ? themeCategory.charAt(0) + themeCategory.slice(1).toLowerCase().replace(/_/g, ' ')
+                      : '';
 
-                  return (
-                    <article
-                      key={post.id}
-                      className="group story-card-container relative"
-                    >
-                      <Card
-                        onClick={() => navigateToReader(post.slug || post.id)}
-                        className="aspect-square overflow-hidden rounded-xl border border-border/60 bg-card/80 hover:bg-card transition duration-200 ease-out hover:-translate-y-0.5 shadow-sm hover:shadow-md ring-1 ring-transparent hover:ring-primary/20 cursor-pointer flex flex-col"
+                    return (
+                      <article
+                        key={post.id}
+                        className="group story-card-container relative"
                       >
-                        <CardHeader className="p-3 pb-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <CardTitle className="text-sm font-semibold tracking-tight line-clamp-2 group-hover:text-primary">
-                                {post.title}
-                              </CardTitle>
-                              {themeCategory && (
-                                <div className="mt-1">
-                                  <Badge className="w-fit text-[10px] font-medium tracking-wide px-1.5 py-0.5 flex items-center gap-1">
-                                    <Book className="h-3 w-3" />
-                                    {displayName}
-                                  </Badge>
+                        <Card
+                          onClick={() => navigateToReader(post.slug || post.id)}
+                          className="aspect-square overflow-hidden rounded-xl border border-border/60 bg-card/80 hover:bg-card transition duration-200 ease-out hover:-translate-y-0.5 shadow-sm hover:shadow-md ring-1 ring-transparent hover:ring-primary/20 cursor-pointer flex flex-col"
+                        >
+                          <CardHeader className="p-3 pb-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <CardTitle className="text-base md:text-lg font-semibold tracking-tight line-clamp-2 group-hover:text-primary">
+                                  {post.title}
+                                </CardTitle>
+                              </div>
+                              <div className="text-[10px] text-muted-foreground whitespace-nowrap">
+                                <div className="flex items-center gap-1 justify-end">
+                                  <Calendar className="h-3 w-3" />
+                                  <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
                                 </div>
-                              )}
-                            </div>
-                            <div className="text-[10px] text-muted-foreground whitespace-nowrap">
-                              <div className="flex items-center gap-1 justify-end">
-                                <Calendar className="h-3 w-3" />
-                                <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
-                              </div>
-                              <div className="flex items-center gap-1 justify-end mt-1">
-                                <Clock className="h-3 w-3" />
-                                <span>{getReadingTime(post.content)}</span>
+                                <div className="flex items-center gap-1 justify-end mt-1">
+                                  <Clock className="h-3 w-3" />
+                                  <span>{getReadingTime(post.content)}</span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="px-3 pt-0 pb-0 flex-1 min-h-0">
-                          <p className="text-xs text-muted-foreground leading-5 line-clamp-1 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                            {extractEngagingExcerpt(post.content, 80)}
-                          </p>
-                        </CardContent>
-                        <CardFooter className="px-3 pb-3 pt-2 mt-auto border-t border-border/50">
-                          <div className="w-full flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              {post && post.id && (
-                                <Suspense fallback={<div className="text-[11px] text-muted-foreground">…</div>}>
-                                  <LikeDislike 
-                                    key={`like-${post.id}`} 
-                                    postId={post.id}
-                                    slug={post.slug}
-                                    source="wp"
-                                    variant="index"
-                                  />
-                                </Suspense>
-                              )}
+                          </CardHeader>
+                          <CardContent className="px-3 pt-0 pb-0 flex-1 min-h-0">
+                            {themeCategory && (
+                              <div className="mt-1">
+                                <Badge className="w-fit text-[10px] font-medium tracking-wide px-1.5 py-0.5 flex items-center gap-1">
+                                  <Book className="h-3 w-3" />
+                                  {displayName}
+                                </Badge>
+                              </div>
+                            )}
+                          </CardContent>
+                          <CardFooter className="px-3 pb-3 pt-2 mt-auto border-t border-border/50">
+                            <div className="w-full flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                {post && post.id && (
+                                  <Suspense fallback={<div className="text-[11px] text-muted-foreground">…</div>}>
+                                    <LikeDislike 
+                                      key={`like-${post.id}`} 
+                                      postId={post.id}
+                                      slug={post.slug}
+                                      source="wp"
+                                      variant="index"
+                                    />
+                                  </Suspense>
+                                )}
+                              </div>
                             </div>
-                            <Button
-                              size="sm"
-                              onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
-                              className="h-7 px-3 ml-2"
-                            >
-                              Read
-                              <ArrowRight className="h-4 w-4 ml-1" />
-                            </Button>
-                          </div>
-                        </CardFooter>
-                      </Card>
-                    </article>
-                  );
-                })}
-              </div>
+                          </CardFooter>
+                        </Card>
+                      </article>
+                    );
+                  })}
+                </div>
+                {latestPosts.length > visibleCount && (
+                  <div className="mt-4 flex justify-center">
+                    <Button
+                      className="h-9 px-4 rounded-lg border border-border/60 shadow-sm"
+                      onClick={() => {
+                        try {
+                          const step = window.innerWidth >= 1024 ? 9 : 6;
+                          setVisibleCount((c) => Math.min(latestPosts.length, c + step));
+                        } catch {
+                          setVisibleCount((c) => Math.min(latestPosts.length, c + 6));
+                        }
+                      }}
+                    >
+                      Read more
+                    </Button>
+                  </div>
+                )}
+              </>
             ) : viewMode === 'grid-minimal' ? (
-              <div className="grid grid-cols-2 gap-3 md:gap-4">
-                {latestPosts.map((post) => (
-                  <button
-                    key={post.id}
-                    className="w-full rounded-lg border border-border/60 bg-card/70 hover:bg-card transition text-left p-3 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                    onClick={() => navigateToReader(post.slug || post.id)}
-                    aria-label={`Open ${post.title}`}
-                    title={post.title}
-                  >
-                    <span className="text-sm font-medium line-clamp-1 group-hover:text-primary">
-                      {post.title}
-                    </span>
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                  {latestPosts.slice(0, visibleCount).map((post) => (
+                    <button
+                      key={post.id}
+                      className="w-full rounded-lg border border-border/60 bg-card/70 hover:bg-card transition text-left p-3 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      onClick={() => navigateToReader(post.slug || post.id)}
+                      aria-label={`Open ${post.title}`}
+                      title={post.title}
+                    >
+                      <span className="text-sm md:text-base font-medium line-clamp-1 group-hover:text-primary">
+                        {post.title}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {latestPosts.length > visibleCount && (
+                  <div className="mt-4 flex justify-center">
+                    <Button
+                      className="h-9 px-4 rounded-lg border border-border/60 shadow-sm"
+                      onClick={() => {
+                        try {
+                          const step = window.innerWidth >= 1024 ? 9 : 6;
+                          setVisibleCount((c) => Math.min(latestPosts.length, c + step));
+                        } catch {
+                          setVisibleCount((c) => Math.min(latestPosts.length, c + 6));
+                        }
+                      }}
+                    >
+                      Read more
+                    </Button>
+                  </div>
+                )}
+              </>
             ) : (
               <div
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
