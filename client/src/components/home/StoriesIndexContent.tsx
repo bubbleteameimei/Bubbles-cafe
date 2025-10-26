@@ -1141,9 +1141,9 @@ export default function StoriesIndexContent() {
                       >
                         <Card
                           onClick={() => navigateToReader(post.slug || post.id)}
-                          className="aspect-square overflow-hidden rounded-xl border border-border/60 bg-card/80 hover:bg-card transition duration-200 ease-out hover:-translate-y-0.5 shadow-sm hover:shadow-md ring-1 ring-transparent hover:ring-primary/20 cursor-pointer flex flex-col"
+                          className="aspect-square overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 cursor-pointer flex flex-col"
                         >
-                          <CardHeader className="p-2 pb-1">
+                          <CardHeader className="p-1 pb-0">
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 min-w-0">
                                 {themeCategory && (
@@ -1169,14 +1169,14 @@ export default function StoriesIndexContent() {
                           <CardFooter className="px-3 pb-3 pt-2 mt-auto">
                             <div className="w-full flex flex-col gap-2">
                               <button
-                                className="text-left text-2xl sm:text-3xl md:text-4xl leading-tight font-semibold tracking-tight line-clamp-2 group-hover:text-primary"
+                                className="text-center text-4xl sm:text-5xl md:text-6xl leading-tight font-semibold tracking-tight line-clamp-2 group-hover:text-primary"
                                 onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
                                 title={post.title}
                               >
                                 {post.title}
                               </button>
-                              <div className="mt-2 border-t border-border/50" />
-                              <div className="flex items-center justify-between gap-2 mt-2">
+                              <div className="mt-3 border-t border-border/50" />
+                              <div className="flex items-center justify-between gap-2 mt-1">
                                 <div className="relative">
                                   {post && post.id && (
                                     <Suspense fallback={<div className="text-[11px] text-muted-foreground">…</div>}>
@@ -1255,7 +1255,7 @@ export default function StoriesIndexContent() {
                     >
                       <Card
                         onClick={() => navigateToReader(post.slug || post.id)}
-                        className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 hover:bg-card transition duration-200 ease-out hover:-translate-y-0.5 shadow-sm hover:shadow-md ring-1 ring-transparent hover:ring-primary/20 cursor-pointer"
+                        className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 cursor-pointer"
                       >
                         <CardHeader className="p-4">
                           <div className="flex items-start justify-between gap-3">
@@ -1306,7 +1306,7 @@ export default function StoriesIndexContent() {
                             <Button
                               size="sm"
                               onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
-                              className="h-9 px-4 transition-transform active:scale-95"
+                              className="h-9 px-4 transition-all"
                             >
                               Read story
                               <ArrowRight className="h-4 w-4 ml-1" />
