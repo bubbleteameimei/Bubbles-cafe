@@ -5,36 +5,38 @@ import { extractEngagingExcerpt } from '@/lib/excerpt-lite';
 import { type posts } from '@shared/schema';
 import { fetchReactionsBatch, type ReactionTotals } from '@/api/reactions';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 type Post = typeof posts.$inferSelect;
 
 interface MostLikedListProps {
   posts: Post[];
   onNavigate: (slugOrId: string | number) => void;
+  totalsMap?: Record<number, ReactionTotals>;
 }
 
-const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigate }) => {
-  const [totalsMap, setTotalsMap] = useState<Record<number, ReactionTotals>>({});
+const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigate, totalsMap: totalsFromParent }) => {
+  const [totalsMap, setTotalsMap] = useState<Record<number, ReactionTotals>>(totalsFromParent || {});
 
+  // If totals not provided by parent, fetch a small batch to avoid late-pop-in
   useEffect(() => {
+    if (totalsFromParent && Object.keys(totalsFromParent).length > 0) return;
     let mounted = true;
     (async () => {
       try {
         const ids = posts.map(p => Number(p.id)).filter(n => Number.isFinite(n));
         if (ids.length === 0) return;
-        const totals = await fetchReactionsBatch(ids.slice(0, 100));
+        const totals = await fetchReactionsBatch(ids.slice(0, 50));
         if (!mounted) return;
         const map: Record<number, ReactionTotals> = {};
-        for (const t of totals) {
-          map[t.postId] = t;
-        }
+        for (const t of totals) map[t.postId] = t;
         setTotalsMap(map);
       } catch {
-        // Ignore failure; UI continues with zeros
+        // Ignore failure; UI continues with baseline
       }
     })();
     return () => { mounted = false; };
-  }, [posts]);
+  }, [posts, totalsFromParent]);
 
   // Sync live updates from LikeDislike (reader/index)
   useEffect(() => {
@@ -62,18 +64,17 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
     return Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
   };
 
-  const topLiked = useMemo(() => {
+  const sortedByLikes = useMemo(() => {
     if (!Array.isArray(posts) || posts.length === 0) return [] as Post[];
-    return [...posts]
-      .sort((a, b) => {
-        const ta = totalsMap[a.id]?.totals?.likes ?? (baselineLikesForPost(a) + (a.likesCount || 0));
-        const tb = totalsMap[b.id]?.totals?.likes ?? (baselineLikesForPost(b) + (b.likesCount || 0));
-        return Number(tb) - Number(ta);
-      })
-      .slice(0, 1);
-  }, [posts, totalsMap]);
+    return [...posts].sort((a, b) => {
+      const ta = (totalsFromParent?.[a.id]?.totals?.likes ?? totalsMap[a.id]?.totals?.likes) ?? (baselineLikesForPost(a) + (a.likesCount || 0));
+      const tb = (totalsFromParent?.[b.id]?.totals?.likes ?? totalsMap[b.id]?.totals?.likes) ?? (baselineLikesForPost(b) + (b.likesCount || 0));
+      return Number(tb) - Number(ta);
+    });
+  }, [posts, totalsMap, totalsFromParent]);
 
-  const featured = topLiked[0];
+  // Adapt count by breakpoint using CSS only; render top 3 and let grid handle layout
+  const topLiked = sortedByLikes.slice(0, 3);
 
   return (
     <div>
@@ -82,56 +83,53 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
         <h3 className="text-base font-semibold">Most Liked</h3>
       </div>
 
-      {!featured ? (
+      {topLiked.length === 0 ? (
         <div className="text-sm text-muted-foreground">No liked stories yet.</div>
       ) : (
-        <article
-          key={featured.id}
-          className="group rounded-xl border border-border/60 bg-card/80 hover:bg-card transition hover:-translate-y-0.5 shadow-sm hover:shadow-md ring-1 ring-primary/10"
-        >
-          <a
-            href={`/reader/${encodeURIComponent(String(featured.slug || featured.id))}`}
-            onClick={(e) => { e.preventDefault(); onNavigate(featured.slug || featured.id); }}
-            className="block p-4 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-xl"
-            aria-label={`Open ${featured.title}`}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <h4
-                className="text-left text-lg font-medium font-castoro group-hover:text-primary leading-6 line-clamp-2"
-                title={featured.title}
-              >
-                {featured.title}
-              </h4>
-              <div className="text-xs text-muted-foreground whitespace-nowrap hidden sm:block">
-                <div className="flex items-center gap-1 justify-end">
-                  <Calendar className="h-3 w-3" />
-                  <time>{new Date(featured.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
-                </div>
-                <div className="flex items-center gap-1 justify-end mt-1">
-                  <Clock className="h-3 w-3" />
-                  <span>{getReadingTime(featured.content)}</span>
-                </div>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {topLiked.map((featured) => (
+            <Card key={featured.id} className="rounded-lg border border-border/60 bg-card/80 hover:bg-card transition shadow-sm hover:shadow-md">
+              <CardContent className="p-4">
+                <a
+                  href={`/reader/${encodeURIComponent(String(featured.slug || featured.id))}`}
+                  onClick={(e) => { e.preventDefault(); onNavigate(featured.slug || featured.id); }}
+                  className="block outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md"
+                  aria-label={`Open ${featured.title}`}
+                >
+                  <h4
+                    className="text-left text-base md:text-lg font-medium font-castoro group-hover:text-primary leading-6 line-clamp-2"
+                    title={featured.title}
+                  >
+                    {featured.title}
+                  </h4>
 
-            <p className="mt-2 text-sm text-muted-foreground leading-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-              {extractEngagingExcerpt(featured.content, 220)}
-            </p>
+                  <p className="mt-2 text-sm text-muted-foreground leading-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                    {extractEngagingExcerpt(featured.content, 180)}
+                  </p>
 
-            <div className="mt-3 flex items-center justify-between">
-              <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-1">
-                  <Heart className="h-4 w-4 text-rose-500" />
-                  {Number(totalsMap[featured.id]?.totals?.likes ?? (baselineLikesForPost(featured) + (featured.likesCount || 0)))}
-                </span>
-              </div>
-              <Button size="sm" className="h-9 px-4" onClick={(e) => { e.preventDefault(); onNavigate(featured.slug || featured.id); }}>
-                Read story
-                <Clock className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-          </a>
-        </article>
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <Heart className="h-4 w-4 text-rose-500" />
+                        {Number((totalsFromParent?.[featured.id]?.totals?.likes ?? totalsMap[featured.id]?.totals?.likes) ?? (baselineLikesForPost(featured) + (featured.likesCount || 0)))}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        <time>{new Date(featured.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {getReadingTime(featured.content)}
+                      </span>
+                    </div>
+                  </div>
+                </a>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -145,6 +143,11 @@ const propsAreEqual = (prev: MostLikedListProps, next: MostLikedListProps) => {
       return false;
     }
   }
+  // If totalsMap identity changed, re-render
+  const prevTotalsKeys = prev.totalsMap ? Object.keys(prev.totalsMap).length : 0;
+  const nextTotalsKeys = next.totalsMap ? Object.keys(next.totalsMap).length : 0;
+  if (prevTotalsKeys !== nextTotalsKeys) return false;
+
   return prev.onNavigate === next.onNavigate;
 };
 

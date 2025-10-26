@@ -12,7 +12,7 @@ import {
   Award, Search, Rows
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
-const MostLikedList = lazy(() => import("@/components/home/MostLikedList"));
+import MostLikedList from "@/components/home/MostLikedList";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -833,9 +833,7 @@ export default function StoriesIndexContent() {
               <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
                   <CardContent className="p-4">
-                    <Suspense fallback={<div className="h-24" />}>
-                      <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} />
-                    </Suspense>
+                    <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} />
                   </CardContent>
                 </Card>
               </div>
