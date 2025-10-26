@@ -52,7 +52,8 @@ export default function StoriesIndexContent() {
   const [canNext, setCanNext] = useState(false);
   const [viewMode, setViewMode] = useState<'cards' | 'grid'>('cards');
   const [visibleCount, setVisibleCount] = useState<number>(6);
-  const latestGridRef = React.useRef<HTMLDivElement | null>(null);
+  const [pageSize, setPageSize] = useState<number>(6);
+  const cardsGridRef = React.useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!carouselApi) return;
@@ -73,8 +74,8 @@ export default function StoriesIndexContent() {
     };
   }, [carouselApi]);
 
-  // Control grid visible count by viewport and auto-switch to cards on larger screens
-  useEffect(() => {
+  // Compute page size and initial visible count based on viewport for story cards view
+ useEffect(() => {
     const compute = () => {
       try {
         const w = window.innerWidth;
@@ -885,7 +886,7 @@ export default function StoriesIndexContent() {
             </div>
           )}
 
-          {/* Stories Grid */}
+          {/* Stories List */}
           {latestPosts.length === 0 ? (
             <div className="mx-auto max-w-full sm:max-w-2xl md:max-w-3xl text-center py-8 sm:py-10 md:py-12 rounded-xl border border-border/60 bg-card/80 px-3 sm:px-6 shadow-sm overflow-hidden">
               <div className="w-full">
@@ -1119,130 +1120,12 @@ export default function StoriesIndexContent() {
               </div>
             </div>
           ) : (
-            viewMode === 'grid' ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6" ref={latestGridRef as any}>
-                  {latestPosts.slice(0, visibleCount).map((post, idx) => {
-
-                    const md: any = post.metadata || {};
-                    // Prefer metadata theme; otherwise detect from title/content for WordPress API posts
-                    let themeCategory = "";
-                    if (md && typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
-                      themeCategory = String(md.themeCategory);
-                    } else {
-                      try {
-                        const derived = sharedDetermineThemeCategory(String(post.title || ''), String(post.content || ''));
-                        themeCategory = String(derived || '');
-                      } catch {}
-                    }
-                    const themeInfo = themeCategory ? THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] : null;
-                    const displayName = themeCategory
-                      ? themeCategory.charAt(0) + themeCategory.slice(1).toLowerCase().replace(/_/g, ' ')
-                      : '';
-
-                    return (
-                      <article
-                        key={post.id}
-                        data-idx={idx}
-                        className="group story-card-container relative"
-                      >
-                        <Card
-                          onClick={() => navigateToReader(post.slug || post.id)}
-                          className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 hover:bg-card transition duration-200 ease-out hover:-translate-y-0.5 shadow-sm hover:shadow-md ring-1 ring-transparent hover:ring-primary/20 cursor-pointer"
-                        >
-                          <CardHeader className="p-4">
-                            <div className="flex items-start justify-between gap-3">
-                              <CardTitle
-                                className="text-lg font-semibold tracking-tight group-hover:text-primary"
-                              >
-                                {post.title}
-                              </CardTitle>
-                              <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
-                                <div className="flex items-center gap-1 justify-end">
-                                  <Calendar className="h-3 w-3" />
-                                  <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
-                                </div>
-                                <div className="flex items-center gap-1 justify-end">
-                                  <Clock className="h-3 w-3" />
-                                  <span>{getReadingTime(post.content)}</span>
-                                </div>
-                              </div>
-                            </div>
-                            {themeCategory && (
-                              <div className="mt-2">
-                                <Badge className="w-fit text-[12px] sm:text-sm font-medium tracking-wide px-2 py-0.5 flex items-center gap-1">
-                                  <Book className="h-3 w-3" />
-                                  {displayName}
-                                </Badge>
-                              </div>
-                            )}
-                          </CardHeader>
-                          <CardContent className="px-4 pt-0 pb-3">
-                            <p className="text-sm text-muted-foreground leading-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                              {extractEngagingExcerpt(post.content, 200)}
-                            </p>
-                          </CardContent>
-                          <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
-                            <div className="w-full flex items-center justify-between">
-                              {post && post.id && (
-                                <Suspense fallback={<div className="text-xs text-muted-foreground">…</div>}>
-                                  <LikeDislike 
-                                    key={`like-${post.id}`} 
-                                    postId={post.id}
-                                    slug={post.slug}
-                                    source="wp"
-                                    variant="index"
-                                    initialTotals={reactionTotals[post.id] || null}
-                                  />
-                                </Suspense>
-                              )}
-                              <Button
-                                size="sm"
-                                onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
-                                className="h-9 px-4 transition-transform active:scale-95"
-                              >
-                                Read story
-                                <ArrowRight className="h-4 w-4 ml-1" />
-                              </Button>
-                            </div>
-                          </CardFooter>
-                        </Card>
-                      </article>
-                    );
-                  })}
-                </div>
-                {latestPosts.length > visibleCount && (
-                  <div className="mt-4 flex justify-center">
-                    <Button
-                      className="h-10 px-5 rounded-lg border border-border/60 shadow-sm"
-                      onClick={() => {
-                        setVisibleCount((c) => {
-                          const next = Math.min(latestPosts.length, c + 5);
-                          const targetIdx = c; // first newly revealed item
-                          // Smoothly scroll to the first newly revealed tile to avoid jumpiness
-                          requestAnimationFrame(() => {
-                            try {
-                              const el = document.querySelector(`[data-idx="${targetIdx}"]`) as HTMLElement | null;
-                              if (el) {
-                                const y = el.getBoundingClientRect().top + window.scrollY - (window.innerHeight * 0.15);
-                                window.scrollTo({ top: y, behavior: 'smooth' });
-                              }
-                            } catch {}
-                          });
-                          return next;
-                        });
-                      }}
-                    >
-                      Read more
-                    </Button>
-                  </div>
-                )}
-              </>
-            ) : (
+            <>
               <div
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
+                ref={cardsGridRef as any}
               >
-                {latestPosts.map((post) => {
+                {latestPosts.slice(0, visibleCount).map((post, idx) => {
                   
                   const md: any = post.metadata || {};
                   // Prefer metadata theme; otherwise detect from title/content for WordPress API posts
@@ -1263,6 +1146,7 @@ export default function StoriesIndexContent() {
                   return (
                     <article
                       key={post.id}
+                      data-idx={idx}
                       className="group story-card-container relative"
                     >
                       <Card
@@ -1330,7 +1214,33 @@ export default function StoriesIndexContent() {
                   );
                 })}
               </div>
-            )
+              {latestPosts.length > visibleCount && (
+                <div className="mt-4 flex justify-center">
+                  <Button
+                    className="h-10 px-5 rounded-lg border border-border/60 shadow-sm"
+                    onClick={() => {
+                      setVisibleCount((c) => {
+                        const next = Math.min(latestPosts.length, c + pageSize);
+                        const targetIdx = c; // first newly revealed item
+                        // Smoothly scroll to the first newly revealed tile to avoid jumpiness
+                        requestAnimationFrame(() => {
+                          try {
+                            const el = document.querySelector(`[data-idx="${targetIdx}"]`) as HTMLElement | null;
+                            if (el) {
+                              const y = el.getBoundingClientRect().top + window.scrollY - (window.innerHeight * 0.15);
+                              window.scrollTo({ top: y, behavior: 'smooth' });
+                            }
+                          } catch {}
+                        });
+                        return next;
+                      });
+                    }}
+                  >
+                    Read more
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
