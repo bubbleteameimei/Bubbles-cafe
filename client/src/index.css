@@ -459,8 +459,6 @@ div.sidebar-menu-container {
   button:hover svg, button:active svg,
   [role="button"]:hover svg, [role="button"]:active svg {
     opacity: 1 !important;
-    fill: currentColor !important;
-    stroke: currentColor !important;
   }
 }
 
