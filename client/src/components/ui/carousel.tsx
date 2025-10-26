@@ -203,6 +203,7 @@ const CarouselPrevious = React.forwardRef<
       ref={ref}
       variant={variant}
       size={size}
+      noOutline
       className={cn(
         "absolute z-10 rounded-full bg-card/90 border border-border/60 shadow-sm transition-opacity h-10 w-10 md:h-8 md:w-8 disabled:opacity-0 disabled:pointer-events-none",
         orientation === "horizontal"
@@ -233,6 +234,7 @@ const CarouselNext = React.forwardRef<
       ref={ref}
       variant={variant}
       size={size}
+      noOutline
       className={cn(
         "absolute z-10 rounded-full bg-card/90 border border-border/60 shadow-sm transition-opacity h-10 w-10 md:h-8 md:w-8 disabled:opacity-0 disabled:pointer-events-none",
         orientation === "horizontal"

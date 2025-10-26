@@ -902,20 +902,23 @@ export default function StoriesIndexContent() {
                             <CardContent className="p-3">
                               <button
                                 className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
-                                onClick={() => navigateToReader(s.slug || s.id)}
-                                title={s.title}
+                                onClick={() => navigateToReader(pop.slug || pop.id)}
                               >
-                                {s.title}
+                                {pop.title}
                               </button>
+                              <p className="text-[12px] text-muted-foreground leading-5 mt-1 line-clamp-1">
+                                {extractEngagingExcerpt(pop.content, 100)}
+                              </p>
                               <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                   <Calendar className="h-3 w-3" />
-                                  <time>{new Date(s.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
+                                  <time>{new Date(pop.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
-                                  <span>{getReadingTime(s.content)}</span>
+                                  <span>{getReadingTime(pop.content)}</span>
                                 </div>
+                              </div>
                               </div>
                             </CardContent>
                           </Card>
