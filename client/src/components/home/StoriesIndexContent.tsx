@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { 
   ArrowRight, ArrowLeft, Clock, Calendar, Book,
-  Award, Search, LayoutGrid, Rows
+  Award, Search, Rows
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 const MostLikedList = lazy(() => import("@/components/home/MostLikedList"));
@@ -50,10 +50,11 @@ export default function StoriesIndexContent() {
   const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
-  const [viewMode, setViewMode] = useState<'cards' | 'grid'>('cards');
+  
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [pageSize, setPageSize] = useState<number>(6);
   const cardsGridRef = React.useRef<HTMLDivElement | null>(null);
+  const breakpointRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null);
 
   useEffect(() => {
     if (!carouselApi) return;
@@ -74,19 +75,24 @@ export default function StoriesIndexContent() {
     };
   }, [carouselApi]);
 
-  // Compute page size and initial visible count based on viewport for story cards view
- useEffect(() => {
+  // Compute page size and initial visible count based on viewport for story cards view (breakpoint-aware, no thrash)
+  useEffect(() => {
     const compute = () => {
       try {
         const w = window.innerWidth;
-        const isDesktop = w >= 1024;
-        setVisibleCount(isDesktop ? 9 : 6);
-        // When the screen becomes medium or larger, force story cards view
-        if (w >= 768) {
-          setViewMode('cards');
+        const cat: 'mobile' | 'tablet' | 'desktop' = w >= 1024 ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
+        if (breakpointRef.current !== cat) {
+          breakpointRef.current = cat;
+          const initial = w >= 1024 ? 6 : (w >= 768 ? 4 : 3);
+          setPageSize(initial);
+          setVisibleCount((c) => (c < initial ? initial : c));
         }
       } catch {
-        setVisibleCount(6);
+        if (breakpointRef.current !== 'mobile') {
+          breakpointRef.current = 'mobile';
+          setPageSize(3);
+          setVisibleCount((c) => (c < 3 ? 3 : c));
+        }
       }
     };
     compute();
@@ -94,12 +100,7 @@ export default function StoriesIndexContent() {
     return () => window.removeEventListener('resize', compute);
   }, []);
 
-  // Ensure grid shows 5 items initially and uses "Read more" pagination in steps of 5
-  useEffect(() => {
-    if (viewMode === 'grid') {
-      setVisibleCount(5);
-    }
-  }, [viewMode]);
+  
 
   // Navigation function
   const navigateToReader = (slugOrId: string | number) => {
@@ -112,7 +113,7 @@ export default function StoriesIndexContent() {
   };
 
   // Paginated query
-  const { data } = useSuspenseInfiniteQuery<{ posts: Post[]; hasMore: boolean; page: number }>({
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery<{ posts: Post[]; hasMore: boolean; page: number }>({
     queryKey: ["wordpress", "posts"],
     queryFn: async ({ pageParam = 1 }) => {
       const page = typeof pageParam === 'number' ? pageParam : 1;
@@ -844,24 +845,13 @@ export default function StoriesIndexContent() {
           <div className="mt-2 mb-3">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl md:text-3xl font-decorative uppercase">LATEST STORIES</h1>
-              <div className="inline-flex items-center gap-2" role="group" aria-label="View toggle">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  aria-label="Grid view"
-                  aria-pressed={viewMode === 'grid'}
-                  onClick={() => setViewMode('grid')}
-                  className={`h-9 w-9 rounded-md md:hidden ${viewMode === 'grid' ? 'border-primary text-primary' : ''}`}
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </Button>
+              <div className="inline-flex items-center gap-2" role="group" aria-label="View">
                 <Button
                   variant="outline"
                   size="sm"
                   aria-label="Story cards view"
-                  aria-pressed={viewMode === 'cards'}
-                  onClick={() => setViewMode('cards')}
-                  className={`h-9 w-9 rounded-lg ${viewMode === 'cards' ? 'border-primary text-primary' : ''}`}
+                  aria-pressed="true"
+                  className="h-9 w-9 rounded-lg border-primary text-primary"
                 >
                   <Rows className="h-4 w-4" />
                 </Button>
@@ -1218,25 +1208,28 @@ export default function StoriesIndexContent() {
                 <div className="mt-4 flex justify-center">
                   <Button
                     className="h-10 px-5 rounded-lg border border-border/60 shadow-sm"
-                    onClick={() => {
-                      setVisibleCount((c) => {
-                        const next = Math.min(latestPosts.length, c + pageSize);
-                        const targetIdx = c; // first newly revealed item
-                        // Smoothly scroll to the first newly revealed tile to avoid jumpiness
-                        requestAnimationFrame(() => {
-                          try {
-                            const el = document.querySelector(`[data-idx="${targetIdx}"]`) as HTMLElement | null;
-                            if (el) {
-                              const y = el.getBoundingClientRect().top + window.scrollY - (window.innerHeight * 0.15);
-                              window.scrollTo({ top: y, behavior: 'smooth' });
-                            }
-                          } catch {}
+                    disabled={isFetchingNextPage}
+                    onClick={async () => {
+                      try {
+                        const current = visibleCount;
+                        const needed = current + pageSize;
+                        if (needed > latestPosts.length && hasNextPage) {
+                          await fetchNextPage();
+                        }
+                        setVisibleCount((c) => {
+                          const next = c + pageSize;
+                          requestAnimationFrame(() => {
+                            const el = document.querySelector(`[data-idx="${c}"]`) as HTMLElement | null;
+                            el?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+                          });
+                          return next;
                         });
-                        return next;
-                      });
+                      } catch {
+                        setVisibleCount((c) => c + pageSize);
+                      }
                     }}
                   >
-                    Read more
+                    {isFetchingNextPage ? 'Loading…' : 'Read more'}
                   </Button>
                 </div>
               )}
