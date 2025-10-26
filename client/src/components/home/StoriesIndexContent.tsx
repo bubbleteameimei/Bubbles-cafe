@@ -73,12 +73,17 @@ export default function StoriesIndexContent() {
     };
   }, [carouselApi]);
 
-  // Control grid visible count by viewport
+  // Control grid visible count by viewport and auto-switch to cards on larger screens
   useEffect(() => {
     const compute = () => {
       try {
-        const isDesktop = window.innerWidth >= 1024;
+        const w = window.innerWidth;
+        const isDesktop = w >= 1024;
         setVisibleCount(isDesktop ? 9 : 6);
+        // When the screen becomes medium or larger, force story cards view
+        if (w >= 768) {
+          setViewMode('cards');
+        }
       } catch {
         setVisibleCount(6);
       }
@@ -1138,7 +1143,7 @@ export default function StoriesIndexContent() {
                           onClick={() => navigateToReader(post.slug || post.id)}
                           className="aspect-square overflow-hidden rounded-xl border border-border/60 bg-card/80 hover:bg-card transition duration-200 ease-out hover:-translate-y-0.5 shadow-sm hover:shadow-md ring-1 ring-transparent hover:ring-primary/20 cursor-pointer flex flex-col"
                         >
-                          <CardHeader className="p-2.5 pb-1">
+                          <CardHeader className="p-2 pb-1">
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 min-w-0">
                                 {themeCategory && (
@@ -1161,17 +1166,18 @@ export default function StoriesIndexContent() {
                             </div>
                           </CardHeader>
                           <CardContent className="px-3 pt-0 pb-0 flex-1 min-h-0" />
-                          <CardFooter className="px-3 pb-3 pt-2 mt-auto border-t border-border/50">
+                          <CardFooter className="px-3 pb-3 pt-2 mt-auto">
                             <div className="w-full flex flex-col gap-2">
                               <button
-                                className="text-left text-xl sm:text-2xl md:text-3xl leading-tight font-semibold tracking-tight line-clamp-2 group-hover:text-primary"
+                                className="text-left text-2xl sm:text-3xl md:text-4xl leading-tight font-semibold tracking-tight line-clamp-2 group-hover:text-primary"
                                 onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
                                 title={post.title}
                               >
                                 {post.title}
                               </button>
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="relative pt-5">
+                              <div className="mt-2 border-t border-border/50" />
+                              <div className="flex items-center justify-between gap-2 mt-2">
+                                <div className="relative">
                                   {post && post.id && (
                                     <Suspense fallback={<div className="text-[11px] text-muted-foreground">…</div>}>
                                       <LikeDislike 

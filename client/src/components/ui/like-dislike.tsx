@@ -497,7 +497,7 @@ export function LikeDislike({
       
       {inlineToast && (
         <div className={`
-          ${variant === 'index' ? 'absolute left-0 right-0 top-0 -translate-y-full px-2' : 'mt-3 px-3'}
+          ${variant === 'index' ? 'mt-2 px-2' : 'mt-3 px-3'}
           py-2 rounded-md text-center font-sans text-xs font-medium 
           transform transition-all duration-300 ease-out shadow-sm
           ${isToastVisible 
@@ -510,7 +510,7 @@ export function LikeDislike({
             ? 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700'
             : 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700'
           }
-        `} style={variant === 'index' ? { pointerEvents: 'none' } : undefined}>
+        `}>
           {inlineToast.message}
         </div>
       )}
