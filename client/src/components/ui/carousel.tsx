@@ -205,10 +205,10 @@ const CarouselPrevious = React.forwardRef<
       size={size}
       noOutline
       className={cn(
-        "absolute z-10 rounded-full bg-card/90 border border-border/60 shadow-sm transition-opacity h-10 w-10 md:h-8 md:w-8 disabled:opacity-0 disabled:pointer-events-none",
+        "absolute z-10 rounded-full bg-background/70 backdrop-blur-sm text-foreground border border-border/50 shadow-md transition-opacity h-10 w-10 md:h-9 md:w-9 disabled:opacity-0 disabled:pointer-events-none md:opacity-0 md:group-hover:opacity-100 active:translate-y-0 active:scale-100",
         orientation === "horizontal"
-          ? "left-2 top-1/2 -translate-y-1/2"
-          : "top-2 left-1/2 -translate-x-1/2 rotate-90",
+          ? "left-3 top-1/2 -translate-y-1/2"
+          : "top-3 left-1/2 -translate-x-1/2 rotate-90",
         className
       )}
       aria-label="Previous slide"
@@ -236,10 +236,10 @@ const CarouselNext = React.forwardRef<
       size={size}
       noOutline
       className={cn(
-        "absolute z-10 rounded-full bg-card/90 border border-border/60 shadow-sm transition-opacity h-10 w-10 md:h-8 md:w-8 disabled:opacity-0 disabled:pointer-events-none",
+        "absolute z-10 rounded-full bg-background/70 backdrop-blur-sm text-foreground border border-border/50 shadow-md transition-opacity h-10 w-10 md:h-9 md:w-9 disabled:opacity-0 disabled:pointer-events-none md:opacity-0 md:group-hover:opacity-100 active:translate-y-0 active:scale-100",
         orientation === "horizontal"
-          ? "right-2 top-1/2 -translate-y-1/2"
-          : "bottom-2 left-1/2 -translate-x-1/2 rotate-90",
+          ? "right-3 top-1/2 -translate-y-1/2"
+          : "bottom-3 left-1/2 -translate-x-1/2 rotate-90",
         className
       )}
       aria-label="Next slide"

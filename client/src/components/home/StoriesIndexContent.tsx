@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { 
   ArrowRight, Clock, Calendar, Book,
-  Award, Search
+  Award, Search, LayoutGrid, Rows
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 const MostLikedList = lazy(() => import("@/components/home/MostLikedList"));
@@ -48,6 +48,7 @@ export default function StoriesIndexContent() {
   const [sort, setSort] = useState<'newest' | 'oldest' | 'popular' | 'shortest'>("newest");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [carouselApi] = useState<CarouselApi | null>(null);
+  const [viewMode, setViewMode] = useState<'cards' | 'grid'>('cards');
 
   useEffect(() => {
     if (!carouselApi) return;
@@ -807,9 +808,33 @@ export default function StoriesIndexContent() {
             </div>
           )}
 
-          <div className="flex justify-between items-center mb-3 mt-2">
-            <h1 className="text-3xl md:text-4xl font-decorative uppercase">LATEST STORIES</h1>
-            <div className="text-lg md:text-xl text-muted-foreground">{latestPosts.length} stories</div>
+          <div className="flex justify-between items-center mt-2 mb-3">
+            <h1 className="text-2xl md:text-3xl font-decorative uppercase">LATEST STORIES</h1>
+            <div className="flex items-center gap-2">
+              <div className="text-sm md:text-base text-muted-foreground mr-2">{latestPosts.length} stories</div>
+              <div className="inline-flex items-center gap-2" role="group" aria-label="View toggle">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-label="Grid view"
+                  aria-pressed={viewMode === 'grid'}
+                  onClick={() => setViewMode('grid')}
+                  className={`h-9 w-9 rounded-md ${viewMode === 'grid' ? 'border-primary text-primary' : ''}`}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-label="Story cards view"
+                  aria-pressed={viewMode === 'cards'}
+                  onClick={() => setViewMode('cards')}
+                  className={`h-9 w-9 rounded-lg ${viewMode === 'cards' ? 'border-primary text-primary' : ''}`}
+                >
+                  <Rows className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
           {/* Optional category filter if categories exist */}
           {availableCategories.length > 0 && (
@@ -1043,97 +1068,185 @@ export default function StoriesIndexContent() {
               </div>
             </div>
           ) : (
-            <div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
-            >
-              {latestPosts.map((post) => {
-                
-                const md: any = post.metadata || {};
-                // Prefer metadata theme; otherwise detect from title/content for WordPress API posts
-                let themeCategory = "";
-                if (md && typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
-                  themeCategory = String(md.themeCategory);
-                } else {
-                  try {
-                    const derived = sharedDetermineThemeCategory(String(post.title || ''), String(post.content || ''));
-                    themeCategory = String(derived || '');
-                  } catch {}
-                }
-                const themeInfo = themeCategory ? THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] : null;
-                const displayName = themeCategory
-                  ? themeCategory.charAt(0) + themeCategory.slice(1).toLowerCase().replace(/_/g, ' ')
-                  : '';
+            viewMode === 'grid' ? (
+              <div className="grid grid-cols-2 gap-4 md:gap-6">
+                {latestPosts.map((post) => {
 
-                return (
-                  <article
-                    key={post.id}
-                    className="group story-card-container relative"
-                  >
-                    <Card
-                      onClick={() => navigateToReader(post.slug || post.id)}
-                      className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 hover:bg-card transition duration-200 ease-out hover:-translate-y-0.5 shadow-sm hover:shadow-md ring-1 ring-transparent hover:ring-primary/20 cursor-pointer"
+                  const md: any = post.metadata || {};
+                  // Prefer metadata theme; otherwise detect from title/content for WordPress API posts
+                  let themeCategory = "";
+                  if (md && typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
+                    themeCategory = String(md.themeCategory);
+                  } else {
+                    try {
+                      const derived = sharedDetermineThemeCategory(String(post.title || ''), String(post.content || ''));
+                      themeCategory = String(derived || '');
+                    } catch {}
+                  }
+                  const themeInfo = themeCategory ? THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] : null;
+                  const displayName = themeCategory
+                    ? themeCategory.charAt(0) + themeCategory.slice(1).toLowerCase().replace(/_/g, ' ')
+                    : '';
+
+                  return (
+                    <article
+                      key={post.id}
+                      className="group story-card-container relative"
                     >
-                      <CardHeader className="p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <CardTitle
-                            className="text-lg font-semibold tracking-tight group-hover:text-primary"
-                          >
+                      <Card
+                        onClick={() => navigateToReader(post.slug || post.id)}
+                        className="aspect-square overflow-hidden rounded-xl border border-border/60 bg-card/80 hover:bg-card transition duration-200 ease-out hover:-translate-y-0.5 shadow-sm hover:shadow-md ring-1 ring-transparent hover:ring-primary/20 cursor-pointer flex flex-col"
+                      >
+                        <CardHeader className="p-3">
+                          <CardTitle className="text-sm font-semibold tracking-tight line-clamp-2 group-hover:text-primary">
                             {post.title}
                           </CardTitle>
-                          <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
-                            <div className="flex items-center gap-1 justify-end">
-                              <Calendar className="h-3 w-3" />
-                              <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
+                          {themeCategory && (
+                            <div className="mt-1">
+                              <Badge className="w-fit text-[11px] font-medium tracking-wide px-1.5 py-0.5 flex items-center gap-1">
+                                <Book className="h-3 w-3" />
+                                {displayName}
+                              </Badge>
                             </div>
-                            <div className="flex items-center gap-1 justify-end">
-                              <Clock className="h-3 w-3" />
-                              <span>{getReadingTime(post.content)}</span>
-                            </div>
-                          </div>
-                        </div>
-                        {themeCategory && (
-                          <div className="mt-2">
-                            <Badge className="w-fit text-[12px] sm:text-sm font-medium tracking-wide px-2 py-0.5 flex items-center gap-1">
-                              <Book className="h-3 w-3" />
-                              {displayName}
-                            </Badge>
-                          </div>
-                        )}
-                      </CardHeader>
-                      <CardContent className="px-4 pt-0 pb-3">
-                        <p className="text-sm text-muted-foreground leading-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                          {extractEngagingExcerpt(post.content, 200)}
-                        </p>
-                      </CardContent>
-                      <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
-                        <div className="w-full flex items-center justify-between">
-                          {post && post.id && (
-                            <Suspense fallback={<div className="text-xs text-muted-foreground">…</div>}>
-                              <LikeDislike 
-                                key={`like-${post.id}`} 
-                                postId={post.id}
-                                slug={post.slug}
-                                source="wp"
-                                variant="index"
-                                initialTotals={reactionTotals[post.id] || null}
-                              />
-                            </Suspense>
                           )}
-                          <Button
-                            size="sm"
-                            onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
-                            className="h-9 px-4 transition-transform active:scale-95"
-                          >
-                            Read story
-                            <ArrowRight className="h-4 w-4 ml-1" />
-                          </Button>
-                        </div>
-                      </CardFooter>
-                    </Card>
-                  </article>
-                );
-              })}
-            </div>
+                        </CardHeader>
+                        <CardContent className="px-3 pt-0">
+                          <p className="text-xs text-muted-foreground leading-5 line-clamp-2 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                            {extractEngagingExcerpt(post.content, 120)}
+                          </p>
+                        </CardContent>
+                        <CardFooter className="px-3 pb-3 pt-2 mt-auto border-t border-border/50">
+                          <div className="w-full flex items-center justify-between">
+                            {post && post.id && (
+                              <Suspense fallback={<div className="text-[11px] text-muted-foreground">…</div>}>
+                                <LikeDislike 
+                                  key={`like-${post.id}`} 
+                                  postId={post.id}
+                                  slug={post.slug}
+                                  source="wp"
+                                  variant="index"
+                                  initialTotals={reactionTotals[post.id] || null}
+                                />
+                              </Suspense>
+                            )}
+                            <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                <span>{getReadingTime(post.content)}</span>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
+                              className="h-8 px-3 ml-2"
+                            >
+                              Read
+                              <ArrowRight className="h-4 w-4 ml-1" />
+                            </Button>
+                          </div>
+                        </CardFooter>
+                      </Card>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
+              >
+                {latestPosts.map((post) => {
+                  
+                  const md: any = post.metadata || {};
+                  // Prefer metadata theme; otherwise detect from title/content for WordPress API posts
+                  let themeCategory = "";
+                  if (md && typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
+                    themeCategory = String(md.themeCategory);
+                  } else {
+                    try {
+                      const derived = sharedDetermineThemeCategory(String(post.title || ''), String(post.content || ''));
+                      themeCategory = String(derived || '');
+                    } catch {}
+                  }
+                  const themeInfo = themeCategory ? THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] : null;
+                  const displayName = themeCategory
+                    ? themeCategory.charAt(0) + themeCategory.slice(1).toLowerCase().replace(/_/g, ' ')
+                    : '';
+
+                  return (
+                    <article
+                      key={post.id}
+                      className="group story-card-container relative"
+                    >
+                      <Card
+                        onClick={() => navigateToReader(post.slug || post.id)}
+                        className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 hover:bg-card transition duration-200 ease-out hover:-translate-y-0.5 shadow-sm hover:shadow-md ring-1 ring-transparent hover:ring-primary/20 cursor-pointer"
+                      >
+                        <CardHeader className="p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <CardTitle
+                              className="text-lg font-semibold tracking-tight group-hover:text-primary"
+                            >
+                              {post.title}
+                            </CardTitle>
+                            <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
+                              <div className="flex items-center gap-1 justify-end">
+                                <Calendar className="h-3 w-3" />
+                                <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
+                              </div>
+                              <div className="flex items-center gap-1 justify-end">
+                                <Clock className="h-3 w-3" />
+                                <span>{getReadingTime(post.content)}</span>
+                              </div>
+                            </div>
+                          </div>
+                          {themeCategory && (
+                            <div className="mt-2">
+                              <Badge className="w-fit text-[12px] sm:text-sm font-medium tracking-wide px-2 py-0.5 flex items-center gap-1">
+                                <Book className="h-3 w-3" />
+                                {displayName}
+                              </Badge>
+                            </div>
+                          )}
+                        </CardHeader>
+                        <CardContent className="px-4 pt-0 pb-3">
+                          <p className="text-sm text-muted-foreground leading-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                            {extractEngagingExcerpt(post.content, 200)}
+                          </p>
+                        </CardContent>
+                        <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
+                          <div className="w-full flex items-center justify-between">
+                            {post && post.id && (
+                              <Suspense fallback={<div className="text-xs text-muted-foreground">…</div>}>
+                                <LikeDislike 
+                                  key={`like-${post.id}`} 
+                                  postId={post.id}
+                                  slug={post.slug}
+                                  source="wp"
+                                  variant="index"
+                                  initialTotals={reactionTotals[post.id] || null}
+                                />
+                              </Suspense>
+                            )}
+                            <Button
+                              size="sm"
+                              onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
+                              className="h-9 px-4 transition-transform active:scale-95"
+                            >
+                              Read story
+                              <ArrowRight className="h-4 w-4 ml-1" />
+                            </Button>
+                          </div>
+                        </CardFooter>
+                      </Card>
+                    </article>
+                  );
+                })}
+              </div>
+            )
           )}
         </div>
       </div>
