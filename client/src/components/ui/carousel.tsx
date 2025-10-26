@@ -155,7 +155,7 @@ const CarouselContent = React.forwardRef<
   const { carouselRef, orientation } = useCarousel()
 
   return (
-    <div ref={carouselRef} className="overflow-hidden">
+    <div ref={carouselRef} className="overflow-hidden" style={{ touchAction: orientation === "horizontal" ? "pan-x pinch-zoom" : "pan-y pinch-zoom" }}>
       <div
         ref={ref}
         className={cn(
@@ -204,12 +204,13 @@ const CarouselPrevious = React.forwardRef<
       variant={variant}
       size={size}
       className={cn(
-        "absolute h-8 w-8 rounded-full bg-card/90 border border-border/60 shadow-sm",
+        "absolute z-10 rounded-full bg-card/90 border border-border/60 shadow-sm transition-opacity h-10 w-10 md:h-8 md:w-8 disabled:opacity-0 disabled:pointer-events-none",
         orientation === "horizontal"
-          ? "left-2 top-1/2 -translate-y-1/2 md:-left-12"
-          : "top-2 left-1/2 -translate-x-1/2 rotate-90 md:-top-12",
+          ? "left-2 top-1/2 -translate-y-1/2"
+          : "top-2 left-1/2 -translate-x-1/2 rotate-90",
         className
       )}
+      aria-label="Previous slide"
       disabled={!canScrollPrev}
       onClick={scrollPrev}
       {...props}
@@ -233,12 +234,13 @@ const CarouselNext = React.forwardRef<
       variant={variant}
       size={size}
       className={cn(
-        "absolute h-8 w-8 rounded-full bg-card/90 border border-border/60 shadow-sm",
+        "absolute z-10 rounded-full bg-card/90 border border-border/60 shadow-sm transition-opacity h-10 w-10 md:h-8 md:w-8 disabled:opacity-0 disabled:pointer-events-none",
         orientation === "horizontal"
-          ? "right-2 top-1/2 -translate-y-1/2 md:-right-12"
-          : "bottom-2 left-1/2 -translate-x-1/2 rotate-90 md:-bottom-12",
+          ? "right-2 top-1/2 -translate-y-1/2"
+          : "bottom-2 left-1/2 -translate-x-1/2 rotate-90",
         className
       )}
+      aria-label="Next slide"
       disabled={!canScrollNext}
       onClick={scrollNext}
       {...props}
