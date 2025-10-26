@@ -205,10 +205,10 @@ const CarouselPrevious = React.forwardRef<
       size={size}
       noOutline
       className={cn(
-        "absolute z-10 rounded-full bg-background/70 backdrop-blur-sm text-foreground border border-border/50 shadow-md transition-opacity h-10 w-10 md:h-9 md:w-9 disabled:opacity-0 disabled:pointer-events-none md:opacity-0 md:group-hover:opacity-100 active:translate-y-0 active:scale-100",
+        "absolute z-20 flex items-center justify-center rounded-full h-11 w-11 bg-card/90 text-foreground border border-border/60 shadow-md hover:bg-card active:bg-card disabled:opacity-0 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         orientation === "horizontal"
           ? "left-3 top-1/2 -translate-y-1/2"
-          : "top-3 left-1/2 -translate-x-1/2 rotate-90",
+          : "top-3 left-1/2 -translate-x-1/2",
         className
       )}
       aria-label="Previous slide"
@@ -216,7 +216,7 @@ const CarouselPrevious = React.forwardRef<
       onClick={scrollPrev}
       {...props}
     >
-      <ArrowLeft className="h-4 w-4" />
+      <ArrowLeft className="h-5 w-5" />
       <span className="sr-only">Previous slide</span>
     </Button>
   )
@@ -236,10 +236,10 @@ const CarouselNext = React.forwardRef<
       size={size}
       noOutline
       className={cn(
-        "absolute z-10 rounded-full bg-background/70 backdrop-blur-sm text-foreground border border-border/50 shadow-md transition-opacity h-10 w-10 md:h-9 md:w-9 disabled:opacity-0 disabled:pointer-events-none md:opacity-0 md:group-hover:opacity-100 active:translate-y-0 active:scale-100",
+        "absolute z-20 flex items-center justify-center rounded-full h-11 w-11 bg-card/90 text-foreground border border-border/60 shadow-md hover:bg-card active:bg-card disabled:opacity-0 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         orientation === "horizontal"
           ? "right-3 top-1/2 -translate-y-1/2"
-          : "bottom-3 left-1/2 -translate-x-1/2 rotate-90",
+          : "bottom-3 left-1/2 -translate-x-1/2",
         className
       )}
       aria-label="Next slide"
@@ -247,7 +247,7 @@ const CarouselNext = React.forwardRef<
       onClick={scrollNext}
       {...props}
     >
-      <ArrowRight className="h-4 w-4" />
+      <ArrowRight className="h-5 w-5" />
       <span className="sr-only">Next slide</span>
     </Button>
   )

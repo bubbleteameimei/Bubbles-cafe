@@ -495,7 +495,7 @@ export function LikeDislike({
         </button>
       </div>
       
-      {inlineToast && (
+      {variant === 'reader' && inlineToast && (
         <div className={`
           mt-3 px-3 py-2 rounded-md text-center font-sans text-xs font-medium 
           transform transition-all duration-300 ease-out shadow-sm
