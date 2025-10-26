@@ -808,10 +808,9 @@ export default function StoriesIndexContent() {
             </div>
           )}
 
-          <div className="flex justify-between items-center mt-2 mb-3">
-            <h1 className="text-2xl md:text-3xl font-decorative uppercase">LATEST STORIES</h1>
-            <div className="flex items-center gap-2">
-              <div className="text-sm md:text-base text-muted-foreground mr-2">{latestPosts.length} stories</div>
+          <div className="mt-2 mb-3">
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl md:text-3xl font-decorative uppercase">LATEST STORIES</h1>
               <div className="inline-flex items-center gap-2" role="group" aria-label="View toggle">
                 <Button
                   variant="outline"
@@ -835,6 +834,7 @@ export default function StoriesIndexContent() {
                 </Button>
               </div>
             </div>
+            <div className="text-base md:text-lg text-muted-foreground mt-1">{latestPosts.length} stories</div>
           </div>
           {/* Optional category filter if categories exist */}
           {availableCategories.length > 0 && (
@@ -1097,26 +1097,26 @@ export default function StoriesIndexContent() {
                         onClick={() => navigateToReader(post.slug || post.id)}
                         className="aspect-square overflow-hidden rounded-xl border border-border/60 bg-card/80 hover:bg-card transition duration-200 ease-out hover:-translate-y-0.5 shadow-sm hover:shadow-md ring-1 ring-transparent hover:ring-primary/20 cursor-pointer flex flex-col"
                       >
-                        <CardHeader className="p-3">
+                        <CardHeader className="p-3 pb-2">
                           <CardTitle className="text-sm font-semibold tracking-tight line-clamp-2 group-hover:text-primary">
                             {post.title}
                           </CardTitle>
                           {themeCategory && (
                             <div className="mt-1">
-                              <Badge className="w-fit text-[11px] font-medium tracking-wide px-1.5 py-0.5 flex items-center gap-1">
+                              <Badge className="w-fit text-[10px] font-medium tracking-wide px-1.5 py-0.5 flex items-center gap-1">
                                 <Book className="h-3 w-3" />
                                 {displayName}
                               </Badge>
                             </div>
                           )}
                         </CardHeader>
-                        <CardContent className="px-3 pt-0">
+                        <CardContent className="px-3 pt-0 pb-0 flex-1 min-h-0">
                           <p className="text-xs text-muted-foreground leading-5 line-clamp-2 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                            {extractEngagingExcerpt(post.content, 120)}
+                            {extractEngagingExcerpt(post.content, 90)}
                           </p>
                         </CardContent>
                         <CardFooter className="px-3 pb-3 pt-2 mt-auto border-t border-border/50">
-                          <div className="w-full flex items-center justify-between">
+                          <div className="w-full flex flex-wrap items-center justify-between gap-2">
                             {post && post.id && (
                               <Suspense fallback={<div className="text-[11px] text-muted-foreground">…</div>}>
                                 <LikeDislike 

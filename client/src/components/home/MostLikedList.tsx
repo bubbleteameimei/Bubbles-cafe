@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Star, Calendar, Clock, Heart } from 'lucide-react';
 import { getReadingTime } from '@/lib/content-analysis';
+import { extractEngagingExcerpt } from '@/lib/excerpt-lite';
 import { type posts } from '@shared/schema';
 import { fetchReactionsBatch, type ReactionTotals } from '@/api/reactions';
+import { Button } from '@/components/ui/button';
 
 type Post = typeof posts.$inferSelect;
 
@@ -68,8 +70,10 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
         const tb = totalsMap[b.id]?.totals?.likes ?? (baselineLikesForPost(b) + (b.likesCount || 0));
         return Number(tb) - Number(ta);
       })
-      .slice(0, 2);
+      .slice(0, 1);
   }, [posts, totalsMap]);
+
+  const featured = topLiked[0];
 
   return (
     <div>
@@ -77,53 +81,58 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
         <Star className="h-4 w-4 text-primary" />
         <h3 className="text-base font-semibold">Most Liked</h3>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {topLiked.map((p) => {
-          const totals = totalsMap[p.id];
-          const likesDisplay = totals?.totals?.likes ?? (baselineLikesForPost(p) + (p.likesCount || 0));
-          return (
-            <article
-              key={p.id}
-              className="group rounded-lg border border-border/60 bg-card/70 hover:bg-card transition hover:-translate-y-0.5 shadow-sm hover:shadow-md"
-            >
-              <a
-                href={`/reader/${encodeURIComponent(String(p.slug || p.id))}`}
-                onClick={(e) => { e.preventDefault(); onNavigate(p.slug || p.id); }}
-                className="block p-3 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-lg"
-                aria-label={`Open ${p.title}`}
+
+      {!featured ? (
+        <div className="text-sm text-muted-foreground">No liked stories yet.</div>
+      ) : (
+        <article
+          key={featured.id}
+          className="group rounded-xl border border-border/60 bg-card/80 hover:bg-card transition hover:-translate-y-0.5 shadow-sm hover:shadow-md ring-1 ring-primary/10"
+        >
+          <a
+            href={`/reader/${encodeURIComponent(String(featured.slug || featured.id))}`}
+            onClick={(e) => { e.preventDefault(); onNavigate(featured.slug || featured.id); }}
+            className="block p-4 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-xl"
+            aria-label={`Open ${featured.title}`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <h4
+                className="text-left text-lg font-medium font-castoro group-hover:text-primary leading-6 line-clamp-2"
+                title={featured.title}
               >
-                <div
-                  className="text-left text-sm font-medium group-hover:text-primary line-clamp-2"
-                  title={p.title}
-                >
-                  {p.title}
+                {featured.title}
+              </h4>
+              <div className="text-xs text-muted-foreground whitespace-nowrap hidden sm:block">
+                <div className="flex items-center gap-1 justify-end">
+                  <Calendar className="h-3 w-3" />
+                  <time>{new Date(featured.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
                 </div>
-                <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1">
-                      <Heart className="h-3 w-3 text-rose-500" />
-                      {Number(likesDisplay)}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {getReadingTime(p.content)}
-                    </span>
-                  </div>
-                  <div className="hidden sm:inline-flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    <time>{new Date(p.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
-                  </div>
+                <div className="flex items-center gap-1 justify-end mt-1">
+                  <Clock className="h-3 w-3" />
+                  <span>{getReadingTime(featured.content)}</span>
                 </div>
-              </a>
-            </article>
-          );
-        })}
-        {topLiked.length === 0 && (
-          <div className="text-sm text-muted-foreground">
-            No liked stories yet.
-          </div>
-        )}
-      </div>
+              </div>
+            </div>
+
+            <p className="mt-2 text-sm text-muted-foreground leading-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+              {extractEngagingExcerpt(featured.content, 220)}
+            </p>
+
+            <div className="mt-3 flex items-center justify-between">
+              <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-1">
+                  <Heart className="h-4 w-4 text-rose-500" />
+                  {Number(totalsMap[featured.id]?.totals?.likes ?? (baselineLikesForPost(featured) + (featured.likesCount || 0)))}
+                </span>
+              </div>
+              <Button size="sm" className="h-9 px-4" onClick={(e) => { e.preventDefault(); onNavigate(featured.slug || featured.id); }}>
+                Read story
+                <Clock className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </a>
+        </article>
+      )}
     </div>
   );
 };
