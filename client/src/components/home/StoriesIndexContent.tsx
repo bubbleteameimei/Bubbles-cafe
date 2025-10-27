@@ -98,22 +98,7 @@ export default function StoriesIndexContent() {
     return () => clearTimeout(t);
   }, [search]);
 
-  // Prefetch next page when scrolled near bottom (75%)
-  useEffect(() => {
-    const onScroll = () => {
-      try {
-        const scrollY = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
-        const vh = window.innerHeight || 800;
-        const docH = document.documentElement.scrollHeight || document.body.scrollHeight || 0;
-        const pct = (scrollY + vh) / Math.max(1, docH);
-        if (pct >= 0.75 && hasNextPage && !isFetchingNextPage) {
-          void fetchNextPage();
-        }
-      } catch {}
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  // Prefetch effect moved below query hook to avoid referencing variables before declaration.
 
   // Search highlighting helpers
   const normalizeText = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -247,6 +232,23 @@ export default function StoriesIndexContent() {
     refetchOnWindowFocus: true,
     initialPageParam: 1,
   });
+
+  // Prefetch next page when scrolled near bottom (75%)
+  useEffect(() => {
+    const onScroll = () => {
+      try {
+        const scrollY = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+        const vh = window.innerHeight || 800;
+        const docH = document.documentElement.scrollHeight || document.body.scrollHeight || 0;
+        const pct = (scrollY + vh) / Math.max(1, docH);
+        if (pct >= 0.75 && hasNextPage && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      } catch {}
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const hasPaginatedPosts = data?.pages && data.pages.length > 0 && data.pages[0]?.posts?.length > 0;
 
