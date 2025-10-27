@@ -22,6 +22,7 @@ import {
   Scan, Castle, Copy, CloudRain, Hourglass, Axe, Cloud, Heart, Droplets, 
   Wind, ScanFace, Tally4, Sparkles, Syringe, Flame, Zap
 } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -29,6 +30,38 @@ import AdminLayout from '@/components/layout/admin-layout';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { THEME_CATEGORIES } from '@shared/theme-categories';
 import { getThemeDefinitionOverrides, saveThemeDefinitionOverrides, syncThemeDefinitionOverridesFromServer } from '@/shared/theme-definitions';
+
+/**
+ * Iconify typeahead suggestions for common horror categories.
+ * Admins can pick any slug; suggestions help discover popular Iconify icons.
+ */
+const ICONIFY_SUGGESTIONS: Array<{ value: string; label: string }> = [
+  { value: 'mdi:ghost', label: 'Ghost (Supernatural/Haunting)' },
+  { value: 'mdi:skull', label: 'Skull (Death/Demonic)' },
+  { value: 'mdi:knife', label: 'Knife (Slasher)' },
+  { value: 'mdi:car', label: 'Car (Vehicular)' },
+  { value: 'mdi:foot-print', label: 'Footprints (Stalking/Zombie)' },
+  { value: 'mdi:clock-outline', label: 'Clock (Time Horror)' },
+  { value: 'mdi:radio', label: 'Radio (Paranormal/Contagion)' },
+  { value: 'mdi:moon-waning-crescent', label: 'Moon (Cosmic/Vampiric)' },
+  { value: 'mdi:castle', label: 'Castle (Gothic)' },
+  { value: 'mdi:forest', label: 'Trees (Folk/Eco)' },
+  { value: 'mdi:biohazard', label: 'Radiation (Apocalyptic)' },
+  { value: 'mdi:bug', label: 'Bug (Parasite/Infestation)' },
+  { value: 'mdi:flask-outline', label: 'Flask (Science Horror)' },
+  { value: 'mdi:cpu-64-bit', label: 'CPU (Technological Horror)' },
+  { value: 'mdi:building', label: 'Building (Urban Horror)' },
+  { value: 'mdi:dog', label: 'Dog (Lycanthropic/Werewolf)' },
+  { value: 'mdi:cat', label: 'Cat (Creature Horror)' },
+  { value: 'mdi:torch', label: 'Flame (Demonic/Infernal)' },
+  { value: 'mdi:alert-outline', label: 'Alert Triangle (Survival)' },
+  { value: 'mdi:box', label: 'Box (Cursed Object)' },
+  { value: 'mdi:moon-star', label: 'Moon Star (Dream/Nightmare/Occult)' },
+  { value: 'mdi:drop', label: 'Droplet (Aquatic/Eco)' },
+  { value: 'mdi:cloud-outline', label: 'Cloud (Isolation/Elemental)' },
+  { value: 'mdi:knife-military', label: 'Knife (Alt)' },
+  { value: 'mdi:human', label: 'Identity (Identity Horror)' }
+];
 
 // Icon mapping for theme categories
 const THEME_ICONS: Record<string, React.ReactNode> = {
@@ -475,6 +508,27 @@ export default function ThemesPage() {
                                           <span className="ml-1">{customIconInput || 'eye'}</span>
                                         </span>
                                       </div>
+                                      {(() => {
+                                        const term = String(customIconInput || '').toLowerCase();
+                                        const matches = ICONIFY_SUGGESTIONS
+                                          .filter(s => term && (s.value.toLowerCase().includes(term) || s.label.toLowerCase().includes(term)))
+                                          .slice(0, 6);
+                                        return matches.length > 0 ? (
+                                          <div className="mt-2 grid grid-cols-1 gap-1">
+                                            {matches.map(s => (
+                                              <button
+                                                type="button"
+                                                key={s.value}
+                                                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+                                                onClick={() => { setCustomIconInput(s.value); setSelectedIcon('custom'); }}
+                                              >
+                                                <Icon icon={s.value} className="h-4 w-4" />
+                                                <span>{s.label}</span>
+                                              </button>
+                                            ))}
+                                          </div>
+                                        ) : null;
+                                      })()}
                                     </div>
                                   )}
                                 </div>
@@ -590,6 +644,27 @@ export default function ThemesPage() {
                                             <span className="ml-1">{customIconInput || 'eye'}</span>
                                           </span>
                                         </div>
+                                        {(() => {
+                                          const term = String(customIconInput || '').toLowerCase();
+                                          const matches = ICONIFY_SUGGESTIONS
+                                            .filter(s => term && (s.value.toLowerCase().includes(term) || s.label.toLowerCase().includes(term)))
+                                            .slice(0, 6);
+                                          return matches.length > 0 ? (
+                                            <div className="mt-2 grid grid-cols-1 gap-1">
+                                              {matches.map(s => (
+                                                <button
+                                                  type="button"
+                                                  key={s.value}
+                                                  className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+                                                  onClick={() => { setCustomIconInput(s.value); setSelectedIcon('custom'); }}
+                                                >
+                                                  <Icon icon={s.value} className="h-4 w-4" />
+                                                  <span>{s.label}</span>
+                                                </button>
+                                              ))}
+                                            </div>
+                                          ) : null;
+                                        })()}
                                       </div>
                                     )}
                                   </div>

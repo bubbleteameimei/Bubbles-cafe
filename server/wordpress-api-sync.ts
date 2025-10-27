@@ -1,7 +1,7 @@
 import { db } from './db';
 import { posts, users } from '@shared/schema';
 import { eq, sql } from 'drizzle-orm';
-import { determineThemeCategory as determineSharedThemeCategory } from '@shared/theme-categories';
+import { determineThemeCategory as determineSharedThemeCategory, THEME_CATEGORIES as SHARED_THEME_CATEGORIES } from '@shared/theme-categories';
 
 interface WordPressPost {
   id: number;
@@ -24,6 +24,38 @@ interface WordPressPost {
 export class WordPressAPISync {
   private readonly baseUrl = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
   private readonly batchSize = 20;
+
+  /**
+   * Pick a reasonable icon slug for a post based on theme and content/title.
+   * Prefers shared theme catalog icon, but can refine based on keywords.
+   */
+  private pickThemeIcon(themeKey: string, title: string, content: string): string {
+    const text = (String(title) + ' ' + String(content)).toLowerCase();
+
+    // Keyword-driven hints
+    if (text.includes('ghost') || text.includes('haunt') || text.includes('spirit')) return 'ghost';
+    if (text.includes('vampire') || text.includes('dracula')) return 'moon';
+    if (text.includes('wolf')) return 'dog';
+    if (text.includes('knife') || text.includes('stab') || text.includes('cut')) return 'fork-knife';
+    if (text.includes('car') || text.includes('drive')) return 'car';
+    if (text.includes('radio') || text.includes('broadcast') || text.includes('signal')) return 'radio';
+    if (text.includes('clock') || text.includes('time')) return 'clock';
+    if (text.includes('skull') || text.includes('death') || text.includes('suicide')) return 'skull';
+    if (text.includes('flame') || text.includes('hell') || text.includes('inferno') || text.includes('demon')) return 'flame';
+    if (text.includes('forest') || text.includes('tree') || text.includes('folk')) return 'trees';
+    if (text.includes('castle') || text.includes('gothic')) return 'castle';
+    if (text.includes('bug') || text.includes('parasite') || text.includes('infect')) return 'bug';
+    if (text.includes('cat') || text.includes('creature') || text.includes('monster')) return 'cat';
+    if (text.includes('lab') || text.includes('science') || text.includes('experiment')) return 'flask';
+    if (text.includes('apocalypse') || text.includes('nuclear') || text.includes('radiation')) return 'radiation';
+    if (text.includes('city') || text.includes('urban') || text.includes('building')) return 'building';
+    if (text.includes('dream') || text.includes('nightmare')) return 'moon-star';
+    if (text.includes('box') || text.includes('cursed')) return 'box';
+
+    // Fallback to shared theme catalog default icon
+    const info = (SHARED_THEME_CATEGORIES as any)[themeKey];
+    return info?.icon || 'ghost';
+  }
 
   async syncAllPosts(): Promise<{ success: boolean; synced: number; errors: any[] }> {
     console.log('[WordPress Sync] Starting comprehensive sync...');
@@ -142,6 +174,8 @@ export class WordPressAPISync {
       .where(sql`metadata->>'wordpressId' = ${wpPost.id.toString()}`)
       .limit(1);
 
+    const themeIcon = this.pickThemeIcon(themeCategory, cleanTitle, cleanContent);
+
     const postData = {
       title: cleanTitle,
       content: cleanContent,
@@ -167,7 +201,8 @@ export class WordPressAPISync {
         source: 'wordpress_api',
         status: 'publish',
         isAdminPost: true,
-        isCommunityPost: false
+        isCommunityPost: false,
+        themeIcon
       }
     };
 
