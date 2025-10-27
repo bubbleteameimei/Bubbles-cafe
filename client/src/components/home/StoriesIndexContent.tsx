@@ -594,7 +594,7 @@ export default function StoriesIndexContent() {
                     </div>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <button className="text-left text-xl md:text-2xl leading-6 font-castoro hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
+                        <button className="text-left text-xl md:text-2xl font-semibold tracking-tight leading-6 hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
                           {renderHighlighted(String(featuredStory.title || ''))}
                         </button>
                         {(() => {
@@ -675,7 +675,7 @@ export default function StoriesIndexContent() {
                             }
                           })();
                           return (
-                            <div className="mt-1">
+                            <div className="mt-0.5">
                               <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
                                 {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : <ThemeIconCmp className="h-3 w-3" />}
                                 {prettyLabel}
@@ -1249,8 +1249,8 @@ export default function StoriesIndexContent() {
 
                       return (
                         <>
-                          <div className="text-center text-xs font-medium text-muted-foreground mb-1">All categories</div>
-                          <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+                          <div className="text-center text-sm md:text-base font-medium text-muted-foreground mb-2 md:mb-3">All categories</div>
+                          <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
                             <button
                               type="button"
                               className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter === 'all' ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}

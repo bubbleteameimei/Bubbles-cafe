@@ -401,10 +401,10 @@ export default function SearchResultsPage() {
         </>
       ) : searchQuery ? (
         <div className="text-center py-12">
-          <p className="text-lg text-gray-600 dark:text-gray-400">
+          <p className="text-lg text-muted-foreground">
             No results found for "{searchQuery}"
           </p>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             Try different keywords or check your spelling
           </p>
         </div>

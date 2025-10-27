@@ -92,20 +92,20 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
       {topLiked.length === 0 ? (
         <div className="text-sm text-muted-foreground">No liked stories yet.</div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
           {topLiked.map((featured) => (
             <Card key={featured.id} className="rounded-lg border border-border/60 bg-card/80 transition hover:bg-card hover:shadow-md hover:ring-1 hover:ring-primary/15">
               <CardContent className="p-4">
                 <a
                   href={`/reader/${encodeURIComponent(String(featured.slug || featured.id))}`}
                   onClick={(e) => { e.preventDefault(); onNavigate(featured.slug || featured.id); }}
-                  className="block outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md"
+                  className="block group outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md"
                   aria-label={`Open ${featured.title}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <h4
-                        className="text-left text-xl md:text-2xl font-semibold font-castoro group-hover:text-primary leading-6 line-clamp-2"
+                        className="text-left text-xl md:text-2xl font-semibold tracking-tight hover:text-primary leading-6 line-clamp-2"
                         title={featured.title}
                       >
                         {featured.title}
@@ -178,7 +178,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                         })();
 
                         return (
-                          <div className="mt-1">
+                          <div className="mt-0.5">
                             <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
                               {isIconify
                                 ? (<Icon icon={String(chosenIconSlug)} className="h-3 w-3" />)
