@@ -705,7 +705,7 @@ export default function StoriesIndexContent() {
                       </div>
                     </div>
                     <p className="text-[15px] sm:text-[16px] text-muted-foreground leading-6 mt-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                      {renderHighlighted(extractEngagingExcerpt(featuredStory.content, 220))}
+                      {extractEngagingExcerpt(featuredStory.content, 220)}
                     </p>
                     
                     <div className="mt-3 flex items-center justify-between">
@@ -1440,7 +1440,7 @@ export default function StoriesIndexContent() {
                                       </div>
                                     </div>
                                     <p className="text-[13px] text-muted-foreground leading-6 mt-7 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                                      {renderHighlighted(extractEngagingExcerpt(post.content, 200))}
+                                      {extractEngagingExcerpt(post.content, 200)}
                                     </p>
                                   </CardContent>
                                   <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
@@ -1688,7 +1688,7 @@ export default function StoriesIndexContent() {
                             </div>
                             
                             <p className="text-[15px] sm:text-[16px] text-muted-foreground leading-6 mt-7 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                              {renderHighlighted(extractEngagingExcerpt(post.content, 200))}
+                              {extractEngagingExcerpt(post.content, 200)}
                             </p>
                           </CardContent>
                           <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
