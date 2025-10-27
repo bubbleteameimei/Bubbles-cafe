@@ -104,7 +104,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                 >
                   <div className="flex items-start justify-between gap-3">
                     <h4
-                      className="text-left text-2xl md:text-3xl font-semibold font-castoro group-hover:text-primary leading-7 line-clamp-2"
+                      className="text-left text-xl md:text-2xl font-semibold font-castoro group-hover:text-primary leading-7 line-clamp-2"
                       title={featured.title}
                     >
                       {featured.title}
@@ -184,7 +184,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                     })();
 
                     return (
-                      <div className="mt-0">
+                      <div className="mt-1">
                         <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
                           {isIconify
                             ? (<Icon icon={String(chosenIconSlug)} className="h-3 w-3" />)
