@@ -808,9 +808,9 @@ export default function StoriesIndexContent() {
         <ContinueReadingBanner />
         <div className="w-full pb-12 pt-0 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
           {/* Sticky controls header (mobile-first) */}
-          <div className="sticky top-0 z-30 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6 py-3 sm:py-4">
+          <div className="sticky top-0 z-30 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6 py-6 sm:py-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="relative w-full sm:max-w-md">
+              <div className="relative w-full sm:max-w-2xl lg:max-w-3xl">
                 <Input
                   placeholder="Search stories..."
                   className="pl-3 pr-10"
@@ -931,7 +931,7 @@ export default function StoriesIndexContent() {
                             }
                           })();
                           return (
-                            <div className="mt-1">
+                            <div className="mt-0.5">
                               <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
                                 {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : (themeKey === 'BODY_HORROR' ? <Bone className="h-3 w-3" /> : null)}
                                 {prettyLabel}
@@ -951,7 +951,7 @@ export default function StoriesIndexContent() {
                         </div>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground leading-6 mt-4 sm:mt-5 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                    <p className="text-sm text-muted-foreground leading-6 mt-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
                       {renderHighlighted(extractEngagingExcerpt(featuredStory.content, 220))}
                     </p>
                     
@@ -1572,10 +1572,10 @@ export default function StoriesIndexContent() {
                                   onClick={() => navigateToReader(post.slug || post.id)}
                                   className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 cursor-pointer"
                                 >
-                                  <CardContent className="p-4 pb-2">
+                                  <CardContent className="p-4 pb-0">
                                     <div className="flex items-start justify-between gap-3">
                                       <div className="flex-1 min-w-0">
-                                        <CardTitle className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary">
+                                        <CardTitle className="text-2xl md:text-3xl font-semibold tracking-tight group-hover:text-primary">
                                           {renderHighlighted(String(post.title || ''))}
                                         </CardTitle>
                                         {themeCategory && (() => {
@@ -1676,7 +1676,7 @@ export default function StoriesIndexContent() {
                                         </div>
                                       </div>
                                     </div>
-                                    <p className="text-sm text-muted-foreground leading-6 mt-4 sm:mt-5 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                                    <p className="text-sm text-muted-foreground leading-6 mt-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
                                       {renderHighlighted(extractEngagingExcerpt(post.content, 200))}
                                     </p>
                                   </CardContent>
@@ -1746,11 +1746,11 @@ export default function StoriesIndexContent() {
                           onClick={() => navigateToReader(post.slug || post.id)}
                           className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 cursor-pointer"
                         >
-                          <CardContent className="p-4 pb-2">
+                          <CardContent className="p-4 pb-0">
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 min-w-0">
                                 <CardTitle
-                                  className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary"
+                                  className="text-2xl md:text-3xl font-semibold tracking-tight group-hover:text-primary"
                                 >
                                   {renderHighlighted(String(post.title || ''))}
                                 </CardTitle>
@@ -1919,7 +1919,7 @@ export default function StoriesIndexContent() {
                               </div>
                             </div>
                             
-                            <p className="text-sm text-muted-foreground leading-6 mt-4 sm:mt-5 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                            <p className="text-sm text-muted-foreground leading-6 mt-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
                               {renderHighlighted(extractEngagingExcerpt(post.content, 200))}
                             </p>
                           </CardContent>

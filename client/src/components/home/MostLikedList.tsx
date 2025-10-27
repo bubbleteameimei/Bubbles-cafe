@@ -110,14 +110,14 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                       {featured.title}
                     </h4>
                     <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1 justify-end">
+                      <div className="flex items-center gap-1 justify-end">
                         <Calendar className="h-3 w-3" />
                         <time>{new Date(featured.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
-                      </span>
-                      <span className="inline-flex items-center gap-1 justify-end" title={`~${String(featured.content || '').split(/\s+/).length} words`}>
+                      </div>
+                      <div className="flex items-center gap-1 justify-end" title={`~${String(featured.content || '').split(/\s+/).length} words`}>
                         <Clock className="h-3 w-3" />
-                        {getReadingTime(featured.content)}
-                      </span>
+                        <span>{getReadingTime(featured.content)}</span>
+                      </div>
                     </div>
                   </div>
 
