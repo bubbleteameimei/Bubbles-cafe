@@ -318,130 +318,11 @@ export default function StoriesIndexContent() {
       });
     }
 
-    // Stronger fuzzy search with synonyms and keyword boosts
+    // Title-only search (exact substring match), no fuzzy or content-based matching.
     const q = search.trim().toLowerCase();
-    const tokenize = (s: string) => normalizeText(s.toLowerCase()).split(/[^a-z0-9]+/).filter(Boolean);
-    const jaccard = (a: string[], b: string[]) => {
-      if (!a.length || !b.length) return 0;
-      const setA = new Set(a);
-      const setB = new Set(b);
-      const inter = [...setA].filter(x => setB.has(x)).length;
-      const union = new Set([...a, ...b]).size;
-      return inter / union;
-    };
-    const editDistance = (a: string, b: string) => {
-      const m = a.length, n = b.length;
-      if (!m) return n;
-      if (!n) return m;
-      const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
-      for (let i = 0; i <= m; i++) dp[i][0] = i;
-      for (let j = 0; j <= n; j++) dp[0][j] = j;
-      for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-          dp[i][j] = Math.min(
-            dp[i - 1][j] + 1,
-            dp[i][j - 1] + 1,
-            dp[i - 1][j - 1] + cost
-          );
-        }
-      }
-      return dp[m][n];
-    };
-
-    const synonyms: Record<string, string[]> = {
-      ghost: ['spirit','phantom','specter','wraith'],
-      curse: ['hex','jinx','spell'],
-      witch: ['hag','sorceress'],
-      demon: ['fiend','devil'],
-      monster: ['creature','beast'],
-      blood: ['bleed','bloody'],
-      scream: ['yell','shriek'],
-      dark: ['night','gloom','black'],
-      shadow: ['shade','silhouette'],
-      grave: ['tomb','burial'],
-      dead: ['deceased','lifeless'],
-      fear: ['terror','dread'],
-      knife: ['blade','dagger'],
-      eyes: ['gaze','stare'],
-      footsteps: ['steps','treads'],
-      whisper: ['murmur','hiss'],
-      door: ['gate','entry'],
-      basement: ['cellar'],
-      closet: ['wardrobe','cupboard'],
-      window: ['pane','glass'],
-      bone: ['skeleton'],
-      cold: ['chill','freezing'],
-      haunted: ['possessed','cursed'],
-      night: ['darkness']
-    };
-
-    const boostedKeywords = [
-      'blood','scream','shadow','dark','fear','dead','grave','curse','witch','ghost','monster',
-      'door','basement','closet','window','footsteps','whisper','knife','bone','eyes','cold','haunted','night'
-    ];
-
-    const expandWithSynonyms = (tokens: string[]) => {
-      const set = new Set(tokens);
-      for (const t of tokens) {
-        const syns = synonyms[t];
-        if (syns) for (const s of syns) set.add(s);
-      }
-      return Array.from(set);
-    };
-
-    const similarityScore = (post: Post, query: string) => {
-      if (!query) return 0;
-      const qTokens = tokenize(query);
-      const qExpanded = expandWithSynonyms(qTokens);
-
-      const title = String(post.title || "");
-      const content = String(post.content || "");
-      const titleTokens = tokenize(title);
-      const contentTokens = tokenize(content).slice(0, 500); // cap for perf
-
-      // Title overlap (expanded) + direct includes
-      const jTitle = jaccard(qExpanded, titleTokens);
-      let directTitle = 0;
-      for (const qt of qExpanded) {
-        if (title.toLowerCase().includes(qt)) directTitle += 0.5;
-      }
-
-      // Content token overlap (lighter weight)
-      const jContent = jaccard(qExpanded, contentTokens) * 0.55;
-
-      // Typo tolerance: nearest word in title (expanded)
-      let typoBonus = 0;
-      for (const qt of qExpanded) {
-        let best = Infinity;
-        for (const tt of titleTokens) {
-          const d = editDistance(qt, tt);
-          if (d < best) best = d;
-        }
-        if (best <= 2) typoBonus += 0.4;
-      }
-
-      // Keyword boosts if title/content contain boosted keywords (only if query includes boosted keyword)
-      const queryContainsBoosted = qTokens.some(t => boostedKeywords.includes(t));
-      let keywordBoost = 0;
-      for (const kw of boostedKeywords) {
-        if (queryContainsBoosted && titleTokens.includes(kw)) keywordBoost += 0.25;
-        if (queryContainsBoosted && contentTokens.includes(kw)) keywordBoost += 0.1;
-      }
-
-      // Recency and engagement mild bonuses
-      const createdAt = new Date(post.createdAt).getTime();
-      const ageDays = Math.max(0, (Date.now() - createdAt) / (24 * 60 * 60 * 1000));
-      const recency = Math.max(0, 1 - (ageDays / 30)) * 0.18;
-
-      const likes = typeof post.likesCount === 'number' ? post.likesCount : 0;
-      const views = post.metadata && (post.metadata as any).pageViews ? Number((post.metadata as any).pageViews) : 0;
-      const engagement = Math.min(1, (likes * 0.01) + (views * 0.0005)) * 0.18;
-
-      return (jTitle * 2.2) + directTitle + jContent + typoBonus + keywordBoost + recency + engagement;
-    };
-
-    
+    if (q) {
+      list = list.filter(p => String(p.title || '').toLowerCase().includes(q));
+    }
 
     switch (sort) {
       case 'oldest':
@@ -505,7 +386,7 @@ export default function StoriesIndexContent() {
 
   // Log zero-results interactions
   useEffect(() => {
-    if (search.trim() && currentPosts.length === 0) {
+    if (search.trim() && titleMatches.length === 0) {
       try {
         fetch('/api/analytics/interaction', {
           method: 'POST',
@@ -514,7 +395,7 @@ export default function StoriesIndexContent() {
         }).catch(() => {});
       } catch {}
     }
-  }, [currentPosts.length, search]);
+  }, [titleMatches.length, search]);
 
   const featuredStory = useMemo(() => {
     const all = [...sortedPosts];
@@ -667,8 +548,8 @@ export default function StoriesIndexContent() {
         <div className="w-full pb-12 pt-0 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
           {/* Sticky controls header (mobile-first) */}
           <div className="sticky top-0 z-30 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6 py-2 sm:py-3 mt-8 sm:mt-12">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="relative w-full lg:w-1/3">
+            <div className="grid grid-cols-1 lg:grid-cols-3 items-center gap-6">
+              <div className="relative w-full lg:col-span-1">
                 <Input
                   placeholder="Search stories..."
                   className="pl-3 pr-10 w-full"
@@ -1526,7 +1407,7 @@ export default function StoriesIndexContent() {
                                             }
                                           })();
                                           return (
-                                            <div className="mt-0">
+                                            <div className="mt-1">
                                               <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
                                                 {themeKeyForTint === 'BODY_HORROR' ? <Bone className="h-3 w-3" /> : null}
                                                 {prettyLabel}
@@ -1773,7 +1654,7 @@ export default function StoriesIndexContent() {
                                     }
                                   })();
                                   return (
-                                    <div className="mt-0">
+                                    <div className="mt-1">
                                       <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
                                         <ThemeIconCmp className="h-3 w-3" />
                                         {prettyLabel}
