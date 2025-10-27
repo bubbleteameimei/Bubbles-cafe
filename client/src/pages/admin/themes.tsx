@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Table,
@@ -352,7 +352,10 @@ export default function ThemesPage() {
                               <span>{post.title}</span>
                               {/* Mobile-only theme display */}
                               <span className="md:hidden text-xs text-muted-foreground mt-1 flex items-center">
-                                {THEME_ICONS[themeIcon.toLowerCase()] || <Eye className="h-3 w-3" />}
+                                {String(themeIcon || '').includes(':')
+                                  ? <Icon icon={String(themeIcon)} className="h-3 w-3" />
+                                  : (THEME_ICONS[String(themeIcon || '').toLowerCase()] || <Eye className="h-3 w-3" />)
+                                }
                                 <span className="ml-1">
                                   {themeInfo?.label || 'Horror'}
                                 </span>
@@ -413,15 +416,22 @@ export default function ThemesPage() {
                                       <SelectValue placeholder="Select an icon">
                                         <div className="flex items-center">
                                           {selectedIcon !== "custom" ? 
-                                            (THEME_ICONS[selectedIcon.toLowerCase()] || <Eye className="h-4 w-4" />) : 
+                                            (
+                                              String(selectedIcon).includes(':')
+                                                ? <Icon icon={String(selectedIcon)} className="h-4 w-4" />
+                                                : (THEME_ICONS[String(selectedIcon).toLowerCase()] || <Eye className="h-4 w-4" />)
+                                            ) : 
                                             <span className="flex items-center">
-                                              {THEME_ICONS[customIconInput.toLowerCase()] || <Eye className="h-4 w-4" />}
+                                              {String(customIconInput).includes(':')
+                                                ? <Icon icon={String(customIconInput)} className="h-4 w-4" />
+                                                : (THEME_ICONS[String(customIconInput).toLowerCase()] || <Eye className="h-4 w-4" />)
+                                              }
                                               <span className="ml-2 truncate max-w-[100px]">Custom: {customIconInput || 'none'}</span>
                                             </span>
                                           }
                                           {selectedIcon !== "custom" && (
                                             <span className="ml-2 truncate">
-                                              {ICON_OPTIONS.find(icon => icon.value === selectedIcon.toLowerCase())?.label || 'Icon'}
+                                              {ICON_OPTIONS.find(icon => icon.value === String(selectedIcon).toLowerCase())?.label || 'Icon'}
                                             </span>
                                           )}
                                         </div>
@@ -458,7 +468,10 @@ export default function ThemesPage() {
                                       <div className="flex items-center">
                                         <span className="text-xs text-muted-foreground">Preview: </span>
                                         <span className="ml-2 flex items-center">
-                                          {THEME_ICONS[customIconInput.toLowerCase()] || <Eye className="h-4 w-4" />}
+                                          {String(customIconInput).includes(':')
+                                            ? <Icon icon={String(customIconInput)} className="h-4 w-4" />
+                                            : (THEME_ICONS[String(customIconInput).toLowerCase()] || <Eye className="h-4 w-4" />)
+                                          }
                                           <span className="ml-1">{customIconInput || 'eye'}</span>
                                         </span>
                                       </div>
@@ -468,9 +481,12 @@ export default function ThemesPage() {
                               </div>
                             ) : (
                               <div className="flex items-center">
-                                {THEME_ICONS[themeIcon.toLowerCase()] || <Eye className="h-4 w-4" />}
+                                {String(themeIcon || '').includes(':')
+                                  ? <Icon icon={String(themeIcon)} className="h-4 w-4" />
+                                  : (THEME_ICONS[String(themeIcon || '').toLowerCase()] || <Eye className="h-4 w-4" />)
+                                }
                                 <span className="ml-2">
-                                  {ICON_OPTIONS.find(icon => icon.value === themeIcon.toLowerCase())?.label || themeIcon}
+                                  {ICON_OPTIONS.find(icon => icon.value === String(themeIcon || '').toLowerCase())?.label || themeIcon}
                                 </span>
                               </div>
                             )}
@@ -567,7 +583,10 @@ export default function ThemesPage() {
                                         <div className="flex items-center">
                                           <span className="text-xs text-muted-foreground">Preview: </span>
                                           <span className="ml-2 flex items-center">
-                                            {THEME_ICONS[customIconInput.toLowerCase()] || <Eye className="h-4 w-4" />}
+                                            {String(customIconInput).includes(':')
+                                              ? <Icon icon={String(customIconInput)} className="h-4 w-4" />
+                                              : (THEME_ICONS[String(customIconInput).toLowerCase()] || <Eye className="h-4 w-4" />)
+                                            }
                                             <span className="ml-1">{customIconInput || 'eye'}</span>
                                           </span>
                                         </div>
@@ -687,6 +706,13 @@ export default function ThemesPage() {
                             placeholder="custom icon slug"
                             className="w-[160px]"
                           />
+                          <span className="flex items-center text-xs text-muted-foreground">
+                            <span className="mr-1">Preview:</span>
+                            {String(value.icon || '').includes(':')
+                              ? <Icon icon={String(value.icon)} className="h-4 w-4" />
+                              : (THEME_ICONS[String(value.icon || '').toLowerCase()] || <Eye className="h-4 w-4" />)
+                            }
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell>

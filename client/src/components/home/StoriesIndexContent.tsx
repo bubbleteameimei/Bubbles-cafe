@@ -1198,6 +1198,91 @@ export default function StoriesIndexContent() {
                                     return baseLabel;
                                   })();
 
+                                  // Resolve icon (story override -> metadata -> global override -> shared -> ghost)
+                                  const chosenIconSlug =
+                                    override?.icon ||
+                                    (md && (md as any).themeIcon) ||
+                                    defOverride?.icon ||
+                                    (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
+                                    'ghost';
+
+                                  // Map lucide icon when not using Iconify provider
+                                  const ThemeIconCmp = (() => {
+                                    const slug = String(chosenIconSlug).toLowerCase();
+                                    switch (slug) {
+                                      case 'skull': return Skull;
+                                      case 'brain': return Brain;
+                                      case 'pill': return Pill;
+                                      case 'cpu': return Cpu;
+                                      case 'dna': return Dna;
+                                      case 'ghost': return Ghost;
+                                      case 'umbrella': return Umbrella;
+                                      case 'footprints': return Footprints;
+                                      case 'cloud-rain':
+                                      case 'cloudrain': return CloudRain;
+                                      case 'castle': return Castle;
+                                      case 'bug': return Bug;
+                                      case 'radiation': return Radiation;
+                                      case 'user-minus2':
+                                      case 'userminus2': return UserMinus2;
+                                      case 'user-plus':
+                                      case 'userplus': return UserPlus;
+                                      case 'anchor': return Anchor;
+                                      case 'alert-triangle':
+                                      case 'alerttriangle': return AlertTriangle;
+                                      case 'building': return Building;
+                                      case 'worm': return Worm;
+                                      case 'cloud': return Cloud;
+                                      case 'cloud-fog':
+                                      case 'cloudfog': return CloudFog;
+                                      case 'flame': return Flame;
+                                      case 'eye': return Eye;
+                                      case 'hourglass': return Hourglass;
+                                      case 'knife': return ForkKnife;
+                                      case 'utensils':
+                                      case 'fork-knife':
+                                      case 'forkknife': return ForkKnife;
+                                      case 'cat': return Cat;
+                                      case 'moon': return Moon;
+                                      case 'dog': return Dog;
+                                      case 'radio': return Radio;
+                                      case 'moon-star':
+                                      case 'moonstar': return MoonStar;
+                                      case 'box': return Box;
+                                      case 'car': return Car;
+                                      case 'alien': return Moon;
+                                      case 'flask': return FlaskConical;
+                                      case 'trees':
+                                      case 'tree': return Trees;
+                                    }
+                                    // Fallback by theme key for diversity when slug is unknown
+                                    switch (themeKey) {
+                                      case 'TECHNOLOGICAL': return Cpu;
+                                      case 'PSYCHOLOGICAL': return Brain;
+                                      case 'SUPERNATURAL': return Ghost;
+                                      case 'UNCANNY': return Eye;
+                                      case 'EXISTENTIAL': return Hourglass;
+                                      case 'DOPPELGANGER': return UserPlus;
+                                      case 'CANNIBALISM': return ForkKnife;
+                                      case 'SLASHER': return Skull;
+                                      case 'MONSTER': return Cat;
+                                      case 'ZOMBIE': return Footprints;
+                                      case 'VAMPIRE': return Moon;
+                                      case 'WEREWOLF': return Dog;
+                                      case 'PARANORMAL': return Radio;
+                                      case 'DREAM_HORROR': return MoonStar;
+                                      case 'CURSED_OBJECT': return Box;
+                                      case 'TIME_HORROR': return Clock;
+                                      case 'APOCALYPTIC': return Radiation;
+                                      case 'SCIENCE_HORROR': return FlaskConical;
+                                      case 'FOLK_HORROR': return Trees;
+                                      case 'GOTHIC': return Castle;
+                                      case 'COSMIC': return Moon;
+                                      case 'VEHICULAR': return Car;
+                                      default: return Ghost;
+                                    }
+                                  })();
+
                                   const badgeTint = (() => {
                                     switch (themeKey) {
                                       case 'DEATH': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
