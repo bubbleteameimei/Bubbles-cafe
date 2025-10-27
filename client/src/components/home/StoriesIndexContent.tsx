@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { 
   ArrowRight, ArrowLeft, Clock, Calendar, Book,
   Award, Search, Ghost, Skull, Brain, Pill, Cpu, Dna, Footprints, CloudRain, Castle, Bug, Radiation, Umbrella, UserMinus2, Anchor, AlertTriangle, Building, Worm, Cloud, CloudFog, Flame,
-  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife
+  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Heart
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 import MostLikedList from "@/components/home/MostLikedList";
@@ -262,14 +262,19 @@ export default function StoriesIndexContent() {
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  // Available theme categories present in posts
+  // Available theme categories present in posts (include derived when metadata missing)
   const availableCategories = useMemo(() => {
     const set = new Set<string>();
     for (const p of allPosts) {
       const md = (p.metadata || {}) as Record<string, any>;
-      if (typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
-        set.add(md.themeCategory);
+      let key = String(md.themeCategory || '').trim();
+      if (!key) {
+        try {
+          const derived = sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
+          key = String(derived || '').trim();
+        } catch {}
       }
+      if (key) set.add(key);
     }
     return Array.from(set);
   }, [allPosts]);
@@ -1862,7 +1867,7 @@ export default function StoriesIndexContent() {
                       overscan={3}
                       className="rounded-md border border-transparent"
                       renderItem={(row, rowIdx) => (
-                        <div className={`grid grid-cols-1 md:grid-cols-${Math.min(2, cols)} lg:grid-cols-${Math.min(3, cols)} gap-5 md:gap-6`}>
+                        <div className={cols >= 3 ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6' : (cols === 2 ? 'grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6' : 'grid grid-cols-1 gap-5 md:gap-6')}>
                           {row.map((post, idx) => {
                             const md: any = post.metadata || {};
                             let themeCategory = "";
@@ -2273,7 +2278,7 @@ export default function StoriesIndexContent() {
                   })}
                 </div>
               )}
-              {latestPosts.length > visibleCount && (
+              {latestPosts.length > visibleCount && latestPosts.length <= 60 && (
                 <div className="mt-4 flex justify-center">
                   <Button
                     className="h-10 px-5 rounded-lg border border-border/60 shadow-sm"
