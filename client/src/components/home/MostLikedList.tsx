@@ -93,8 +93,8 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
         <div className="text-sm text-muted-foreground">No liked stories yet.</div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {topLiked.map((featured) => (
-            <Card key={featured.id} className="rounded-lg border border-border/60 bg-card/80 transition hover:bg-card hover:shadow-md hover:ring-1 hover:ring-primary/15">
+          {topLiked.map((featured, idx) => (
+            <Card key={featured.id} className={`${idx === 3 ? 'hidden lg:block' : ''} rounded-lg border border-border/60 bg-card/80 transition hover:bg-card hover:shadow-md hover:ring-1 hover:ring-primary/15`}>
               <CardContent className="p-4">
                 <a
                   href={`/reader/${encodeURIComponent(String(featured.slug || featured.id))}`}
