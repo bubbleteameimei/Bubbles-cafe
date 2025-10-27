@@ -675,7 +675,7 @@ export default function StoriesIndexContent() {
                             }
                           })();
                           return (
-                            <div className="mt-0">
+                            <div className="-mt-0.5">
                               <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
                                 {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : <ThemeIconCmp className="h-3 w-3" />}
                                 {prettyLabel}
@@ -743,7 +743,7 @@ export default function StoriesIndexContent() {
             <div className="flex justify-between items-center">
               <h1 className="text-2xl md:text-3xl font-decorative uppercase">LATEST STORIES</h1>
               <div className="text-sm md:text-base text-muted-foreground">
-                {allPosts.length} stories
+                {filteredPosts.length} stories
               </div>
             </div>
           </div>
@@ -1221,7 +1221,7 @@ export default function StoriesIndexContent() {
                     </Button>
                   </div>
                   {/* Category tags under carousel controls */}
-                  <div className="mt-3 px-2">
+                  <div className="mt-8 px-2">
                     {(() => {
                       // Build counts including derived categories for posts lacking metadata
                       const counts = new Map<string, number>();
@@ -1281,13 +1281,13 @@ export default function StoriesIndexContent() {
             </div>
           ) : (
             <>
-              {latestPosts.length > 60 ? (
+              {filteredPosts.length > 60 ? (
                 // Virtualized rows for large lists (row = gridCols items)
                 (() => {
                   const cols = gridCols || 1;
                   const rows: Post[][] = [];
-                  for (let i = 0; i < latestPosts.length; i += cols) {
-                    rows.push(latestPosts.slice(i, i + cols));
+                  for (let i = 0; i < filteredPosts.length; i += cols) {
+                    rows.push(filteredPosts.slice(i, i + cols));
                   }
                   const rowHeight = 360; // approximate card row height
                   return (
@@ -1472,7 +1472,7 @@ export default function StoriesIndexContent() {
                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
                   ref={cardsGridRef as any}
                 >
-                  {latestPosts.slice(0, visibleCount).map((post, idx) => {
+                  {filteredPosts.slice(0, visibleCount).map((post, idx) => {
                     
                     const md: any = post.metadata || {};
                     // Prefer metadata theme; otherwise detect from title/content for WordPress API posts
@@ -1712,7 +1712,7 @@ export default function StoriesIndexContent() {
                   })}
                 </div>
               )}
-              {latestPosts.length > visibleCount && latestPosts.length <= 60 && (
+              {filteredPosts.length > visibleCount && filteredPosts.length <= 60 && (
                 <div className="mt-4 flex justify-center">
                   <Button
                     className="h-10 px-5 rounded-lg border border-border/60 shadow-sm"
@@ -1721,7 +1721,7 @@ export default function StoriesIndexContent() {
                       try {
                         const current = visibleCount;
                         const needed = current + pageSize;
-                        if (needed > latestPosts.length && hasNextPage) {
+                        if (needed > filteredPosts.length && hasNextPage) {
                           await fetchNextPage();
                         }
                         setVisibleCount((c) => {
