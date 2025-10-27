@@ -12,8 +12,8 @@ import "@/styles/reader-fixes.css";
 import { 
   Share2, Minus, Plus, Shuffle, ChevronLeft, ChevronRight,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
-  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog, BookText, Trash, X, Pencil,
-  Eye, Hourglass, Knife, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Alien, Trees, ForkKnife
+  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog, BookText, Trash, X, Pencil, Clock,
+  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from 'date-fns';
@@ -1288,7 +1288,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         case 'cloudfog': return CloudFog;
                         case 'eye': return Eye;
                         case 'hourglass': return Hourglass;
-                        case 'knife': return Knife;
+                        case 'knife': return ForkKnife;
                         case 'utensils':
                         case 'fork-knife':
                         case 'forkknife': return ForkKnife;
@@ -1300,7 +1300,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         case 'moonstar': return MoonStar;
                         case 'box': return Box;
                         case 'car': return Car;
-                        case 'alien': return Alien;
+                        case 'alien': return Moon;
                         case 'trees':
                         case 'tree': return Trees;
                       }
@@ -1313,7 +1313,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         case 'EXISTENTIAL': return Hourglass;
                         case 'DOPPELGANGER': return UserPlus;
                         case 'CANNIBALISM': return ForkKnife;
-                        case 'SLASHER': return Knife;
+                        case 'SLASHER': return Skull;
                         case 'MONSTER': return Cat;
                         case 'ZOMBIE': return Footprints;
                         case 'VAMPIRE': return Moon;
@@ -1326,7 +1326,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         case 'SCIENCE_HORROR': return FlaskConical;
                         case 'FOLK_HORROR': return Trees;
                         case 'GOTHIC': return Castle;
-                        case 'COSMIC': return Alien;
+                        case 'COSMIC': return Moon;
                         case 'VEHICULAR': return Car;
                         default: return Ghost;
                       }

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { 
   ArrowRight, ArrowLeft, Clock, Calendar, Book,
   Award, Search, Ghost, Skull, Brain, Pill, Cpu, Dna, Footprints, CloudRain, Castle, Bug, Radiation, Umbrella, UserMinus2, Anchor, AlertTriangle, Building, Worm, Cloud, CloudFog, Flame,
-  Eye, Hourglass, Knife, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Alien, Trees, ForkKnife
+  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 import MostLikedList from "@/components/home/MostLikedList";
@@ -1333,7 +1333,7 @@ export default function StoriesIndexContent() {
                                 case 'flame': return Flame;
                                 case 'eye': return Eye;
                                 case 'hourglass': return Hourglass;
-                                case 'knife': return Knife;
+                                case 'knife': return ForkKnife;
                                 case 'utensils':
                                 case 'fork-knife':
                                 case 'forkknife': return ForkKnife;
@@ -1345,7 +1345,7 @@ export default function StoriesIndexContent() {
                                 case 'moonstar': return MoonStar;
                                 case 'box': return Box;
                                 case 'car': return Car;
-                                case 'alien': return Alien;
+                                case 'alien': return Moon;
                                 case 'trees':
                                 case 'tree': return Trees;
                               }
@@ -1358,7 +1358,7 @@ export default function StoriesIndexContent() {
                                 case 'EXISTENTIAL': return Hourglass;
                                 case 'DOPPELGANGER': return UserPlus;
                                 case 'CANNIBALISM': return ForkKnife;
-                                case 'SLASHER': return Knife;
+                                case 'SLASHER': return Skull;
                                 case 'MONSTER': return Cat;
                                 case 'ZOMBIE': return Footprints;
                                 case 'VAMPIRE': return Moon;
@@ -1371,7 +1371,7 @@ export default function StoriesIndexContent() {
                                 case 'SCIENCE_HORROR': return FlaskConical;
                                 case 'FOLK_HORROR': return Trees;
                                 case 'GOTHIC': return Castle;
-                                case 'COSMIC': return Alien;
+                                case 'COSMIC': return Moon;
                                 case 'VEHICULAR': return Car;
                                 default: return Ghost;
                               }
