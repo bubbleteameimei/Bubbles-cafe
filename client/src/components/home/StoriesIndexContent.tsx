@@ -1306,18 +1306,6 @@ export default function StoriesIndexContent() {
 
                                   const prettyLabel = (() => {
                                     if (override?.label) return override.label;
-                                    const l = String(baseLabel).toLowerCase();
-                                    if (l.includes('cosmic')) return 'Cosmic Horror';
-                                    if (l.includes('existential')) return 'Existential Horror';
-                                    if (l.includes('vehicular')) return 'Vehicular Horror';
-                                    if (l.includes('psychological')) return 'Psychological Horror';
-                                    if (l.includes('supernatural')) return 'Supernatural Horror';
-                                    if (l.includes('technological')) return 'Technological Horror';
-                                    if (l.includes('uncanny')) return 'Uncanny Horror';
-                                    if (l.includes('gothic')) return 'Gothic Horror';
-                                    if (l.includes('folk')) return 'Folk Horror';
-                                    if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
-                                    if (l.includes('cannibal')) return 'Cannibalism Horror';
                                     return baseLabel;
                                   })();
 
@@ -1330,8 +1318,7 @@ export default function StoriesIndexContent() {
                                     'ghost';
                                   if (themeKey === 'BODY_HORROR') {
                                     chosenIconSlug = 'bone';
-                                 new </}
-;
+                                  }
 
                                   // Map lucide icon when not using Iconify provider
                                   const ThemeIconCmp = (() => {
@@ -1381,33 +1368,35 @@ export default function StoriesIndexContent() {
                                       case 'flask': return FlaskConical;
                                       case 'trees':
                                       case 'tree': return Trees;
-                                    }
-                                    // Fallback by theme key for diversity when slug is unknown
-                                    switch (themeKey) {
-                                      case 'TECHNOLOGICAL': return Cpu;
-                                      case 'PSYCHOLOGICAL': return Brain;
-                                      case 'SUPERNATURAL': return Ghost;
-                                      case 'UNCANNY': return Eye;
-                                      case 'EXISTENTIAL': return Hourglass;
-                                      case 'DOPPELGANGER': return UserPlus;
-                                      case 'CANNIBALISM': return ForkKnife;
-                                      case 'SLASHER': return Skull;
-                                      case 'MONSTER': return Cat;
-                                      case 'ZOMBIE': return Footprints;
-                                      case 'VAMPIRE': return Moon;
-                                      case 'WEREWOLF': return Dog;
-                                      case 'PARANORMAL': return Radio;
-                                      case 'DREAM_HORROR': return MoonStar;
-                                      case 'CURSED_OBJECT': return Box;
-                                      case 'TIME_HORROR': return Clock;
-                                      case 'APOCALYPTIC': return Radiation;
-                                      case 'SCIENCE_HORROR': return FlaskConical;
-                                    case 'BODY_HORROR': return Bone;
-                                    case 'FOLK_HORROR': return Trees;
-                                      case 'GOTHIC': return Castle;
-                                      case 'COSMIC': return Moon;
-                                      case 'VEHICULAR': return Car;
-                                      default: return Ghost;
+                                      case 'bone': return Bone;
+                                      default:
+                                        // Fallback by theme key for diversity when slug is unknown
+                                        switch (themeKey) {
+                                          case 'TECHNOLOGICAL': return Cpu;
+                                          case 'PSYCHOLOGICAL': return Brain;
+                                          case 'SUPERNATURAL': return Ghost;
+                                          case 'UNCANNY': return Eye;
+                                          case 'EXISTENTIAL': return Hourglass;
+                                          case 'DOPPELGANGER': return UserPlus;
+                                          case 'CANNIBALISM': return ForkKnife;
+                                          case 'SLASHER': return Skull;
+                                          case 'MONSTER': return Cat;
+                                          case 'ZOMBIE': return Footprints;
+                                          case 'VAMPIRE': return Moon;
+                                          case 'WEREWOLF': return Dog;
+                                          case 'PARANORMAL': return Radio;
+                                          case 'DREAM_HORROR': return MoonStar;
+                                          case 'CURSED_OBJECT': return Box;
+                                          case 'TIME_HORROR': return Clock;
+                                          case 'APOCALYPTIC': return Radiation;
+                                          case 'SCIENCE_HORROR': return FlaskConical;
+                                          case 'BODY_HORROR': return Bone;
+                                          case 'FOLK_HORROR': return Trees;
+                                          case 'GOTHIC': return Castle;
+                                          case 'COSMIC': return Moon;
+                                          case 'VEHICULAR': return Car;
+                                          default: return Ghost;
+                                        }
                                     }
                                   })();
 
