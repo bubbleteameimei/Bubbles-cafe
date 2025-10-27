@@ -25,6 +25,7 @@ import type { WordPressPost } from "@/lib/wordpress-api";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { determineThemeCategory as sharedDetermineThemeCategory, THEME_CATEGORIES as SHARED_THEME_CATEGORIES } from "@shared/theme-categories";
 import { getStoryThemeOverride } from "@shared/story-theme-overrides";
+import { getThemeDefinitionOverride } from "@/shared/theme-definitions";
 
 
 
@@ -969,8 +970,11 @@ export default function StoriesIndexContent() {
 
                                 const themeKey = override?.key || derivedKey;
 
+                                const defOverride = getThemeDefinitionOverride(themeKey);
+
                                 const baseLabel =
                                   override?.label ||
+                                  defOverride?.label ||
                                   (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
                                   primaryThemeRaw ||
                                   'Horror';
@@ -1153,8 +1157,11 @@ export default function StoriesIndexContent() {
 
                                   const themeKey = override?.key || derivedKey;
 
+                                  const defOverride = getThemeDefinitionOverride(themeKey);
+
                                   const baseLabel =
                                     override?.label ||
+                                    defOverride?.label ||
                                     (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
                                     primaryThemeRaw ||
                                     'Horror';
@@ -1314,9 +1321,12 @@ export default function StoriesIndexContent() {
 
                             const themeKeyForTint = override?.key || derivedKey;
 
+                            const defOverride = getThemeDefinitionOverride(themeKeyForTint);
+
                             const chosenIconSlug =
                               override?.icon ||
                               (md && (md as any).themeIcon) ||
+                              defOverride?.icon ||
                               (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
                               'ghost';
 
@@ -1398,6 +1408,7 @@ export default function StoriesIndexContent() {
 
                             const baseLabel =
                               override?.label ||
+                              defOverride?.label ||
                               (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
                               themeCategory;
 

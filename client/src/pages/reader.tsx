@@ -61,6 +61,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } from "@shared/theme-categories";
 import { getStoryThemeOverride } from "@shared/story-theme-overrides";
+import { getThemeDefinitionOverride } from "@/shared/theme-definitions";
 
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
@@ -1256,11 +1257,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
                     const themeKey = override?.key || derivedKey;
 
-                    // Icon slug priority: story override -> editor override -> metadata -> shared definition -> ghost
+                    const defOverride = getThemeDefinitionOverride(themeKey);
+
+                    // Icon slug priority: story override -> editor override -> metadata -> global override -> shared definition -> ghost
                     const chosenIconSlug =
                       override?.icon ||
                       overrideThemeIcon ||
                       md.themeIcon ||
+                      defOverride?.icon ||
                       (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
                       'ghost';
 
@@ -1343,6 +1347,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     // Human-friendly label with specific "Horror" suffixes; prefer override label
                     const baseLabel =
                       override?.label ||
+                      defOverride?.label ||
                       (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
                       primaryThemeRaw ||
                       'Horror';

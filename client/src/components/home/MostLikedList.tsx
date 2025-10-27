@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { THEME_CATEGORIES } from '@/lib/themes-lite';
 import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } from '@shared/theme-categories';
 import { getStoryThemeOverride } from '@shared/story-theme-overrides';
+import { getThemeDefinitionOverride } from '@/shared/theme-definitions';
 
 type Post = typeof posts.$inferSelect;
 
@@ -130,8 +131,11 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
 
                     const themeKey = override?.key || derivedKey;
 
+                    const defOverride = getThemeDefinitionOverride(themeKey);
+
                     const baseLabel =
                       override?.label ||
+                      defOverride?.label ||
                       (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
                       primaryThemeRaw ||
                       'Horror';

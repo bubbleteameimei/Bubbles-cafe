@@ -28,6 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import AdminLayout from '@/components/layout/admin-layout';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { THEME_CATEGORIES } from '@shared/theme-categories';
+import { getThemeDefinitionOverrides, saveThemeDefinitionOverrides } from '@/shared/theme-definitions';
 
 // Icon mapping for theme categories
 const THEME_ICONS: Record<string, React.ReactNode> = {
@@ -105,6 +106,27 @@ export default function ThemesPage() {
   const [selectedIcon, setSelectedIcon] = useState('');
   const [customIconInput, setCustomIconInput] = useState('');
   const [showCustomIconInput, setShowCustomIconInput] = useState(false);
+
+  // Global theme definitions overrides
+  const [defs, setDefs] = useState<Record<string, { label: string; icon: string }>>(() => {
+    try {
+      const raw = getThemeDefinitionOverrides();
+      const init: Record<string, { label: string; icon: string }> = {};
+      Object.entries(THEME_CATEGORIES).forEach(([key, info]) => {
+        const baseLabel = (info as any).label || key;
+        const baseIcon = (info as any).icon || 'eye';
+        const ov = (raw && (raw as any)[key]) || {};
+        init[key] = { label: ov.label || baseLabel, icon: ov.icon || baseIcon };
+      });
+      return init;
+    } catch {
+      const init: Record<string, { label: string; icon: string }> = {};
+      Object.entries(THEME_CATEGORIES).forEach(([key, info]) => {
+        init[key] = { label: (info as any).label || key, icon: (info as any).icon || 'eye' };
+      });
+      return init;
+    }
+  });
 
   interface Post {
     id: number;
@@ -578,6 +600,138 @@ export default function ThemesPage() {
               </Table>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="w-full mt-6">
+        <CardHeader>
+          <CardTitle>Global Theme Definitions</CardTitle>
+          <CardDescription>
+            Edit labels and default icons for theme keys. Changes persist locally and apply across Index and Reader.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Key</TableHead>
+                  <TableHead>Label</TableHead>
+                  <TableHead>Icon</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Object.entries(THEME_CATEGORIES).map(([key, info]) => {
+                  const base = info as any;
+                  const value = defs[key] || { label: base.label || key, icon: base.icon || 'eye' };
+                  return (
+                    <TableRow key={key}>
+                      <TableCell className="text-xs">{key}</TableCell>
+                      <TableCell>
+                        <Input
+                          value={value.label}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setDefs(prev => ({ ...prev, [key]: { ...prev[key], label: v } }));
+                          }}
+                          className="w-full md:w-[220px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={value.icon}
+                            onValueChange={(v) => setDefs(prev => ({ ...prev, [key]: { ...prev[key], icon: v } }))}
+                          >
+                            <SelectTrigger className="w-[160px]">
+                              <SelectValue placeholder="Icon slug" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ICON_OPTIONS.map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  <div className="flex items-center">
+                                    {THEME_ICONS[opt.value]}
+                                    <span className="ml-2">{opt.label}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            value={value.icon}
+                            onChange={(e) => {
+                              const v = e.target.value.toLowerCase();
+                              setDefs(prev => ({ ...prev, [key]: { ...prev[key], icon: v } }));
+                            }}
+                            placeholder="custom icon slug"
+                            className="w-[160px]"
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            const baseLabel = base.label || key;
+                            const baseIcon = base.icon || 'eye';
+                            setDefs(prev => ({ ...prev, [key]: { label: baseLabel, icon: baseIcon } }));
+                          }}
+                        >
+                          Reset
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="mt-4 flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => {
+                try {
+                  // Only save differences vs base THEME_CATEGORIES
+                  const out: Record<string, { label?: string; icon?: string }> = {};
+                  Object.entries(THEME_CATEGORIES).forEach(([key, info]) => {
+                    const baseLabel = (info as any).label || key;
+                    const baseIcon = (info as any).icon || 'eye';
+                    const v = defs[key] || { label: baseLabel, icon: baseIcon };
+                    const diff: { label?: string; icon?: string } = {};
+                    if (v.label && v.label !== baseLabel) diff.label = v.label;
+                    if (v.icon && v.icon !== baseIcon) diff.icon = v.icon;
+                    if (diff.label || diff.icon) out[key] = diff;
+                  });
+                  saveThemeDefinitionOverrides(out);
+                  toast({ title: 'Theme definitions saved', description: 'Global labels and default icons updated.' });
+                } catch (err) {
+                  console.error('Save theme definitions failed', err);
+                  toast({ title: 'Save failed', description: 'Unable to save theme definitions.', variant: 'destructive' });
+                }
+              }}
+            >
+              Save all
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                try {
+                  saveThemeDefinitionOverrides({});
+                  const init: Record<string, { label: string; icon: string }> = {};
+                  Object.entries(THEME_CATEGORIES).forEach(([key, info]) => {
+                    init[key] = { label: (info as any).label || key, icon: (info as any).icon || 'eye' };
+                  });
+                  setDefs(init);
+                  toast({ title: 'Theme definitions reset', description: 'Overrides cleared.' });
+                } catch {}
+              }}
+            >
+              Reset all
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </AdminLayout>
