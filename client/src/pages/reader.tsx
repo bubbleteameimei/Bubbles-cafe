@@ -555,7 +555,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       // no-op
     }
     // Re-evaluate on progress changes, post changes, interaction and visibility transitions
-  }, [readingProgress, currentPostId, currentPostLink, interactionCount, visibilityTick, isCategoryAllowed])</;
+  }, [readingProgress, currentPostId, currentPostLink, interactionCount, visibilityTick, isCategoryAllowed]);
 
   // Finish-read tracking (local analytics): 90% scroll and ≥ 60s active time
   useEffect(() => {
