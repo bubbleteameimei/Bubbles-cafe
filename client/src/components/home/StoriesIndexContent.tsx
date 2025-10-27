@@ -567,7 +567,7 @@ export default function StoriesIndexContent() {
             <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1">
                 <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
-                  <CardContent className="p-4">
+                  <CardContent className="group p-4">
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
                         <Award className="h-4 w-4 text-primary" />
@@ -594,7 +594,7 @@ export default function StoriesIndexContent() {
                     </div>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <button className="text-left text-xl md:text-2xl font-semibold tracking-tight leading-6 hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
+                        <button className="text-left text-xl md:text-2xl font-semibold tracking-tight hover:text-primary group-hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
                           {renderHighlighted(String(featuredStory.title || ''))}
                         </button>
                         {(() => {
@@ -675,7 +675,7 @@ export default function StoriesIndexContent() {
                             }
                           })();
                           return (
-                            <div className="mt-0.5">
+                            <div className="mt-0">
                               <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
                                 {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : <ThemeIconCmp className="h-3 w-3" />}
                                 {prettyLabel}
@@ -727,7 +727,7 @@ export default function StoriesIndexContent() {
                   </CardContent>
                 </Card>
               </div>
-              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="lg:col-span-2">
                 <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
                   <CardContent className="p-4">
                     <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} />
@@ -1249,8 +1249,8 @@ export default function StoriesIndexContent() {
 
                       return (
                         <>
-                          <div className="text-center text-sm md:text-base font-medium text-muted-foreground mb-2 md:mb-3">All categories</div>
-                          <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+                          <div className="text-center text-base md:text-lg font-medium text-muted-foreground mb-3 md:mb-4">All categories</div>
+                          <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
                             <button
                               type="button"
                               className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter === 'all' ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}

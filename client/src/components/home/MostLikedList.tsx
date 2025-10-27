@@ -178,7 +178,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                         })();
 
                         return (
-                          <div className="mt-0.5">
+                          <div className="mt-1">
                             <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
                               {isIconify
                                 ? (<Icon icon={String(chosenIconSlug)} className="h-3 w-3" />)
