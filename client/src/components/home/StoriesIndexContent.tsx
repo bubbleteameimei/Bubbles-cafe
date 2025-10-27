@@ -134,6 +134,52 @@ export default function StoriesIndexContent() {
     return parts;
   };
 
+  // Plain normalization and small edit-distance for fuzzy title matching (≤ 2 typos)
+  const normalizePlain = (s: string) =>
+    s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+  const levenshtein = (a: string, b: string): number => {
+    const m = a.length, n = b.length;
+    if (!m) return n;
+    if (!n) return m;
+    const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,
+          dp[i][j - 1] + 1,
+          dp[i - 1][j - 1] + cost
+        );
+      }
+    }
+    return dp[m][n];
+  };
+
+  const closestTitleMatch = React.useMemo(() => {
+    const q = search.trim();
+    if (!q) return null;
+    const qn = normalizePlain(q);
+    let best: { post: Post; score: number } | null = null;
+
+    for (const p of sortedPosts) {
+      const tn = normalizePlain(String(p.title || ''));
+      if (!tn) continue;
+      if (tn.includes(qn)) {
+        // Exact substring match - prefer strongly (score 0)
+        if (!best || 0 < best.score) best = { post: p, score: 0 };
+        continue;
+      }
+      const d = levenshtein(tn, qn);
+      if (d <= 2) {
+        if (!best || d < best.score) best = { post: p, score: d };
+      }
+    }
+    return best?.post || null;
+  }, [search, sortedPosts]);
+
   useEffect(() => {
     if (!carouselApi) return;
     const update = () => {
@@ -400,6 +446,11 @@ export default function StoriesIndexContent() {
   const featuredStory = useMemo(() => {
     const all = [...sortedPosts];
     if (!all || all.length === 0) return null;
+
+    // If searching, pick the closest title match (exact substring or ≤2 typos)
+    if (search.trim() && closestTitleMatch) {
+      return closestTitleMatch;
+    }
 
     // Respect dropdown criteria directly for the featured pick
     if (sort === 'newest') {
@@ -759,7 +810,7 @@ export default function StoriesIndexContent() {
           
 
           {/* Stories List */}
-          {search.trim() && titleMatches.length === 0 ? (
+          {search.trim() && titleMatches.length === 0 && !closestTitleMatch ? (
             <div className="mx-auto max-w-full sm:max-w-2xl md:max-w-3xl text-center py-8 sm:py-10 md:py-12 rounded-xl border border-border/60 bg-card/80 px-3 sm:px-6 shadow-sm overflow-hidden">
               <div className="w-full">
                 <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4 mt-2">
