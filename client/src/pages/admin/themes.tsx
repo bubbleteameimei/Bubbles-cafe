@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Table,
@@ -22,12 +22,46 @@ import {
   Scan, Castle, Copy, CloudRain, Hourglass, Axe, Cloud, Heart, Droplets, 
   Wind, ScanFace, Tally4, Sparkles, Syringe, Flame, Zap
 } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import AdminLayout from '@/components/layout/admin-layout';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { THEME_CATEGORIES } from '@shared/theme-categories';
+import { getThemeDefinitionOverrides, saveThemeDefinitionOverrides, syncThemeDefinitionOverridesFromServer } from '@/shared/theme-definitions';
+
+/**
+ * Iconify typeahead suggestions for common horror categories.
+ * Admins can pick any slug; suggestions help discover popular Iconify icons.
+ */
+const ICONIFY_SUGGESTIONS: Array<{ value: string; label: string }> = [
+  { value: 'mdi:ghost', label: 'Ghost (Supernatural/Haunting)' },
+  { value: 'mdi:skull', label: 'Skull (Death/Demonic)' },
+  { value: 'mdi:knife', label: 'Knife (Slasher)' },
+  { value: 'mdi:car', label: 'Car (Vehicular)' },
+  { value: 'mdi:foot-print', label: 'Footprints (Stalking/Zombie)' },
+  { value: 'mdi:clock-outline', label: 'Clock (Time Horror)' },
+  { value: 'mdi:radio', label: 'Radio (Paranormal/Contagion)' },
+  { value: 'mdi:moon-waning-crescent', label: 'Moon (Cosmic/Vampiric)' },
+  { value: 'mdi:castle', label: 'Castle (Gothic)' },
+  { value: 'mdi:forest', label: 'Trees (Folk/Eco)' },
+  { value: 'mdi:biohazard', label: 'Radiation (Apocalyptic)' },
+  { value: 'mdi:bug', label: 'Bug (Parasite/Infestation)' },
+  { value: 'mdi:flask-outline', label: 'Flask (Science Horror)' },
+  { value: 'mdi:cpu-64-bit', label: 'CPU (Technological Horror)' },
+  { value: 'mdi:building', label: 'Building (Urban Horror)' },
+  { value: 'mdi:dog', label: 'Dog (Lycanthropic/Werewolf)' },
+  { value: 'mdi:cat', label: 'Cat (Creature Horror)' },
+  { value: 'mdi:torch', label: 'Flame (Demonic/Infernal)' },
+  { value: 'mdi:alert-outline', label: 'Alert Triangle (Survival)' },
+  { value: 'mdi:box', label: 'Box (Cursed Object)' },
+  { value: 'mdi:moon-star', label: 'Moon Star (Dream/Nightmare/Occult)' },
+  { value: 'mdi:drop', label: 'Droplet (Aquatic/Eco)' },
+  { value: 'mdi:cloud-outline', label: 'Cloud (Isolation/Elemental)' },
+  { value: 'mdi:knife-military', label: 'Knife (Alt)' },
+  { value: 'mdi:human', label: 'Identity (Identity Horror)' }
+];
 
 // Icon mapping for theme categories
 const THEME_ICONS: Record<string, React.ReactNode> = {
@@ -105,6 +139,47 @@ export default function ThemesPage() {
   const [selectedIcon, setSelectedIcon] = useState('');
   const [customIconInput, setCustomIconInput] = useState('');
   const [showCustomIconInput, setShowCustomIconInput] = useState(false);
+
+  // Global theme definitions overrides
+  const [defs, setDefs] = useState<Record<string, { label: string; icon: string }>>(() => {
+    try {
+      const raw = getThemeDefinitionOverrides();
+      const init: Record<string, { label: string; icon: string }> = {};
+      Object.entries(THEME_CATEGORIES).forEach(([key, info]) => {
+        const baseLabel = (info as any).label || key;
+        const baseIcon = (info as any).icon || 'eye';
+        const ov = (raw && (raw as any)[key]) || {};
+        init[key] = { label: ov.label || baseLabel, icon: ov.icon || baseIcon };
+      });
+      return init;
+    } catch {
+      const init: Record<string, { label: string; icon: string }> = {};
+      Object.entries(THEME_CATEGORIES).forEach(([key, info]) => {
+        init[key] = { label: (info as any).label || key, icon: (info as any).icon || 'eye' };
+      });
+      return init;
+    }
+  });
+
+  // Sync overrides from server on mount (merge into local and rebuild UI state)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const merged = await syncThemeDefinitionOverridesFromServer();
+        if (!mounted) return;
+        const next: Record<string, { label: string; icon: string }> = {};
+        Object.entries(THEME_CATEGORIES).forEach(([key, info]) => {
+          const baseLabel = (info as any).label || key;
+          const baseIcon = (info as any).icon || 'eye';
+          const ov = (merged && (merged as any)[key]) || {};
+          next[key] = { label: ov.label || baseLabel, icon: ov.icon || baseIcon };
+        });
+        setDefs(next);
+      } catch {}
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   interface Post {
     id: number;
@@ -310,7 +385,10 @@ export default function ThemesPage() {
                               <span>{post.title}</span>
                               {/* Mobile-only theme display */}
                               <span className="md:hidden text-xs text-muted-foreground mt-1 flex items-center">
-                                {THEME_ICONS[themeIcon.toLowerCase()] || <Eye className="h-3 w-3" />}
+                                {String(themeIcon || '').includes(':')
+                                  ? <Icon icon={String(themeIcon)} className="h-3 w-3" />
+                                  : (THEME_ICONS[String(themeIcon || '').toLowerCase()] || <Eye className="h-3 w-3" />)
+                                }
                                 <span className="ml-1">
                                   {themeInfo?.label || 'Horror'}
                                 </span>
@@ -371,15 +449,22 @@ export default function ThemesPage() {
                                       <SelectValue placeholder="Select an icon">
                                         <div className="flex items-center">
                                           {selectedIcon !== "custom" ? 
-                                            (THEME_ICONS[selectedIcon.toLowerCase()] || <Eye className="h-4 w-4" />) : 
+                                            (
+                                              String(selectedIcon).includes(':')
+                                                ? <Icon icon={String(selectedIcon)} className="h-4 w-4" />
+                                                : (THEME_ICONS[String(selectedIcon).toLowerCase()] || <Eye className="h-4 w-4" />)
+                                            ) : 
                                             <span className="flex items-center">
-                                              {THEME_ICONS[customIconInput.toLowerCase()] || <Eye className="h-4 w-4" />}
+                                              {String(customIconInput).includes(':')
+                                                ? <Icon icon={String(customIconInput)} className="h-4 w-4" />
+                                                : (THEME_ICONS[String(customIconInput).toLowerCase()] || <Eye className="h-4 w-4" />)
+                                              }
                                               <span className="ml-2 truncate max-w-[100px]">Custom: {customIconInput || 'none'}</span>
                                             </span>
                                           }
                                           {selectedIcon !== "custom" && (
                                             <span className="ml-2 truncate">
-                                              {ICON_OPTIONS.find(icon => icon.value === selectedIcon.toLowerCase())?.label || 'Icon'}
+                                              {ICON_OPTIONS.find(icon => icon.value === String(selectedIcon).toLowerCase())?.label || 'Icon'}
                                             </span>
                                           )}
                                         </div>
@@ -416,19 +501,46 @@ export default function ThemesPage() {
                                       <div className="flex items-center">
                                         <span className="text-xs text-muted-foreground">Preview: </span>
                                         <span className="ml-2 flex items-center">
-                                          {THEME_ICONS[customIconInput.toLowerCase()] || <Eye className="h-4 w-4" />}
+                                          {String(customIconInput).includes(':')
+                                            ? <Icon icon={String(customIconInput)} className="h-4 w-4" />
+                                            : (THEME_ICONS[String(customIconInput).toLowerCase()] || <Eye className="h-4 w-4" />)
+                                          }
                                           <span className="ml-1">{customIconInput || 'eye'}</span>
                                         </span>
                                       </div>
+                                      {(() => {
+                                        const term = String(customIconInput || '').toLowerCase();
+                                        const matches = ICONIFY_SUGGESTIONS
+                                          .filter(s => term && (s.value.toLowerCase().includes(term) || s.label.toLowerCase().includes(term)))
+                                          .slice(0, 6);
+                                        return matches.length > 0 ? (
+                                          <div className="mt-2 grid grid-cols-1 gap-1">
+                                            {matches.map(s => (
+                                              <button
+                                                type="button"
+                                                key={s.value}
+                                                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+                                                onClick={() => { setCustomIconInput(s.value); setSelectedIcon('custom'); }}
+                                              >
+                                                <Icon icon={s.value} className="h-4 w-4" />
+                                                <span>{s.label}</span>
+                                              </button>
+                                            ))}
+                                          </div>
+                                        ) : null;
+                                      })()}
                                     </div>
                                   )}
                                 </div>
                               </div>
                             ) : (
                               <div className="flex items-center">
-                                {THEME_ICONS[themeIcon.toLowerCase()] || <Eye className="h-4 w-4" />}
+                                {String(themeIcon || '').includes(':')
+                                  ? <Icon icon={String(themeIcon)} className="h-4 w-4" />
+                                  : (THEME_ICONS[String(themeIcon || '').toLowerCase()] || <Eye className="h-4 w-4" />)
+                                }
                                 <span className="ml-2">
-                                  {ICON_OPTIONS.find(icon => icon.value === themeIcon.toLowerCase())?.label || themeIcon}
+                                  {ICON_OPTIONS.find(icon => icon.value === String(themeIcon || '').toLowerCase())?.label || themeIcon}
                                 </span>
                               </div>
                             )}
@@ -525,10 +637,34 @@ export default function ThemesPage() {
                                         <div className="flex items-center">
                                           <span className="text-xs text-muted-foreground">Preview: </span>
                                           <span className="ml-2 flex items-center">
-                                            {THEME_ICONS[customIconInput.toLowerCase()] || <Eye className="h-4 w-4" />}
+                                            {String(customIconInput).includes(':')
+                                              ? <Icon icon={String(customIconInput)} className="h-4 w-4" />
+                                              : (THEME_ICONS[String(customIconInput).toLowerCase()] || <Eye className="h-4 w-4" />)
+                                            }
                                             <span className="ml-1">{customIconInput || 'eye'}</span>
                                           </span>
                                         </div>
+                                        {(() => {
+                                          const term = String(customIconInput || '').toLowerCase();
+                                          const matches = ICONIFY_SUGGESTIONS
+                                            .filter(s => term && (s.value.toLowerCase().includes(term) || s.label.toLowerCase().includes(term)))
+                                            .slice(0, 6);
+                                          return matches.length > 0 ? (
+                                            <div className="mt-2 grid grid-cols-1 gap-1">
+                                              {matches.map(s => (
+                                                <button
+                                                  type="button"
+                                                  key={s.value}
+                                                  className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+                                                  onClick={() => { setCustomIconInput(s.value); setSelectedIcon('custom'); }}
+                                                >
+                                                  <Icon icon={s.value} className="h-4 w-4" />
+                                                  <span>{s.label}</span>
+                                                </button>
+                                              ))}
+                                            </div>
+                                          ) : null;
+                                        })()}
                                       </div>
                                     )}
                                   </div>
@@ -578,6 +714,145 @@ export default function ThemesPage() {
               </Table>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="w-full mt-6">
+        <CardHeader>
+          <CardTitle>Global Theme Definitions</CardTitle>
+          <CardDescription>
+            Edit labels and default icons for theme keys. Changes persist locally and apply across Index and Reader.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Key</TableHead>
+                  <TableHead>Label</TableHead>
+                  <TableHead>Icon</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Object.entries(THEME_CATEGORIES).map(([key, info]) => {
+                  const base = info as any;
+                  const value = defs[key] || { label: base.label || key, icon: base.icon || 'eye' };
+                  return (
+                    <TableRow key={key}>
+                      <TableCell className="text-xs">{key}</TableCell>
+                      <TableCell>
+                        <Input
+                          value={value.label}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setDefs(prev => ({ ...prev, [key]: { ...prev[key], label: v } }));
+                          }}
+                          className="w-full md:w-[220px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={value.icon}
+                            onValueChange={(v) => setDefs(prev => ({ ...prev, [key]: { ...prev[key], icon: v } }))}
+                          >
+                            <SelectTrigger className="w-[160px]">
+                              <SelectValue placeholder="Icon slug" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ICON_OPTIONS.map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  <div className="flex items-center">
+                                    {THEME_ICONS[opt.value]}
+                                    <span className="ml-2">{opt.label}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            value={value.icon}
+                            onChange={(e) => {
+                              const v = e.target.value.toLowerCase();
+                              setDefs(prev => ({ ...prev, [key]: { ...prev[key], icon: v } }));
+                            }}
+                            placeholder="custom icon slug"
+                            className="w-[160px]"
+                          />
+                          <span className="flex items-center text-xs text-muted-foreground">
+                            <span className="mr-1">Preview:</span>
+                            {String(value.icon || '').includes(':')
+                              ? <Icon icon={String(value.icon)} className="h-4 w-4" />
+                              : (THEME_ICONS[String(value.icon || '').toLowerCase()] || <Eye className="h-4 w-4" />)
+                            }
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            const baseLabel = base.label || key;
+                            const baseIcon = base.icon || 'eye';
+                            setDefs(prev => ({ ...prev, [key]: { label: baseLabel, icon: baseIcon } }));
+                          }}
+                        >
+                          Reset
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="mt-4 flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                try {
+                  // Only save differences vs base THEME_CATEGORIES
+                  const out: Record<string, { label?: string; icon?: string }> = {};
+                  Object.entries(THEME_CATEGORIES).forEach(([key, info]) => {
+                    const baseLabel = (info as any).label || key;
+                    const baseIcon = (info as any).icon || 'eye';
+                    const v = defs[key] || { label: baseLabel, icon: baseIcon };
+                    const diff: { label?: string; icon?: string } = {};
+                    if (v.label && v.label !== baseLabel) diff.label = v.label;
+                    if (v.icon && v.icon !== baseIcon) diff.icon = v.icon;
+                    if (diff.label || diff.icon) out[key] = diff;
+                  });
+                  await saveThemeDefinitionOverrides(out);
+                  toast({ title: 'Theme definitions saved', description: 'Global labels and default icons updated.' });
+                } catch (err) {
+                  console.error('Save theme definitions failed', err);
+                  toast({ title: 'Save failed', description: 'Unable to save theme definitions.', variant: 'destructive' });
+                }
+              }}
+            >
+              Save all
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                try {
+                  saveThemeDefinitionOverrides({});
+                  const init: Record<string, { label: string; icon: string }> = {};
+                  Object.entries(THEME_CATEGORIES).forEach(([key, info]) => {
+                    init[key] = { label: (info as any).label || key, icon: (info as any).icon || 'eye' };
+                  });
+                  setDefs(init);
+                  toast({ title: 'Theme definitions reset', description: 'Overrides cleared.' });
+                } catch {}
+              }}
+            >
+              Reset all
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </AdminLayout>

@@ -434,9 +434,8 @@ div.sidebar-menu-container {
     box-shadow: none !important;
     text-shadow: none !important;
   }
-  /* Disable pseudo-element underline/glow effects */
+  /* Disable pseudo-element underline/glow effects (do not remove pseudo-elements entirely) */
   a::after, a::before, button::after, button::before {
-    display: none !important;
     box-shadow: none !important;
     text-shadow: none !important;
     background: none !important;
@@ -446,6 +445,20 @@ div.sidebar-menu-container {
   [data-sidebar="menu-button"] span.absolute.inset-0,
   [data-sidebar="menu-sub-button"] span.absolute.inset-0 {
     display: none !important;
+  }
+  /* Ensure hover/active states keep text and icons visible */
+  a:hover, a:active,
+  button:hover, button:active,
+  [role="button"]:hover, [role="button"]:active {
+    opacity: 1 !important;
+    color: inherit !important;
+    -webkit-text-fill-color: inherit !important;
+    -webkit-text-stroke-color: inherit !important;
+  }
+  a:hover svg, a:active svg,
+  button:hover svg, button:active svg,
+  [role="button"]:hover svg, [role="button"]:active svg {
+    opacity: 1 !important;
   }
 }
 

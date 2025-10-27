@@ -7,162 +7,64 @@
 
 // Theme categories with their respective icons
 export const THEME_CATEGORIES = {
-  DEATH: { 
-    label: "Death",
-    icon: "skull" 
-  },
-  BODY_HORROR: { 
-    label: "Body Horror",
-    icon: "scissors" 
-  },
-  SUPERNATURAL: { 
-    label: "Supernatural",
-    icon: "ghost" 
-  },
-  PSYCHOLOGICAL: { 
-    label: "Psychological",
-    icon: "brain" 
-  },
-  EXISTENTIAL: { 
-    label: "Existential",
-    icon: "hourglass" 
-  },
-  HORROR: { 
-    label: "Horror",
-    icon: "eye" 
-  },
-  STALKING: { 
-    label: "Stalking",
-    icon: "footprints" 
-  },
-  CANNIBALISM: { 
-    label: "Cannibalism",
-    icon: "utensils" 
-  },
-  PSYCHOPATH: { 
-    label: "Psychopath",
-    icon: "axe" 
-  },
-  DOPPELGANGER: { 
-    label: "Doppelgänger",
-    icon: "user-plus" 
-  },
-  VEHICULAR: { 
-    label: "Vehicular",
-    icon: "car" 
-  },
-  PARASITE: { 
-    label: "Parasite",
-    icon: "bug" 
-  },
-  TECHNOLOGICAL: { 
-    label: "Technological",
-    icon: "cpu" 
-  },
-  COSMIC: { 
-    label: "Cosmic/Lovecraftian",
-    icon: "alien" 
-  },
-  UNCANNY: { 
-    label: "Uncanny",
-    icon: "doll" 
-  },
-  ELEMENTAL: {
-    label: "Elemental",
-    icon: "cloud"
-  },
-  AQUATIC: {
-    label: "Aquatic",
-    icon: "droplets"
-  },
-  RITUAL: {
-    label: "Ritual",
-    icon: "sparkles"
-  },
-  MEDICAL: {
-    label: "Medical",
-    icon: "syringe"
-  },
-  HAUNTING: {
-    label: "Haunting",
-    icon: "wind"
-  },
-  IDENTITY: {
-    label: "Identity",
-    icon: "scanface"
-  },
-  OCCULT: {
-    label: "Occult",
-    icon: "tally4"
-  },
-  PASSION: {
-    label: "Passion",
-    icon: "heart"
-  },
-  INFERNAL: {
-    label: "Infernal",
-    icon: "flame"
-  },
-  GOTHIC: {
-    label: "Gothic",
-    icon: "castle"
-  },
-  FOLK_HORROR: {
-    label: "Folk Horror",
-    icon: "tree"
-  },
-  SLASHER: {
-    label: "Slasher",
-    icon: "knife"
-  },
-  MONSTER: {
-    label: "Monster",
-    icon: "cat"
-  },
-  ZOMBIE: {
-    label: "Zombie",
-    icon: "footprints"
-  },
-  VAMPIRE: {
-    label: "Vampire",
-    icon: "moon"
-  },
-  WEREWOLF: {
-    label: "Werewolf",
-    icon: "dog"
-  },
-  PARANORMAL: {
-    label: "Paranormal",
-    icon: "radio"
-  },
-  DREAM_HORROR: {
-    label: "Dream Horror",
-    icon: "moon-star"
-  },
-  DEMONIC: {
-    label: "Demonic",
-    icon: "flame"
-  },
-  CURSED_OBJECT: {
-    label: "Cursed Object",
-    icon: "box"
-  },
-  TIME_HORROR: {
-    label: "Time Horror",
-    icon: "clock"
-  },
-  APOCALYPTIC: {
-    label: "Apocalyptic",
-    icon: "bomb"
-  },
-  DYSTOPIAN: {
-    label: "Dystopian",
-    icon: "building"
-  },
-  SCIENCE_HORROR: {
-    label: "Science Horror",
-    icon: "flask"
-  }
+  // Base and special cases
+  HORROR: { label: "Horror", icon: "eye" },
+  DEATH: { label: "Death", icon: "skull" },
+  SUICIDE: { label: "Suicide", icon: "skull" },
+
+  // Exact list requested with refined labels and valid icon slugs
+  COSMIC: { label: "Cosmic Horror", icon: "moon" },
+  EXISTENTIAL: { label: "Existential Horror", icon: "hourglass" },
+  PSYCHOLOGICAL: { label: "Psychological Horror", icon: "brain" },
+  SUPERNATURAL: { label: "Supernatural Horror", icon: "ghost" },
+  BODY_HORROR: { label: "Body Horror", icon: "pill" },
+  FOLK_HORROR: { label: "Folk Horror", icon: "trees" },
+  GOTHIC: { label: "Gothic Horror", icon: "castle" },
+  VEHICULAR: { label: "Vehicular Horror", icon: "car" },
+  SLASHER: { label: "Slasher", icon: "knife" }, // mapped to ForkKnife in UI
+  PARASITE: { label: "Parasite", icon: "bug" },
+  INFESTATION_HORROR: { label: "Infestation Horror", icon: "bug" },
+  CANNIBALISM: { label: "Cannibalism", icon: "fork-knife" },
+  DOPPELGANGER: { label: "Doppelgänger", icon: "user-plus" },
+  IDENTITY_HORROR: { label: "Identity Horror", icon: "eye" },
+  STALKING: { label: "Stalking", icon: "footprints" },
+  DREAM_NIGHTMARE: { label: "Dream/Nightmare", icon: "moon-star" },
+  PARANORMAL_HORROR: { label: "Paranormal Horror", icon: "radio" },
+  CURSED_OBJECT: { label: "Cursed Object", icon: "box" },
+  TIME_HORROR: { label: "Time Horror", icon: "clock" },
+  TECHNOLOGICAL: { label: "Technological Horror", icon: "cpu" },
+  SCIENCE_HORROR: { label: "Science Horror", icon: "flask" }, // mapped to FlaskConical in UI
+  APOCALYPTIC: { label: "Apocalyptic/Post-Apocalyptic Horror", icon: "radiation" },
+  URBAN_HORROR: { label: "Urban Horror", icon: "building" },
+  ECO_HORROR: { label: "Eco Horror", icon: "trees" },
+  CREATURE_HORROR: { label: "Creature Horror", icon: "cat" },
+  OCCULT: { label: "Occult", icon: "moon-star" },
+  DEMONIC_HORROR: { label: "Demonic Horror", icon: "flame" },
+  VAMPIRIC_HORROR: { label: "Vampiric Horror", icon: "moon" },
+  LYCANTHROPIC_HORROR: { label: "Lycanthropic Horror", icon: "dog" },
+  UNDEAD_HORROR: { label: "Undead Horror", icon: "footprints" },
+  HAUNTING: { label: "Haunting", icon: "ghost" },
+  ISOLATION_HORROR: { label: "Isolation Horror", icon: "cloud" },
+  SURVIVAL_HORROR: { label: "Survival Horror", icon: "alert-triangle" },
+  CONTAGION: { label: "Contagion", icon: "radio" },
+
+  // Legacy keys kept for compatibility (map to refined labels)
+  PSYCHOPATH: { label: "Slasher", icon: "knife" },
+  UNCANNY: { label: "Uncanny", icon: "eye" },
+  ELEMENTAL: { label: "Eco Horror", icon: "trees" },
+  AQUATIC: { label: "Eco Horror", icon: "droplets" },
+  RITUAL: { label: "Occult", icon: "moon-star" },
+  MEDICAL: { label: "Science Horror", icon: "flask" },
+  IDENTITY: { label: "Identity Horror", icon: "eye" },
+  INFERNAL: { label: "Demonic Horror", icon: "flame" },
+  MONSTER: { label: "Creature Horror", icon: "cat" },
+  ZOMBIE: { label: "Undead Horror", icon: "footprints" },
+  VAMPIRE: { label: "Vampiric Horror", icon: "moon" },
+  WEREWOLF: { label: "Lycanthropic Horror", icon: "dog" },
+  PARANORMAL: { label: "Paranormal Horror", icon: "radio" },
+  DREAM_HORROR: { label: "Dream/Nightmare", icon: "moon-star" },
+  DEMONIC: { label: "Demonic Horror", icon: "flame" },
+  DYSTOPIAN: { label: "Urban Horror", icon: "building" },
 };
 
 // Mapping from specific story titles/keywords to themes

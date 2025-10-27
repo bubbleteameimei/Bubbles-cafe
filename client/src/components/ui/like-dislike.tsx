@@ -237,7 +237,7 @@ export function LikeDislike({
         removeTimerRef.current = null;
       }
     };
-  }, [postId, slug, source, onUpdate, initialTotals]);
+  }, [postId, slug, source, onUpdate, initialTotals, storageKey]);
 
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
     setInlineToast({ message, type });
@@ -369,21 +369,22 @@ export function LikeDislike({
       window.dispatchEvent(new CustomEvent('reaction:updated', { detail: composeTotals(optimistic) }));
     } catch {}
 
+    // Immediate feedback before server sync
+    if (nextLiked) {
+      showInlineToast("Thanks for liking! 😘", 'like');
+      onLike?.(true);
+    } else {
+      onLike?.(false);
+    }
+
     // Server sync
     try {
       const data = await submitReaction(postId, true);
       applyServerTotals(data);
-
-      if (nextLiked) {
-        showInlineToast("Thanks for liking!", 'like');
-        onLike?.(true);
-      } else {
-        onLike?.(false);
-      }
+      // onLike callback already handled
     } catch (error) {
       console.error(`[LikeDislike] Error handling like for post ${postId}:`, error);
-      // Keep optimistic counts; show toast if turning on like
-      if (nextLiked) showInlineToast("Thanks for liking!", 'like');
+      // Keep optimistic counts; user already saw feedback
     }
   };
 
@@ -421,6 +422,14 @@ export function LikeDislike({
       window.dispatchEvent(new CustomEvent('reaction:updated', { detail: composeTotals(optimistic) }));
     } catch {}
 
+    // Immediate feedback before server sync
+    if (nextDisliked) {
+      showInlineToast("Thanks for the feedback! 😔", 'dislike');
+      onDislike?.(true);
+    } else {
+      onDislike?.(false);
+    }
+
     // Server sync
     try {
       const data = await submitReaction(postId, false);
@@ -428,17 +437,10 @@ export function LikeDislike({
       setDisliked(nextDisliked);
       setLiked(nextLiked);
       applyServerTotals(data);
-
-      if (nextDisliked) {
-        showInlineToast("Thanks for the feedback!", 'dislike');
-        onDislike?.(true);
-      } else {
-        onDislike?.(false);
-      }
+      // onDislike callback already handled
     } catch (error) {
       console.error(`[LikeDislike] Error handling dislike for post ${postId}:`, error);
-      // Keep optimistic counts; show toast if turning on dislike
-      if (nextDisliked) showInlineToast("Thanks for the feedback!", 'dislike');
+      // Keep optimistic counts; user already saw feedback
     }
   };
 
@@ -495,7 +497,8 @@ export function LikeDislike({
       
       {inlineToast && (
         <div className={`
-          mt-3 px-3 py-2 rounded-md text-center font-sans text-xs font-medium 
+          ${variant === 'index' ? 'mt-2 px-2' : 'mt-3 px-3'}
+          py-2 rounded-md text-center font-sans text-xs font-medium 
           transform transition-all duration-300 ease-out shadow-sm
           ${isToastVisible 
             ? 'translate-y-0 opacity-100 scale-100' 

@@ -8,11 +8,55 @@
  */
 function stripHtml(input: string): string {
   if (!input) return "";
-  return input
+
+  // Decode common HTML entities, including numeric (decimal/hex) references
+  const decodeEntities = (s: string): string => {
+    if (!s) return "";
+
+    // Named entities
+    const namedMap: Record<string, string> = {
+      "&nbsp;": " ",
+      "&amp;": "&",
+      "&lt;": "<",
+      "&gt;": ">",
+      "&quot;": "\"",
+      "&#039;": "'",
+      "&apos;": "'",
+    };
+    let out = s.replace(/&nbsp;|&amp;|&lt;|&gt;|&quot;|&#039;|&apos;/g, (m) => namedMap[m] ?? m);
+
+    // Numeric decimal entities: &#8217; etc.
+    out = out.replace(/&#(\d+);/g, (_m, dec) => {
+      const code = Number.parseInt(dec, 10);
+      return Number.isFinite(code) ? String.fromCharCode(code) : _m;
+    });
+
+    // Numeric hexadecimal entities: &#x2019; etc.
+    out = out.replace(/&#x([0-9a-fA-F]+);/g, (_m, hex) => {
+      const code = Number.parseInt(hex, 16);
+      return Number.isFinite(code) ? String.fromCharCode(code) : _m;
+    });
+
+    // WordPress-specific dashes and quotes (some themes emit these as named entities)
+    out = out
+      .replace(/&#8211;/g, "–")
+      .replace(/&#8212;/g, "—")
+      .replace(/&#8216;/g, "’")
+      .replace(/&#8217;/g, "’")
+      .replace(/&#8220;/g, "\"")
+      .replace(/&#8221;/g, "\"")
+      .replace(/&#8230;/g, "…");
+
+    return out;
+  };
+
+  // Strip tags, normalize whitespace, then decode entities
+  const noTags = input
     .replace(/<\/?[^>]+(>|$)/g, " ")
-    .replace(/&nbsp;/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+  return decodeEntities(noTags);
 }
 
 /**

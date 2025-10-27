@@ -200,7 +200,7 @@ export default function Home() {
                 transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
                 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-white flex flex-col items-center"
               >
-                <span>BUBBLES</span>
+                <span>BUBBLE'S</span>
                 <span className="mt-1 md:mt-2 text-red-700 relative">CAFE</span>
               </motion.h1>
             </div>
@@ -371,7 +371,7 @@ export default function Home() {
                   >
                     <div className="flex items-center justify-center gap-3">
                       <h3 className="text-xl sm:text-2xl font-semibold text-white">
-                        Try the Bubble’s Cafe App!
+                        Try the Bubble's Cafe App!
                       </h3>
                       <motion.div
                         animate={{ x: [0, 4, 0] }}
