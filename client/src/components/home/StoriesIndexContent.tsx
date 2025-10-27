@@ -158,27 +158,7 @@ export default function StoriesIndexContent() {
     return dp[m][n];
   };
 
-  const closestTitleMatch = React.useMemo(() => {
-    const q = search.trim();
-    if (!q) return null;
-    const qn = normalizePlain(q);
-    let best: { post: Post; score: number } | null = null;
-
-    for (const p of sortedPosts) {
-      const tn = normalizePlain(String(p.title || ''));
-      if (!tn) continue;
-      if (tn.includes(qn)) {
-        // Exact substring match - prefer strongly (score 0)
-        if (!best || 0 < best.score) best = { post: p, score: 0 };
-        continue;
-      }
-      const d = levenshtein(tn, qn);
-      if (d <= 2) {
-        if (!best || d < best.score) best = { post: p, score: d };
-      }
-    }
-    return best?.post || null;
-  }, [search, sortedPosts]);
+  
 
   useEffect(() => {
     if (!carouselApi) return;
@@ -306,6 +286,28 @@ export default function StoriesIndexContent() {
   const sortedPosts = [...allPosts].sort((a: Post, b: Post) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+
+  // Compute the closest title match (substring or <= 2 typos) for featured card search
+  const closestTitleMatch = React.useMemo(() => {
+    const q = search.trim();
+    if (!q) return null;
+    const qn = normalizePlain(q);
+    let best: { post: Post; score: number } | null = null;
+
+    for (const p of sortedPosts) {
+      const tn = normalizePlain(String(p.title || ''));
+      if (!tn) continue;
+      if (tn.includes(qn)) {
+        if (!best || 0 < best.score) best = { post: p, score: 0 };
+        continue;
+      }
+      const d = levenshtein(tn, qn);
+      if (d <= 2) {
+        if (!best || d < best.score) best = { post: p, score: d };
+      }
+    }
+    return best?.post || null;
+  }, [search, sortedPosts]);
 
   // Available theme categories present in posts (include derived when metadata missing)
   const availableCategories = useMemo(() => {
