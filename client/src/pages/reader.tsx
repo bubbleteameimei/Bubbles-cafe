@@ -1308,6 +1308,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         case 'box': return Box;
                         case 'car': return Car;
                         case 'alien': return Moon;
+                        case 'flask': return FlaskConical;
                         case 'trees':
                         case 'tree': return Trees;
                       }
