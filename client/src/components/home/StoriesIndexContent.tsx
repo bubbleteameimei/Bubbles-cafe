@@ -401,7 +401,16 @@ export default function StoriesIndexContent() {
     const all = [...sortedPosts];
     if (!all || all.length === 0) return null;
 
-    
+    // Respect dropdown criteria directly for the featured pick
+    if (sort === 'newest') {
+      return [...all].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+    }
+    if (sort === 'oldest') {
+      return [...all].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
+    }
+    if (sort === 'shortest') {
+      return [...all].sort((a, b) => String(a.content || '').length - String(b.content || '').length)[0];
+    }
 
     // If explicitly sorting by popular, pick highest likes + engagement using live reaction totals
     if (sort === 'popular') {
@@ -743,7 +752,7 @@ export default function StoriesIndexContent() {
             <div className="flex justify-between items-center">
               <h1 className="text-2xl md:text-3xl font-decorative uppercase">LATEST STORIES</h1>
               <div className="text-sm md:text-base text-muted-foreground">
-                {filteredPosts.length} stories
+                {latestPosts.length} stories
               </div>
             </div>
           </div>
@@ -1281,13 +1290,13 @@ export default function StoriesIndexContent() {
             </div>
           ) : (
             <>
-              {filteredPosts.length > 60 ? (
+              {latestPosts.length > 60 ? (
                 // Virtualized rows for large lists (row = gridCols items)
                 (() => {
                   const cols = gridCols || 1;
                   const rows: Post[][] = [];
-                  for (let i = 0; i < filteredPosts.length; i += cols) {
-                    rows.push(filteredPosts.slice(i, i + cols));
+                  for (let i = 0; i < latestPosts.length; i += cols) {
+                    rows.push(latestPosts.slice(i, i + cols));
                   }
                   const rowHeight = 360; // approximate card row height
                   return (
@@ -1472,7 +1481,7 @@ export default function StoriesIndexContent() {
                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
                   ref={cardsGridRef as any}
                 >
-                  {filteredPosts.slice(0, visibleCount).map((post, idx) => {
+                  {latestPosts.slice(0, visibleCount).map((post, idx) => {
                     
                     const md: any = post.metadata || {};
                     // Prefer metadata theme; otherwise detect from title/content for WordPress API posts
@@ -1712,7 +1721,7 @@ export default function StoriesIndexContent() {
                   })}
                 </div>
               )}
-              {filteredPosts.length > visibleCount && filteredPosts.length <= 60 && (
+              {latestPosts.length > visibleCount && latestPosts.length <= 60 && (
                 <div className="mt-4 flex justify-center">
                   <Button
                     className="h-10 px-5 rounded-lg border border-border/60 shadow-sm"
@@ -1721,7 +1730,7 @@ export default function StoriesIndexContent() {
                       try {
                         const current = visibleCount;
                         const needed = current + pageSize;
-                        if (needed > filteredPosts.length && hasNextPage) {
+                        if (needed > latestPosts.length && hasNextPage) {
                           await fetchNextPage();
                         }
                         setVisibleCount((c) => {
