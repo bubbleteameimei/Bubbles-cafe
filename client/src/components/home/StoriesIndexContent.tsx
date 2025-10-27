@@ -1884,15 +1884,6 @@ export default function StoriesIndexContent() {
                                 key={post.id}
                                 data-idx={rowIdx * cols + idx}
                                 className="group story-card-container relative"
-                                role="button"
-                                aria-label="Open story"
-                                tabIndex={0}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    navigateToReader(post.slug || post.id);
-                                  }
-                                }}
                               >
                                 <Card
                                   onClick={() => navigateToReader(post.slug || post.id)}

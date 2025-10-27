@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef } from "react";
-import { useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"; 
@@ -556,7 +555,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       // no-op
     }
     // Re-evaluate on progress changes, post changes, interaction and visibility transitions
-  }, [readingProgress, currentPostId, currentPostLink, interactionCount, visibilityTick]);
+  }, [readingProgress, currentPostId, currentPostLink, interactionCount, visibilityTick, isCategoryAllowed])</;
 
   // Finish-read tracking (local analytics): 90% scroll and ≥ 60s active time
   useEffect(() => {
@@ -591,7 +590,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     } catch {
       // no-op
     }
-  }, [readingProgress, currentPostId, interactionCount, visibilityTick]);
+  }, [readingProgress, currentPostId, interactionCount, visibilityTick, isCategoryAllowed, currentIndex, postsData?.posts]);
 
   // Create a function to generate the styles
   const generateStoryContentStyles = () => {

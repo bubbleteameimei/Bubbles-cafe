@@ -237,7 +237,7 @@ export function LikeDislike({
         removeTimerRef.current = null;
       }
     };
-  }, [postId, slug, source, onUpdate, initialTotals]);
+  }, [postId, slug, source, onUpdate, initialTotals, storageKey]);
 
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
     setInlineToast({ message, type });
