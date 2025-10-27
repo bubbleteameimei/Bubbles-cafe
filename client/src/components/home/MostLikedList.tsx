@@ -102,12 +102,24 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                   className="block outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md"
                   aria-label={`Open ${featured.title}`}
                 >
-                  <h4
-                    className="text-left text-base md:text-lg font-medium font-castoro group-hover:text-primary leading-6 line-clamp-2"
-                    title={featured.title}
-                  >
-                    {featured.title}
-                  </h4>
+                  <div className="flex items-start justify-between gap-3">
+                    <h4
+                      className="text-left text-base md:text-lg font-medium font-castoro group-hover:text-primary leading-6 line-clamp-2"
+                      title={featured.title}
+                    >
+                      {featured.title}
+                    </h4>
+                    <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 justify-end">
+                        <Calendar className="h-3 w-3" />
+                        <time>{new Date(featured.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
+                      </span>
+                      <span className="inline-flex items-center gap-1 justify-end" title={`~${String(featured.content || '').split(/\s+/).length} words`}>
+                        <Clock className="h-3 w-3" />
+                        {getReadingTime(featured.content)}
+                      </span>
+                    </div>
+                  </div>
 
                   {(() => {
                     const md: any = (featured as any)?.metadata || {};

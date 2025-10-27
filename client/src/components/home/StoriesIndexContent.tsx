@@ -441,14 +441,7 @@ export default function StoriesIndexContent() {
       return (jTitle * 2.2) + directTitle + jContent + typoBonus + keywordBoost + recency + engagement;
     };
 
-    if (q) {
-      // Score and sort by similarity; filter minimal matches (stricter to avoid random picks)
-      list = list
-        .map(p => ({ p, score: similarityScore(p, q) }))
-        .filter(x => x.score > 0.32)
-        .sort((a, b) => b.score - a.score)
-        .map(x => x.p);
-    }
+    
 
     switch (sort) {
       case 'oldest':
@@ -860,9 +853,21 @@ export default function StoriesIndexContent() {
                         </Select>
                       </div>
                     </div>
-                    <button className="text-left text-lg font-castoro hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
-                      {renderHighlighted(String(featuredStory.title || ''))}
-                    </button>
+                    <div className="flex items-start justify-between gap-3">
+                      <button className="text-left text-lg font-castoro hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
+                        {renderHighlighted(String(featuredStory.title || ''))}
+                      </button>
+                      <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
+                        <div className="flex items-center gap-1 justify-end">
+                          <Calendar className="h-3 w-3" />
+                          <time>{new Date(featuredStory.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
+                        </div>
+                        <div className="flex items-center gap-1 justify-end" title={`~${String(featuredStory.content || '').split(/\s+/).length} words`}>
+                          <Clock className="h-3 w-3" />
+                          <span>{getReadingTime(featuredStory.content)}</span>
+                        </div>
+                      </div>
+                    </div>
                     {(() => {
                       const md: any = (featuredStory as any)?.metadata || {};
                       const primaryThemeRaw =
@@ -886,8 +891,12 @@ export default function StoriesIndexContent() {
                         primaryThemeRaw ||
                         'Horror';
                       const prettyLabel = baseLabel;
-                      const iconSlug =
+                      let iconSlug =
                         override?.icon || md.themeIcon || defOverride?.icon || (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon || 'ghost';
+                      // Force Body Horror to use a stronger icon
+                      if ((override?.key || derivedKey) === 'BODY_HORROR') {
+                        iconSlug = 'bone';
+                      }
                       const isIconify = String(iconSlug).includes(':');
 
                       const ThemeIconCmp = (() => {
@@ -915,9 +924,25 @@ export default function StoriesIndexContent() {
                         }
                       })();
 
+                      const badgeTint = (() => {
+                        switch (themeKey) {
+                          case 'DEATH': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
+                          case 'BODY_HORROR': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700';
+                          case 'SUPERNATURAL': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700';
+                          case 'PSYCHOLOGICAL': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700';
+                          case 'EXISTENTIAL': return 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700';
+                          case 'HORROR': return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-700';
+                          case 'VEHICULAR': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700';
+                          case 'TECHNOLOGICAL': return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700';
+                          case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700';
+                          case 'FOLK_HORROR': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700';
+                          case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark:text-stone-300 dark:border-stone-700';
+                          default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark:text-foreground dark:border-primary/20';
+                        }
+                      })();
                       return (
-                        <div className="mt-2">
-                          <Badge className="px-2 py-0.5 text-[11px] sm:text-xs flex items-center gap-1 bg-primary/10 border border-primary/20">
+                        <div className="mt-1">
+                          <Badge className={`px-2 py-0.5 text-[11px] sm:text-xs flex items-center gap-1 border ${badgeTint}`}>
                             {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : <ThemeIconCmp className="h-3 w-3" />}
                             {prettyLabel}
                           </Badge>
@@ -944,10 +969,7 @@ export default function StoriesIndexContent() {
                               <span className="flex items-center gap-1">
                                 <Eye className="h-3 w-3" /> {views}
                               </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" /> {readingTimeStr}
-                              </span>
-                            </>
+                                                          </>
                           );
                         })()}
                       </div>
@@ -1219,11 +1241,7 @@ export default function StoriesIndexContent() {
                   <div className="text-left sm:text-center mb-2 text-xs font-medium text-muted-foreground">
                     Popular right now
                   </div>
-                  {Object.keys(reactionTotals).length === 0 && (
-                    <div className="mb-2 text-center text-[11px] text-muted-foreground">
-                      Loading popularity…
-                    </div>
-                  )}
+                  
                   <Carousel opts={{ align: "start", containScroll: "trimSnaps" }} setApi={setCarouselApi}>
                     <CarouselContent>
                       {(() => {
@@ -1304,12 +1322,16 @@ export default function StoriesIndexContent() {
                                   })();
 
                                   // Resolve icon (story override -> metadata -> global override -> shared -> ghost)
-                                  const chosenIconSlug =
+                                  let chosenIconSlug =
                                     override?.icon ||
                                     (md && (md as any).themeIcon) ||
                                     defOverride?.icon ||
                                     (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
                                     'ghost';
+                                  if (themeKey === 'BODY_HORROR') {
+                                    chosenIconSlug = 'bone';
+                                 new </}
+;
 
                                   // Map lucide icon when not using Iconify provider
                                   const ThemeIconCmp = (() => {
@@ -1444,7 +1466,7 @@ export default function StoriesIndexContent() {
                   <div className="mt-3 flex items-center justify-center gap-3">
                     <Button
                       size="sm"
-                      className="h-9 px-3"
+                      className="h-9 px-3 rounded-full border border-border/60 bg-card/90 hover:bg-card shadow-sm"
                       onClick={() => { try { carouselApi?.scrollPrev(); } catch {} }}
                       disabled={!canPrev}
                     >
@@ -1453,7 +1475,7 @@ export default function StoriesIndexContent() {
                     </Button>
                     <Button
                       size="sm"
-                      className="h-9 px-3"
+                      className="h-9 px-3 rounded-full border border-border/60 bg-card/90 hover:bg-card shadow-sm"
                       onClick={() => { try { carouselApi?.scrollNext(); } catch {} }}
                       disabled={!canNext}
                     >
