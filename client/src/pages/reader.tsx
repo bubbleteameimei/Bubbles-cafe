@@ -1398,7 +1398,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                           ? (<Icon icon={String(chosenIconSlug)} className="h-4 w-4" />)
                           : (<ThemeIcon className="h-4 w-4" />)
                         }
-                        <span className="text-sm font-medium">{prettyLabel}</span>
+                        <span className="text-xs font-medium">{prettyLabel}</span>
                       </div>
                     );
                   })()}
