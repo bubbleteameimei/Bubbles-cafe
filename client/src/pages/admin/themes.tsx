@@ -28,7 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import AdminLayout from '@/components/layout/admin-layout';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { THEME_CATEGORIES } from '@shared/theme-categories';
-import { getThemeDefinitionOverrides, saveThemeDefinitionOverrides } from '@/shared/theme-definitions';
+import { getThemeDefinitionOverrides, saveThemeDefinitionOverrides, syncThemeDefinitionOverridesFromServer } from '@/shared/theme-definitions';
 
 // Icon mapping for theme categories
 const THEME_ICONS: Record<string, React.ReactNode> = {
@@ -127,6 +127,26 @@ export default function ThemesPage() {
       return init;
     }
   });
+
+  // Sync overrides from server on mount (merge into local and rebuild UI state)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const merged = await syncThemeDefinitionOverridesFromServer();
+        if (!mounted) return;
+        const next: Record<string, { label: string; icon: string }> = {};
+        Object.entries(THEME_CATEGORIES).forEach(([key, info]) => {
+          const baseLabel = (info as any).label || key;
+          const baseIcon = (info as any).icon || 'eye';
+          const ov = (merged && (merged as any)[key]) || {};
+          next[key] = { label: ov.label || baseLabel, icon: ov.icon || baseIcon };
+        });
+        setDefs(next);
+      } catch {}
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   interface Post {
     id: number;
@@ -692,7 +712,7 @@ export default function ThemesPage() {
           <div className="mt-4 flex gap-2 justify-end">
             <Button
               variant="outline"
-              onClick={() => {
+              onClick={async () => {
                 try {
                   // Only save differences vs base THEME_CATEGORIES
                   const out: Record<string, { label?: string; icon?: string }> = {};
@@ -705,7 +725,7 @@ export default function ThemesPage() {
                     if (v.icon && v.icon !== baseIcon) diff.icon = v.icon;
                     if (diff.label || diff.icon) out[key] = diff;
                   });
-                  saveThemeDefinitionOverrides(out);
+                  await saveThemeDefinitionOverrides(out);
                   toast({ title: 'Theme definitions saved', description: 'Global labels and default icons updated.' });
                 } catch (err) {
                   console.error('Save theme definitions failed', err);

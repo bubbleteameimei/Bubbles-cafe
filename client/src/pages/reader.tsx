@@ -61,7 +61,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } from "@shared/theme-categories";
 import { getStoryThemeOverride } from "@shared/story-theme-overrides";
-import { getThemeDefinitionOverride } from "@/shared/theme-definitions";
+import { getThemeDefinitionOverride, syncThemeDefinitionOverridesFromServer } from "@/shared/theme-definitions";
+import { Icon } from "@iconify/react";
 
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
@@ -429,6 +430,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         instagram: !!FaInstagram
       });
     }
+    // Sync theme definition overrides from server to ensure global labels/icons are up to date
+    (async () => {
+      try { await syncThemeDefinitionOverridesFromServer(); } catch {}
+    })();
   }, []);
 
   // WordPress read tracking: compute current post id/link and gate by time-on-page and scroll depth.
@@ -1390,7 +1395,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
                     return (
                       <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border ${badgeTint}`}>
-                        <ThemeIcon className="h-4 w-4" />
+                        {String(chosenIconSlug).includes(':')
+                          ? (<Icon icon={String(chosenIconSlug)} className="h-4 w-4" />)
+                          : (<ThemeIcon className="h-4 w-4" />)
+                        }
                         <span className="text-sm font-medium">{prettyLabel}</span>
                       </div>
                     );

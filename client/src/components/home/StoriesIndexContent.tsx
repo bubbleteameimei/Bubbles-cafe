@@ -25,7 +25,8 @@ import type { WordPressPost } from "@/lib/wordpress-api";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { determineThemeCategory as sharedDetermineThemeCategory, THEME_CATEGORIES as SHARED_THEME_CATEGORIES } from "@shared/theme-categories";
 import { getStoryThemeOverride } from "@shared/story-theme-overrides";
-import { getThemeDefinitionOverride } from "@/shared/theme-definitions";
+import { getThemeDefinitionOverride, syncThemeDefinitionOverridesFromServer } from "@/shared/theme-definitions";
+import { Icon } from "@iconify/react";
 
 
 
@@ -77,6 +78,20 @@ export default function StoriesIndexContent() {
       } catch {}
     };
   }, [carouselApi]);
+
+  // Sync global theme definitions from server once on mount (updates local overrides)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        await syncThemeDefinitionOverridesFromServer();
+        if (!mounted) return;
+        // trigger a light rerender
+        setVisibleCount((c) => c);
+      } catch {}
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   // Compute page size and initial visible count based on viewport for story cards view (breakpoint-aware, no thrash)
   useEffect(() => {
@@ -1206,8 +1221,12 @@ export default function StoriesIndexContent() {
                                   })();
 
                                   return (
-                                    <div className="mt-1">
-                                      <Badge className={`w-fit text-[11px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                    <div className="mt-2">
+                                      <Badge className={`w-fit text-[12px] sm:text-sm font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                        {String(chosenIconSlug).includes(':')
+                                          ? (<Icon icon={String(chosenIconSlug)} className="h-3 w-3" />)
+                                          : (<ThemeIconCmp className="h-3 w-3" />)
+                                        }
                                         {prettyLabel}
                                       </Badge>
                                     </div>
