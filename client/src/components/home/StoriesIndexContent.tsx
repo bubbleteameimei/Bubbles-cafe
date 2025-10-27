@@ -74,13 +74,8 @@ export default function StoriesIndexContent() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // Derive grid columns from breakpoint
-  const gridCols = useMemo(() => {
-    const b = breakpointRef.current;
-    if (b === 'desktop') return 3;
-    if (b === 'tablet') return 2;
-    return 1;
-  }, [breakpointRef.current]);
+  // Derive grid columns from breakpoint (stateful to satisfy eslint exhaustive-deps)
+  const [gridCols, setGridCols] = useState<number>(1);
 
   // Analytics: log search queries (debounced) and zero-result events
   useEffect(() => {
@@ -183,12 +178,14 @@ export default function StoriesIndexContent() {
           const initial = w >= 1024 ? 6 : (w >= 768 ? 4 : 3);
           setPageSize(initial);
           setVisibleCount((c) => (c < initial ? initial : c));
+          setGridCols(cat === 'desktop' ? 3 : (cat === 'tablet' ? 2 : 1));
         }
       } catch {
         if (breakpointRef.current !== 'mobile') {
           breakpointRef.current = 'mobile';
           setPageSize(3);
           setVisibleCount((c) => (c < 3 ? 3 : c));
+          setGridCols(1);
         }
       }
     };
@@ -1887,6 +1884,8 @@ export default function StoriesIndexContent() {
                                 key={post.id}
                                 data-idx={rowIdx * cols + idx}
                                 className="group story-card-container relative"
+                                role="button"
+                                aria-label="Open story"
                                 tabIndex={0}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter' || e.key === ' ') {
@@ -2065,6 +2064,8 @@ export default function StoriesIndexContent() {
                         key={post.id}
                         data-idx={idx}
                         className="group story-card-container relative"
+                        role="button"
+                        aria-label="Open story"
                         tabIndex={0}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
