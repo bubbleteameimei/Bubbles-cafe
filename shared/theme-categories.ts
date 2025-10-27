@@ -17,7 +17,7 @@ export const THEME_CATEGORIES = {
   EXISTENTIAL: { label: "Existential Horror", icon: "hourglass" },
   PSYCHOLOGICAL: { label: "Psychological Horror", icon: "brain" },
   SUPERNATURAL: { label: "Supernatural Horror", icon: "ghost" },
-  BODY_HORROR: { label: "Body Horror", icon: "pill" },
+  BODY_HORROR: { label: "Body Horror", icon: "bone" },
   FOLK_HORROR: { label: "Folk Horror", icon: "trees" },
   GOTHIC: { label: "Gothic Horror", icon: "castle" },
   VEHICULAR: { label: "Vehicular Horror", icon: "car" },
