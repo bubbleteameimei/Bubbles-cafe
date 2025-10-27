@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Star, Calendar, Clock, Heart } from 'lucide-react';
+import { Star, Calendar, Clock, Heart, Bone } from 'lucide-react';
 import { getReadingTime } from '@/lib/content-analysis';
 import { extractEngagingExcerpt } from '@/lib/excerpt-lite';
 import { type posts } from '@shared/schema';
@@ -11,6 +11,7 @@ import { THEME_CATEGORIES } from '@/lib/themes-lite';
 import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } from '@shared/theme-categories';
 import { getStoryThemeOverride } from '@shared/story-theme-overrides';
 import { getThemeDefinitionOverride } from '@/shared/theme-definitions';
+import { Icon } from '@iconify/react';
 
 type Post = typeof posts.$inferSelect;
 
@@ -108,10 +109,6 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                     {featured.title}
                   </h4>
 
-                  <p className="mt-2 text-sm text-muted-foreground leading-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                    {extractEngagingExcerpt(featured.content, 180)}
-                  </p>
-
                   {(() => {
                     const md: any = (featured as any)?.metadata || {};
                     const primaryThemeRaw =
@@ -140,22 +137,17 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                       primaryThemeRaw ||
                       'Horror';
 
-                    const prettyLabel = (() => {
-                      if (override?.label) return override.label;
-                      const l = String(baseLabel).toLowerCase();
-                      if (l.includes('cosmic')) return 'Cosmic Horror';
-                      if (l.includes('existential')) return 'Existential Horror';
-                      if (l.includes('vehicular')) return 'Vehicular Horror';
-                      if (l.includes('psychological')) return 'Psychological Horror';
-                      if (l.includes('supernatural')) return 'Supernatural Horror';
-                      if (l.includes('technological')) return 'Technological Horror';
-                      if (l.includes('uncanny')) return 'Uncanny Horror';
-                      if (l.includes('gothic')) return 'Gothic Horror';
-                      if (l.includes('folk')) return 'Folk Horror';
-                      if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
-                      if (l.includes('cannibal')) return 'Cannibalism Horror';
-                      return baseLabel;
-                    })();
+                    const prettyLabel = baseLabel;
+
+                    const chosenIconSlug =
+                      override?.icon ||
+                      (md && (md as any).themeIcon) ||
+                      defOverride?.icon ||
+                      (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
+                      'ghost';
+
+                    const isIconify = String(chosenIconSlug).includes(':');
+                    const showBone = String(chosenIconSlug).toLowerCase() === 'bone' || themeKey === 'BODY_HORROR';
 
                     const badgeTint = (() => {
                       switch (themeKey) {
@@ -180,13 +172,21 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                     })();
 
                     return (
-                      <div className="mt-2">
-                        <Badge className={`w-fit text-[12px] sm:text-sm font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                      <div className="mt-1">
+                        <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                          {isIconify
+                            ? (<Icon icon={String(chosenIconSlug)} className="h-3 w-3" />)
+                            : (showBone ? <Bone className="h-3 w-3" /> : null)
+                          }
                           {prettyLabel}
                         </Badge>
                       </div>
                     );
                   })()}
+
+                  <p className="mt-2 text-sm text-muted-foreground leading-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                    {extractEngagingExcerpt(featured.content, 180)}
+                  </p>
 
                   <div className="mt-3 flex items-center justify-between">
                     <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">

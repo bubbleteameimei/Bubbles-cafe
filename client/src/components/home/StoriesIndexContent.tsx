@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { 
   ArrowRight, ArrowLeft, Clock, Calendar, Book,
   Award, Search, Ghost, Skull, Brain, Pill, Cpu, Dna, Footprints, CloudRain, Castle, Bug, Radiation, Umbrella, UserMinus2, Anchor, AlertTriangle, Building, Worm, Cloud, CloudFog, Flame,
-  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Heart
+  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Heart, Bone
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 import MostLikedList from "@/components/home/MostLikedList";
@@ -492,7 +492,7 @@ export default function StoriesIndexContent() {
 
   const currentPosts = filteredPosts;
 
-  // Latest Stories list - always sorted newest->oldest regardless of dropdown, but respects search/category
+  // Latest Stories list - always sorted newest->oldest; search does NOT change this list
   const latestPosts = useMemo(() => {
     let list = [...sortedPosts];
     if (categoryFilter !== 'all') {
@@ -501,125 +501,13 @@ export default function StoriesIndexContent() {
         return String(md.themeCategory || '').toLowerCase() === categoryFilter.toLowerCase();
       });
     }
-    const q = search.trim().toLowerCase();
-    if (q) {
-      // Reuse similarity scoring from above (inline duplication to avoid refactor)
-      const tokenize = (s: string) => normalizeText(s.toLowerCase()).split(/[^a-z0-9]+/).filter(Boolean);
-      const jaccard = (a: string[], b: string[]) => {
-        if (!a.length || !b.length) return 0;
-        const setA = new Set(a);
-        const setB = new Set(b);
-        const inter = [...setA].filter(x => setB.has(x)).length;
-        const union = new Set([...a, ...b]).size;
-        return inter / union;
-      };
-      const editDistance = (a: string, b: string) => {
-        const m = a.length, n = b.length;
-        if (!m) return n;
-        if (!n) return m;
-        const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
-        for (let i = 0; i <= m; i++) dp[i][0] = i;
-        for (let j = 0; j <= n; j++) dp[0][j] = j;
-        for (let i = 1; i <= m; i++) {
-          for (let j = 1; j <= n; j++) {
-            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-            dp[i][j] = Math.min(
-              dp[i - 1][j] + 1,
-              dp[i][j - 1] + 1,
-              dp[i - 1][j - 1] + cost
-            );
-          }
-        }
-        return dp[m][n];
-      };
-      const synonyms: Record<string, string[]> = {
-        ghost: ['spirit','phantom','specter','wraith'],
-        curse: ['hex','jinx','spell'],
-        witch: ['hag','sorceress'],
-        demon: ['fiend','devil'],
-        monster: ['creature','beast'],
-        blood: ['bleed','bloody'],
-        scream: ['yell','shriek'],
-        dark: ['night','gloom','black'],
-        shadow: ['shade','silhouette'],
-        grave: ['tomb','burial'],
-        dead: ['deceased','lifeless'],
-        fear: ['terror','dread'],
-        knife: ['blade','dagger'],
-        eyes: ['gaze','stare'],
-        footsteps: ['steps','treads'],
-        whisper: ['murmur','hiss'],
-        door: ['gate','entry'],
-        basement: ['cellar'],
-        closet: ['wardrobe','cupboard'],
-        window: ['pane','glass'],
-        bone: ['skeleton'],
-        cold: ['chill','freezing'],
-        haunted: ['possessed','cursed'],
-        night: ['darkness']
-      };
-      const boostedKeywords = [
-        'blood','scream','shadow','dark','fear','dead','grave','curse','witch','ghost','monster',
-        'door','basement','closet','window','footsteps','whisper','knife','bone','eyes','cold','haunted','night'
-      ];
-      const expandWithSynonyms = (tokens: string[]) => {
-        const set = new Set(tokens);
-        for (const t of tokens) {
-          const syns = synonyms[t];
-          if (syns) for (const s of syns) set.add(s);
-        }
-        return Array.from(set);
-      };
-      const similarityScore = (post: Post, query: string) => {
-        const qTokens = tokenize(query);
-        const qExpanded = expandWithSynonyms(qTokens);
-        const title = String(post.title || "");
-        const content = String(post.content || "");
-        const titleTokens = tokenize(title);
-        const contentTokens = tokenize(content).slice(0, 500);
-        const jTitle = jaccard(qExpanded, titleTokens);
-        let directTitle = 0;
-        for (const qt of qExpanded) {
-          if (title.toLowerCase().includes(qt)) directTitle += 0.5;
-        }
-        const jContent = jaccard(qExpanded, contentTokens) * 0.55;
-        let typoBonus = 0;
-        for (const qt of qExpanded) {
-          let best = Infinity;
-          for (const tt of titleTokens) {
-            const d = editDistance(qt, tt);
-            if (d < best) best = d;
-          }
-          if (best <= 2) typoBonus += 0.4;
-        }
-        // Only boost if query itself contains boosted keywords
-        const queryContainsBoosted = qTokens.some(t => boostedKeywords.includes(t));
-        let keywordBoost = 0;
-        for (const kw of boostedKeywords) {
-          if (queryContainsBoosted && titleTokens.includes(kw)) keywordBoost += 0.25;
-          if (queryContainsBoosted && contentTokens.includes(kw)) keywordBoost += 0.1;
-        }
-        // Boost if title starts with or equals the query
-        const startsBoost = title.toLowerCase().startsWith(query) ? 0.6 : 0;
-        const equalsBoost = title.toLowerCase() === query ? 0.9 : 0;
-
-        return (jTitle * 2.2) + directTitle + jContent + typoBonus + keywordBoost + startsBoost + equalsBoost;
-      };
-
-      list = list
-        .map(p => ({ p, score: similarityScore(p, q) }))
-        .filter(x => x.score > (sortedPosts.length > 50 ? 0.36 : 0.28)) // adaptive threshold
-        .map(x => x.p);
-    }
-
-    // Always newest -> oldest
     list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return list;
-  }, [sortedPosts, categoryFilter, search]);
+  }, [sortedPosts, categoryFilter]);
 
   // Log zero-results interactions
   useEffect(() => {
-    if (search.trim() && latestPosts.length === 0) {
+    if (search.trim() && currentPosts.length === 0) {
       try {
         fetch('/api/analytics/interaction', {
           method: 'POST',
@@ -628,7 +516,7 @@ export default function StoriesIndexContent() {
         }).catch(() => {});
       } catch {}
     }
-  }, [latestPosts.length, search]);
+  }, [currentPosts.length, search]);
 
   const featuredStory = useMemo(() => {
     const all = [...currentPosts];
@@ -997,20 +885,7 @@ export default function StoriesIndexContent() {
                         (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
                         primaryThemeRaw ||
                         'Horror';
-                      const prettyLabel = (() => {
-                        if (override?.label) return override.label;
-                        const l = String(baseLabel).toLowerCase();
-                        if (l.includes('cosmic')) return 'Cosmic Horror';
-                        if (l.includes('existential')) return 'Existential Horror';
-                        if (l.includes('vehicular')) return 'Vehicular Horror';
-                        if (l.includes('psychological')) return 'Psychological Horror';
-                        if (l.includes('supernatural')) return 'Supernatural Horror';
-                        if (l.includes('technological')) return 'Technological Horror';
-                        if (l.includes('uncanny')) return 'Uncanny Horror';
-                        if (l.includes('gothic')) return 'Gothic Horror';
-                        if (l.includes('folk')) return 'Folk Horror';
-                        return baseLabel;
-                      })();
+                      const prettyLabel = baseLabel;
                       const iconSlug =
                         override?.icon || md.themeIcon || defOverride?.icon || (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon || 'ghost';
                       const isIconify = String(iconSlug).includes(':');
@@ -1024,7 +899,7 @@ export default function StoriesIndexContent() {
                           case 'castle': return Castle; case 'bug': return Bug; case 'moon': return Moon; case 'moon-star': case 'moonstar': return MoonStar;
                           case 'radio': return Radio; case 'box': return Box; case 'flask': return FlaskConical; case 'radiation': return Radiation;
                           case 'building': return Building; case 'cat': return Cat; case 'flame': return Flame; case 'dog': return Dog; case 'cloud': return Cloud;
-                          case 'alert-triangle': case 'alerttriangle': return AlertTriangle; case 'footprints': return Footprints;
+                          case 'alert-triangle': case 'alerttriangle': return AlertTriangle; case 'footprints': return Footprints; case 'bone': return Bone;
                           default:
                             switch (themeKey) {
                               case 'TECHNOLOGICAL': return Cpu;
@@ -1042,7 +917,7 @@ export default function StoriesIndexContent() {
 
                       return (
                         <div className="mt-2">
-                          <Badge className="px-2 py-0.5 flex items-center gap-1 bg-primary/10 border border-primary/20">
+                          <Badge className="px-2 py-0.5 text-[11px] sm:text-xs flex items-center gap-1 bg-primary/10 border border-primary/20">
                             {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : <ThemeIconCmp className="h-3 w-3" />}
                             {prettyLabel}
                           </Badge>
@@ -1100,14 +975,14 @@ export default function StoriesIndexContent() {
             <div className="flex justify-between items-center">
               <h1 className="text-2xl md:text-3xl font-decorative uppercase">LATEST STORIES</h1>
               <div className="text-sm md:text-base text-muted-foreground">
-                {latestPosts.length} stories
+                {allPosts.length} stories
               </div>
             </div>
           </div>
           
 
           {/* Stories List */}
-          {latestPosts.length === 0 ? (
+          {search.trim() && currentPosts.length === 0 ? (
             <div className="mx-auto max-w-full sm:max-w-2xl md:max-w-3xl text-center py-8 sm:py-10 md:py-12 rounded-xl border border-border/60 bg-card/80 px-3 sm:px-6 shadow-sm overflow-hidden">
               <div className="w-full">
                 <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4 mt-2">
@@ -1285,65 +1160,9 @@ export default function StoriesIndexContent() {
                       })()}
                     </div>
 
-                    {/* Quick pivots */}
-                    <div className="mt-2 mb-3 flex items-center justify-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-3"
-                        onClick={() => {
-                          setSort('popular');
-                          setSearch('');
-                          try {
-                            fetch('/api/analytics/interaction', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ interactionType: 'index_pivot_popular', details: {}, path: '/stories' })
-                            }).catch(() => {});
-                          } catch {}
-                        }}
-                      >
-                        Popular
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-3"
-                        onClick={() => {
-                          setCategoryFilter('COSMIC');
-                          setSearch('');
-                          try {
-                            fetch('/api/analytics/interaction', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ interactionType: 'index_pivot_theme', details: { theme: 'COSMIC' }, path: '/stories' })
-                            }).catch(() => {});
-                          } catch {}
-                        }}
-                      >
-                        Cosmic Horror
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-3"
-                        onClick={() => {
-                          setCategoryFilter('PSYCHOLOGICAL');
-                          setSearch('');
-                          try {
-                            fetch('/api/analytics/interaction', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ interactionType: 'index_pivot_theme', details: { theme: 'PSYCHOLOGICAL' }, path: '/stories' })
-                            }).catch(() => {});
-                          } catch {}
-                        }}
-                      >
-                        Psychological Horror
-                      </Button>
-                    </div>
+                    
 
-                    <div className="flex items-center justify-center gap-2 mb-6">
+                    <div className="flex items-center justify-center gap-2 mb-2">
                       <Button variant="outline" size="sm" onClick={() => setSearch("")} className="h-9 px-3">
                         Clear search
                       </Button>
@@ -1385,6 +1204,9 @@ export default function StoriesIndexContent() {
                         Browse popular
                       </Button>
                     </div>
+                    <p className="text-sm text-muted-foreground mb-6 text-center">
+                      No close matches. Try clearing your search or exploring popular stories.
+                    </p>
                   </>
                 ) : (
                   <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed">
@@ -1558,7 +1380,8 @@ export default function StoriesIndexContent() {
                                       case 'TIME_HORROR': return Clock;
                                       case 'APOCALYPTIC': return Radiation;
                                       case 'SCIENCE_HORROR': return FlaskConical;
-                                      case 'FOLK_HORROR': return Trees;
+                                    case 'BODY_HORROR': return Bone;
+                                    case 'FOLK_HORROR': return Trees;
                                       case 'GOTHIC': return Castle;
                                       case 'COSMIC': return Moon;
                                       case 'VEHICULAR': return Car;
@@ -1620,7 +1443,6 @@ export default function StoriesIndexContent() {
                   </Carousel>
                   <div className="mt-3 flex items-center justify-center gap-3">
                     <Button
-                      variant="outline"
                       size="sm"
                       className="h-9 px-3"
                       onClick={() => { try { carouselApi?.scrollPrev(); } catch {} }}
@@ -1638,6 +1460,59 @@ export default function StoriesIndexContent() {
                       Next
                       <ArrowRight className="h-4 w-4 ml-1" />
                     </Button>
+                  </div>
+                  {/* Category tags under carousel controls */}
+                  <div className="mt-3 px-2">
+                    {(() => {
+                      // Build counts including derived categories for posts lacking metadata
+                      const counts = new Map<string, number>();
+                      for (const p of allPosts) {
+                        const md = (p.metadata || {}) as Record<string, any>;
+                        let key = String(md.themeCategory || '').trim();
+                        if (!key) {
+                          try {
+                            const derived = sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
+                            key = String(derived || '').trim();
+                          } catch {}
+                        }
+                        if (!key) continue;
+                        counts.set(key, (counts.get(key) || 0) + 1);
+                      }
+
+                      const pills = Array.from(counts.entries())
+                        .map(([key, count]) => {
+                          const pretty = key.replace(/_/g,' ').toLowerCase().replace(/^./, c => c.toUpperCase());
+                          return { key, count, pretty };
+                        })
+                        .sort((a, b) => b.count - a.count);
+
+                      if (pills.length === 0) return null;
+
+                      return (
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter === 'all' ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}
+                            onClick={() => setCategoryFilter('all')}
+                            aria-pressed={categoryFilter === 'all'}
+                          >
+                            All
+                          </button>
+                          {pills.map(p => (
+                            <button
+                              type="button"
+                              key={p.key}
+                              className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter.toLowerCase() === p.key.toLowerCase() ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}
+                              onClick={() => setCategoryFilter(p.key)}
+                              aria-pressed={categoryFilter.toLowerCase() === p.key.toLowerCase()}
+                              title={`${p.pretty} (${p.count})`}
+                            >
+                              {p.pretty} <span className="ml-1 text-muted-foreground">({p.count})</span>
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -1728,7 +1603,7 @@ export default function StoriesIndexContent() {
                                         case 'fork-knife': case 'forkknife': case 'utensils': return ForkKnife; case 'trees': case 'tree': return Trees; case 'castle': return Castle; case 'bug': return Bug;
                                         case 'moon': return Moon; case 'moon-star': case 'moonstar': return MoonStar; case 'radio': return Radio; case 'box': return Box; case 'flask': return FlaskConical;
                                         case 'radiation': return Radiation; case 'building': return Building; case 'cat': return Cat; case 'flame': return Flame; case 'dog': return Dog; case 'cloud': return Cloud;
-                                        case 'alert-triangle': case 'alerttriangle': return AlertTriangle; case 'footprints': return Footprints;
+                                        case 'alert-triangle': case 'alerttriangle': return AlertTriangle; case 'footprints': return Footprints; case 'bone': return Bone;
                                         default:
                                           switch (themeKeyForTint) {
                                             case 'TECHNOLOGICAL': return Cpu;
@@ -1967,6 +1842,7 @@ export default function StoriesIndexContent() {
                                 case 'TIME_HORROR': return Clock;
                                 case 'APOCALYPTIC': return Radiation;
                                 case 'SCIENCE_HORROR': return FlaskConical;
+                                case 'BODY_HORROR': return Bone;
                                 case 'FOLK_HORROR': return Trees;
                                 case 'GOTHIC': return Castle;
                                 case 'COSMIC': return Moon;
