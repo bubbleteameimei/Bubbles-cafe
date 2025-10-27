@@ -563,7 +563,7 @@ export default function StoriesIndexContent() {
           </div>
 
           {/* Featured row */}
-          {(featuredStory && sortedPosts.length > 0) && (
+          {(featuredStory && sortedPosts.length > 0 && (!search.trim() || titleMatches.length > 0)) && (
             <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1">
                 <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
@@ -675,9 +675,9 @@ export default function StoriesIndexContent() {
                             }
                           })();
                           return (
-                            <div className="mt-0">
+                            <div className="mt-1">
                               <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : (themeKey === 'BODY_HORROR' ? <Bone className="h-3 w-3" /> : null)}
+                                {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : <ThemeIconCmp className="h-3 w-3" />}
                                 {prettyLabel}
                               </Badge>
                             </div>
@@ -1200,10 +1200,10 @@ export default function StoriesIndexContent() {
                       })()}
                     </CarouselContent>
                   </Carousel>
-                  <div className="mt-3 flex items-center justify-center gap-3">
+                  <div className="mt-3 flex items-center justify-center gap-2">
                     <Button
                       size="sm"
-                      className="h-9 px-3 rounded-full border border-border/60 bg-card/90 hover:bg-card shadow-sm"
+                      className="h-9 px-3 w-28 justify-center rounded-full border border-border/60 bg-card/90 hover:bg-card shadow-sm"
                       onClick={() => { try { carouselApi?.scrollPrev(); } catch {} }}
                       disabled={!canPrev}
                     >
@@ -1212,7 +1212,7 @@ export default function StoriesIndexContent() {
                     </Button>
                     <Button
                       size="sm"
-                      className="h-9 px-3 rounded-full border border-border/60 bg-card/90 hover:bg-card shadow-sm"
+                      className="h-9 px-3 w-28 justify-center rounded-full border border-border/60 bg-card/90 hover:bg-card shadow-sm"
                       onClick={() => { try { carouselApi?.scrollNext(); } catch {} }}
                       disabled={!canNext}
                     >
@@ -1248,28 +1248,31 @@ export default function StoriesIndexContent() {
                       if (pills.length === 0) return null;
 
                       return (
-                        <div className="flex flex-wrap items-center justify-center gap-2">
-                          <button
-                            type="button"
-                            className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter === 'all' ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}
-                            onClick={() => setCategoryFilter('all')}
-                            aria-pressed={categoryFilter === 'all'}
-                          >
-                            All
-                          </button>
-                          {pills.map(p => (
+                        <>
+                          <div className="text-center text-xs font-medium text-muted-foreground mb-1">All categories</div>
+                          <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
                             <button
                               type="button"
-                              key={p.key}
-                              className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter.toLowerCase() === p.key.toLowerCase() ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}
-                              onClick={() => setCategoryFilter(p.key)}
-                              aria-pressed={categoryFilter.toLowerCase() === p.key.toLowerCase()}
-                              title={`${p.pretty} (${p.count})`}
+                              className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter === 'all' ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}
+                              onClick={() => setCategoryFilter('all')}
+                              aria-pressed={categoryFilter === 'all'}
                             >
-                              {p.pretty} <span className="ml-1 text-muted-foreground">({p.count})</span>
+                              All
                             </button>
-                          ))}
-                        </div>
+                            {pills.map(p => (
+                              <button
+                                type="button"
+                                key={p.key}
+                                className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter.toLowerCase() === p.key.toLowerCase() ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}
+                                onClick={() => setCategoryFilter(p.key)}
+                                aria-pressed={categoryFilter.toLowerCase() === p.key.toLowerCase()}
+                                title={`${p.pretty} (${p.count})`}
+                              >
+                                {p.pretty} <span className="ml-1 text-muted-foreground">({p.count})</span>
+                              </button>
+                            ))}
+                          </div>
+                        </>
                       );
                     })()}
                   </div>
