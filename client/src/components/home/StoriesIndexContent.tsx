@@ -484,6 +484,11 @@ export default function StoriesIndexContent() {
   }, [sortedPosts, categoryFilter, search, sort, reactionTotals]);
 
   const currentPosts = filteredPosts;
+  const titleMatches = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [] as Post[];
+    return sortedPosts.filter(p => String(p.title || '').toLowerCase().includes(q));
+  }, [search, sortedPosts]);
 
   // Latest Stories list - always sorted newest->oldest; search does NOT change this list
   const latestPosts = useMemo(() => {
@@ -512,157 +517,10 @@ export default function StoriesIndexContent() {
   }, [currentPosts.length, search]);
 
   const featuredStory = useMemo(() => {
-    const all = [...currentPosts];
+    const all = [...sortedPosts];
     if (!all || all.length === 0) return null;
 
-    const q = search.trim().toLowerCase();
-    // If searching, pick best match as featured (smooth, accurate) with synonyms/boosts
-    if (q) {
-      const tokenize = (s: string) => normalizeText(s.toLowerCase()).split(/[^a-z0-9]+/).filter(Boolean);
-      const jaccard = (a: string[], b: string[]) => {
-        if (!a.length || !b.length) return 0;
-        const setA = new Set(a);
-        const setB = new Set(b);
-        const inter = [...setA].filter(x => setB.has(x)).length;
-        const union = new Set([...a, ...b]).size;
-        return inter / union;
-      };
-      const editDistance = (a: string, b: string) => {
-        const m = a.length, n = b.length;
-        if (!m) return n;
-        if (!n) return m;
-        const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
-        for (let i = 0; i <= m; i++) dp[i][0] = i;
-        for (let j = 0; j <= n; j++) dp[0][j] = j;
-        for (let i = 1; i <= m; i++) {
-          for (let j = 1; j <= n; j++) {
-            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-            dp[i][j] = Math.min(
-              dp[i - 1][j] + 1,
-              dp[i][j - 1] + 1,
-              dp[i - 1][j - 1] + cost
-            );
-          }
-        }
-        return dp[m][n];
-      };
-      const synonyms: Record<string, string[]> = {
-        ghost: ['spirit','phantom','specter','wraith'],
-        curse: ['hex','jinx','spell'],
-        witch: ['hag','sorceress'],
-        demon: ['fiend','devil'],
-        monster: ['creature','beast'],
-        blood: ['bleed','bloody'],
-        scream: ['yell','shriek'],
-        dark: ['night','gloom','black'],
-        shadow: ['shade','silhouette'],
-        grave: ['tomb','burial'],
-        dead: ['deceased','lifeless'],
-        fear: ['terror','dread'],
-        knife: ['blade','dagger'],
-        eyes: ['gaze','stare'],
-        footsteps: ['steps','treads'],
-        whisper: ['murmur','hiss'],
-        door: ['gate','entry'],
-        basement: ['cellar'],
-        closet: ['wardrobe','cupboard'],
-        window: ['pane','glass'],
-        bone: ['skeleton'],
-        cold: ['chill','freezing'],
-        haunted: ['possessed','cursed'],
-        night: ['darkness']
-      };
-      const boostedKeywords = [
-        'blood','scream','shadow','dark','fear','dead','grave','curse','witch','ghost','monster',
-        'door','basement','closet','window','footsteps','whisper','knife','bone','eyes','cold','haunted','night'
-      ];
-      const expandWithSynonyms = (tokens: string[]) => {
-        const set = new Set(tokens);
-        for (const t of tokens) {
-          const syns = synonyms[t];
-          if (syns) for (const s of syns) set.add(s);
-        }
-        return Array.from(set);
-      };
-
-      const qTokens = tokenize(q);
-      const qExpanded = expandWithSynonyms(qTokens);
-      const score = (p: Post) => {
-        const title = String(p.title || "");
-        const content = String(p.content || "");
-        const tTok = tokenize(title);
-        const cTok = tokenize(content).slice(0, 400);
-        const jTitle = jaccard(qExpanded, tTok) * 2.2;
-        let directTitle = 0;
-        for (const qt of qExpanded) if (title.toLowerCase().includes(qt)) directTitle += 0.5;
-        const jContent = jaccard(qExpanded, cTok) * 0.55;
-        let typoBonus = 0;
-        for (const qt of qExpanded) {
-          let best = Infinity;
-          for (const tt of tTok) {
-            const d = editDistance(qt, tt);
-            if (d < best) best = d;
-          }
-          if (best <= 2) typoBonus += 0.4;
-        }
-        // Only boost if query itself contains boosted keywords
-        const queryContainsBoosted = qTokens.some(t => boostedKeywords.includes(t));
-        let keywordBoost = 0;
-        for (const kw of boostedKeywords) {
-          if (queryContainsBoosted && tTok.includes(kw)) keywordBoost += 0.25;
-          if (queryContainsBoosted && cTok.includes(kw)) keywordBoost += 0.1;
-        }
-        return jTitle + directTitle + jContent + typoBonus + keywordBoost;
-      };
-
-      const scoredBySearch = all
-        .map(p => ({ p, s: score(p) }))
-        .sort((a, b) => b.s - a.s)
-        .map(x => x.p);
-
-      // Only feature a story if the query has a close match (typo tolerance <= 2)
-      const hasCloseMatch = (() => {
-        const qTokens = tokenize(q);
-        for (const p of all) {
-          const tTok = tokenize(String(p.title || ''));
-          for (const qt of qTokens) {
-            for (const tt of tTok) {
-              const d = editDistance(qt, tt);
-              if (d <= 2) return true;
-            }
-          }
-        }
-        return false;
-      })();
-
-      if (!hasCloseMatch) return null;
-
-      // Diversity constraint: avoid repeating the same theme as last featured
-      const lastTheme = (() => {
-        try { return localStorage.getItem('lastFeaturedTheme') || ''; } catch { return ''; }
-      })();
-      const pickWithDiversity = (candidates: Post[]) => {
-        const getThemeKey = (p: Post) => {
-          const md: any = (p as any)?.metadata || {};
-          const primary = md.themeCategory || sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
-          const raw = String(primary || '').trim();
-          if (!raw) return '';
-          for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-            if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-          }
-          return raw.toUpperCase().replace(/\\s+/g, '_');
-        };
-        if (!candidates.length) return null;
-        const first = candidates[0];
-        const firstKey = getThemeKey(first);
-        if (lastTheme && firstKey.toUpperCase() === lastTheme.toUpperCase() && candidates.length > 1) {
-          return candidates[1];
-        }
-        return first;
-      };
-
-      return pickWithDiversity(scoredBySearch) || null;
-    }
+    
 
     // If explicitly sorting by popular, pick highest likes + engagement using live reaction totals
     if (sort === 'popular') {
@@ -758,7 +616,7 @@ export default function StoriesIndexContent() {
     });
 
     return sortedByEngagement[0];
-  }, [currentPosts, search, sort, reactionTotals]);
+  }, [sortedPosts, sort, reactionTotals]);
 
   // Persist last featured theme for diversity in subsequent sessions
   useEffect(() => {
@@ -810,7 +668,7 @@ export default function StoriesIndexContent() {
           {/* Sticky controls header (mobile-first) */}
           <div className="sticky top-0 z-30 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6 py-2 sm:py-3 mt-8 sm:mt-12">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="relative w-full">
+              <div className="relative w-full lg:w-1/3">
                 <Input
                   placeholder="Search stories..."
                   className="pl-3 pr-10 w-full"
@@ -824,7 +682,7 @@ export default function StoriesIndexContent() {
           </div>
 
           {/* Featured row */}
-          {(featuredStory && currentPosts.length > 0) && (
+          {(featuredStory && sortedPosts.length > 0) && (
             <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1">
                 <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
@@ -855,7 +713,7 @@ export default function StoriesIndexContent() {
                     </div>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <button className="text-left text-xl md:text-2xl font-castoro hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
+                        <button className="text-left text-xl md:text-2xl leading-6 font-castoro hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
                           {renderHighlighted(String(featuredStory.title || ''))}
                         </button>
                         {(() => {
@@ -927,11 +785,16 @@ export default function StoriesIndexContent() {
                               case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700';
                               case 'FOLK_HORROR': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700';
                               case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark:text-stone-300 dark:border-stone-700';
+                              case 'CURSED_OBJECT': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700';
+                              case 'OCCULT': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700';
+                              case 'URBAN_HORROR': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700';
+                              case 'SUICIDE': return 'bg-zinc-100 text-zinc-800 border-zinc-200 dark:bg-zinc-900/30 dark:text-zinc-300 dark:border-zinc-700';
+                              case 'CONTAGION': return 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700';
                               default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark:text-foreground dark:border-primary/20';
                             }
                           })();
                           return (
-                            <div className="mt-1">
+                            <div className="mt-0">
                               <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
                                 {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : (themeKey === 'BODY_HORROR' ? <Bone className="h-3 w-3" /> : null)}
                                 {prettyLabel}
@@ -1006,7 +869,7 @@ export default function StoriesIndexContent() {
           
 
           {/* Stories List */}
-          {search.trim() && currentPosts.length === 0 ? (
+          {search.trim() && titleMatches.length === 0 ? (
             <div className="mx-auto max-w-full sm:max-w-2xl md:max-w-3xl text-center py-8 sm:py-10 md:py-12 rounded-xl border border-border/60 bg-card/80 px-3 sm:px-6 shadow-sm overflow-hidden">
               <div className="w-full">
                 <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4 mt-2">
@@ -1147,6 +1010,11 @@ export default function StoriesIndexContent() {
                                     case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700';
                                     case 'UNCANNY': return 'bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-700';
                                     case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark:text-stone-300 dark:border-stone-700';
+                                    case 'CURSED_OBJECT': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700';
+                                    case 'OCCULT': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700';
+                                    case 'URBAN_HORROR': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700';
+                                    case 'SUICIDE': return 'bg-zinc-100 text-zinc-800 border-zinc-200 dark:bg-zinc-900/30 dark:text-zinc-300 dark:border-zinc-700';
+                                    case 'CONTAGION': return 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700';
                                     default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark:text-foreground dark:border-primary/20';
                                   }
                                 })();
@@ -1649,11 +1517,16 @@ export default function StoriesIndexContent() {
                                               case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700';
                                               case 'FOLK_HORROR': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700';
                                               case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark:text-stone-300 dark:border-stone-700';
+                                              case 'CURSED_OBJECT': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700';
+                                              case 'OCCULT': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700';
+                                              case 'URBAN_HORROR': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700';
+                                              case 'SUICIDE': return 'bg-zinc-100 text-zinc-800 border-zinc-200 dark:bg-zinc-900/30 dark:text-zinc-300 dark:border-zinc-700';
+                                              case 'CONTAGION': return 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700';
                                               default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark:text-foreground dark:border-primary/20';
                                             }
                                           })();
                                           return (
-                                            <div className="mt-1">
+                                            <div className="mt-0">
                                               <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
                                                 {themeKeyForTint === 'BODY_HORROR' ? <Bone className="h-3 w-3" /> : null}
                                                 {prettyLabel}
@@ -1891,11 +1764,16 @@ export default function StoriesIndexContent() {
                                       case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700';
                                       case 'UNCANNY': return 'bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-700';
                                       case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark:text-stone-300 dark:border-stone-700';
+                                      case 'CURSED_OBJECT': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700';
+                                      case 'OCCULT': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700';
+                                      case 'URBAN_HORROR': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700';
+                                      case 'SUICIDE': return 'bg-zinc-100 text-zinc-800 border-zinc-200 dark:bg-zinc-900/30 dark:text-zinc-300 dark:border-zinc-700';
+                                      case 'CONTAGION': return 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700';
                                       default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark:text-foreground dark:border-primary/20';
                                     }
                                   })();
                                   return (
-                                    <div className="mt-1">
+                                    <div className="mt-0">
                                       <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
                                         <ThemeIconCmp className="h-3 w-3" />
                                         {prettyLabel}
