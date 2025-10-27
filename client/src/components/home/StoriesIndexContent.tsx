@@ -24,6 +24,7 @@ import { THEME_CATEGORIES } from "@/lib/themes-lite";
 import type { WordPressPost } from "@/lib/wordpress-api";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { determineThemeCategory as sharedDetermineThemeCategory, THEME_CATEGORIES as SHARED_THEME_CATEGORIES } from "@shared/theme-categories";
+import { getStoryThemeOverride } from "@shared/story-theme-overrides";
 
 
 
@@ -955,7 +956,9 @@ export default function StoriesIndexContent() {
                                   md.themeCategory ||
                                   sharedDetermineThemeCategory(String(s.title || ''), String(s.content || ''));
 
-                                const themeKey = (() => {
+                                const override = getStoryThemeOverride(s.slug as any, s.title as any);
+
+                                const derivedKey = (() => {
                                   const raw = String(primaryThemeRaw || '').trim();
                                   if (!raw) return 'HORROR';
                                   for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
@@ -964,12 +967,16 @@ export default function StoriesIndexContent() {
                                   return raw.toUpperCase().replace(/\s+/g, '_');
                                 })();
 
+                                const themeKey = override?.key || derivedKey;
+
                                 const baseLabel =
-                                  (SHARED_THEME_CATEGORIES as any)[themeKey]?.label ||
+                                  override?.label ||
+                                  (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
                                   primaryThemeRaw ||
                                   'Horror';
 
                                 const prettyLabel = (() => {
+                                  if (override?.label) return override.label;
                                   const l = String(baseLabel).toLowerCase();
                                   if (l.includes('cosmic')) return 'Cosmic Horror';
                                   if (l.includes('existential')) return 'Existential Horror';
@@ -1133,7 +1140,9 @@ export default function StoriesIndexContent() {
                                     md.themeCategory ||
                                     sharedDetermineThemeCategory(String(pop.title || ''), String(pop.content || ''));
 
-                                  const themeKey = (() => {
+                                  const override = getStoryThemeOverride(pop.slug as any, pop.title as any);
+
+                                  const derivedKey = (() => {
                                     const raw = String(primaryThemeRaw || '').trim();
                                     if (!raw) return 'HORROR';
                                     for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
@@ -1142,12 +1151,16 @@ export default function StoriesIndexContent() {
                                     return raw.toUpperCase().replace(/\s+/g, '_');
                                   })();
 
+                                  const themeKey = override?.key || derivedKey;
+
                                   const baseLabel =
-                                    (SHARED_THEME_CATEGORIES as any)[themeKey]?.label ||
+                                    override?.label ||
+                                    (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
                                     primaryThemeRaw ||
                                     'Horror';
 
                                   const prettyLabel = (() => {
+                                    if (override?.label) return override.label;
                                     const l = String(baseLabel).toLowerCase();
                                     if (l.includes('cosmic')) return 'Cosmic Horror';
                                     if (l.includes('existential')) return 'Existential Horror';
@@ -1288,7 +1301,9 @@ export default function StoriesIndexContent() {
                             </div>
                           </div>
                           {themeCategory && (() => {
-                            const themeKey = (() => {
+                            const override = getStoryThemeOverride(post.slug as any, post.title as any);
+
+                            const derivedKey = (() => {
                               const raw = themeCategory;
                               if (!raw) return '';
                               for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
@@ -1297,9 +1312,12 @@ export default function StoriesIndexContent() {
                               return raw.toUpperCase().replace(/\s+/g, '_');
                             })();
 
+                            const themeKeyForTint = override?.key || derivedKey;
+
                             const chosenIconSlug =
+                              override?.icon ||
                               (md && (md as any).themeIcon) ||
-                              (SHARED_THEME_CATEGORIES as any)[themeKey]?.icon ||
+                              (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
                               'ghost';
 
                             const ThemeIconCmp = (() => {
@@ -1350,7 +1368,7 @@ export default function StoriesIndexContent() {
                                 case 'tree': return Trees;
                               }
                               // Fallback by theme key for diversity when slug is unknown
-                              switch (themeKey) {
+                              switch (themeKeyForTint) {
                                 case 'TECHNOLOGICAL': return Cpu;
                                 case 'PSYCHOLOGICAL': return Brain;
                                 case 'SUPERNATURAL': return Ghost;
@@ -1378,9 +1396,12 @@ export default function StoriesIndexContent() {
                             })();
 
                             const baseLabel =
-                              (SHARED_THEME_CATEGORIES as any)[themeKey]?.label || themeCategory;
+                              override?.label ||
+                              (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
+                              themeCategory;
 
                             const prettyLabel = (() => {
+                              if (override?.label) return override.label;
                               const l = String(baseLabel).toLowerCase();
                               if (l.includes('cosmic')) return 'Cosmic Horror';
                               if (l.includes('existential')) return 'Existential Horror';
@@ -1393,7 +1414,7 @@ export default function StoriesIndexContent() {
                             })();
 
                             const badgeTint = (() => {
-                              switch (themeKey) {
+                              switch (themeKeyForTint) {
                                 case 'DEATH': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
                                 case 'BODY_HORROR': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700';
                                 case 'SUPERNATURAL': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700';

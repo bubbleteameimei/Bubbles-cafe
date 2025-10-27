@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { THEME_CATEGORIES } from '@/lib/themes-lite';
 import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } from '@shared/theme-categories';
+import { getStoryThemeOverride } from '@shared/story-theme-overrides';
 
 type Post = typeof posts.$inferSelect;
 
@@ -116,21 +117,27 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                       md.themeCategory ||
                       determineThemeCategory(String(featured.title || ''), String(featured.content || ''));
 
-                    const themeKey = (() => {
+                    const override = getStoryThemeOverride(featured.slug as any, featured.title as any);
+
+                    const derivedKey = (() => {
                       const raw = String(primaryThemeRaw || '').trim();
                       if (!raw) return 'HORROR';
                       for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
                         if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
                       }
-                      return raw.toUpperCase().replace(/\s+/g, '_');
+                      return raw.toUpperCase().replace(/\\s+/g, '_');
                     })();
 
+                    const themeKey = override?.key || derivedKey;
+
                     const baseLabel =
-                      (SHARED_THEME_CATEGORIES as any)[themeKey]?.label ||
+                      override?.label ||
+                      (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
                       primaryThemeRaw ||
                       'Horror';
 
                     const prettyLabel = (() => {
+                      if (override?.label) return override.label;
                       const l = String(baseLabel).toLowerCase();
                       if (l.includes('cosmic')) return 'Cosmic Horror';
                       if (l.includes('existential')) return 'Existential Horror';
