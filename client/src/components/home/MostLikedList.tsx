@@ -105,7 +105,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <h4
-                        className="text-left text-xl md:text-2xl font-semibold font-castoro group-hover:text-primary leading-7 line-clamp-2"
+                        className="text-left text-xl md:text-2xl font-semibold font-castoro group-hover:text-primary leading-6 line-clamp-2"
                         title={featured.title}
                       >
                         {featured.title}
