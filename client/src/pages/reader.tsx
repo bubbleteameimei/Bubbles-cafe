@@ -1465,11 +1465,33 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                               <SelectValue placeholder="Select a theme" />
                             </SelectTrigger>
                             <SelectContent>
-                              {Object.entries(SHARED_THEME_CATEGORIES as Record<string, { label: string; icon: string }>).map(([key, info]) => (
-                                <SelectItem key={key} value={key}>
-                                  {info.label}
-                                </SelectItem>
-                              ))}
+                              {Object.entries(SHARED_THEME_CATEGORIES as Record<string, { label: string; icon: string }>).map(([key, info]) => {
+                                const base = info.label;
+                                const l = String(base).toLowerCase();
+                                const refined = (() => {
+                                  if (l.includes('cosmic')) return 'Cosmic Horror';
+                                  if (l.includes('existential')) return 'Existential Horror';
+                                  if (l.includes('vehicular')) return 'Vehicular Horror';
+                                  if (l.includes('psychological')) return 'Psychological Horror';
+                                  if (l.includes('supernatural')) return 'Supernatural Horror';
+                                  if (l.includes('technological')) return 'Technological Horror';
+                                  if (l.includes('uncanny')) return 'Uncanny Horror';
+                                  if (l.includes('gothic')) return 'Gothic Horror';
+                                  if (l.includes('folk')) return 'Folk Horror';
+                                  if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
+                                  if (l.includes('cannibal')) return 'Cannibalism Horror';
+                                  if (l.includes('science')) return 'Science Horror';
+                                  if (l.includes('apocalyptic')) return 'Apocalyptic Horror';
+                                  if (l.includes('stalking')) return 'Stalker/Pursuit Horror';
+                                  if (l.includes('doppelganger')) return 'Identity Horror';
+                                  return base;
+                                })();
+                                return (
+                                  <SelectItem key={key} value={key}>
+                                    {refined}
+                                  </SelectItem>
+                                );
+                              })}
                             </SelectContent>
                           </Select>
                         </div>

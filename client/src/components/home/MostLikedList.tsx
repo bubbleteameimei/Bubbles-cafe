@@ -6,6 +6,9 @@ import { type posts } from '@shared/schema';
 import { fetchReactionsBatch, type ReactionTotals } from '@/api/reactions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { THEME_CATEGORIES } from '@/lib/themes-lite';
+import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } from '@shared/theme-categories';
 
 type Post = typeof posts.$inferSelect;
 
@@ -106,6 +109,73 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                   <p className="mt-2 text-sm text-muted-foreground leading-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
                     {extractEngagingExcerpt(featured.content, 180)}
                   </p>
+
+                  {(() => {
+                    const md: any = (featured as any)?.metadata || {};
+                    const primaryThemeRaw =
+                      md.themeCategory ||
+                      determineThemeCategory(String(featured.title || ''), String(featured.content || ''));
+
+                    const themeKey = (() => {
+                      const raw = String(primaryThemeRaw || '').trim();
+                      if (!raw) return 'HORROR';
+                      for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
+                        if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
+                      }
+                      return raw.toUpperCase().replace(/\s+/g, '_');
+                    })();
+
+                    const baseLabel =
+                      (SHARED_THEME_CATEGORIES as any)[themeKey]?.label ||
+                      primaryThemeRaw ||
+                      'Horror';
+
+                    const prettyLabel = (() => {
+                      const l = String(baseLabel).toLowerCase();
+                      if (l.includes('cosmic')) return 'Cosmic Horror';
+                      if (l.includes('existential')) return 'Existential Horror';
+                      if (l.includes('vehicular')) return 'Vehicular Horror';
+                      if (l.includes('psychological')) return 'Psychological Horror';
+                      if (l.includes('supernatural')) return 'Supernatural Horror';
+                      if (l.includes('technological')) return 'Technological Horror';
+                      if (l.includes('uncanny')) return 'Uncanny Horror';
+                      if (l.includes('gothic')) return 'Gothic Horror';
+                      if (l.includes('folk')) return 'Folk Horror';
+                      if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
+                      if (l.includes('cannibal')) return 'Cannibalism Horror';
+                      return baseLabel;
+                    })();
+
+                    const badgeTint = (() => {
+                      switch (themeKey) {
+                        case 'DEATH': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
+                        case 'BODY_HORROR': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700';
+                        case 'SUPERNATURAL': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700';
+                        case 'PSYCHOLOGICAL': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700';
+                        case 'EXISTENTIAL': return 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700';
+                        case 'HORROR': return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-700';
+                        case 'STALKING': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700';
+                        case 'CANNIBALISM': return 'bg-red-200 text-red-900 border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700';
+                        case 'PSYCHOPATH': return 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200 dark:bg-fuchsia-900/30 dark:text-fuchsia-300 dark:border-fuchsia-700';
+                        case 'DOPPELGANGER': return 'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-700';
+                        case 'VEHICULAR': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700';
+                        case 'PARASITE': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700';
+                        case 'TECHNOLOGICAL': return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700';
+                        case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700';
+                        case 'UNCANNY': return 'bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-700';
+                        case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark:text-stone-300 dark:border-stone-700';
+                        default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark:text-foreground dark:border-primary/20';
+                      }
+                    })();
+
+                    return (
+                      <div className="mt-2">
+                        <Badge className={`w-fit text-[12px] sm:text-sm font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                          {prettyLabel}
+                        </Badge>
+                      </div>
+                    );
+                  })()}
 
                   <div className="mt-3 flex items-center justify-between">
                     <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
