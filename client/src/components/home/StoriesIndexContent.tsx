@@ -943,7 +943,7 @@ export default function StoriesIndexContent() {
                       return (
                         <div className="mt-1">
                           <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                            {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : <ThemeIconCmp className="h-3 w-3" />}
+                            {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : (themeKey === 'BODY_HORROR' ? <Bone className="h-3 w-3" /> : null)}
                             {prettyLabel}
                           </Badge>
                         </div>
@@ -1423,7 +1423,7 @@ export default function StoriesIndexContent() {
                                       <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
                                         {String(chosenIconSlug).includes(':')
                                           ? (<Icon icon={String(chosenIconSlug)} className="h-3 w-3" />)
-                                          : (<ThemeIconCmp className="h-3 w-3" />)
+                                          : (themeKey === 'BODY_HORROR' ? <Bone className="h-3 w-3" /> : null)
                                         }
                                         {prettyLabel}
                                       </Badge>
@@ -1670,9 +1670,9 @@ export default function StoriesIndexContent() {
                                       return (
                                         <div className="mt-1">
                                           <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                            <ThemeIconCmp className="h-3 w-3" />
-                                            {prettyLabel}
-                                          </Badge>
+                                          {themeKeyForTint === 'BODY_HORROR' ? <Bone className="h-3 w-3" /> : null}
+                                          {prettyLabel}
+                                        </Badge>
                                         </div>
                                       );
                                     })()}
@@ -1914,7 +1914,7 @@ export default function StoriesIndexContent() {
                               return (
                                 <div className="mt-1">
                                   <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                    <ThemeIconCmp className="h-3 w-3" />
+                                    {themeKeyForTint === 'BODY_HORROR' ? <Bone className="h-3 w-3" /> : null}
                                     {prettyLabel}
                                   </Badge>
                                 </div>
