@@ -810,8 +810,7 @@ export default function StoriesIndexContent() {
           {/* Sticky controls header (mobile-first) */}
           <div className="sticky top-0 z-30 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6 py-2 sm:py-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="relative w-full sm:max-w-5xl lg:max-w-7xl xl:max-w-[80rem]">elative w-full sm:max-w-5xl lg:max-w-7xl xl:max-w-[80rem]">
-            
+              <div className="relative w-full sm:max-w-5xl lg:max-w-7xl xl:max-w-[80rem]">
                 <Input
                   placeholder="Search stories..."
                   className="pl-3 pr-10"
@@ -1573,7 +1572,7 @@ export default function StoriesIndexContent() {
                                   onClick={() => navigateToReader(post.slug || post.id)}
                                   className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 cursor-pointer"
                                 >
-                                  <CardContent className="p-4 pb-1">
+                                  <CardContent className="p-4 pb-0">
                                     <div className="flex items-start justify-between gap-3">
                                       <div className="flex-1 min-w-0">
                                         <CardTitle className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary">
@@ -1747,7 +1746,7 @@ export default function StoriesIndexContent() {
                           onClick={() => navigateToReader(post.slug || post.id)}
                           className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 cursor-pointer"
                         >
-                          <CardContent className="p-4 pb-1">
+                          <CardContent className="p-4 pb-0">
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 min-w-0">
                                 <CardTitle
