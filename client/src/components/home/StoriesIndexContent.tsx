@@ -1672,7 +1672,7 @@ export default function StoriesIndexContent() {
                                         </div>
                                       );
                                     })()}
-                                    <p className="text-sm text-muted-foreground leading-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                                    <p className="text-sm text-muted-foreground leading-6 mt-2 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
                                       {renderHighlighted(extractEngagingExcerpt(post.content, 200))}
                                     </p>
                                   </CardContent>
@@ -1913,7 +1913,7 @@ export default function StoriesIndexContent() {
                                 </div>
                               );
                             })()}
-                            <p className="text-sm text-muted-foreground leading-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                            <p className="text-sm text-muted-foreground leading-6 mt-2 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
                               {renderHighlighted(extractEngagingExcerpt(post.content, 200))}
                             </p>
                           </CardContent>
