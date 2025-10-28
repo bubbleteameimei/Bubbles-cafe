@@ -17,6 +17,7 @@ import {
 import { motion } from "framer-motion";
 import { format } from 'date-fns';
 import { useLocation } from "wouter";
+import { createPortal } from "react-dom";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { useFontSize } from "@/hooks/use-font-size";
 import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
@@ -229,7 +230,65 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       } catch {}
     };
   }, [showHorrorMessage]);
-  
+
+  // Cookie-consent style portal overlay: lock body scroll and focus the close button
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!showHorrorMessage) return;
+    const prevOverflow = document.body.style.overflow;
+    const prevPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+    const id = requestAnimationFrame(() => {
+      try {
+        closeBtnRef.current?.focus();
+      } catch {}
+    });
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.paddingRight = prevPaddingRight;
+      cancelAnimationFrame(id);
+    };
+  }, [showHorrorMessage]);
+
+  // Basic focus trap within the overlay (active only when visible)
+  useEffect(() => {
+    if (!showHorrorMessage) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const root = overlayRef.current;
+      if (!root) return;
+      const focusables = Array.from(
+        root.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])')
+      ).filter(el => !el.hasAttribute("disabled") && el.tabIndex !== -1);
+
+      if (focusables.length === 0) return;
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (e.shiftKey) {
+        if (active === first || !root.contains(active)) {
+          last.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (active === last) {
+          first.focus();
+          e.preventDefault();
+        }
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [showHorrorMessage]);
+
   // Create a ref for the content container to attach swipe events and copy protection
   const contentRef = useCopyProtection(true);
   // Removed positionRestoredRef as we no longer save reading position
@@ -962,57 +1021,89 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       {/* Reader content styles with smooth font transitions */}
       <style dangerouslySetInnerHTML={{ __html: generateStoryContentStyles() }} />
 
-      {/* Horror message modal */}
+      {/* Horror message modal (portal to body using CookieConsent overlay logic) */}
       {showHorrorMessage && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md"
-          // Removed onClick handler to prevent closing by clicking outside
-        >
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ 
-              type: "spring", 
-              stiffness: 300, 
-              damping: 30 
-            }}
-            className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-full text-center border border-[#ff0000]/80"
-          >
-            <div className="absolute inset-0 rounded-lg bg-[#ff0000]/10 animate-pulse" />
-            <div className="relative z-10">
-              <div className="mb-6">
-                <CreepyTextGlitch 
-                  text={horrorMessageText} 
-                  className="text-4xl font-bold"
-                  intensityFactor={8}
-                />
-              </div>
-              {/* The button is wrapped in a div with no animations to keep it stable */}
-              <div className="mt-4">
-                <Button
-                  variant="outline"
-                  className="border-[#ff0000]/60 bg-background hover:bg-background/90 text-foreground w-full py-6"
-                  onClick={() => setShowHorrorMessage(false)}
-                >
-                  <span className="mx-auto text-lg font-medium">I understand, I'm sorry</span>
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
+        typeof document !== 'undefined'
+          ? createPortal(
+              <motion.div
+                ref={overlayRef}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                className="fixed inset-0 z-[1400] bg-black/70 backdrop-blur-sm pointer-events-auto flex items-center justify-center p-4"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="glitch-overlay-title"
+                aria-describedby="glitch-overlay-description"
+              >
+                <div className="max-w-[520px] w-full mx-auto bg-card rounded-lg shadow-xl border border-border/60 p-6">
+                  <div className="text-center space-y-4">
+                    <h2 id="glitch-overlay-title" className="sr-only">Attention</h2>
+                    <p id="glitch-overlay-description" className="sr-only">Rapid navigation warning</p>
+                    <div className="mb-2">
+                      <CreepyTextGlitch
+                        text={horrorMessageText}
+                        className="text-4xl font-bold"
+                        intensityFactor={8}
+                      />
+                    </div>
+                    <div className="mt-4">
+                      <Button
+                        ref={closeBtnRef}
+                        variant="outline"
+                        className="border-[#ff0000]/60 bg-background hover:bg-background/90 text-foreground w-full py-4"
+                        onClick={() => setShowHorrorMessage(false)}
+                      >
+                        <span className="mx-auto text-lg font-medium">I understand, I'm sorry</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>,
+              document.body
+            )
+          : (
+              <motion.div
+                ref={overlayRef}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                className="fixed inset-0 z-[1400] bg-black/70 backdrop-blur-sm pointer-events-auto flex items-center justify-center p-4"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="glitch-overlay-title"
+                aria-describedby="glitch-overlay-description"
+              >
+                <div className="max-w-[520px] w-full mx-auto bg-card rounded-lg shadow-xl border border-border/60 p-6">
+                  <div className="text-center space-y-4">
+                    <h2 id="glitch-overlay-title" className="sr-only">Attention</h2>
+                    <p id="glitch-overlay-description" className="sr-only">Rapid navigation warning</p>
+                    <div className="mb-2">
+                      <CreepyTextGlitch
+                        text={horrorMessageText}
+                        className="text-4xl font-bold"
+                        intensityFactor={8}
+                      />
+                    </div>
+                    <div className="mt-4">
+                      <Button
+                        ref={closeBtnRef}
+                        variant="outline"
+                        className="border-[#ff0000]/60 bg-background hover:bg-background/90 text-foreground w-full py-4"
+                        onClick={() => setShowHorrorMessage(false)}
+                      >
+                        <span className="mx-auto text-lg font-medium">I understand, I'm sorry</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )
       )}
       
-      {/* Overlay to prevent interaction with the page when horror message is shown */}
-      {showHorrorMessage && (
-        <div 
-          className="fixed inset-0 z-[999]" 
-          style={{ pointerEvents: 'all' }}
-          aria-hidden="true"
-        />
-      )}
+      
       
       
       

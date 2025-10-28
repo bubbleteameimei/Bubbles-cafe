@@ -40,8 +40,8 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
   const scheduleRandomGlitches = useCallback(() => {
     clearAllTimeouts();
 
-    const safeIntensity = Math.max(0, Math.min(intensityFactor ?? 1, 3));
-    const perCharGlitchChance = Math.min(0.25, 0.08 * safeIntensity);
+    const safeIntensity = Math.max(0, Math.min(intensityFactor ?? 1, 8));
+    const perCharGlitchChance = Math.min(0.85, 0.12 * safeIntensity);
 
     const randomGlitchEffect = () => {
       const chars = originalText.current.split('');
@@ -54,23 +54,23 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
 
       setDisplayText(newChars.join(''));
 
-      if (Math.random() < 0.3 * safeIntensity) {
+      if (Math.random() < 0.6) {
         setBlurActive(true);
-        const blurDuration = 60 + Math.random() * 120;
+        const blurDuration = 80 + Math.random() * 140;
         const blurTimeout = setTimeout(() => setBlurActive(false), blurDuration);
         timeoutIds.current.push(blurTimeout);
       }
 
       const revertTimeout = setTimeout(() => {
         setDisplayText(originalText.current);
-      }, 120 + Math.random() * 160);
+      }, 90 + Math.random() * 140);
       timeoutIds.current.push(revertTimeout);
     };
 
     const scheduleNext = () => {
-      const maxDelay = 180 - 30 * safeIntensity;
-      const minDelay = 60;
-      const nextGlitchDelay = minDelay + Math.random() * Math.max(60, maxDelay);
+      const minDelay = 25;
+      const maxDelay = 50;
+      const nextGlitchDelay = minDelay + Math.random() * maxDelay;
 
       const timeout = setTimeout(() => {
         randomGlitchEffect();
@@ -104,27 +104,55 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
     return HEADER_FONTS[randomIndex];
   };
 
-  const letterSpacingJitter = `${(Math.random() * 0.2 - 0.1).toFixed(2)}px`;
+  const letterSpacingJitter = `${(Math.random() * 0.8 - 0.4).toFixed(2)}px`;
+
+  const getJitterTransform = () => {
+    const x = (Math.random() * 1.2 - 0.6).toFixed(2);
+    const y = (Math.random() * 1.2 - 0.6).toFixed(2);
+    return `translate(${x}px, ${y}px)`;
+  };
 
   return (
     <span
-      className={`pure-red-text ${className}`}
+      className={className}
       style={{
         position: 'relative',
         display: 'inline-block',
-        color: '#ff0000',
-        fontFamily: getRandomHeaderFont(),
-        fontWeight: 'bold',
-        letterSpacing: letterSpacingJitter,
-        filter: getBlurStyle(),
-        transition: 'filter 0.08s ease, letter-spacing 0.12s ease',
-        textShadow: 'none',
-        animation: 'none !important',
-        WebkitTextFillColor: '#ff0000',
-        WebkitTextStroke: '0 transparent',
       }}
     >
-      {displayText}
+      <span
+        style={{
+          color: '#ff0000',
+          fontFamily: getRandomHeaderFont(),
+          fontWeight: 'bold',
+          letterSpacing: '0px',
+          textShadow: 'none',
+          WebkitTextFillColor: '#ff0000',
+          WebkitTextStroke: '0 transparent',
+        }}
+      >
+        {originalText.current}
+      </span>
+      <span
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          pointerEvents: 'none',
+          color: '#ff0000',
+          fontFamily: getRandomHeaderFont(),
+          fontWeight: 'bold',
+          letterSpacing: letterSpacingJitter,
+          filter: getBlurStyle(),
+          transform: getJitterTransform(),
+          transition: 'filter 0.06s ease, letter-spacing 0.1s ease, transform 0.08s ease',
+          textShadow: 'none',
+          WebkitTextFillColor: '#ff0000',
+          WebkitTextStroke: '0 transparent',
+        }}
+      >
+        {displayText}
+      </span>
     </span>
   );
 }
