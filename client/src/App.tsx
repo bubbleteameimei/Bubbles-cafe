@@ -98,8 +98,7 @@ const readerLoaderFallback = (
 function ReaderRoute(props: React.ComponentProps<typeof ReaderPage>) {
   return (
     <React.Suspense fallback={readerLoaderFallback}>
-      {/* @ts-expect-error React.lazy inferred component */}
-      <ReaderPage {...props} />
+            <ReaderPage {...props} />
     </React.Suspense>
   );
 }
