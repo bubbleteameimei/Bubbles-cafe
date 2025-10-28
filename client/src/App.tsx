@@ -264,11 +264,10 @@ const AppContent = () => {
     };
     rafId = requestAnimationFrame(poll);
 
-    // Hard fallback: reveal footer after a short timeout even if heuristics haven't matched yet
+    // Hard fallback: reveal footer after a short timeout only if meaningful content is present
     const timeoutId = window.setTimeout(() => {
-      if (!settled) {
-        setFooterReady(true);
-        settled = true;
+      if (!settled && hasMeaningfulContent()) {
+             settled = true;
         try { observer.disconnect(); } catch {}
         cancelAnimationFrame(rafId);
       }
