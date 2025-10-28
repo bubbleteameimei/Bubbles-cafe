@@ -664,6 +664,26 @@ function App() {
     })();
   }, []);
 
+  // Idle prefetch: warm the Home page "latest post" query so the Latest Story appears faster on first load
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const { fetchWordPressPosts } = await import('./lib/wordpress-api');
+        await queryClient.prefetchQuery({
+          queryKey: ["pages", "home", "latest-post"],
+          queryFn: async () => fetchWordPressPosts({ page: 1, perPage: 1 }),
+          staleTime: 5 * 60 * 1000,
+        });
+      } catch {}
+    };
+    const ric = (window as any)?.requestIdleCallback as any;
+    if (typeof ric === 'function') {
+      ric(() => run(), { timeout: 1200 });
+    } else {
+      setTimeout(run, 300);
+    }
+  }, []);
+
   
 
   return (
