@@ -629,11 +629,10 @@ const AppContent = () => {
                         {(params) => <ReaderRoute params={params} isCommunityContent={true} />}
                       </Route>
                       <Route path="/reader/:slug">
-                        {(params) = <<ReaderRoute params={params} isCommunityContent={false} />}
-                    <//RRo_codeutnewe</>
-
+                        {(params) => <ReaderRoute params={params} isCommunityContent={false} />}
+                      </Route>
                       <Route path="/story/:slug">
-                        {(params) => <ReaderPage params={params} isCommunityContent={false} />}
+                        {(params) => <ReaderRoute params={params} isCommunityContent={false} />}
                       </Route>
 
                       {/* Error Pages */}
