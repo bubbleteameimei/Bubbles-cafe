@@ -32,6 +32,8 @@ import AutoHideNavbar from './components/layout/AutoHideNavbar';
 // Import our notification system components
 import { NotificationProvider } from './contexts/notification-context';
 import ErrorToastProvider from './components/providers/error-toast-provider';
+import ReaderPrefetcher from './components/providers/ReaderPrefetcher';
+import LinkPrefetchObserver from './components/providers/LinkPrefetchObserver';
 // Import our new refresh components
 import { RefreshProvider } from './contexts/refresh-context';
 const PostsPrefetcher = React.lazy(() => import('./components/providers/PostsPrefetcher'));
@@ -645,10 +647,12 @@ function App() {
                   <ScrollEffectsProvider>
                     <ErrorToastProvider>
                       <RefreshProvider>
-                        {/* Warm the cache for posts to make navigation instant */}
+                        {/* Warm caches for common routes and data */}
                         <React.Suspense fallback={null}>
                           <PostsPrefetcher />
                         </React.Suspense>
+                        <ReaderPrefetcher />
+                        <LinkPrefetchObserver />
                         <div className="app-content">
                           <AppContent />
                         </div>

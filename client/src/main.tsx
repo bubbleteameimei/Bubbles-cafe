@@ -52,12 +52,9 @@ if (!root) {
   } catch {}
 })();
 
-// Service worker registration
+// Service worker registration (enabled by default in production)
 try {
-  const enableSWFlag = String((import.meta.env as any)?.VITE_ENABLE_SW || '').toLowerCase();
-  const swEnabled = enableSWFlag === 'true' || enableSWFlag === '1';
-
-  if (import.meta.env.PROD && swEnabled && "serviceWorker" in navigator) {
+  if (import.meta.env.PROD && "serviceWorker" in navigator) {
     const hostname = location.hostname;
     const isLocalhost = ["localhost", "127.0.0.1"].includes(hostname);
     const isPreviewHost =
@@ -73,6 +70,26 @@ try {
     }
   }
 } catch {}
+
+// Background route chunk preloading on idle (Reader, Stories)
+(() => {
+  const run = async () => {
+    try {
+      await Promise.allSettled([
+        import("./pages/reader"),
+        import("./pages/index"),
+      ]);
+    } catch {
+      // Silent
+    }
+  };
+  const ric = (window as any).requestIdleCallback as ((cb: () => void, opts?: { timeout?: number }) => void) | undefined;
+  if (typeof ric === "function") {
+    ric(() => run(), { timeout: 2000 });
+  } else {
+    setTimeout(run, 800);
+  }
+})();
 
 // Dynamically import and mount the App to keep the entry chunk small
 (async () => {
