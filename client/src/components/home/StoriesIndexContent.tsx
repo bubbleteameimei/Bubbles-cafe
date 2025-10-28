@@ -27,6 +27,7 @@ import { determineThemeCategory as sharedDetermineThemeCategory, THEME_CATEGORIE
 import { getStoryThemeOverride } from "@shared/story-theme-overrides";
 import { getThemeDefinitionOverride, syncThemeDefinitionOverridesFromServer } from "@/shared/theme-definitions";
 import { Icon } from "@iconify/react";
+import { getBadgeTint } from "@/lib/theme-badges";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { VirtualScrollArea } from "@/components/ui/VirtualScrollArea";
 
@@ -133,6 +134,32 @@ export default function StoriesIndexContent() {
     parts.push(text.slice(lastIndex));
     return parts;
   };
+
+  // Plain normalization and small edit-distance for fuzzy title matching (≤ 2 typos)
+  const normalizePlain = (s: string) =>
+    s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+  const levenshtein = (a: string, b: string): number => {
+    const m = a.length, n = b.length;
+    if (!m) return n;
+    if (!n) return m;
+    const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,
+          dp[i][j - 1] + 1,
+          dp[i - 1][j - 1] + cost
+        );
+      }
+    }
+    return dp[m][n];
+  };
+
+  
 
   useEffect(() => {
     if (!carouselApi) return;
@@ -261,6 +288,79 @@ export default function StoriesIndexContent() {
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
+  // Compute the closest title match (token-aware, substring + <=2 typos) for featured card search
+  const closestTitleMatch = React.useMemo(() => {
+    const raw = search.trim();
+    if (!raw) return null;
+
+    const tokenize = (s: string) => normalizePlain(s).split(/[^a-z0-9]+/).filter(Boolean);
+    const jaccard = (a: string[], b: string[]) => {
+      if (!a.length || !b.length) return 0;
+      const setA = new Set(a);
+      const setB = new Set(b);
+      const inter = [...setA].filter(x => setB.has(x)).length;
+      const union = new Set([...a, ...b]).size;
+      return inter / union;
+    };
+
+    const qn = normalizePlain(raw);
+    const qTokens = tokenize(raw);
+    const longEnough = qn.length >= 3;
+
+    let best: { post: Post; score: number } | null = null;
+
+    for (const p of sortedPosts) {
+      const title = String(p.title || '');
+      const tn = normalizePlain(title);
+      if (!tn) continue;
+
+      const tTokens = tokenize(title);
+
+      const containsSub = tn.includes(qn);
+      const tokenContains = tTokens.some(tt => tt.includes(qn)) || qTokens.some(qt => tn.includes(qt));
+
+      // Per-token minimum edit distance to any title token
+      const perTokenMinD = qTokens.map(qt => {
+        let md = Infinity;
+        for (const tt of tTokens) {
+          const d = levenshtein(tt, qt);
+          if (d < md) md = d;
+          if (md === 0) break;
+        }
+        return md;
+      });
+
+      const anyClose = perTokenMinD.some(d => d <= 2);
+
+      // Accept only if we have a direct substring match OR a close token match (and query length is reasonable)
+      if (!(containsSub || (longEnough && anyClose))) continue;
+
+      const tokenScore = qTokens.length
+        ? perTokenMinD.reduce((acc, d, i) => {
+            const len = Math.max(2, qTokens[i]?.length || 2);
+            const s = Math.max(0, 1 - d / len);
+            return acc + s;
+          }, 0) / qTokens.length
+        : 0;
+
+      const jac = jaccard(tTokens, qTokens);
+
+      let score = 0;
+      if (containsSub) score += 100;
+      if (tokenContains) score += 60;
+      score += tokenScore * 40 + jac * 20;
+
+      // Mild length penalty so extremely long titles don't dominate weak matches
+      score -= Math.max(0, tTokens.length - qTokens.length) * 2;
+
+      if (!best || score > best.score) {
+        best = { post: p, score };
+      }
+    }
+
+    return best?.post || null;
+  }, [search, sortedPosts]);
+
   // Available theme categories present in posts (include derived when metadata missing)
   const availableCategories = useMemo(() => {
     const set = new Set<string>();
@@ -386,7 +486,7 @@ export default function StoriesIndexContent() {
 
   // Log zero-results interactions
   useEffect(() => {
-    if (search.trim() && titleMatches.length === 0) {
+    if (search.trim() && titleMatches.length === 0 && !closestTitleMatch) {
       try {
         fetch('/api/analytics/interaction', {
           method: 'POST',
@@ -395,13 +495,27 @@ export default function StoriesIndexContent() {
         }).catch(() => {});
       } catch {}
     }
-  }, [titleMatches.length, search]);
+  }, [titleMatches.length, search, closestTitleMatch]);
 
   const featuredStory = useMemo(() => {
     const all = [...sortedPosts];
     if (!all || all.length === 0) return null;
 
-    
+    // If searching, pick the closest title match (exact substring or ≤2 typos)
+    if (search.trim() && closestTitleMatch) {
+      return closestTitleMatch;
+    }
+
+    // Respect dropdown criteria directly for the featured pick
+    if (sort === 'newest') {
+      return [...all].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+    }
+    if (sort === 'oldest') {
+      return [...all].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
+    }
+    if (sort === 'shortest') {
+      return [...all].sort((a, b) => String(a.content || '').length - String(b.content || '').length)[0];
+    }
 
     // If explicitly sorting by popular, pick highest likes + engagement using live reaction totals
     if (sort === 'popular') {
@@ -563,11 +677,11 @@ export default function StoriesIndexContent() {
           </div>
 
           {/* Featured row */}
-          {(featuredStory && sortedPosts.length > 0 && (!search.trim() || titleMatches.length > 0)) && (
+          {(featuredStory && sortedPosts.length > 0 && (!search.trim() || titleMatches.length > 0 || !!closestTitleMatch)) && (
             <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1">
                 <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
-                  <CardContent className="p-4">
+                  <CardContent className="group p-4">
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
                         <Award className="h-4 w-4 text-primary" />
@@ -594,7 +708,7 @@ export default function StoriesIndexContent() {
                     </div>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <button className="text-left text-xl md:text-2xl leading-6 font-castoro hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
+                        <button className="text-left text-xl md:text-2xl font-semibold tracking-tight leading-tight hover:text-primary group-hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
                           {renderHighlighted(String(featuredStory.title || ''))}
                         </button>
                         {(() => {
@@ -675,7 +789,7 @@ export default function StoriesIndexContent() {
                             }
                           })();
                           return (
-                            <div className="mt-1">
+                            <div className="-mt-1">
                               <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
                                 {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : <ThemeIconCmp className="h-3 w-3" />}
                                 {prettyLabel}
@@ -696,7 +810,7 @@ export default function StoriesIndexContent() {
                       </div>
                     </div>
                     <p className="text-[15px] sm:text-[16px] text-muted-foreground leading-6 mt-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                      {renderHighlighted(extractEngagingExcerpt(featuredStory.content, 220))}
+                      {extractEngagingExcerpt(featuredStory.content, 220)}
                     </p>
                     
                     <div className="mt-3 flex items-center justify-between">
@@ -727,7 +841,7 @@ export default function StoriesIndexContent() {
                   </CardContent>
                 </Card>
               </div>
-              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="lg:col-span-2">
                 <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
                   <CardContent className="p-4">
                     <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} />
@@ -743,14 +857,14 @@ export default function StoriesIndexContent() {
             <div className="flex justify-between items-center">
               <h1 className="text-2xl md:text-3xl font-decorative uppercase">LATEST STORIES</h1>
               <div className="text-sm md:text-base text-muted-foreground">
-                {allPosts.length} stories
+                {latestPosts.length} stories
               </div>
             </div>
           </div>
           
 
           {/* Stories List */}
-          {search.trim() && titleMatches.length === 0 ? (
+          {search.trim() && titleMatches.length === 0 && !closestTitleMatch ? (
             <div className="mx-auto max-w-full sm:max-w-2xl md:max-w-3xl text-center py-8 sm:py-10 md:py-12 rounded-xl border border-border/60 bg-card/80 px-3 sm:px-6 shadow-sm overflow-hidden">
               <div className="w-full">
                 <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4 mt-2">
@@ -873,32 +987,7 @@ export default function StoriesIndexContent() {
                                   return baseLabel;
                                 })();
 
-                                const badgeTint = (() => {
-                                  switch (themeKey) {
-                                    case 'DEATH': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
-                                    case 'BODY_HORROR': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700';
-                                    case 'SUPERNATURAL': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700';
-                                    case 'PSYCHOLOGICAL': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700';
-                                    case 'EXISTENTIAL': return 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700';
-                                    case 'HORROR': return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-700';
-                                    case 'STALKING': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700';
-                                    case 'CANNIBALISM': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
-                                    case 'PSYCHOPATH': return 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200 dark:bg-fuchsia-900/30 dark:text-fuchsia-300 dark:border-fuchsia-700';
-                                    case 'DOPPELGANGER': return 'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-700';
-                                    case 'VEHICULAR': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700';
-                                    case 'PARASITE': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700';
-                                    case 'TECHNOLOGICAL': return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700';
-                                    case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700';
-                                    case 'UNCANNY': return 'bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-700';
-                                    case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark:text-stone-300 dark:border-stone-700';
-                                    case 'CURSED_OBJECT': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700';
-                                    case 'OCCULT': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700';
-                                    case 'URBAN_HORROR': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700';
-                                    case 'SUICIDE': return 'bg-zinc-100 text-zinc-800 border-zinc-200 dark:bg-zinc-900/30 dark:text-zinc-300 dark:border-zinc-700';
-                                    case 'CONTAGION': return 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700';
-                                    default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark:text-foreground dark:border-primary/20';
-                                  }
-                                })();
+                                const badgeTint = getBadgeTint(themeKey);
 
                                 return (
                                   <div className="mt-1">
@@ -1221,7 +1310,7 @@ export default function StoriesIndexContent() {
                     </Button>
                   </div>
                   {/* Category tags under carousel controls */}
-                  <div className="mt-3 px-2">
+                  <div className="mt-8 px-2">
                     {(() => {
                       // Build counts including derived categories for posts lacking metadata
                       const counts = new Map<string, number>();
@@ -1249,8 +1338,8 @@ export default function StoriesIndexContent() {
 
                       return (
                         <>
-                          <div className="text-center text-xs font-medium text-muted-foreground mb-1">All categories</div>
-                          <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+                          <div className="text-center text-base md:text-lg font-medium text-muted-foreground mb-3 md:mb-4">All categories</div>
+                          <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
                             <button
                               type="button"
                               className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter === 'all' ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}
@@ -1431,7 +1520,7 @@ export default function StoriesIndexContent() {
                                       </div>
                                     </div>
                                     <p className="text-[13px] text-muted-foreground leading-6 mt-7 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                                      {renderHighlighted(extractEngagingExcerpt(post.content, 200))}
+                                      {extractEngagingExcerpt(post.content, 200)}
                                     </p>
                                   </CardContent>
                                   <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
@@ -1679,7 +1768,7 @@ export default function StoriesIndexContent() {
                             </div>
                             
                             <p className="text-[15px] sm:text-[16px] text-muted-foreground leading-6 mt-7 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                              {renderHighlighted(extractEngagingExcerpt(post.content, 200))}
+                              {extractEngagingExcerpt(post.content, 200)}
                             </p>
                           </CardContent>
                           <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">

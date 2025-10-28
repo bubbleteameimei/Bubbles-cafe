@@ -114,7 +114,7 @@ export const SearchBar = ({
   return (
     <div
       ref={searchContainerRef}
-      className={`relative w-full max-w-md ${className}`}
+      className={`relative w-full max-w-full ${className}`}
     >
       <motion.div
         initial={animate ? { opacity: 0, y: -10 } : undefined}

@@ -460,6 +460,17 @@ div.sidebar-menu-container {
   [role="button"]:hover svg, [role="button"]:active svg {
     opacity: 1 !important;
   }
+
+  /* Propagate new color tokens across legacy gray utilities (search page, etc.) */
+  .text-gray-500,
+  .text-gray-600,
+  .text-gray-700 {
+    color: hsl(var(--muted-foreground)) !important;
+  }
+  .dark .text-gray-300,
+  .dark .text-gray-400 {
+    color: hsl(var(--muted-foreground)) !important;
+  }
 }
 
 /* BackToTop fixed placement helper to escape layout overrides */
