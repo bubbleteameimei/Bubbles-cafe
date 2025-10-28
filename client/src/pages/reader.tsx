@@ -766,9 +766,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         // The CreepyTextGlitch component has been enhanced for a rapid, unnerving effect
         toast({
           title: "NOTICE",
-          description: <CreepyTextGlitch text={message} intensityFactor={8} />, // Maximum intensity
+          description: <CreepyTextGlitch text={message} intensityFactor={8} />,
           variant: "destructive",
-          duration: 9000, // Extended duration for more psychological impact
+          duration: 9000,
         });
         
         // Reset after showing - match the extended toast duration
@@ -953,15 +953,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         }
       `}} />
       {/* Hide site header and footer while creepy glitch is active */}
-     <dstyle dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{__html: `
         .glitch-active header.main-header,
         .glitch-active footer {
           display: none !important;
         }
       `}} />
       {/* Reader content styles with smooth font transitions */}
-     < style dangerouslySetInnerHTML={{ __html: generateStoryContentStyles() }} new/</>
-} />
+      <style dangerouslySetInnerHTML={{ __html: generateStoryContentStyles() }} />
 
       {/* Horror message modal */}
       {showHorrorMessage && (
