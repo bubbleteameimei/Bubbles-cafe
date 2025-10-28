@@ -287,25 +287,76 @@ export default function StoriesIndexContent() {
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  // Compute the closest title match (substring or <= 2 typos) for featured card search
+  // Compute the closest title match (token-aware, substring + <=2 typos) for featured card search
   const closestTitleMatch = React.useMemo(() => {
-    const q = search.trim();
-    if (!q) return null;
-    const qn = normalizePlain(q);
+    const raw = search.trim();
+    if (!raw) return null;
+
+    const tokenize = (s: string) => normalizePlain(s).split(/[^a-z0-9]+/).filter(Boolean);
+    const jaccard = (a: string[], b: string[]) => {
+      if (!a.length || !b.length) return 0;
+      const setA = new Set(a);
+      const setB = new Set(b);
+      const inter = [...setA].filter(x => setB.has(x)).length;
+      const union = new Set([...a, ...b]).size;
+      return inter / union;
+    };
+
+    const qn = normalizePlain(raw);
+    const qTokens = tokenize(raw);
+    const longEnough = qn.length >= 3;
+
     let best: { post: Post; score: number } | null = null;
 
     for (const p of sortedPosts) {
-      const tn = normalizePlain(String(p.title || ''));
+      const title = String(p.title || '');
+      const tn = normalizePlain(title);
       if (!tn) continue;
-      if (tn.includes(qn)) {
-        if (!best || 0 < best.score) best = { post: p, score: 0 };
-        continue;
-      }
-      const d = levenshtein(tn, qn);
-      if (d <= 2) {
-        if (!best || d < best.score) best = { post: p, score: d };
+
+      const tTokens = tokenize(title);
+
+      const containsSub = tn.includes(qn);
+      const tokenContains = tTokens.some(tt => tt.includes(qn)) || qTokens.some(qt => tn.includes(qt));
+
+      // Per-token minimum edit distance to any title token
+      const perTokenMinD = qTokens.map(qt => {
+        let md = Infinity;
+        for (const tt of tTokens) {
+          const d = levenshtein(tt, qt);
+          if (d < md) md = d;
+          if (md === 0) break;
+        }
+        return md;
+      });
+
+      const anyClose = perTokenMinD.some(d => d <= 2);
+
+      // Accept only if we have a direct substring match OR a close token match (and query length is reasonable)
+      if (!(containsSub || (longEnough && anyClose))) continue;
+
+      const tokenScore = qTokens.length
+        ? perTokenMinD.reduce((acc, d, i) => {
+            const len = Math.max(2, qTokens[i]?.length || 2);
+            const s = Math.max(0, 1 - d / len);
+            return acc + s;
+          }, 0) / qTokens.length
+        : 0;
+
+      const jac = jaccard(tTokens, qTokens);
+
+      let score = 0;
+      if (containsSub) score += 100;
+      if (tokenContains) score += 60;
+      score += tokenScore * 40 + jac * 20;
+
+      // Mild length penalty so extremely long titles don't dominate weak matches
+      score -= Math.max(0, tTokens.length - qTokens.length) * 2;
+
+      if (!best || score > best.score) {
+        best = { post: p, score };
       }
     }
+
     return best?.post || null;
   }, [search, sortedPosts]);
 
@@ -434,7 +485,7 @@ export default function StoriesIndexContent() {
 
   // Log zero-results interactions
   useEffect(() => {
-    if (search.trim() && titleMatches.length === 0) {
+    if (search.trim() && titleMatches.length === 0 && !closestTitleMatch) {
       try {
         fetch('/api/analytics/interaction', {
           method: 'POST',
@@ -443,7 +494,7 @@ export default function StoriesIndexContent() {
         }).catch(() => {});
       } catch {}
     }
-  }, [titleMatches.length, search]);
+  }, [titleMatches.length, search, closestTitleMatch]);
 
   const featuredStory = useMemo(() => {
     const all = [...sortedPosts];
@@ -625,7 +676,7 @@ export default function StoriesIndexContent() {
           </div>
 
           {/* Featured row */}
-          {(featuredStory && sortedPosts.length > 0 && (!search.trim() || titleMatches.length > 0)) && (
+          {(featuredStory && sortedPosts.length > 0 && (!search.trim() || titleMatches.length > 0 || !!closestTitleMatch)) && (
             <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1">
                 <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
