@@ -496,7 +496,7 @@ export const SidebarMenuButton = React.forwardRef<
     const { isMobile, state } = useSidebar()
 
     const button = (
-     <<Comp
+      <Comp
         ref={ref}
         data-sidebar="menu-button"
         data-size={size}
@@ -510,7 +510,6 @@ export const SidebarMenuButton = React.forwardRef<
           className
         )}
         style={{ WebkitTapHighlightColor: 'transparent' }}
-       'transparent' }}
         {...props}
       >
         {props.children}
