@@ -50,9 +50,8 @@ import Footer from './components/layout/footer';
 import RouteLoader from './components/ui/RouteLoader';
 
 // Lazily load core pages to enable code-splitting
-const ReaderPage = React.lazy(() => import('./pages/reader'));
-
-// Reader loader fallback for initial slow loads
+const ReaderPage = React.lazy(() => import('./pages/reader'));>
+// Wrapper componentlback for initial slow loads
 const readerLoaderFallback = (<RouteLoader label="Loading reader" minHeight="50vh" />);
 
 // Wrapper component that shows a loader while the Reader page chunk loads
@@ -546,9 +545,8 @@ const AppContent = () => {
                   </div>
               </PageTransition>
             )}
+            <Footer />
           </main>
-          {/* Footer at page bottom (all non-error pages) */}
-          {!isErrorPage && <Footer />}
         </React.Suspense>
       </div>
     </ErrorBoundary>
