@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 interface CreepyTextGlitchProps {
   text: string;
@@ -6,127 +6,157 @@ interface CreepyTextGlitchProps {
   intensityFactor?: number;
 }
 
-const GLITCH_CHARS = "!@#$%^&*()_+-={}|[]\\:\"<>?/.,;'~`";
-
-const HEADER_FONTS = [
-  "'Castoro Titling', serif",
-  "'Gilda Display', serif",
-  "'Newsreader', serif",
-  "'Cormorant Garamond', serif",
-];
+// Character pool for random replacements
+const GLITCH_CHARS = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789¿¡§±æøåñÇçÑÆØÅ";
 
 export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: CreepyTextGlitchProps) {
   const [displayText, setDisplayText] = useState(text);
-  const [blurActive, setBlurActive] = useState(false);
+  const [displayStyle, setDisplayStyle] = useState<React.CSSProperties>({});
   const originalText = useRef(text);
   const timeoutIds = useRef<NodeJS.Timeout[]>([]);
-
-  useEffect(() => {
-    const id = 'glitch-fonts-link';
-    if (!document.getElementById(id)) {
-      const link = document.createElement('link');
-      link.id = id;
-      link.rel = 'stylesheet';
-      link.href = 'https://fonts.googleapis.com/css2?family=Castoro+Titling&family=Gilda+Display&family=Newsreader:wght@400;600&family=Cormorant+Garamond:wght@400;600&display=swap';
-      document.head.appendChild(link);
-    }
-  }, []);
-
+  
+  // Cleanup function to clear all timeouts
   const clearAllTimeouts = () => {
     timeoutIds.current.forEach(id => clearTimeout(id));
     timeoutIds.current = [];
   };
-
-  const scheduleRandomGlitches = useCallback(() => {
-    clearAllTimeouts();
-
-    const safeIntensity = Math.max(1, Math.min(intensityFactor ?? 1, 8));
-    const perCharGlitchChance = Math.min(0.95, 0.12 * safeIntensity);
-
-    const cycle = () => {
-      // Glitch frame: heavily corrupt characters
-      const chars = originalText.current.split('');
-      const newChars = chars.map((ch) =>
-        ch === ' '
-          ? ' '
-          : Math.random() < perCharGlitchChance
-              ? GLITCH_CHARS.charAt(Math.floor(Math.random() * GLITCH_CHARS.length))
-              : ch
-      );
-      setDisplayText(newChars.join(''));
-      setBlurActive(true);
-
-      // Short-lived glitch, then guaranteed revert for a clean frame
-      const glitchDuration = 50 + Math.random() * 80; // ~50–130ms
-      const revertTimeout = setTimeout(() => {
-        setDisplayText(originalText.current);
-        setBlurActive(false);
-        // Keep the clean frame visible before the next glitch
-        const cleanDuration = 120 + Math.random() * 160; // ~120–280ms
-        const nextTimeout = setTimeout(() => {
-          cycle();
-        }, cleanDuration);
-        timeoutIds.current.push(nextTimeout);
-      }, glitchDuration);
-
-      timeoutIds.current.push(revertTimeout);
-    };
-
-    cycle();
-  }, [intensityFactor]);
-
+  
+  // Initialize and cleanup glitch effect
   useEffect(() => {
     originalText.current = text;
     setDisplayText(text);
     scheduleRandomGlitches();
-    return () => clearAllTimeouts();
-  }, [text, scheduleRandomGlitches]);
-
-  const getBlurStyle = () => {
-    if (blurActive) {
-      const blurAmount = 0.5 + Math.random() * 1.0;
-      return `blur(${blurAmount}px)`;
-    }
-    return 'none';
+    
+    return () => {
+      clearAllTimeouts();
+    };
+  }, [text]);
+  
+  // Schedule random glitches throughout the text
+  const scheduleRandomGlitches = () => {
+    clearAllTimeouts();
+    
+    // Convert text to array for easier manipulation
+    const textArray = originalText.current.split('');
+    
+    // Intensified glitch effect - multiple characters at once
+    const intensiveGlitch = () => {
+      // Clone the current text
+      const newTextArray = [...textArray];
+      
+      // Number of characters to glitch - scales with intensity factor
+      const baseGlitchCount = 2 + Math.floor(Math.random() * 3);
+      const glitchCount = Math.min(
+        Math.floor(baseGlitchCount * intensityFactor!),
+        Math.floor(textArray.length * 0.6) // Cap at 60% of text length
+      );
+      const positions: number[] = [];
+      
+      // Select random positions to glitch
+      for (let i = 0; i < glitchCount; i++) {
+        let pos;
+        do {
+          pos = Math.floor(Math.random() * textArray.length);
+        } while (
+          newTextArray[pos] === ' ' || 
+          positions.includes(pos)
+        );
+        
+        positions.push(pos);
+        
+        // Get random replacement character
+        const randomChar = GLITCH_CHARS.charAt(
+          Math.floor(Math.random() * GLITCH_CHARS.length)
+        );
+        
+        newTextArray[pos] = randomChar;
+      }
+      
+      // Apply a subtle style variation - intensity affects probability and strength
+      const newStyle: React.CSSProperties = {};
+      
+      // Randomly add a subtle filter or transform
+      if (Math.random() < 0.3 * intensityFactor!) {
+        newStyle.filter = `blur(${(0.2 + Math.random() * 0.5) * intensityFactor!}px)`;
+      }
+      
+      if (Math.random() < 0.3 * intensityFactor!) {
+        newStyle.transform = `skew(${(Math.random() - 0.5) * 2 * intensityFactor!}deg)`;
+      }
+      
+      // Set the glitched text and style
+      setDisplayText(newTextArray.join(''));
+      setDisplayStyle(newStyle);
+      
+      // Schedule revert after a brief moment - more intense = faster changes
+      const revertTimeout = setTimeout(() => {
+        setDisplayText(originalText.current);
+        setDisplayStyle({});
+      }, Math.max(30, 80 + Math.random() * 170 / intensityFactor!)); // Faster reversion with higher intensity
+      
+      timeoutIds.current.push(revertTimeout);
+    };
+    
+    // Function to glitch a single character at a random position
+    const glitchRandomCharacter = () => {
+      // Pick a random position in the text
+      const pos = Math.floor(Math.random() * textArray.length);
+      
+      // Skip spaces
+      if (textArray[pos] === ' ') {
+        return;
+      }
+      
+      // Save original character
+      const originalChar = textArray[pos];
+      
+      // Replace with random character
+      const randomChar = GLITCH_CHARS.charAt(
+        Math.floor(Math.random() * GLITCH_CHARS.length)
+      );
+      
+      // Update the text with the glitched character
+      const newTextArray = [...textArray];
+      newTextArray[pos] = randomChar;
+      setDisplayText(newTextArray.join(''));
+      
+      // Schedule revert back to original character after a brief moment
+      const revertTimeout = setTimeout(() => {
+        const revertTextArray = [...newTextArray];
+        revertTextArray[pos] = originalChar;
+        setDisplayText(revertTextArray.join(''));
+      }, Math.max(30, 80 + Math.random() * 120 / intensityFactor!)); // Faster reversion with higher intensity
+      
+      timeoutIds.current.push(revertTimeout);
+    };
+    
+    // Schedule irregular glitches - frequency increases with intensity
+    const scheduleNext = () => {
+      // Random delay between glitches - reduced delay with higher intensity
+      const nextGlitchDelay = Math.max(10, (50 + Math.random() * 750) / intensityFactor!);
+      
+      const timeout = setTimeout(() => {
+        // Chance of intensive glitch increases with intensity factor
+        const intensiveGlitchProbability = Math.min(0.2 * intensityFactor!, 0.8);
+        
+        if (Math.random() < intensiveGlitchProbability) {
+          intensiveGlitch();
+        } else {
+          glitchRandomCharacter();
+        }
+        
+        scheduleNext(); // Continue the cycle
+      }, nextGlitchDelay);
+      
+      timeoutIds.current.push(timeout);
+    };
+    
+    // Start the cycle
+    scheduleNext();
   };
-
-  const getRandomHeaderFont = () => {
-    if (!HEADER_FONTS.length) return "'Castoro Titling', serif";
-    const randomIndex = Math.floor(Math.random() * HEADER_FONTS.length);
-    return HEADER_FONTS[randomIndex];
-  };
-
-  const letterSpacingJitter = `${(Math.random() * 0.8 - 0.4).toFixed(2)}px`;
-
-  const getJitterTransform = () => {
-    const x = (Math.random() * 1.2 - 0.6).toFixed(2);
-    const y = (Math.random() * 1.2 - 0.6).toFixed(2);
-    return `translate(${x}px, ${y}px)`;
-  };
-
-  const isGlitched = displayText !== originalText.current;
-
+  
   return (
-    <span
-      className={`pure-red-text ${className}`}
-      style={{
-        position: 'relative',
-        display: 'inline-block',
-        color: '#ff0000',
-        fontFamily: getRandomHeaderFont(),
-        fontWeight: 'bold',
-        letterSpacing: isGlitched ? letterSpacingJitter : '0px',
-        filter: getBlurStyle(),
-        transform: isGlitched ? getJitterTransform() : 'none',
-        transition: 'filter 0.06s ease, letter-spacing 0.1s ease, transform 0.08s ease',
-        textShadow: 'none',
-        animation: 'none !important',
-        WebkitTextFillColor: '#ff0000',
-        WebkitTextStroke: '0 transparent',
-      }}
-    >
-      {displayText}
-    </span>
+    <span className={className} style={displayStyle}>{displayText}</span>
   );
 }
 
