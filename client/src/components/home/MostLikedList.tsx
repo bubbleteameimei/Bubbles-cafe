@@ -92,7 +92,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
       {topLiked.length === 0 ? (
         <div className="text-sm text-muted-foreground">No liked stories yet.</div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-5">
           {/* First three cards always visible across breakpoints */}
           {topLiked.slice(0, 3).map((featured) => (
             <Card key={featured.id} className="rounded-lg border border-border/60 bg-card/80 transition hover:bg-card hover:shadow-md hover:ring-1 hover:ring-primary/15">
