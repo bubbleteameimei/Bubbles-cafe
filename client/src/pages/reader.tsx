@@ -29,6 +29,7 @@ import ApiLoader from "@/components/api-loader";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import SimplifiedErrorPage from "@/components/errors/SimplifiedErrorPage";
 import { useToast } from "@/hooks/use-toast";
+import RouteLoader from "@/components/ui/RouteLoader";
 
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import SEO from "@/components/SEO";
@@ -654,11 +655,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Let's make sure we have posts data and current post before rendering
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <ApiLoader isLoading={true} />
-      </div>
-    );
+    return <RouteLoader label="Loading reader" minHeight="60vh" />;
   }
 
   if (error) {
