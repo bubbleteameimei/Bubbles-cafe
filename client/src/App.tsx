@@ -47,52 +47,13 @@ const BackToTopButton = React.lazy(() => import('./components/BackToTopButton'))
 const HomePage = React.lazy(() => import('./pages/home'));
 const StoriesPage = React.lazy(() => import('./pages/index'));
 import Footer from './components/layout/footer';
+import RouteLoader from './components/ui/RouteLoader';
 
 // Lazily load core pages to enable code-splitting
 const ReaderPage = React.lazy(() => import('./pages/reader'));
 
 // Reader loader fallback for initial slow loads
-const readerLoaderFallback = (
-  <>
-    {/* From Uiverse.io by Leoodaviid */}
-    <style>{`
-      /* From Uiverse.io by Leoodaviid */
-      .loader-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 50vh;
-      }
-      
-      .loader {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-      
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-          box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.4);
-        }
-      
-        50% {
-          transform: rotate(180deg);
-          box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.4);
-        }
-      
-        100% {
-          transform: rotate(360deg);
-          box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.4);
-        }
-      }
-    `}</style>
-    <div className="loader-container" role="status" aria-label="Loading reader">
-      <div className="loader" />
-    </div>
-  </>
-);
+const readerLoaderFallback = (<RouteLoader label="Loading reader" minHeight="50vh" />);
 
 // Wrapper component that shows a loader while the Reader page chunk loads
 function ReaderRoute(props: React.ComponentProps<typeof ReaderPage>) {
