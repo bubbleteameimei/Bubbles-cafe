@@ -213,22 +213,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const skipCountRef = useRef(0);
   const lastNavigationTimeRef = useRef(Date.now());
 
-  // Hide site header and footer while creepy glitch overlay is active
-  useEffect(() => {
-    try {
-      const root = document.documentElement;
-      if (showHorrorMessage) {
-        root.classList.add('glitch-active');
-      } else {
-        root.classList.remove('glitch-active');
-      }
-    } catch {}
-    return () => {
-      try {
-        document.documentElement.classList.remove('glitch-active');
-      } catch {}
-    };
-  }, [showHorrorMessage]);
+  
   
   // Create a ref for the content container to attach swipe events and copy protection
   const contentRef = useCopyProtection(true);
@@ -952,13 +937,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           will-change: opacity, visibility;
         }
       `}} />
-      {/* Hide site header and footer while creepy glitch is active */}
-      <style dangerouslySetInnerHTML={{__html: `
-        .glitch-active header.main-header,
-        .glitch-active footer {
-          display: none !important;
-        }
-      `}} />
+      
       {/* Reader content styles with smooth font transitions */}
       <style dangerouslySetInnerHTML={{ __html: generateStoryContentStyles() }} />
 
