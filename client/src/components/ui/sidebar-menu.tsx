@@ -259,7 +259,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     }
 
     try {
-      // 1. Reset UI state (all menus closed)
+      // 1. Reset UI state (all menus closed) — keep minimal to avoid blocking input
       setDisplayOpen(false);
       setAccountOpen(false);
       setSupportOpen(false);
@@ -275,13 +275,23 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         sidebar.setOpenMobile(false);
       }
 
-      // 4. Prefetch route chunk, but cap wait to avoid sluggishness
-      const done = prefetchRouteAsync(path).catch(() => {});
-      const cap = new Promise<void>((resolve) => setTimeout(resolve, 150));
-      Promise.race([done, cap]).then(() => {
+      // 4. Route change in a transition so the browser can paint promptly
+      React.startTransition(() => {
         setLocation(path);
-        // Warm likely data endpoints after navigation
-        void prefetchDataForRouteEarly(path);
+      });
+
+      // 5. Defer heavy prefetch/warmup to post-paint to avoid blocking INP
+      requestAnimationFrame(() => {
+        const idle = (window as any).requestIdleCallback as ((cb: () => void, opts?: any) => void) | undefined;
+        const run = () => {
+          prefetchRouteAsync(path).catch(() => {});
+          void prefetchDataForRouteEarly(path);
+        };
+        if (typeof idle === "function") {
+          idle(run);
+        } else {
+          setTimeout(run, 0);
+        }
       });
 
     } catch (error) {

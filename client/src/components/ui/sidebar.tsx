@@ -429,8 +429,6 @@ export const SidebarMenu = React.forwardRef<
   <ul
     ref={ref}
     data-sidebar="menu"
-    role="menu"
-    aria-orientation="vertical"
     className={cn("flex w-full min-w-0 flex-col gap-0 -space-y-2", className)}
     {...props}
   />
@@ -444,7 +442,6 @@ export const SidebarMenuItem = React.forwardRef<
   <li
     ref={ref}
     data-sidebar="menu-item"
-    role="presentation"
     className={cn("group/menu-item relative", className)}
     {...props}
   />
@@ -499,12 +496,11 @@ export const SidebarMenuButton = React.forwardRef<
     const { isMobile, state } = useSidebar()
 
     const button = (
-      <Comp
+     <<Comp
         ref={ref}
         data-sidebar="menu-button"
         data-size={size}
         data-active={isActive}
-        role="menuitem"
         aria-current={isActive ? "page" : undefined}
         aria-label={ariaLabel}
         tabIndex={0}
@@ -514,6 +510,7 @@ export const SidebarMenuButton = React.forwardRef<
           className
         )}
         style={{ WebkitTapHighlightColor: 'transparent' }}
+       'transparent' }}
         {...props}
       >
         {props.children}
@@ -650,8 +647,6 @@ export const SidebarMenuSub = React.forwardRef<
   <ul
     ref={ref}
     data-sidebar="menu-sub"
-    role="menu"
-    aria-orientation="vertical"
     className={cn(
       "mx-2 sm:mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 sm:gap-2 border-l border-sidebar-border px-1 sm:px-2 py-1",
       "group-data-[collapsible=icon]:hidden",
@@ -668,7 +663,6 @@ export const SidebarMenuSubItem = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <li 
     ref={ref} 
-    role="presentation"
     className={cn(className)}
     {...props} 
   />
@@ -692,7 +686,6 @@ export const SidebarMenuSubButton = React.forwardRef<
       data-sidebar="menu-sub-button"
       data-size={size}
       data-active={isActive}
-      role="menuitem"
       aria-current={isActive ? "page" : undefined}
       aria-label={ariaLabel}
       tabIndex={0}

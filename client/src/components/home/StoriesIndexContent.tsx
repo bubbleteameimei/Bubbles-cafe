@@ -227,7 +227,9 @@ export default function StoriesIndexContent() {
   const navigateToReader = (slugOrId: string | number) => {
     try {
       const slugStr = String(slugOrId);
-      setLocation(`/reader/${encodeURIComponent(slugStr)}`);
+      React.startTransition(() => {
+        setLocation(`/reader/${encodeURIComponent(slugStr)}`);
+      });
     } catch {
       window.location.href = `/reader/${encodeURIComponent(String(slugOrId))}`;
     }
