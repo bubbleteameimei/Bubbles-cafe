@@ -156,8 +156,8 @@ const AppContent = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isPageTransition, setIsPageTransition] = useState(false);
   const [previousLocation, setPreviousLocation] = useState('');
-  // Gate footer display until content is actually present to avoid \"footer-first\" flash
-  const [footerReady, setFooterReady] = useState(false);
+  // Footer is always present on non-error pages for stable layout
+  const [footerReady, setFooterReady] = useState(true);
 
   // Basic SEO: set canonical and defaults site-wide
   const canonical = locationStr || '/';
@@ -196,89 +196,10 @@ const AppContent = () => {
     }
   }, [location, isErrorPage]);
 
-  // Footer readiness gating: reveal footer only after meaningful content has painted
+  // Footer visibility: present on all non-error pages without content gating
   useEffect(() => {
-    if (isErrorPage) {
-      setFooterReady(false);
-      return;
-    }
-    setFooterReady(false);
-    const main = document.getElementById('main-content');
-    if (!main) return;
-
-    // Helper: detect meaningful content (not just layout wrappers)
-    const hasMeaningfulContent = (): boolean => {
-      const page = main.querySelector('.page-content') as HTMLElement | null;
-      if (!page) return false;
-
-      // Consider route-level loader as meaningful to avoid footer disappearance
-      const loader = page.querySelector('.loader-container') as HTMLElement | null;
-      if (loader) return true;
-
-      // Reader route: require story-content with actual text
-      const story = page.querySelector('.reader-page .story-content') as HTMLElement | null;
-      if (story) {
-        const t = (story.textContent || '').trim();
-        const rect = story.getBoundingClientRect();
-        if (t.length > 200 && rect.height > 60) return true;
-      }
-
-      // General routes: look for visible text-bearing elements
-      const candidates = page.querySelectorAll('h1,h2,h3,h4,h5,h6,p,li,article,section');
-      let textLen = 0;
-      let anyVisibleBlock = false;
-      candidates.forEach((el) => {
-        const text = (el.textContent || '').trim();
-        textLen += text.length;
-        const rect = el.getBoundingClientRect();
-        const visible = rect.height > 18 && rect.width > 30 && rect.top < window.innerHeight;
-        if (visible) anyVisibleBlock = true;
-      });
-      return textLen > 60 && anyVisibleBlock;
-    };
-
-    let settled = false;
-
-    const observer = new MutationObserver(() => {
-      if (!settled && hasMeaningfulContent()) {
-        setFooterReady(true);
-        settled = true;
-        observer.disconnect();
-      }
-    });
-
-    try {
-      observer.observe(main, { childList: true, subtree: true });
-    } catch {}
-
-    // Safety: also poll via RAF for cases MutationObserver misses
-    let rafId = 0;
-    const poll = () => {
-      if (!settled && hasMeaningfulContent()) {
-        setFooterReady(true);
-        settled = true;
-        cancelAnimationFrame(rafId);
-      } else {
-        rafId = requestAnimationFrame(poll);
-      }
-    };
-    rafId = requestAnimationFrame(poll);
-
-    // Hard fallback: reveal footer after a short timeout only if meaningful content is present
-    const timeoutId = window.setTimeout(() => {
-      if (!settled && hasMeaningfulContent()) {
-             settled = true;
-        try { observer.disconnect(); } catch {}
-        cancelAnimationFrame(rafId);
-      }
-    }, 1500);
-
-    return () => {
-      try { observer.disconnect(); } catch {}
-      cancelAnimationFrame(rafId);
-      clearTimeout(timeoutId);
-    };
-  }, [locationStr, isErrorPage]);
+    setFooterReady(!isErrorPage);
+  }, [isErrorPage]);
 
   // Prefetch the current route component to avoid Suspense blank frames
   useEffect(() => {
@@ -626,8 +547,8 @@ const AppContent = () => {
               </PageTransition>
             )}
           </main>
-          {/* Footer at page bottom (all non-error pages), gated to avoid early flash */}
-          {footerReady ? <Footer /> : null}
+          {/* Footer at page bottom (all non-error pages) */}
+          {!isErrorPage && <Footer />}
         </React.Suspense>
       </div>
     </ErrorBoundary>
