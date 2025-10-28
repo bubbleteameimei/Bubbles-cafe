@@ -71,11 +71,12 @@ try {
   }
 } catch {}
 
-// Background route chunk preloading on idle (Reader, Stories)
+// Background route chunk preloading on idle (Home, Reader, Stories)
 (() => {
   const run = async () => {
     try {
       await Promise.allSettled([
+        import("./pages/home"),
         import("./pages/reader"),
         import("./pages/index"),
       ]);
