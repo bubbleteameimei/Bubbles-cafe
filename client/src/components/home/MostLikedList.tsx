@@ -79,8 +79,18 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
     });
   }, [posts, totalsMap, totalsFromParent]);
 
-  // Adapt count by breakpoint using CSS only; render top 4 and let grid handle layout
-  const topLiked = sortedByLikes.slice(0, 4);
+  // Ensure we always have up to 4 items; if not enough liked data, backfill with recent posts
+  const topLiked = useMemo(() => {
+    const primary = sortedByLikes.slice(0, 4);
+    if (primary.length >= 4) return primary;
+    const need = 4 - primary.length;
+    const haveIds = new Set(primary.map(p => p.id));
+    const recent = [...posts]
+      .filter(p => !haveIds.has(p.id))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, need);
+    return [...primary, ...recent];
+  }, [sortedByLikes, posts]);
 
   return (
     <div>
@@ -221,7 +231,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
           ))}
           {/* Fourth card only visible on large screens for a clean 4-up layout */}
           {topLiked[3] ? (
-            <div className="hidden lg:block">
+            <div className="hidden md:block">
               <Card key={topLiked[3].id} className="rounded-lg border border-border/60 bg-card/80 transition hover:bg-card hover:shadow-md hover:ring-1 hover:ring-primary/15">
                 <CardContent className="p-4">
                   <a
