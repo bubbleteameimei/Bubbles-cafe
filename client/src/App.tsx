@@ -50,6 +50,59 @@ import Footer from './components/layout/footer';
 
 // Lazily load core pages to enable code-splitting
 const ReaderPage = React.lazy(() => import('./pages/reader'));
+
+// Reader loader fallback for initial slow loads
+const readerLoaderFallback = (
+  <>
+    {/* From Uiverse.io by Leoodaviid */}
+    <style>{`
+      /* From Uiverse.io by Leoodaviid */
+      .loader-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 50vh;
+      }
+      
+      .loader {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+          box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.4);
+        }
+      
+        50% {
+          transform: rotate(180deg);
+          box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.4);
+        }
+      
+        100% {
+          transform: rotate(360deg);
+          box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.4);
+        }
+      }
+    `}</style>
+    <div className="loader-container" role="status" aria-label="Loading reader">
+      <div className="loader" />
+    </div>
+  </>
+);
+
+// Wrapper component that shows a loader while the Reader page chunk loads
+function ReaderRoute(props: React.ComponentProps<typeof ReaderPage>) {
+  return (
+    <React.Suspense fallback={readerLoaderFallback}>
+      {/* @ts-expect-error React.lazy inferred component */}
+      <ReaderPage {...props} />
+    </React.Suspense>
+  );
+}
 const AboutPage = React.lazy(() => import('./pages/about'));
 const ContactPage = React.lazy(() => import('./pages/contact'));
 const PrivacyPage = React.lazy(() => import('./pages/privacy'));
@@ -401,7 +454,7 @@ const AppContent = () => {
                   {/* Main Pages */}
                   <Route path="/" component={HomePage} />
                   <Route path="/stories" component={StoriesPage} />
-                  <Route path="/reader" component={ReaderPage} />
+                  <Route path="/reader" component={ReaderRoute} />
                   <Route path="/about" component={AboutPage} />
                   <Route path="/contact" component={ContactPage} />
                   <Route path="/privacy" component={PrivacyPage} />
@@ -467,13 +520,13 @@ const AppContent = () => {
                   {/* Dynamic Routes */}
                   <Route path="/search" component={SearchResultsPage} />
                   <Route path="/community-story/:slug">
-                    {(params) => <ReaderPage params={params} isCommunityContent={true} />}
+                    {(params) => <ReaderRoute params={params} isCommunityContent={true} />}
                   </Route>
                   <Route path="/reader/:slug">
-                    {(params) => <ReaderPage params={params} isCommunityContent={false} />}
+                    {(params) => <ReaderRoute params={params} isCommunityContent={false} />}
                   </Route>
                   <Route path="/story/:slug">
-                    {(params) => <ReaderPage params={params} isCommunityContent={false} />}
+                    {(params) => <ReaderRoute params={params} isCommunityContent={false} />}
                   </Route>
 
                   {/* Error Pages */}
@@ -495,7 +548,7 @@ const AppContent = () => {
                       {/* Main Pages */}
                       <Route path="/" component={HomePage} />
                       <Route path="/stories" component={StoriesPage} />
-                      <Route path="/reader" component={ReaderPage} />
+                      <Route path="/reader" component={ReaderRoute} />
                       <Route path="/about" component={AboutPage} />
                       <Route path="/contact" component={ContactPage} />
                       <Route path="/privacy" component={PrivacyPage} />
@@ -573,11 +626,12 @@ const AppContent = () => {
                       {/* Dynamic Routes */}
                       <Route path="/search" component={SearchResultsPage} />
                       <Route path="/community-story/:slug">
-                        {(params) => <ReaderPage params={params} isCommunityContent={true} />}
+                        {(params) => <ReaderRoute params={params} isCommunityContent={true} />}
                       </Route>
                       <Route path="/reader/:slug">
-                        {(params) => <ReaderPage params={params} isCommunityContent={false} />}
-                      </Route>
+                        {(params) = <<ReaderRoute params={params} isCommunityContent={false} />}
+                    <//RRo_codeutnewe</>
+
                       <Route path="/story/:slug">
                         {(params) => <ReaderPage params={params} isCommunityContent={false} />}
                       </Route>
