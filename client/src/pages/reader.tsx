@@ -988,7 +988,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 <CreepyTextGlitch 
                   text={horrorMessageText} 
                   className="text-4xl font-bold"
-                  intensityFactor={8} // Maximum intensity for an extremely disturbing effect
+                  intensityFactor={8}
                 />
               </div>
               {/* The button is wrapped in a div with no animations to keep it stable */}
