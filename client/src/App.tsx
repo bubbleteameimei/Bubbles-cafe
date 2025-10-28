@@ -211,6 +211,10 @@ const AppContent = () => {
       const page = main.querySelector('.page-content') as HTMLElement | null;
       if (!page) return false;
 
+      // Consider route-level loader as meaningful to avoid footer disappearance
+      const loader = page.querySelector('.loader-container') as HTMLElement | null;
+      if (loader) return true;
+
       // Reader route: require story-content with actual text
       const story = page.querySelector('.reader-page .story-content') as HTMLElement | null;
       if (story) {
@@ -260,9 +264,20 @@ const AppContent = () => {
     };
     rafId = requestAnimationFrame(poll);
 
+    // Hard fallback: reveal footer after a short timeout even if heuristics haven't matched yet
+    const timeoutId = window.setTimeout(() => {
+      if (!settled) {
+        setFooterReady(true);
+        settled = true;
+        try { observer.disconnect(); } catch {}
+        cancelAnimationFrame(rafId);
+      }
+    }, 1500);
+
     return () => {
       try { observer.disconnect(); } catch {}
       cancelAnimationFrame(rafId);
+      clearTimeout(timeoutId);
     };
   }, [locationStr, isErrorPage]);
 
@@ -403,7 +418,9 @@ const AppContent = () => {
         {/* Main content and footer with minimal reserved fallback to prevent footer flash */}
         <React.Suspense fallback={
           <main id="main-content" tabIndex={-1} className="flex-1">
-            <div className="page-content" style={{ minHeight: '65vh' }} />
+            <div className="page-content" style={{ minHeight: '65vh' }}>
+              <RouteLoader label="Loading page" minHeight="65vh" />
+            </div>
           </main>
         }>
           {/* Main content landmark for accessibility */}
