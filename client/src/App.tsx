@@ -47,8 +47,7 @@ const BackToTopButton = React.lazy(() => import('./components/BackToTopButton'))
 const HomePage = React.lazy(() => import('./pages/home'));
 const StoriesPage = React.lazy(() => import('./pages/index'));
 import Footer from './components/layout/footer';
-import RouteLoader from './components/ui/RouteLoader';
-
+import RouteLoader from './components/ui/RouteLoader';>
 // Lazily load core pages to enable code-splitting
 const ReaderPage = React.lazy(() => import('./pages/reader'));>
 // Wrapper componentlback for initial slow loads
