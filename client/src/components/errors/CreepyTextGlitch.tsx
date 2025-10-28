@@ -40,47 +40,39 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
   const scheduleRandomGlitches = useCallback(() => {
     clearAllTimeouts();
 
-    const safeIntensity = Math.max(0, Math.min(intensityFactor ?? 1, 8));
-    const perCharGlitchChance = Math.min(0.85, 0.12 * safeIntensity);
+    const safeIntensity = Math.max(1, Math.min(intensityFactor ?? 1, 8));
+    const perCharGlitchChance = Math.min(0.95, 0.12 * safeIntensity);
 
-    const randomGlitchEffect = () => {
+    const cycle = () => {
+      // Glitch frame: heavily corrupt characters
       const chars = originalText.current.split('');
-      const newChars = chars.map((ch) => {
-        if (ch === ' ') return ' ';
-        return Math.random() < perCharGlitchChance
-          ? GLITCH_CHARS.charAt(Math.floor(Math.random() * GLITCH_CHARS.length))
-          : ch;
-      });
-
+      const newChars = chars.map((ch) =>
+        ch === ' '
+          ? ' '
+          : Math.random() < perCharGlitchChance
+              ? GLITCH_CHARS.charAt(Math.floor(Math.random() * GLITCH_CHARS.length))
+              : ch
+      );
       setDisplayText(newChars.join(''));
+      setBlurActive(true);
 
-      if (Math.random() < 0.6) {
-        setBlurActive(true);
-        const blurDuration = 80 + Math.random() * 140;
-        const blurTimeout = setTimeout(() => setBlurActive(false), blurDuration);
-        timeoutIds.current.push(blurTimeout);
-      }
-
+      // Short-lived glitch, then guaranteed revert for a clean frame
+      const glitchDuration = 50 + Math.random() * 80; // ~50–130ms
       const revertTimeout = setTimeout(() => {
         setDisplayText(originalText.current);
-      }, 90 + Math.random() * 140);
+        setBlurActive(false);
+        // Keep the clean frame visible before the next glitch
+        const cleanDuration = 120 + Math.random() * 160; // ~120–280ms
+        const nextTimeout = setTimeout(() => {
+          cycle();
+        }, cleanDuration);
+        timeoutIds.current.push(nextTimeout);
+      }, glitchDuration);
+
       timeoutIds.current.push(revertTimeout);
     };
 
-    const scheduleNext = () => {
-      const minDelay = 25;
-      const maxDelay = 50;
-      const nextGlitchDelay = minDelay + Math.random() * maxDelay;
-
-      const timeout = setTimeout(() => {
-        randomGlitchEffect();
-        scheduleNext();
-      }, nextGlitchDelay);
-
-      timeoutIds.current.push(timeout);
-    };
-
-    scheduleNext();
+    cycle();
   }, [intensityFactor]);
 
   useEffect(() => {
@@ -112,47 +104,28 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
     return `translate(${x}px, ${y}px)`;
   };
 
+  const isGlitched = displayText !== originalText.current;
+
   return (
     <span
-      className={className}
+      className={`pure-red-text ${className}`}
       style={{
         position: 'relative',
         display: 'inline-block',
+        color: '#ff0000',
+        fontFamily: getRandomHeaderFont(),
+        fontWeight: 'bold',
+        letterSpacing: isGlitched ? letterSpacingJitter : '0px',
+        filter: getBlurStyle(),
+        transform: isGlitched ? getJitterTransform() : 'none',
+        transition: 'filter 0.06s ease, letter-spacing 0.1s ease, transform 0.08s ease',
+        textShadow: 'none',
+        animation: 'none !important',
+        WebkitTextFillColor: '#ff0000',
+        WebkitTextStroke: '0 transparent',
       }}
     >
-      <span
-        style={{
-          color: '#ff0000',
-          fontFamily: getRandomHeaderFont(),
-          fontWeight: 'bold',
-          letterSpacing: '0px',
-          textShadow: 'none',
-          WebkitTextFillColor: '#ff0000',
-          WebkitTextStroke: '0 transparent',
-        }}
-      >
-        {originalText.current}
-      </span>
-      <span
-        style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          pointerEvents: 'none',
-          color: '#ff0000',
-          fontFamily: getRandomHeaderFont(),
-          fontWeight: 'bold',
-          letterSpacing: letterSpacingJitter,
-          filter: getBlurStyle(),
-          transform: getJitterTransform(),
-          transition: 'filter 0.06s ease, letter-spacing 0.1s ease, transform 0.08s ease',
-          textShadow: 'none',
-          WebkitTextFillColor: '#ff0000',
-          WebkitTextStroke: '0 transparent',
-        }}
-      >
-        {displayText}
-      </span>
+      {displayText}
     </span>
   );
 }
