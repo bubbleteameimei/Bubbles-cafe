@@ -33,7 +33,14 @@ const DEFAULT_SITE_CONFIG = {
   siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://bubblescafe.space',
   locale: 'en_US',
   twitterSite: '@bubblescafe',
-  twitterCreator: '@bubblescafe'
+  twitterCreator: '@bubblescafe',
+  // Site-wide default keywords
+  defaultKeywords: [
+    'dark','fiction','stories','short','psychological','horror','literary','online','writing','reading','experimental','creative','storytelling','prose','narrative',
+    'madness','obsession','decay','identity','violence','love','death','memory','loneliness','isolation','fear','dreams','devotion','mind','soul',
+    'magazine','journal','publishing','authors','writers','submissions','fictionhub','literature','readers','community',
+    'gothic','darkness','melancholy','emotion','surreal','haunting','literaryfiction','experimentalwriting','aesthetic','atmosphere','introspective','contemporary','digitalmagazine','shortfiction'
+  ]
 };
 
 export default function SEO({
@@ -45,7 +52,7 @@ export default function SEO({
   author,
   published,
   modified,
-  keywords = ['horror stories', 'fiction', 'creative writing', 'storytelling', 'immersive fiction', 'dark tales'],
+  keywords = DEFAULT_SITE_CONFIG.defaultKeywords,
   category,
   tags = [],
   readingTime,
@@ -62,7 +69,10 @@ export default function SEO({
   const pageUrl = useMemo(() => canonical ? `${siteUrl}${canonical}` : (typeof window !== 'undefined' ? window.location.href : ''), [canonical, siteUrl]);
   const imageUrl = useMemo(() => image ? (image.startsWith('http') ? image : `${siteUrl}${image}`) : `${siteUrl}${DEFAULT_SITE_CONFIG.defaultImage}`, [image, siteUrl]);
   const fullTitle = useMemo(() => (title ? `${title} | ${siteName}` : DEFAULT_SITE_CONFIG.defaultTitle), [title, siteName]);
-  const keywordsJoined = useMemo(() => keywords.concat(tags).join(', '), [keywords, tags]);
+  const keywordsJoined = useMemo(
+    () => Array.from(new Set([...(DEFAULT_SITE_CONFIG.defaultKeywords || []), ...(keywords || []), ...(tags || [])])).join(', '),
+    [keywords, tags]
+  );
   
   useEffect(() => {
     // Set document title with proper formatting
