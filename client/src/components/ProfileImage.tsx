@@ -214,16 +214,15 @@ export default function ProfileImage() {
                   decoding="async"
                   style={{
                     position: "absolute",
-                    height: "145%", /* Reduced zoom to 145% per user request */
-                    width: "auto", /* Width auto to maintain aspect ratio */
-                    left: "45%", /* Shifted left as requested (from 50% to 45%) */
-                    top: "20%", /* Keeps position high as requested */
-                    transform: "translate(-50%, -15%)", /* Adjusted for top focus */
-                    objectFit: "cover", /* Ensure the image covers the area */
-                    objectPosition: "center 10%", /* Focus point high */
-                    transition: "all 0.8s ease-in-out", /* Smoother animation transition */
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    objectPosition: "center",
+                    transform: "none",
+                    transition: "all 0.6s ease-in-out",
                   }}
-                  className="transition-all duration-1000 will-change-transform"
+                  className="transition-all duration-700 will-change-transform"
                   onError={handleImageError}
                   onLoad={() => {
                     console.log("[Profile] Image loaded successfully");

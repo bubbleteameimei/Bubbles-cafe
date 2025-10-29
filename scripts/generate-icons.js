@@ -6,22 +6,50 @@ async function ensureDir(dir) {
   await fs.promises.mkdir(dir, { recursive: true });
 }
 
-async function findSourceImage() {
-  // Search in both client/public and project-level public to honor where the user placed the file
+function circleMaskSvg(size) {
+  return Buffer.from(
+    `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="white"/>
+    </svg>`
+  );
+}
+
+async function selectSourceImage() {
+  // Honor explicit favicon.png first, then fall back
   const candidateDirs = [
     path.resolve(process.cwd(), 'client', 'public'),
     path.resolve(process.cwd(), 'public'),
   ];
-  const candidates = ['favicon.png', 'profile.png', 'IMG_5307.png', 'IMG_4848.jpeg'];
+
+  // Prefer favicon.png strictly
   for (const dir of candidateDirs) {
-    for (const c of candidates) {
+    const p = path.join(dir, 'favicon.png');
+    try {
+      if (fs.existsSync(p)) return { sourcePath: p, sourceDir: dir, chosen: 'favicon.png' };
+    } catch {}
+  }
+
+  // Fallback options if favicon.png is missing
+  const fallbacks = ['profile.png', 'IMG_5307.png', 'IMG_4848.jpeg'];
+  for (const dir of candidateDirs) {
+    for (const c of fallbacks) {
       const p = path.join(dir, c);
       try {
-        if (fs.existsSync(p)) return { sourcePath: p, sourceDir: dir };
+        if (fs.existsSync(p)) return { sourcePath: p, sourceDir: dir, chosen: c };
       } catch {}
     }
   }
+
   return null;
+}
+
+async function generateRoundedPng(sourcePath, size, outPath) {
+  const mask = circleMaskSvg(size);
+  await sharp(sourcePath)
+    .resize(size, size, { fit: 'cover' })
+    .composite([{ input: mask, blend: 'dest-in' }]) // apply circular alpha mask
+    .png({ quality: 95 })
+    .toFile(outPath);
 }
 
 async function main() {
@@ -35,43 +63,41 @@ async function main() {
     await ensureDir(path.join(dir, 'icons'));
   }
 
-  const found = await findSourceImage();
+  const found = await selectSourceImage();
   if (!found) {
     console.warn('[icons] No suitable source image found in client/public or public – skipping icon and OG generation.');
     return;
   }
-  const { sourcePath } = found;
+  const { sourcePath, chosen } = found;
+  console.log(`[icons] Using source image: ${chosen} -> ${sourcePath}`);
 
-  // Generate PWA icons (192, 512), Apple touch (180), favicons (16, 32) into each output dir
+  // Generate icons with rounded (circular) shape and OG image (rectangular)
   for (const dir of outputDirs) {
     const iconsDir = path.join(dir, 'icons');
 
+    // PWA icons (rounded)
     for (const size of [192, 512]) {
       const outPath = path.join(iconsDir, `icon-${size}x${size}.png`);
-      await sharp(sourcePath)
-        .resize(size, size, { fit: 'cover' })
-        .png({ quality: 85 })
-        .toFile(outPath);
+      await generateRoundedPng(sourcePath, size, outPath);
       console.log('Generated', outPath);
     }
 
+    // Apple touch icon (rounded)
     {
       const outPath = path.join(iconsDir, 'apple-touch-icon.png');
-      await sharp(sourcePath)
-        .resize(180, 180, { fit: 'cover' })
-        .png({ quality: 90 })
-        .toFile(outPath);
+      await generateRoundedPng(sourcePath, 180, outPath);
       console.log('Generated', outPath);
     }
 
+    // Favicons (rounded)
     const favicon16Path = path.join(iconsDir, 'favicon-16x16.png');
     const favicon32Path = path.join(iconsDir, 'favicon-32x32.png');
-    await sharp(sourcePath).resize(16, 16, { fit: 'cover' }).png({ quality: 100 }).toFile(favicon16Path);
-    await sharp(sourcePath).resize(32, 32, { fit: 'cover' }).png({ quality: 100 }).toFile(favicon32Path);
+    await generateRoundedPng(sourcePath, 16, favicon16Path);
+    await generateRoundedPng(sourcePath, 32, favicon32Path);
     console.log('Generated', favicon16Path);
     console.log('Generated', favicon32Path);
 
-    // Open Graph / Twitter share image (1200x630) placed at the root of each output dir
+    // Open Graph / Twitter share image (rectangle, not rounded)
     const ogOutPath = path.join(dir, 'og-image-1200x630.png');
     await sharp(sourcePath)
       .resize(1200, 630, { fit: 'cover', position: 'entropy' })
