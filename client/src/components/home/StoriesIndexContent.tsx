@@ -242,13 +242,13 @@ export default function StoriesIndexContent() {
       const page = typeof pageParam === 'number' ? pageParam : 1;
       const wpResponse = await fetchWordPressPosts({
         page,
-        perPage: 60,
+        perPage: 30,
       });
       const wpPosts = wpResponse.posts || [];
       const posts = wpPosts.map((post: WordPressPost) => wpToPost(post)) as Post[];
       return {
         posts,
-        hasMore: wpPosts.length === 60,
+        hasMore: wpPosts.length === 30,
         page,
       };
     },

@@ -323,14 +323,8 @@ const AppContent = () => {
          style={{ width: '100%', minWidth: '100%', maxWidth: '100%', margin: '0 auto', paddingTop: isReaderLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)' }}>
         {/* Main navigation bar */}
         <AutoHideNavbar />
-        {/* Main content and footer with minimal reserved fallback to prevent footer flash */}
-        <React.Suspense fallback={
-          <main id="main-content" tabIndex={-1} className="flex-1">
-            <div className="page-content" style={{ minHeight: '65vh' }}>
-              <RouteLoader label="Loading page" minHeight="65vh" />
-            </div>
-          </main>
-        }>
+        {/* Main content */}
+        <React.Suspense fallback={null}>
           {/* Main content landmark for accessibility */}
           <main id="main-content" tabIndex={-1} className="flex-1">
             {isReaderLike ? (
