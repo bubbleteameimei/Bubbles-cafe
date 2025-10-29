@@ -400,6 +400,20 @@ export default function StoriesIndexContent() {
     return Array.from(set);
   }, [allPosts]);
 
+  // Helper: compute theme key and label for a story using metadata or derived category
+  const computeThemeMeta = (p: Post): { key: string; label: string } => {
+    const md: any = (p as any)?.metadata || {};
+    const primary = md.themeCategory || sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
+    const raw = String(primary || '').trim();
+    if (!raw) return { key: 'HORROR', label: 'Horror' };
+    for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
+      if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) {
+        return { key, label: (info as any)?.label || raw };
+      }
+    }
+    return { key: raw.toUpperCase().replace(/\s+/g, '_'), label: raw };
+  };
+
   // Reaction totals map for posts (batch fetched)
   const [reactionTotals, setReactionTotals] = useState<Record<number, import("@/api/reactions").ReactionTotals>>({});
   
@@ -492,6 +506,43 @@ export default function StoriesIndexContent() {
     const q = search.trim().toLowerCase();
     if (!q) return [] as Post[];
     return sortedPosts.filter(p => String(p.title || '').toLowerCase().includes(q));
+  }, [search, sortedPosts]);
+
+  // Suggestions for zero-results (closest title matches by simple heuristics)
+  const searchSuggestions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [] as Post[];
+    const tokenize = (s: string) => normalizeText(s.toLowerCase()).split(/[^a-z0-9]+/).filter(Boolean);
+    const jaccard = (a: string[], b: string[]) => {
+      if (!a.length || !b.length) return 0;
+      const setA = new Set(a);
+      const setB = new Set(b);
+      const inter = [...setA].filter(x => setB.has(x)).length;
+      const union = new Set([...a, ...b]).size;
+      return inter / union;
+    };
+    const qTokens = tokenize(q);
+    const score = (p: Post) => {
+      const title = String(p.title || "");
+      const tTok = tokenize(title);
+      let minD = Infinity;
+      for (const qt of qTokens) {
+        for (const tt of tTok) {
+          const d = levenshtein(qt, tt);
+          if (d < minD) minD = d;
+        }
+      }
+      const includesBonus = title.toLowerCase().includes(q) ? 3 : 0;
+      const j = jaccard(qTokens, tTok);
+      const distanceBoost = minD <= 2 ? (2 - minD) : -minD * 0.15;
+      return includesBonus + (j * 2) + distanceBoost;
+    };
+    return [...sortedPosts]
+      .map(p => ({ p, s: score(p) }))
+      .filter(x => x.s > 0.5)
+      .sort((a, b) => b.s - a.s)
+      .slice(0, 3)
+      .map(x => x.p);
   }, [search, sortedPosts]);
 
   // Latest Stories list - always sorted newest->oldest; search does NOT change this list
@@ -756,87 +807,12 @@ export default function StoriesIndexContent() {
                           {renderHighlighted(String(featuredStory.title || ''))}
                         </button>
                         {(() => {
-                          const md: any = (featuredStory as any)?.metadata || {};
-                          const primaryThemeRaw =
-                            md.themeCategory ||
-                            sharedDetermineThemeCategory(String(featuredStory.title || ''), String(featuredStory.content || ''));
-                          const override = getStoryThemeOverride(featuredStory.slug as any, featuredStory.title as any);
-                          const derivedKey = (() => {
-                            const raw = String(primaryThemeRaw || '').trim();
-                            if (!raw) return 'HORROR';
-                            for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-                              if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-                            }
-                            return raw.toUpperCase().replace(/\s+/g, '_');
-                          })();
-                          const themeKey = override?.key || derivedKey;
-                          const defOverride = getThemeDefinitionOverride(themeKey);
-                          const baseLabel =
-                            override?.label ||
-                            defOverride?.label ||
-                            (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
-                            primaryThemeRaw ||
-                            'Horror';
-                          const prettyLabel = baseLabel;
-                          let iconSlug =
-                            override?.icon || md.themeIcon || defOverride?.icon || (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon || 'ghost';
-                          // Force Body Horror to use a stronger icon
-                          if ((override?.key || derivedKey) === 'BODY_HORROR') {
-                            iconSlug = 'bone';
-                          }
-                          const isIconify = String(iconSlug).includes(':');
-
-                          const ThemeIconCmp = (() => {
-                            const slug = String(iconSlug).toLowerCase();
-                            switch (slug) {
-                              case 'skull': return Skull; case 'brain': return Brain; case 'pill': return Pill; case 'cpu': return Cpu;
-                              case 'ghost': return Ghost; case 'eye': return Eye; case 'hourglass': return Hourglass; case 'car': return Car;
-                              case 'fork-knife': case 'forkknife': case 'utensils': return ForkKnife; case 'trees': case 'tree': return Trees;
-                              case 'castle': return Castle; case 'bug': return Bug; case 'moon': return Moon; case 'moon-star': case 'moonstar': return MoonStar;
-                              case 'radio': return Radio; case 'box': return Box; case 'flask': return FlaskConical; case 'radiation': return Radiation;
-                              case 'building': return Building; case 'cat': return Cat; case 'flame': return Flame; case 'dog': return Dog; case 'cloud': return Cloud;
-                              case 'alert-triangle': case 'alerttriangle': return AlertTriangle; case 'footprints': return Footprints; case 'bone': return Bone;
-                              default:
-                                switch (themeKey) {
-                                  case 'TECHNOLOGICAL': return Cpu;
-                                  case 'PSYCHOLOGICAL': return Brain;
-                                  case 'SUPERNATURAL': return Ghost;
-                                  case 'EXISTENTIAL': return Hourglass;
-                                  case 'VEHICULAR': return Car;
-                                  case 'FOLK_HORROR': return Trees;
-                                  case 'GOTHIC': return Castle;
-                                  case 'COSMIC': return Moon;
-                                  default: return Ghost;
-                                }
-                            }
-                          })();
-
-                          const badgeTint = (() => {
-                            switch (themeKey) {
-                              case 'DEATH': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
-                              case 'BODY_HORROR': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700';
-                              case 'SUPERNATURAL': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700';
-                              case 'PSYCHOLOGICAL': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700';
-                              case 'EXISTENTIAL': return 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700';
-                              case 'HORROR': return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-700';
-                              case 'VEHICULAR': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700';
-                              case 'TECHNOLOGICAL': return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700';
-                              case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700';
-                              case 'FOLK_HORROR': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700';
-                              case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark:text-stone-300 dark:border-stone-700';
-                              case 'CURSED_OBJECT': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700';
-                              case 'OCCULT': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700';
-                              case 'URBAN_HORROR': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700';
-                              case 'SUICIDE': return 'bg-zinc-100 text-zinc-800 border-zinc-200 dark:bg-zinc-900/30 dark:text-zinc-300 dark:border-zinc-700';
-                              case 'CONTAGION': return 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700';
-                              default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark:text-foreground dark:border-primary/20';
-                            }
-                          })();
+                          const { key, label } = computeThemeMeta(featuredStory);
+                          const badgeTint = getBadgeTint(key);
                           return (
                             <div className="-mt-1">
                               <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : <ThemeIconCmp className="h-3 w-3" />}
-                                {prettyLabel}
+                                {label}
                               </Badge>
                             </div>
                           );
@@ -925,60 +901,7 @@ export default function StoriesIndexContent() {
                     </p>
 
                     <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
-                      {(() => {
-                        const q = search.trim().toLowerCase();
-                        const tokenize = (s: string) => normalizeText(s.toLowerCase()).split(/[^a-z0-9]+/).filter(Boolean);
-                        const jaccard = (a: string[], b: string[]) => {
-                          if (!a.length || !b.length) return 0;
-                          const setA = new Set(a);
-                          const setB = new Set(b);
-                          const inter = [...setA].filter(x => setB.has(x)).length;
-                          const union = new Set([...a, ...b]).size;
-                          return inter / union;
-                        };
-                        const editDistance = (a: string, b: string) => {
-                          const m = a.length, n = b.length;
-                          if (!m) return n;
-                          if (!n) return m;
-                          const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
-                          for (let i = 0; i <= m; i++) dp[i][0] = i;
-                          for (let j = 0; j <= n; j++) dp[0][j] = j;
-                          for (let i = 1; i <= m; i++) {
-                            for (let j = 1; j <= n; j++) {
-                              const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-                              dp[i][j] = Math.min(
-                                dp[i - 1][j] + 1,
-                                dp[i][j - 1] + 1,
-                                dp[i - 1][j - 1] + cost
-                              );
-                            }
-                          }
-                          return dp[m][n];
-                        };
-                        const qTokens = tokenize(q);
-                        const score = (p: Post) => {
-                          const title = String(p.title || "");
-                          const tTok = tokenize(title);
-                          let minD = Infinity;
-                          for (const qt of qTokens) {
-                            for (const tt of tTok) {
-                              const d = editDistance(qt, tt);
-                              if (d < minD) minD = d;
-                            }
-                          }
-                          const includesBonus = title.toLowerCase().includes(q) ? 3 : 0;
-                          const j = jaccard(qTokens, tTok);
-                          const distanceBoost = minD <= 2 ? (2 - minD) : -minD * 0.15;
-                          return includesBonus + (j * 2) + distanceBoost;
-                        };
-                        const suggestions = [...sortedPosts]
-                          .map(p => ({ p, s: score(p) }))
-                          .filter(x => x.s > 0.5)
-                          .sort((a, b) => b.s - a.s)
-                          .slice(0, 3)
-                          .map(x => x.p);
-
-                        return suggestions.length ? suggestions.map(s => (
+                      {searchSuggestions.length ? searchSuggestions.map(s => (
                           <Card key={s.id} className="rounded-lg border border-border/60 bg-card/70 hover:bg-card transition">
                             <CardContent className="p-3">
                               <button
@@ -1064,8 +987,7 @@ export default function StoriesIndexContent() {
                           <div className="col-span-1 sm:col-span-2 text-sm text-muted-foreground">
                             No close matches. Try clearing your search or exploring popular stories.
                           </div>
-                        );
-                      })()}
+                        )}
                     </div>
 
                     
