@@ -30,7 +30,9 @@ import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import SimplifiedErrorPage from "@/components/errors/SimplifiedErrorPage";
 import { useToast } from "@/hooks/use-toast";
 
+
 import { SupportWritingCard } from "@/components/SupportWritingCard";
+import Footer from "@/components/layout/footer";
 import SEO from "@/components/SEO";
 import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
 import { sanitizeHtml } from "@/lib/sanitize";
@@ -212,6 +214,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [horrorMessageText, setHorrorMessageText] = useState("Are you avoiding something?");
   const skipCountRef = useRef(0);
   const lastNavigationTimeRef = useRef(Date.now());
+
+  
   
   // Create a ref for the content container to attach swipe events and copy protection
   const contentRef = useCopyProtection(true);
@@ -613,14 +617,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    transition: color 0.3s ease, background-color 0.3s ease, font-size 0.25s ease-in-out, font-family 0.25s ease-in-out;
   }
   .story-content p, .story-content .story-paragraph {
     line-height: 1.7;
     margin-bottom: 1.7em;
     font-family: var(--reader-font-family);
     font-size: var(--reader-font-size);
-    transition: font-size 0.25s ease-in-out, font-family 0.25s ease-in-out;
   }
   @media (max-width: 768px) {
     .story-content p, .story-content .story-paragraph {
@@ -652,11 +654,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Let's make sure we have posts data and current post before rendering
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <ApiLoader isLoading={true} />
-      </div>
-    );
+    // Avoid showing an inline loader; let the header remain and page content appear when ready
+    return null;
   }
 
   if (error) {
@@ -749,9 +748,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         // The CreepyTextGlitch component has been enhanced for a rapid, unnerving effect
         toast({
           title: "NOTICE",
-          description: <CreepyTextGlitch text={message} intensityFactor={8} />, // Maximum intensity
+          description: <CreepyTextGlitch text={message} intensityFactor={8} />,
           variant: "destructive",
-          duration: 9000, // Extended duration for more psychological impact
+          duration: 9000,
         });
         
         // Reset after showing - match the extended toast duration
@@ -935,6 +934,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           will-change: opacity, visibility;
         }
       `}} />
+      
       {/* Reader content styles with smooth font transitions */}
       <style dangerouslySetInnerHTML={{ __html: generateStoryContentStyles() }} />
 
@@ -963,7 +963,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 <CreepyTextGlitch 
                   text={horrorMessageText} 
                   className="text-4xl font-bold"
-                  intensityFactor={8} // Maximum intensity for an extremely disturbing effect
+                  intensityFactor={8}
                 />
               </div>
               {/* The button is wrapped in a div with no animations to keep it stable */}
@@ -1815,6 +1815,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </div>
         </article>
       </div>
+      <Footer />
     </div>
   );
 }

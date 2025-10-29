@@ -32,6 +32,8 @@ import AutoHideNavbar from './components/layout/AutoHideNavbar';
 // Import our notification system components
 import { NotificationProvider } from './contexts/notification-context';
 import ErrorToastProvider from './components/providers/error-toast-provider';
+import ReaderPrefetcher from './components/providers/ReaderPrefetcher';
+import LinkPrefetchObserver from './components/providers/LinkPrefetchObserver';
 // Import our new refresh components
 import { RefreshProvider } from './contexts/refresh-context';
 const PostsPrefetcher = React.lazy(() => import('./components/providers/PostsPrefetcher'));
@@ -44,10 +46,15 @@ const BackToTopButton = React.lazy(() => import('./components/BackToTopButton'))
 // Import essential pages lazily to keep main bundle small
 const HomePage = React.lazy(() => import('./pages/home'));
 const StoriesPage = React.lazy(() => import('./pages/index'));
-import Footer from './components/layout/footer';
 
+import RouteLoader from './components/ui/RouteLoader';
 // Lazily load core pages to enable code-splitting
 const ReaderPage = React.lazy(() => import('./pages/reader'));
+
+// Reader route component: outer Suspense handles route-level loading fallback
+function ReaderRoute(props: React.ComponentProps<typeof ReaderPage>) {
+  return <ReaderPage {...props} />;
+}
 const AboutPage = React.lazy(() => import('./pages/about'));
 const ContactPage = React.lazy(() => import('./pages/contact'));
 const PrivacyPage = React.lazy(() => import('./pages/privacy'));
@@ -141,8 +148,7 @@ const AppContent = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isPageTransition, setIsPageTransition] = useState(false);
   const [previousLocation, setPreviousLocation] = useState('');
-  // Gate footer display until content is actually present to avoid \"footer-first\" flash
-  const [footerReady, setFooterReady] = useState(false);
+  
 
   // Basic SEO: set canonical and defaults site-wide
   const canonical = locationStr || '/';
@@ -181,75 +187,7 @@ const AppContent = () => {
     }
   }, [location, isErrorPage]);
 
-  // Footer readiness gating: reveal footer only after meaningful content has painted
-  useEffect(() => {
-    if (isErrorPage) {
-      setFooterReady(false);
-      return;
-    }
-    setFooterReady(false);
-    const main = document.getElementById('main-content');
-    if (!main) return;
-
-    // Helper: detect meaningful content (not just layout wrappers)
-    const hasMeaningfulContent = (): boolean => {
-      const page = main.querySelector('.page-content') as HTMLElement | null;
-      if (!page) return false;
-
-      // Reader route: require story-content with actual text
-      const story = page.querySelector('.reader-page .story-content') as HTMLElement | null;
-      if (story) {
-        const t = (story.textContent || '').trim();
-        const rect = story.getBoundingClientRect();
-        if (t.length > 200 && rect.height > 60) return true;
-      }
-
-      // General routes: look for visible text-bearing elements
-      const candidates = page.querySelectorAll('h1,h2,h3,h4,h5,h6,p,li,article,section');
-      let textLen = 0;
-      let anyVisibleBlock = false;
-      candidates.forEach((el) => {
-        const text = (el.textContent || '').trim();
-        textLen += text.length;
-        const rect = el.getBoundingClientRect();
-        const visible = rect.height > 18 && rect.width > 30 && rect.top < window.innerHeight;
-        if (visible) anyVisibleBlock = true;
-      });
-      return textLen > 60 && anyVisibleBlock;
-    };
-
-    let settled = false;
-
-    const observer = new MutationObserver(() => {
-      if (!settled && hasMeaningfulContent()) {
-        setFooterReady(true);
-        settled = true;
-        observer.disconnect();
-      }
-    });
-
-    try {
-      observer.observe(main, { childList: true, subtree: true });
-    } catch {}
-
-    // Safety: also poll via RAF for cases MutationObserver misses
-    let rafId = 0;
-    const poll = () => {
-      if (!settled && hasMeaningfulContent()) {
-        setFooterReady(true);
-        settled = true;
-        cancelAnimationFrame(rafId);
-      } else {
-        rafId = requestAnimationFrame(poll);
-      }
-    };
-    rafId = requestAnimationFrame(poll);
-
-    return () => {
-      try { observer.disconnect(); } catch {}
-      cancelAnimationFrame(rafId);
-    };
-  }, [locationStr, isErrorPage]);
+  
 
   // Prefetch the current route component to avoid Suspense blank frames
   useEffect(() => {
@@ -385,12 +323,8 @@ const AppContent = () => {
          style={{ width: '100%', minWidth: '100%', maxWidth: '100%', margin: '0 auto', paddingTop: isReaderLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)' }}>
         {/* Main navigation bar */}
         <AutoHideNavbar />
-        {/* Main content and footer with minimal reserved fallback to prevent footer flash */}
-        <React.Suspense fallback={
-          <main id="main-content" tabIndex={-1} className="flex-1">
-            <div className="page-content" style={{ minHeight: '65vh' }} />
-          </main>
-        }>
+        {/* Main content */}
+        <React.Suspense fallback={null}>
           {/* Main content landmark for accessibility */}
           <main id="main-content" tabIndex={-1} className="flex-1">
             {isReaderLike ? (
@@ -399,7 +333,7 @@ const AppContent = () => {
                   {/* Main Pages */}
                   <Route path="/" component={HomePage} />
                   <Route path="/stories" component={StoriesPage} />
-                  <Route path="/reader" component={ReaderPage} />
+                  <Route path="/reader" component={ReaderRoute} />
                   <Route path="/about" component={AboutPage} />
                   <Route path="/contact" component={ContactPage} />
                   <Route path="/privacy" component={PrivacyPage} />
@@ -465,13 +399,13 @@ const AppContent = () => {
                   {/* Dynamic Routes */}
                   <Route path="/search" component={SearchResultsPage} />
                   <Route path="/community-story/:slug">
-                    {(params) => <ReaderPage params={params} isCommunityContent={true} />}
+                    {(params) => <ReaderRoute params={params} isCommunityContent={true} />}
                   </Route>
                   <Route path="/reader/:slug">
-                    {(params) => <ReaderPage params={params} isCommunityContent={false} />}
+                    {(params) => <ReaderRoute params={params} isCommunityContent={false} />}
                   </Route>
                   <Route path="/story/:slug">
-                    {(params) => <ReaderPage params={params} isCommunityContent={false} />}
+                    {(params) => <ReaderRoute params={params} isCommunityContent={false} />}
                   </Route>
 
                   {/* Error Pages */}
@@ -493,7 +427,7 @@ const AppContent = () => {
                       {/* Main Pages */}
                       <Route path="/" component={HomePage} />
                       <Route path="/stories" component={StoriesPage} />
-                      <Route path="/reader" component={ReaderPage} />
+                      <Route path="/reader" component={ReaderRoute} />
                       <Route path="/about" component={AboutPage} />
                       <Route path="/contact" component={ContactPage} />
                       <Route path="/privacy" component={PrivacyPage} />
@@ -571,13 +505,13 @@ const AppContent = () => {
                       {/* Dynamic Routes */}
                       <Route path="/search" component={SearchResultsPage} />
                       <Route path="/community-story/:slug">
-                        {(params) => <ReaderPage params={params} isCommunityContent={true} />}
+                        {(params) => <ReaderRoute params={params} isCommunityContent={true} />}
                       </Route>
                       <Route path="/reader/:slug">
-                        {(params) => <ReaderPage params={params} isCommunityContent={false} />}
+                        {(params) => <ReaderRoute params={params} isCommunityContent={false} />}
                       </Route>
                       <Route path="/story/:slug">
-                        {(params) => <ReaderPage params={params} isCommunityContent={false} />}
+                        {(params) => <ReaderRoute params={params} isCommunityContent={false} />}
                       </Route>
 
                       {/* Error Pages */}
@@ -594,9 +528,8 @@ const AppContent = () => {
                   </div>
               </PageTransition>
             )}
+            
           </main>
-          {/* Footer at page bottom (all non-error pages), gated to avoid early flash */}
-          {footerReady ? <Footer /> : null}
         </React.Suspense>
       </div>
     </ErrorBoundary>
@@ -632,6 +565,26 @@ function App() {
     })();
   }, []);
 
+  // Idle prefetch: warm the Home page "latest post" query so the Latest Story appears faster on first load
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const { fetchWordPressPosts } = await import('./lib/wordpress-api');
+        await queryClient.prefetchQuery({
+          queryKey: ["pages", "home", "latest-post"],
+          queryFn: async () => fetchWordPressPosts({ page: 1, perPage: 1 }),
+          staleTime: 5 * 60 * 1000,
+        });
+      } catch {}
+    };
+    const ric = (window as any)?.requestIdleCallback as any;
+    if (typeof ric === 'function') {
+      ric(() => run(), { timeout: 1200 });
+    } else {
+      setTimeout(run, 300);
+    }
+  }, []);
+
   
 
   return (
@@ -645,10 +598,12 @@ function App() {
                   <ScrollEffectsProvider>
                     <ErrorToastProvider>
                       <RefreshProvider>
-                        {/* Warm the cache for posts to make navigation instant */}
+                        {/* Warm caches for common routes and data */}
                         <React.Suspense fallback={null}>
                           <PostsPrefetcher />
                         </React.Suspense>
+                        <ReaderPrefetcher />
+                        <LinkPrefetchObserver />
                         <div className="app-content">
                           <AppContent />
                         </div>

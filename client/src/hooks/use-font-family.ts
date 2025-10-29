@@ -60,29 +60,6 @@ export function useFontFamily() {
 
   // Apply the font family when the component mounts and whenever it changes
   useEffect(() => {
-     // Make sure the fonts are loaded from Google Fonts if needed
-     const fontUrls = {
-       'cormorant': 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
-       'merriweather': 'https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap',
-       'lora': 'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
-       'roboto': 'https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap',
-       'opensans': 'https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
-       'literata': 'https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
-     };
- 
-     // Only load the necessary font
-     const fontUrl = fontUrls[fontFamily];
-     
-     // Check if the font link is already in the document
-     const existingLink = document.querySelector(`link[href="${fontUrl}"]`);
-     
-     if (!existingLink && fontUrl) {
-       const fontLink = document.createElement('link');
-       fontLink.rel = 'stylesheet';
-       fontLink.href = fontUrl;
-       document.head.appendChild(fontLink);
-     }
-     
     // Update CSS custom property for global access in a rAF to avoid reflow thrash
     const raf = requestAnimationFrame(() => {
       document.documentElement.style.setProperty('--reader-font-family', FONT_FAMILIES[fontFamily].family);

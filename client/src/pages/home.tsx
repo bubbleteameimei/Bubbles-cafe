@@ -9,9 +9,9 @@ import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { getExcerpt } from "@/lib/content-analysis";
 import { extractEngagingExcerpt } from "@/lib/excerpt-lite";
 import { sanitizeHtml } from "@/lib/sanitize";
-import ApiLoader from "@/components/api-loader";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
+import Footer from "@/components/layout/footer";
 
 
 export default function Home() {
@@ -112,8 +112,6 @@ export default function Home() {
   
   return (
     <div>
-      <ApiLoader isLoading={isLoading} />
-      
       {error ? (
         <div className="text-center p-8 text-white bg-black/70 rounded-lg max-w-2xl mx-auto mt-20">
           <h2 className="text-xl font-bold mb-4">Unable to load latest story</h2>
@@ -174,7 +172,7 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        <>
+        <div className="homepage-content">
         <div 
           className="relative min-h-screen overflow-x-hidden flex flex-col home-page"
           style={{
@@ -391,8 +389,9 @@ export default function Home() {
 
           {/* Continue Reading floating banner */}
           <ContinueReadingBanner />
-        </>
-        )}
+          <Footer />
+        </div>
+      )}
     </div>
   );
 }

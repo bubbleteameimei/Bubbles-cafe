@@ -3,7 +3,7 @@ import { queryClient } from "@/lib/queryClient";
 
 /**
  * Lightweight prefetcher that warms the React Query cache with
- * the most common post lists so navigation feels instant.
+ * small post lists so navigation feels instant without heavy network usage.
  */
 export function PostsPrefetcher() {
   useEffect(() => {
@@ -11,36 +11,36 @@ export function PostsPrefetcher() {
 
     const prefetch = async () => {
       try {
-        // Prefetch latest posts list
+        // Prefetch a small latest posts list
         await queryClient.prefetchQuery({
-          queryKey: ["/api/posts", "list", { limit: 100 }],
+          queryKey: ["/api/posts", "list", { limit: 20 }],
           queryFn: async () => {
-            const res = await fetch("/api/posts?limit=100");
+            const res = await fetch("/api/posts?limit=20");
             if (!res.ok) throw new Error("Failed to prefetch posts");
             return res.json();
           },
-          staleTime: 5 * 60 * 1000,
+          staleTime: 3 * 60 * 1000,
         });
 
         if (cancelled) return;
 
-        // Prefetch community posts list
+        // Prefetch a small community posts list
         await queryClient.prefetchQuery({
-          queryKey: ["/api/posts/community", "list", { limit: 50 }],
+          queryKey: ["/api/posts/community", "list", { limit: 20 }],
           queryFn: async () => {
-            const res = await fetch("/api/posts/community?limit=50");
+            const res = await fetch("/api/posts/community?limit=20");
             if (!res.ok) throw new Error("Failed to prefetch community posts");
             return res.json();
           },
-          staleTime: 5 * 60 * 1000,
+          staleTime: 3 * 60 * 1000,
         });
       } catch {
         // Silent fail - prefetch is best-effort
       }
     };
 
-    // Defer slightly to avoid competing with critical render
-    const id = setTimeout(prefetch, 800);
+    // Defer more to avoid competing with critical render
+    const id = setTimeout(prefetch, 1500);
 
     return () => {
       cancelled = true;

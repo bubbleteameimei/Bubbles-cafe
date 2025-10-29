@@ -63,6 +63,26 @@ export default function StoriesIndexContent() {
   const cardsGridRef = React.useRef<HTMLDivElement | null>(null);
   const breakpointRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null);
 
+  // Defer heavy sub-sections until after first paint to improve TTI
+  const [readyPopular, setReadyPopular] = useState(false);
+  const [readyReactions, setReadyReactions] = useState(false);
+  const [readyMostLiked, setReadyMostLiked] = useState(false);
+  useEffect(() => {
+    const start = () => {
+      setReadyPopular(true);
+      setReadyReactions(true);
+      setReadyMostLiked(true);
+    };
+    const ric = (window as any).requestIdleCallback as
+      | ((cb: () => void, opts?: { timeout?: number }) => void)
+      | undefined;
+    if (typeof ric === 'function') {
+      ric(() => start(), { timeout: 1200 });
+    } else {
+      setTimeout(start, 700);
+    }
+  }, []);
+
   // Viewport-aware container height for virtualization and sticky header spacing
   const [containerHeight, setContainerHeight] = useState<number>(() => {
     try { return window.innerHeight; } catch { return 800; }
@@ -227,7 +247,9 @@ export default function StoriesIndexContent() {
   const navigateToReader = (slugOrId: string | number) => {
     try {
       const slugStr = String(slugOrId);
-      setLocation(`/reader/${encodeURIComponent(slugStr)}`);
+      React.startTransition(() => {
+        setLocation(`/reader/${encodeURIComponent(slugStr)}`);
+      });
     } catch {
       window.location.href = `/reader/${encodeURIComponent(String(slugOrId))}`;
     }
@@ -240,13 +262,13 @@ export default function StoriesIndexContent() {
       const page = typeof pageParam === 'number' ? pageParam : 1;
       const wpResponse = await fetchWordPressPosts({
         page,
-        perPage: 60,
+        perPage: 30,
       });
       const wpPosts = wpResponse.posts || [];
       const posts = wpPosts.map((post: WordPressPost) => wpToPost(post)) as Post[];
       return {
         posts,
-        hasMore: wpPosts.length === 60,
+        hasMore: wpPosts.length === 30,
         page,
       };
     },
@@ -378,17 +400,32 @@ export default function StoriesIndexContent() {
     return Array.from(set);
   }, [allPosts]);
 
+  // Helper: compute theme key and label for a story using metadata or derived category
+  const computeThemeMeta = (p: Post): { key: string; label: string } => {
+    const md: any = (p as any)?.metadata || {};
+    const primary = md.themeCategory || sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
+    const raw = String(primary || '').trim();
+    if (!raw) return { key: 'HORROR', label: 'Horror' };
+    for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
+      if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) {
+        return { key, label: (info as any)?.label || raw };
+      }
+    }
+    return { key: raw.toUpperCase().replace(/\s+/g, '_'), label: raw };
+  };
+
   // Reaction totals map for posts (batch fetched)
   const [reactionTotals, setReactionTotals] = useState<Record<number, import("@/api/reactions").ReactionTotals>>({});
-
+  
   useEffect(() => {
+    if (!readyReactions) return;
     let mounted = true;
     (async () => {
       try {
         const ids = allPosts.map((p: Post) => Number(p.id)).filter((n: number) => Number.isFinite(n));
         if (ids.length === 0) return;
         const { fetchReactionsBatch } = await import("@/api/reactions");
-        const totals = await fetchReactionsBatch(ids.slice(0, 150));
+        const totals = await fetchReactionsBatch(ids.slice(0, 120));
         if (!mounted) return;
         const map: Record<number, import("@/api/reactions").ReactionTotals> = {};
         for (const t of totals) map[t.postId] = t;
@@ -397,7 +434,7 @@ export default function StoriesIndexContent() {
         // Ignore failures; UI continues with local fallback logic
       }
     })();
-
+  
     // Listen for reaction updates from LikeDislike
     const onUpdate = (e: Event) => {
       const detail = (e as CustomEvent).detail as import("@/api/reactions").ReactionTotals;
@@ -406,7 +443,7 @@ export default function StoriesIndexContent() {
     };
     window.addEventListener('reaction:updated', onUpdate as EventListener);
     return () => { mounted = false; window.removeEventListener('reaction:updated', onUpdate as EventListener); };
-  }, [allPosts]);
+  }, [allPosts, readyReactions]);
 
   // Filter and sort posts for display
   const filteredPosts = useMemo(() => {
@@ -471,6 +508,43 @@ export default function StoriesIndexContent() {
     return sortedPosts.filter(p => String(p.title || '').toLowerCase().includes(q));
   }, [search, sortedPosts]);
 
+  // Suggestions for zero-results (closest title matches by simple heuristics)
+  const searchSuggestions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [] as Post[];
+    const tokenize = (s: string) => normalizeText(s.toLowerCase()).split(/[^a-z0-9]+/).filter(Boolean);
+    const jaccard = (a: string[], b: string[]) => {
+      if (!a.length || !b.length) return 0;
+      const setA = new Set(a);
+      const setB = new Set(b);
+      const inter = [...setA].filter(x => setB.has(x)).length;
+      const union = new Set([...a, ...b]).size;
+      return inter / union;
+    };
+    const qTokens = tokenize(q);
+    const score = (p: Post) => {
+      const title = String(p.title || "");
+      const tTok = tokenize(title);
+      let minD = Infinity;
+      for (const qt of qTokens) {
+        for (const tt of tTok) {
+          const d = levenshtein(qt, tt);
+          if (d < minD) minD = d;
+        }
+      }
+      const includesBonus = title.toLowerCase().includes(q) ? 3 : 0;
+      const j = jaccard(qTokens, tTok);
+      const distanceBoost = minD <= 2 ? (2 - minD) : -minD * 0.15;
+      return includesBonus + (j * 2) + distanceBoost;
+    };
+    return [...sortedPosts]
+      .map(p => ({ p, s: score(p) }))
+      .filter(x => x.s > 0.5)
+      .sort((a, b) => b.s - a.s)
+      .slice(0, 3)
+      .map(x => x.p);
+  }, [search, sortedPosts]);
+
   // Latest Stories list - always sorted newest->oldest; search does NOT change this list
   const latestPosts = useMemo(() => {
     let list = [...sortedPosts];
@@ -483,6 +557,27 @@ export default function StoriesIndexContent() {
     list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return list;
   }, [sortedPosts, categoryFilter]);
+
+  // Precompute popular posts (top 6) for carousel without nested IIFE
+  const popularPosts = useMemo(() => {
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    const windowDays = 14;
+
+    return [...sortedPosts]
+      .map(p => {
+        const totals = reactionTotals[p.id];
+        const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
+        const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
+        const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
+        const decay = Math.max(0.2, 1 - (ageDays / windowDays));
+        const score = (likes * 2.5 + views * 0.8) * decay;
+        return { p, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map(x => x.p);
+  }, [sortedPosts, reactionTotals]);
 
   // Log zero-results interactions
   useEffect(() => {
@@ -712,87 +807,12 @@ export default function StoriesIndexContent() {
                           {renderHighlighted(String(featuredStory.title || ''))}
                         </button>
                         {(() => {
-                          const md: any = (featuredStory as any)?.metadata || {};
-                          const primaryThemeRaw =
-                            md.themeCategory ||
-                            sharedDetermineThemeCategory(String(featuredStory.title || ''), String(featuredStory.content || ''));
-                          const override = getStoryThemeOverride(featuredStory.slug as any, featuredStory.title as any);
-                          const derivedKey = (() => {
-                            const raw = String(primaryThemeRaw || '').trim();
-                            if (!raw) return 'HORROR';
-                            for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-                              if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-                            }
-                            return raw.toUpperCase().replace(/\s+/g, '_');
-                          })();
-                          const themeKey = override?.key || derivedKey;
-                          const defOverride = getThemeDefinitionOverride(themeKey);
-                          const baseLabel =
-                            override?.label ||
-                            defOverride?.label ||
-                            (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
-                            primaryThemeRaw ||
-                            'Horror';
-                          const prettyLabel = baseLabel;
-                          let iconSlug =
-                            override?.icon || md.themeIcon || defOverride?.icon || (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon || 'ghost';
-                          // Force Body Horror to use a stronger icon
-                          if ((override?.key || derivedKey) === 'BODY_HORROR') {
-                            iconSlug = 'bone';
-                          }
-                          const isIconify = String(iconSlug).includes(':');
-
-                          const ThemeIconCmp = (() => {
-                            const slug = String(iconSlug).toLowerCase();
-                            switch (slug) {
-                              case 'skull': return Skull; case 'brain': return Brain; case 'pill': return Pill; case 'cpu': return Cpu;
-                              case 'ghost': return Ghost; case 'eye': return Eye; case 'hourglass': return Hourglass; case 'car': return Car;
-                              case 'fork-knife': case 'forkknife': case 'utensils': return ForkKnife; case 'trees': case 'tree': return Trees;
-                              case 'castle': return Castle; case 'bug': return Bug; case 'moon': return Moon; case 'moon-star': case 'moonstar': return MoonStar;
-                              case 'radio': return Radio; case 'box': return Box; case 'flask': return FlaskConical; case 'radiation': return Radiation;
-                              case 'building': return Building; case 'cat': return Cat; case 'flame': return Flame; case 'dog': return Dog; case 'cloud': return Cloud;
-                              case 'alert-triangle': case 'alerttriangle': return AlertTriangle; case 'footprints': return Footprints; case 'bone': return Bone;
-                              default:
-                                switch (themeKey) {
-                                  case 'TECHNOLOGICAL': return Cpu;
-                                  case 'PSYCHOLOGICAL': return Brain;
-                                  case 'SUPERNATURAL': return Ghost;
-                                  case 'EXISTENTIAL': return Hourglass;
-                                  case 'VEHICULAR': return Car;
-                                  case 'FOLK_HORROR': return Trees;
-                                  case 'GOTHIC': return Castle;
-                                  case 'COSMIC': return Moon;
-                                  default: return Ghost;
-                                }
-                            }
-                          })();
-
-                          const badgeTint = (() => {
-                            switch (themeKey) {
-                              case 'DEATH': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
-                              case 'BODY_HORROR': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700';
-                              case 'SUPERNATURAL': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700';
-                              case 'PSYCHOLOGICAL': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700';
-                              case 'EXISTENTIAL': return 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700';
-                              case 'HORROR': return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-700';
-                              case 'VEHICULAR': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700';
-                              case 'TECHNOLOGICAL': return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700';
-                              case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700';
-                              case 'FOLK_HORROR': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700';
-                              case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark:text-stone-300 dark:border-stone-700';
-                              case 'CURSED_OBJECT': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700';
-                              case 'OCCULT': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700';
-                              case 'URBAN_HORROR': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700';
-                              case 'SUICIDE': return 'bg-zinc-100 text-zinc-800 border-zinc-200 dark:bg-zinc-900/30 dark:text-zinc-300 dark:border-zinc-700';
-                              case 'CONTAGION': return 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700';
-                              default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark:text-foreground dark:border-primary/20';
-                            }
-                          })();
+                          const { key, label } = computeThemeMeta(featuredStory);
+                          const badgeTint = getBadgeTint(key);
                           return (
                             <div className="-mt-1">
                               <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : <ThemeIconCmp className="h-3 w-3" />}
-                                {prettyLabel}
+                                {label}
                               </Badge>
                             </div>
                           );
@@ -841,13 +861,15 @@ export default function StoriesIndexContent() {
                   </CardContent>
                 </Card>
               </div>
-              <div className="lg:col-span-2">
-                <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
-                  <CardContent className="p-4">
-                    <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} />
-                  </CardContent>
-                </Card>
-              </div>
+              {readyMostLiked && (
+                <div className="lg:col-span-2">
+                  <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
+                    <CardContent className="p-4">
+                      <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} />
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </div>
           )}
 
@@ -879,60 +901,7 @@ export default function StoriesIndexContent() {
                     </p>
 
                     <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
-                      {(() => {
-                        const q = search.trim().toLowerCase();
-                        const tokenize = (s: string) => normalizeText(s.toLowerCase()).split(/[^a-z0-9]+/).filter(Boolean);
-                        const jaccard = (a: string[], b: string[]) => {
-                          if (!a.length || !b.length) return 0;
-                          const setA = new Set(a);
-                          const setB = new Set(b);
-                          const inter = [...setA].filter(x => setB.has(x)).length;
-                          const union = new Set([...a, ...b]).size;
-                          return inter / union;
-                        };
-                        const editDistance = (a: string, b: string) => {
-                          const m = a.length, n = b.length;
-                          if (!m) return n;
-                          if (!n) return m;
-                          const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
-                          for (let i = 0; i <= m; i++) dp[i][0] = i;
-                          for (let j = 0; j <= n; j++) dp[0][j] = j;
-                          for (let i = 1; i <= m; i++) {
-                            for (let j = 1; j <= n; j++) {
-                              const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-                              dp[i][j] = Math.min(
-                                dp[i - 1][j] + 1,
-                                dp[i][j - 1] + 1,
-                                dp[i - 1][j - 1] + cost
-                              );
-                            }
-                          }
-                          return dp[m][n];
-                        };
-                        const qTokens = tokenize(q);
-                        const score = (p: Post) => {
-                          const title = String(p.title || "");
-                          const tTok = tokenize(title);
-                          let minD = Infinity;
-                          for (const qt of qTokens) {
-                            for (const tt of tTok) {
-                              const d = editDistance(qt, tt);
-                              if (d < minD) minD = d;
-                            }
-                          }
-                          const includesBonus = title.toLowerCase().includes(q) ? 3 : 0;
-                          const j = jaccard(qTokens, tTok);
-                          const distanceBoost = minD <= 2 ? (2 - minD) : -minD * 0.15;
-                          return includesBonus + (j * 2) + distanceBoost;
-                        };
-                        const suggestions = [...sortedPosts]
-                          .map(p => ({ p, s: score(p) }))
-                          .filter(x => x.s > 0.5)
-                          .sort((a, b) => b.s - a.s)
-                          .slice(0, 3)
-                          .map(x => x.p);
-
-                        return suggestions.length ? suggestions.map(s => (
+                      {searchSuggestions.length ? searchSuggestions.map(s => (
                           <Card key={s.id} className="rounded-lg border border-border/60 bg-card/70 hover:bg-card transition">
                             <CardContent className="p-3">
                               <button
@@ -1018,8 +987,7 @@ export default function StoriesIndexContent() {
                           <div className="col-span-1 sm:col-span-2 text-sm text-muted-foreground">
                             No close matches. Try clearing your search or exploring popular stories.
                           </div>
-                        );
-                      })()}
+                        )}
                     </div>
 
                     
@@ -1074,243 +1042,80 @@ export default function StoriesIndexContent() {
                 )}
 
                 {/* Popular right now mini carousel */}
-                <div className="mt-2">
-                  <div className="text-left sm:text-center mb-2 text-xs font-medium text-muted-foreground">
-                    Popular right now
-                  </div>
-                  
-                  <Carousel opts={{ align: "start", containScroll: "trimSnaps" }} setApi={setCarouselApi}>
-                    <CarouselContent>
-                      {(() => {
-                        const now = Date.now();
-                        const dayMs = 24 * 60 * 60 * 1000;
-                        const windowDays = 14;
-
-                        const popular = [...sortedPosts]
-                          .map(p => {
-                            const totals = reactionTotals[p.id];
-                            const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
-                            const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
-                            const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
-                            const decay = Math.max(0.2, 1 - (ageDays / windowDays)); // decay after 14 days
-                            const score = (likes * 2.5 + views * 0.8) * decay;
-                            return { p, score };
-                          })
-                          .sort((a, b) => b.score - a.score)
-                          .slice(0, 6)
-                          .map(x => x.p);
-                        return popular.map(pop => (
-                          <CarouselItem key={pop.id} className="basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                            <Card className="rounded-lg border border-border/50 bg-card/70 hover:bg-card transition">
-                              <CardContent className="p-3">
-                                <button
-                                  className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
-                                  onClick={() => navigateToReader(pop.slug || pop.id)}
-                                >
-                                  {pop.title}
-                                </button>
-                                {(() => {
-                                  const md: any = (pop as any)?.metadata || {};
-                                  const primaryThemeRaw =
-                                    md.themeCategory ||
-                                    sharedDetermineThemeCategory(String(pop.title || ''), String(pop.content || ''));
-
-                                  const override = getStoryThemeOverride(pop.slug as any, pop.title as any);
-
-                                  const derivedKey = (() => {
-                                    const raw = String(primaryThemeRaw || '').trim();
-                                    if (!raw) return 'HORROR';
-                                    for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-                                      if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-                                    }
-                                    return raw.toUpperCase().replace(/\s+/g, '_');
-                                  })();
-
-                                  const themeKey = override?.key || derivedKey;
-
-                                  const defOverride = getThemeDefinitionOverride(themeKey);
-
-                                  const baseLabel =
-                                    override?.label ||
-                                    defOverride?.label ||
-                                    (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
-                                    primaryThemeRaw ||
-                                    'Horror';
-
-                                  const prettyLabel = (() => {
-                                    if (override?.label) return override.label;
-                                    return baseLabel;
-                                  })();
-
-                                  // Resolve icon (story override -> metadata -> global override -> shared -> ghost)
-                                  let chosenIconSlug =
-                                    override?.icon ||
-                                    (md && (md as any).themeIcon) ||
-                                    defOverride?.icon ||
-                                    (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
-                                    'ghost';
-                                  if (themeKey === 'BODY_HORROR') {
-                                    chosenIconSlug = 'bone';
-                                  }
-
-                                  // Map lucide icon when not using Iconify provider
-                                  const ThemeIconCmp = (() => {
-                                    const slug = String(chosenIconSlug).toLowerCase();
-                                    switch (slug) {
-                                      case 'skull': return Skull;
-                                      case 'brain': return Brain;
-                                      case 'pill': return Pill;
-                                      case 'cpu': return Cpu;
-                                      case 'dna': return Dna;
-                                      case 'ghost': return Ghost;
-                                      case 'umbrella': return Umbrella;
-                                      case 'footprints': return Footprints;
-                                      case 'cloud-rain':
-                                      case 'cloudrain': return CloudRain;
-                                      case 'castle': return Castle;
-                                      case 'bug': return Bug;
-                                      case 'radiation': return Radiation;
-                                      case 'user-minus2':
-                                      case 'userminus2': return UserMinus2;
-                                      case 'user-plus':
-                                      case 'userplus': return UserPlus;
-                                      case 'anchor': return Anchor;
-                                      case 'alert-triangle':
-                                      case 'alerttriangle': return AlertTriangle;
-                                      case 'building': return Building;
-                                      case 'worm': return Worm;
-                                      case 'cloud': return Cloud;
-                                      case 'cloud-fog':
-                                      case 'cloudfog': return CloudFog;
-                                      case 'flame': return Flame;
-                                      case 'eye': return Eye;
-                                      case 'hourglass': return Hourglass;
-                                      case 'knife': return ForkKnife;
-                                      case 'utensils':
-                                      case 'fork-knife':
-                                      case 'forkknife': return ForkKnife;
-                                      case 'cat': return Cat;
-                                      case 'moon': return Moon;
-                                      case 'dog': return Dog;
-                                      case 'radio': return Radio;
-                                      case 'moon-star':
-                                      case 'moonstar': return MoonStar;
-                                      case 'box': return Box;
-                                      case 'car': return Car;
-                                      case 'alien': return Moon;
-                                      case 'flask': return FlaskConical;
-                                      case 'trees':
-                                      case 'tree': return Trees;
-                                      case 'bone': return Bone;
-                                      default:
-                                        // Fallback by theme key for diversity when slug is unknown
-                                        switch (themeKey) {
-                                          case 'TECHNOLOGICAL': return Cpu;
-                                          case 'PSYCHOLOGICAL': return Brain;
-                                          case 'SUPERNATURAL': return Ghost;
-                                          case 'UNCANNY': return Eye;
-                                          case 'EXISTENTIAL': return Hourglass;
-                                          case 'DOPPELGANGER': return UserPlus;
-                                          case 'CANNIBALISM': return ForkKnife;
-                                          case 'SLASHER': return Skull;
-                                          case 'MONSTER': return Cat;
-                                          case 'ZOMBIE': return Footprints;
-                                          case 'VAMPIRE': return Moon;
-                                          case 'WEREWOLF': return Dog;
-                                          case 'PARANORMAL': return Radio;
-                                          case 'DREAM_HORROR': return MoonStar;
-                                          case 'CURSED_OBJECT': return Box;
-                                          case 'TIME_HORROR': return Clock;
-                                          case 'APOCALYPTIC': return Radiation;
-                                          case 'SCIENCE_HORROR': return FlaskConical;
-                                          case 'BODY_HORROR': return Bone;
-                                          case 'FOLK_HORROR': return Trees;
-                                          case 'GOTHIC': return Castle;
-                                          case 'COSMIC': return Moon;
-                                          case 'VEHICULAR': return Car;
-                                          default: return Ghost;
-                                        }
-                                    }
-                                  })();
-
-                                  const badgeTint = (() => {
-                                    switch (themeKey) {
-                                      case 'DEATH': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
-                                      case 'BODY_HORROR': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700';
-                                      case 'SUPERNATURAL': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700';
-                                      case 'PSYCHOLOGICAL': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700';
-                                      case 'EXISTENTIAL': return 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700';
-                                      case 'HORROR': return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-700';
-                                      case 'STALKING': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700';
-                                      case 'CANNIBALISM': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
-                                      case 'PSYCHOPATH': return 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200 dark:bg-fuchsia-900/30 dark:text-fuchsia-300 dark:border-fuchsia-700';
-                                      case 'DOPPELGANGER': return 'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-700';
-                                      case 'VEHICULAR': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700';
-                                      case 'PARASITE': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700';
-                                      case 'TECHNOLOGICAL': return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700';
-                                      case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700';
-                                      case 'UNCANNY': return 'bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-700';
-                                      case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark:text-stone-300 dark:border-stone-700';
-                                      default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark:text-foreground dark:border-primary/20';
-                                    }
-                                  })();
-
-                                  return (
-                                    <div className="mt-1">
-                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                        {String(chosenIconSlug).includes(':')
-                                          ? (<Icon icon={String(chosenIconSlug)} className="h-3 w-3" />)
-                                          : (themeKey === 'BODY_HORROR' ? <Bone className="h-3 w-3" /> : null)
-                                        }
-                                        {prettyLabel}
-                                      </Badge>
+                {readyPopular && (
+                  <div className="mt-2">
+                    <div className="text-left sm:text-center mb-2 text-xs font-medium text-muted-foreground">
+                      Popular right now
+                    </div>
+                    
+                    <Carousel opts={{ align: "start", containScroll: "trimSnaps" }} setApi={setCarouselApi}>
+                      <CarouselContent>
+                        {popularPosts.map(pop => (
+                            <CarouselItem key={pop.id} className="basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                              <Card className="rounded-lg border border-border/50 bg-card/70 hover:bg-card transition">
+                                <CardContent className="p-3">
+                                  <button
+                                    className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
+                                    onClick={() => navigateToReader(pop.slug || pop.id)}
+                                  >
+                                    {pop.title}
+                                  </button>
+                                  {(() => {
+                                    const { key, label } = computeThemeMeta(pop);
+                                    const badgeTint = getBadgeTint(key);
+                                    return (
+                                      <div className="mt-1">
+                                        <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                          {label}
+                                        </Badge>
+                                      </div>
+                                    );
+                                  })()}
+      
+                                  <p className="text-[13px] text-muted-foreground leading-5 mt-1 line-clamp-1">
+                                    {extractEngagingExcerpt(pop.content, 100)}
+                                  </p>
+      
+                                  <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+                                    <div className="flex items-center gap-1">
+                                      <Calendar className="h-3 w-3" />
+                                      <time>{new Date(pop.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
                                     </div>
-                                  );
-                                })()}
-
-                                <p className="text-[13px] text-muted-foreground leading-5 mt-1 line-clamp-1">
-                                  {extractEngagingExcerpt(pop.content, 100)}
-                                </p>
-
-                                <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
-                                  <div className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    <time>{new Date(pop.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      <span>{getReadingTime(pop.content)}</span>
+                                    </div>
                                   </div>
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    <span>{getReadingTime(pop.content)}</span>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </CarouselItem>
-                        ));
-                      })()}
-                    </CarouselContent>
-                  </Carousel>
-                  <div className="mt-3 flex items-center justify-center gap-2">
-                    <Button
-                      size="sm"
-                      className="h-9 px-3 w-28 justify-center rounded-full border border-border/60 bg-card/90 hover:bg-card shadow-sm"
-                      onClick={() => { try { carouselApi?.scrollPrev(); } catch {} }}
-                      disabled={!canPrev}
-                    >
-                      <ArrowLeft className="h-4 w-4 mr-1" />
-                      Previous
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="h-9 px-3 w-28 justify-center rounded-full border border-border/60 bg-card/90 hover:bg-card shadow-sm"
-                      onClick={() => { try { carouselApi?.scrollNext(); } catch {} }}
-                      disabled={!canNext}
-                    >
-                      Next
-                      <ArrowRight className="h-4 w-4 ml-1" />
-                    </Button>
+                                </CardContent>
+                              </Card>
+                            </CarouselItem>
+                          ))}
+                      </CarouselContent>
+                    </Carousel>
+                    <div className="mt-3 flex items-center justify-center gap-2">
+                      <Button
+                        size="sm"
+                        className="h-9 px-3 w-28 justify-center rounded-full border border-border/60 bg-card/90 hover:bg-card shadow-sm"
+                        onClick={() => { try { carouselApi?.scrollPrev(); } catch {} }}
+                        disabled={!canPrev}
+                      >
+                        <ArrowLeft className="h-4 w-4 mr-1" />
+                        Previous
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="h-9 px-3 w-28 justify-center rounded-full border border-border/60 bg-card/90 hover:bg-card shadow-sm"
+                        onClick={() => { try { carouselApi?.scrollNext(); } catch {} }}
+                        disabled={!canNext}
+                      >
+                        Next
+                        <ArrowRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
                   </div>
-                  {/* Category tags under carousel controls */}
-                  <div className="mt-8 px-2">
+                )}
+                {/* Category tags under carousel controls */}
+                <div className="mt-8 px-2">
                     {(() => {
                       // Build counts including derived categories for posts lacking metadata
                       const counts = new Map<string, number>();
@@ -1367,195 +1172,194 @@ export default function StoriesIndexContent() {
                   </div>
                 </div>
               </div>
-            </div>
           ) : (
             <>
               {latestPosts.length > 60 ? (
                 // Virtualized rows for large lists (row = gridCols items)
-                (() => {
-                  const cols = gridCols || 1;
-                  const rows: Post[][] = [];
-                  for (let i = 0; i < latestPosts.length; i += cols) {
-                    rows.push(latestPosts.slice(i, i + cols));
-                  }
-                  const rowHeight = 360; // approximate card row height
-                  return (
-                    <VirtualScrollArea
-                      items={rows}
-                      itemHeight={rowHeight}
-                      containerHeight={Math.max(400, containerHeight - 200)}
-                      overscan={3}
-                      className="rounded-md border border-transparent"
-                      renderItem={(row, rowIdx) => (
-                        <div className={cols >= 3 ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6' : (cols === 2 ? 'grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6' : 'grid grid-cols-1 gap-5 md:gap-6')}>
-                          {row.map((post, idx) => {
-                            const md: any = post.metadata || {};
-                            let themeCategory = "";
-                            if (md && typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
-                              themeCategory = String(md.themeCategory);
-                            } else {
-                              try {
-                                const derived = sharedDetermineThemeCategory(String(post.title || ''), String(post.content || ''));
-                                themeCategory = String(derived || '');
-                              } catch {}
-                            }
+                <VirtualScrollArea
+                  items={(() => {
+                    const cols = gridCols || 1;
+                    const rows: Post[][] = [];
+                    for (let i = 0; i < latestPosts.length; i += cols) {
+                      rows.push(latestPosts.slice(i, i + cols));
+                    }
+                    return rows;
+                  })()}
+                  itemHeight={360}
+                  containerHeight={Math.max(400, containerHeight - 200)}
+                  overscan={3}
+                  className="rounded-md border border-transparent"
+                  renderItem={(row, rowIdx) => {
+                    const cols = gridCols || 1;
+                    return (
+                      <div className={cols >= 3 ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6' : (cols === 2 ? 'grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6' : 'grid grid-cols-1 gap-5 md:gap-6')}>
+                        {row.map((post, idx) => {
+                          const md: any = post.metadata || {};
+                          let themeCategory = "";
+                          if (md && typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
+                            themeCategory = String(md.themeCategory);
+                          } else {
+                            try {
+                              const derived = sharedDetermineThemeCategory(String(post.title || ''), String(post.content || ''));
+                              themeCategory = String(derived || '');
+                            } catch {}
+                          }
 
-                            return (
-                              <article
-                                key={post.id}
-                                data-idx={rowIdx * cols + idx}
-                                className="group story-card-container relative"
+                          return (
+                            <article
+                              key={post.id}
+                              data-idx={rowIdx * cols + idx}
+                              className="group story-card-container relative"
+                            >
+                              <Card
+                                onClick={() => navigateToReader(post.slug || post.id)}
+                                className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 cursor-pointer"
                               >
-                                <Card
-                                  onClick={() => navigateToReader(post.slug || post.id)}
-                                  className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 cursor-pointer"
-                                >
-                                  <CardContent className="p-4 pb-4">
-                                    <div className="flex items-start justify-between gap-3">
-                                      <div className="flex-1 min-w-0">
-                                        <CardTitle className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary">
-                                          {renderHighlighted(String(post.title || ''))}
-                                        </CardTitle>
-                                        {themeCategory && (() => {
-                                          const override = getStoryThemeOverride(post.slug as any, post.title as any);
-                                          const derivedKey = (() => {
-                                            const raw = themeCategory;
-                                            if (!raw) return '';
-                                            for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-                                              if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-                                            }
-                                            return raw.toUpperCase().replace(/\s+/g, '_');
-                                          })();
-                                          const themeKeyForTint = override?.key || derivedKey;
-                                          const defOverride = getThemeDefinitionOverride(themeKeyForTint);
-                                          let chosenIconSlug =
-                                            override?.icon ||
-                                            (md && (md as any).themeIcon) ||
-                                            defOverride?.icon ||
-                                            (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
-                                            'ghost';
-                                          if (themeKeyForTint === 'BODY_HORROR') {
-                                            chosenIconSlug = 'bone';
+                                <CardContent className="p-4 pb-4">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <CardTitle className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary">
+                                        {renderHighlighted(String(post.title || ''))}
+                                      </CardTitle>
+                                      {themeCategory && (() => {
+                                        const override = getStoryThemeOverride(post.slug as any, post.title as any);
+                                        const derivedKey = (() => {
+                                          const raw = themeCategory;
+                                          if (!raw) return '';
+                                          for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
+                                            if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
                                           }
-                                          const ThemeIconCmp = (() => {
-                                            const slug = String(chosenIconSlug).toLowerCase();
-                                            switch (slug) {
-                                              case 'skull': return Skull; case 'brain': return Brain; case 'pill': return Pill; case 'cpu': return Cpu; case 'ghost': return Ghost;
-                                              case 'eye': return Eye; case 'hourglass': return Hourglass; case 'car': return Car;
-                                              case 'fork-knife': case 'forkknife': case 'utensils': return ForkKnife; case 'trees': case 'tree': return Trees; case 'castle': return Castle; case 'bug': return Bug;
-                                              case 'moon': return Moon; case 'moon-star': case 'moonstar': return MoonStar; case 'radio': return Radio; case 'box': return Box; case 'flask': return FlaskConical;
-                                              case 'radiation': return Radiation; case 'building': return Building; case 'cat': return Cat; case 'flame': return Flame; case 'dog': return Dog; case 'cloud': return Cloud;
-                                              case 'alert-triangle': case 'alerttriangle': return AlertTriangle; case 'footprints': return Footprints; case 'bone': return Bone;
-                                              default:
-                                                switch (themeKeyForTint) {
-                                                  case 'TECHNOLOGICAL': return Cpu;
-                                                  case 'PSYCHOLOGICAL': return Brain;
-                                                  case 'SUPERNATURAL': return Ghost;
-                                                  case 'EXISTENTIAL': return Hourglass;
-                                                  case 'VEHICULAR': return Car;
-                                                  case 'FOLK_HORROR': return Trees;
-                                                  case 'GOTHIC': return Castle;
-                                                  case 'COSMIC': return Moon;
-                                                  default: return Ghost;
-                                                }
-                                            }
-                                          })();
-                                          const baseLabel =
-                                            override?.label ||
-                                            defOverride?.label ||
-                                            (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
-                                            themeCategory;
-                                          const prettyLabel = (() => {
-                                            if (override?.label) return override.label;
-                                            const l = String(baseLabel).toLowerCase();
-                                            if (l.includes('cosmic')) return 'Cosmic Horror';
-                                            if (l.includes('existential')) return 'Existential Horror';
-                                            if (l.includes('vehicular')) return 'Vehicular Horror';
-                                            if (l.includes('psychological')) return 'Psychological Horror';
-                                            if (l.includes('supernatural')) return 'Supernatural Horror';
-                                            if (l.includes('technological')) return 'Technological Horror';
-                                            if (l.includes('uncanny')) return 'Uncanny Horror';
-                                            return baseLabel;
-                                          })();
-                                          const badgeTint = (() => {
-                                            switch (themeKeyForTint) {
-                                              case 'DEATH': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
-                                              case 'BODY_HORROR': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700';
-                                              case 'SUPERNATURAL': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700';
-                                              case 'PSYCHOLOGICAL': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700';
-                                              case 'EXISTENTIAL': return 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700';
-                                              case 'HORROR': return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-700';
-                                              case 'VEHICULAR': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700';
-                                              case 'TECHNOLOGICAL': return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700';
-                                              case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700';
-                                              case 'FOLK_HORROR': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700';
-                                              case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark:text-stone-300 dark:border-stone-700';
-                                              case 'CURSED_OBJECT': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700';
-                                              case 'OCCULT': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700';
-                                              case 'URBAN_HORROR': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700';
-                                              case 'SUICIDE': return 'bg-zinc-100 text-zinc-800 border-zinc-200 dark:bg-zinc-900/30 dark:text-zinc-300 dark:border-zinc-700';
-                                              case 'CONTAGION': return 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700';
-                                              default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark:text-foreground dark:border-primary/20';
-                                            }
-                                          })();
-                                          return (
-                                            <div className="mt-1">
-                                              <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                                {themeKeyForTint === 'BODY_HORROR' ? <Bone className="h-3 w-3" /> : null}
-                                                {prettyLabel}
-                                              </Badge>
-                                            </div>
-                                          );
-                                        })()}
+                                          return raw.toUpperCase().replace(/\s+/g, '_');
+                                        })();
+                                        const themeKeyForTint = override?.key || derivedKey;
+                                        const defOverride = getThemeDefinitionOverride(themeKeyForTint);
+                                        let chosenIconSlug =
+                                          override?.icon ||
+                                          (md && (md as any).themeIcon) ||
+                                          defOverride?.icon ||
+                                          (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
+                                          'ghost';
+                                        if (themeKeyForTint === 'BODY_HORROR') {
+                                          chosenIconSlug = 'bone';
+                                        }
+                                        const ThemeIconCmp = (() => {
+                                          const slug = String(chosenIconSlug).toLowerCase();
+                                          switch (slug) {
+                                            case 'skull': return Skull; case 'brain': return Brain; case 'pill': return Pill; case 'cpu': return Cpu; case 'ghost': return Ghost;
+                                            case 'eye': return Eye; case 'hourglass': return Hourglass; case 'car': return Car;
+                                            case 'fork-knife': case 'forkknife': case 'utensils': return ForkKnife; case 'trees': case 'tree': return Trees; case 'castle': return Castle; case 'bug': return Bug;
+                                            case 'moon': return Moon; case 'moon-star': case 'moonstar': return MoonStar; case 'radio': return Radio; case 'box': return Box; case 'flask': return FlaskConical;
+                                            case 'radiation': return Radiation; case 'building': return Building; case 'cat': return Cat; case 'flame': return Flame; case 'dog': return Dog; case 'cloud': return Cloud;
+                                            case 'alert-triangle': case 'alerttriangle': return AlertTriangle; case 'footprints': return Footprints; case 'bone': return Bone;
+                                            default:
+                                              switch (themeKeyForTint) {
+                                                case 'TECHNOLOGICAL': return Cpu;
+                                                case 'PSYCHOLOGICAL': return Brain;
+                                                case 'SUPERNATURAL': return Ghost;
+                                                case 'EXISTENTIAL': return Hourglass;
+                                                case 'VEHICULAR': return Car;
+                                                case 'FOLK_HORROR': return Trees;
+                                                case 'GOTHIC': return Castle;
+                                                case 'COSMIC': return Moon;
+                                                default: return Ghost;
+                                              }
+                                          }
+                                        })();
+                                        const baseLabel =
+                                          override?.label ||
+                                          defOverride?.label ||
+                                          (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
+                                          themeCategory;
+                                        const prettyLabel = (() => {
+                                          if (override?.label) return override.label;
+                                          const l = String(baseLabel).toLowerCase();
+                                          if (l.includes('cosmic')) return 'Cosmic Horror';
+                                          if (l.includes('existential')) return 'Existential Horror';
+                                          if (l.includes('vehicular')) return 'Vehicular Horror';
+                                          if (l.includes('psychological')) return 'Psychological Horror';
+                                          if (l.includes('supernatural')) return 'Supernatural Horror';
+                                          if (l.includes('technological')) return 'Technological Horror';
+                                          if (l.includes('uncanny')) return 'Uncanny Horror';
+                                          return baseLabel;
+                                        })();
+                                        const badgeTint = (() => {
+                                          switch (themeKeyForTint) {
+                                            case 'DEATH': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark	text-red-300 dark	border-red-700';
+                                            case 'BODY_HORROR': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark	text-rose-300 dark	border-rose-700';
+                                            case 'SUPERNATURAL': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark	text-violet-300 dark	border-violet-700';
+                                            case 'PSYCHOLOGICAL': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark	text-amber-300 dark	border-amber-700';
+                                            case 'EXISTENTIAL': return 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark	text-indigo-300 dark	border-indigo-700';
+                                            case 'HORROR': return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/30 dark	text-slate-300 dark	border-slate-700';
+                                            case 'VEHICULAR': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark	text-emerald-300 dark	border-emerald-700';
+                                            case 'TECHNOLOGICAL': return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark	text-sky-300 dark	border-sky-700';
+                                            case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark	text-purple-300 dark	border-purple-700';
+                                            case 'FOLK_HORROR': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark	text-lime-300 dark	border-lime-700';
+                                            case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark	text-stone-300 dark	border-stone-700';
+                                            case 'CURSED_OBJECT': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark	text-yellow-300 dark	border-yellow-700';
+                                            case 'OCCULT': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark	text-green-300 dark	border-green-700';
+                                            case 'URBAN_HORROR': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark	text-blue-300 dark	border-blue-700';
+                                            case 'SUICIDE': return 'bg-zinc-100 text-zinc-800 border-zinc-200 dark:bg-zinc-900/30 dark	text-zinc-300 dark	border-zinc-700';
+                                            case 'CONTAGION': return 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark	text-teal-300 dark	border-teal-700';
+                                            default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark	text-foreground dark	border-primary/20';
+                                          }
+                                        })();
+                                        return (
+                                          <div className="mt-1">
+                                            <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                              {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                              {prettyLabel}
+                                            </Badge>
+                                          </div>
+                                        );
+                                      })()}
+                                    </div>
+                                    <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
+                                      <div className="flex items-center gap-1 justify-end">
+                                        <Calendar className="h-3 w-3" />
+                                        <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
                                       </div>
-                                      <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
-                                        <div className="flex items-center gap-1 justify-end">
-                                          <Calendar className="h-3 w-3" />
-                                          <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
-                                        </div>
-                                        <div className="flex items-center gap-1 justify-end" title={`~${String(post.content || '').split(/\s+/).length} words`}>
-                                          <Clock className="h-3 w-3" />
-                                          <span>{getReadingTime(post.content)}</span>
-                                        </div>
+                                      <div className="flex items-center gap-1 justify-end" title={`~${String(post.content || '').split(/\\s+/).length} words`}>
+                                        <Clock className="h-3 w-3" />
+                                        <span>{getReadingTime(post.content)}</span>
                                       </div>
                                     </div>
-                                    <p className="text-[13px] text-muted-foreground leading-6 mt-7 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                                      {extractEngagingExcerpt(post.content, 200)}
-                                    </p>
-                                  </CardContent>
-                                  <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
-                                    <div className="w-full flex items-center justify-between">
-                                      {post && post.id && (
-                                        <Suspense fallback={<div className="text-xs text-muted-foreground">…</div>}>
-                                          <LikeDislike 
-                                            key={`like-${post.id}`} 
-                                            postId={post.id}
-                                            slug={post.slug}
-                                            source="wp"
-                                            variant="index"
-                                            initialTotals={reactionTotals[post.id] || null}
-                                          />
-                                        </Suspense>
-                                      )}
-                                      <Button
-                                        size="sm"
-                                        onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
-                                        className="h-9 px-4 transition-all"
-                                      >
-                                        Read story
-                                        <ArrowRight className="h-4 w-4 ml-1" />
-                                      </Button>
-                                    </div>
-                                  </CardFooter>
-                                </Card>
-                              </article>
-                            );
-                          })}
-                        </div>
-                      )}
-                    />
-                  );
-                })()
+                                  </div>
+                                  <p className="text-[13px] text-muted-foreground leading-6 mt-7 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                                    {extractEngagingExcerpt(post.content, 200)}
+                                  </p>
+                                </CardContent>
+                                <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
+                                  <div className="w-full flex items-center justify-between">
+                                    {readyReactions && post && post.id && (
+                                      <Suspense fallback={null}>
+                                        <LikeDislike 
+                                          key={`like-${post.id}`} 
+                                          postId={post.id}
+                                          slug={post.slug}
+                                          source="wp"
+                                          variant="index"
+                                          initialTotals={reactionTotals[post.id] || null}
+                                        />
+                                      </Suspense>
+                                    )}
+                                    <Button
+                                      size="sm"
+                                      onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
+                                      className="h-9 px-4 transition-all"
+                                    >
+                                      Read story
+                                      <ArrowRight className="h-4 w-4 ml-1" />
+                                    </Button>
+                                  </div>
+                                </CardFooter>
+                              </Card>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    );
+                  }}
+                />
               ) : (
                 <div
                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
@@ -1773,8 +1577,8 @@ export default function StoriesIndexContent() {
                           </CardContent>
                           <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
                             <div className="w-full flex items-center justify-between">
-                              {post && post.id && (
-                                <Suspense fallback={<div className="text-xs text-muted-foreground">…</div>}>
+                              {readyReactions && post && post.id && (
+                                <Suspense fallback={null}>
                                   <LikeDislike 
                                     key={`like-${post.id}`} 
                                     postId={post.id}

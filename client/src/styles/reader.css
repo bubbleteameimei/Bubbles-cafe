@@ -20,7 +20,7 @@
   max-width: 100%; /* Allow full width */
   margin: 0 auto;
   font-size: var(--base-font-size, 16px); /* Use the base font size variable with fallback */
-  transition: font-size 0.2s ease, font 0.2s ease, font-family 0.2s ease; /* Smooth transitions when size or family changes */
+  transition: font-size 0.2s ease, font 0.2s ease; /* Remove font-family transition to avoid visible font swap */
   width: 100%; /* Ensure full width */
   box-sizing: border-box; /* Include padding in width calculation */
   overflow-wrap: break-word; /* Prevent text overflow by breaking words */
@@ -36,7 +36,7 @@
   font-kerning: normal; /* Improved kerning for better character spacing */
   font-feature-settings: "kern", "liga", "clig", "calt"; /* Typography enhancements */
   font-size: var(--base-font-size, 16px); /* Use the base font size variable with fallback */
-  transition: font-size 0.2s ease, font 0.2s ease, font-family 0.2s ease; /* Smooth transitions */
+  transition: font-size 0.2s ease, font 0.2s ease; /* Remove font-family transition */
 }
 
 .story-content p + p {
