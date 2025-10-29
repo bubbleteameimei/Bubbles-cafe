@@ -179,6 +179,22 @@ app.use((req, res, next) => {
         path.startsWith("/submit-story"))
     ) {
       res.setHeader("X-Robots-Tag", "index, follow");
+    } else if (
+      req.method === "GET" &&
+      (path.startsWith("/admin") ||
+        path.startsWith("/search") ||
+        path.startsWith("/auth") ||
+        path.startsWith("/reset-password") ||
+        path.startsWith("/settings") ||
+        path.startsWith("/profile") ||
+        path.startsWith("/bookmarks") ||
+        path.startsWith("/notifications") ||
+        path.startsWith("/recommendations") ||
+        path.startsWith("/user"))
+    ) {
+      // Prevent indexing of utility and user-specific pages; allow following links where appropriate
+      const disallowFollow = path.startsWith("/admin") || path.startsWith("/auth");
+      res.setHeader("X-Robots-Tag", disallowFollow ? "noindex, nofollow" : "noindex, follow");
     }
   } catch {}
   next();

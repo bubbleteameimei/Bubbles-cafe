@@ -28,8 +28,8 @@ const DEFAULT_SITE_CONFIG = {
   siteName: 'Bubble’s Cafe',
   defaultTitle: 'Bubble’s Cafe - Dark, Psychological and Gothic Fiction',
   defaultDescription: 'Dark, psychological, and gothic fiction — short stories and unsettling tales from Bubble’s Cafe.',
-  // Use provided favicon image for default social previews as well
-  defaultImage: '/img_9653.png',
+  // Use a stable icon path for default social previews
+  defaultImage: '/icons/icon-512x512.png',
   siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://bubblescafe.space',
   locale: 'en_US',
   twitterSite: '@bubblescafe',
@@ -134,7 +134,7 @@ export default function SEO({
     setMetaTag('og:locale', locale, true);
     
     // Twitter Card tags
-    setMetaTag('twitter:card', type === 'article' ? 'summary_large_image' : 'summary');
+    setMetaTag('twitter:card', 'summary_large_image');
     setMetaTag('twitter:title', title || DEFAULT_SITE_CONFIG.defaultTitle);
     setMetaTag('twitter:description', description);
     setMetaTag('twitter:image', imageUrl);
@@ -166,8 +166,8 @@ export default function SEO({
     setLinkTag('dns-prefetch', 'https://pixel.wp.com');
     
     // Favicon and app icons (use provided PNG favicon)
-    setLinkTag('icon', '/img_9653.png', { type: 'image/png' });
-    setLinkTag('apple-touch-icon', '/img_9653.png');
+    setLinkTag('icon', '/icons/icon-512x512.png', { type: 'image/png' });
+    setLinkTag('apple-touch-icon', '/icons/icon-512x512.png');
     
     // Generate and set JSON-LD structured data
     const generateStructuredData = () => {
@@ -190,9 +190,14 @@ export default function SEO({
           url: siteUrl,
           logo: {
             '@type': 'ImageObject',
-            url: `${siteUrl}/img_9653.png`,
+            url: `${siteUrl}/icons/icon-512x512.png`,
             alt: `${siteName} Logo`
-          }
+          },
+          sameAs: [
+            'https://bubbleteameimei.wordpress.com/',
+            'https://twitter.com/Bubbleteameimei',
+            'https://www.instagram.com/Bubbleteameimei/'
+          ]
         }
       };
 
@@ -203,9 +208,14 @@ export default function SEO({
         url: siteUrl,
         logo: {
           '@type': 'ImageObject',
-          url: `${siteUrl}/og-image.svg`,
+          url: `${siteUrl}/icons/icon-512x512.png`,
           alt: `${siteName} Logo`
-        }
+        },
+        sameAs: [
+          'https://bubbleteameimei.wordpress.com/',
+          'https://twitter.com/Bubbleteameimei',
+          'https://www.instagram.com/Bubbleteameimei/'
+        ]
       };
 
       const navigationSchemas = [
@@ -229,7 +239,94 @@ export default function SEO({
         }
       ];
 
-      const schemas: any[] = [websiteSchema, organizationSchema, ...navigationSchemas];
+      // Build BreadcrumbList JSON-LD from canonical or current path
+      const buildBreadcrumbList = (baseUrl: string, canonicalPath?: string, pageTitle?: string) => {
+        try {
+          const pathOnly = (() => {
+            if (!canonicalPath) return '';
+            // canonical may be absolute or path
+            try {
+              const u = new URL(canonicalPath, baseUrl);
+              return u.pathname || '';
+            } catch {
+              return canonicalPath.startsWith('/') ? canonicalPath : `/${canonicalPath}`;
+            }
+          })();
+
+          const segments = pathOnly.replace(/\/+$/, '').split('/').filter(Boolean);
+          const items: Array<{ '@type': 'ListItem'; position: number; name: string; item: string }> = [];
+
+          // Always start with Home
+          items.push({
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: `${baseUrl}/`
+          });
+
+          // Helper to title-case labels
+          const toTitle = (s: string) =>
+            s
+              .split('-')
+              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(' ')
+              .replace(/_/g, ' ');
+
+          let position = 2;
+          let cumulative = '';
+
+          for (let i = 0; i < segments.length; i++) {
+            const seg = segments[i].toLowerCase();
+            cumulative += `/${segments[i]}`;
+
+            // Special handling: map "reader" to "Stories"
+            if (seg === 'reader') {
+              items.push({
+                '@type': 'ListItem',
+                position: position++,
+                name: 'Stories',
+                item: `${baseUrl}/stories`
+              });
+              continue;
+            }
+
+            // Final segment: use page title for story pages when present
+            const isLast = i === segments.length - 1;
+            const label =
+              isLast && pageTitle
+                ? pageTitle
+                : toTitle(seg);
+
+            items.push({
+              '@type': 'ListItem',
+              position: position++,
+              name: label,
+              item: `${baseUrl}${cumulative}`
+            });
+          }
+
+          if (items.length < 2) {
+            // Only "Home" present; skip breadcrumb
+            return null;
+          }
+
+          return {
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: items
+          };
+        } catch {
+          return null;
+        }
+      };
+
+      const breadcrumbs = buildBreadcrumbList(
+        siteUrl,
+        canonical || (typeof pageUrl === 'string' ? new URL(pageUrl, siteUrl).pathname : undefined),
+        title
+      );
+
+      const schemas: any[] = [websiteSchema, organizationSchema, ...navigationSchemas, ...(breadcrumbs ? [breadcrumbs] : [])];
 
       if (type === 'article') {
         const articleSchema = {
@@ -239,6 +336,7 @@ export default function SEO({
           headline: title,
           description: description || DEFAULT_SITE_CONFIG.defaultDescription,
           url: pageUrl,
+          mainEntityOfPage: pageUrl,
           image: {
             '@type': 'ImageObject',
             url: imageUrl,
@@ -250,7 +348,7 @@ export default function SEO({
             url: siteUrl,
             logo: {
               '@type': 'ImageObject',
-              url: `${siteUrl}/og-image.svg`,
+              url: `${siteUrl}/icons/icon-512x512.png`,
               alt: `${siteName} Logo`
             }
           },

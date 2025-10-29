@@ -167,6 +167,92 @@ const AppContent = () => {
     locationStr.includes('/errors/503') ||
     locationStr.includes('/errors/504');
 
+  // Derive route-aware SEO defaults (title/description and robots)
+  const pathForSeo = locationStr || '/';
+  let seoTitle: string | undefined = undefined;
+  let seoDescription: string | undefined = undefined;
+  let seoNoindex = false;
+  let seoNofollow = false;
+
+  if (pathForSeo === '/') {
+    // Keep global defaults from index.html
+  } else if (pathForSeo.startsWith('/stories')) {
+    seoTitle = 'Stories';
+    seoDescription = 'Browse dark, psychological, and gothic fiction stories at Bubble’s Cafe.';
+  } else if (pathForSeo.startsWith('/reader')) {
+    // Reader page sets its own page-level SEO (Article)
+    // Provide only canonical here via global SEO
+  } else if (pathForSeo.startsWith('/about')) {
+    seoTitle = 'About';
+    seoDescription = 'About Bubble’s Cafe and the creator behind the stories.';
+  } else if (pathForSeo.startsWith('/contact')) {
+    seoTitle = 'Contact';
+    seoDescription = 'Get in touch with Bubble’s Cafe.';
+  } else if (pathForSeo.startsWith('/privacy')) {
+    seoTitle = 'Privacy Policy';
+    seoDescription = 'Privacy Policy for Bubble’s Cafe.';
+  } else if (pathForSeo.startsWith('/install')) {
+    seoTitle = 'Install App';
+    seoDescription = 'Install the Bubble’s Cafe app for a fast, immersive reading experience.';
+  } else if (pathForSeo.startsWith('/community')) {
+    seoTitle = 'Community';
+    seoDescription = 'Explore and engage with the Bubble’s Cafe community.';
+  } else if (pathForSeo.startsWith('/submit-story')) {
+    seoTitle = 'Submit Story';
+    seoDescription = 'Submit your story to Bubble’s Cafe.';
+  } else if (pathForSeo.startsWith('/edit-story')) {
+    seoTitle = 'Edit Story';
+    seoDescription = 'Edit your submitted story.';
+    seoNoindex = true;
+  } else if (pathForSeo.startsWith('/search')) {
+    seoTitle = 'Search Results';
+    seoDescription = 'Search stories at Bubble’s Cafe.';
+    seoNoindex = true;
+  } else if (pathForSeo.startsWith('/admin')) {
+    seoTitle = 'Admin';
+    seoDescription = 'Site administration.';
+    seoNoindex = true;
+    seoNofollow = true;
+  } else if (pathForSeo.startsWith('/auth')) {
+    seoTitle = 'Sign In';
+    seoDescription = 'Authenticate to Bubble’s Cafe.';
+    seoNoindex = true;
+    seoNofollow = true;
+  } else if (pathForSeo.startsWith('/reset-password')) {
+    seoTitle = 'Reset Password';
+    seoDescription = 'Reset your Bubble’s Cafe password.';
+    seoNoindex = true;
+  } else if (pathForSeo.startsWith('/profile')) {
+    seoTitle = 'Profile';
+    seoDescription = 'Manage your profile.';
+    seoNoindex = true;
+  } else if (pathForSeo.startsWith('/bookmarks')) {
+    seoTitle = 'Bookmarks';
+    seoDescription = 'Your bookmarked stories.';
+    seoNoindex = true;
+  } else if (pathForSeo.startsWith('/notifications')) {
+    seoTitle = 'Notifications';
+    seoDescription = 'Your notifications.';
+    seoNoindex = true;
+  } else if (pathForSeo.startsWith('/recommendations')) {
+    seoTitle = 'Recommendations';
+    seoDescription = 'Recommended stories for you.';
+    seoNoindex = true;
+  } else if (pathForSeo.startsWith('/settings/')) {
+    seoTitle = 'Settings';
+    seoDescription = 'Manage your preferences.';
+    seoNoindex = true;
+  } else if (pathForSeo.startsWith('/legal/copyright')) {
+    seoTitle = 'Copyright';
+    seoDescription = 'Copyright information.';
+  } else if (pathForSeo.startsWith('/legal/terms')) {
+    seoTitle = 'Terms of Service';
+    seoDescription = 'Terms of service for Bubble’s Cafe.';
+  } else if (pathForSeo.startsWith('/legal/cookie-policy')) {
+    seoTitle = 'Cookie Policy';
+    seoDescription = 'Cookie policy for Bubble’s Cafe.';
+  }
+
   
 
   
@@ -311,7 +397,13 @@ const AppContent = () => {
     <ErrorBoundary>
       {/* Global SEO defaults; pages can override with their own SEO if desired */}
       <React.Suspense fallback={null}>
-        <SEO title={undefined} canonical={canonical} />
+        <SEO
+          title={seoTitle}
+          description={seoDescription}
+          canonical={canonical}
+          noindex={seoNoindex}
+          nofollow={seoNofollow}
+        />
       </React.Suspense>
       {/* Skip to content: hidden until focused, not intrusive */}
       <a href="#main-content" className="skip-link">

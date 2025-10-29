@@ -36,6 +36,12 @@ router.get('/robots.txt', async (req: Request, res: Response) => {
 		const lines = [
 			'User-agent: *',
 			'Allow: /',
+			// Disallow internal/admin and utility routes from indexing
+			'Disallow: /admin',
+			'Disallow: /api',
+			'Disallow: /search',
+			'Disallow: /auth',
+			'Disallow: /reset-password',
 			'',
 			// Explicitly list all sitemap endpoints
 			`Sitemap: ${origin}/sitemap.xml`,
@@ -103,7 +109,7 @@ router.get('/sitemap.xml', async (req: Request, res: Response) => {
 router.get('/pages-sitemap.xml', async (req: Request, res: Response) => {
 	try {
 		const origin = getOrigin(req);
-		const staticPaths = ['/', '/stories', '/reader', '/about', '/contact', '/privacy', '/community', '/submit-story'];
+		const staticPaths = ['/', '/stories', '/reader', '/about', '/contact', '/privacy', '/community', '/submit-story', '/install'];
 
 		const urls = staticPaths.map(p => ({
 			loc: `${origin}${p}`,
