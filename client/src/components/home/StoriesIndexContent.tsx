@@ -507,6 +507,27 @@ export default function StoriesIndexContent() {
     return list;
   }, [sortedPosts, categoryFilter]);
 
+  // Precompute popular posts (top 6) for carousel without nested IIFE
+  const popularPosts = useMemo(() => {
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    const windowDays = 14;
+
+    return [...sortedPosts]
+      .map(p => {
+        const totals = reactionTotals[p.id];
+        const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
+        const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
+        const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
+        const decay = Math.max(0.2, 1 - (ageDays / windowDays));
+        const score = (likes * 2.5 + views * 0.8) * decay;
+        return { p, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map(x => x.p);
+  }, [sortedPosts, reactionTotals]);
+
   // Log zero-results interactions
   useEffect(() => {
     if (search.trim() && titleMatches.length === 0 && !closestTitleMatch) {
@@ -1107,25 +1128,7 @@ export default function StoriesIndexContent() {
                     
                     <Carousel opts={{ align: "start", containScroll: "trimSnaps" }} setApi={setCarouselApi}>
                       <CarouselContent>
-                        {(() => {
-                          const now = Date.now();
-                          const dayMs = 24 * 60 * 60 * 1000;
-                          const windowDays = 14;
-      
-                          const popular = [...sortedPosts]
-                            .map(p => {
-                              const totals = reactionTotals[p.id];
-                              const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
-                              const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
-                              const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
-                              const decay = Math.max(0.2, 1 - (ageDays / windowDays)); // decay after 14 days
-                              const score = (likes * 2.5 + views * 0.8) * decay;
-                              return { p, score };
-                            })
-                            .sort((a, b) => b.score - a.score)
-                            .slice(0, 6)
-                            .map(x => x.p);
-                          return popular.map(pop => (
+                        {popularPosts.map(pop => (
                             <CarouselItem key={pop.id} className="basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                               <Card className="rounded-lg border border-border/50 bg-card/70 hover:bg-card transition">
                                 <CardContent className="p-3">
@@ -1311,8 +1314,7 @@ export default function StoriesIndexContent() {
                                 </CardContent>
                               </Card>
                             </CarouselItem>
-                          ));
-                        })()}
+                          ))}
                       </CarouselContent>
                     </Carousel>
                     <div className="mt-3 flex items-center justify-center gap-2">
