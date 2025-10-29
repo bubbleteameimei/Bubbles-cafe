@@ -1,22 +1,15 @@
 import { useEffect } from "react";
-import { fetchWordPressPosts } from "@/lib/wordpress-api";
 
 /**
  * ReaderPrefetcher
- * Warm the WordPress posts (with content) in the background so the Reader opens instantly.
- * Uses the wordpress-api localStorage cache, so subsequent Reader queries reuse the result.
+ * Light-weight prefetcher: only warm the Reader route chunk on idle.
+ * Avoids large data fetches competing with first render.
  */
 export function ReaderPrefetcher() {
   useEffect(() => {
     const run = async () => {
       try {
-        // Match the Reader’s typical initial query shape
-        await fetchWordPressPosts({
-          perPage: 100,
-          includeContent: true,
-          skipCache: false,
-          maxRetries: 0,
-        });
+        await import("../../pages/reader");
       } catch {
         // Best-effort only
       }

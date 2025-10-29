@@ -20,13 +20,10 @@
   max-width: 100%; /* Allow full width */
   margin: 0 auto;
   font-size: var(--base-font-size, 16px); /* Use the base font size variable with fallback */
-  transition: font-family 0.15s ease-in-out, font-size 0.15s ease-in-out; /* Smooth transition when font size changes */
   width: 100%; /* Ensure full width */
   box-sizing: border-box; /* Include padding in width calculation */
   overflow-wrap: break-word; /* Prevent text overflow by breaking words */
   word-wrap: break-word; /* Fallback for older browsers */
-  font-display: swap;
-  font-synthesis: none;
 }
 
 .story-content p {
@@ -56,7 +53,7 @@
 }
 
 .story-content h1 {
-  font-family: 'Castoro Titling', serif;
+  font-family: var(--reader-font-family, 'Cormorant Garamond', serif);
   font-size: 2em; /* Slightly larger for better hierarchy */
   letter-spacing: -0.02em; /* Tighter tracking for main headings */
   margin-bottom: 1em;
@@ -64,7 +61,7 @@
 }
 
 .story-content h2 {
-  font-family: 'Gilda Display', serif;
+  font-family: var(--reader-font-family, 'Cormorant Garamond', serif);
   font-size: 1.6em;
   position: relative; /* For subtle styling */
   margin-top: 2em;
@@ -82,7 +79,7 @@
 }
 
 .story-content h3 {
-  font-family: 'Gilda Display', serif;
+  font-family: var(--reader-font-family, 'Cormorant Garamond', serif);
   font-size: 1.3em;
   color: hsl(var(--muted-foreground));
   font-weight: 600;
@@ -130,7 +127,7 @@
   font-size: 3em;
   color: hsl(var(--primary));
   opacity: 0.15;
-  font-family: 'Dancing Script', cursive;
+  font-family: var(--reader-font-family, 'Cormorant Garamond', serif);
 }
 
 .story-content blockquote p {
@@ -475,5 +472,5 @@
 /* Prevent font flash during changes */
 .story-content * {
   font-family: inherit;
-  transition: font-family 0.15s ease-in-out, font-size 0.15s ease-in-out;
+  transition: font-size 0.15s ease-in-out;
 }

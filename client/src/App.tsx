@@ -46,7 +46,7 @@ const BackToTopButton = React.lazy(() => import('./components/BackToTopButton'))
 // Import essential pages lazily to keep main bundle small
 const HomePage = React.lazy(() => import('./pages/home'));
 const StoriesPage = React.lazy(() => import('./pages/index'));
-import Footer from './components/layout/footer';
+
 import RouteLoader from './components/ui/RouteLoader';
 // Lazily load core pages to enable code-splitting
 const ReaderPage = React.lazy(() => import('./pages/reader'));
@@ -148,8 +148,7 @@ const AppContent = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isPageTransition, setIsPageTransition] = useState(false);
   const [previousLocation, setPreviousLocation] = useState('');
-  // Footer is always present on non-error pages for stable layout
-  const [footerReady, setFooterReady] = useState(true);
+  
 
   // Basic SEO: set canonical and defaults site-wide
   const canonical = locationStr || '/';
@@ -188,10 +187,7 @@ const AppContent = () => {
     }
   }, [location, isErrorPage]);
 
-  // Footer visibility: present on all non-error pages without content gating
-  useEffect(() => {
-    setFooterReady(!isErrorPage);
-  }, [isErrorPage]);
+  
 
   // Prefetch the current route component to avoid Suspense blank frames
   useEffect(() => {
@@ -538,7 +534,7 @@ const AppContent = () => {
                   </div>
               </PageTransition>
             )}
-            <Footer />
+            
           </main>
         </React.Suspense>
       </div>

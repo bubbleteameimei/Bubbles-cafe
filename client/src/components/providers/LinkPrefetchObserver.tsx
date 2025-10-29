@@ -1,10 +1,9 @@
 import { useEffect } from "react";
-import { fetchWordPressPosts } from "@/lib/wordpress-api";
 
 /**
  * LinkPrefetchObserver
- * Prefetch route chunks and data when links to Reader/Stories enter the viewport.
- * Helps first navigation feel instant without overfetching.
+ * Prefetch only route chunks when links to Reader/Stories enter the viewport.
+ * Avoids heavy data prefetch to keep first load snappy.
  */
 export function LinkPrefetchObserver() {
   useEffect(() => {
@@ -18,20 +17,9 @@ export function LinkPrefetchObserver() {
         if (href.startsWith("/reader") || href.startsWith("/story") || href.startsWith("/community-story")) {
           // Warm the Reader route chunk
           await import("../../pages/reader");
-          // Warm WordPress posts list (includes content)
-          await fetchWordPressPosts({
-            perPage: 100,
-            includeContent: true,
-            skipCache: false,
-            maxRetries: 0,
-          });
         } else if (href.startsWith("/stories")) {
-          // Warm the Stories route chunk and common list data
+          // Warm the Stories route chunk
           await import("../../pages/index");
-          // Warm the posts listing via server API for index page feel
-          try {
-            await fetch("/api/posts?limit=100", { credentials: "include" }).catch(() => {});
-          } catch {}
         }
       } catch {
         // Silent: prefetch is best-effort

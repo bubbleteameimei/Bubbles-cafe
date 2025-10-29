@@ -29,9 +29,10 @@ import ApiLoader from "@/components/api-loader";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import SimplifiedErrorPage from "@/components/errors/SimplifiedErrorPage";
 import { useToast } from "@/hooks/use-toast";
-import RouteLoader from "@/components/ui/RouteLoader";
+
 
 import { SupportWritingCard } from "@/components/SupportWritingCard";
+import Footer from "@/components/layout/footer";
 import SEO from "@/components/SEO";
 import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
 import { sanitizeHtml } from "@/lib/sanitize";
@@ -616,14 +617,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    transition: color 0.3s ease, background-color 0.3s ease, font-size 0.25s ease-in-out, font-family 0.25s ease-in-out;
   }
   .story-content p, .story-content .story-paragraph {
     line-height: 1.7;
     margin-bottom: 1.7em;
     font-family: var(--reader-font-family);
     font-size: var(--reader-font-size);
-    transition: font-size 0.25s ease-in-out, font-family 0.25s ease-in-out;
   }
   @media (max-width: 768px) {
     .story-content p, .story-content .story-paragraph {
@@ -655,7 +654,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Let's make sure we have posts data and current post before rendering
   if (isLoading) {
-    return <RouteLoader label="Loading reader" minHeight="60vh" />;
+    // Avoid showing an inline loader; let the header remain and page content appear when ready
+    return null;
   }
 
   if (error) {
@@ -1815,6 +1815,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </div>
         </article>
       </div>
+      <Footer />
     </div>
   );
 }
