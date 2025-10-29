@@ -92,12 +92,29 @@ app.get('/health', async (_req, res) => {
   res.json({ status: 'ok', db: dbStatus });
 });
 
-// Favicon fallback for legacy clients/bots that request /favicon.ico
-// Redirects permanently to the 32x32 PNG used site-wide.
+// Favicon handler for legacy clients/bots that request /favicon.ico
+// Serve client/public/favicon.png if present; otherwise fall back to generated PNG.
 app.get('/favicon.ico', (_req, res) => {
+  try { res.setHeader('Cache-Control', 'public, max-age=86400'); } catch {}
   try {
-    res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
+    const path = require('path');
+    const fs = require('fs');
+    const candidatePaths = [
+      // Prefer client/public/favicon.png during dev
+      path.resolve(process.cwd(), 'client', 'public', 'favicon.png'),
+      // Prefer dist/public/favicon.png in production builds if present
+      path.resolve(process.cwd(), 'dist', 'public', 'favicon.png'),
+    ];
+    for (const p of candidatePaths) {
+      try {
+        if (fs.existsSync(p)) {
+          res.type('image/png');
+          return res.sendFile(p);
+        }
+      } catch {}
+    }
   } catch {}
+  // Fall back to generated 32x32 PNG
   res.redirect(301, '/icons/favicon-32x32.png');
 });
 

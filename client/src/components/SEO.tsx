@@ -175,9 +175,10 @@ export default function SEO({
     setLinkTag('preconnect', 'https://pixel.wp.com');
     setLinkTag('dns-prefetch', 'https://pixel.wp.com');
     
-    // Favicon and app icons (use provided PNG favicon)
-    setLinkTag('icon', '/icons/icon-512x512.png', { type: 'image/png' });
-    setLinkTag('apple-touch-icon', '/icons/icon-512x512.png');
+    // Favicon and app icons (use provided PNG favicon from client/public)
+    setLinkTag('icon', '/favicon.png', { type: 'image/png', sizes: 'any' });
+    setLinkTag('shortcut icon', '/favicon.ico');
+    setLinkTag('apple-touch-icon', '/icons/apple-touch-icon.png');
     
     // Generate and set JSON-LD structured data
     const generateStructuredData = () => {

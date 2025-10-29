@@ -219,8 +219,9 @@ export default function ProfileImage() {
                     height: "100%",
                     objectFit: "cover",
                     objectPosition: "center",
-                    transform: "none",
-                    transition: "all 0.6s ease-in-out",
+                    transform: "scale(0.82)", // zoom out so both eyes are visible
+                    transformOrigin: "center",
+                    transition: "transform 0.5s ease-in-out",
                   }}
                   className="transition-all duration-700 will-change-transform"
                   onError={handleImageError}
