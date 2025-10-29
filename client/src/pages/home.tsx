@@ -172,7 +172,7 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        <>
+        <div className="homepage-content">
         <div 
           className="relative min-h-screen overflow-x-hidden flex flex-col home-page"
           style={{
@@ -390,7 +390,7 @@ export default function Home() {
           {/* Continue Reading floating banner */}
          <<ContinueReadingBanner />
          <>Footer />
-        </>
+        </div>
         )}
   </  div>
   _code);new
