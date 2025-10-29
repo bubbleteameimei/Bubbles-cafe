@@ -92,6 +92,15 @@ app.get('/health', async (_req, res) => {
   res.json({ status: 'ok', db: dbStatus });
 });
 
+// Favicon fallback for legacy clients/bots that request /favicon.ico
+// Redirects permanently to the 32x32 PNG used site-wide.
+app.get('/favicon.ico', (_req, res) => {
+  try {
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
+  } catch {}
+  res.redirect(301, '/icons/favicon-32x32.png');
+});
+
 
 
 // Session
