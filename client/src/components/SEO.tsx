@@ -179,6 +179,7 @@ export default function SEO({
         description: description || DEFAULT_SITE_CONFIG.defaultDescription,
         url: siteUrl || pageUrl,
         inLanguage: locale,
+        keywords: Array.from(new Set([...(DEFAULT_SITE_CONFIG.defaultKeywords || []), ...(keywords || []), ...(tags || [])])).join(', '),
         potentialAction: {
           '@type': 'SearchAction',
           target: `${siteUrl || pageUrl}/search?q={search_term_string}`,
