@@ -20,11 +20,13 @@ export function ssrStreamHandler(req: Request, res: Response) {
     <meta property="og:title" content="Bubble’s Cafe"/>
     <meta property="og:description" content="Dark, psychological and experimental short fiction."/>
     <meta property="og:type" content="website"/>
-    <meta property="og:image" content="/icons/icon-512x512.png"/>
+    <meta property="og:image" content="/og-image-1200x630.png"/>
+    <meta property="og:image:width" content="1200"/>
+    <meta property="og:image:height" content="630"/>
     <meta name="twitter:card" content="summary_large_image"/>
     <meta name="twitter:title" content="Bubble’s Cafe"/>
     <meta name="twitter:description" content="Dark, psychological and experimental short fiction."/>
-    <meta name="twitter:image" content="/icons/icon-512x512.png"/>
+    <meta name="twitter:image" content="/og-image-1200x630.png"/>
   </head><body>`);
 
   res.write(`<div id="root">`);
