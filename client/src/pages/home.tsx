@@ -388,10 +388,10 @@ export default function Home() {
           </div>
 
           {/* Continue Reading floating banner */}
-         <<ContinueReadingBanner />
-         <>Footer />
+          <ContinueReadingBanner />
+          <Footer />
         </div>
-        )}
-  </  div>
-  _code);new
-</}
+      )}
+    </div>
+  );
+}
