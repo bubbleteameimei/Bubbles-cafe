@@ -1140,157 +1140,24 @@ export default function StoriesIndexContent() {
                                   </button>
                                   {(() => {
                                     const md: any = (pop as any)?.metadata || {};
-                                    const primaryThemeRaw =
-                                      md.themeCategory ||
-                                      sharedDetermineThemeCategory(String(pop.title || ''), String(pop.content || ''));
-      
-                                    const override = getStoryThemeOverride(pop.slug as any, pop.title as any);
-      
-                                    const derivedKey = (() => {
-                                      const raw = String(primaryThemeRaw || '').trim();
-                                      if (!raw) return 'HORROR';
+                                    const primary = md.themeCategory || sharedDetermineThemeCategory(String(pop.title || ''), String(pop.content || ''));
+                                    const raw = String(primary || '').trim();
+                                    let themeKey = 'HORROR';
+                                    let prettyLabel = raw || 'Horror';
+                                    if (raw) {
                                       for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-                                        if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
+                                        if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) {
+                                          themeKey = key;
+                                          prettyLabel = (info as any)?.label || raw;
+                                          break;
+                                        }
                                       }
-                                      return raw.toUpperCase().replace(/\s+/g, '_');
-                                    })();
-      
-                                    const themeKey = override?.key || derivedKey;
-      
-                                    const defOverride = getThemeDefinitionOverride(themeKey);
-      
-                                    const baseLabel =
-                                      override?.label ||
-                                      defOverride?.label ||
-                                      (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
-                                      primaryThemeRaw ||
-                                      'Horror';
-      
-                                    const prettyLabel = (() => {
-                                      if (override?.label) return override.label;
-                                      return baseLabel;
-                                    })();
-      
-                                    // Resolve icon (story override -> metadata -> global override -> shared -> ghost)
-                                    let chosenIconSlug =
-                                      override?.icon ||
-                                      (md && (md as any).themeIcon) ||
-                                      defOverride?.icon ||
-                                      (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
-                                      'ghost';
-                                    if (themeKey === 'BODY_HORROR') {
-                                      chosenIconSlug = 'bone';
+                                      themeKey = themeKey || raw.toUpperCase().replace(/\s+/g, '_');
                                     }
-      
-                                    // Map lucide icon when not using Iconify provider
-                                    const ThemeIconCmp = (() => {
-                                      const slug = String(chosenIconSlug).toLowerCase();
-                                      switch (slug) {
-                                        case 'skull': return Skull;
-                                        case 'brain': return Brain;
-                                        case 'pill': return Pill;
-                                        case 'cpu': return Cpu;
-                                        case 'dna': return Dna;
-                                        case 'ghost': return Ghost;
-                                        case 'umbrella': return Umbrella;
-                                        case 'footprints': return Footprints;
-                                        case 'cloud-rain':
-                                        case 'cloudrain': return CloudRain;
-                                        case 'castle': return Castle;
-                                        case 'bug': return Bug;
-                                        case 'radiation': return Radiation;
-                                        case 'user-minus2':
-                                        case 'userminus2': return UserMinus2;
-                                        case 'user-plus':
-                                        case 'userplus': return UserPlus;
-                                        case 'anchor': return Anchor;
-                                        case 'alert-triangle':
-                                        case 'alerttriangle': return AlertTriangle;
-                                        case 'building': return Building;
-                                        case 'worm': return Worm;
-                                        case 'cloud': return Cloud;
-                                        case 'cloud-fog':
-                                        case 'cloudfog': return CloudFog;
-                                        case 'flame': return Flame;
-                                        case 'eye': return Eye;
-                                        case 'hourglass': return Hourglass;
-                                        case 'knife': return ForkKnife;
-                                        case 'utensils':
-                                        case 'fork-knife':
-                                        case 'forkknife': return ForkKnife;
-                                        case 'cat': return Cat;
-                                        case 'moon': return Moon;
-                                        case 'dog': return Dog;
-                                        case 'radio': return Radio;
-                                        case 'moon-star':
-                                        case 'moonstar': return MoonStar;
-                                        case 'box': return Box;
-                                        case 'car': return Car;
-                                        case 'alien': return Moon;
-                                        case 'flask': return FlaskConical;
-                                        case 'trees':
-                                        case 'tree': return Trees;
-                                        case 'bone': return Bone;
-                                        default:
-                                          // Fallback by theme key for diversity when slug is unknown
-                                          switch (themeKey) {
-                                            case 'TECHNOLOGICAL': return Cpu;
-                                            case 'PSYCHOLOGICAL': return Brain;
-                                            case 'SUPERNATURAL': return Ghost;
-                                            case 'UNCANNY': return Eye;
-                                            case 'EXISTENTIAL': return Hourglass;
-                                            case 'DOPPELGANGER': return UserPlus;
-                                            case 'CANNIBALISM': return ForkKnife;
-                                            case 'SLASHER': return Skull;
-                                            case 'MONSTER': return Cat;
-                                            case 'ZOMBIE': return Footprints;
-                                            case 'VAMPIRE': return Moon;
-                                            case 'WEREWOLF': return Dog;
-                                            case 'PARANORMAL': return Radio;
-                                            case 'DREAM_HORROR': return MoonStar;
-                                            case 'CURSED_OBJECT': return Box;
-                                            case 'TIME_HORROR': return Clock;
-                                            case 'APOCALYPTIC': return Radiation;
-                                            case 'SCIENCE_HORROR': return FlaskConical;
-                                            case 'BODY_HORROR': return Bone;
-                                            case 'FOLK_HORROR': return Trees;
-                                            case 'GOTHIC': return Castle;
-                                            case 'COSMIC': return Moon;
-                                            case 'VEHICULAR': return Car;
-                                            default: return Ghost;
-                                          }
-                                      }
-                                    })();
-      
-                                    const badgeTint = (() => {
-                                      switch (themeKey) {
-                                        case 'DEATH': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
-                                        case 'BODY_HORROR': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700';
-                                        case 'SUPERNATURAL': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700';
-                                        case 'PSYCHOLOGICAL': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700';
-                                        case 'EXISTENTIAL': return 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700';
-                                        case 'HORROR': return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-700';
-                                        case 'STALKING': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700';
-                                        case 'CANNIBALISM': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
-                                        case 'PSYCHOPATH': return 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200 dark:bg-fuchsia-900/30 dark:text-fuchsia-300 dark:border-fuchsia-700';
-                                        case 'DOPPELGANGER': return 'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark	border-cyan-700';
-                                        case 'VEHICULAR': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark	text-emerald-300 dark	border-emerald-700';
-                                        case 'PARASITE': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark	text-lime-300 dark	border-lime-700';
-                                        case 'TECHNOLOGICAL': return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark	text-sky-300 dark	border-sky-700';
-                                        case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark	text-purple-300 dark	border-purple-700';
-                                        case 'UNCANNY': return 'bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900/30 dark	text-pink-300 dark	border-pink-700';
-                                        case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark	text-stone-300 dark	border-stone-700';
-                                        default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark	text-foreground dark	border-primary/20';
-                                      }
-                                    })();
-      
+                                    const badgeTint = getBadgeTint(themeKey);
                                     return (
                                       <div className="mt-1">
                                         <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                          {String(chosenIconSlug).includes(':')
-                                            ? (<Icon icon={String(chosenIconSlug)} className="h-3 w-3" />)
-                                            : (themeKey === 'BODY_HORROR' ? <Bone className="h-3 w-3" /> : null)
-                                          }
                                           {prettyLabel}
                                         </Badge>
                                       </div>
