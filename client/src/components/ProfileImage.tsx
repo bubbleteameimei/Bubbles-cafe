@@ -13,16 +13,22 @@ export default function ProfileImage() {
   }, []);
   
   // Define optimized images with progressive loading strategy
+  // Updated to use the new author profile image. Place the file at:
+  // client/public/images/author-profile.jpg
   const images = useMemo(() => [
     { 
-      src: '/images/optimized/profile-optimized.jpg', 
-      alt: 'Profile Image 1',
-      // Smaller blur version for faster loading
-      blurSrc: '/images/optimized/profile-blur.jpg',
-      // Proper srcset for responsive loading
-      srcset: '/images/optimized/profile-optimized.jpg 600w, /images/IMG_5266.png 900w'
+      src: '/images/author-profile.jpg',
+      alt: 'Author Profile',
+      // Use same source for blurred placeholder via CSS filter (no separate blur asset required)
+      blurSrc: '/images/author-profile.jpg',
+      // High-res hint; keep single entry to avoid broken fallbacks
+      srcset: '/images/author-profile.jpg 900w'
     }
   ], []);
+  // Fallback-aware current source
+  const [currentSrc, setCurrentSrc] = useState(images[0].src);
+  const [currentSrcSet, setCurrentSrcSet] = useState(images[0].srcset);
+  const [fallbackStep, setFallbackStep] = useState(0);
   
   // Use eager loading with preload
   useEffect(() => {
@@ -32,9 +38,6 @@ export default function ProfileImage() {
     preloadLink.as = 'image';
     preloadLink.href = images[0].src;
     document.head.appendChild(preloadLink);
-    
-    // Immediate state set for better perceived performance
-    setImageLoaded(true);
     
     return () => {
       // Clean up preload link on unmount
@@ -137,7 +140,22 @@ export default function ProfileImage() {
   
   // Handle image error and loading state
   const handleImageError = () => {
+    // Try alternate extensions first, then fallback to previous optimized image
+    if (fallbackStep === 0) {
+      setCurrentSrc('/images/author-profile.jpeg');
+      setCurrentSrcSet('/images/author-profile.jpeg 900w');
+      setFallbackStep(1);
+      return;
+    }
+    if (fallbackStep === 1) {
+      setCurrentSrc('/images/author-profile.png');
+      setCurrentSrcSet('/images/author-profile.png 900w');
+      setFallbackStep(2);
+      return;
+    }
     setLoadError(true);
+    setCurrentSrc('/images/optimized/profile-optimized.jpg');
+    setCurrentSrcSet('/images/optimized/profile-optimized.jpg 600w, /images/IMG_5266.png 900w');
   };
   
   const handleImageLoad = () => {
@@ -184,30 +202,12 @@ export default function ProfileImage() {
                 className="min-w-full h-full rounded-full overflow-hidden flex-shrink-0 scroll-snap-align-start"
                 style={{ position: "relative" }}
               >
-                {/* Blur image that loads first */}
-                {!imageLoaded && (
-                  <img 
-                    src={image.blurSrc}
-                    alt=""
-                    style={{
-                      position: "absolute",
-                      height: "145%",
-                      width: "auto",
-                      left: "45%",
-                      top: "20%",
-                      transform: "translate(-50%, -15%)",
-                      objectFit: "cover",
-                      objectPosition: "center 10%",
-                      transition: "opacity 0.5s ease-in-out",
-                    }}
-                    className="transition-opacity"
-                  />
-                )}
+                
                 
                 {/* Main high quality image */}
                 <img 
-                  src={image.src}
-                  srcSet={image.srcset}
+                  src={currentSrc}
+                  srcSet={currentSrcSet}
                   alt={image.alt}
                   fetchPriority="high"
                   loading="eager"
@@ -222,7 +222,6 @@ export default function ProfileImage() {
                     objectFit: "cover", /* Ensure the image covers the area */
                     objectPosition: "center 10%", /* Focus point high */
                     transition: "all 0.8s ease-in-out", /* Smoother animation transition */
-                    opacity: imageLoaded ? 1 : 0,
                   }}
                   className="transition-all duration-1000 will-change-transform"
                   onError={handleImageError}

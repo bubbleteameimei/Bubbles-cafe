@@ -73,6 +73,7 @@ async function generatePagesSitemap() {
     { loc: `${SITE_URL}/about`, changefreq: 'monthly', priority: '0.5', lastmod: today },
     { loc: `${SITE_URL}/contact`, changefreq: 'monthly', priority: '0.5', lastmod: today },
     { loc: `${SITE_URL}/privacy`, changefreq: 'yearly', priority: '0.3', lastmod: today },
+    { loc: `${SITE_URL}/install`, changefreq: 'monthly', priority: '0.4', lastmod: today },
   ];
 
   const urls = pages.map(
@@ -178,8 +179,15 @@ async function generateSitemapIndex() {
 async function generateRobots() {
   const content = `User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /api
+Disallow: /search
+Disallow: /auth
+Disallow: /reset-password
 
 Sitemap: ${SITE_URL}/sitemap.xml
+Sitemap: ${SITE_URL}/pages-sitemap.xml
+Sitemap: ${SITE_URL}/stories-sitemap.xml
 `;
   await fs.writeFile(path.join(distPublicDir, 'robots.txt'), content, 'utf8');
   console.log('[sitemaps] wrote robots.txt');
