@@ -13,16 +13,21 @@ export default function ProfileImage() {
   }, []);
   
   // Define optimized images with progressive loading strategy
+  // Updated to use the new author profile image. Place the file at:
+  // client/public/images/author-profile.jpg
   const images = useMemo(() => [
     { 
-      src: '/images/optimized/profile-optimized.jpg', 
-      alt: 'Profile Image 1',
-      // Smaller blur version for faster loading
-      blurSrc: '/images/optimized/profile-blur.jpg',
-      // Proper srcset for responsive loading
-      srcset: '/images/optimized/profile-optimized.jpg 600w, /images/IMG_5266.png 900w'
+      src: '/images/author-profile.jpg',
+      alt: 'Author Profile',
+      // Use same source for blurred placeholder via CSS filter (no separate blur asset required)
+      blurSrc: '/images/author-profile.jpg',
+      // High-res hint; keep single entry to avoid broken fallbacks
+      srcset: '/images/author-profile.jpg 900w'
     }
   ], []);
+  // Fallback-aware current source
+  const [currentSrc, setCurrentSrc] = useState(images[0].src);
+  const [currentSrcSet, setCurrentSrcSet] = useState(images[0].srcset);
   
   // Use eager loading with preload
   useEffect(() => {
@@ -137,7 +142,10 @@ export default function ProfileImage() {
   
   // Handle image error and loading state
   const handleImageError = () => {
+    // Fallback to previous optimized image path if new author image is missing
     setLoadError(true);
+    setCurrentSrc('/images/optimized/profile-optimized.jpg');
+    setCurrentSrcSet('/images/optimized/profile-optimized.jpg 600w, /images/IMG_5266.png 900w');
   };
   
   const handleImageLoad = () => {
@@ -184,7 +192,7 @@ export default function ProfileImage() {
                 className="min-w-full h-full rounded-full overflow-hidden flex-shrink-0 scroll-snap-align-start"
                 style={{ position: "relative" }}
               >
-                {/* Blur image that loads first */}
+                {/* Blurred placeholder using the same source (CSS filter) */}
                 {!imageLoaded && (
                   <img 
                     src={image.blurSrc}
@@ -199,6 +207,8 @@ export default function ProfileImage() {
                       objectFit: "cover",
                       objectPosition: "center 10%",
                       transition: "opacity 0.5s ease-in-out",
+                      filter: "blur(20px) saturate(90%)",
+                      opacity: 0.6
                     }}
                     className="transition-opacity"
                   />
@@ -206,8 +216,8 @@ export default function ProfileImage() {
                 
                 {/* Main high quality image */}
                 <img 
-                  src={image.src}
-                  srcSet={image.srcset}
+                  src={currentSrc}
+                  srcSet={currentSrcSet}
                   alt={image.alt}
                   fetchPriority="high"
                   loading="eager"
