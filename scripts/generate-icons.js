@@ -14,32 +14,14 @@ function circleMaskSvg(size) {
   );
 }
 
-async function selectSourceImage() {
-  // Honor explicit favicon.png first, then fall back
-  const candidateDirs = [
-    path.resolve(process.cwd(), 'client', 'public'),
-    path.resolve(process.cwd(), 'public'),
-  ];
-
-  // Prefer favicon.png strictly
-  for (const dir of candidateDirs) {
-    const p = path.join(dir, 'favicon.png');
-    try {
-      if (fs.existsSync(p)) return { sourcePath: p, sourceDir: dir, chosen: 'favicon.png' };
-    } catch {}
-  }
-
-  // Fallback options if favicon.png is missing
-  const fallbacks = ['profile.png', 'IMG_5307.png', 'IMG_4848.jpeg'];
-  for (const dir of candidateDirs) {
-    for (const c of fallbacks) {
-      const p = path.join(dir, c);
-      try {
-        if (fs.existsSync(p)) return { sourcePath: p, sourceDir: dir, chosen: c };
-      } catch {}
+function resolveStrictFavicon() {
+  // STRICT: require client/public/favicon.png only (no fallbacks)
+  const p = path.resolve(process.cwd(), 'client', 'public', 'favicon.png');
+  try {
+    if (fs.existsSync(p)) {
+      return p;
     }
-  }
-
+  } catch {}
   return null;
 }
 
@@ -63,13 +45,12 @@ async function main() {
     await ensureDir(path.join(dir, 'icons'));
   }
 
-  const found = await selectSourceImage();
-  if (!found) {
-    console.warn('[icons] No suitable source image found in client/public or public – skipping icon and OG generation.');
+  const sourcePath = resolveStrictFavicon();
+  if (!sourcePath) {
+    console.error('[icons] favicon.png not found at client/public/favicon.png. Please add the correct image and rerun.');
     return;
   }
-  const { sourcePath, chosen } = found;
-  console.log(`[icons] Using source image: ${chosen} -> ${sourcePath}`);
+  console.log(`[icons] Using source image: ${sourcePath}`);
 
   // Generate icons with rounded (circular) shape and OG image (rectangular)
   for (const dir of outputDirs) {
