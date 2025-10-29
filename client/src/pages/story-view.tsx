@@ -50,8 +50,8 @@ export default function StoryView({ slug }: StoryViewProps) {
           <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground mb-8 font-mono">
             <time>{format(new Date(post.createdAt), 'MMMM d, yyyy')}</time>
             <ShareButton 
-              title={post.title} 
-              text={`Read "${post.title}" on Stories`}
+              title={"Bubble’s Cafe"} 
+              text={`Read ${post.title} — from Bubble’s Cafe.${(post.excerpt && post.excerpt.trim()) ? ' ' + post.excerpt.trim() : ''}`}
               className="ml-auto"
             />
           </div>

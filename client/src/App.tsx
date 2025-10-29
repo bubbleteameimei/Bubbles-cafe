@@ -175,19 +175,20 @@ const AppContent = () => {
   let seoNofollow = false;
 
   if (pathForSeo === '/') {
-    // Keep global defaults from index.html
+    seoTitle = 'Home';
+    seoDescription = 'A home for dark, psychological and experimental short fiction — stories that explore the quiet violence beneath ordinary life.';
   } else if (pathForSeo.startsWith('/stories')) {
     seoTitle = 'Stories';
-    seoDescription = 'Browse dark, psychological, and gothic fiction stories at Bubble’s Cafe.';
+    seoDescription = 'Discover short fiction from Bubble’s Cafe — psychological and experimental stories of identity, obsession, and the strange grace of decay.';
   } else if (pathForSeo.startsWith('/reader')) {
     // Reader page sets its own page-level SEO (Article)
     // Provide only canonical here via global SEO
   } else if (pathForSeo.startsWith('/about')) {
     seoTitle = 'About';
-    seoDescription = 'About Bubble’s Cafe and the creator behind the stories.';
+    seoDescription = 'Bubble’s Cafe publishes dark psychological and experimental short fiction. We explore stories that examine the mind, memory, and the complexities of human emotion.';
   } else if (pathForSeo.startsWith('/contact')) {
     seoTitle = 'Contact';
-    seoDescription = 'Get in touch with Bubble’s Cafe.';
+    seoDescription = 'Reach Bubble’s Cafe. For inquiries, collaborations, or permissions, contact me.';
   } else if (pathForSeo.startsWith('/privacy')) {
     seoTitle = 'Privacy Policy';
     seoDescription = 'Privacy Policy for Bubble’s Cafe.';
@@ -199,14 +200,14 @@ const AppContent = () => {
     seoDescription = 'Explore and engage with the Bubble’s Cafe community.';
   } else if (pathForSeo.startsWith('/submit-story')) {
     seoTitle = 'Submit Story';
-    seoDescription = 'Submit your story to Bubble’s Cafe.';
+    seoDescription = 'Submit your short fiction to Bubble’s Cafe. We welcome macabre works that explore identity, emotion, and the horror.';
   } else if (pathForSeo.startsWith('/edit-story')) {
     seoTitle = 'Edit Story';
     seoDescription = 'Edit your submitted story.';
     seoNoindex = true;
   } else if (pathForSeo.startsWith('/search')) {
-    seoTitle = 'Search Results';
-    seoDescription = 'Search stories at Bubble’s Cafe.';
+    seoTitle = 'Search';
+    seoDescription = 'Search Bubble’s Cafe for short fiction by theme, tone, or title.';
     seoNoindex = true;
   } else if (pathForSeo.startsWith('/admin')) {
     seoTitle = 'Admin';
@@ -224,23 +225,23 @@ const AppContent = () => {
     seoNoindex = true;
   } else if (pathForSeo.startsWith('/profile')) {
     seoTitle = 'Profile';
-    seoDescription = 'Manage your profile.';
+    seoDescription = 'Manage your Bubble’s Cafe account — track your reading activity, bookmarks, and preferences.';
     seoNoindex = true;
   } else if (pathForSeo.startsWith('/bookmarks')) {
     seoTitle = 'Bookmarks';
-    seoDescription = 'Your bookmarked stories.';
+    seoDescription = 'Your saved short fiction from Bubble’s Cafe — revisit stories you’ve marked as favourites.';
     seoNoindex = true;
   } else if (pathForSeo.startsWith('/notifications')) {
     seoTitle = 'Notifications';
-    seoDescription = 'Your notifications.';
+    seoDescription = 'View personalized story recommendations and updates from Bubble’s Cafe.';
     seoNoindex = true;
   } else if (pathForSeo.startsWith('/recommendations')) {
     seoTitle = 'Recommendations';
-    seoDescription = 'Recommended stories for you.';
+    seoDescription = 'View personalized story recommendations and updates from Bubble’s Cafe.';
     seoNoindex = true;
   } else if (pathForSeo.startsWith('/settings/')) {
     seoTitle = 'Settings';
-    seoDescription = 'Manage your preferences.';
+    seoDescription = 'Adjust your Bubble’s Cafe reading experience — update display settings, preferences, and saved data.';
     seoNoindex = true;
   } else if (pathForSeo.startsWith('/legal/copyright')) {
     seoTitle = 'Copyright';

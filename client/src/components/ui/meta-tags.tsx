@@ -10,9 +10,9 @@ interface MetaTagsProps {
 }
 
 export function MetaTags({ post, title, description, image, url }: MetaTagsProps) {
-  const pageTitle = post?.title || title || "Bubble’s Cafe - Dark, Psychological and Gothic Fiction";
-  const pageDescription = post?.excerpt || description || "Dark, psychological, and gothic fiction — short stories and unsettling tales from Bubble’s Cafe.";
-  const pageImage = image || "/img_9653.png";
+  const pageTitle = post?.title || title || "Bubble’s Cafe";
+  const pageDescription = post?.excerpt || description || "Bubble’s Cafe publishes dark, psychological and experimental short fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.";
+  const pageImage = image || "/icons/icon-512x512.png";
   const pageUrl = url || window.location.href;
 
   useEffect(() => {

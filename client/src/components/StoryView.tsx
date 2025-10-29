@@ -64,8 +64,8 @@ export function StoryView({ slug }: StoryViewProps) {
       {/* Fixed position interaction buttons */}
       <LikeDislike postId={story.id} className="reaction-buttons" />
       <ShareButton 
-        title={story.title}
-        text={story.excerpt || "Check out this story!"}
+        title={"Bubble’s Cafe"}
+        text={`Read ${story.title} — from Bubble’s Cafe.${(story.excerpt && story.excerpt.trim()) ? ' ' + story.excerpt.trim() : ''}`}
         className="social-interaction"
       />
     </>

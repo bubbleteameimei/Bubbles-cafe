@@ -26,8 +26,8 @@ interface SEOProps {
 
 const DEFAULT_SITE_CONFIG = {
   siteName: 'Bubble’s Cafe',
-  defaultTitle: 'Bubble’s Cafe - Dark, Psychological and Gothic Fiction',
-  defaultDescription: 'Dark, psychological, and gothic fiction — short stories and unsettling tales from Bubble’s Cafe.',
+  defaultTitle: 'Bubble’s Cafe',
+  defaultDescription: 'Bubble’s Cafe publishes dark, psychological and experimental short fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.',
   // Use a stable icon path for default social previews
   defaultImage: '/icons/icon-512x512.png',
   siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://bubblescafe.space',
