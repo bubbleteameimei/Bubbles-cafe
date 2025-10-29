@@ -28,6 +28,7 @@ export default function ProfileImage() {
   // Fallback-aware current source
   const [currentSrc, setCurrentSrc] = useState(images[0].src);
   const [currentSrcSet, setCurrentSrcSet] = useState(images[0].srcset);
+  const [fallbackStep, setFallbackStep] = useState(0);
   
   // Use eager loading with preload
   useEffect(() => {
@@ -37,9 +38,6 @@ export default function ProfileImage() {
     preloadLink.as = 'image';
     preloadLink.href = images[0].src;
     document.head.appendChild(preloadLink);
-    
-    // Immediate state set for better perceived performance
-    setImageLoaded(true);
     
     return () => {
       // Clean up preload link on unmount
@@ -142,7 +140,19 @@ export default function ProfileImage() {
   
   // Handle image error and loading state
   const handleImageError = () => {
-    // Fallback to previous optimized image path if new author image is missing
+    // Try alternate extensions first, then fallback to previous optimized image
+    if (fallbackStep === 0) {
+      setCurrentSrc('/images/author-profile.jpeg');
+      setCurrentSrcSet('/images/author-profile.jpeg 900w');
+      setFallbackStep(1);
+      return;
+    }
+    if (fallbackStep === 1) {
+      setCurrentSrc('/images/author-profile.png');
+      setCurrentSrcSet('/images/author-profile.png 900w');
+      setFallbackStep(2);
+      return;
+    }
     setLoadError(true);
     setCurrentSrc('/images/optimized/profile-optimized.jpg');
     setCurrentSrcSet('/images/optimized/profile-optimized.jpg 600w, /images/IMG_5266.png 900w');
@@ -192,27 +202,7 @@ export default function ProfileImage() {
                 className="min-w-full h-full rounded-full overflow-hidden flex-shrink-0 scroll-snap-align-start"
                 style={{ position: "relative" }}
               >
-                {/* Blurred placeholder using the same source (CSS filter) */}
-                {!imageLoaded && (
-                  <img 
-                    src={image.blurSrc}
-                    alt=""
-                    style={{
-                      position: "absolute",
-                      height: "145%",
-                      width: "auto",
-                      left: "45%",
-                      top: "20%",
-                      transform: "translate(-50%, -15%)",
-                      objectFit: "cover",
-                      objectPosition: "center 10%",
-                      transition: "opacity 0.5s ease-in-out",
-                      filter: "blur(20px) saturate(90%)",
-                      opacity: 0.6
-                    }}
-                    className="transition-opacity"
-                  />
-                )}
+                
                 
                 {/* Main high quality image */}
                 <img 
@@ -232,7 +222,6 @@ export default function ProfileImage() {
                     objectFit: "cover", /* Ensure the image covers the area */
                     objectPosition: "center 10%", /* Focus point high */
                     transition: "all 0.8s ease-in-out", /* Smoother animation transition */
-                    opacity: imageLoaded ? 1 : 0,
                   }}
                   className="transition-all duration-1000 will-change-transform"
                   onError={handleImageError}
