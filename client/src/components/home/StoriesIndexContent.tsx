@@ -400,18 +400,59 @@ export default function StoriesIndexContent() {
     return Array.from(set);
   }, [allPosts]);
 
-  // Helper: compute theme key and label for a story using metadata or derived category
+  // Helper: compute theme key and pretty label (with overrides) for a story
   const computeThemeMeta = (p: Post): { key: string; label: string } => {
     const md: any = (p as any)?.metadata || {};
-    const primary = md.themeCategory || sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
-    const raw = String(primary || '').trim();
-    if (!raw) return { key: 'HORROR', label: 'Horror' };
-    for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-      if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) {
-        return { key, label: (info as any)?.label || raw };
+    const title = String(p.title || '');
+    const content = String(p.content || '');
+    const primaryThemeRaw =
+      md.themeCategory ||
+      sharedDetermineThemeCategory(title, content);
+
+    const override = getStoryThemeOverride((p as any)?.slug as any, title as any);
+
+    const derivedKey = (() => {
+      const raw = String(primaryThemeRaw || '').trim();
+      if (!raw) return 'HORROR';
+      for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
+        if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
       }
-    }
-    return { key: raw.toUpperCase().replace(/\s+/g, '_'), label: raw };
+      return raw.toUpperCase().replace(/\s+/g, '_');
+    })();
+
+    const themeKey = override?.key || derivedKey;
+
+    const defOverride = getThemeDefinitionOverride(themeKey);
+
+    const baseLabel =
+      override?.label ||
+      defOverride?.label ||
+      (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
+      primaryThemeRaw ||
+      'Horror';
+
+    const prettyLabel = (() => {
+      if (override?.label) return override.label;
+      const l = String(baseLabel).toLowerCase();
+      if (l.includes('cosmic')) return 'Cosmic Horror';
+      if (l.includes('existential')) return 'Existential Horror';
+      if (l.includes('vehicular')) return 'Vehicular Horror';
+      if (l.includes('psychological')) return 'Psychological Horror';
+      if (l.includes('supernatural')) return 'Supernatural Horror';
+      if (l.includes('technological')) return 'Technological Horror';
+      if (l.includes('uncanny')) return 'Uncanny Horror';
+      if (l.includes('gothic')) return 'Gothic Horror';
+      if (l.includes('folk')) return 'Folk Horror';
+      if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
+      if (l.includes('cannibal')) return 'Cannibalism Horror';
+      if (l.includes('science')) return 'Science Horror';
+      if (l.includes('apocalyptic')) return 'Apocalyptic Horror';
+      if (l.includes('stalking')) return 'Stalker/Pursuit Horror';
+      if (l.includes('doppelganger')) return 'Identity Horror';
+      return baseLabel;
+    })();
+
+    return { key: themeKey, label: prettyLabel };
   };
 
   // Reaction totals map for posts (batch fetched)
