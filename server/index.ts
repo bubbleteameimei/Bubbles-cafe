@@ -143,9 +143,17 @@ app.get('/og-image-1200x630.png', (_req, res) => {
   try { res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); } catch {}
   try {
     const candidates = [
+      // Production build path
       path.resolve(process.cwd(), 'dist', 'public', 'og-image-1200x630.png'),
+      // Dev/public path
       path.resolve(process.cwd(), 'client', 'public', 'og-image-1200x630.png'),
+      // Root public fallback
       path.resolve(process.cwd(), 'public', 'og-image-1200x630.png'),
+      // Extra fallbacks: allow asset to live under src/assets during dev
+      path.resolve(process.cwd(), 'client', 'src', 'assets', 'og-image-1200x630.png'),
+      path.resolve(process.cwd(), 'client', 'src', 'assets', 'images', 'og-image-1200x630.png'),
+      path.resolve(process.cwd(), 'client', 'src', 'assets', 'img', 'og-image-1200x630.png'),
+      path.resolve(process.cwd(), 'assets', 'og-image-1200x630.png'),
     ];
     for (const p of candidates) {
       try {

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 
 const ICON_VERSION = 'v=3';
-const OG_VERSIONED = 'https://bubblescafe.space/og-image-1200x630.png?v=4';
+const OG_VERSIONED = 'https://bubblescafe.space/og-image-1200x630.png?v=5';
 
 export function ssrStreamHandler(req: Request, res: Response) {
   if (process.env.ENABLE_SSR !== 'true') {

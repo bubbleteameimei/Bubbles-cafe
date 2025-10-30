@@ -31,7 +31,7 @@ const DEFAULT_SITE_CONFIG = {
   // Use a stable icon path for default social previews
   // Use a rectangular OG image for previews so it isn't rounded/cropped like a favicon
   // Add version param to force refresh after updates
-  defaultImage: '/og-image-1200x630.png?v=4',
+  defaultImage: '/og-image-1200x630.png?v=5',
   siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://bubblescafe.space',
   locale: 'en_US',
   twitterSite: '@bubblescafe',
