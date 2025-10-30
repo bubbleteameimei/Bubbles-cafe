@@ -37,33 +37,14 @@ export const BuyMeCoffeeButton = () => {
     setIsProcessing(true);
     setCtaActive(true);
 
-    // Open a blank tab immediately (within the user gesture) to avoid popup blockers
-    const newWin = window.open('', '_blank');
-    try {
-      if (newWin) {
-        // Prevent reverse-tabnabbing
-        try { newWin.opener = null; } catch {}
-        // Optional minimal placeholder while animation runs
-        try {
-          newWin.document.write('<!doctype html><title>Opening Paystack…</title><body style="font-family:system-ui;padding:16px;color:#333;background:#fff">Redirecting to Paystack…</body>');
-        } catch {}
-      }
-    } catch {}
-
-    // Let the animation play, then navigate the pre-opened tab to Paystack
+    // Play the animation first, then open Paystack in a new tab
     const PAYSTACK_URL = "https://paystack.shop/pay/z7fmj9rge1";
     setTimeout(() => {
       try {
-        if (newWin) {
-          newWin.location.href = PAYSTACK_URL;
-        } else {
-          // Fallback in case the tab was blocked
-          window.open(PAYSTACK_URL, "_blank", "noopener,noreferrer");
-        }
-      } catch {
         window.open(PAYSTACK_URL, "_blank", "noopener,noreferrer");
+      } finally {
+        setIsOpen(false);
       }
-      setIsOpen(false);
     }, 1100);
 
     // Reset states after the animation finishes
@@ -632,11 +613,7 @@ export const BuyMeCoffeeButton = () => {
                         <div className="numbers-line2"></div>
                       </div>
                     </div>
-                    <div className="bmc-right">
-                      <svg className="arrow" xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 451.846 451.847" aria-hidden="true" focusable="false">
-                        <path d="M345.441 248.292L151.154 442.573c-12.359 12.365-32.397 12.365-44.75 0-12.354-12.354-12.354-32.391 0-44.744L278.318 225.92 106.409 54.017c-12.354-12.359-12.354-32.394 0-44.748 12.354-12.359 32.391-12.359 44.75 0l194.287 194.284c6.177 6.18 9.262 14.271 9.262 22.366 0 8.099-3.091 16.196-9.267 22.373z" fill="#cfcfcf"/>
-                      </svg>
-                    </div>
+                    <div className="bmc-right"></div>
                   </div>
                 </div>
               )}
@@ -648,9 +625,9 @@ export const BuyMeCoffeeButton = () => {
               <button
                 type="button"
                 aria-label="Close"
-                className="px-3 py-1.5 rounded-full text-xs border border-border/60 bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card/80 transition-colors opacity-80 hover:opacity-100"
+                className="h-8 w-8 inline-flex items-center justify-center rounded-full border border-border/60 bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card/80 transition-colors opacity-80 hover:opacity-100"
               >
-                Close
+                ×
               </button>
             </DialogClose>
           </div>
