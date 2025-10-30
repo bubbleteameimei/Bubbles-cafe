@@ -220,8 +220,8 @@ export default function ProfileImage() {
                     width: "100%",
                     height: "100%",
                     objectFit: "cover",
-                    objectPosition: "center",
-                    transform: "none", // use natural framing with exact circular clip
+                    objectPosition: "center", // perfectly centered
+                    transform: "scale(1.14)", // 0.04 further zoom-out to reveal more while still hiding edges
                     transformOrigin: "center",
                     transition: "opacity 0.3s ease-in-out",
                   }}

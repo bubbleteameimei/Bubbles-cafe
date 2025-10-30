@@ -29,7 +29,9 @@ const DEFAULT_SITE_CONFIG = {
   defaultTitle: 'Bubble’s Cafe',
   defaultDescription: 'Bubble’s Cafe publishes dark, psychological and experimental short fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.',
   // Use a stable icon path for default social previews
-  defaultImage: '/icons/icon-512x512.png',
+  // Use a rectangular OG image for previews so it isn't rounded/cropped like a favicon
+  // Add version param to force refresh after updates
+  defaultImage: '/og-image-1200x630.png?v=5',
   siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://bubblescafe.space',
   locale: 'en_US',
   twitterSite: '@bubblescafe',
@@ -139,6 +141,11 @@ export default function SEO({
     setMetaTag('og:type', type, true);
     setMetaTag('og:url', pageUrl, true);
     setMetaTag('og:image', imageUrl, true);
+    // Provide secure_url and explicit dimensions so platforms don't fall back to favicons
+    const secureImageUrl = imageUrl.startsWith('http') ? imageUrl.replace('http://', 'https://') : imageUrl;
+    setMetaTag('og:image:secure_url', secureImageUrl, true);
+    setMetaTag('og:image:width', '1200', true);
+    setMetaTag('og:image:height', '630', true);
     setMetaTag('og:image:alt', `${title || DEFAULT_SITE_CONFIG.defaultTitle} - Preview Image`, true);
     setMetaTag('og:site_name', siteName, true);
     setMetaTag('og:locale', locale, true);

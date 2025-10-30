@@ -23,7 +23,9 @@ const DEFAULT_KEYWORDS = [
 export function MetaTags({ post, title, description, image, url }: MetaTagsProps) {
   const pageTitle = post?.title || title || "Bubble’s Cafe";
   const pageDescription = post?.excerpt || description || "Bubble’s Cafe publishes dark, psychological and experimental short fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.";
-  const pageImage = image || "/icons/icon-512x512.png";
+  // Use a proper Open Graph image for page previews, not the favicon
+  // Add version param to ensure cache-busting on updates
+  const pageImage = image || "/og-image-1200x630.png?v=5";
   const pageUrl = url || window.location.href;
 
   useEffect(() => {
@@ -36,7 +38,11 @@ export function MetaTags({ post, title, description, image, url }: MetaTagsProps
       // OpenGraph tags
       updateMetaTag("og:title", pageTitle);
       updateMetaTag("og:description", pageDescription);
-      updateMetaTag("og:image", new URL(pageImage, window.location.origin).href);
+      const absoluteImage = new URL(pageImage, window.location.origin).href;
+      updateMetaTag("og:image", absoluteImage);
+      updateMetaTag("og:image:secure_url", absoluteImage.replace("http://", "https://"));
+      updateMetaTag("og:image:width", "1200");
+      updateMetaTag("og:image:height", "630");
       updateMetaTag("og:url", pageUrl);
       updateMetaTag("og:type", "article");
 

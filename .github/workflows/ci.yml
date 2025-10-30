@@ -24,6 +24,8 @@ jobs:
       - run: npx axe-core --urls http://localhost:3000 || true
       - run: npm run build
       - run: npm run budget
+        env:
+          BUNDLE_BUDGET_KB: '800'
       - run: npm test --silent
   e2e:
     runs-on: ubuntu-latest

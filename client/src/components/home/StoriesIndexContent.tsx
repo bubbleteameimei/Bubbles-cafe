@@ -17,7 +17,7 @@ import MostLikedList from "@/components/home/MostLikedList";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { type CarouselApi, Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
+
 
 import { getReadingTime, extractEngagingExcerpt } from "@/lib/excerpt-lite";
 import { THEME_CATEGORIES } from "@/lib/themes-lite";
@@ -26,7 +26,6 @@ import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { determineThemeCategory as sharedDetermineThemeCategory, THEME_CATEGORIES as SHARED_THEME_CATEGORIES } from "@shared/theme-categories";
 import { getStoryThemeOverride } from "@shared/story-theme-overrides";
 import { getThemeDefinitionOverride, syncThemeDefinitionOverridesFromServer } from "@/shared/theme-definitions";
-import { Icon } from "@iconify/react";
 import { getBadgeTint } from "@/lib/theme-badges";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { VirtualScrollArea } from "@/components/ui/VirtualScrollArea";
@@ -54,9 +53,7 @@ export default function StoriesIndexContent() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<'newest' | 'oldest' | 'popular' | 'shortest'>("newest");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
-  const [canPrev, setCanPrev] = useState(false);
-  const [canNext, setCanNext] = useState(false);
+  
   
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [pageSize, setPageSize] = useState<number>(6);
@@ -181,24 +178,7 @@ export default function StoriesIndexContent() {
 
   
 
-  useEffect(() => {
-    if (!carouselApi) return;
-    const update = () => {
-      try {
-        setCanPrev(Boolean((carouselApi as any).canScrollPrev?.() ?? carouselApi.canScrollPrev()));
-        setCanNext(Boolean((carouselApi as any).canScrollNext?.() ?? carouselApi.canScrollNext()));
-      } catch {}
-    };
-    update();
-    (carouselApi as any).on?.("select", update);
-    (carouselApi as any).on?.("reInit", update);
-    return () => {
-      try {
-        (carouselApi as any).off?.("select", update);
-        (carouselApi as any).off?.("reInit", update);
-      } catch {}
-    };
-  }, [carouselApi]);
+  
 
   // Sync global theme definitions from server once on mount (updates local overrides)
   useEffect(() => {
@@ -400,18 +380,59 @@ export default function StoriesIndexContent() {
     return Array.from(set);
   }, [allPosts]);
 
-  // Helper: compute theme key and label for a story using metadata or derived category
+  // Helper: compute theme key and pretty label (with overrides) for a story
   const computeThemeMeta = (p: Post): { key: string; label: string } => {
     const md: any = (p as any)?.metadata || {};
-    const primary = md.themeCategory || sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
-    const raw = String(primary || '').trim();
-    if (!raw) return { key: 'HORROR', label: 'Horror' };
-    for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-      if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) {
-        return { key, label: (info as any)?.label || raw };
+    const title = String(p.title || '');
+    const content = String(p.content || '');
+    const primaryThemeRaw =
+      md.themeCategory ||
+      sharedDetermineThemeCategory(title, content);
+
+    const override = getStoryThemeOverride((p as any)?.slug as any, title as any);
+
+    const derivedKey = (() => {
+      const raw = String(primaryThemeRaw || '').trim();
+      if (!raw) return 'HORROR';
+      for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
+        if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
       }
-    }
-    return { key: raw.toUpperCase().replace(/\s+/g, '_'), label: raw };
+      return raw.toUpperCase().replace(/\s+/g, '_');
+    })();
+
+    const themeKey = override?.key || derivedKey;
+
+    const defOverride = getThemeDefinitionOverride(themeKey);
+
+    const baseLabel =
+      override?.label ||
+      defOverride?.label ||
+      (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
+      primaryThemeRaw ||
+      'Horror';
+
+    const prettyLabel = (() => {
+      if (override?.label) return override.label;
+      const l = String(baseLabel).toLowerCase();
+      if (l.includes('cosmic')) return 'Cosmic Horror';
+      if (l.includes('existential')) return 'Existential Horror';
+      if (l.includes('vehicular')) return 'Vehicular Horror';
+      if (l.includes('psychological')) return 'Psychological Horror';
+      if (l.includes('supernatural')) return 'Supernatural Horror';
+      if (l.includes('technological')) return 'Technological Horror';
+      if (l.includes('uncanny')) return 'Uncanny Horror';
+      if (l.includes('gothic')) return 'Gothic Horror';
+      if (l.includes('folk')) return 'Folk Horror';
+      if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
+      if (l.includes('cannibal')) return 'Cannibalism Horror';
+      if (l.includes('science')) return 'Science Horror';
+      if (l.includes('apocalyptic')) return 'Apocalyptic Horror';
+      if (l.includes('stalking')) return 'Stalker/Pursuit Horror';
+      if (l.includes('doppelganger')) return 'Identity Horror';
+      return baseLabel;
+    })();
+
+    return { key: themeKey, label: prettyLabel };
   };
 
   // Reaction totals map for posts (batch fetched)
@@ -809,9 +830,47 @@ export default function StoriesIndexContent() {
                         {(() => {
                           const { key, label } = computeThemeMeta(featuredStory);
                           const badgeTint = getBadgeTint(key);
+
+                          // Derive icon slug with overrides to match Reader/Most Liked/List cards behavior
+                          const md: any = (featuredStory as any)?.metadata || {};
+                          const override = getStoryThemeOverride((featuredStory as any)?.slug as any, (featuredStory as any)?.title as any);
+                          const defOverride = getThemeDefinitionOverride(key);
+                          let iconSlug =
+                            override?.icon ||
+                            (md && (md as any).themeIcon) ||
+                            defOverride?.icon ||
+                            (SHARED_THEME_CATEGORIES as any)[key]?.icon ||
+                            'ghost';
+                          if (key === 'BODY_HORROR') iconSlug = 'bone';
+
+                          const ThemeIconCmp = (() => {
+                            const slug = String(iconSlug).toLowerCase();
+                            switch (slug) {
+                              case 'skull': return Skull; case 'brain': return Brain; case 'pill': return Pill; case 'cpu': return Cpu; case 'ghost': return Ghost;
+                              case 'eye': return Eye; case 'hourglass': return Hourglass; case 'car': return Car;
+                              case 'fork-knife': case 'forkknife': case 'utensils': return ForkKnife; case 'trees': case 'tree': return Trees; case 'castle': return Castle; case 'bug': return Bug;
+                              case 'moon': return Moon; case 'moon-star': case 'moonstar': return MoonStar; case 'radio': return Radio; case 'box': return Box; case 'flask': return FlaskConical;
+                              case 'radiation': return Radiation; case 'building': return Building; case 'cat': return Cat; case 'flame': return Flame; case 'dog': return Dog; case 'cloud': return Cloud;
+                              case 'alert-triangle': case 'alerttriangle': return AlertTriangle; case 'footprints': return Footprints; case 'bone': return Bone;
+                              default:
+                                switch (key) {
+                                  case 'TECHNOLOGICAL': return Cpu;
+                                  case 'PSYCHOLOGICAL': return Brain;
+                                  case 'SUPERNATURAL': return Ghost;
+                                  case 'EXISTENTIAL': return Hourglass;
+                                  case 'VEHICULAR': return Car;
+                                  case 'FOLK_HORROR': return Trees;
+                                  case 'GOTHIC': return Castle;
+                                  case 'COSMIC': return Moon;
+                                  default: return Ghost;
+                                }
+                            }
+                          })();
+
                           return (
                             <div className="-mt-1">
                               <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                 {label}
                               </Badge>
                             </div>
@@ -1047,70 +1106,50 @@ export default function StoriesIndexContent() {
                     <div className="text-left sm:text-center mb-2 text-xs font-medium text-muted-foreground">
                       Popular right now
                     </div>
-                    
-                    <Carousel opts={{ align: "start", containScroll: "trimSnaps" }} setApi={setCarouselApi}>
-                      <CarouselContent>
+                    <div className="relative">
+                      <div
+                        className="flex gap-3 sm:gap-4 overflow-x-auto snap-x snap-mandatory scroll-px-3 sm:scroll-px-4 [-webkit-overflow-scrolling:touch]"
+                        aria-label="Popular stories"
+                      >
                         {popularPosts.map(pop => (
-                            <CarouselItem key={pop.id} className="basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                              <Card className="rounded-lg border border-border/50 bg-card/70 hover:bg-card transition">
-                                <CardContent className="p-3">
-                                  <button
-                                    className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
-                                    onClick={() => navigateToReader(pop.slug || pop.id)}
-                                  >
-                                    {pop.title}
-                                  </button>
-                                  {(() => {
-                                    const { key, label } = computeThemeMeta(pop);
-                                    const badgeTint = getBadgeTint(key);
-                                    return (
-                                      <div className="mt-1">
-                                        <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                          {label}
-                                        </Badge>
-                                      </div>
-                                    );
-                                  })()}
-      
-                                  <p className="text-[13px] text-muted-foreground leading-5 mt-1 line-clamp-1">
-                                    {extractEngagingExcerpt(pop.content, 100)}
-                                  </p>
-      
-                                  <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
-                                    <div className="flex items-center gap-1">
-                                      <Calendar className="h-3 w-3" />
-                                      <time>{new Date(pop.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
+                          <div key={pop.id} className="snap-start min-w-[260px] sm:min-w-[300px] md:min-w-[320px]">
+                            <Card className="rounded-lg border border-border/50 bg-card/70 hover:bg-card transition">
+                              <CardContent className="p-3">
+                                <button
+                                  className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
+                                  onClick={() => navigateToReader(pop.slug || pop.id)}
+                                >
+                                  {pop.title}
+                                </button>
+                                {(() => {
+                                  const { key, label } = computeThemeMeta(pop);
+                                  const badgeTint = getBadgeTint(key);
+                                  return (
+                                    <div className="mt-1">
+                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                        {label}
+                                      </Badge>
                                     </div>
-                                    <div className="flex items-center gap-1">
-                                      <Clock className="h-3 w-3" />
-                                      <span>{getReadingTime(pop.content)}</span>
-                                    </div>
+                                  );
+                                })()}
+                                <p className="text-[13px] text-muted-foreground leading-5 mt-1 line-clamp-1">
+                                  {extractEngagingExcerpt(pop.content, 100)}
+                                </p>
+                                <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    <time>{new Date(pop.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
                                   </div>
-                                </CardContent>
-                              </Card>
-                            </CarouselItem>
-                          ))}
-                      </CarouselContent>
-                    </Carousel>
-                    <div className="mt-3 flex items-center justify-center gap-2">
-                      <Button
-                        size="sm"
-                        className="h-9 px-3 w-28 justify-center rounded-full border border-border/60 bg-card/90 hover:bg-card shadow-sm"
-                        onClick={() => { try { carouselApi?.scrollPrev(); } catch {} }}
-                        disabled={!canPrev}
-                      >
-                        <ArrowLeft className="h-4 w-4 mr-1" />
-                        Previous
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="h-9 px-3 w-28 justify-center rounded-full border border-border/60 bg-card/90 hover:bg-card shadow-sm"
-                        onClick={() => { try { carouselApi?.scrollNext(); } catch {} }}
-                        disabled={!canNext}
-                      >
-                        Next
-                        <ArrowRight className="h-4 w-4 ml-1" />
-                      </Button>
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    <span>{getReadingTime(pop.content)}</span>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
