@@ -850,9 +850,49 @@ export default function StoriesIndexContent() {
                         {(() => {
                           const { key, label } = computeThemeMeta(featuredStory);
                           const badgeTint = getBadgeTint(key);
+
+                          // Derive icon slug with overrides to match Reader/Most Liked/List cards behavior
+                          const md: any = (featuredStory as any)?.metadata || {};
+                          const override = getStoryThemeOverride((featuredStory as any)?.slug as any, (featuredStory as any)?.title as any);
+                          const defOverride = getThemeDefinitionOverride(key);
+                          let iconSlug =
+                            override?.icon ||
+                            (md && (md as any).themeIcon) ||
+                            defOverride?.icon ||
+                            (SHARED_THEME_CATEGORIES as any)[key]?.icon ||
+                            'ghost';
+                          if (key === 'BODY_HORROR') iconSlug = 'bone';
+
+                          const isIconify = String(iconSlug).includes(':');
+
+                          const ThemeIconCmp = (() => {
+                            const slug = String(iconSlug).toLowerCase();
+                            switch (slug) {
+                              case 'skull': return Skull; case 'brain': return Brain; case 'pill': return Pill; case 'cpu': return Cpu; case 'ghost': return Ghost;
+                              case 'eye': return Eye; case 'hourglass': return Hourglass; case 'car': return Car;
+                              case 'fork-knife': case 'forkknife': case 'utensils': return ForkKnife; case 'trees': case 'tree': return Trees; case 'castle': return Castle; case 'bug': return Bug;
+                              case 'moon': return Moon; case 'moon-star': case 'moonstar': return MoonStar; case 'radio': return Radio; case 'box': return Box; case 'flask': return FlaskConical;
+                              case 'radiation': return Radiation; case 'building': return Building; case 'cat': return Cat; case 'flame': return Flame; case 'dog': return Dog; case 'cloud': return Cloud;
+                              case 'alert-triangle': case 'alerttriangle': return AlertTriangle; case 'footprints': return Footprints; case 'bone': return Bone;
+                              default:
+                                switch (key) {
+                                  case 'TECHNOLOGICAL': return Cpu;
+                                  case 'PSYCHOLOGICAL': return Brain;
+                                  case 'SUPERNATURAL': return Ghost;
+                                  case 'EXISTENTIAL': return Hourglass;
+                                  case 'VEHICULAR': return Car;
+                                  case 'FOLK_HORROR': return Trees;
+                                  case 'GOTHIC': return Castle;
+                                  case 'COSMIC': return Moon;
+                                  default: return Ghost;
+                                }
+                            }
+                          })();
+
                           return (
                             <div className="-mt-1">
                               <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : <ThemeIconCmp className="h-3 w-3" />}
                                 {label}
                               </Badge>
                             </div>
