@@ -7,10 +7,9 @@ import SEO from "@/components/SEO";
 
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  ArrowRight, ArrowLeft, Clock, Calendar, Book,
-  Award, Search, Ghost, Skull, Brain, Pill, Cpu, Dna, Footprints, CloudRain, Castle, Bug, Radiation, Umbrella, UserMinus2, Anchor, AlertTriangle, Building, Worm, Cloud, CloudFog, Flame,
-  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Heart, Bone
+import {
+  ArrowRight, ArrowLeft, Clock, Calendar,
+  Award, Search, Eye, Heart
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 const MostLikedList = lazy(() => import("@/components/home/MostLikedList"));
