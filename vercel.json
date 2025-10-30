@@ -1,9 +1,0 @@
-{
-  "redirects": [
-    {
-      "source": "/(.*)",
-      "destination": "https://bubblescafe.space/:1",
-      "permanent": true
-    }
-  ]
-}
