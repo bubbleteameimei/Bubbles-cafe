@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 export const BuyMeCoffeeButton = () => {
   const href = "https://paystack.com/pay/z7fmj9rge1";
 
-  return (
+
     <Button
       asChild
       size="lg"
