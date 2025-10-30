@@ -49,11 +49,11 @@ export default function AboutPage() {
 
           <div className="prose dark:prose-invert max-w-none space-y-6">
             <p>
-              Hi hi, My name is Vanessa. This website is my digital collection of short horror stories, designed to be consumed in one sitting. Fluent in English and Chinese.
+              Hi hi, I’m Vanessa. Bubble’s Cafe is my digital collection of short horror fiction, small pieces of thoughts I have — quiet, private things I’ve decided to share. I've created this website as a curated space for fast-paced, potent horror.
             </p>
 
             <p>
-              My writing explores the darkest corners of the human mind, delving into fears both common and uncommon. I believe that horror is a deeply personal experience, and what terrifies one person might not affect another at all. That's why I try to create a diverse range of horror stories, hoping that at least one of them will find that tender spot in your psyche that makes you leave the light on at night.
+              My writing explores the darkest parts of the human mind, delving into fears both common and uncommon. I believe that horror is a deeply personal experience, and what disturbs or unsettles one person might not affect another. That's why I try to create a diverse range of horror stories. The stories differ in form and style, but they share the same focus: the human mind at its most fragile.
             </p>
 
             <p>
@@ -61,11 +61,12 @@ export default function AboutPage() {
             </p>
 
             <p>
-              If you have anything you need to ask or comment about please leave a comment or drop me an email through the contact page. I will try to reply ASAP. If you do not hear back from me within a week, please feel free to send another message.
+              If you have anything you need to ask or talk about please leave a comment or drop me an email through the contact page. 
+              I will try to reply ASAP. If you do not hear back from me within a week, you’re welcome to send another message.
             </p>
 
-            <p>
-              And remember, that creeping sensation on the back of your neck while reading my stories? It might not just be your imagination...
+            <p className="italic">
+              Read slowly. Stay as long as you like.
             </p>
 
             <p className="italic text-center mt-8">
