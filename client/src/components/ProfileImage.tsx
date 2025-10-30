@@ -180,7 +180,7 @@ export default function ProfileImage() {
         <div className="h-48 w-48 relative border-2 border-[#8B0000]/30 dark:border-[#8B0000]/40 shadow-lg 
                       ring-1 ring-[#660000]/20 dark:ring-[#660000]/30 ring-offset-1 ring-offset-background 
                       rounded-full overflow-hidden
-                      p-1 bg-background/70 mx-auto transition-all duration-700 
+                      bg-transparent mx-auto transition-all duration-700 
                       hover:shadow-[0_0_15px_rgba(139,0,0,0.4)] dark:hover:shadow-[0_0_20px_rgba(139,0,0,0.5)]">
           {/* Carousel wrapper */}
           <div 
