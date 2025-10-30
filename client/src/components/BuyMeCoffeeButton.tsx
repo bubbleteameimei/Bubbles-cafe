@@ -392,6 +392,7 @@ export const BuyMeCoffeeButton = () => {
                       height: 120px;
                       position: relative;
                       border-radius: 6px;
+                      margin: 0 auto;
                       transition: 0.3s ease-in-out;
                       overflow: hidden;
                     }
@@ -431,7 +432,8 @@ export const BuyMeCoffeeButton = () => {
                       gap: 10px;
                       white-space: nowrap;
                       transition: 0.3s;
-                      background-color: transparent        }
+                      background-color: transparent;
+                    }
                     .donation-cta .bmc-right:hover {
                       background-color: #f9f7f9;
                     }
@@ -618,15 +620,16 @@ export const BuyMeCoffeeButton = () => {
           </motion.div>
           
           <div className="mt-6 flex justify-center">
-           <sDialogClose asChild>
-             < button
+           <DialogClose asChild>
+             <button
                 type="button"
                 aria-label="Close"
                 className="px-3 py-1.5 rounded-full text-xs border border-border/60 bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card/80 transition-colors opacity-80 hover:opacity-100"
               >
                 Close
-            </  button>
-          </  DialogClose        </DialogContent>
+            </button>
+          </DialogClose>
+        </DialogContent>
       </Dialog>
     </>
   );
