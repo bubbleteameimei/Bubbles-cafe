@@ -26,28 +26,40 @@ export function ShareButton({ title, text, url = window.location.href, className
   const { toast } = useToast();
 
   const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title,
-          text,
-          url,
-        });
-        toast({
-          description: "Story shared successfully!",
-        });
-      } catch (error) {
-        if ((error as Error).name !== "AbortError") {
-          console.error("Error sharing:", error);
-          toast({
-            variant: "destructive",
-            description: "Failed to share story. Please try again.",
-          });
+    // Try Web Share Level 2 with image file first
+    try {
+      const ogUrl = "/og-image-1200x630.png";
+      const response = await fetch(ogUrl, { cache: "no-cache" });
+      let files: File[] | undefined = undefined;
+      if (response.ok) {
+        const blob = await response.blob();
+        try {
+          const file = new File([blob], "preview.png", { type: "image/png" });
+          if ((navigator as any).canShare && (navigator as any).canShare({ files: [file] })) {
+            files = [file];
+          }
+        } catch {
+          // File constructor or canShare not supported
+          files = undefined;
         }
       }
-    } else {
-      setIsOpen(true);
+
+      if (navigator.share) {
+        // Prefer including image if supported
+        const shareData: any = { title, text, url };
+        if (files) {
+          shareData.files = files;
+        }
+        await navigator.share(shareData);
+        toast({ description: "Story shared successfully!" });
+        return;
+      }
+    } catch (e) {
+      // Fall through to dialog on errors or unsupported features
     }
+
+    // Fallback: open dialog for copy/share links
+    setIsOpen(true);
   };
 
   const handleCopyLink = async () => {

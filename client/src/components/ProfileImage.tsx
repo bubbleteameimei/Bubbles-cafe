@@ -219,7 +219,7 @@ export default function ProfileImage() {
                     height: "100%",
                     objectFit: "cover",
                     objectPosition: "center",
-                    transform: "scale(0.82)", // zoom out so both eyes are visible
+                    transform: "scale(0.70)", // further zoom out to reveal full face (both eyes)
                     transformOrigin: "center",
                     transition: "transform 0.5s ease-in-out",
                   }}

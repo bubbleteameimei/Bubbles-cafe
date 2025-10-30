@@ -29,7 +29,7 @@ import { globalRateLimiter } from "./middlewares/rate-limiter";
 import { apiCache } from './middlewares/api-cache';
 import { browserCache, etagCache } from './middlewares/browser-cache';
 import { idempotency } from './middleware/idempotency';
-import { ssrStreamHandler } from './ssr';
+import { ssrStreamHandler, readerPreviewHandler } from './ssr';
 
 const app = express();
 if (process.env.ENABLE_TRACING === 'true') {
@@ -95,7 +95,7 @@ app.get('/health', async (_req, res) => {
 // Favicon handler for legacy clients/bots that request /favicon.ico
 // Serve client/public/favicon.png if present; otherwise fall back to generated PNG.
 app.get('/favicon.ico', (_req, res) => {
-  try { res.setHeader('Cache-Control', 'public, max-age=86400'); } catch {}
+  try { res.setHeader('Cache-Control', 'no-cache, must-revalidate'); } catch {}
   try {
     const path = require('path');
     const fs = require('fs');
@@ -116,6 +116,52 @@ app.get('/favicon.ico', (_req, res) => {
   } catch {}
   // Fall back to generated 32x32 PNG
   res.redirect(301, '/icons/favicon-32x32.png');
+});
+
+// Ensure favicon.png is also served without cache to reflect updates immediately in Chrome
+app.get('/favicon.png', (_req, res) => {
+  try { res.setHeader('Cache-Control', 'no-cache, must-revalidate'); } catch {}
+  try {
+    const path = require('path');
+    const fs = require('fs');
+    const candidatePaths = [
+      path.resolve(process.cwd(), 'client', 'public', 'favicon.png'),
+      path.resolve(process.cwd(), 'dist', 'public', 'favicon.png'),
+    ];
+    for (const p of candidatePaths) {
+      try {
+        if (fs.existsSync(p)) {
+          res.type('image/png');
+          return res.sendFile(p);
+        }
+      } catch {}
+    }
+  } catch {}
+  res.status(404).end('Not Found');
+});
+
+// OG share image hard route to avoid 404 during crawler fetch
+app.get('/og-image-1200x630.png', (_req, res) => {
+  try { res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); } catch {}
+  try {
+    const path = require('path');
+    const fs = require('fs');
+    const candidates = [
+      path.resolve(process.cwd(), 'dist', 'public', 'og-image-1200x630.png'),
+      path.resolve(process.cwd(), 'client', 'public', 'og-image-1200x630.png'),
+      path.resolve(process.cwd(), 'public', 'og-image-1200x630.png'),
+    ];
+    for (const p of candidates) {
+      try {
+        if (fs.existsSync(p)) {
+          res.type('image/png');
+          return res.sendFile(p);
+        }
+      } catch {}
+    }
+  } catch {}
+  // Fall back to the 512x512 logo to avoid missing previews
+  res.redirect(302, '/icons/icon-512x512.png');
 });
 
 
@@ -265,6 +311,8 @@ async function startServer() {
 
       const { setupVite } = await import('./vite');
       await setupVite(app, server);
+      // Serve a minimal server-rendered head for reader pages so social crawlers see OG meta without JS
+      app.get('/reader/:slug', readerPreviewHandler);
       app.get('/ssr', ssrStreamHandler);
     } else {
       serverLogger.info('Setting up production environment');
@@ -285,10 +333,10 @@ async function startServer() {
       
 
       const { serveStatic } = await import('./vite');
+      // Reader pages: respond with SSR head first so crawlers get OG meta
+      app.get('/reader/:slug', readerPreviewHandler);
       serveStatic(app);
-      if (process.env.ENABLE_SSR === 'true') {
-        app.get('/ssr', ssrStreamHandler);
-      }
+      if (process.env.ENABLE_SSR === }
     }
 
     const listeningPromise = new Promise<void>((resolve, reject) => {
