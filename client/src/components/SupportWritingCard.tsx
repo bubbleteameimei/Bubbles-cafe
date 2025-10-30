@@ -25,7 +25,7 @@ export const SupportWritingCard = ({ className = "" }: SupportWritingCardProps) 
     if (isProcessing) return;
     
     setIsProcessing(true);
-    window.open("https://paystack.shop/pay/z7fmj9rge", "_blank", "noopener,noreferrer");
+    window.open("https://paystack.shop/pay/z7fmj9rge1", "_blank", "noopener,noreferrer");
     setIsOpen(false);
     
     // Reset processing state after a short delay
