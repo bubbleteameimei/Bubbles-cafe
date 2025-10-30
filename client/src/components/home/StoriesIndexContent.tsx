@@ -12,11 +12,11 @@ import {
   Award, Search, Eye, Heart
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
-const MostLikedList = lazy(() => import("@/components/home/MostLikedList"));
+import MostLikedList from "@/components/home/MostLikedList";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { type CarouselApi, Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
+
 
 import { getReadingTime, extractEngagingExcerpt } from "@/lib/excerpt-lite";
 import { THEME_CATEGORIES } from "@/lib/themes-lite";
@@ -52,9 +52,7 @@ export default function StoriesIndexContent() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<'newest' | 'oldest' | 'popular' | 'shortest'>("newest");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
-  const [canPrev, setCanPrev] = useState(false);
-  const [canNext, setCanNext] = useState(false);
+  
   
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [pageSize, setPageSize] = useState<number>(6);
@@ -179,24 +177,7 @@ export default function StoriesIndexContent() {
 
   
 
-  useEffect(() => {
-    if (!carouselApi) return;
-    const update = () => {
-      try {
-        setCanPrev(Boolean((carouselApi as any).canScrollPrev?.() ?? carouselApi.canScrollPrev()));
-        setCanNext(Boolean((carouselApi as any).canScrollNext?.() ?? carouselApi.canScrollNext()));
-      } catch {}
-    };
-    update();
-    (carouselApi as any).on?.("select", update);
-    (carouselApi as any).on?.("reInit", update);
-    return () => {
-      try {
-        (carouselApi as any).off?.("select", update);
-        (carouselApi as any).off?.("reInit", update);
-      } catch {}
-    };
-  }, [carouselApi]);
+  
 
   // Sync global theme definitions from server once on mount (updates local overrides)
   useEffect(() => {
@@ -942,9 +923,7 @@ export default function StoriesIndexContent() {
                 <div className="lg:col-span-2">
                   <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
                     <CardContent className="p-4">
-                      <Suspense fallback={null}>
-                        <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} />
-                      </Suspense>
+                      <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} />
                     </CardContent>
                   </Card>
                 </div>
@@ -1126,70 +1105,50 @@ export default function StoriesIndexContent() {
                     <div className="text-left sm:text-center mb-2 text-xs font-medium text-muted-foreground">
                       Popular right now
                     </div>
-                    
-                    <Carousel opts={{ align: "start", containScroll: "trimSnaps" }} setApi={setCarouselApi}>
-                      <CarouselContent>
+                    <div className="relative">
+                      <div
+                        className="flex gap-3 sm:gap-4 overflow-x-auto snap-x snap-mandatory scroll-px-3 sm:scroll-px-4 [-webkit-overflow-scrolling:touch]"
+                        aria-label="Popular stories"
+                      >
                         {popularPosts.map(pop => (
-                            <CarouselItem key={pop.id} className="basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                              <Card className="rounded-lg border border-border/50 bg-card/70 hover:bg-card transition">
-                                <CardContent className="p-3">
-                                  <button
-                                    className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
-                                    onClick={() => navigateToReader(pop.slug || pop.id)}
-                                  >
-                                    {pop.title}
-                                  </button>
-                                  {(() => {
-                                    const { key, label } = computeThemeMeta(pop);
-                                    const badgeTint = getBadgeTint(key);
-                                    return (
-                                      <div className="mt-1">
-                                        <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                          {label}
-                                        </Badge>
-                                      </div>
-                                    );
-                                  })()}
-      
-                                  <p className="text-[13px] text-muted-foreground leading-5 mt-1 line-clamp-1">
-                                    {extractEngagingExcerpt(pop.content, 100)}
-                                  </p>
-      
-                                  <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
-                                    <div className="flex items-center gap-1">
-                                      <Calendar className="h-3 w-3" />
-                                      <time>{new Date(pop.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
+                          <div key={pop.id} className="snap-start min-w-[260px] sm:min-w-[300px] md:min-w-[320px]">
+                            <Card className="rounded-lg border border-border/50 bg-card/70 hover:bg-card transition">
+                              <CardContent className="p-3">
+                                <button
+                                  className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
+                                  onClick={() => navigateToReader(pop.slug || pop.id)}
+                                >
+                                  {pop.title}
+                                </button>
+                                {(() => {
+                                  const { key, label } = computeThemeMeta(pop);
+                                  const badgeTint = getBadgeTint(key);
+                                  return (
+                                    <div className="mt-1">
+                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                        {label}
+                                      </Badge>
                                     </div>
-                                    <div className="flex items-center gap-1">
-                                      <Clock className="h-3 w-3" />
-                                      <span>{getReadingTime(pop.content)}</span>
-                                    </div>
+                                  );
+                                })()}
+                                <p className="text-[13px] text-muted-foreground leading-5 mt-1 line-clamp-1">
+                                  {extractEngagingExcerpt(pop.content, 100)}
+                                </p>
+                                <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    <time>{new Date(pop.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
                                   </div>
-                                </CardContent>
-                              </Card>
-                            </CarouselItem>
-                          ))}
-                      </CarouselContent>
-                    </Carousel>
-                    <div className="mt-3 flex items-center justify-center gap-2">
-                      <Button
-                        size="sm"
-                        className="h-9 px-3 w-28 justify-center rounded-full border border-border/60 bg-card/90 hover:bg-card shadow-sm"
-                        onClick={() => { try { carouselApi?.scrollPrev(); } catch {} }}
-                        disabled={!canPrev}
-                      >
-                        <ArrowLeft className="h-4 w-4 mr-1" />
-                        Previous
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="h-9 px-3 w-28 justify-center rounded-full border border-border/60 bg-card/90 hover:bg-card shadow-sm"
-                        onClick={() => { try { carouselApi?.scrollNext(); } catch {} }}
-                        disabled={!canNext}
-                      >
-                        Next
-                        <ArrowRight className="h-4 w-4 ml-1" />
-                      </Button>
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    <span>{getReadingTime(pop.content)}</span>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
