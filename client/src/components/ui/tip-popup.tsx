@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Coffee, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion"</;
+import { motion } from "framer-motion";
 
 
 interface TipPopupProps {
