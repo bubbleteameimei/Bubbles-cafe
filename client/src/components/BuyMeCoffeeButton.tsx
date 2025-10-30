@@ -620,15 +620,16 @@ export const BuyMeCoffeeButton = () => {
           </motion.div>
           
           <div className="mt-6 flex justify-center">
-           <DialogClose asChild>
-             <button
+            <DialogClose asChild>
+              <button
                 type="button"
                 aria-label="Close"
                 className="px-3 py-1.5 rounded-full text-xs border border-border/60 bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card/80 transition-colors opacity-80 hover:opacity-100"
               >
                 Close
-            </button>
-          </DialogClose>
+              </button>
+            </DialogClose>
+          </div>
         </DialogContent>
       </Dialog>
     </>
