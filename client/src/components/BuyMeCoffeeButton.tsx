@@ -37,26 +37,11 @@ export const BuyMeCoffeeButton = () => {
     setIsProcessing(true);
     setCtaActive(true);
 
-    // Pre-open a blank tab within the user gesture to avoid popup blockers.
+    // Play the animation first, then open Paystack in a new tab (no pre-open so it doesn't pop immediately)
     const PAYSTACK_URL = "https://paystack.shop/pay/z7fmj9rge1";
-    const newWin = window.open("", "_blank");
-    try {
-      if (newWin) {
-        try { newWin.opener = null; } catch {}
-        // Keep focus on current tab so the animation is visible
-        try { window.focus(); } catch {}
-      }
-    } catch {}
-
-    // After the animation plays, navigate the pre-opened tab to Paystack
     setTimeout(() => {
       try {
-        if (newWin) {
-          newWin.location.href = PAYSTACK_URL;
-        } else {
-          // Fallback if pre-open was blocked
-          window.open(PAYSTACK_URL, "_blank", "noopener,noreferrer");
-        }
+        window.open(PAYSTACK_URL, "_blank", "noopener,noreferrer");
       } finally {
         setIsOpen(false);
       }
@@ -326,312 +311,300 @@ export const BuyMeCoffeeButton = () => {
             transition={{ delay: 0.3, type: "spring", stiffness: 200, damping: 20 }}
           >
             <div className="w-full flex justify-center">
-              {!ctaActive ? (
-                <motion.div
-                  whileHover={{ 
-                    scale: 1.08,
-                    boxShadow: "0 10px 25px rgba(0,0,0,0.2)"
-                  }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-full text-center"
-                >
-                  <Button
-                    onClick={handleAnimatedTip}
-                    disabled={isProcessing}
-                    className="px-8 py-4 text-lg font-medium w-full sm:w-auto bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white rounded-full shadow-lg relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed"
-                    size="lg"
-                    aria-label="Support with a donation"
-                  >
-                    {/* Animated shine effect */}
-                    <motion.div
-                      initial={{ x: "-100%" }}
-                      animate={{ x: "100%" }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        repeatDelay: 3,
-                        ease: "easeInOut"
-                      }}
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                      style={{ transform: "skewX(-25deg)" }}
-                    />
-                    
-                    <span className="relative flex items-center gap-2">
-                      {isProcessing ? (
-                        <>
-                          <motion.span
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          >
-                            ⏳
-                          </motion.span>
-                          Opening payment...
-                        </>
-                      ) : (
-                        <>
-                          <motion.span
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ duration: 1, repeat: Infinity, repeatType: "reverse" }}
-                          >
-                            🥰
-                          </motion.span>
-                          Yes, I'd love to!
-                          <motion.span
-                            animate={{ y: [0, -2, 0] }}
-                            transition={{ duration: 1.5, repeat: Infinity, repeatType: "reverse" }}
-                          >
-                            💝
-                          </motion.span>
-                        </>
-                      )}
-                    </span>
-                  </Button>
-                </motion.div>
-              ) : (
-                <div className="donation-cta">
-                  <style>{`
-                    .donation-cta {
-                      --background: #33837e;
-                      --left-side: #5de2a3;
-                      --card: #c7ffbc;
-                      --card-line: #80ea69;
-                      --button-color-3: #26850e;
-                      --button-color-2: #379e1f;
-                      --button-color-1: #56be3e;
-                      --post: #dddde0;
-                      --numbers: #838183;
-                      --numbers-2: #aaa9ab;
-                      --post-line: #757375;
-                      --post-line2: #545354;
-                      --dollar: #4b953b;
-                    }
-                    .donation-cta .bmc-container {
-                      background-color: #ffffff;
-                      display: flex;
-                      width: clamp(340px, 80vw, 560px);
-                      height: 120px;
-                      position: relative;
-                      border-radius: 6px;
-                      margin: 0 auto;
-                      transition: 0.3s ease-in-out;
-                      overflow: hidden;
-                    }
-                    .donation-cta .bmc-container::before {
-                      width: 200vw;
-                      position: absolute;
-                      top: 0;
-                      left: -100vw;
-                      height: 100%;
-                      content: "";
-                    }
-                    .donation-cta .bmc-container:hover,
-                    .donation-cta .bmc-container.active {
-                      transform: scale(1.02);
-                    }
-                    .donation-cta .bmc-left {
-                      background-color: var(--left-side);
-                      width: 130px;
-                      height: 120px;
-                      border-radius: 4px;
-                      position: relative;
-                      display: flex;
-                      justify-content: center;
-                      align-items: center;
-                      cursor: pointer;
-                      transition: 0.3s;
-                      flex-shrink: 0;
-                      overflow: hidden;
-                    }
-                    .donation-cta .bmc-right {
-                      width: calc(100% - 130px);
-                      display: flex;
-                      align-items: center;
-                      overflow: hidden;
-                      cursor: pointer;
-                      justify-content: center;
-                      gap: 10px;
-                      white-space: nowrap;
-                      transition: 0.3s;
-                      background-color: transparent;
-                    }
-                    .donation-cta .bmc-right:hover {
-                      background-color: #f9f7f9;
-                    }
-                    .donation-cta .arrow {
-                      width: 20px;
-                      height: 20px;
-                      margin-right: 0;
-                      flex-shrink: 0;
-                    }
-                    .donation-cta .new {
-                      font-size: 23px;
-                      margin-left: 20px;
-                      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
-                    }
-                    .donation-cta .bmc-card {
-                      width: 70px;
-                      height: 46px;
-                      background-color: var(--card);
-                      border-radius: 6px;
-                      position: absolute;
-                      display: flex;
-                      z-index: 10;
-                      flex-direction: column;
-                      align-items: center;
-                      box-shadow: 9px 9px 9px -2px rgba(77, 200, 143, 0.72);
-                    }
-                    .donation-cta .card-line {
-                      width: 65px;
-                      height: 13px;
-                      background-color: var(--card-line);
-                      border-radius: 2px;
-                      margin-top: 7px;
-                    }
-                    @media only screen and (max-width: 480px) {
+              <div
+                className="w-full text-center"
+                onMouseEnter={() => setCtaActive(true)}
+                onMouseLeave={() => setCtaActive(false)}
+                onClick={handleTip}
+              >
+                {ctaActive ? (
+                  <div className="donation-cta">
+                    <style>{`
+                      .donation-cta {
+                        --background: #33837e;
+                        --left-side: #5de2a3;
+                        --card: #c7ffbc;
+                        --card-line: #80ea69;
+                        --button-color-3: #26850e;
+                        --button-color-2: #379e1f;
+                        --button-color-1: #56be3e;
+                        --post: #dddde0;
+                        --numbers: #838183;
+                        --numbers-2: #aaa9ab;
+                        --post-line: #757375;
+                        --post-line2: #545354;
+                        --dollar: #4b953b;
+                      }
                       .donation-cta .bmc-container {
-                        transform: scale(0.7);
+                        background-color: #ffffff;
+                        display: flex;
+                        width: clamp(340px, 80vw, 560px);
+                        height: 120px;
+                        position: relative;
+                        border-radius: 6px;
+                        margin: 0 auto;
+                        transition: 0.3s ease-in-out;
+                        overflow: hidden;
+                      }
+                      .donation-cta .bmc-container::before {
+                        width: 200vw;
+                        position: absolute;
+                        top: 0;
+                        left: -100vw;
+                        height: 100%;
+                        content: "";
                       }
                       .donation-cta .bmc-container:hover,
                       .donation-cta .bmc-container.active {
-                        transform: scale(0.74);
+                        transform: scale(1.02);
                       }
-                      .donation-cta .new {
-                        font-size: 18px;
+                      .donation-cta .bmc-left {
+                        background-color: var(--left-side);
+                        width: 130px;
+                        height: 120px;
+                        border-radius: 4px;
+                        position: relative;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        cursor: pointer;
+                        transition: 0.3s;
+                        flex-shrink: 0;
+                        overflow: hidden;
                       }
-                    }
-                    .donation-cta .buttons {
-                      width: 8px;
-                      height: 8px;
-                      background-color: var(--button-color-2);
-                      box-shadow: 0 -10px 0 0 var(--button-color-3), 0 10px 0 0 var(--button-color-1);
-                      border-radius: 50%;
-                      margin-top: 5px;
-                      transform: rotate(90deg);
-                      margin: 10px 0 0 -30px;
-                    }
-                    .donation-cta .bmc-container:hover .bmc-card,
-                    .donation-cta .bmc-container.active .bmc-card {
-                      animation: slide-top 1.2s cubic-bezier(0.645, 0.045, 0.355, 1) both;
-                    }
-                    .donation-cta .bmc-container:hover .bmc-post,
-                    .donation-cta .bmc-container.active .bmc-post {
-                      animation: slide-post 1s cubic-bezier(0.165, 0.84, 0.44, 1) both;
-                    }
-                    @keyframes slide-top {
-                      0% { transform: translateY(0); }
-                      50% { transform: translateY(-70px) rotate(90deg); }
-                      60% { transform: translateY(-70px) rotate(90deg); }
-                      100% { transform: translateY(-8px) rotate(90deg); }
-                    }
-                    .donation-cta .bmc-post {
-                      width: 63px;
-                      height: 75px;
-                      background-color: var(--post);
-                      position: absolute;
-                      z-index: 11;
-                      bottom: 10px;
-                      top: 120px;
-                      border-radius: 6px;
-                      overflow: hidden;
-                    }
-                    .donation-cta .post-line {
-                      width: 47px;
-                      height: 9px;
-                      background-color: var(--post-line2);
-                      position: absolute;
-                      border-radius: 0px 0px 3px 3px;
-                      right: 8px;
-                      top: 8px;
-                    }
-                    .donation-cta .post-line::before {
-                      content: "";
-                      position: absolute;
-                      width: 47px;
-                      height: 9px;
-                      background-color: var(--post-line);
-                      top: -8px;
-                      left: 0;
-                    }
-                    .donation-cta .screen {
-                      width: 47px;
-                      height: 23px;
-                      background-color: #ffffff;
-                      position: absolute;
-                      top: 22px;
-                      right: 8px;
-                      border-radius: 3px;
-                    }
-                    .donation-cta .numbers {
-                      width: 12px;
-                      height: 12px;
-                      background-color: var(--numbers);
-                      box-shadow: 0 -18px 0 0 var(--numbers), 0 18px 0 0 var(--numbers);
-                      border-radius: 2px;
-                      position: absolute;
-                      transform: rotate(90deg);
-                      left: 25px;
-                      top: 52px;
-                    }
-                    .donation-cta .numbers-line2 {
-                      width: 12px;
-                      height: 12px;
-                      background-color: var(--numbers-2);
-                      box-shadow: 0 -18px 0 0 var(--numbers-2), 0 18px 0 0 var(--numbers-2);
-                      border-radius: 2px;
-                      position: absolute;
-                      transform: rotate(90deg);
-                      left: 25px;
-                      top: 68px;
-                    }
-                    @keyframes slide-post {
-                      50% { transform: translateY(0); }
-                      100% { transform: translateY(-70px); }
-                    }
-                    .donation-cta .dollar {
-                      position: absolute;
-                      font-size: 16px;
-                      width: 100%;
-                      left: 0;
-                      top: 0;
-                      color: var(--dollar);
-                      text-align: center;
-                    }
-                    .donation-cta .bmc-container:hover .dollar,
-                    .donation-cta .bmc-container.active .dollar {
-                      animation: fade-in-fwd 0.3s 1s backwards;
-                    }
-                    @keyframes fade-in-fwd {
-                      0% { opacity: 0; transform: translateY(-5px); }
-                      100% { opacity: 1; transform: translateY(0); }
-                    }
-                  `}</style>
+                      .donation-cta .bmc-right {
+                        width: calc(100% - 130px);
+                        display: flex;
+                        align-items: center;
+                        overflow: hidden;
+                        cursor: pointer;
+                        justify-content: center;
+                        gap: 10px;
+                        white-space: nowrap;
+                        transition: 0.3s;
+                        background-color: transparent;
+                      }
+                      .donation-cta .bmc-right:hover {
+                        background-color: #f9f7f9;
+                      }
+                      .donation-cta .bmc-card {
+                        width: 70px;
+                        height: 46px;
+                        background-color: var(--card);
+                        border-radius: 6px;
+                        position: absolute;
+                        display: flex;
+                        z-index: 10;
+                        flex-direction: column;
+                        align-items: center;
+                        box-shadow: 9px 9px 9px -2px rgba(77, 200, 143, 0.72);
+                      }
+                      .donation-cta .card-line {
+                        width: 65px;
+                        height: 13px;
+                        background-color: var(--card-line);
+                        border-radius: 2px;
+                        margin-top: 7px;
+                      }
+                      @media only screen and (max-width: 480px) {
+                        .donation-cta .bmc-container {
+                          transform: scale(0.7);
+                        }
+                        .donation-cta .bmc-container:hover,
+                        .donation-cta .bmc-container.active {
+                          transform: scale(0.74);
+                        }
+                      }
+                      .donation-cta .buttons {
+                        width: 8px;
+                        height: 8px;
+                        background-color: var(--button-color-2);
+                        box-shadow: 0 -10px 0 0 var(--button-color-3), 0 10px 0 0 var(--button-color-1);
+                        border-radius: 50%;
+                        margin-top: 5px;
+                        transform: rotate(90deg);
+                        margin: 10px 0 0 -30px;
+                      }
+                      .donation-cta .bmc-container:hover .bmc-card,
+                      .donation-cta .bmc-container.active .bmc-card {
+                        animation: slide-top 1.2s cubic-bezier(0.645, 0.045, 0.355, 1) both;
+                      }
+                      .donation-cta .bmc-container:hover .bmc-post,
+                      .donation-cta .bmc-container.active .bmc-post {
+                        animation: slide-post 1s cubic-bezier(0.165, 0.84, 0.44, 1) both;
+                      }
+                      @keyframes slide-top {
+                        0% { transform: translateY(0); }
+                        50% { transform: translateY(-70px) rotate(90deg); }
+                        60% { transform: translateY(-70px) rotate(90deg); }
+                        100% { transform: translateY(-8px) rotate(90deg); }
+                      }
+                      .donation-cta .bmc-post {
+                        width: 63px;
+                        height: 75px;
+                        background-color: var(--post);
+                        position: absolute;
+                        z-index: 11;
+                        bottom: 10px;
+                        top: 120px;
+                        border-radius: 6px;
+                        overflow: hidden;
+                      }
+                      .donation-cta .post-line {
+                        width: 47px;
+                        height: 9px;
+                        background-color: var(--post-line2);
+                        position: absolute;
+                        border-radius: 0px 0px 3px 3px;
+                        right: 8px;
+                        top: 8px;
+                      }
+                      .donation-cta .post-line::before {
+                        content: "";
+                        position: absolute;
+                        width: 47px;
+                        height: 9px;
+                        background-color: var(--post-line);
+                        top: -8px;
+                        left: 0;
+                      }
+                      .donation-cta .screen {
+                        width: 47px;
+                        height: 23px;
+                        background-color: #ffffff;
+                        position: absolute;
+                        top: 22px;
+                        right: 8px;
+                        border-radius: 3px;
+                      }
+                      .donation-cta .numbers {
+                        width: 12px;
+                        height: 12px;
+                        background-color: var(--numbers);
+                        box-shadow: 0 -18px 0 0 var(--numbers), 0 18px 0 0 var(--numbers);
+                        border-radius: 2px;
+                        position: absolute;
+                        transform: rotate(90deg);
+                        left: 25px;
+                        top: 52px;
+                      }
+                      .donation-cta .numbers-line2 {
+                        width: 12px;
+                        height: 12px;
+                        background-color: var(--numbers-2);
+                        box-shadow: 0 -18px 0 0 var(--numbers-2), 0 18px 0 0 var(--numbers-2);
+                        border-radius: 2px;
+                        position: absolute;
+                        transform: rotate(90deg);
+                        left: 25px;
+                        top: 68px;
+                      }
+                      @keyframes slide-post {
+                        50% { transform: translateY(0); }
+                        100% { transform: translateY(-70px); }
+                      }
+                      .donation-cta .dollar {
+                        position: absolute;
+                        font-size: 16px;
+                        width: 100%;
+                        left: 0;
+                        top: 0;
+                        color: var(--dollar);
+                        text-align: center;
+                      }
+                      .donation-cta .bmc-container:hover .dollar,
+                      .donation-cta .bmc-container.active .dollar {
+                        animation: fade-in-fwd 0.3s 1s backwards;
+                      }
+                      @keyframes fade-in-fwd {
+                        0% { opacity: 0; transform: translateY(-5px); }
+                        100% { opacity: 1; transform: translateY(0); }
+                      }
+                    `}</style>
 
-                  <div
-                    className={`bmc-container ${ctaActive ? 'active' : ''} ${isProcessing ? 'opacity-70 pointer-events-none' : ''}`}
-                    role="button"
-                    tabIndex={0}
-                    aria-label="Support with a donation"
-                    onClick={handleAnimatedTip}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleAnimatedTip(); } }}
-                  >
-                    <div className="bmc-left">
-                      <div className="bmc-card">
-                        <div className="card-line"></div>
-                        <div className="buttons"></div>
-                      </div>
-                      <div className="bmc-post">
-                        <div className="post-line"></div>
-                        <div className="screen">
-                          <div className="dollar">$</div>
+                    <div
+                      className={`bmc-container ${ctaActive ? 'active' : ''} ${isProcessing ? 'opacity-70 pointer-events-none' : ''}`}
+                      aria-label="Support with a donation"
+                    >
+                      <div className="bmc-left">
+                        <div className="bmc-card">
+                          <div className="card-line"></div>
+                          <div className="buttons"></div>
                         </div>
-                        <div className="numbers"></div>
-                        <div className="numbers-line2"></div>
+                        <div className="bmc-post">
+                          <div className="post-line"></div>
+                          <div className="screen">
+                            <div className="dollar">$</div>
+                          </div>
+                          <div className="numbers"></div>
+                          <div className="numbers-line2"></div>
+                        </div>
                       </div>
+                      <div className="bmc-right"></div>
                     </div>
-                    <div className="bmc-right"></div>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <motion.div
+                    whileHover={{ 
+                      scale: 1.08,
+                      boxShadow: "0 10px 25px rgba(0,0,0,0.2)"
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-full text-center"
+                  >
+                    <Button
+                      disabled={isProcessing}
+                      className="px-8 py-4 text-lg font-medium w-full sm:w-auto bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white rounded-full shadow-lg relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed"
+                      size="lg"
+                      aria-label="Support with a donation"
+                    >
+                      {/* Animated shine effect */}
+                      <motion.div
+                        initial={{ x: "-100%" }}
+                        animate={{ x: "100%" }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          repeatDelay: 3,
+                          ease: "easeInOut"
+                        }}
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                        style={{ transform: "skewX(-25deg)" }}
+                      />
+                      
+                      <span className="relative flex items-center gap-2">
+                        {isProcessing ? (
+                          <>
+                            <motion.span
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            >
+                              ⏳
+                            </motion.span>
+                            Opening payment...
+                          </>
+                        ) : (
+                          <>
+                            <motion.span
+                              animate={{ scale: [1, 1.2, 1] }}
+                              transition={{ duration: 1, repeat: Infinity, repeatType: "reverse" }}
+                            >
+                              🥰
+                            </motion.span>
+                            Yes, I'd love to!
+                            <motion.span
+                              animate={{ y: [0, -2, 0] }}
+                              transition={{ duration: 1.5, repeat: Infinity, repeatType: "reverse" }}
+                            >
+                              💝
+                            </motion.span>
+                          </>
+                        )}
+                      </span>
+                    </Button>
+                  </motion.div>
+                )}
+              </div>
             </div>
           </motion.div>
           
