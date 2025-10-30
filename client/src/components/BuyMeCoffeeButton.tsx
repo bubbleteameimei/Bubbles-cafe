@@ -22,7 +22,7 @@ export const BuyMeCoffeeButton = () => {
     if (isProcessing) return;
     
     setIsProcessing(true);
-    window.open("https://paystack.com/pay/z7fmj9rge1", "_blank", "noopener,noreferrer");
+    window.open("https://paystack.shop/pay/z7fmj9rge", "_blank", "noopener,noreferrer");
     setIsOpen(false);
     
     // Reset processing state after a short delay
@@ -38,7 +38,7 @@ export const BuyMeCoffeeButton = () => {
     // Let the animation play before opening Paystack
     setTimeout(() => {
       try {
-        window.open("https://paystack.com/pay/z7fmj9rge1", "_blank", "noopener,noreferrer");
+        window.open("https://paystack.shop/pay/z7fmj9rge", "_blank", "noopener,noreferrer");
       } catch {}
       setIsOpen(false);
     }, 1100);
@@ -388,7 +388,7 @@ export const BuyMeCoffeeButton = () => {
                     .donation-cta .bmc-container {
                       background-color: #ffffff;
                       display: flex;
-                      width: 460px;
+                      width: clamp(340px, 80vw, 560px);
                       height: 120px;
                       position: relative;
                       border-radius: 6px;
@@ -405,8 +405,7 @@ export const BuyMeCoffeeButton = () => {
                     }
                     .donation-cta .bmc-container:hover,
                     .donation-cta .bmc-container.active {
-                      transform: scale(1.03);
-                      width: 220px;
+                      transform: scale(1.02);
                     }
                     .donation-cta .bmc-left {
                       background-color: var(--left-side);
@@ -428,18 +427,18 @@ export const BuyMeCoffeeButton = () => {
                       align-items: center;
                       overflow: hidden;
                       cursor: pointer;
-                      justify-content: space-between;
+                      justify-content: center;
+                      gap: 10px;
                       white-space: nowrap;
                       transition: 0.3s;
-                      background-color: transparent;
-                    }
+                      background-color: transparent        }
                     .donation-cta .bmc-right:hover {
                       background-color: #f9f7f9;
                     }
                     .donation-cta .arrow {
                       width: 20px;
                       height: 20px;
-                      margin-right: 20px;
+                      margin-right: 0;
                       flex-shrink: 0;
                     }
                     .donation-cta .new {
@@ -608,7 +607,6 @@ export const BuyMeCoffeeButton = () => {
                       </div>
                     </div>
                     <div className="bmc-right">
-                      <div className="new">{isProcessing ? 'Opening…' : 'New Transaction'}</div>
                       <svg className="arrow" xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 451.846 451.847" aria-hidden="true" focusable="false">
                         <path d="M345.441 248.292L151.154 442.573c-12.359 12.365-32.397 12.365-44.75 0-12.354-12.354-12.354-32.391 0-44.744L278.318 225.92 106.409 54.017c-12.354-12.359-12.354-32.394 0-44.748 12.354-12.359 32.391-12.359 44.75 0l194.287 194.284c6.177 6.18 9.262 14.271 9.262 22.366 0 8.099-3.091 16.196-9.267 22.373z" fill="#cfcfcf"/>
                       </svg>
@@ -619,8 +617,16 @@ export const BuyMeCoffeeButton = () => {
             </div>
           </motion.div>
           
-          <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none" />
-        </DialogContent>
+          <div className="mt-6 flex justify-center">
+           <sDialogClose asChild>
+             < button
+                type="button"
+                aria-label="Close"
+                className="px-3 py-1.5 rounded-full text-xs border border-border/60 bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card/80 transition-colors opacity-80 hover:opacity-100"
+              >
+                Close
+            </  button>
+          </  DialogClose        </DialogContent>
       </Dialog>
     </>
   );
