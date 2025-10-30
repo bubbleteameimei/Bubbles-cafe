@@ -13,7 +13,7 @@ import {
   Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Heart, Bone
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
-import MostLikedList from "@/components/home/MostLikedList";
+const MostLikedList = lazy(() => import("@/components/home/MostLikedList"));
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -946,7 +946,9 @@ export default function StoriesIndexContent() {
                 <div className="lg:col-span-2">
                   <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
                     <CardContent className="p-4">
-                      <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} />
+                      <Suspense fallback={null}>
+                        <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} />
+                      </Suspense>
                     </CardContent>
                   </Card>
                 </div>
