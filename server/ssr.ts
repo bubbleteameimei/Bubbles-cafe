@@ -19,7 +19,6 @@ export function ssrStreamHandler(req: Request, res: Response) {
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png?${ICON_VERSION}"/>
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png?${ICON_VERSION}"/>
     <link rel="shortcut icon" href="/favicon.ico"/>
-    <link rel="icon" type="image/png" sizes="any" href="/favicon.png?${ICON_VERSION}"/>
     <meta name="description" content="A home for dark, psychological and experimental short fiction — stories that explore the quiet violence beneath ordinary life."/>
     <meta property="og:title" content="Bubble’s Cafe"/>
     <meta property="og:description" content="Dark, psychological and experimental short fiction."/>

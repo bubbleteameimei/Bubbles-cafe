@@ -219,9 +219,9 @@ export default function ProfileImage() {
                     height: "100%",
                     objectFit: "cover",
                     objectPosition: "center",
-                    transform: "scale(0.70)", // further zoom out to reveal full face (both eyes)
+                    transform: "none", // use natural framing with exact circular clip
                     transformOrigin: "center",
-                    transition: "transform 0.5s ease-in-out",
+                    transition: "opacity 0.3s ease-in-out",
                   }}
                   className="transition-all duration-700 will-change-transform"
                   onError={handleImageError}
