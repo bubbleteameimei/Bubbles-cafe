@@ -64,7 +64,7 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
       if (opened) return;
       opened = true;
       try {
-        window.open(PAYSTACK_URL, '_blank', 'noopener,noreferrer');
+        window.location.href = PAYSTACK_URL; // redirect in same tab to avoid popup blockers
       } catch {}
       setIsOpen(false);
       setIsProcessing(false);
