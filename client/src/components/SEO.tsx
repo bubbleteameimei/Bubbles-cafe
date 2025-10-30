@@ -67,9 +67,42 @@ export default function SEO({
   nofollow = false,
   robots
 }: SEOProps) {
-  const siteUrl = DEFAULT_SITE_CONFIG.siteUrl;
-  const pageUrl = useMemo(() => canonical ? `${siteUrl}${canonical}` : (typeof window !== 'undefined' ? window.location.href : ''), [canonical, siteUrl]);
-  const imageUrl = useMemo(() => image ? (image.startsWith('http') ? image : `${siteUrl}${image}`) : `${siteUrl}${DEFAULT_SITE_CONFIG.defaultImage}`, [image, siteUrl]);
+  // Normalize origin to apex (strip leading www) to avoid redirect/canonical issues
+  const siteUrl = useMemo(() => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : DEFAULT_SITE_CONFIG.siteUrl;
+    try {
+      const u = new URL(origin);
+      const host = (u.host || '').toLowerCase().replace(/^www\./, '');
+      return `${u.protocol}//${host}`;
+    } catch {
+      return 'https://bubblescafe.space';
+    }
+  }, []);
+
+  const pageUrl = useMemo(() => {
+    // Build absolute, normalized URL using apex siteUrl
+    try {
+      const base = new URL(siteUrl);
+      if (canonical) {
+        const u = new URL(canonical, base);
+        u.host = (u.host || '').toLowerCase().replace(/^www\./, '');
+        return u.toString();
+      }
+      if (typeof window !== 'undefined') {
+        const current = new URL(window.location.href, base);
+        current.host = (current.host || '').toLowerCase().replace(/^www\./, '');
+        return current.toString();
+      }
+      return '';
+    } catch {
+      return canonical ? `${siteUrl}${canonical}` : (typeof window !== 'undefined' ? window.location.href : '');
+    }
+  }, [canonical, siteUrl]);
+
+  const imageUrl = useMemo(() => {
+    if (image && image.startsWith('http')) return image;
+    return `${siteUrl}${image || DEFAULT_SITE_CONFIG.defaultImage}`;
+  }, [image, siteUrl]);
   const fullTitle = useMemo(() => (title ? `${title} | ${siteName}` : DEFAULT_SITE_CONFIG.defaultTitle), [title, siteName]);
   const keywordsJoined = useMemo(
     () => Array.from(new Set([...(DEFAULT_SITE_CONFIG.defaultKeywords || []), ...(keywords || []), ...(tags || [])])).join(', '),

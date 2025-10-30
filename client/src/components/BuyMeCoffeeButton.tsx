@@ -33,15 +33,39 @@ export const BuyMeCoffeeButton = () => {
 
   const handleAnimatedTip = () => {
     if (isProcessing) return;
+
     setIsProcessing(true);
     setCtaActive(true);
-    // Let the animation play before opening Paystack
+
+    // Open a blank tab immediately (within the user gesture) to avoid popup blockers
+    const newWin = window.open('', '_blank');
+    try {
+      if (newWin) {
+        // Prevent reverse-tabnabbing
+        try { newWin.opener = null; } catch {}
+        // Optional minimal placeholder while animation runs
+        try {
+          newWin.document.write('<!doctype html><title>Opening Paystack…</title><body style="font-family:system-ui;padding:16px;color:#333;background:#fff">Redirecting to Paystack…</body>');
+        } catch {}
+      }
+    } catch {}
+
+    // Let the animation play, then navigate the pre-opened tab to Paystack
+    const PAYSTACK_URL = "https://paystack.shop/pay/z7fmj9rge";
     setTimeout(() => {
       try {
-        window.open("https://paystack.shop/pay/z7fmj9rge", "_blank", "noopener,noreferrer");
-      } catch {}
+        if (newWin) {
+          newWin.location.href = PAYSTACK_URL;
+        } else {
+          // Fallback in case the tab was blocked
+          window.open(PAYSTACK_URL, "_blank", "noopener,noreferrer");
+        }
+      } catch {
+        window.open(PAYSTACK_URL, "_blank", "noopener,noreferrer");
+      }
       setIsOpen(false);
     }, 1100);
+
     // Reset states after the animation finishes
     setTimeout(() => {
       setIsProcessing(false);
