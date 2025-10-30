@@ -44,10 +44,25 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
     setCtaActive(true);
 
     const PAYSTACK_URL = 'https://paystack.shop/pay/z7fmj9rge1';
-    // Let the animation play first, then open Paystack
+
+    // Pre-open a blank tab within the user gesture to avoid popup blockers.
+    const newWin = window.open('', '_blank');
+    try {
+      if (newWin) {
+        try { newWin.opener = null; } catch {}
+        // Keep focus on current tab so the animation is visible
+        try { window.focus(); } catch {}
+      }
+    } catch {}
+
+    // Let the animation play first, then navigate the pre-opened tab
     setTimeout(() => {
       try {
-        window.open(PAYSTACK_URL, '_blank', 'noopener,noreferrer');
+        if (newWin) {
+          newWin.location.href = PAYSTACK_URL;
+        } else {
+          window.open(PAYSTACK_URL, '_blank', 'noopener,noreferrer');
+        }
       } finally {
         setIsOpen(false);
       }
