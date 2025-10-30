@@ -7,7 +7,17 @@ import path from 'path';
 import { XMLParser } from 'fast-xml-parser';
 
 const DIST_PUBLIC = path.resolve('dist', 'public');
-const SITE_URL = process.env.SITE_URL || 'https://bubblescafe.space';
+const RAW_SITE_URL = process.env.SITE_URL || 'https://bubblescafe.space';
+function normalizeSiteUrl(input) {
+  try {
+    const u = new URL(input);
+    const host = (u.host || '').toLowerCase().replace(/^www\./, '');
+    return `https://${host}`;
+  } catch {
+    return 'https://bubblescafe.space';
+  }
+}
+const SITE_URL = normalizeSiteUrl(RAW_SITE_URL);
 
 const parser = new XMLParser({
   ignoreAttributes: false,
