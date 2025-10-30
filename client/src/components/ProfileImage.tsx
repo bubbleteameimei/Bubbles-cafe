@@ -221,7 +221,7 @@ export default function ProfileImage() {
                     height: "100%",
                     objectFit: "cover",
                     objectPosition: "center",
-                    transform: "scale(1.06)", // slight zoom to hide white edge from source image
+                    transform: "scale(1.12)", // increased zoom to fully hide white edge from source image
                     transformOrigin: "center",
                     transition: "opacity 0.3s ease-in-out",
                   }}

@@ -23,7 +23,8 @@ const DEFAULT_KEYWORDS = [
 export function MetaTags({ post, title, description, image, url }: MetaTagsProps) {
   const pageTitle = post?.title || title || "Bubble’s Cafe";
   const pageDescription = post?.excerpt || description || "Bubble’s Cafe publishes dark, psychological and experimental short fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.";
-  const pageImage = image || "/icons/icon-512x512.png";
+  // Use a proper Open Graph image for page previews, not the favicon
+  const pageImage = image || "/og-image-1200x630.png";
   const pageUrl = url || window.location.href;
 
   useEffect(() => {
