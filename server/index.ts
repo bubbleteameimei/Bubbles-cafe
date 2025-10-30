@@ -29,7 +29,7 @@ import { globalRateLimiter } from "./middlewares/rate-limiter";
 import { apiCache } from './middlewares/api-cache';
 import { browserCache, etagCache } from './middlewares/browser-cache';
 import { idempotency } from './middleware/idempotency';
-import { ssrStreamHandler, readerPreviewHandler } from './ssr';
+import { ssrStreamHandler, readerPreviewHandler, aboutPreviewHandler } from './ssr';
 import path from "path";
 import fs from "fs";
 
@@ -307,8 +307,9 @@ async function startServer() {
 
       const { setupVite } = await import('./vite');
       await setupVite(app, server);
-      // Serve a minimal server-rendered head for reader pages so social crawlers see OG meta without JS
+      // Serve minimal server-rendered head for key pages so social crawlers see OG meta without JS
       app.get('/reader/:slug', readerPreviewHandler);
+      app.get('/about', aboutPreviewHandler);
       app.get('/ssr', ssrStreamHandler);
     } else {
       serverLogger.info('Setting up production environment');
@@ -329,8 +330,9 @@ async function startServer() {
       
 
       const { serveStatic } = await import('./vite');
-      // Reader pages: respond with SSR head first so crawlers get OG meta
+      // Key pages: respond with SSR head first so crawlers get OG meta
       app.get('/reader/:slug', readerPreviewHandler);
+      app.get('/about', aboutPreviewHandler);
       serveStatic(app);
       if (process.env.ENABLE_SSR === 'true') {
         app.get('/ssr', ssrStreamHandler);
