@@ -30,6 +30,8 @@ import { apiCache } from './middlewares/api-cache';
 import { browserCache, etagCache } from './middlewares/browser-cache';
 import { idempotency } from './middleware/idempotency';
 import { ssrStreamHandler, readerPreviewHandler } from './ssr';
+import path from "path";
+import fs from "fs";
 
 const app = express();
 if (process.env.ENABLE_TRACING === 'true') {
@@ -97,8 +99,6 @@ app.get('/health', async (_req, res) => {
 app.get('/favicon.ico', (_req, res) => {
   try { res.setHeader('Cache-Control', 'no-cache, must-revalidate'); } catch {}
   try {
-    const path = require('path');
-    const fs = require('fs');
     const candidatePaths = [
       // Prefer client/public/favicon.png during dev
       path.resolve(process.cwd(), 'client', 'public', 'favicon.png'),
@@ -122,8 +122,6 @@ app.get('/favicon.ico', (_req, res) => {
 app.get('/favicon.png', (_req, res) => {
   try { res.setHeader('Cache-Control', 'no-cache, must-revalidate'); } catch {}
   try {
-    const path = require('path');
-    const fs = require('fs');
     const candidatePaths = [
       path.resolve(process.cwd(), 'client', 'public', 'favicon.png'),
       path.resolve(process.cwd(), 'dist', 'public', 'favicon.png'),
@@ -144,8 +142,6 @@ app.get('/favicon.png', (_req, res) => {
 app.get('/og-image-1200x630.png', (_req, res) => {
   try { res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); } catch {}
   try {
-    const path = require('path');
-    const fs = require('fs');
     const candidates = [
       path.resolve(process.cwd(), 'dist', 'public', 'og-image-1200x630.png'),
       path.resolve(process.cwd(), 'client', 'public', 'og-image-1200x630.png'),
@@ -336,7 +332,9 @@ async function startServer() {
       // Reader pages: respond with SSR head first so crawlers get OG meta
       app.get('/reader/:slug', readerPreviewHandler);
       serveStatic(app);
-      if (process.env.ENABLE_SSR === }
+      if (process.env.ENABLE_SSR === 'true') {
+        app.get('/ssr', ssrStreamHandler);
+      }
     }
 
     const listeningPromise = new Promise<void>((resolve, reject) => {
