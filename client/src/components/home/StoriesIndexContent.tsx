@@ -26,7 +26,6 @@ import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { determineThemeCategory as sharedDetermineThemeCategory, THEME_CATEGORIES as SHARED_THEME_CATEGORIES } from "@shared/theme-categories";
 import { getStoryThemeOverride } from "@shared/story-theme-overrides";
 import { getThemeDefinitionOverride, syncThemeDefinitionOverridesFromServer } from "@/shared/theme-definitions";
-import { Icon } from "@iconify/react";
 import { getBadgeTint } from "@/lib/theme-badges";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { VirtualScrollArea } from "@/components/ui/VirtualScrollArea";
@@ -863,8 +862,6 @@ export default function StoriesIndexContent() {
                             'ghost';
                           if (key === 'BODY_HORROR') iconSlug = 'bone';
 
-                          const isIconify = String(iconSlug).includes(':');
-
                           const ThemeIconCmp = (() => {
                             const slug = String(iconSlug).toLowerCase();
                             switch (slug) {
@@ -892,7 +889,7 @@ export default function StoriesIndexContent() {
                           return (
                             <div className="-mt-1">
                               <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : <ThemeIconCmp className="h-3 w-3" />}
+                                {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                 {label}
                               </Badge>
                             </div>
