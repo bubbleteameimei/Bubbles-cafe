@@ -220,8 +220,8 @@ export default function ProfileImage() {
                     width: "100%",
                     height: "100%",
                     objectFit: "cover",
-                    objectPosition: "center 52%", // very slight downward shift
-                    transform: "scale(1.12)", // increased zoom to fully hide white edge from source image
+                    objectPosition: "center", // perfectly centered
+                    transform: "scale(1.24)", // stronger zoom to eliminate any remaining white edge
                     transformOrigin: "center",
                     transition: "opacity 0.3s ease-in-out",
                   }}

@@ -140,6 +140,11 @@ export default function SEO({
     setMetaTag('og:type', type, true);
     setMetaTag('og:url', pageUrl, true);
     setMetaTag('og:image', imageUrl, true);
+    // Provide secure_url and explicit dimensions so platforms don't fall back to favicons
+    const secureImageUrl = imageUrl.startsWith('http') ? imageUrl.replace('http://', 'https://') : imageUrl;
+    setMetaTag('og:image:secure_url', secureImageUrl, true);
+    setMetaTag('og:image:width', '1200', true);
+    setMetaTag('og:image:height', '630', true);
     setMetaTag('og:image:alt', `${title || DEFAULT_SITE_CONFIG.defaultTitle} - Preview Image`, true);
     setMetaTag('og:site_name', siteName, true);
     setMetaTag('og:locale', locale, true);

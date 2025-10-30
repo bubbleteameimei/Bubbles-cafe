@@ -37,7 +37,11 @@ export function MetaTags({ post, title, description, image, url }: MetaTagsProps
       // OpenGraph tags
       updateMetaTag("og:title", pageTitle);
       updateMetaTag("og:description", pageDescription);
-      updateMetaTag("og:image", new URL(pageImage, window.location.origin).href);
+      const absoluteImage = new URL(pageImage, window.location.origin).href;
+      updateMetaTag("og:image", absoluteImage);
+      updateMetaTag("og:image:secure_url", absoluteImage.replace("http://", "https://"));
+      updateMetaTag("og:image:width", "1200");
+      updateMetaTag("og:image:height", "630");
       updateMetaTag("og:url", pageUrl);
       updateMetaTag("og:type", "article");
 
