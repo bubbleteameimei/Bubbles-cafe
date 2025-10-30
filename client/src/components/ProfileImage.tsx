@@ -221,7 +221,7 @@ export default function ProfileImage() {
                     height: "100%",
                     objectFit: "cover",
                     objectPosition: "center", // perfectly centered
-                    transform: "scale(1.20)", // slightly zoomed-in to hide edges while showing more of the face
+                    transform: "scale(1.18)", // slightly zoomed-out to reveal more while still hiding edges
                     transformOrigin: "center",
                     transition: "opacity 0.3s ease-in-out",
                   }}

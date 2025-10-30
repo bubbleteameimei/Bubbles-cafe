@@ -18,7 +18,7 @@ export default function AboutPage() {
         title="About"
         description="About Vanessa — writer, designer, and developer behind Bubble’s Cafe."
         canonical="/about"
-        image="/og-image-1200x630.png"
+        image="/og-image-1200x630.png?v=4"
         type="profile"
         author="Vanessa"
       />

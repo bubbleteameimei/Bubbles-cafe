@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 
 const ICON_VERSION = 'v=3';
+const OG_VERSIONED = 'https://bubblescafe.space/og-image-1200x630.png?v=4';
 
 export function ssrStreamHandler(req: Request, res: Response) {
   if (process.env.ENABLE_SSR !== 'true') {
@@ -23,13 +24,13 @@ export function ssrStreamHandler(req: Request, res: Response) {
     <meta property="og:title" content="Bubble’s Cafe"/>
     <meta property="og:description" content="Dark, psychological and experimental short fiction."/>
     <meta property="og:type" content="website"/>
-    <meta property="og:image" content="https://bubblescafe.space/og-image-1200x630.png"/>
+    <meta property="og:image" content="${OG_VERSIONED}"/>
     <meta property="og:image:width" content="1200"/>
     <meta property="og:image:height" content="630"/>
     <meta name="twitter:card" content="summary_large_image"/>
     <meta name="twitter:title" content="Bubble’s Cafe"/>
     <meta name="twitter:description" content="Dark, psychological and experimental short fiction."/>
-    <meta name="twitter:image" content="https://bubblescafe.space/og-image-1200x630.png"/>
+    <meta name="twitter:image" content="${OG_VERSIONED}"/>
   </head><body>`);
 
   res.write(`<div id="root">`);
@@ -63,8 +64,8 @@ export function readerPreviewHandler(req: Request, res: Response) {
     <meta property="og:description" content="Read this story on Bubble’s Cafe."/>
     <meta property="og:type" content="article"/>
     <meta property="og:url" content="https://bubblescafe.space/reader/${encodeURIComponent(slug)}"/>
-    <meta property="og:image" content="https://bubblescafe.space/og-image-1200x630.png"/>
-    <meta property="og:image:secure_url" content="https://bubblescafe.space/og-image-1200x630.png"/>
+    <meta property="og:image" content="${OG_VERSIONED}"/>
+    <meta property="og:image:secure_url" content="${OG_VERSIONED}"/>
     <meta property="og:image:width" content="1200"/>
     <meta property="og:image:height" content="630"/>
 
@@ -72,7 +73,7 @@ export function readerPreviewHandler(req: Request, res: Response) {
     <meta name="twitter:card" content="summary_large_image"/>
     <meta name="twitter:title" content="${safeTitle}"/>
     <meta name="twitter:description" content="Read this story on Bubble’s Cafe."/>
-    <meta name="twitter:image" content="https://bubblescafe.space/og-image-1200x630.png"/>
+    <meta name="twitter:image" content="${OG_VERSIONED}"/>
   </head>
   <body>
     <div id="root"><div style="padding:16px;font-family:system-ui">Loading…</div></div>
@@ -102,8 +103,8 @@ export function aboutPreviewHandler(_req: Request, res: Response) {
     <meta property="og:description" content="${desc}"/>
     <meta property="og:type" content="profile"/>
     <meta property="og:url" content="https://bubblescafe.space/about"/>
-    <meta property="og:image" content="https://bubblescafe.space/og-image-1200x630.png"/>
-    <meta property="og:image:secure_url" content="https://bubblescafe.space/og-image-1200x630.png"/>
+    <meta property="og:image" content="${OG_VERSIONED}"/>
+    <meta property="og:image:secure_url" content="${OG_VERSIONED}"/>
     <meta property="og:image:width" content="1200"/>
     <meta property="og:image:height" content="630"/>
 
@@ -111,7 +112,7 @@ export function aboutPreviewHandler(_req: Request, res: Response) {
     <meta name="twitter:card" content="summary_large_image"/>
     <meta name="twitter:title" content="${title}"/>
     <meta name="twitter:description" content="${desc}"/>
-    <meta name="twitter:image" content="https://bubblescafe.space/og-image-1200x630.png"/>
+    <meta name="twitter:image" content="${OG_VERSIONED}"/>
   </head>
   <body>
     <div id="root"><div style="padding:16px;font-family:system-ui">Loading…</div></div>

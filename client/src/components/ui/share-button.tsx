@@ -28,7 +28,7 @@ export function ShareButton({ title, text, url = window.location.href, className
   const handleShare = async () => {
     // Try Web Share Level 2 with image file first
     try {
-      const ogUrl = "/og-image-1200x630.png";
+      const ogUrl = "/og-image-1200x630.png?v=4";
       const response = await fetch(ogUrl, { cache: "no-cache" });
       let files: File[] | undefined = undefined;
       if (response.ok) {
