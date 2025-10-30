@@ -431,6 +431,7 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
                 </motion.div>
               )}
             </div>
+          </div>
         </motion.div>
 
         <div className="mt-6 flex justify-center">
