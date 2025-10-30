@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,9 @@ interface TipPopupProps {
 export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [ctaActive, setCtaActive] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const animRef = useRef<HTMLDivElement | null>(null);
+  const btnRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (autoShow) {
@@ -40,26 +42,46 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
     return () => {};
   }, [autoShow]);
 
-  const handleAnimatedTip = () => {
-    if (isProcessing) return;
+  const handleAnimatedTip = (e: any) => {
+    e?.preventDefault?.();
+    if (isProcessing || isAnimating) return;
+
     setIsProcessing(true);
-    setCtaActive(true);
+    setIsAnimating(true);
+
+    const anim = animRef.current;
+    const btn = btnRef.current;
+
+    try {
+      anim?.setAttribute('aria-hidden', 'false');
+      anim?.setAttribute('aria-live', 'polite');
+    } catch {}
 
     const PAYSTACK_URL = 'https://paystack.shop/pay/z7fmj9rge1';
+    let opened = false;
 
-    // Let the animation play first, then open Paystack (no pre-open to avoid instant pop)
-    setTimeout(() => {
+    const openCheckout = () => {
+      if (opened) return;
+      opened = true;
       try {
         window.open(PAYSTACK_URL, '_blank', 'noopener,noreferrer');
-      } finally {
-        setIsOpen(false);
-      }
-    }, 1100);
-
-    setTimeout(() => {
+      } catch {}
+      setIsOpen(false);
       setIsProcessing(false);
-      setCtaActive(false);
-    }, 2000);
+      setIsAnimating(false);
+      try { btn?.focus(); } catch {}
+    };
+
+    if (anim) {
+      const onEnd = () => {
+        openCheckout();
+        anim.removeEventListener('animationend', onEnd);
+      };
+      anim.addEventListener('animationend', onEnd);
+      window.setTimeout(openCheckout, 1300);
+    } else {
+      window.setTimeout(openCheckout, 1100);
+    }
   };
 
   return (
@@ -124,20 +146,8 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
           <div className="w-full flex justify-center">
             <div
               className="w-full text-center"
-              onMouseEnter={() => setCtaActive(true)}
-              onMouseLeave={() => setCtaActive(false)}
-              onClick={() => {
-                if (isProcessing) return;
-                setIsProcessing(true);
-                try {
-                  window.open('https://paystack.shop/pay/z7fmj9rge1', '_blank', 'noopener,noreferrer');
-                } finally {
-                  setIsOpen(false);
-                }
-                setTimeout(() => setIsProcessing(false), 1000);
-              }}
             >
-              {ctaActive ? (
+              {isAnimating ? (
                 <div className="donation-cta">
                   <style>{`
                     .donation-cta {
@@ -343,8 +353,12 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
                   `}</style>
 
                   <div
-                    className={`bmc-container ${ctaActive ? 'active' : ''} ${isProcessing ? 'opacity-70 pointer-events-none' : ''}`}
+                    id="atm-animation"
+                    ref={animRef}
+                    className={`bmc-container ${isAnimating ? 'active' : ''} ${isProcessing ? 'opacity-70 pointer-events-none' : ''}`}
                     aria-label="Support with a donation"
+                    aria-hidden={!isAnimating}
+                    aria-live={isAnimating ? "polite" : undefined}
                   >
                     <div className="bmc-left">
                       <div className="bmc-card">
@@ -370,6 +384,9 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
                   className="w-full text-center"
                 >
                   <Button
+                    id="coffee-btn"
+                    ref={btnRef}
+                    onClick={handleAnimatedTip}
                     disabled={isProcessing}
                     className="px-8 py-4 text-lg font-medium w-full sm:w-auto bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white rounded-full shadow-lg relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed"
                     aria-label="Support with a donation"
