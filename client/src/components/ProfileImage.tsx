@@ -15,16 +15,18 @@ export default function ProfileImage() {
   // Define optimized images with progressive loading strategy
   // Updated to use the new author profile image. Place the file at:
   // client/public/images/author-profile.jpg
+  // Add a cache-busting param so the latest uploaded file is used immediately.
+  const [bust] = useState(() => String(Date.now()));
   const images = useMemo(() => [
     { 
-      src: '/images/author-profile.jpg',
+      src: `/images/author-profile.jpg?v=${bust}`,
       alt: 'Author Profile',
       // Use same source for blurred placeholder via CSS filter (no separate blur asset required)
-      blurSrc: '/images/author-profile.jpg',
+      blurSrc: `/images/author-profile.jpg?v=${bust}`,
       // High-res hint; keep single entry to avoid broken fallbacks
-      srcset: '/images/author-profile.jpg 900w'
+      srcset: `/images/author-profile.jpg?v=${bust} 900w`
     }
-  ], []);
+  ], [bust]);
   // Fallback-aware current source
   const [currentSrc, setCurrentSrc] = useState(images[0].src);
   const [currentSrcSet, setCurrentSrcSet] = useState(images[0].srcset);
@@ -142,20 +144,20 @@ export default function ProfileImage() {
   const handleImageError = () => {
     // Try alternate extensions first, then fallback to previous optimized image
     if (fallbackStep === 0) {
-      setCurrentSrc('/images/author-profile.jpeg');
-      setCurrentSrcSet('/images/author-profile.jpeg 900w');
+      setCurrentSrc(`/images/author-profile.jpeg?v=${bust}`);
+      setCurrentSrcSet(`/images/author-profile.jpeg?v=${bust} 900w`);
       setFallbackStep(1);
       return;
     }
     if (fallbackStep === 1) {
-      setCurrentSrc('/images/author-profile.png');
-      setCurrentSrcSet('/images/author-profile.png 900w');
+      setCurrentSrc(`/images/author-profile.png?v=${bust}`);
+      setCurrentSrcSet(`/images/author-profile.png?v=${bust} 900w`);
       setFallbackStep(2);
       return;
     }
     setLoadError(true);
-    setCurrentSrc('/images/optimized/profile-optimized.jpg');
-    setCurrentSrcSet('/images/optimized/profile-optimized.jpg 600w, /images/IMG_5266.png 900w');
+    setCurrentSrc(`/images/optimized/profile-optimized.jpg?v=${bust}`);
+    setCurrentSrcSet(`/images/optimized/profile-optimized.jpg?v=${bust} 600w, /images/IMG_5266.png?v=${bust} 900w`);
   };
   
   const handleImageLoad = () => {
@@ -214,16 +216,16 @@ export default function ProfileImage() {
                   decoding="async"
                   style={{
                     position: "absolute",
-                    height: "145%", /* Reduced zoom to 145% per user request */
-                    width: "auto", /* Width auto to maintain aspect ratio */
-                    left: "45%", /* Shifted left as requested (from 50% to 45%) */
-                    top: "20%", /* Keeps position high as requested */
-                    transform: "translate(-50%, -15%)", /* Adjusted for top focus */
-                    objectFit: "cover", /* Ensure the image covers the area */
-                    objectPosition: "center 10%", /* Focus point high */
-                    transition: "all 0.8s ease-in-out", /* Smoother animation transition */
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    objectPosition: "center",
+                    transform: "none", // use natural framing with exact circular clip
+                    transformOrigin: "center",
+                    transition: "opacity 0.3s ease-in-out",
                   }}
-                  className="transition-all duration-1000 will-change-transform"
+                  className="transition-all duration-700 will-change-transform"
                   onError={handleImageError}
                   onLoad={() => {
                     console.log("[Profile] Image loaded successfully");
