@@ -149,8 +149,8 @@ export default function SEO({
     // Provide secure_url and explicit dimensions so platforms don't fall back to favicons
     const secureImageUrl = imageUrl.startsWith('http') ? imageUrl.replace('http://', 'https://') : imageUrl;
     setMetaTag('og:image:secure_url', secureImageUrl, true);
-    setMetaTag('og:image:width', '1200', true);
-    setMetaTag('og:image:height', '630', true);
+    setMetaTag('og:image:width', '512', true);
+    setMetaTag('og:image:height', '512', true);
     setMetaTag('og:image:alt', `${title || DEFAULT_SITE_CONFIG.defaultTitle} - Preview Image`, true);
     setMetaTag('og:site_name', siteName, true);
     setMetaTag('og:locale', locale, true);
@@ -245,6 +245,12 @@ export default function SEO({
         {
           '@context': 'https://schema.org',
           '@type': 'SiteNavigationElement',
+          name: 'Home',
+          url: `${siteUrl}/`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
           name: 'Stories',
           url: `${siteUrl}/stories`
         },
@@ -259,6 +265,18 @@ export default function SEO({
           '@type': 'SiteNavigationElement',
           name: 'Contact',
           url: `${siteUrl}/contact`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'Privacy Policy',
+          url: `${siteUrl}/privacy`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'Community',
+          url: `${siteUrl}/community`
         }
       ];
 

@@ -2,17 +2,17 @@
 
 echo "==== Verifying UI Changes ===="
 
-# Check if the server is running on port 3001
-if ! curl -s "http://localhost:3001/" -o /dev/null; then
-  echo "ERROR: Server is not running on port 3001"
+# Check if the server is running on port 3002
+if ! curl -s "http://localhost:3002/" -o /dev/null; then
+  echo "ERROR: Server is not running on port 3002"
   exit 1
 fi
 
-echo "✅ Server is running on port 3001"
+echo "✅ Server is running on port 3002"
 
 # Fetch the reader page HTML
 echo "Fetching reader page HTML..."
-READER_HTML=$(curl -s "http://localhost:3001/reader/blood")
+READER_HTML=$(curl -s "http://localhost:3002/reader/blood")
 
 # Check for slim navigation
 echo "Checking for slimmed navigation bar..."
@@ -47,7 +47,7 @@ fi
 
 # Fetch the index HTML
 echo "Fetching index HTML..."
-INDEX_HTML=$(curl -s "http://localhost:3001/")
+INDEX_HTML=$(curl -s "http://localhost:3002/")
 
 # Check for loading provider
 echo "Checking for loading provider..."
