@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 
 
 import { SupportWritingCard } from "@/components/SupportWritingCard";
+import { resolveAuthorId } from "@/lib/reader-navigation";
 import Footer from "@/components/layout/footer";
 import SEO from "@/components/SEO";
 import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
@@ -1831,11 +1832,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </div>
             
             {/* Social sharing and support section  */}
-            <div className={`social-support-section mt-8 pt-6 border-t border-border ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              
-              {/* Support writing card */}
-              <SupportWritingCard />
-            </div>
+              <div className={`social-support-section mt-8 pt-6 border-t border-border ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                
+                {/* Support writing card with auto-wired authorId */}
+                <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
+              </div>
 
             {/* Comment section */}
             <div className={`mt-8 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>

@@ -10,7 +10,7 @@ import { getExcerpt } from "@/lib/content-analysis";
 import { extractEngagingExcerpt } from "@/lib/excerpt-lite";
 import { sanitizeHtml } from "@/lib/sanitize";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
-import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
+import { SupportWritingCard } from "@/components/SupportWritingCard";
 import Footer from "@/components/layout/footer";
 
 
@@ -259,15 +259,11 @@ export default function Home() {
                     <Button
                       size="lg"
                       variant="secondary"
-                      onClick={() => {
+                      onClick={async () => {
                         try {
-                          const targetSlug = posts?.[0]?.slug;
-                          if (targetSlug) {
-                            setLocation(`/reader/${encodeURIComponent(String(targetSlug))}`);
-                          } else {
-                            // Fallback: go to story index
-                            setLocation('/stories');
-                          }
+                          const { getLatestReaderPath } = await import('@/lib/reader-navigation');
+                          const target = await getLatestReaderPath();
+                          setLocation(target);
                         } catch {
                           setLocation('/stories');
                         }
@@ -295,9 +291,9 @@ export default function Home() {
               </motion.div>
               {/* Monthly readers pill removed by request */}
               
-              {/* Buy Me a Coffee button positioned above Latest Story (always visible) */}
+              {/* Support Writing overlay launcher (same as reader page) */}
               <div className="flex justify-center mt-1 sm:mt-2 mb-1 sm:mb-1 w-full px-4 max-w-4xl mx-auto">
-                <BuyMeCoffeeButton />
+                <SupportWritingCard authorId={Number(posts?.[0]?.author) || undefined} />
               </div>
 
               
@@ -306,14 +302,11 @@ export default function Home() {
                 <div className="mt-2 sm:mt-3 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <motion.div 
-                    onClick={() => {
+                    onClick={async () => {
                       try {
-                        const targetSlug = posts?.[0]?.slug;
-                        if (targetSlug) {
-                          setLocation(`/reader/${encodeURIComponent(String(targetSlug))}`);
-                        } else {
-                          setLocation('/stories');
-                        }
+                        const { getLatestReaderPath } = await import('@/lib/reader-navigation');
+                        const target = await getLatestReaderPath();
+                        setLocation(target);
                       } catch {
                         setLocation('/stories');
                       }

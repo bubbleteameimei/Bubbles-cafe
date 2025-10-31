@@ -246,33 +246,20 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     }
   }, []);
 
-  // Navigate to reader with a valid slug when possible
+  // Navigate to reader with standardized helper
   const navigateToReader = React.useCallback(async () => {
     try {
-      // Attempt to fetch the latest post from the database
-      const res = await fetch('/api/posts?limit=1', { credentials: 'include' }).catch(() => null);
-      if (res && res.ok) {
-        const data = await res.json().catch(() => null);
-        const slug = data?.posts?.[0]?.slug;
-        if (slug) {
-          // Close sidebar then navigate to reader slug
-          if (sidebar) sidebar.setOpenMobile(false);
-          React.startTransition(() => {
-            setLocation(`/reader/${encodeURIComponent(String(slug))}`);
-          });
-          return;
-        }
-      }
-      // Fallback: navigate to the story index directly and warm resources
+      const { getLatestReaderPath } = await import('@/lib/reader-navigation');
+      const target = await getLatestReaderPath();
       if (sidebar) sidebar.setOpenMobile(false);
       React.startTransition(() => {
-        setLocation('/stories');
+        setLocation(target);
       });
       requestAnimationFrame(() => {
         const idle = (window as any).requestIdleCallback as ((cb: () => void, opts?: any) => void) | undefined;
         const run = () => {
-          prefetchRouteAsync('/stories').catch(() => {});
-          void prefetchDataForRouteEarly('/stories');
+          prefetchRouteAsync(target.startsWith('/reader') ? '/reader' : '/stories').catch(() => {});
+          void prefetchDataForRouteEarly(target.startsWith('/reader') ? '/reader' : '/stories');
         };
         if (typeof idle === "function") {
           idle(run);
@@ -281,7 +268,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         }
       });
     } catch {
-      // Hard fallback
       window.location.href = '/stories';
     }
   }, [setLocation, sidebar, prefetchRouteAsync, prefetchDataForRouteEarly]);

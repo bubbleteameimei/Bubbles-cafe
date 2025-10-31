@@ -107,10 +107,25 @@ export default function CommunityPage() {
         params.append('search', searchTerm);
       }
       
-      const response = await fetch(`/api/posts/community?${params.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch community posts');
-      const result: PostsResponse = await response.json();
-      return result;
+      // Primary attempt: community endpoint
+      const response = await fetch(`/api/posts/community?${params.toString()}`).catch(() => null as any);
+      if (response && response.ok) {
+        const result: PostsResponse = await response.json();
+        return result;
+      }
+      
+      // Fallback: fetch general posts and filter community
+      const fallbackRes = await fetch(`/api/posts?${params.toString()}`).catch(() => null as any);
+      if (fallbackRes && fallbackRes.ok) {
+        const base = await fallbackRes.json().catch(() => ({ posts: [], hasMore: false, page: Number(currentPage), totalPosts: 0 }));
+        const posts = (Array.isArray(base.posts) ? base.posts : []).filter((p: any) => {
+          const md = (p as any)?.metadata || {};
+          return md.isCommunityPost === true || (p as any)?.isCommunityPost === true;
+        });
+        return { posts, hasMore: Boolean(base.hasMore), page: Number(currentPage), totalPosts: Number(posts.length) } as PostsResponse;
+      }
+      
+      throw new Error('Failed to fetch community posts');
     },
     staleTime: 60000 // 1 minute
   });
