@@ -24,7 +24,7 @@ export const BuyMeCoffeeButton = ({ authorId }: BuyMeCoffeeButtonProps) => {
     <Button
       asChild
       size="lg"
-      className="relative overflow-hidden px-6 py-3 bg-gradient-to-r from-rose-500 via-pink-500 to-violet-500 text-white rounded-full shadow-xl ring-1 ring-white/20 transition-all duration-500"
+      className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white rounded-full shadow-lg transition-colors"
       aria-label="Buy me a coffee"
     >
       <motion.a
