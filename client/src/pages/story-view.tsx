@@ -43,6 +43,13 @@ export default function StoryView({ slug }: StoryViewProps) {
   const wordCount = plainText ? plainText.split(/\s+/).filter(Boolean).length : 0;
   const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
   const description = (post.excerpt && post.excerpt.trim()) || (plainText ? plainText.slice(0, 160) : undefined);
+  const createdAtIso = (() => {
+    try {
+      return new Date(post.createdAt as any).toISOString();
+    } catch {
+      return undefined;
+    }
+  })();
 
   return (
     <div className="relative min-h-screen">
@@ -51,8 +58,8 @@ export default function StoryView({ slug }: StoryViewProps) {
         description={description}
         canonical={canonical}
         type="article"
-        published={post.createdAt}
-        modified={post.createdAt}
+        published={createdAtIso}
+        modified={createdAtIso}
         readingTime={readingMinutes}
         wordCount={wordCount}
       />
