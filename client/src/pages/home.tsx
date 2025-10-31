@@ -230,11 +230,11 @@ export default function Home() {
                       size="lg"
                       onClick={() => setLocation('/index')}
                       onMouseEnter={() => { try { void import('@/pages/index'); } catch {} }}
-                      onFocus={() => { tryry { void import('@/pages/index'); } catch {} }}
+                      onFocus={() => { try { void import('@/pages/index'); } catch {} }}
                       className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       data-testid="home-browse-stories"
                     >
-                      <span className="text-center mr-1">Open Index</span>
+                      <span className="text-center mr-1">Story Index</span>
                       <motion.div
                         animate={inView ? {
                           rotate: [0, 10, -6, 4, 0],

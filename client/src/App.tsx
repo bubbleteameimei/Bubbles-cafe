@@ -444,9 +444,8 @@ const AppContent = () => {
                   {/* Main Pages */}
                   <Route path="/" component={HomePage} />
                   <Route path="/stories" component={StoriesPage} />
-                 <<Route path="/index" component={StoriesPage} />
-                 < Route path="/best-stories" component={BestStoriesPage_code} new/</>
-esPage} />
+                  <Route path="/index" component={StoriesPage} />
+                  <Route path="/best-stories" component={BestStoriesPage} />
                   <Route path="/curated" component={CuratedPage} />
                   <Route path="/editors-picks" component={EditorsPicksPage} />
                   <Route path="/edens-hollow" component={EdensHollowPage} />

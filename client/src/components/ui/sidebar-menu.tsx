@@ -577,13 +577,13 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       onClick={() => handleNavigation('/index')}
                       onMouseEnter={() => prefetchRoute('/index')}
                       onFocus={() => prefetchRoute('/index')}
-                      tooltip="Index"
+                      tooltip="Story Index"
                       className={menuItemClass}
                       aria-current={location === '/index' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/index')}
                       <Scroll className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-105 transition-transform duration-150" />
-                      <span className="sidebar-menu-text-enhanced">INDEX</span>
+                      <span className="sidebar-menu-text-enhanced">STORY INDEX</span>
                     </SidebarMenuButton>
                   </motion.div>
                 </SidebarMenuItem>
