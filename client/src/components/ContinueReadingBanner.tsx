@@ -67,6 +67,7 @@ export default function ContinueReadingBanner() {
 
   const slug = latest?.slug;
 
+  // Load post title by slug
   const { data, isLoading, isError } = useQuery({
     queryKey: ["/api/posts/slug", slug],
     enabled: Boolean(slug) && !dismissed,
@@ -78,10 +79,25 @@ export default function ContinueReadingBanner() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Load server reading progress if available for authenticated users
+  const { data: serverProgress } = useQuery({
+    queryKey: ["/api/reading-progress", slug],
+    enabled: Boolean(slug) && !dismissed,
+    queryFn: async () => {
+      const res = await fetch(`/api/reading-progress/${encodeURIComponent(slug as string)}`, { credentials: 'include' });
+      if (!res.ok) return null;
+      return await res.json();
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+
   // Don't render without valid data
   if (!slug || dismissed) return null;
 
-  const pct = Math.round(latest?.pos.percentRead || 0);
+  const localPct = Math.round(latest?.pos.percentRead || 0);
+  const serverPct = Number(serverProgress?.progress?.percentCompleted || 0);
+  const pct = Math.max(localPct, serverPct); // prefer higher of local/server
+
   const title = data ? parseTitle(data.title) : "Continue Reading";
   const safeTitle = sanitize(title);
 
@@ -104,10 +120,10 @@ export default function ContinueReadingBanner() {
               </button>
             </div>
             <div className="mt-1.5 text-xs text-muted-foreground">
-              Continue from {pct}% read
+              Continue from {Math.round(pct)}% read
             </div>
             <div className="mt-2">
-              <Progress value={pct} className="h-1.5" />
+              <Progress value={Math.round(pct)} className="h-1.5" />
             </div>
             <div className="mt-3 flex items-center gap-2">
               <Link href={`/reader/${encodeURIComponent(slug)}`}>

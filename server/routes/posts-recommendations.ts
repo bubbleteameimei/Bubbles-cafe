@@ -1,6 +1,6 @@
 import { Request, Response, Express } from "express";
 import { db } from "../db";
-import { posts } from "@shared/schema";
+import { posts, analytics } from "@shared/schema";
 import { desc, eq, and, ne, or, sql, not, inArray } from "drizzle-orm";
 
 /**
@@ -25,7 +25,7 @@ export function registerPostRecommendationsRoutes(app: Express) {
       if (!postId) {
         console.log('No postId provided, returning recent posts');
         const recentPosts = await fetchRecentPosts(limit);
-        const enhancedPosts = enhancePostsWithMetadata(recentPosts);
+        const enhancedPosts = await enhancePostsWithMetadata(recentPosts);
         return res.json(enhancedPosts);
       }
       
@@ -39,7 +39,7 @@ export function registerPostRecommendationsRoutes(app: Express) {
       console.log(`Found source post: ${sourcePost.title}`);
       
       // Extract metadata for theme-based recommendations
-      const metadata = sourcePost.metadata;
+      const metadata = sourcePost.metadata as any;
       
       // Extract theme category if available
       let themeCategory: string | null = null;
@@ -52,13 +52,21 @@ export function registerPostRecommendationsRoutes(app: Express) {
           console.log('Error parsing metadata string:', e);
         }
       } else if (metadata && typeof metadata === 'object') {
-        // Using any here to avoid TypeScript errors with dynamic properties
-        const metadataObj = metadata as any;
-        themeCategory = metadataObj.themeCategory || null;
+        themeCategory = (metadata as any)?.themeCategory || null;
       }
       
       // Try to find posts with the same theme category if available
-      let recommendedPosts: Array<{ id: number; title: string; slug: string; excerpt: string | null; createdAt: Date }> = [];
+      let recommendedPosts: Array<{ 
+        id: number; 
+        title: string; 
+        slug: string; 
+        excerpt: string | null; 
+        createdAt: Date;
+        content: string;
+        metadata: any;
+        readingTimeMinutes: number | null;
+        likesCount: number | null;
+      }> = [];
       if (themeCategory) {
         console.log(`Finding posts with theme: ${themeCategory}`);
         
@@ -67,7 +75,11 @@ export function registerPostRecommendationsRoutes(app: Express) {
           title: posts.title,
           slug: posts.slug,
           excerpt: posts.excerpt,
-          createdAt: posts.createdAt
+          createdAt: posts.createdAt,
+          content: posts.content,
+          metadata: posts.metadata,
+          readingTimeMinutes: posts.readingTimeMinutes,
+          likesCount: posts.likesCount
         })
         .from(posts)
         .where(
@@ -104,7 +116,11 @@ export function registerPostRecommendationsRoutes(app: Express) {
             title: posts.title,
             slug: posts.slug,
             excerpt: posts.excerpt,
-            createdAt: posts.createdAt
+            createdAt: posts.createdAt,
+            content: posts.content,
+            metadata: posts.metadata,
+            readingTimeMinutes: posts.readingTimeMinutes,
+            likesCount: posts.likesCount
           })
           .from(posts)
           .where(
@@ -132,7 +148,6 @@ export function registerPostRecommendationsRoutes(app: Express) {
           // Otherwise, add more posts to reach the limit
           const existingIds = recommendedPosts.map((p: { id: number }) => p.id);
           
-          // Only try to supplement if we have existing posts and there are at least 2 ids
           if (existingIds.length > 0) {
             try {
               const additionalPosts = await db.select({
@@ -140,7 +155,11 @@ export function registerPostRecommendationsRoutes(app: Express) {
                 title: posts.title,
                 slug: posts.slug,
                 excerpt: posts.excerpt,
-                createdAt: posts.createdAt
+                createdAt: posts.createdAt,
+                content: posts.content,
+                metadata: posts.metadata,
+                readingTimeMinutes: posts.readingTimeMinutes,
+                likesCount: posts.likesCount
               })
               .from(posts)
               .where(
@@ -165,8 +184,8 @@ export function registerPostRecommendationsRoutes(app: Express) {
       
       console.log(`Found ${recommendedPosts.length} recommended posts`);
       
-      // Add estimated reading time and other metadata
-      const enhancedPosts = enhancePostsWithMetadata(recommendedPosts as any[]);
+      // Add analytics and other metadata
+      const enhancedPosts = await enhancePostsWithMetadata(recommendedPosts as any[]);
       return res.json(enhancedPosts);
     } catch (error) {
       console.error("Error getting post recommendations:", error);
@@ -188,7 +207,11 @@ async function fetchRecentPosts(limit: number, excludeId?: number | null) {
       title: posts.title,
       slug: posts.slug,
       excerpt: posts.excerpt,
-      createdAt: posts.createdAt
+      createdAt: posts.createdAt,
+      content: posts.content,
+      metadata: posts.metadata,
+      readingTimeMinutes: posts.readingTimeMinutes,
+      likesCount: posts.likesCount
     })
     .from(posts);
 
@@ -206,20 +229,31 @@ async function fetchRecentPosts(limit: number, excludeId?: number | null) {
 }
 
 /**
- * Add metadata to posts for frontend display
+ * Add metadata and analytics to posts for frontend display
  */
-function enhancePostsWithMetadata(posts: any[]) {
-  return posts.map(post => {
-    // Estimate reading time based on excerpt length
-    const wordCount = post.excerpt ? post.excerpt.split(' ').length : 0;
-    const readingTime = Math.max(2, Math.ceil(wordCount / 200)); // Assume 200 words per minute
-    
-    return {
+async function enhancePostsWithMetadata(rawPosts: any[]) {
+  const results: any[] = [];
+  for (const post of rawPosts) {
+    let views = 0;
+    try {
+      const [row] = await db
+        .select()
+        .from(analytics)
+        .where(eq(analytics.postId, Number(post.id)))
+        .orderBy(desc(analytics.updatedAt))
+        .limit(1);
+      views = Number(row?.pageViews || 0);
+    } catch {
+      views = 0;
+    }
+
+    results.push({
       ...post,
-      readingTime,
-      authorName: 'Anonymous', // Default author
-      views: Math.floor(Math.random() * 100) + 10, // Random view count 
-      likes: Math.floor(Math.random() * 20) + 1 // Random like count
-    };
-  });
+      authorName: 'Anonymous',
+      views,
+      likesCount: Number(post.likesCount ?? 0),
+      readingTimeMinutes: (post.readingTimeMinutes as number | null) ?? null
+    });
+  }
+  return results;
 }

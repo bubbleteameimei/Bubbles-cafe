@@ -189,9 +189,9 @@ const AppContent = () => {
   if (pathForSeo === '/') {
     seoTitle = 'Bubble’s Cafe';
     seoDescription = 'Bubble’s Cafe publishes dark, psychological, and experimental short fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.';
-  } else if (pathForSeo.startsWith('/stories')) {
-    seoTitle = 'Stories';
-    seoDescription = 'Discover short fiction from Bubble’s Cafe — psychological and experimental stories of identity, obsession, and the strange grace of decay.';
+  } else if (pathForSeo.startsWith('/stories') || pathForSeo.startsWith('/index')) {
+    seoTitle = 'Index';
+    seoDescription = 'Browse the index of short fiction from Bubble’s Cafe — psychological and experimental stories of identity, obsession, and the strange grace of decay.';
   } else if (pathForSeo.startsWith('/reader')) {
     // Reader page sets its own page-level SEO (Article)
     // Provide only canonical here via global SEO
@@ -295,7 +295,7 @@ const AppContent = () => {
         const path = locationStr;
         if (path === '/') {
           void import('./pages/home');
-        } else if (path.startsWith('/stories')) {
+        } else if (path.startsWith('/stories') || path.startsWith('/index')) {
           void import('./pages/index');
         } else if (path.startsWith('/best-stories')) {
           void import('./pages/best-stories');
@@ -444,6 +444,7 @@ const AppContent = () => {
                   {/* Main Pages */}
                   <Route path="/" component={HomePage} />
                   <Route path="/stories" component={StoriesPage} />
+                  <Route path="/index" component={StoriesPage} />
                   <Route path="/best-stories" component={BestStoriesPage} />
                   <Route path="/curated" component={CuratedPage} />
                   <Route path="/editors-picks" component={EditorsPicksPage} />
@@ -515,6 +516,8 @@ const AppContent = () => {
                   <Route path="/community-story/:slug">
                     {(params) => <CommunityStoryRoute params={params} />}
                   </Route>
+                  {/* Ensure /reader without slug also resolves to the reader component */}
+                  <Route path="/reader" component={ReaderRoute} />
                   <Route path="/reader/:slug">
                     {(params) => <ReaderRoute params={params} isCommunityContent={false} />}
                   </Route>
@@ -541,6 +544,7 @@ const AppContent = () => {
                       {/* Main Pages */}
                       <Route path="/" component={HomePage} />
                       <Route path="/stories" component={StoriesPage} />
+                      <Route path="/index" component={StoriesPage} />
                       <Route path="/best-stories" component={BestStoriesPage} />
                       <Route path="/curated" component={CuratedPage} />
                       <Route path="/editors-picks" component={EditorsPicksPage} />

@@ -25,7 +25,12 @@ const createCommentBodySchema = z.object({
 	author: z.string().min(1).max(50).optional(),
 	parentId: z.coerce.number().int().positive().optional(),
 	needsModeration: z.boolean().optional(),
-	moderationStatus: z.enum(['flagged', 'under_review', 'none']).optional()
+	moderationStatus: z.enum(['flagged', 'under_review', 'none']).optional(),
+	// Inline selection anchors (optional)
+	selectionStart: z.coerce.number().int().min(0).optional(),
+	selectionEnd: z.coerce.number().int().min(0).optional(),
+	anchorParagraphIndex: z.coerce.number().int().min(0).optional(),
+	selectionText: z.string().min(1).max(1000).optional()
 });
 
 const voteBodySchema = z.object({
@@ -94,6 +99,19 @@ router.post(
 			? body.author.trim()
 			: ((req as any).user?.username || ((req as any).user?.id ? 'User' : 'Guest'));
 
+		// Build optional selection anchor metadata
+		const selectionAnchor = (body.selectionStart !== undefined && body.selectionEnd !== undefined) ? {
+			startOffset: Number(body.selectionStart),
+			endOffset: Number(body.selectionEnd),
+			paragraphIndex: (body.anchorParagraphIndex !== undefined ? Number(body.anchorParagraphIndex) : undefined),
+			text: body.selectionText || undefined
+		} : undefined;
+
+		const baseMeta: any = {};
+		if (selectionAnchor) {
+			(baseMeta as any).selectionAnchor = selectionAnchor;
+		}
+
 		const insert = {
 			content: contentToSave,
 			postId,
@@ -102,7 +120,8 @@ router.post(
 			is_approved: shouldHoldForReview ? false : true,
 			metadata: {
 				author: inferredAuthor,
-				ownerKey: userKey
+				ownerKey: userKey,
+				...baseMeta
 			}
 		} as z.infer<typeof insertCommentSchema>;
 

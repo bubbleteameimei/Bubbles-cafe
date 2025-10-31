@@ -101,7 +101,7 @@ const CommentPlugin: React.FC<CommentPluginProps> = ({
       newUserVote = null;
     }
     
-    // Calculate new vote counts
+    // Calculate new vote counts (optimistic)
     const newVotes = {
       upvotes: votes.upvotes + (newUserVote === 'up' ? 1 : 0) - (votes.userVote === 'up' ? 1 : 0),
       downvotes: votes.downvotes + (newUserVote === 'down' ? 1 : 0) - (votes.userVote === 'down' ? 1 : 0),
@@ -117,15 +117,35 @@ const CommentPlugin: React.FC<CommentPluginProps> = ({
     
     setComments(updatedComments);
     
-    // Call the external handler if provided
-    if (onVoteComment) {
-      try {
+    // Call API or external handler
+    try {
+      if (onVoteComment) {
         await onVoteComment(commentId, isUpvote);
-      } catch (error) {
-        console.error('Failed to register vote:', error);
-        // Revert to previous state on error
-        setComments(comments);
+      } else {
+        await fetch(`/api/comments/${encodeURIComponent(commentId)}/vote`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ isUpvote })
+        }).then(async (res) => {
+          if (!res.ok) return;
+          const data = await res.json();
+          const upvotes = Number(data?.upvotes || newVotes.upvotes);
+          const downvotes = Number(data?.downvotes || newVotes.downvotes);
+          // Sync counts with server response
+          setComments(prev => {
+            const idx = prev.findIndex(c => c.id === commentId);
+            if (idx === -1) return prev;
+            const copy = [...prev];
+            copy[idx] = { ...copy[idx], votes: { ...copy[idx].votes, upvotes, downvotes } };
+            return copy;
+          });
+        }).catch(() => {});
       }
+    } catch (error) {
+      console.error('Failed to register vote:', error);
+      // Revert to previous state on error
+      setComments(comments);
     }
   };
 

@@ -293,7 +293,11 @@ export const reportedContent = pgTable("reported_content", {
 export const authorTips = pgTable("author_tips", {
   id: serial("id").primaryKey(),
   authorId: integer("author_id").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id),
   amount: text("amount").notNull(),
+  currency: text("currency").default("USD"),
+  status: text("status").default("pending"), // pending, succeeded, failed
+  providerId: text("provider_id"),
   message: text("message"),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
@@ -367,6 +371,21 @@ export const adminNotifications = pgTable("admin_notifications", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
+// User Notifications (for user-facing in-app notifications)
+export const userNotifications = pgTable("user_notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  type: text("type").notNull(), // 'story', 'comment', 'system'
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  isRead: boolean("is_read").default(false).notNull(),
+  metadata: json("metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  userIdx: index("user_notifications_user_idx").on(table.userId),
+  readIdx: index("user_notifications_read_idx").on(table.isRead)
+}));
+
 // Achievement system tables removed
 
 export const userProgress = pgTable("user_progress", {
@@ -433,6 +452,20 @@ export const userPrivacySettings = pgTable("user_privacy_settings", {
   anonymousCommenting: boolean("anonymous_commenting").default(false).notNull(),
   twoFactorAuthEnabled: boolean("two_factor_auth_enabled").default(false).notNull(),
   loginNotifications: boolean("login_notifications").default(true).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// User Notification Preferences (persisted preferences for notifications)
+export const userNotificationPreferences = pgTable("user_notification_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull().unique(),
+  storyUpdates: boolean("story_updates").default(true).notNull(),
+  communityActivity: boolean("community_activity").default(true).notNull(),
+  securityAlerts: boolean("security_alerts").default(true).notNull(),
+  readingReminders: boolean("reading_reminders").default(false).notNull(),
+  recommendations: boolean("recommendations").default(true).notNull(),
+  preferredTime: text("preferred_time"),
+  timezone: text("timezone"),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
@@ -584,6 +617,11 @@ export const insertAdminNotificationSchema = createInsertSchema(adminNotificatio
 export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
 export type AdminNotification = typeof adminNotifications.$inferSelect;
 
+// User notifications insert schema/types
+export const insertUserNotificationSchema = createInsertSchema(userNotifications).omit({ id: true, createdAt: true });
+export type InsertUserNotification = z.infer<typeof insertUserNotificationSchema>;
+export type UserNotification = typeof userNotifications.$inferSelect;
+
 // Add new insert schemas and types
 // Achievement system schemas removed
 
@@ -634,6 +672,13 @@ export interface CommentMetadata {
   downvotes?: number;
   replyCount?: number;
   sanitized?: boolean; // Flag to indicate content was sanitized
+  // Optional inline selection anchor for highlighted text ranges
+  selectionAnchor?: {
+    startOffset: number;
+    endOffset: number;
+    paragraphIndex?: number;
+    text?: string;
+  };
 }
 
 // Add insert schema and types for performance metrics
@@ -840,6 +885,13 @@ export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
   }),
 }));
 
+export const userNotificationsRelations = relations(userNotifications, ({ one }) => ({
+  user: one(users, {
+    fields: [userNotifications.userId],
+    references: [users.id]
+  }),
+}));
+
 export const userProgressRelations = relations(userProgress, ({ one }) => ({
   user: one(users, {
     fields: [userProgress.userId],
@@ -865,6 +917,13 @@ export const userPrivacySettingsRelations = relations(userPrivacySettings, ({ on
   }),
 }));
 
+export const userNotificationPreferencesRelations = relations(userNotificationPreferences, ({ one }) => ({
+  user: one(users, {
+    fields: [userNotificationPreferences.userId],
+    references: [users.id],
+  }),
+}));
+
 // User Privacy Settings schema and types
 export const insertUserPrivacySettingsSchema = createInsertSchema(userPrivacySettings).omit({ 
   id: true, 
@@ -873,6 +932,14 @@ export const insertUserPrivacySettingsSchema = createInsertSchema(userPrivacySet
 export type InsertUserPrivacySettings = z.infer<typeof insertUserPrivacySettingsSchema>;
 
 export type UserPrivacySettings = typeof userPrivacySettings.$inferSelect;
+
+// Notification Preferences schema and types
+export const insertUserNotificationPreferencesSchema = createInsertSchema(userNotificationPreferences).omit({ 
+  id: true,
+  updatedAt: true
+});
+export type InsertUserNotificationPreferences = z.infer<typeof insertUserNotificationPreferencesSchema>;
+export type UserNotificationPreferences = typeof userNotificationPreferences.$inferSelect;
 
 // Add missing type exports
 export type User = typeof users.$inferSelect;

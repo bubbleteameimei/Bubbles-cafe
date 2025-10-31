@@ -1,6 +1,6 @@
 "use client"
 
-import React, { memo, useCallback } from "react"
+import React, { memo, useCallback, useEffect } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -21,25 +21,25 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-// Schema defined outside component to prevent recreation on render
+// Schema defined outside component to prevent recreation on render (camelCase keys)
 const NotificationFormSchema = z.object({
-  story_updates: z.boolean().default(true),
-  community_activity: z.boolean().default(true),
-  security_alerts: z.boolean(),
-  reading_reminders: z.boolean().default(false),
+  storyUpdates: z.boolean().default(true),
+  communityActivity: z.boolean().default(true),
+  securityAlerts: z.boolean(),
+  readingReminders: z.boolean().default(false),
   recommendations: z.boolean().default(true),
-  preferred_time: z.string().optional(),
+  preferredTime: z.string().optional(),
   timezone: z.string().optional(),
 })
 
 // Pre-defined default values to prevent recreation
 const defaultFormValues = {
-  security_alerts: true,
-  story_updates: true,
-  community_activity: true,
-  reading_reminders: false,
+  securityAlerts: true,
+  storyUpdates: true,
+  communityActivity: true,
+  readingReminders: false,
   recommendations: true,
-  preferred_time: "evening",
+  preferredTime: "evening",
   timezone: "pst"
 }
 
@@ -188,8 +188,6 @@ const timezoneOptions = {
   }
 };
 
-
-
 export function NotificationSettingsForm() {
   // Optimize form initialization with stable references
   const form = useForm<z.infer<typeof NotificationFormSchema>>({
@@ -198,45 +196,95 @@ export function NotificationSettingsForm() {
   })
 
   const { toast } = useToast();
+
+  // Load existing preferences from server
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/user/notification-preferences', { credentials: 'include' });
+        if (!res.ok) return;
+        const prefs = await res.json();
+        if (isMounted && prefs) {
+          form.reset({
+            storyUpdates: !!prefs.storyUpdates,
+            communityActivity: !!prefs.communityActivity,
+            securityAlerts: !!prefs.securityAlerts,
+            readingReminders: !!prefs.readingReminders,
+            recommendations: !!prefs.recommendations,
+            preferredTime: prefs.preferredTime || 'evening',
+            timezone: prefs.timezone || 'pst'
+          });
+        }
+      } catch {
+        // non-fatal
+      }
+    })();
+    return () => { isMounted = false; };
+  }, [form]);
   
   // Memoize the submit handler to prevent recreation on renders
-  const onSubmit = useCallback((data: z.infer<typeof NotificationFormSchema>) => {
-    toast({
-      title: "Notification preferences updated",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    })
-  }, [toast]);
+  const onSubmit = useCallback(async (data: z.infer<typeof NotificationFormSchema>) => {
+    try {
+      const res = await fetch('/api/user/notification-preferences', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        throw new Error('Failed to save preferences');
+      }
+      const saved = await res.json();
+      toast({
+        title: "Preferences saved",
+        description: "Your notification preferences have been updated.",
+      });
+      // Sync form with server response
+      form.reset({
+        storyUpdates: !!saved.storyUpdates,
+        communityActivity: !!saved.communityActivity,
+        securityAlerts: !!saved.securityAlerts,
+        readingReminders: !!saved.readingReminders,
+        recommendations: !!saved.recommendations,
+        preferredTime: saved.preferredTime || 'evening',
+        timezone: saved.timezone || 'pst'
+      });
+    } catch (e) {
+      toast({
+        title: "Save failed",
+        description: "An error occurred while saving preferences. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [toast, form]);
 
   // Get the current form values for our memoized components
   const { 
-    story_updates, 
-    community_activity, 
-    security_alerts, 
-    reading_reminders, 
+    storyUpdates, 
+    communityActivity, 
+    securityAlerts, 
+    readingReminders, 
     recommendations,
-    preferred_time,
+    preferredTime,
     timezone
   } = form.watch();
 
   // Memoize field change handlers
   const handleStoryUpdatesChange = useCallback((value: boolean) => {
-    form.setValue('story_updates', value);
+    form.setValue('storyUpdates', value);
   }, [form]);
 
   const handleCommunityActivityChange = useCallback((value: boolean) => {
-    form.setValue('community_activity', value);
+    form.setValue('communityActivity', value);
   }, [form]);
 
   const handleSecurityAlertsChange = useCallback((value: boolean) => {
-    form.setValue('security_alerts', value);
+    form.setValue('securityAlerts', value);
   }, [form]);
 
   const handleReadingRemindersChange = useCallback((value: boolean) => {
-    form.setValue('reading_reminders', value);
+    form.setValue('readingReminders', value);
   }, [form]);
 
   const handleRecommendationsChange = useCallback((value: boolean) => {
@@ -244,7 +292,7 @@ export function NotificationSettingsForm() {
   }, [form]);
 
   const handlePreferredTimeChange = useCallback((value: string) => {
-    form.setValue('preferred_time', value);
+    form.setValue('preferredTime', value);
   }, [form]);
 
   const handleTimezoneChange = useCallback((value: string) => {
@@ -261,21 +309,21 @@ export function NotificationSettingsForm() {
             <NotificationToggleItem
               label="Story Updates"
               description="Receive notifications about new stories and updates."
-              checked={story_updates}
+              checked={storyUpdates}
               onChange={handleStoryUpdatesChange}
             />
             
             <NotificationToggleItem
               label="Community Activity"
               description="Get notified about comments and reactions on your stories."
-              checked={community_activity}
+              checked={communityActivity}
               onChange={handleCommunityActivityChange}
             />
             
             <NotificationToggleItem
               label="Security Alerts"
               description="Important alerts about your account security."
-              checked={security_alerts}
+              checked={securityAlerts}
               onChange={handleSecurityAlertsChange}
               disabled={true}
             />
@@ -283,7 +331,7 @@ export function NotificationSettingsForm() {
             <NotificationToggleItem
               label="Reading Reminders"
               description="Get reminders to continue reading your saved stories."
-              checked={reading_reminders}
+              checked={readingReminders}
               onChange={handleReadingRemindersChange}
             />
             
@@ -298,7 +346,7 @@ export function NotificationSettingsForm() {
             <TimePreferenceSelect
               label="Preferred Time"
               description="Choose when you'd like to receive notifications."
-              value={preferred_time || 'evening'}
+              value={preferredTime || 'evening'}
               onChange={handlePreferredTimeChange}
               options={timeOptions}
             />

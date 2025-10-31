@@ -9,6 +9,8 @@ import * as paystackService from '../services/paystack';
 import { storage } from '../storage';
 import { z } from 'zod';
 import { validateBody, validateParams } from '../middleware/input-validation';
+import { db } from '../db';
+import { authorTips } from '@shared/schema';
 
 /**
  * Register payment routes
@@ -165,9 +167,32 @@ export const registerPaymentRoutes = (app: Express) => {
                 status: 'success'
               }
             });
-            
-            // Add more logic to update user subscription, etc.
           }
+
+          // Record author tip when authorId is provided in metadata
+          try {
+            const authorIdRaw = event?.data?.metadata?.authorId;
+            if (authorIdRaw) {
+              const authorId = parseInt(String(authorIdRaw));
+              const currency = String(event?.data?.currency || 'USD');
+              const amount = String(event?.data?.amount ?? '');
+              const providerId = String(event?.data?.reference || '');
+              const message = String(event?.data?.metadata?.message || '');
+
+              await db.insert(authorTips).values({
+                authorId,
+                userId: event?.data?.metadata?.userId ? parseInt(String(event.data.metadata.userId)) : null,
+                amount,
+                currency,
+                status: 'succeeded',
+                providerId,
+                message
+              } as any);
+            }
+          } catch (e) {
+            console.warn('Non-fatal: Failed to record author tip from webhook', e instanceof Error ? e.message : String(e));
+          }
+
           break;
           
         case 'subscription.create':

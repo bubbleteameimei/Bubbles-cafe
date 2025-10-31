@@ -37,9 +37,26 @@ interface NotificationProviderProps {
   maxNotifications?: number;
 }
 
-// Mock notification function for testing - replace with actual API call in production
+// Load notifications from API when authenticated, fallback to a single welcome notification
 const fetchNotifications = async (): Promise<Notification[]> => {
-  // In a real implementation, this would fetch from an API
+  try {
+    const res = await fetch('/api/notifications', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      const items = Array.isArray(data?.notifications) ? data.notifications : [];
+      return items.map((n: any) => ({
+        id: String(n.id),
+        title: String(n.title),
+        description: String(n.message),
+        read: !!n.isRead,
+        date: new Date(n.createdAt).toISOString(),
+        type: (n.type as Notification['type']) || 'system',
+        link: (n.metadata && n.metadata.link) || undefined
+      }));
+    }
+  } catch (e) {
+    // Fall through to default
+  }
   return [
     {
       id: uuidv4(),
@@ -106,6 +123,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   };
   
   const markAsRead = (id: string) => {
+    // Optimistic update
     setNotifications(prev => 
       prev.map(notif => 
         notif.id === id 
@@ -113,12 +131,35 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
           : notif
       )
     );
+    // Persist to server when possible
+    try {
+      fetch(`/api/notifications/${encodeURIComponent(id)}/read`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isRead: true })
+      }).catch(() => {});
+    } catch {}
   };
   
   const markAllAsRead = () => {
+    // Optimistic update
     setNotifications(prev => 
       prev.map(notif => ({ ...notif, read: true }))
     );
+    // Persist each to server
+    try {
+      notifications.forEach(n => {
+        if (!n.read) {
+          fetch(`/api/notifications/${encodeURIComponent(n.id)}/read`, {
+            method: 'PATCH',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isRead: true })
+          }).catch(() => {});
+        }
+      });
+    } catch {}
   };
   
   const clearNotifications = () => {

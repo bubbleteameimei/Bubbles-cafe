@@ -7,6 +7,7 @@ import { supabaseAuthRouter } from './supabase-auth';
 import { adminRoutes } from './admin';
 import searchRoutes from './search';
 import newsletterRoutes from './newsletter';
+import newsletterDirectRoutes from './newsletter-direct';
 // import bookmarksRoutes from './bookmarks';
 import emailRoutes from './email';
 import moderationRoutes from './moderation';
@@ -14,7 +15,10 @@ import analyticsRoutes from './analytics';
 import { registerPrivacySettingsRoutes } from './privacy-settings';
 import { registerRecommendationsRoutes } from './recommendations';
 import { registerPostRecommendationsRoutes } from './posts-recommendations';
+import trendingStoriesRouter from './trending-stories';
+import readingProgressRouter from './reading-progress';
 import { registerUserFeedbackRoutes } from '../routes/user-feedback';
+import userNotificationsRouter from './notifications';
 import { storage } from '../storage';
 import { handleError } from '../utils/error-handler';
 import healthRoutes from './health';
@@ -23,6 +27,8 @@ import { z } from 'zod';
 import seoRoutes from './seo';
 import { requireAuth, requireAdmin } from '../middlewares/auth';
 import themesDefinitionsRouter from './themes-definitions';
+import { registerNotificationPreferencesRoutes } from './notification-preferences';
+import tipsRouter from './tips';
 
 const routesLogger = createSecureLogger('RoutesIndex');
 
@@ -59,7 +65,16 @@ export function registerModularRoutes(app: Express) {
 
     // Newsletter routes
     app.use('/api/newsletter', newsletterRoutes);
+    app.use('/api/newsletter-direct', newsletterDirectRoutes);
     routesLogger.info('Newsletter routes registered');
+
+    // Trending stories route
+    app.use('/api/trending-stories', trendingStoriesRouter);
+    routesLogger.info('Trending stories route registered');
+
+    // Reading progress routes
+    app.use('/api/reading-progress', readingProgressRouter);
+    routesLogger.info('Reading progress routes registered');
 
     // Bookmarks routes are registered via registerBookmarkRoutes to avoid conflicts
 
@@ -79,6 +94,10 @@ export function registerModularRoutes(app: Express) {
     registerPrivacySettingsRoutes(app, storage);
     routesLogger.info('Privacy settings routes registered');
 
+    // Notification preferences (function-based registration)
+    registerNotificationPreferencesRoutes(app);
+    routesLogger.info('Notification preferences routes registered');
+
     // Recommendations (function-based registration)
     registerRecommendationsRoutes(app, storage);
     registerPostRecommendationsRoutes(app);
@@ -95,6 +114,14 @@ export function registerModularRoutes(app: Express) {
     // Theme definitions (global overrides)
     app.use('/api/themes', themesDefinitionsRouter);
     routesLogger.info('Theme definitions routes registered');
+
+    // User notifications
+    app.use('/api/notifications', userNotificationsRouter);
+    routesLogger.info('User notifications routes registered');
+
+    // Tips/donations routes
+    app.use('/api/tips', tipsRouter);
+    routesLogger.info('Tips routes registered');
 
     // Feedback submission endpoint used by client
     const feedbackSchema = z.object({

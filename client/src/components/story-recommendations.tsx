@@ -47,7 +47,7 @@ interface Post {
   content: string;
   excerpt?: string;
   authorName?: string;
-  readingTime?: number;
+  readingTimeMinutes?: number | null;
   views?: number;
   likesCount?: number;
   metadata?: {
@@ -195,7 +195,7 @@ export function StoryRecommendations({
               <Card>
                 <CardHeader>
                   <CardTitle className="line-clamp-2">
-                    <a href={`/stories/${post.slug}`} className="hover:underline">
+                    <a href={`/reader/${post.slug}`} className="hover:underline">
                       {post.title}
                     </a>
                   </CardTitle>
@@ -218,17 +218,17 @@ export function StoryRecommendations({
                       <>
                         <Badge variant="outline" className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {post.readingTime || estimateReadingTime(post.content)} min
+                          {(post.readingTimeMinutes ?? estimateReadingTime(post.content))} min
                         </Badge>
                         
-                        {post.views !== undefined && (
+                        {typeof post.views === 'number' && (
                           <Badge variant="outline" className="flex items-center gap-1">
                             <Eye className="h-3 w-3" />
                             {post.views}
                           </Badge>
                         )}
                         
-                        {post.likesCount !== undefined && (
+                        {typeof post.likesCount === 'number' && (
                           <Badge variant="outline" className="flex items-center gap-1">
                             <ThumbsUp className="h-3 w-3" />
                             {post.likesCount}
@@ -240,7 +240,7 @@ export function StoryRecommendations({
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <Button variant="outline" size="sm" asChild>
-                    <a href={`/stories/${post.slug}`}>Read Story</a>
+                    <a href={`/reader/${post.slug}`}>Read Story</a>
                   </Button>
                   
                   <Button 

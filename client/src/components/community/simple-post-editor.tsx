@@ -97,15 +97,15 @@ export default function SimplePostEditor({ postId, onClose: _onClose }: SimplePo
       };
       
       if (postId) {
-        // Update existing post
+        // Update existing post - use canonical PUT
         return apiRequest(`/api/posts/${postId}`, {
-          method: 'PATCH',
+          method: 'PUT',
           body: JSON.stringify(postData),
           credentials: 'include', // Include credentials for CSRF
         });
       } else {
-        // Create new post - use the community-specific endpoint
-        return apiRequest('/api/posts/community', {
+        // Create new post - use canonical POST with metadata.isCommunityPost
+        return apiRequest('/api/posts', {
           method: 'POST',
           body: JSON.stringify(postData),
           credentials: 'include', // Include credentials for CSRF

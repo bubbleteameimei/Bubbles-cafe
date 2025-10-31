@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Coffee, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,18 +13,58 @@ import {
 
 interface SupportWritingCardProps {
   className?: string;
+  authorId?: number; // recipient author id for logging tips
+  hideCard?: boolean; // when true, render only the overlay (no visible card)
 }
 
-export const SupportWritingCard = ({ className = "" }: SupportWritingCardProps) => {
+export const SupportWritingCard = ({ className = "", authorId, hideCard = false }: SupportWritingCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  
-  const handleTip = () => {
+  const [authorIdInternal, setAuthorIdInternal] = useState<number | undefined>(authorId);
+
+  // Allow external triggers (e.g., BuyMeCoffeeButton) to open this overlay
+  useEffect(() => {
+    const handler = (e: Event) => {
+      try {
+        const ce = e as CustomEvent<any>;
+        const maybeAuthor = Number(ce?.detail?.authorId);
+        if (Number.isFinite(maybeAuthor) && maybeAuthor > 0) {
+          setAuthorIdInternal(maybeAuthor);
+        }
+      } catch {}
+      setIsOpen(true);
+    };
+    window.addEventListener('support-writing:open', handler as EventListener);
+    return () => window.removeEventListener('support-writing:open', handler as EventListener);
+  }, []);
+
+  const handleTip = async () => {
     // Prevent multiple clicks
     if (isProcessing) return;
     
     setIsProcessing(true);
+
+    // Log tip intent to backend (pending status); only if authorId known
+    try {
+      if (typeof authorIdInternal === 'number' && Number.isFinite(authorIdInternal) && authorIdInternal > 0) {
+        await fetch('/api/tips', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            authorId: authorIdInternal,
+            amount: '0', // intent only; actual amount recorded via webhook
+            currency: 'USD',
+            status: 'pending',
+            message: 'support_intent'
+          })
+        }).catch(() => {});
+      }
+    } catch {
+      // non-fatal
+    }
+
     window.open("https://paystack.com/pay/z7fmj9rge1", "_blank", "noopener,noreferrer");
     setIsOpen(false);
     
@@ -78,170 +118,171 @@ export const SupportWritingCard = ({ className = "" }: SupportWritingCardProps) 
 
   return (
     <div className={`w-full max-w-sm mx-auto ${className}`}>
-      {/* Support My Writing Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-background/30 backdrop-blur-md rounded-xl border border-border/30 p-6 text-center shadow-lg relative overflow-hidden"
-        onHoverStart={() => setIsHovered(true)}
-        onHoverEnd={() => setIsHovered(false)}
-        style={{ contain: 'layout paint', isolation: 'isolate' }}
-      >
-        {/* Cute sparkles around the card when hovered */}
-        <AnimatePresence>
-          {isHovered && (
-            <>
-              {[...Array(4)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ scale: 0, rotate: 0 }}
-                  animate={{ 
-                    scale: [0, 1, 0],
-                    rotate: 360,
-                    x: [0, Math.cos(i * 90 * Math.PI / 180) * 25],
-                    y: [0, Math.sin(i * 90 * Math.PI / 180) * 25]
-                  }}
-                  exit={{ scale: 0 }}
-                  transition={{ 
-                    duration: 1.2, 
-                    repeat: Infinity,
-                    delay: i * 0.15 
-                  }}
-                  className="absolute top-1/2 left-1/2 w-1.5 h-1.5 bg-yellow-300 rounded-full pointer-events-none"
-                  style={{ 
-                    filter: 'drop-shadow(0 0 3px rgba(255, 255, 0, 0.7))' 
-                  }}
-                />
-              ))}
-            </>
-          )}
-        </AnimatePresence>
-
-        <div className="flex items-center justify-center gap-2 mb-3 relative">
-          <motion.div
-            animate={{ 
-              scale: [1, 1.1, 1],
-              rotate: [0, 5, -5, 0]
-            }}
-            transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
-          >
-            <Heart className="w-5 h-5 text-pink-500" />
-          </motion.div>
-          <h3 className="text-lg font-medium text-foreground tracking-tight">
-            Support My Writing
-          </h3>
-          <motion.div
-            animate={{ 
-              scale: [1, 1.1, 1],
-              rotate: [0, -5, 5, 0]
-            }}
-            transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", delay: 0.5 }}
-          >
-            <Heart className="w-5 h-5 text-pink-500" />
-          </motion.div>
-
-          {/* Floating hearts when hovered */}
-          <AnimatePresence>
-            {isHovered && (
-              <motion.div
-                variants={heartVariants}
-                initial="initial"
-                animate="animate"
-                className="absolute top-0 right-0 pointer-events-none"
-              >
-                <Heart className="w-3 h-3 text-pink-300 fill-current" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-        
-        <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-          If you're enjoying these stories, consider buying me a coffee! Your support helps me create more engaging content.
-        </p>
-        
+      {!hideCard && (
         <motion.div
-          whileHover={{ 
-            scale: 1.05,
-            rotate: [0, -0.5, 0.5, 0],
-            transition: { 
-              scale: { type: "spring", stiffness: 300, damping: 10 },
-              rotate: { duration: 0.4, repeat: Infinity, repeatType: "reverse" }
-            }
-          }}
-          className="relative"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-background/30 backdrop-blur-md rounded-xl border border-border/30 p-6 text-center shadow-lg relative overflow-hidden"
+          onHoverStart={() => setIsHovered(true)}
+          onHoverEnd={() => setIsHovered(false)}
           style={{ contain: 'layout paint', isolation: 'isolate' }}
         >
-          <Button
-            onClick={() => setIsOpen(true)}
-            className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-medium py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg relative overflow-hidden"
-          >
-            {/* Animated gradient background */}
+          {/* Cute sparkles around the card when hovered */}
+          <AnimatePresence>
+            {isHovered && (
+              <>
+                {[...Array(4)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ scale: 0, rotate: 0 }}
+                    animate={{ 
+                      scale: [0, 1, 0],
+                      rotate: 360,
+                      x: [0, Math.cos(i * 90 * Math.PI / 180) * 25],
+                      y: [0, Math.sin(i * 90 * Math.PI / 180) * 25]
+                    }}
+                    exit={{ scale: 0 }}
+                    transition={{ 
+                      duration: 1.2, 
+                      repeat: Infinity,
+                      delay: i * 0.15 
+                    }}
+                    className="absolute top-1/2 left-1/2 w-1.5 h-1.5 bg-yellow-300 rounded-full pointer-events-none"
+                    style={{ 
+                      filter: 'drop-shadow(0 0 3px rgba(255, 255, 0, 0.7))' 
+                    }}
+                  />
+                ))}
+              </>
+            )}
+          </AnimatePresence>
+
+          <div className="flex items-center justify-center gap-2 mb-3 relative">
             <motion.div
               animate={{ 
-                background: [
-                  "linear-gradient(45deg, rgba(236, 72, 153, 0.3), rgba(147, 51, 234, 0.3))",
-                  "linear-gradient(45deg, rgba(147, 51, 234, 0.3), rgba(236, 72, 153, 0.3))"
-                ]
+                scale: [1, 1.1, 1],
+                rotate: [0, 5, -5, 0]
               }}
               transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
-              className="absolute inset-0 rounded-lg"
-            />
+            >
+              <Heart className="w-5 h-5 text-pink-500" />
+            </motion.div>
+            <h3 className="text-lg font-medium text-foreground tracking-tight">
+              Support My Writing
+            </h3>
+            <motion.div
+              animate={{ 
+                scale: [1, 1.1, 1],
+                rotate: [0, -5, 5, 0]
+              }}
+              transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", delay: 0.5 }}
+            >
+              <Heart className="w-5 h-5 text-pink-500" />
+            </motion.div>
 
-            {/* Steam particles */}
-            <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 pointer-events-none">
-              {[...Array(2)].map((_, i) => (
+            {/* Floating hearts when hovered */}
+            <AnimatePresence>
+              {isHovered && (
                 <motion.div
-                  key={i}
-                  variants={steamVariants}
+                  variants={heartVariants}
                   initial="initial"
                   animate="animate"
-                  style={{ 
-                    animationDelay: `${i * 0.4}s` 
-                  }}
-                  className="absolute w-0.5 h-0.5 bg-white/50 rounded-full"
-                />
-              ))}
-            </div>
-
-            <span className="relative flex items-center justify-center gap-2 z-10">
-              <motion.div 
+                  className="absolute top-0 right-0 pointer-events-none"
+                >
+                  <Heart className="w-3 h-3 text-pink-300 fill-current" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          
+          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+            If you're enjoying these stories, consider buying me a coffee! Your support helps me create more engaging content.
+          </p>
+          
+          <motion.div
+            whileHover={{ 
+              scale: 1.05,
+              rotate: [0, -0.5, 0.5, 0],
+              transition: { 
+                scale: { type: "spring", stiffness: 300, damping: 10 },
+                rotate: { duration: 0.4, repeat: Infinity, repeatType: "reverse" }
+              }
+            }}
+            className="relative"
+            style={{ contain: 'layout paint', isolation: 'isolate' }}
+          >
+            <Button
+              onClick={() => setIsOpen(true)}
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-medium py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg relative overflow-hidden"
+            >
+              {/* Animated gradient background */}
+              <motion.div
                 animate={{ 
-                  y: [0, -3, 0],
-                  rotate: [0, 8, -8, 0]
-                }} 
-                transition={{ 
-                  duration: 1.2, 
-                  repeat: Infinity, 
-                  repeatType: "reverse",
-                  ease: "easeInOut"
+                  background: [
+                    "linear-gradient(45deg, rgba(236, 72, 153, 0.3), rgba(147, 51, 234, 0.3))",
+                    "linear-gradient(45deg, rgba(147, 51, 234, 0.3), rgba(236, 72, 153, 0.3))"
+                  ]
                 }}
-                className="relative"
-              >
-                <Coffee className="w-4 h-4" />
-                {/* Coffee steam effect */}
-                <motion.div
+                transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+                className="absolute inset-0 rounded-lg"
+              />
+
+              {/* Steam particles */}
+              <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 pointer-events-none">
+                {[...Array(2)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    variants={steamVariants}
+                    initial="initial"
+                    animate="animate"
+                    style={{ 
+                      animationDelay: `${i * 0.4}s` 
+                    }}
+                    className="absolute w-0.5 h-0.5 bg-white/50 rounded-full"
+                  />
+                ))}
+              </div>
+
+              <span className="relative flex items-center justify-center gap-2 z-10">
+                <motion.div 
                   animate={{ 
-                    opacity: [0.3, 0.6, 0.3],
-                    scale: [0.7, 1, 0.7]
-                  }}
+                    y: [0, -3, 0],
+                    rotate: [0, 8, -8, 0]
+                  }} 
                   transition={{ 
-                    duration: 1.5, 
-                    repeat: Infinity,
+                    duration: 1.2, 
+                    repeat: Infinity, 
+                    repeatType: "reverse",
                     ease: "easeInOut"
                   }}
-                  className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white/20 rounded-full blur-sm"
-                />
-              </motion.div>
-              Buy me a coffee ☕
-            </span>
-          </Button>
+                  className="relative"
+                >
+                  <Coffee className="w-4 h-4" />
+                  {/* Coffee steam effect */}
+                  <motion.div
+                    animate={{ 
+                      opacity: [0.3, 0.6, 0.3],
+                      scale: [0.7, 1, 0.7]
+                    }}
+                    transition={{ 
+                      duration: 1.5, 
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                    className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white/20 rounded-full blur-sm"
+                  />
+                </motion.div>
+                Buy me a coffee ☕
+              </span>
+            </Button>
+          </motion.div>
+          
+          <p className="text-xs text-muted-foreground/70 mt-3">
+            Powered by Paystack • Secure Payment
+          </p>
         </motion.div>
-        
-        <p className="text-xs text-muted-foreground/70 mt-3">
-          Powered by Paystack • Secure Payment
-        </p>
-      </motion.div>
+      )}
 
       {/* Donation Modal */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

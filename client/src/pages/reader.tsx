@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 
 
 import { SupportWritingCard } from "@/components/SupportWritingCard";
+import { resolveAuthorId } from "@/lib/reader-navigation";
 import Footer from "@/components/layout/footer";
 import SEO from "@/components/SEO";
 import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
@@ -489,6 +490,34 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const readActiveStartRef = useRef<number | null>(null);
   const activeAccumulatedMsRef = useRef<number>(0);
   const [visibilityTick, setVisibilityTick] = useState(0);
+
+  // Persist reading progress to server for cross-device resume (throttled)
+  const lastProgressSentRef = useRef<{ percent: number; ts: number }>({ percent: 0, ts: 0 });
+  useEffect(() => {
+    try {
+      if (!isAuthenticated) return;
+      const slug = routeSlug || autoSaveSlug || postsData?.posts?.[currentIndex]?.slug;
+      if (!slug) return;
+
+      const now = Date.now();
+      const rounded = Math.round(readingProgress);
+      const diff = Math.abs(rounded - (lastProgressSentRef.current.percent || 0));
+      const tooSoon = now - (lastProgressSentRef.current.ts || 0) < 15000; // 15s throttle
+
+      if (diff >= 10 && !tooSoon) {
+        fetch('/api/reading-progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ postSlug: String(slug), percentCompleted: rounded })
+        }).then((res) => {
+          if (res.ok) {
+            lastProgressSentRef.current = { percent: rounded, ts: Date.now() };
+          }
+        }).catch(() => { /* non-fatal */ });
+      }
+    } catch { /* non-fatal */ }
+  }, [readingProgress, routeSlug, autoSaveSlug, postsData?.posts, currentIndex, isAuthenticated]);
 
   // Reset active timers when post changes
   useEffect(() => {
@@ -1803,11 +1832,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </div>
             
             {/* Social sharing and support section  */}
-            <div className={`social-support-section mt-8 pt-6 border-t border-border ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              
-              {/* Support writing card */}
-              <SupportWritingCard />
-            </div>
+              <div className={`social-support-section mt-8 pt-6 border-t border-border ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                
+                {/* Support writing card with auto-wired authorId */}
+                <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
+              </div>
 
             {/* Comment section */}
             <div className={`mt-8 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
