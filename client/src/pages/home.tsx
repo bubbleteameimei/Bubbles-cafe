@@ -124,7 +124,7 @@ export default function Home() {
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
               <Button 
-                onClick={() => setLocation('/reader')}
+                onClick={() => setLocation('/index')}
                 className="group w-full px-6 py-3 bg-gradient-to-r from-slate-600 via-slate-700 to-gray-700 hover:from-slate-500 hover:via-slate-600 hover:to-gray-600 text-white shadow-lg transition-all duration-300 hover:shadow-xl font-medium text-lg text-center"
               >
                 Browse Stories
@@ -234,7 +234,7 @@ export default function Home() {
                       className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       data-testid="home-browse-stories"
                     >
-                      <span className="text-center mr-1">Story Index</span>
+                      <span className="text-center mr-1">Browse Stories</span>
                       <motion.div
                         animate={inView ? {
                           rotate: [0, 10, -6, 4, 0],
