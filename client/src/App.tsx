@@ -50,12 +50,19 @@ const StoriesPage = React.lazy(() => import('./pages/index'));
 import RouteLoader from './components/ui/RouteLoader';
 // Lazily load core pages to enable code-splitting
 const ReaderPage = React.lazy(() => import('./pages/reader'));
-const StoryViewPage = React.lazy(() => import('./pages/story-view'));derPage = React.lazy(() => import('./pages/reader'));
-const StoryViewPage = React.lazy(() => import('./pages/story-view'))>
+const StoryViewPage = React.lazy(() => import('./pages/story-view'));
+
 // Reader route component: outer Suspense handles route-level loading fallback
 function ReaderRoute(props: React.ComponentProps<typeof ReaderPage>) {
   return <ReaderPage {...props} />;
 }
+
+// Community story route component: renders local DB stories by slug using StoryView
+function CommunityStoryRoute({ params }: { params?: { slug?: string } }) {
+  const slug = params?.slug || '';
+  return <StoryViewPage slug={slug} />;
+}
+
 const AboutPage = React.lazy(() => import('./pages/about'));
 const ContactPage = React.lazy(() => import('./pages/contact'));
 const PrivacyPage = React.lazy(() => import('./pages/privacy'));

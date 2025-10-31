@@ -17,7 +17,7 @@ async function testSimpleCommentSection() {
     
     // Navigate to a story page
     const BASE_URL = process.env.APP_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3002';
-    await page.goto(`${BASE_URL}/story/1`, { 
+    await page.goto(`${BASE_URL}/reader/blood`, { 
       waitUntil: 'networkidle0',
       timeout: 30000
     });

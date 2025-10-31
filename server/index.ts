@@ -344,10 +344,15 @@ async function startServer() {
       const { serveStatic } = await import('./vite');
 
       // Canonicalize legacy routes
-      app.get('/auth-success', (_req, res) => res.redirect(302, '/readerPreviewHandler);
+      app.get('/auth-success', (_req, res) => res.redirect(302, '/auth/success'));
+      app.get('/admin/posts', (_req, res) => res.redirect(302, '/admin/manage-posts'));
+
+      // Key pages: respond with SSR head first so crawlers get OG meta
+      app.get('/reader/:slug', readerPreviewHandler);
       app.get('/story/:slug', storyPreviewHandler);
       app.get('/about', aboutPreviewHandler);
-     === 'true') {
+      serveStatic(app);
+      if (process.env.ENABLE_SSR === 'true') {
         app.get('/ssr', ssrStreamHandler);
       }
     }
