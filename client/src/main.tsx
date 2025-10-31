@@ -66,7 +66,16 @@ try {
 
     // Only register on HTTPS or localhost, and avoid ephemeral preview hosts by default
     if (!isPreviewHost && (location.protocol === "https:" || isLocalhost)) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      (async () => {
+        try {
+          const res = await fetch("/sw.js", { method: "HEAD" });
+          if (res.ok) {
+            navigator.serviceWorker.register("/sw.js").catch(() => {});
+          }
+        } catch {
+          // Silent: no service worker available
+        }
+      })();
     }
   }
 } catch {}

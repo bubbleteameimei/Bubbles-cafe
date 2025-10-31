@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 // URL to capture
-const url = 'http://localhost:3001/';
+const url = 'http://localhost:3002/';
 const outputPath = path.join(process.cwd(), 'mobile-layout.html');
 
 console.log(`Capturing ${url} and saving to ${outputPath}...`);

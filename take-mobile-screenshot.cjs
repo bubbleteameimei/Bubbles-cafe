@@ -30,7 +30,8 @@ async function takeMobileScreenshot() {
     });
     
     console.log('Navigating to page...');
-    await page.goto('http://localhost:3001', {
+    const BASE_URL = process.env.APP_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3002';
+    await page.goto(BASE_URL, {
       waitUntil: 'networkidle2',
       timeout: 30000
     });

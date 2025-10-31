@@ -1925,61 +1925,86 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
-  // Helper method to ensure post exists (especially for WordPress posts)
+  // Helper to ensure a post exists in the local DB without forcing external IDs.
+  // Returns true if a matching post already exists (by local id or metadata.wordpressId) or a placeholder was created.
   private async ensurePostExists(postId: number): Promise<boolean> {
     try {
-      // First check if the post already exists
-      const existingPost = await this.getPostById(postId);
-      if (existingPost) {
+      // Direct match by local primary key
+      const direct = await this.getPostById(postId);
+      if (direct) {
         return true;
       }
 
-      console.log(`[Storage] Post ${postId} doesn't exist, creating placeholder for WordPress post`);
-
-      // Compute deterministic baseline for placeholder using slug
-      const placeholderSlug = `wordpress-post-${postId}`;
-      const hashSlug = (s: string): number => {
-        let hash = 0;
-        for (let i = 0; i < s.length; i++) {
-          hash = (hash << 5) - hash + s.charCodeAt(i);
-          hash |= 0;
+      // Match by metadata.wordpressId to avoid creating duplicate placeholders when a mapped local post exists.
+      try {
+        const [mapped] = await db
+          .select({ id: postsTable.id })
+          .from(postsTable)
+          .where(sql`(metadata->>'wordpressId')::int = ${postId}`)
+          .limit(1);
+        if (mapped && typeof mapped.id === 'number') {
+          return true;
         }
-        return Math.abs(hash);
-      };
-      const seededRandom = (n: number) => {
-        const x = Math.sin(n) * 10000;
-        return x - Math.floor(x);
-      };
-      const seedNumber = hashSlug(placeholderSlug);
-      const seed = seedNumber * 12345;
-      const baselineLikes = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
-      const baselineDislikes = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
+      } catch (_) {
+        // non-fatal: continue to placeholder creation
+      }
 
-      const [placeholderPost] = await db.insert(postsTable)
-        .values({
-          id: postId,
-          title: `WordPress Post ${postId}`,
-          content: "This is a placeholder for a WordPress post",
-          slug: placeholderSlug,
-          authorId: 1,
-          isAdminPost: true,
-          createdAt: new Date(),
-          metadata: {
-            wordpressId: postId,
-            isPlaceholder: true,
-            source: 'wordpress_api'
-          },
-          baselineLikes,
-          baselineDislikes
-        })
-        .returning();
+      // Create placeholder without forcing the id to avoid collisions with local primary keys.
+      const placeholderSlug = `wordpress-post-${postId}`;
+      const insertPost: InsertPost = {
+        title: `WordPress Post ${postId}`,
+        content: "This is a placeholder for a WordPress post",
+        slug: placeholderSlug,
+        authorId: 1,
+        isAdminPost: true,
+        metadata: { wordpressId: postId, isPlaceholder: true, source: 'wordpress_api' } as any
+      } as any;
 
-      console.log(`[Storage] Created placeholder post with ID ${placeholderPost.id}`);
+      await this.createPost(insertPost);
       return true;
     } catch (error) {
       console.error(`[Storage] Error ensuring post exists: ${error}`);
       return false;
     }
+  }
+
+  // Resolve a target local post id for a given external or numeric identifier.
+  // If the provided id matches a local post, returns it.
+  // Otherwise tries metadata.wordpressId mapping; if not found, creates a placeholder and returns its local id.
+  private async resolveLocalPostIdForCommentTarget(postId: number): Promise<number> {
+    // Direct local id match
+    const direct = await this.getPostById(postId);
+    if (direct) {
+      return Number(direct.id);
+    }
+
+    // Match by metadata.wordpressId
+    try {
+      const [mapped] = await db
+        .select({ id: postsTable.id })
+        .from(postsTable)
+        .where(sql`(metadata->>'wordpressId')::int = ${postId}`)
+        .limit(1);
+      if (mapped && typeof mapped.id === 'number') {
+        return Number(mapped.id);
+      }
+    } catch (_) {
+      // ignore and fall through to placeholder creation
+    }
+
+    // Create a placeholder without forcing id, then return its local id
+    const placeholderSlug = `wordpress-post-${postId}`;
+    const insertPost: InsertPost = {
+      title: `WordPress Post ${postId}`,
+      content: "This is a placeholder for a WordPress post",
+      slug: placeholderSlug,
+      authorId: 1,
+      isAdminPost: true,
+      metadata: { wordpressId: postId, isPlaceholder: true, source: 'wordpress_api' } as any
+    } as any;
+
+    const newPost = await this.createPost(insertPost);
+    return Number(newPost.id);
   }
 
   async createComment(comment: InsertComment): Promise<Comment> {
@@ -1990,16 +2015,12 @@ export class DatabaseStorage implements IStorage {
         hasParentId: !!comment.parentId
       });
 
-      // Ensure the post exists before creating a comment on it
-      const postId = Number(comment.postId);
-      if (!Number.isFinite(postId)) {
+      // Resolve the local post id (handles WordPress id mapping; creates placeholder if needed)
+      const inputPostId = Number(comment.postId);
+      if (!Number.isFinite(inputPostId)) {
         throw new Error('Invalid post ID: Post ID must be a number');
       }
-
-      const postExists = await this.ensurePostExists(postId);
-      if (!postExists) {
-        throw new Error(`Cannot create comment: Post with ID ${postId} does not exist and could not be created`);
-      }
+      const targetPostId = await this.resolveLocalPostIdForCommentTarget(inputPostId);
 
       // Create comprehensive metadata for the comment
       const baseMeta: any = (comment.metadata || {}) as any;
@@ -2019,7 +2040,7 @@ export class DatabaseStorage implements IStorage {
         INSERT INTO comments (content, post_id, parent_id, user_id, is_approved, metadata, created_at)
         VALUES (
           ${comment.content},
-          ${comment.postId},
+          ${targetPostId},
           ${comment.parentId ?? null},
           ${comment.userId ?? null},
           ${comment.is_approved !== undefined ? comment.is_approved : true},

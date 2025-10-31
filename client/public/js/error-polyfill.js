@@ -1,41 +1,37 @@
-// Minimal error polyfill to reduce noisy cross-origin "Script error" reports.
-// This does not suppress real errors from our own scripts; it only prevents
-// default handling when the browser reports generic script errors with no details.
+/**
+ * Lightweight client-side error reporter to avoid noisy browser logs and record early script errors.
+ * Sends minimal payloads to the backend and never throws.
+ */
 (function () {
   try {
-    // Compute API base for split frontend/backend domains
-    var API_BASE = (function () {
+    var report = function (id, message) {
       try {
-        var protocol = window.location.protocol;
-        var hostname = window.location.hostname;
-        if (/^localhost$|^127\\./.test(hostname)) return '';
-        if (hostname.startsWith('api.')) return protocol + '//' + hostname;
-        var host = hostname.startsWith('www.') ? hostname.slice(4) : hostname;
-        return protocol + '//' + 'api.' + host;
-      } catch (e) {
-        return '';
-      }
-    })();
+        fetch('/api/errors', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: id, message: String(message || 'Unknown error') }),
+          credentials: 'include'
+        }).catch(function () { /* swallow */ });
+      } catch (e) { /* swallow */ }
+    };
 
-    window.addEventListener(
-      "error",
-      function (event) {
-        // Some browsers emit "Script error." for cross-origin failures without details.
-        if (event && event.message === "Script error.") {
-          event.preventDefault();
-          // Optionally, report a sanitized event to the backend
-          try {
-            var url = (API_BASE ? (API_BASE + "/api/errors") : "/api/errors");
-            fetch(url, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ id: "script-error-generic", message: "Cross-origin script error" }),
-              credentials: "include"
-            }).catch(function () {});
-          } catch {}
+    // Early JS runtime errors
+    window.addEventListener('error', function (ev) {
+      try {
+        var msg = ev && ev.message ? String(ev.message) : (ev && ev.error && ev.error.message ? String(ev.error.message) : 'Script error');
+        report('script-error', msg);
+      } catch (e) { /* swallow */ }
+    });
+
+    // Resource loading errors (e.g., missing assets)
+    window.addEventListener('error', function (ev) {
+      try {
+        var target = ev && ev.target;
+        if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK' || target.tagName === 'IMG')) {
+          var src = target.src || (target.href || '');
+          report('resource-error', 'Failed to load: ' + String(src));
         }
-      },
-      true
-    );
-  } catch {}
+      } catch (e) { /* swallow */ }
+    }, true);
+  } catch (e) { /* swallow */ }
 })();

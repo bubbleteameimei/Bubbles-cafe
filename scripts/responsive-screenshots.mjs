@@ -1,6 +1,6 @@
 import puppeteer from 'puppeteer';
 
-const BASE_URL = process.env.APP_URL || 'http://localhost:3001';
+const BASE_URL = process.env.APP_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3002';
 const VIEWPORTS = [
   { name: 'mobile-iphoneX', width: 375, height: 812 },
   { name: 'mobile-pixel7', width: 390, height: 844 },

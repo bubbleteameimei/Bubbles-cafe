@@ -132,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password: payload.password,
         options: {
           data: { username: payload.username },
-          emailRedirectTo: `${window.location.origin}/auth-success`,
+          emailRedirectTo: `${window.location.origin}/auth/success`,
         },
       });
       if (sError) {

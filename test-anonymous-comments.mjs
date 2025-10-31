@@ -16,7 +16,8 @@ async function testSimpleCommentSection() {
     await page.setViewport({ width: 1280, height: 800 });
     
     // Navigate to a story page
-    await page.goto('http://localhost:3001/story/1', { 
+    const BASE_URL = process.env.APP_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3002';
+    await page.goto(`${BASE_URL}/reader/blood`, { 
       waitUntil: 'networkidle0',
       timeout: 30000
     });

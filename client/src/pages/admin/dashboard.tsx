@@ -328,7 +328,7 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <Button variant="outline" className="w-full justify-start" 
-                  onClick={() => window.location.href = '/admin/posts'}>
+                  onClick={() => window.location.href = '/admin/manage-posts'}>
                   <FileText className="mr-2 h-4 w-4" />
                   Manage Stories
                 </Button>

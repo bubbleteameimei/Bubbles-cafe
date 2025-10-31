@@ -175,13 +175,7 @@ export default function Home() {
         <div className="homepage-content">
         <div 
           className="relative min-h-screen overflow-x-hidden flex flex-col home-page"
-          style={{
-            backgroundImage: 'url("/homepage-bg.jpeg")',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            backgroundAttachment: 'fixed'
-          }}
+          style={{}}
         >
           {/* Background overlay removed per request */}
           
@@ -293,6 +287,8 @@ export default function Home() {
               <div className="flex justify-center mt-1 sm:mt-2 mb-1 sm:mb-1 w-full px-4 max-w-4xl mx-auto">
                 <BuyMeCoffeeButton />
               </div>
+
+              
 
               {posts.length > 0 && (
                 <div className="mt-2 sm:mt-3 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">

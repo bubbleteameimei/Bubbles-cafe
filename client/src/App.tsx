@@ -46,15 +46,27 @@ const BackToTopButton = React.lazy(() => import('./components/BackToTopButton'))
 // Import essential pages lazily to keep main bundle small
 const HomePage = React.lazy(() => import('./pages/home'));
 const StoriesPage = React.lazy(() => import('./pages/index'));
+const BestStoriesPage = React.lazy(() => import('./pages/best-stories'));
+const CuratedPage = React.lazy(() => import('./pages/curated'));
+const EditorsPicksPage = React.lazy(() => import('./pages/editors-picks'));
+const EdensHollowPage = React.lazy(() => import('./pages/edens-hollow'));
 
 import RouteLoader from './components/ui/RouteLoader';
 // Lazily load core pages to enable code-splitting
 const ReaderPage = React.lazy(() => import('./pages/reader'));
+const StoryViewPage = React.lazy(() => import('./pages/story-view'));
 
 // Reader route component: outer Suspense handles route-level loading fallback
 function ReaderRoute(props: React.ComponentProps<typeof ReaderPage>) {
   return <ReaderPage {...props} />;
 }
+
+// Community story route component: renders local DB stories by slug using StoryView
+function CommunityStoryRoute({ params }: { params?: { slug?: string } }) {
+  const slug = params?.slug || '';
+  return <StoryViewPage slug={slug} />;
+}
+
 const AboutPage = React.lazy(() => import('./pages/about'));
 const ContactPage = React.lazy(() => import('./pages/contact'));
 const PrivacyPage = React.lazy(() => import('./pages/privacy'));
@@ -175,8 +187,8 @@ const AppContent = () => {
   let seoNofollow = false;
 
   if (pathForSeo === '/') {
-    seoTitle = 'Home';
-    seoDescription = 'A home for dark, psychological and experimental short fiction — stories that explore the quiet violence beneath ordinary life.';
+    seoTitle = 'Bubble’s Cafe';
+    seoDescription = 'Bubble’s Cafe publishes dark, psychological, and experimental short fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.';
   } else if (pathForSeo.startsWith('/stories')) {
     seoTitle = 'Stories';
     seoDescription = 'Discover short fiction from Bubble’s Cafe — psychological and experimental stories of identity, obsession, and the strange grace of decay.';
@@ -285,10 +297,16 @@ const AppContent = () => {
           void import('./pages/home');
         } else if (path.startsWith('/stories')) {
           void import('./pages/index');
-        } else if (path === '/reader' || path.startsWith('/reader/')) {
-          void import('./pages/reader');
+        } else if (path.startsWith('/best-stories')) {
+          void import('./pages/best-stories');
+        } else if (path.startsWith('/curated')) {
+          void import('./pages/curated');
+        } else if (path.startsWith('/editors-picks')) {
+          void import('./pages/editors-picks');
+        } else if (path.startsWith('/edens-hollow')) {
+          void import('./pages/edens-hollow');
         } else if (path.startsWith('/community-story/')) {
-          void import('./pages/reader');
+          void import('./pages/story-view');
         } else if (path.startsWith('/story/')) {
           void import('./pages/reader');
         } else if (path.startsWith('/about')) {
@@ -426,7 +444,10 @@ const AppContent = () => {
                   {/* Main Pages */}
                   <Route path="/" component={HomePage} />
                   <Route path="/stories" component={StoriesPage} />
-                  <Route path="/reader" component={ReaderRoute} />
+                  <Route path="/best-stories" component={BestStoriesPage} />
+                  <Route path="/curated" component={CuratedPage} />
+                  <Route path="/editors-picks" component={EditorsPicksPage} />
+                  <Route path="/edens-hollow" component={EdensHollowPage} />
                   <Route path="/about" component={AboutPage} />
                   <Route path="/contact" component={ContactPage} />
                   <Route path="/privacy" component={PrivacyPage} />
@@ -492,7 +513,7 @@ const AppContent = () => {
                   {/* Dynamic Routes */}
                   <Route path="/search" component={SearchResultsPage} />
                   <Route path="/community-story/:slug">
-                    {(params) => <ReaderRoute params={params} isCommunityContent={true} />}
+                    {(params) => <CommunityStoryRoute params={params} />}
                   </Route>
                   <Route path="/reader/:slug">
                     {(params) => <ReaderRoute params={params} isCommunityContent={false} />}
@@ -520,6 +541,10 @@ const AppContent = () => {
                       {/* Main Pages */}
                       <Route path="/" component={HomePage} />
                       <Route path="/stories" component={StoriesPage} />
+                      <Route path="/best-stories" component={BestStoriesPage} />
+                      <Route path="/curated" component={CuratedPage} />
+                      <Route path="/editors-picks" component={EditorsPicksPage} />
+                      <Route path="/edens-hollow" component={EdensHollowPage} />
                       <Route path="/reader" component={ReaderRoute} />
                       <Route path="/about" component={AboutPage} />
                       <Route path="/contact" component={ContactPage} />
@@ -598,7 +623,7 @@ const AppContent = () => {
                       {/* Dynamic Routes */}
                       <Route path="/search" component={SearchResultsPage} />
                       <Route path="/community-story/:slug">
-                        {(params) => <ReaderRoute params={params} isCommunityContent={true} />}
+                        {(params) => <CommunityStoryRoute params={params} />}
                       </Route>
                       <Route path="/reader/:slug">
                         {(params) => <ReaderRoute params={params} isCommunityContent={false} />}

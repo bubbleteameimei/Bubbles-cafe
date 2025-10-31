@@ -7,12 +7,13 @@ function takeScreenshot() {
   console.log('Taking screenshot using curl...');
   
   // Create a simple HTML file that will redirect to our app
+  const BASE = process.env.APP_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://0.0.0.0:3002';
   const redirectHtml = `
   <!DOCTYPE html>
   <html>
   <head>
     <title>Taking Screenshot</title>
-    <meta http-equiv="refresh" content="0;url=http://0.0.0.0:3001">
+    <meta http-equiv="refresh" content="0;url=${BASE}">
   </head>
   <body>
     <p>Redirecting to app...</p>
@@ -24,7 +25,7 @@ function takeScreenshot() {
   fs.writeFileSync('redirect.html', redirectHtml);
   
   // Use curl to get the main page HTML
-  exec('curl -s http://0.0.0.0:3001', (error, stdout, stderr) => {
+  exec(\`curl -s \${BASE}\`, (error, stdout, stderr) => {
     if (error) {
       console.error(`Error fetching page: ${error.message}`);
       return;

@@ -153,7 +153,7 @@ export function PersonalizedRecommendations({
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {data.recommendations.map((post) => (
-          <Link key={post.id} href={`/story/${post.slug}`}>
+          <Link key={post.id} href={`/community-story/${post.slug}`}>
             <a className="block h-full">
               <Card className="h-full overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
                 <CardHeader className="pb-2">

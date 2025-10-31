@@ -27,11 +27,9 @@ interface SEOProps {
 const DEFAULT_SITE_CONFIG = {
   siteName: 'Bubble’s Cafe',
   defaultTitle: 'Bubble’s Cafe',
-  defaultDescription: 'Bubble’s Cafe publishes dark, psychological and experimental short fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.',
+  defaultDescription: 'Bubble’s Cafe publishes dark, psychological, and experimental short fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.',
   // Use a stable icon path for default social previews
-  // Use a rectangular OG image for previews so it isn't rounded/cropped like a favicon
-  // Add version param to force refresh after updates
-  defaultImage: '/og-image-1200x630.png?v=5',
+  defaultImage: 'https://bubblescafe.space/icons/icon-512x512.png',
   siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://bubblescafe.space',
   locale: 'en_US',
   twitterSite: '@bubblescafe',
@@ -69,7 +67,14 @@ export default function SEO({
 }: SEOProps) {
   const siteUrl = DEFAULT_SITE_CONFIG.siteUrl;
   const pageUrl = useMemo(() => canonical ? `${siteUrl}${canonical}` : (typeof window !== 'undefined' ? window.location.href : ''), [canonical, siteUrl]);
-  const imageUrl = useMemo(() => image ? (image.startsWith('http') ? image : `${siteUrl}${image}`) : `${siteUrl}${DEFAULT_SITE_CONFIG.defaultImage}`, [image, siteUrl]);
+  const imageUrl = useMemo(() => {
+    // Avoid double-prefixing when default image is already an absolute URL
+    const fallback = DEFAULT_SITE_CONFIG.defaultImage.startsWith('http')
+      ? DEFAULT_SITE_CONFIG.defaultImage
+      : `${siteUrl}${DEFAULT_SITE_CONFIG.defaultImage}`;
+    if (!image) return fallback;
+    return image.startsWith('http') ? image : `${siteUrl}${image}`;
+  }, [image, siteUrl]);
   const fullTitle = useMemo(() => (title ? `${title} | ${siteName}` : DEFAULT_SITE_CONFIG.defaultTitle), [title, siteName]);
   const keywordsJoined = useMemo(
     () => Array.from(new Set([...(DEFAULT_SITE_CONFIG.defaultKeywords || []), ...(keywords || []), ...(tags || [])])).join(', '),
@@ -144,8 +149,8 @@ export default function SEO({
     // Provide secure_url and explicit dimensions so platforms don't fall back to favicons
     const secureImageUrl = imageUrl.startsWith('http') ? imageUrl.replace('http://', 'https://') : imageUrl;
     setMetaTag('og:image:secure_url', secureImageUrl, true);
-    setMetaTag('og:image:width', '1200', true);
-    setMetaTag('og:image:height', '630', true);
+    setMetaTag('og:image:width', '512', true);
+    setMetaTag('og:image:height', '512', true);
     setMetaTag('og:image:alt', `${title || DEFAULT_SITE_CONFIG.defaultTitle} - Preview Image`, true);
     setMetaTag('og:site_name', siteName, true);
     setMetaTag('og:locale', locale, true);
@@ -182,10 +187,9 @@ export default function SEO({
     setLinkTag('preconnect', 'https://pixel.wp.com');
     setLinkTag('dns-prefetch', 'https://pixel.wp.com');
     
-    // Favicon and app icons (use provided PNG favicon from client/public), add cache-bust
-    setLinkTag('icon', '/favicon.png?v=3', { type: 'image/png', sizes: 'any' });
-    setLinkTag('shortcut icon', '/favicon.ico');
-    setLinkTag('apple-touch-icon', '/icons/apple-touch-icon.png?v=3');
+    // Favicon and app icons (remote absolute URLs to avoid 404s)
+    setLinkTag('icon', 'https://bubblescafe.space/icons/favicon-32x32.png?v=3', { type: 'image/png', sizes: '32x32' });
+    setLinkTag('apple-touch-icon', 'https://bubblescafe.space/icons/apple-touch-icon.png?v=3', { sizes: '180x180' });
     
     // Generate and set JSON-LD structured data
     const generateStructuredData = () => {
@@ -209,7 +213,7 @@ export default function SEO({
           url: siteUrl,
           logo: {
             '@type': 'ImageObject',
-            url: `${siteUrl}/icons/icon-512x512.png`,
+            url: `https://bubblescafe.space/icons/icon-512x512.png`,
             alt: `${siteName} Logo`
           },
           sameAs: [
@@ -241,8 +245,44 @@ export default function SEO({
         {
           '@context': 'https://schema.org',
           '@type': 'SiteNavigationElement',
+          name: 'Home',
+          url: `${siteUrl}/`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
           name: 'Stories',
           url: `${siteUrl}/stories`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'Browse Stories',
+          url: `${siteUrl}/reader`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'Best Stories',
+          url: `${siteUrl}/best-stories`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'Curated for You',
+          url: `${siteUrl}/curated`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'Editor’s Picks',
+          url: `${siteUrl}/editors-picks`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'Play Eden’s Hollow! – Gothic Visual Novel',
+          url: `${siteUrl}/edens-hollow`
         },
         {
           '@context': 'https://schema.org',
@@ -255,6 +295,31 @@ export default function SEO({
           '@type': 'SiteNavigationElement',
           name: 'Contact',
           url: `${siteUrl}/contact`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'Privacy Policy',
+          url: `${siteUrl}/privacy`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'Community',
+          url: `${siteUrl}/community`
+        },
+        // Optional: highlight specific high-performing stories for sitelinks consideration
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'Nostalgia',
+          url: `${siteUrl}/reader/nostalgia`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'Blood',
+          url: `${siteUrl}/reader/blood`
         }
       ];
 
@@ -367,7 +432,7 @@ export default function SEO({
             url: siteUrl,
             logo: {
               '@type': 'ImageObject',
-              url: `${siteUrl}/icons/icon-512x512.png`,
+              url: `https://bubblescafe.space/icons/icon-512x512.png`,
               alt: `${siteName} Logo`
             }
           },

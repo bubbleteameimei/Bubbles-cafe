@@ -40,7 +40,8 @@ async function testCommentSection() {
     const page = await browser.newPage();
     page.setDefaultTimeout(15000);
     console.log('Opening story page to check comment section...');
-    await page.goto('http://localhost:3001/story/nostalgia', { waitUntil: 'networkidle2' });
+    const BASE_URL = process.env.APP_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3002';
+    await page.goto(`${BASE_URL}/reader/blood`, { waitUntil: 'networkidle2' });
     await delay(1000);
 
     // Wait for the comments section robustly; retry once on failure

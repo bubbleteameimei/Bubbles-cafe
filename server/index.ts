@@ -29,7 +29,7 @@ import { globalRateLimiter } from "./middlewares/rate-limiter";
 import { apiCache } from './middlewares/api-cache';
 import { browserCache, etagCache } from './middlewares/browser-cache';
 import { idempotency } from './middleware/idempotency';
-import { ssrStreamHandler, readerPreviewHandler, aboutPreviewHandler } from './ssr';
+import { ssrStreamHandler, readerPreviewHandler, aboutPreviewHandler, storyPreviewHandler } from './ssr';
 import path from "path";
 import fs from "fs";
 
@@ -202,6 +202,8 @@ app.use(validateCsrfToken({
     '/api/auth/supabase/callback',
     '/api/analytics/vitals',
     '/api/analytics/performance',
+    '/api/analytics/pageview',
+    '/api/analytics/interaction',
     '/api/wordpress/sync/status',
     '/api/errors',
     '/api/payments/webhook'
@@ -252,6 +254,11 @@ app.use((req, res, next) => {
         path.startsWith("/contact") ||
         path.startsWith("/privacy") ||
         path.startsWith("/community") ||
+        path.startsWith("/community-story") ||
+        path.startsWith("/best-stories") ||
+        path.startsWith("/curated") ||
+        path.startsWith("/editors-picks") ||
+        path.startsWith("/edens-hollow") ||
         path.startsWith("/submit-story"))
     ) {
       res.setHeader("X-Robots-Tag", "index, follow");
@@ -317,6 +324,7 @@ async function startServer() {
       await setupVite(app, server);
       // Serve minimal server-rendered head for key pages so social crawlers see OG meta without JS
       app.get('/reader/:slug', readerPreviewHandler);
+      app.get('/story/:slug', storyPreviewHandler);
       app.get('/about', aboutPreviewHandler);
       app.get('/ssr', ssrStreamHandler);
     } else {
@@ -338,8 +346,14 @@ async function startServer() {
       
 
       const { serveStatic } = await import('./vite');
+
+      // Canonicalize legacy routes
+      app.get('/auth-success', (_req, res) => res.redirect(302, '/auth/success'));
+      app.get('/admin/posts', (_req, res) => res.redirect(302, '/admin/manage-posts'));
+
       // Key pages: respond with SSR head first so crawlers get OG meta
       app.get('/reader/:slug', readerPreviewHandler);
+      app.get('/story/:slug', storyPreviewHandler);
       app.get('/about', aboutPreviewHandler);
       serveStatic(app);
       if (process.env.ENABLE_SSR === 'true') {

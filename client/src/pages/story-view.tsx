@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 import { motion } from "framer-motion";
 import { LikeDislike } from "@/components/ui/like-dislike";
-import { MetaTags } from "@/components/ui/meta-tags";
+import SEO from "@/components/SEO";
 import { ShareButton } from "@/components/ui/share-button";
 
 interface StoryViewProps {
@@ -36,9 +36,33 @@ export default function StoryView({ slug }: StoryViewProps) {
     return <div className="text-center p-8">Story not found or error loading story.</div>;
   }
 
+  // SEO and JSON-LD breadcrumbs
+  const canonical = `/community-story/${encodeURIComponent(post.slug)}`;
+  const title = post.title;
+  const plainText = typeof post.content === 'string' ? post.content : '';
+  const wordCount = plainText ? plainText.split(/\s+/).filter(Boolean).length : 0;
+  const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
+  const description = (post.excerpt && post.excerpt.trim()) || (plainText ? plainText.slice(0, 160) : undefined);
+  const createdAtIso = (() => {
+    try {
+      return new Date(post.createdAt as any).toISOString();
+    } catch {
+      return undefined;
+    }
+  })();
+
   return (
     <div className="relative min-h-screen">
-      <MetaTags post={post} />
+      <SEO
+        title={title}
+        description={description}
+        canonical={canonical}
+        type="article"
+        published={createdAtIso}
+        modified={createdAtIso}
+        readingTime={readingMinutes}
+        wordCount={wordCount}
+      />
       <div className="story-container max-w-3xl mx-auto px-4 py-8">
         <motion.article
           initial={{ opacity: 0, y: 20 }}

@@ -5,7 +5,8 @@
  */
 
 // Use built-in Fetch API
-const API_URL = 'http://localhost:3001/api/admin/cleanup/wordpress-post-272';
+const BASE = process.env.APP_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3002';
+const API_URL = `${BASE}/api/admin/cleanup/wordpress-post-272`;
 
 async function deleteWordPressPost() {
   try {

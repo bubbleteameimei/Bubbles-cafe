@@ -83,6 +83,46 @@ export function readerPreviewHandler(req: Request, res: Response) {
   res.status(200).end(html);
 }
 
+// Minimal server-side preview for Story alias pages (/story/:slug) for crawler OG tags.
+export function storyPreviewHandler(req: Request, res: Response) {
+  const slug = String(req.params.slug || '').trim();
+  const safeTitle = slug ? `Read: ${decodeURIComponent(slug)} | Bubble’s Cafe` : 'Bubble’s Cafe';
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+
+  const html = `<!doctype html><html><head>
+    <meta charset="utf-8"/>
+    <title>${safeTitle}</title>
+    <meta name="description" content="Dark, psychological and experimental short fiction on Bubble’s Cafe."/>
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png?${ICON_VERSION}"/>
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png?${ICON_VERSION}"/>
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png?${ICON_VERSION}"/>
+    <link rel="shortcut icon" href="/favicon.ico"/>
+    <link rel="icon" type="image/png" sizes="any" href="/favicon.png?${ICON_VERSION}"/>
+
+    <!-- Open Graph for social previews -->
+    <meta property="og:title" content="${safeTitle}"/>
+    <meta property="og:description" content="Read this story on Bubble’s Cafe."/>
+    <meta property="og:type" content="article"/>
+    <meta property="og:url" content="https://bubblescafe.space/story/${encodeURIComponent(slug)}"/>
+    <meta property="og:image" content="${OG_VERSIONED}"/>
+    <meta property="og:image:secure_url" content="${OG_VERSIONED}"/>
+    <meta property="og:image:width" content="1200"/>
+    <meta property="og:image:height" content="630"/>
+
+    <!-- Twitter card -->
+    <meta name="twitter:card" content="summary_large_image"/>
+    <meta name="twitter:title" content="${safeTitle}"/>
+    <meta name="twitter:description" content="Read this story on Bubble’s Cafe."/>
+    <meta name="twitter:image" content="${OG_VERSIONED}"/>
+  </head>
+  <body>
+    <div id="root"><div style="padding:16px;font-family:system-ui">Loading…</div></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body></html>`;
+
+  res.status(200).end(html);
+}
+
 export function aboutPreviewHandler(_req: Request, res: Response) {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   const title = 'About | Bubble’s Cafe';

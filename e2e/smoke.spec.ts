@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('home loads', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle(/Bubble's Cafe/i);
+  // Accept either straight or curly apostrophe
+  await expect(page).toHaveTitle(/Bubble[’']s Cafe/i);
 });
 
