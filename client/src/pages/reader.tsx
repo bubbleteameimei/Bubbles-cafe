@@ -720,6 +720,20 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Get current post
   const currentPost = posts[validCurrentIndex];
 
+  // Ensure canonical URL reflects the actual story when arriving on bare /reader
+  const ensuredCanonicalRef = useRef(false);
+  useEffect(() => {
+    try {
+      if (!ensuredCanonicalRef.current && posts && posts.length > 0 && !routeSlug) {
+        ensuredCanonicalRef.current = true;
+        const slugToUse = String(posts[validCurrentIndex]?.slug ?? posts[validCurrentIndex]?.id);
+        if (slugToUse) {
+          setLocation(`/reader/${encodeURIComponent(slugToUse)}`);
+        }
+      }
+    } catch {}
+  }, [posts, validCurrentIndex, routeSlug, setLocation]);
+
   
 
   // SEO values for this story
@@ -809,6 +823,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
       checkRapidNavigation();
       setCurrentIndex(randomIndex);
+      try {
+        const nextSlug = String(posts[randomIndex]?.slug ?? posts[randomIndex]?.id);
+        if (nextSlug) {
+          setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
+        }
+      } catch {}
       window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
     }
   };
@@ -820,6 +840,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       const newIndex = currentIndex - 1;
       checkRapidNavigation();
       setCurrentIndex(newIndex);
+      try {
+        const nextSlug = String(posts[newIndex]?.slug ?? posts[newIndex]?.id);
+        if (nextSlug) {
+          setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
+        }
+      } catch {}
       window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
     }
   };
@@ -831,6 +857,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       const newIndex = currentIndex + 1;
       checkRapidNavigation();
       setCurrentIndex(newIndex);
+      try {
+        const nextSlug = String(posts[newIndex]?.slug ?? posts[newIndex]?.id);
+        if (nextSlug) {
+          setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
+        }
+      } catch {}
       window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
     }
   };
