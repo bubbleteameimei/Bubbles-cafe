@@ -30,7 +30,7 @@ const adminNavigation = [
   {
     group: 'Content Management',
     items: [
-      { name: 'Stories', href: '/admin/posts', icon: Book },
+      { name: 'Stories', href: '/admin/manage-posts', icon: Book },
       { name: 'Themes', href: '/admin/themes', icon: FileText },
       { name: 'WordPress Sync', href: '/admin/wordpress-sync', icon: Globe }
     ]

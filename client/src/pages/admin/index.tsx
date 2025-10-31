@@ -25,7 +25,7 @@ export default function AdminPage() {
       title: "Content Management",
       description: "Manage stories and content",
       icon: Book,
-      link: "/admin/posts"
+      link: "/admin/manage-posts"
     },
     {
       title: "Theme Management",

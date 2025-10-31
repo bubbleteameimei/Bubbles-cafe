@@ -16,7 +16,7 @@ export function AdminNav() {
           Admin Dashboard
         </a>
       </Link>
-      <Link href="/admin/posts">
+      <Link href="/admin/manage-posts">
         <a className="text-sm font-medium transition-colors hover:text-primary">
           Manage Posts
         </a>

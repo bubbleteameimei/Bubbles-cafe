@@ -10,7 +10,7 @@ interface SocialLoginButtonsProps {
 export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginButtonsProps) {
   const handleGoogleLogin = useCallback(async () => {
     try {
-      const redirectTo = `${window.location.origin}/auth-success`;
+      const redirectTo = `${window.location.origin}/auth/success`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo }

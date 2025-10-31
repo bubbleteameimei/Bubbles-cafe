@@ -29,7 +29,7 @@ import { globalRateLimiter } from "./middlewares/rate-limiter";
 import { apiCache } from './middlewares/api-cache';
 import { browserCache, etagCache } from './middlewares/browser-cache';
 import { idempotency } from './middleware/idempotency';
-import { ssrStreamHandler, readerPreviewHandler, aboutPreviewHandler } from './ssr';
+import { ssrStreamHandler, readerPreviewHandler, aboutPreviewHandler, storyPreviewHandler } from './ssr';
 import path from "path";
 import fs from "fs";
 
@@ -319,6 +319,7 @@ async function startServer() {
       await setupVite(app, server);
       // Serve minimal server-rendered head for key pages so social crawlers see OG meta without JS
       app.get('/reader/:slug', readerPreviewHandler);
+      app.get('/story/:slug', storyPreviewHandler);ory/:slug', storyPreviewHandler);
       app.get('/about', aboutPreviewHandler);
       app.get('/ssr', ssrStreamHandler);
     } else {
