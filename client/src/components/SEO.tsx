@@ -257,6 +257,12 @@ export default function SEO({
         {
           '@context': 'https://schema.org',
           '@type': 'SiteNavigationElement',
+          name: 'Best Stories',
+          url: `${siteUrl}/best-stories`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
           name: 'About',
           url: `${siteUrl}/about`
         },
@@ -277,6 +283,19 @@ export default function SEO({
           '@type': 'SiteNavigationElement',
           name: 'Community',
           url: `${siteUrl}/community`
+        },
+        // Optional: highlight specific high-performing stories for sitelinks consideration
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'Nostalgia',
+          url: `${siteUrl}/reader/nostalgia`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'Blood',
+          url: `${siteUrl}/reader/blood`
         }
       ];
 

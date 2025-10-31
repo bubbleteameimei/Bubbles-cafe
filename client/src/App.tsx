@@ -46,6 +46,7 @@ const BackToTopButton = React.lazy(() => import('./components/BackToTopButton'))
 // Import essential pages lazily to keep main bundle small
 const HomePage = React.lazy(() => import('./pages/home'));
 const StoriesPage = React.lazy(() => import('./pages/index'));
+const BestStoriesPage = React.lazy(() => import('./pages/best-stories'));
 
 import RouteLoader from './components/ui/RouteLoader';
 // Lazily load core pages to enable code-splitting
@@ -293,8 +294,10 @@ const AppContent = () => {
           void import('./pages/home');
         } else if (path.startsWith('/stories')) {
           void import('./pages/index');
+        } else if (path.startsWith('/best-stories')) {
+          void import('./pages/best-stories');
         } else if (path === '/reader' || path.startsWith('/reader/')) {
-          void import('./pages/reader');
+          void import;
         } else if (path.startsWith('/community-story/')) {
           void import('./pages/story-view');
         } else if (path.startsWith('/story/')) {
@@ -434,6 +437,7 @@ const AppContent = () => {
                   {/* Main Pages */}
                   <Route path="/" component={HomePage} />
                   <Route path="/stories" component={StoriesPage} />
+                  <Route path="/best-stories" component={BestStoriesPage} />
                   <Route path="/reader" component={ReaderRoute} />
                   <Route path="/about" component={AboutPage} />
                   <Route path="/contact" component={ContactPage} />
@@ -528,6 +532,7 @@ const AppContent = () => {
                       {/* Main Pages */}
                       <Route path="/" component={HomePage} />
                       <Route path="/stories" component={StoriesPage} />
+                      <Route path="/best-stories" component={BestStoriesPage} />
                       <Route path="/reader" component={ReaderRoute} />
                       <Route path="/about" component={AboutPage} />
                       <Route path="/contact" component={ContactPage} />
