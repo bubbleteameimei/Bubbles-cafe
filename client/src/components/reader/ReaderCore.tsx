@@ -24,13 +24,13 @@ export function ReaderCore({ slug, onPostLoad, onError }: ReaderCoreProps) {
     readingTimeMinutes?: number | null;
   } | null;
 
-  // Optimized post fetching with caching
+  // Optimized post fetching with caching (use canonical slug route)
   const { data: post, isLoading, error } = useQuery<PostShape>({
     queryKey: ['post', slug],
     queryFn: async () => {
       mark('fetch-start');
       try {
-        const data = await cachedFetch(`/api/posts/by-slug/${slug}`, {
+        const data = await cachedFetch(`/api/posts/slug/${slug}`, {
           ttl: 10 * 60 * 1000 // 10 minutes cache
         });
         measure('fetch-duration', 'fetch-start', 'fetch-end');
@@ -94,7 +94,7 @@ export function ReaderCore({ slug, onPostLoad, onError }: ReaderCoreProps) {
     return html
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
       .replace(/javascript:/gi, '')
-      .replace(/on\w+="[^"]*"/gi, '');
+      .replace(/on\w+=\"[^\"]*\"/gi, '');
   }, [post?.content]);
 
   if (isLoading) {
