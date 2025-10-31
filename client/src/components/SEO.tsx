@@ -69,7 +69,14 @@ export default function SEO({
 }: SEOProps) {
   const siteUrl = DEFAULT_SITE_CONFIG.siteUrl;
   const pageUrl = useMemo(() => canonical ? `${siteUrl}${canonical}` : (typeof window !== 'undefined' ? window.location.href : ''), [canonical, siteUrl]);
-  const imageUrl = useMemo(() => image ? (image.startsWith('http') ? image : `${siteUrl}${image}`) : `${siteUrl}${DEFAULT_SITE_CONFIG.defaultImage}`, [image, siteUrl]);
+  const imageUrl = useMemo(() => {
+    // Avoid double-prefixing when default image is already an absolute URL
+    const fallback = DEFAULT_SITE_CONFIG.defaultImage.startsWith('http')
+      ? DEFAULT_SITE_CONFIG.defaultImage
+      : `${siteUrl}${DEFAULT_SITE_CONFIG.defaultImage}`;
+    if (!image) return fallback;
+    return image.startsWith('http') ? image : `${siteUrl}${image}`;
+  }, [image, siteUrl]);
   const fullTitle = useMemo(() => (title ? `${title} | ${siteName}` : DEFAULT_SITE_CONFIG.defaultTitle), [title, siteName]);
   const keywordsJoined = useMemo(
     () => Array.from(new Set([...(DEFAULT_SITE_CONFIG.defaultKeywords || []), ...(keywords || []), ...(tags || [])])).join(', '),
