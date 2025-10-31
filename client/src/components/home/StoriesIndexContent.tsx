@@ -727,7 +727,7 @@ export default function StoriesIndexContent() {
     });
 
     return sortedByEngagement[0];
-  }, [sortedPosts, sort, reactionTotals]);
+  }, [sortedPosts, sort, reactionTotals, search, closestTitleMatch]);
 
   // Persist last featured theme for diversity in subsequent sessions
   useEffect(() => {
