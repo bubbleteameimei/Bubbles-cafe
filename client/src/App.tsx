@@ -34,6 +34,7 @@ import { NotificationProvider } from './contexts/notification-context';
 import ErrorToastProvider from './components/providers/error-toast-provider';
 import ReaderPrefetcher from './components/providers/ReaderPrefetcher';
 import LinkPrefetchObserver from './components/providers/LinkPrefetchObserver';
+import RouteScrollManager from './components/providers/RouteScrollManager';
 // Import our new refresh components
 import { RefreshProvider } from './contexts/refresh-context';
 const PostsPrefetcher = React.lazy(() => import('./components/providers/PostsPrefetcher'));
@@ -726,6 +727,7 @@ function App() {
                         </React.Suspense>
                         <ReaderPrefetcher />
                         <LinkPrefetchObserver />
+                        <RouteScrollManager />
                         <div className="app-content">
                           <AppContent />
                         </div>
