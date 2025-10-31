@@ -16,8 +16,8 @@ export async function getLatestReaderPath(): Promise<string> {
   } catch {
     // no-op
   }
-  // Fallback
-  return '/stories';
+  // Fallback to reader root (not index)
+  return '/reader';
 }
 
 /**

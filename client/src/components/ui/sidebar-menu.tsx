@@ -179,7 +179,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const prefetchDataForRouteEarly = React.useCallback(async (href: string) => {
     try {
       switch (href) {
-        case '/stories': {
+        case '/stories':
+        case '/index': {
           // Warm stories list
           await fetch('/api/posts?limit=100', { credentials: 'include' }).catch(() => {});
           break;
@@ -223,6 +224,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           return import('../../pages/home');
         case '/stories':
           return import('../../pages/index');
+        case '/index':
+          return import('../../pages/index');
         case '/reader':
           return import('../../pages/reader');
         case '/community':
@@ -246,20 +249,18 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     }
   }, []);
 
-  // Navigate to reader with standardized helper
+  // Navigate directly to the reader page (not latest story)
   const navigateToReader = React.useCallback(async () => {
     try {
-      const { getLatestReaderPath } = await import('@/lib/reader-navigation');
-      const target = await getLatestReaderPath();
       if (sidebar) sidebar.setOpenMobile(false);
       React.startTransition(() => {
-        setLocation(target);
+        setLocation('/reader');
       });
       requestAnimationFrame(() => {
         const idle = (window as any).requestIdleCallback as ((cb: () => void, opts?: any) => void) | undefined;
         const run = () => {
-          prefetchRouteAsync(target.startsWith('/reader') ? '/reader' : '/stories').catch(() => {});
-          void prefetchDataForRouteEarly(target.startsWith('/reader') ? '/reader' : '/stories');
+          prefetchRouteAsync('/reader').catch(() => {});
+          void prefetchDataForRouteEarly('/reader');
         };
         if (typeof idle === "function") {
           idle(run);
@@ -268,7 +269,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         }
       });
     } catch {
-      window.location.href = '/stories';
+      window.location.href = '/reader';
     }
   }, [setLocation, sidebar, prefetchRouteAsync, prefetchDataForRouteEarly]);
 
@@ -337,7 +338,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const prefetchDataForRoute = React.useCallback(async (href: string) => {
     try {
       switch (href) {
-        case '/stories': {
+        case '/stories':
+        case '/index': {
           // Warm stories list
           await fetch('/api/posts?limit=100', { credentials: 'include' }).catch(() => {});
           break;
@@ -381,6 +383,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           void import('../../pages/home');
           break;
         case '/stories':
+          void import('../../pages/index');
+          break;
+        case '/index':
           void import('../../pages/index');
           break;
         case '/reader':
@@ -447,8 +452,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       const DONE_KEY = 'bc_prefetch_stories_done';
       if (!sessionStorage.getItem(DONE_KEY)) {
         const id = setTimeout(() => {
-          prefetchRoute('/stories');
-          void prefetchDataForRoute('/stories');
+          prefetchRoute('/index');
+          void prefetchDataForRoute('/index');
           sessionStorage.setItem(DONE_KEY, '1');
         }, 600);
         return () => clearTimeout(id);
@@ -567,18 +572,18 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     whileTap={{ scale: 0.98 }}
                   >
                     <SidebarMenuButton
-                      isActive={location === '/stories'}
+                      isActive={location === '/index'}
                       size="sm"
-                      onClick={() => handleNavigation('/stories')}
-                      onMouseEnter={() => prefetchRoute('/stories')}
-                      onFocus={() => prefetchRoute('/stories')}
-                      tooltip="Story Index"
+                      onClick={() => handleNavigation('/index')}
+                      onMouseEnter={() => prefetchRoute('/index')}
+                      onFocus={() => prefetchRoute('/index')}
+                      tooltip="Index"
                       className={menuItemClass}
-                      aria-current={location === '/stories' ? 'page' : undefined}
+                      aria-current={location === '/index' ? 'page' : undefined}
                     >
-                      {renderActiveIndicator('/stories')}
+                      {renderActiveIndicator('/index')}
                       <Scroll className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-105 transition-transform duration-150" />
-                      <span className="sidebar-menu-text-enhanced">STORY INDEX</span>
+                      <span className="sidebar-menu-text-enhanced">INDEX</span>
                     </SidebarMenuButton>
                   </motion.div>
                 </SidebarMenuItem>

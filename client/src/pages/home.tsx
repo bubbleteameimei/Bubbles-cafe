@@ -10,6 +10,7 @@ import { getExcerpt } from "@/lib/content-analysis";
 import { extractEngagingExcerpt } from "@/lib/excerpt-lite";
 import { sanitizeHtml } from "@/lib/sanitize";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
+import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import Footer from "@/components/layout/footer";
 
@@ -227,13 +228,13 @@ export default function Home() {
                   >
                     <Button
                       size="lg"
-                      onClick={() => setLocation('/stories')}
+                      onClick={() => setLocation('/index')}
                       onMouseEnter={() => { try { void import('@/pages/index'); } catch {} }}
-                      onFocus={() => { try { void import('@/pages/index'); } catch {} }}
+                      onFocus={() => { tryry { void import('@/pages/index'); } catch {} }}
                       className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       data-testid="home-browse-stories"
                     >
-                      <span className="text-center mr-1">Browse Stories</span>
+                      <span className="text-center mr-1">Open Index</span>
                       <motion.div
                         animate={inView ? {
                           rotate: [0, 10, -6, 4, 0],
@@ -265,7 +266,7 @@ export default function Home() {
                           const target = await getLatestReaderPath();
                           setLocation(target);
                         } catch {
-                          setLocation('/stories');
+                          setLocation('/reader');
                         }
                       }}
                       onMouseEnter={() => { try { void import('@/pages/reader'); } catch {} }}
@@ -291,9 +292,11 @@ export default function Home() {
               </motion.div>
               {/* Monthly readers pill removed by request */}
               
-              {/* Support Writing overlay launcher (same as reader page) */}
-              <div className="flex justify-center mt-1 sm:mt-2 mb-1 sm:mb-1 w-full px-4 max-w-4xl mx-auto">
-                <SupportWritingCard authorId={Number(posts?.[0]?.author) || undefined} />
+              {/* Buy Me a Coffee launches the existing Support My Writing overlay */}
+              <div className="flex flex-col items-center gap-2 mt-1 sm:mt-2 mb-1 sm:mb-1 w-full px-4 max-w-4xl mx-auto">
+                <BuyMeCoffeeButton authorId={Number(posts?.[0]?.author) || undefined} />
+                {/* Mount overlay (hidden card) so the button can open it */}
+                <SupportWritingCard hideCard authorId={Number(posts?.[0]?.author) || undefined} />
               </div>
 
               
@@ -308,7 +311,8 @@ export default function Home() {
                         const target = await getLatestReaderPath();
                         setLocation(target);
                       } catch {
-                        setLocation('/stories');
+                        setLocation('/reader');
+
                       }
                     }} 
                     className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl bg-white/5 dark:bg-white/10 backdrop-blur-md border border-white/15 transition-all duration-300"
