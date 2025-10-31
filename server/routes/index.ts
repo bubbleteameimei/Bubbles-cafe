@@ -27,6 +27,8 @@ import { z } from 'zod';
 import seoRoutes from './seo';
 import { requireAuth, requireAdmin } from '../middlewares/auth';
 import themesDefinitionsRouter from './themes-definitions';
+import { registerNotificationPreferencesRoutes } from './notification-preferences';
+import tipsRouter from './tips';
 
 const routesLogger = createSecureLogger('RoutesIndex');
 
@@ -92,6 +94,10 @@ export function registerModularRoutes(app: Express) {
     registerPrivacySettingsRoutes(app, storage);
     routesLogger.info('Privacy settings routes registered');
 
+    // Notification preferences (function-based registration)
+    registerNotificationPreferencesRoutes(app);
+    routesLogger.info('Notification preferences routes registered');
+
     // Recommendations (function-based registration)
     registerRecommendationsRoutes(app, storage);
     registerPostRecommendationsRoutes(app);
@@ -112,6 +118,10 @@ export function registerModularRoutes(app: Express) {
     // User notifications
     app.use('/api/notifications', userNotificationsRouter);
     routesLogger.info('User notifications routes registered');
+
+    // Tips/donations routes
+    app.use('/api/tips', tipsRouter);
+    routesLogger.info('Tips routes registered');
 
     // Feedback submission endpoint used by client
     const feedbackSchema = z.object({

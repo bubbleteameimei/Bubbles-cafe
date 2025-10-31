@@ -73,6 +73,41 @@ export function ReaderCore({ slug, onPostLoad, onError }: ReaderCoreProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [updateReadingProgress]);
 
+  // Persist reading progress to server (throttled)
+  useEffect(() => {
+    // Track last saved to avoid spamming
+    const state = {
+      lastSavedPct: 0,
+      lastSavedAt: 0
+    };
+
+    const maybeSave = async () => {
+      try {
+        const now = Date.now();
+        const pct = Math.max(0, Math.min(100, readingProgress));
+        const deltaPct = pct - state.lastSavedPct;
+        const deltaTime = now - state.lastSavedAt;
+
+        // Save only when at least +5% progressed and at least 10s elapsed
+        if (deltaPct >= 5 && deltaTime >= 10_000) {
+          state.lastSavedPct = pct;
+          state.lastSavedAt = now;
+          await fetch('/api/reading-progress', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ postSlug: slug, percentCompleted: pct })
+          }).catch(() => {});
+        }
+      } catch {
+        // Non-fatal
+      }
+    };
+
+    // Trigger on progress changes
+    maybeSave();
+  }, [readingProgress, slug]);
+
   // Post load callback
   useEffect(() => {
     if (post && onPostLoad) {

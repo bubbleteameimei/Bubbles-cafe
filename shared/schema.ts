@@ -293,7 +293,11 @@ export const reportedContent = pgTable("reported_content", {
 export const authorTips = pgTable("author_tips", {
   id: serial("id").primaryKey(),
   authorId: integer("author_id").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id),
   amount: text("amount").notNull(),
+  currency: text("currency").default("USD"),
+  status: text("status").default("pending"), // pending, succeeded, failed
+  providerId: text("provider_id"),
   message: text("message"),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
@@ -448,6 +452,20 @@ export const userPrivacySettings = pgTable("user_privacy_settings", {
   anonymousCommenting: boolean("anonymous_commenting").default(false).notNull(),
   twoFactorAuthEnabled: boolean("two_factor_auth_enabled").default(false).notNull(),
   loginNotifications: boolean("login_notifications").default(true).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// User Notification Preferences (persisted preferences for notifications)
+export const userNotificationPreferences = pgTable("user_notification_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull().unique(),
+  storyUpdates: boolean("story_updates").default(true).notNull(),
+  communityActivity: boolean("community_activity").default(true).notNull(),
+  securityAlerts: boolean("security_alerts").default(true).notNull(),
+  readingReminders: boolean("reading_reminders").default(false).notNull(),
+  recommendations: boolean("recommendations").default(true).notNull(),
+  preferredTime: text("preferred_time"),
+  timezone: text("timezone"),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
@@ -899,6 +917,13 @@ export const userPrivacySettingsRelations = relations(userPrivacySettings, ({ on
   }),
 }));
 
+export const userNotificationPreferencesRelations = relations(userNotificationPreferences, ({ one }) => ({
+  user: one(users, {
+    fields: [userNotificationPreferences.userId],
+    references: [users.id],
+  }),
+}));
+
 // User Privacy Settings schema and types
 export const insertUserPrivacySettingsSchema = createInsertSchema(userPrivacySettings).omit({ 
   id: true, 
@@ -907,6 +932,14 @@ export const insertUserPrivacySettingsSchema = createInsertSchema(userPrivacySet
 export type InsertUserPrivacySettings = z.infer<typeof insertUserPrivacySettingsSchema>;
 
 export type UserPrivacySettings = typeof userPrivacySettings.$inferSelect;
+
+// Notification Preferences schema and types
+export const insertUserNotificationPreferencesSchema = createInsertSchema(userNotificationPreferences).omit({ 
+  id: true,
+  updatedAt: true
+});
+export type InsertUserNotificationPreferences = z.infer<typeof insertUserNotificationPreferencesSchema>;
+export type UserNotificationPreferences = typeof userNotificationPreferences.$inferSelect;
 
 // Add missing type exports
 export type User = typeof users.$inferSelect;
