@@ -27,6 +27,7 @@ interface ThreadedCommentsProps {
 export function ThreadedComments({ comments, postId: _postId, onSubmitComment }: ThreadedCommentsProps) {
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState('');
+  const [voteCounts, setVoteCounts] = useState<Record<number, { upvotes: number; downvotes: number }>>({});
   
   // Organize comments into a tree structure
   const buildCommentTree = (comments: Comment[]): Comment[] => {
@@ -59,6 +60,25 @@ export function ThreadedComments({ comments, postId: _postId, onSubmitComment }:
     setReplyingTo(commentId);
     setReplyContent('');
   };
+
+  const handleVote = async (commentId: number, isUpvote: boolean) => {
+    try {
+      const res = await fetch(`/api/comments/${commentId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ isUpvote })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const upvotes = Number(data?.upvotes || 0);
+        const downvotes = Number(data?.downvotes || 0);
+        setVoteCounts(prev => ({ ...prev, [commentId]: { upvotes, downvotes } }));
+      }
+    } catch {
+      // Silent failure; UI remains optimistic
+    }
+  };
   
   const submitReply = async () => {
     if (replyContent.trim()) {
@@ -74,42 +94,53 @@ export function ThreadedComments({ comments, postId: _postId, onSubmitComment }:
   };
   
   const renderComments = (comments: Comment[], depth = 0) => {
-    return comments.map(comment => (
-      <div 
-        key={comment.id} 
-        style={{ marginLeft: `${depth * 20}px` }}
-        className={`mb-4 ${depth > 0 ? 'pl-4 border-l border-gray-200 dark:border-gray-700' : ''}`}
-      >
-        <CommentWithMarkdown
-          author={comment.metadata?.author || 'Anonymous'}
-          content={comment.content}
-          createdAt={comment.createdAt}
-          upvotes={comment.metadata?.upvotes || 0}
-          downvotes={comment.metadata?.downvotes || 0}
-          onReply={() => handleReply(comment.id)}
-          onUpvote={() => console.log('Upvote', comment.id)}
-          onDownvote={() => console.log('Downvote', comment.id)}
-          onReport={() => console.log('Report', comment.id)}
-        />
-        
-        {replyingTo === comment.id && (
-          <div className="ml-8 mt-2 mb-4">
-            <Textarea
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              placeholder="Write a reply..."
-              className="mb-2"
-            />
-            <div className="flex space-x-2">
-              <Button size="sm" onClick={submitReply}>Reply</Button>
-              <Button size="sm" variant="outline" onClick={cancelReply}>Cancel</Button>
+    return comments.map(comment => {
+      const counts = voteCounts[comment.id] || { upvotes: comment.metadata?.upvotes || 0, downvotes: comment.metadata?.downvotes || 0 };
+      return (
+        <div 
+          key={comment.id} 
+          style={{ marginLeft: `${depth * 20}px` }}
+          className={`mb-4 ${depth > 0 ? 'pl-4 border-l border-gray-200 dark:border-gray-700' : ''}`}
+        >
+          <CommentWithMarkdown
+            author={comment.metadata?.author || 'Anonymous'}
+            content={comment.content}
+            createdAt={comment.createdAt}
+            upvotes={counts.upvotes}
+            downvotes={counts.downvotes}
+            onReply={() => handleReply(comment.id)}
+            onUpvote={() => handleVote(comment.id, true)}
+            onDownvote={() => handleVote(comment.id, false)}
+            onReport={() => {
+              // Minimal report handler
+              fetch(`/api/comments/${comment.id}/flag`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ reason: 'inappropriate content' })
+              }).catch(() => {});
+            }}
+          />
+          
+          {replyingTo === comment.id && (
+            <div className="ml-8 mt-2 mb-4">
+              <Textarea
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                placeholder="Write a reply..."
+                className="mb-2"
+              />
+              <div className="flex space-x-2">
+                <Button size="sm" onClick={submitReply}>Reply</Button>
+                <Button size="sm" variant="outline" onClick={cancelReply}>Cancel</Button>
+              </div>
             </div>
-          </div>
-        )}
-        
-        {comment.replies && comment.replies.length > 0 && renderComments(comment.replies, depth + 1)}
-      </div>
-    ));
+          )}
+          
+          {comment.replies && comment.replies.length > 0 && renderComments(comment.replies, depth + 1)}
+        </div>
+      );
+    });
   };
   
   return (

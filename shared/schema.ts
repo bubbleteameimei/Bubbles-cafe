@@ -367,6 +367,21 @@ export const adminNotifications = pgTable("admin_notifications", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
+// User Notifications (for user-facing in-app notifications)
+export const userNotifications = pgTable("user_notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  type: text("type").notNull(), // 'story', 'comment', 'system'
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  isRead: boolean("is_read").default(false).notNull(),
+  metadata: json("metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  userIdx: index("user_notifications_user_idx").on(table.userId),
+  readIdx: index("user_notifications_read_idx").on(table.isRead)
+}));
+
 // Achievement system tables removed
 
 export const userProgress = pgTable("user_progress", {
@@ -584,6 +599,11 @@ export const insertAdminNotificationSchema = createInsertSchema(adminNotificatio
 export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
 export type AdminNotification = typeof adminNotifications.$inferSelect;
 
+// User notifications insert schema/types
+export const insertUserNotificationSchema = createInsertSchema(userNotifications).omit({ id: true, createdAt: true });
+export type InsertUserNotification = z.infer<typeof insertUserNotificationSchema>;
+export type UserNotification = typeof userNotifications.$inferSelect;
+
 // Add new insert schemas and types
 // Achievement system schemas removed
 
@@ -634,6 +654,13 @@ export interface CommentMetadata {
   downvotes?: number;
   replyCount?: number;
   sanitized?: boolean; // Flag to indicate content was sanitized
+  // Optional inline selection anchor for highlighted text ranges
+  selectionAnchor?: {
+    startOffset: number;
+    endOffset: number;
+    paragraphIndex?: number;
+    text?: string;
+  };
 }
 
 // Add insert schema and types for performance metrics
@@ -837,6 +864,13 @@ export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
   user: one(users, {
     fields: [activityLogs.userId],
     references: [users.id],
+  }),
+}));
+
+export const userNotificationsRelations = relations(userNotifications, ({ one }) => ({
+  user: one(users, {
+    fields: [userNotifications.userId],
+    references: [users.id]
   }),
 }));
 

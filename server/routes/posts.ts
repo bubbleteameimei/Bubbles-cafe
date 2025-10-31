@@ -100,6 +100,26 @@ router.get('/slug/:slug',
 	})
 );
 
+// Alias for legacy clients: /api/posts/by-slug/:slug
+router.get('/by-slug/:slug',
+	apiRateLimiter,
+	asyncHandler(async (req: Request, res: Response) => {
+		const { slug } = req.params;
+		try {
+			const post = await storage.getPost(String(slug));
+			if (!post) {
+				throw createError.notFound('Post not found');
+			}
+			res.json(post);
+		} catch (error) {
+			const anyError = error as any;
+			if (anyError?.statusCode) throw anyError;
+			postsLogger.error('Error retrieving post by legacy slug route', { slug, error: error instanceof Error ? error.message : String(error) });
+			throw createError.internal('Failed to retrieve post');
+		}
+	})
+);
+
 // GET /api/posts/community - Get community posts (non-admin posts, optional filters)
 router.get('/community',
 	apiRateLimiter,

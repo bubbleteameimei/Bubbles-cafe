@@ -7,6 +7,7 @@ import { supabaseAuthRouter } from './supabase-auth';
 import { adminRoutes } from './admin';
 import searchRoutes from './search';
 import newsletterRoutes from './newsletter';
+import newsletterDirectRoutes from './newsletter-direct';
 // import bookmarksRoutes from './bookmarks';
 import emailRoutes from './email';
 import moderationRoutes from './moderation';
@@ -14,7 +15,10 @@ import analyticsRoutes from './analytics';
 import { registerPrivacySettingsRoutes } from './privacy-settings';
 import { registerRecommendationsRoutes } from './recommendations';
 import { registerPostRecommendationsRoutes } from './posts-recommendations';
+import trendingStoriesRouter from './trending-stories';
+import readingProgressRouter from './reading-progress';
 import { registerUserFeedbackRoutes } from '../routes/user-feedback';
+import userNotificationsRouter from './notifications';
 import { storage } from '../storage';
 import { handleError } from '../utils/error-handler';
 import healthRoutes from './health';
@@ -59,7 +63,16 @@ export function registerModularRoutes(app: Express) {
 
     // Newsletter routes
     app.use('/api/newsletter', newsletterRoutes);
+    app.use('/api/newsletter-direct', newsletterDirectRoutes);
     routesLogger.info('Newsletter routes registered');
+
+    // Trending stories route
+    app.use('/api/trending-stories', trendingStoriesRouter);
+    routesLogger.info('Trending stories route registered');
+
+    // Reading progress routes
+    app.use('/api/reading-progress', readingProgressRouter);
+    routesLogger.info('Reading progress routes registered');
 
     // Bookmarks routes are registered via registerBookmarkRoutes to avoid conflicts
 
@@ -95,6 +108,10 @@ export function registerModularRoutes(app: Express) {
     // Theme definitions (global overrides)
     app.use('/api/themes', themesDefinitionsRouter);
     routesLogger.info('Theme definitions routes registered');
+
+    // User notifications
+    app.use('/api/notifications', userNotificationsRouter);
+    routesLogger.info('User notifications routes registered');
 
     // Feedback submission endpoint used by client
     const feedbackSchema = z.object({
