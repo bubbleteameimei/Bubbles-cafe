@@ -50,7 +50,7 @@ const StoriesPage = React.lazy(() => import('./pages/index'));
 import RouteLoader from './components/ui/RouteLoader';
 // Lazily load core pages to enable code-splitting
 const ReaderPage = React.lazy(() => import('./pages/reader'));
-const StoryViewPage = React.lazy(() => import('./pages/story-view'));>
+const StoryViewPage = React.lazy(() => import('./pages/story-view'));
 // Reader route component: outer Suspense handles route-level loading fallback
 function ReaderRoute(props: React.ComponentProps<typeof ReaderPage>) {
   return <ReaderPage {...props} />;
@@ -288,7 +288,7 @@ const AppContent = () => {
         } else if (path === '/reader' || path.startsWith('/reader/')) {
           void import('./pages/reader');
         } else if (path.startsWith('/community-story/')) {
-          void import('./pages/reader');
+          void import('./pages/story-view');
         } else if (path.startsWith('/story/')) {
           void import('./pages/reader');
         } else if (path.startsWith('/about')) {

@@ -254,7 +254,8 @@ app.use((req, res, next) => {
         path.startsWith("/contact") ||
         path.startsWith("/privacy") ||
         path.startsWith("/community") ||
-        path.startsWith("/submit-story"))
+        path.startsWith("/community-story") ||
+        path.starts
     ) {
       res.setHeader("X-Robots-Tag", "index, follow");
     } else if (
@@ -319,7 +320,7 @@ async function startServer() {
       await setupVite(app, server);
       // Serve minimal server-rendered head for key pages so social crawlers see OG meta without JS
       app.get('/reader/:slug', readerPreviewHandler);
-      app.get('/story/:slug', storyPreviewHandler);ory/:slug', storyPreviewHandler);
+      app.get('/story/:slug', storyPreviewHandler);
       app.get('/about', aboutPreviewHandler);
       app.get('/ssr', ssrStreamHandler);
     } else {
@@ -341,11 +342,12 @@ async function startServer() {
       
 
       const { serveStatic } = await import('./vite');
-      // Key pages: respond with SSR head first so crawlers get OG meta
-      app.get('/reader/:slug', readerPreviewHandler);
+
+      // Canonicalize legacy routes
+      app.get('/auth-success', (_req, res) => res.redirect(302, '/readerPreviewHandler);
+      app.get('/story/:slug', storyPreviewHandler);
       app.get('/about', aboutPreviewHandler);
-      serveStatic(app);
-      if (process.env.ENABLE_SSR === 'true') {
+     === 'true') {
         app.get('/ssr', ssrStreamHandler);
       }
     }
