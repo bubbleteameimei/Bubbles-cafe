@@ -305,7 +305,6 @@ const AppContent = () => {
           void import('./pages/editors-picks');
         } else if (path.startsWith('/edens-hollow')) {
           void import('./pages/edens-hollow');
-       ');
         } else if (path.startsWith('/community-story/')) {
           void import('./pages/story-view');
         } else if (path.startsWith('/story/')) {
@@ -448,7 +447,7 @@ const AppContent = () => {
                   <Route path="/best-stories" component={BestStoriesPage} />
                   <Route path="/curated" component={CuratedPage} />
                   <Route path="/editors-picks" component={EditorsPicksPage} />
-                 <<Route path="/edensr" component={ReaderRoute} />
+                  <Route path="/edens-hollow" component={EdensHollowPage} />
                   <Route path="/about" component={AboutPage} />
                   <Route path="/contact" component={ContactPage} />
                   <Route path="/privacy" component={PrivacyPage} />
