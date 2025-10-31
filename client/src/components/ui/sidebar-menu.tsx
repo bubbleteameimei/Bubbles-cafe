@@ -263,12 +263,28 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           return;
         }
       }
-      // Fallback: navigate to the reader list or story index
-      handleNavigation('/stories');
+      // Fallback: navigate to the story index directly and warm resources
+      if (sidebar) sidebar.setOpenMobile(false);
+      React.startTransition(() => {
+        setLocation('/stories');
+      });
+      requestAnimationFrame(() => {
+        const idle = (window as any).requestIdleCallback as ((cb: () => void, opts?: any) => void) | undefined;
+        const run = () => {
+          prefetchRouteAsync('/stories').catch(() => {});
+          void prefetchDataForRouteEarly('/stories');
+        };
+        if (typeof idle === "function") {
+          idle(run);
+        } else {
+          setTimeout(run, 0);
+        }
+      });
     } catch {
-      handleNavigation('/stories');
+      // Hard fallback
+      window.location.href = '/stories';
     }
-  }, [setLocation, sidebar, handleNavigation]);
+  }, [setLocation, sidebar, prefetchRouteAsync, prefetchDataForRouteEarly]);
 
   const handleNavigation = React.useCallback((path: string) => {
     // Prevent duplicate navigation

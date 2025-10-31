@@ -13,18 +13,40 @@ import {
 
 interface SupportWritingCardProps {
   className?: string;
+  authorId?: number; // recipient author id for logging tips
 }
 
-export const SupportWritingCard = ({ className = "" }: SupportWritingCardProps) => {
+export const SupportWritingCard = ({ className = "", authorId }: SupportWritingCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
-  const handleTip = () => {
+  const handleTip = async () => {
     // Prevent multiple clicks
     if (isProcessing) return;
     
     setIsProcessing(true);
+
+    // Log tip intent to backend (pending status); only if authorId known
+    try {
+      if (typeof authorId === 'number' && Number.isFinite(authorId) && authorId > 0) {
+        await fetch('/api/tips', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            authorId,
+            amount: '0', // intent only; actual amount recorded via webhook
+            currency: 'USD',
+            status: 'pending',
+            message: 'support_intent'
+          })
+        }).catch(() => {});
+      }
+    } catch {
+      // non-fatal
+    }
+
     window.open("https://paystack.com/pay/z7fmj9rge1", "_blank", "noopener,noreferrer");
     setIsOpen(false);
     
