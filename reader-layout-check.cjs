@@ -16,7 +16,8 @@ async function checkReaderLayout() {
     
     // Navigate to the reader page
     console.log('Navigating to reader page...');
-    await page.goto('http://localhost:3001/reader', { 
+    const BASE_URL = process.env.APP_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3002';
+    await page.goto(`${BASE_URL}/reader`, { 
       waitUntil: 'networkidle2',
       timeout: 60000
     });

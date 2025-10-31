@@ -26,9 +26,10 @@ async function takeScreenshot() {
       deviceScaleFactor: 1
     });
     
-    // Navigate to the page (use port 3001 for Replit environment)
+    // Navigate to the page
     console.log('Navigating to homepage...');
-    await page.goto('http://localhost:3001', {
+    const BASE_URL = process.env.APP_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3002';
+    await page.goto(BASE_URL, {
       waitUntil: 'networkidle2',
       timeout: 10000
     });

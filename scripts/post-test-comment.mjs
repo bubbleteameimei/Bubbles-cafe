@@ -6,7 +6,7 @@
 import http from 'http';
 import https from 'https';
 
-const BASE = process.env.BASE_URL || 'http://localhost:3001';
+const BASE = process.env.APP_URL || process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || 'http://localhost:3002';
 
 const agent = (url) => (url.startsWith('https:') ? new https.Agent({ keepAlive: true }) : new http.Agent({ keepAlive: true }));
 

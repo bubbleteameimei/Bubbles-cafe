@@ -13,7 +13,8 @@ async function captureScreenshot() {
     await page.setViewport({ width: 1280, height: 800 });
     
     console.log('Navigating to the story page...');
-    await page.goto('http://localhost:3001/reader/nostalgia', { 
+    const BASE_URL = process.env.APP_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3002';
+    await page.goto(`${BASE_URL}/reader/nostalgia`, { 
       waitUntil: 'networkidle2',
       timeout: 10000
     });

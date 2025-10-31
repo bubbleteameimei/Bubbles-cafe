@@ -175,13 +175,7 @@ export default function Home() {
         <div className="homepage-content">
         <div 
           className="relative min-h-screen overflow-x-hidden flex flex-col home-page"
-          style={{
-            backgroundImage: 'url("/homepage-bg.jpeg")',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            backgroundAttachment: 'fixed'
-          }}
+          style={{}}
         >
           {/* Background overlay removed per request */}
           
