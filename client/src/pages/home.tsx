@@ -288,16 +288,7 @@ export default function Home() {
                 <BuyMeCoffeeButton />
               </div>
 
-              {/* Inline site navigation links to improve sitelink confidence */}
-              <nav aria-label="Primary site links" className="mt-3 sm:mt-4">
-                <ul className="flex flex-wrap justify-center gap-4 text-white/90 text-sm sm:text-base">
-                  <li><a href="/stories" className="underline hover:no-underline">Stories</a></li>
-                  <li><a href="/about" className="underline hover:no-underline">About</a></li>
-                  <li><a href="/contact" className="underline hover:no-underline">Contact</a></li>
-                  <li><a href="/privacy" className="underline hover:no-underline">Privacy Policy</a></li>
-                  <li><a href="/community" className="underline hover:no-underline">Community</a></li>
-                </ul>
-              </nav>
+              
 
               {posts.length > 0 && (
                 <div className="mt-2 sm:mt-3 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
