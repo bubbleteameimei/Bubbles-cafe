@@ -113,6 +113,7 @@ export default function Navigation() {
         case '/':
           void import('../../pages/home'); break;
         case '/stories':
+        case '/index':
           void import('../../pages/index'); break;
         case '/reader':
           void import('../../pages/reader'); break;
@@ -132,6 +133,7 @@ export default function Navigation() {
       switch (href) {
         case '/': return import('../../pages/home');
         case '/stories': return import('../../pages/index');
+        case '/index': return import('../../pages/index');
         case '/reader': return import('../../pages/reader');
         case '/community': return import('../../pages/community');
         case '/about': return import('../../pages/about');
@@ -201,7 +203,7 @@ export default function Navigation() {
         <nav aria-label="Main" className="hidden lg:flex items-center justify-center flex-1 space-x-4">
           {[
             { href: "/", label: "Home" },
-            { href: "/stories", label: "Stories" },
+            { href: "/index", label: "Index" },
             { href: "/reader", label: "Reader" },
             { href: "/community", label: "Community" },
             { href: "/about", label: "About" },

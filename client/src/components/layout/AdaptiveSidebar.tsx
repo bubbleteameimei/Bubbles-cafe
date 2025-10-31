@@ -56,7 +56,7 @@ const AdaptiveSidebar: React.FC<AdaptiveSidebarProps> = ({ className = "" }): JS
           transition={{ duration: 0.2 }}
           className="font-bold text-xl"
         >
-          {isOpen && "Stories"}
+          {isOpen && "Index"}
         </motion.div>
         <Button
           variant="ghost"
@@ -79,8 +79,8 @@ const AdaptiveSidebar: React.FC<AdaptiveSidebarProps> = ({ className = "" }): JS
           <NavItem
             isOpen={isOpen}
             icon={<BookOpen size={20} />}
-            text="Stories"
-            href="/stories"
+            text="Index"
+            href="/index"
           />
           <NavItem
             isOpen={isOpen}

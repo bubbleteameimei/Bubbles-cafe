@@ -168,6 +168,34 @@ app.get('/og-image-1200x630.png', (_req, res) => {
   res.redirect(302, '/icons/icon-512x512.png');
 });
 
+// Trailing slash normalization (GET requests only, except root)
+app.use((req, res, next) => {
+  try {
+    if (req.method === 'GET') {
+      const original = req.originalUrl || req.url || '';
+      const idx = original.indexOf('?');
+      const pathOnly = idx >= 0 ? original.slice(0, idx) : original;
+      const qs = idx >= 0 ? original.slice(idx) : '';
+      if (pathOnly.length > 1 && /\/+$/.test(pathOnly)) {
+        const normalized = pathOnly.replace(/\/+$/, '');
+        return res.redirect(308, normalized + qs);
+      }
+    }
+  } catch {}
+  next();
+});
+
+// Alias canonicalization: use preferred URL structure
+app.get('/stories', (_req, res) => res.redirect(308, '/index'));
+app.get('/story/:slug', (req, res) => {
+  try {
+    const slug = String(req.params.slug || '').trim();
+    return res.redirect(308, `/reader/${encodeURIComponent(slug)}`);
+  } catch {
+    return res.redirect(308, '/reader');
+  }
+});
+
 
 
 // Session
@@ -249,7 +277,7 @@ app.use((req, res, next) => {
       (isHtml ||
         path === "/" ||
         path.startsWith("/reader") ||
-        path.startsWith("/stories") ||
+        path.startsWith("/index") ||
         path.startsWith("/about") ||
         path.startsWith("/contact") ||
         path.startsWith("/privacy") ||
@@ -348,8 +376,8 @@ async function startServer() {
       const { serveStatic } = await import('./vite');
 
       // Canonicalize legacy routes
-      app.get('/auth-success', (_req, res) => res.redirect(302, '/auth/success'));
-      app.get('/admin/posts', (_req, res) => res.redirect(302, '/admin/manage-posts'));
+      app.get('/auth-success', (_req, res) => res.redirect(308, '/auth/success'));
+      app.get('/admin/posts', (_req, res) => res.redirect(308, '/admin/manage-posts'));
 
       // Key pages: respond with SSR head first so crawlers get OG meta
       app.get('/reader/:slug', readerPreviewHandler);
