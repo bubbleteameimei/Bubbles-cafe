@@ -515,6 +515,8 @@ const AppContent = () => {
                   <Route path="/community-story/:slug">
                     {(params) => <CommunityStoryRoute params={params} />}
                   </Route>
+                  {/* Ensure /reader without slug also resolves to the reader component */}
+                  <Route path="/reader" component={ReaderRoute} />
                   <Route path="/reader/:slug">
                     {(params) => <ReaderRoute params={params} isCommunityContent={false} />}
                   </Route>

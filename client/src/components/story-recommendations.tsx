@@ -195,7 +195,7 @@ export function StoryRecommendations({
               <Card>
                 <CardHeader>
                   <CardTitle className="line-clamp-2">
-                    <a href={`/stories/${post.slug}`} className="hover:underline">
+                    <a href={`/reader/${post.slug}`} className="hover:underline">
                       {post.title}
                     </a>
                   </CardTitle>
@@ -240,7 +240,7 @@ export function StoryRecommendations({
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <Button variant="outline" size="sm" asChild>
-                    <a href={`/stories/${post.slug}`}>Read Story</a>
+                    <a href={`/reader/${post.slug}`}>Read Story</a>
                   </Button>
                   
                   <Button 

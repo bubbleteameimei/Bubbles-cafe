@@ -246,6 +246,30 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     }
   }, []);
 
+  // Navigate to reader with a valid slug when possible
+  const navigateToReader = React.useCallback(async () => {
+    try {
+      // Attempt to fetch the latest post from the database
+      const res = await fetch('/api/posts?limit=1', { credentials: 'include' }).catch(() => null);
+      if (res && res.ok) {
+        const data = await res.json().catch(() => null);
+        const slug = data?.posts?.[0]?.slug;
+        if (slug) {
+          // Close sidebar then navigate to reader slug
+          if (sidebar) sidebar.setOpenMobile(false);
+          React.startTransition(() => {
+            setLocation(`/reader/${encodeURIComponent(String(slug))}`);
+          });
+          return;
+        }
+      }
+      // Fallback: navigate to the reader list or story index
+      handleNavigation('/stories');
+    } catch {
+      handleNavigation('/stories');
+    }
+  }, [setLocation, sidebar, handleNavigation]);
+
   const handleNavigation = React.useCallback((path: string) => {
     // Prevent duplicate navigation
     if (location === path) {
@@ -572,7 +596,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     <SidebarMenuButton
                       isActive={location === '/reader'}
                       size="sm"
-                      onClick={() => handleNavigation('/reader')}
+                      onClick={() => navigateToReader()}
                       onMouseEnter={() => prefetchRoute('/reader')}
                       onFocus={() => prefetchRoute('/reader')}
                       tooltip="Interactive Reader"

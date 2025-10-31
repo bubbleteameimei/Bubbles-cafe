@@ -490,6 +490,34 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const activeAccumulatedMsRef = useRef<number>(0);
   const [visibilityTick, setVisibilityTick] = useState(0);
 
+  // Persist reading progress to server for cross-device resume (throttled)
+  const lastProgressSentRef = useRef<{ percent: number; ts: number }>({ percent: 0, ts: 0 });
+  useEffect(() => {
+    try {
+      if (!isAuthenticated) return;
+      const slug = routeSlug || autoSaveSlug || postsData?.posts?.[currentIndex]?.slug;
+      if (!slug) return;
+
+      const now = Date.now();
+      const rounded = Math.round(readingProgress);
+      const diff = Math.abs(rounded - (lastProgressSentRef.current.percent || 0));
+      const tooSoon = now - (lastProgressSentRef.current.ts || 0) < 15000; // 15s throttle
+
+      if (diff >= 10 && !tooSoon) {
+        fetch('/api/reading-progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ postSlug: String(slug), percentCompleted: rounded })
+        }).then((res) => {
+          if (res.ok) {
+            lastProgressSentRef.current = { percent: rounded, ts: Date.now() };
+          }
+        }).catch(() => { /* non-fatal */ });
+      }
+    } catch { /* non-fatal */ }
+  }, [readingProgress, routeSlug, autoSaveSlug, postsData?.posts, currentIndex, isAuthenticated]);
+
   // Reset active timers when post changes
   useEffect(() => {
     activeAccumulatedMsRef.current = 0;

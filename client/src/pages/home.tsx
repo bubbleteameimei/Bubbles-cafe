@@ -259,7 +259,19 @@ export default function Home() {
                     <Button
                       size="lg"
                       variant="secondary"
-                      onClick={() => setLocation('/reader')}
+                      onClick={() => {
+                        try {
+                          const targetSlug = posts?.[0]?.slug;
+                          if (targetSlug) {
+                            setLocation(`/reader/${encodeURIComponent(String(targetSlug))}`);
+                          } else {
+                            // Fallback: go to story index
+                            setLocation('/stories');
+                          }
+                        } catch {
+                          setLocation('/stories');
+                        }
+                      }}
                       onMouseEnter={() => { try { void import('@/pages/reader'); } catch {} }}
                       onFocus={() => { try { void import('@/pages/reader'); } catch {} }}
                       aria-label="Start reading now"
@@ -294,7 +306,18 @@ export default function Home() {
                 <div className="mt-2 sm:mt-3 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <motion.div 
-                    onClick={() => setLocation('/reader')} 
+                    onClick={() => {
+                      try {
+                        const targetSlug = posts?.[0]?.slug;
+                        if (targetSlug) {
+                          setLocation(`/reader/${encodeURIComponent(String(targetSlug))}`);
+                        } else {
+                          setLocation('/stories');
+                        }
+                      } catch {
+                        setLocation('/stories');
+                      }
+                    }} 
                     className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl bg-white/5 dark:bg-white/10 backdrop-blur-md border border-white/15 transition-all duration-300"
                     whileHover={{ 
                       y: -8, 
