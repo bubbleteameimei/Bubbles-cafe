@@ -269,6 +269,18 @@ export default function SEO({
         {
           '@context': 'https://schema.org',
           '@type': 'SiteNavigationElement',
+          name: 'Curated for You',
+          url: `${siteUrl}/curated`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: 'Editors Picks',
+          url: `${siteUrl}/editors-picks`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
           name: 'About',
           url: `${siteUrl}/about`
         },

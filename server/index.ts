@@ -256,6 +256,8 @@ app.use((req, res, next) => {
         path.startsWith("/community") ||
         path.startsWith("/community-story") ||
         path.startsWith("/best-stories") ||
+        path.startsWith("/curated") ||
+        path.startsWith("/editors-picks") ||
         path.startsWith("/submit-story"))
     ) {
       res.setHeader("X-Robots-Tag", "index, follow");
