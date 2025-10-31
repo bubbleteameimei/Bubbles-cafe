@@ -40,13 +40,13 @@ export default function EditorsPicksPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SEO
-        title="Editors Picks"
+        title="Editor’s Picks"
         description="A curated showcase of standout short fiction selected by the editor."
         canonical={canonical}
         type="website"
       />
       <div className="container max-w-3xl mx-auto px-4 py-10">
-        <h1 className="text-3xl md:text-4xl font-bold mb-6">Editors Picks</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-6">Editor’s Picks</h1>
         <p className="text-muted-foreground mb-8">
           Selected highlights from Bubble’s Cafe.
         </p>

@@ -275,7 +275,7 @@ export default function SEO({
         {
           '@context': 'https://schema.org',
           '@type': 'SiteNavigationElement',
-          name: 'Editors Picks',
+          name: 'Editor’s Picks',
           url: `${siteUrl}/editors-picks`
         },
         {
