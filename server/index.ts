@@ -255,7 +255,7 @@ app.use((req, res, next) => {
         path.startsWith("/privacy") ||
         path.startsWith("/community") ||
         path.startsWith("/community-story") ||
-        path.starts
+        path.startsWith("/submit-story"))
     ) {
       res.setHeader("X-Robots-Tag", "index, follow");
     } else if (

@@ -50,7 +50,8 @@ const StoriesPage = React.lazy(() => import('./pages/index'));
 import RouteLoader from './components/ui/RouteLoader';
 // Lazily load core pages to enable code-splitting
 const ReaderPage = React.lazy(() => import('./pages/reader'));
-const StoryViewPage = React.lazy(() => import('./pages/story-view'));
+const StoryViewPage = React.lazy(() => import('./pages/story-view'));derPage = React.lazy(() => import('./pages/reader'));
+const StoryViewPage = React.lazy(() => import('./pages/story-view'))>
 // Reader route component: outer Suspense handles route-level loading fallback
 function ReaderRoute(props: React.ComponentProps<typeof ReaderPage>) {
   return <ReaderPage {...props} />;
