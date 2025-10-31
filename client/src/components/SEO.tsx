@@ -27,11 +27,9 @@ interface SEOProps {
 const DEFAULT_SITE_CONFIG = {
   siteName: 'Bubble’s Cafe',
   defaultTitle: 'Bubble’s Cafe',
-  defaultDescription: 'Bubble’s Cafe publishes dark, psychological and experimental short fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.',
+  defaultDescription: 'Bubble’s Cafe publishes dark, psychological, and experimental short fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.',
   // Use a stable icon path for default social previews
-  // Use a rectangular OG image for previews so it isn't rounded/cropped like a favicon
-  // Add version param to force refresh after updates
-  defaultImage: 'https://bubblescafe.space/og-image-1200x630.png?v=5',
+  defaultImage: 'https://bubblescafe.space/icons/icon-512x512.png',
   siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://bubblescafe.space',
   locale: 'en_US',
   twitterSite: '@bubblescafe',

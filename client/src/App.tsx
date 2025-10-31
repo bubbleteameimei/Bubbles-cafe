@@ -175,8 +175,8 @@ const AppContent = () => {
   let seoNofollow = false;
 
   if (pathForSeo === '/') {
-    seoTitle = 'Home';
-    seoDescription = 'A home for dark, psychological and experimental short fiction — stories that explore the quiet violence beneath ordinary life.';
+    seoTitle = 'Bubble’s Cafe';
+    seoDescription = 'Bubble’s Cafe publishes dark, psychological, and experimental short fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.';
   } else if (pathForSeo.startsWith('/stories')) {
     seoTitle = 'Stories';
     seoDescription = 'Discover short fiction from Bubble’s Cafe — psychological and experimental stories of identity, obsession, and the strange grace of decay.';
