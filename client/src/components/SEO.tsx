@@ -182,9 +182,9 @@ export default function SEO({
     setLinkTag('preconnect', 'https://pixel.wp.com');
     setLinkTag('dns-prefetch', 'https://pixel.wp.com');
     
-    // Favicon and app icons (use provided PNG favicon from client/public), add cache-bust
+    // Favicon and app icons (remote absolute URLs to avoid 404s)
     setLinkTag('icon', 'https://bubblescafe.space/icons/favicon-32x32.png?v=3', { type: 'image/png', sizes: '32x32' });
-    setLinkTag('shortcut icon',-touch-icon', '/icons/apple-touch-icon.png?v=3');
+    setLinkTag('apple-touch-icon', 'https://bubblescafe.space/icons/apple-touch-icon.png?v=3', { sizes: '180x180' });
     
     // Generate and set JSON-LD structured data
     const generateStructuredData = () => {
@@ -366,7 +366,7 @@ export default function SEO({
             url: siteUrl,
             logo: {
               '@type': 'ImageObject',
-              url: `${siteUrl}/icons/icon-512x512.png`,
+              url: `https://bubblescafe.space/icons/icon-512x512.png`,
               alt: `${siteName} Logo`
             }
           },

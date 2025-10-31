@@ -202,6 +202,8 @@ app.use(validateCsrfToken({
     '/api/auth/supabase/callback',
     '/api/analytics/vitals',
     '/api/analytics/performance',
+    '/api/analytics/pageview',
+    '/api/analytics/interaction',
     '/api/wordpress/sync/status',
     '/api/errors',
     '/api/payments/webhook'

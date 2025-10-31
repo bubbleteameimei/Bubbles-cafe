@@ -87,13 +87,13 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
       return next();
     }
 
+    // Auth endpoints may be exempted; all other state-changing endpoints require CSRF
     const allowlist = new Set<string>([
       '/api/auth/login',
       '/api/auth/register',
       '/api/auth/forgot-password',
       '/api/auth/reset-password',
-      '/api/auth/social-login',
-      '/api/user/privacy-settings'
+      '/api/auth/social-login'
     ]);
     if (allowlist.has(req.path)) {
       return next();
@@ -110,6 +110,9 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
       console.log(`Ignore paths:`, ignorePaths);
     }
     
+    // Only skip CSRF for explicitly allowed endpoints:
+    // - Paths provided via options.ignorePaths (configured in server/index.ts)
+    // - Analytics endpoints (metrics collection)
     if (
       ignorePaths.some(path => 
         apiPath === path || 
@@ -117,19 +120,13 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
         endpointPath === path ||
         apiPath.startsWith(path) || 
         relPath.startsWith(path) ||
-        endpointPath.startsWith(path) ||
-        req.path.endsWith('/csrf-test-bypass') ||
-        req.path.includes('/analytics/vitals') ||
-        req.path.includes('/analytics/pageview') ||
-        req.path.includes('/analytics/interaction') ||
-        req.path.includes('/analytics/performance') ||
-        req.path.includes('/reader/bookmarks') ||
-        req.path.includes('/newsletter-direct/subscribe') ||
-        req.path.includes('/newsletter/subscribe') ||
-        req.path.includes('/newsletter/unsubscribe')
-      )
+        endpointPath.startsWith(path)
+      ) ||
+      req.path.startsWith('/api/analytics/')
     ) {
-      console.log(`CSRF validation skipped for ${req.method} ${req.path} (matches ignore path)`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`CSRF validation skipped for ${req.method} ${req.path} (allowed endpoint)`);
+      }
       return next();
     }
 
