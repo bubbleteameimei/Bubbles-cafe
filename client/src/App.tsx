@@ -49,6 +49,7 @@ const StoriesPage = React.lazy(() => import('./pages/index'));
 const BestStoriesPage = React.lazy(() => import('./pages/best-stories'));
 const CuratedPage = React.lazy(() => import('./pages/curated'));
 const EditorsPicksPage = React.lazy(() => import('./pages/editors-picks'));
+const EdensHollowPage = React.lazy(() => import('./pages/edens-hollow'));
 
 import RouteLoader from './components/ui/RouteLoader';
 // Lazily load core pages to enable code-splitting
@@ -302,8 +303,9 @@ const AppContent = () => {
           void import('./pages/curated');
         } else if (path.startsWith('/editors-picks')) {
           void import('./pages/editors-picks');
-        } else if (path === '/reader' || path.startsWith('/reader/')) {
-          void import('./pages/reader');
+        } else if (path.startsWith('/edens-hollow')) {
+          void import('./pages/edens-hollow');
+       ');
         } else if (path.startsWith('/community-story/')) {
           void import('./pages/story-view');
         } else if (path.startsWith('/story/')) {
@@ -446,7 +448,7 @@ const AppContent = () => {
                   <Route path="/best-stories" component={BestStoriesPage} />
                   <Route path="/curated" component={CuratedPage} />
                   <Route path="/editors-picks" component={EditorsPicksPage} />
-                  <Route path="/reader" component={ReaderRoute} />
+                 <<Route path="/edensr" component={ReaderRoute} />
                   <Route path="/about" component={AboutPage} />
                   <Route path="/contact" component={ContactPage} />
                   <Route path="/privacy" component={PrivacyPage} />
@@ -543,6 +545,7 @@ const AppContent = () => {
                       <Route path="/best-stories" component={BestStoriesPage} />
                       <Route path="/curated" component={CuratedPage} />
                       <Route path="/editors-picks" component={EditorsPicksPage} />
+                      <Route path="/edens-hollow" component={EdensHollowPage} />
                       <Route path="/reader" component={ReaderRoute} />
                       <Route path="/about" component={AboutPage} />
                       <Route path="/contact" component={ContactPage} />

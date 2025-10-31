@@ -55,15 +55,16 @@ export default function EditorsPicksPage() {
         ) : (
           <ul className="space-y-6">
             {selected.map((p: any) => {
-              const title = String(p?.title?.rendered || p?.title || 'Untitled');
+              const rawTitle = String(p?.title?.rendered || p?.title || 'Untitled');
+              const titleText = rawTitle.replace(/<\/?[^>]+(>|$)/g, '').trim();
               const slug = String(p?.slug || p?.id || '').trim();
-              const excerpt = String(p?.excerpt?.rendered || '').replace(/<\\/?[^>]+(>|$)/g, '').trim();
+              const excerpt = String(p?.excerpt?.rendered || '').replace(/<\/?[^>]+(>|$)/g, '').trim();
               const description = excerpt || 'Read this editor’s pick.';
               if (!slug) return null;
               return (
                 <li key={slug} className="border border-border rounded-lg p-4">
                   <a href={`/reader/${encodeURIComponent(slug)}`} className="text-xl font-semibold underline hover:no-underline">
-                    <span dangerouslySetInnerHTML={{ __html: title }} />
+                    <span>{titleText}</span>
                   </a>
                   <p className="text-sm text-muted-foreground mt-2">{description}</p>
                 </li>

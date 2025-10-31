@@ -281,6 +281,12 @@ export default function SEO({
         {
           '@context': 'https://schema.org',
           '@type': 'SiteNavigationElement',
+          name: 'Play Eden’s Hollow! – Gothic Visual Novel',
+          url: `${siteUrl}/edens-hollow`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
           name: 'About',
           url: `${siteUrl}/about`
         },

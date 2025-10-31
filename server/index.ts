@@ -258,6 +258,7 @@ app.use((req, res, next) => {
         path.startsWith("/best-stories") ||
         path.startsWith("/curated") ||
         path.startsWith("/editors-picks") ||
+        path.startsWith("/edens-hollow") ||
         path.startsWith("/submit-story"))
     ) {
       res.setHeader("X-Robots-Tag", "index, follow");

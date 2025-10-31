@@ -109,7 +109,7 @@ router.get('/sitemap.xml', async (req: Request, res: Response) => {
 router.get('/pages-sitemap.xml', async (req: Request, res: Response) => {
 	try {
 		const origin = getOrigin(req);
-		const staticPaths = ['/', '/stories', '/best-stories', '/curated', '/editors-picks', '/reader', '/about', '/contact', '/privacy', '/community', '/submit-story', '/install'];
+		const staticPaths = ['/', '/stories', '/best-stories', '/curated', '/editors-picks', '/edens-hollow', '/reader', '/about', '/contact', '/privacy', '/community', '/submit-story', '/install'];
 
 		const urls = staticPaths.map(p => ({
 			loc: `${origin}${p}`,
