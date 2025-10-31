@@ -257,6 +257,12 @@ export default function SEO({
         {
           '@context': 'https://schema.org',
           '@type': 'SiteNavigationElement',
+          name: 'Browse Stories',
+          url: `${siteUrl}/reader`
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
           name: 'Best Stories',
           url: `${siteUrl}/best-stories`
         },
