@@ -1,41 +1,33 @@
-// Minimal error polyfill to reduce noisy cross-origin "Script error" reports.
-// This does not suppress real errors from our own scripts; it only prevents
-// default handling when the browser reports generic script errors with no details.
+/**
+ * Lightweight error polyfill to report script errors early.
+ * Loaded before main bundle to capture cross-origin errors where possible.
+ */
 (function () {
-  try {
-    // Compute API base for split frontend/backend domains
-    var API_BASE = (function () {
-      try {
-        var protocol = window.location.protocol;
-        var hostname = window.location.hostname;
-        if (/^localhost$|^127\\./.test(hostname)) return '';
-        if (hostname.startsWith('api.')) return protocol + '//' + hostname;
-        var host = hostname.startsWith('www.') ? hostname.slice(4) : hostname;
-        return protocol + '//' + 'api.' + host;
-      } catch (e) {
-        return '';
-      }
-    })();
+  function sendError(id, message) {
+    try {
+      fetch('/api/errors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id: id, message: String(message || 'Unknown') })
+      }).catch(function () {});
+    } catch (e) {}
+  }
 
-    window.addEventListener(
-      "error",
-      function (event) {
-        // Some browsers emit "Script error." for cross-origin failures without details.
-        if (event && event.message === "Script error.") {
-          event.preventDefault();
-          // Optionally, report a sanitized event to the backend
-          try {
-            var url = (API_BASE ? (API_BASE + "/api/errors") : "/api/errors");
-            fetch(url, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ id: "script-error-generic", message: "Cross-origin script error" }),
-              credentials: "include"
-            }).catch(function () {});
-          } catch {}
-        }
-      },
-      true
-    );
-  } catch {}
+  // Report uncaught errors
+  window.addEventListener('error', function (event) {
+    try {
+      var msg = event && event.message ? event.message : 'Script error';
+      sendError('window-error', msg);
+    } catch (_) {}
+  });
+
+  // Report unhandled promise rejections
+  window.addEventListener('unhandledrejection', function (event) {
+    try {
+      var reason = event && event.reason ? event.reason : 'Unknown';
+      var msg = typeof reason === 'string' ? reason : (reason && reason.message) ? reason.message : String(reason);
+      sendError('unhandledrejection', msg);
+    } catch (_) {}
+  });
 })();

@@ -103,25 +103,7 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
     const relPath = req.path.replace(/^\/api/, '');
     const endpointPath = req.originalUrl.split('?')[0];
 
-    // Allow comment operations without CSRF to prevent blocking posting in constrained environments.
-    // This exemption applies only to comment creation (POST /api/posts/:postId/comments)
-    // and comment interactions (POST /api/comments/:id/vote, POST /api/comments/:id/flag).
-    const isCommentOperation =
-      (endpointPath.startsWith('/api/posts/') && endpointPath.includes('/comments')) ||
-      (endpointPath.startsWith('/api/comments/') && (endpointPath.endsWith('/vote') || endpointPath.endsWith('/flag')));
-    if (isCommentOperation) {
-      console.log(`CSRF validation skipped for comment operation: ${req.method} ${endpointPath}`);
-      return next();
-    }
-
-    // Allow post reaction endpoints without CSRF to prevent blocking lightweight interactions (preview-friendly).
-    const isPostReactionOperation =
-      endpointPath.startsWith('/api/posts/') &&
-      (endpointPath.endsWith('/reaction') || endpointPath.endsWith('/like'));
-    if (isPostReactionOperation) {
-      console.log(`CSRF validation skipped for post reaction: ${req.method} ${endpointPath}`);
-      return next();
-    }
+    
 
     if (process.env.NODE_ENV !== 'production') {
       console.log(`CSRF checking path: ${req.method} ${req.path} (API relative: ${relPath})`);

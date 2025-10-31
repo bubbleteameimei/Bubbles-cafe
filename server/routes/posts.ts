@@ -8,7 +8,7 @@ import { insertPostSchema, updatePostSchema , posts as postsTable } from "@share
 import { apiRateLimiter } from '../middlewares/rate-limiter';
 // DB helpers imported where needed
 import { db } from '../db';
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 const postsLogger = createSecureLogger('PostsRoutes');
 const router = Router();
@@ -346,43 +346,61 @@ router.get('/:id/reactions',
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
-      let post = await (storage as any).getPostById(Number(id));
-      // Ensure placeholder exists for WordPress posts if missing
-      if (!post && (storage as any).ensurePostExists) {
-        await (storage as any).ensurePostExists(Number(id));
-        post = await (storage as any).getPostById(Number(id));
+      let effectiveId = Number(id);
+      let post = await (storage as any).getPostById(effectiveId);
+
+      // Try metadata.wordpressId mapping to locate the local post id when not found
+      if (!post) {
+        try {
+          const mapped = await db
+            .select({ id: postsTable.id })
+            .from(postsTable)
+            .where(sql`(metadata->>'wordpressId')::int = ${effectiveId}`)
+            .limit(1);
+          if (mapped[0]?.id) {
+            effectiveId = Number(mapped[0].id);
+            post = await (storage as any).getPostById(effectiveId);
+          }
+        } catch (_) { /* no-op */ }
       }
+
+      // Ensure placeholder exists if still missing (for external ids)
+      if (!post && (storage as any).ensurePostExists) {
+        await (storage as any).ensurePostExists(effectiveId);
+        post = await (storage as any).getPostById(effectiveId);
+      }
+
       if (!post) throw createError.notFound('Post not found');
 
-      const counts = await (storage as any).getPostLikeCounts(Number(id));
+      const counts = await (storage as any).getPostLikeCounts(effectiveId);
       let baselineLikes = Number((post as any).baselineLikes ?? 0);
       let baselineDislikes = Number((post as any).baselineDislikes ?? 0);
 
       // Fallback seeding: if baselines are zero, compute deterministic values and persist
       if (baselineLikes === 0 || baselineDislikes === 0) {
         const slug = String((post as any).slug || '');
-        const seedNumber = slug ? (() => { let h = 0; for (let i = 0; i < slug.length; i++) { h = (h << 5) - h + slug.charCodeAt(i); h |= 0; } return Math.abs(h); })() : Number(id);
+        const seedNumber = slug
+          ? (() => { let h = 0; for (let i = 0; i < slug.length; i++) { h = (h << 5) - h + slug.charCodeAt(i); h |= 0; } return Math.abs(h); })()
+          : effectiveId;
         const seed = seedNumber * 12345;
         const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
         const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80; // 80–200
         const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2; // 2–13
 
-        // Persist once so everyone sees the same baseline
         try {
           await db.update(postsTable)
             .set({ baselineLikes: likesBase, baselineDislikes: dislikesBase })
-            .where(eq(postsTable.id, Number(id)));
+            .where(eq(postsTable.id, effectiveId));
           baselineLikes = likesBase;
           baselineDislikes = dislikesBase;
         } catch (_) {
-          // If persistence fails, still use computed values in response
           baselineLikes = baselineLikes || likesBase;
           baselineDislikes = baselineDislikes || dislikesBase;
         }
       }
 
       return res.json({
-        postId: Number(id),
+        postId: effectiveId,
         baselineLikes,
         baselineDislikes,
         likesCount: Number(counts.likesCount ?? 0),
@@ -414,16 +432,34 @@ router.get('/reactions-batch',
       }
 
       const results: any[] = [];
-      for (const id of list.slice(0, 200)) { // cap to 200 ids per call
+      for (const rawId of list.slice(0, 200)) { // cap to 200 ids per call
         try {
-          let post = await (storage as any).getPostById(Number(id));
-          if (!post && (storage as any).ensurePostExists) {
-            await (storage as any).ensurePostExists(Number(id));
-            post = await (storage as any).getPostById(Number(id));
+          let effectiveId = Number(rawId);
+          let post = await (storage as any).getPostById(effectiveId);
+
+          if (!post) {
+            // Try metadata.wordpressId mapping to locate the local post id
+            try {
+              const mapped = await db
+                .select({ id: postsTable.id })
+                .from(postsTable)
+                .where(sql`(metadata->>'wordpressId')::int = ${effectiveId}`)
+                .limit(1);
+              if (mapped[0]?.id) {
+                effectiveId = Number(mapped[0].id);
+                post = await (storage as any).getPostById(effectiveId);
+              }
+            } catch (_) { /* no-op */ }
           }
+
+          if (!post && (storage as any).ensurePostExists) {
+            await (storage as any).ensurePostExists(effectiveId);
+            post = await (storage as any).getPostById(effectiveId);
+          }
+
           if (!post) {
             results.push({
-              postId: id,
+              postId: effectiveId,
               baselineLikes: 0,
               baselineDislikes: 0,
               likesCount: 0,
@@ -433,13 +469,15 @@ router.get('/reactions-batch',
             continue;
           }
 
-          const counts = await (storage as any).getPostLikeCounts(Number(id));
+          const counts = await (storage as any).getPostLikeCounts(effectiveId);
           let baselineLikes = Number((post as any).baselineLikes ?? 0);
           let baselineDislikes = Number((post as any).baselineDislikes ?? 0);
 
           if (baselineLikes === 0 || baselineDislikes === 0) {
             const slug = String((post as any).slug || '');
-            const seedNumber = slug ? (() => { let h = 0; for (let i = 0; i < slug.length; i++) { h = (h << 5) - h + slug.charCodeAt(i); h |= 0; } return Math.abs(h); })() : Number(id);
+            const seedNumber = slug
+              ? (() => { let h = 0; for (let i = 0; i < slug.length; i++) { h = (h << 5) - h + slug.charCodeAt(i); h |= 0; } return Math.abs(h); })()
+              : effectiveId;
             const seed = seedNumber * 12345;
             const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
             const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
@@ -448,7 +486,7 @@ router.get('/reactions-batch',
             try {
               await db.update(postsTable)
                 .set({ baselineLikes: likesBase, baselineDislikes: dislikesBase })
-                .where(eq(postsTable.id, Number(id)));
+                .where(eq(postsTable.id, effectiveId));
               baselineLikes = likesBase;
               baselineDislikes = dislikesBase;
             } catch (_) {
@@ -458,7 +496,7 @@ router.get('/reactions-batch',
           }
 
           results.push({
-            postId: id,
+            postId: effectiveId,
             baselineLikes,
             baselineDislikes,
             likesCount: Number(counts.likesCount ?? 0),
@@ -469,9 +507,9 @@ router.get('/reactions-batch',
             }
           });
         } catch (e) {
-          postsLogger.warn('Batch reaction calc failed for post', { postId: id, error: e instanceof Error ? e.message : String(e) });
+          postsLogger.warn('Batch reaction calc failed for post', { postId: rawId, error: e instanceof Error ? e.message : String(e) });
           results.push({
-            postId: id,
+            postId: Number(rawId),
             baselineLikes: 0,
             baselineDislikes: 0,
             likesCount: 0,
@@ -501,17 +539,31 @@ router.post('/:id/reaction',
     const { id } = req.params;
     const { isLike } = req.body as any;
     try {
-      // Ensure the post exists (create placeholder if needed)
-      let post = await (storage as any).getPostById(Number(id));
+      let effectiveId = Number(id);
+      // Ensure the post exists (create placeholder if needed), with metadata mapping support
+      let post = await (storage as any).getPostById(effectiveId);
+      if (!post) {
+        try {
+          const mapped = await db
+            .select({ id: postsTable.id })
+            .from(postsTable)
+            .where(sql`(metadata->>'wordpressId')::int = ${effectiveId}`)
+            .limit(1);
+          if (mapped[0]?.id) {
+            effectiveId = Number(mapped[0].id);
+            post = await (storage as any).getPostById(effectiveId);
+          }
+        } catch (_) { /* no-op */ }
+      }
       if (!post && (storage as any).ensurePostExists) {
-        await (storage as any).ensurePostExists(Number(id));
-        post = await (storage as any).getPostById(Number(id));
+        await (storage as any).ensurePostExists(effectiveId);
+        post = await (storage as any).getPostById(effectiveId);
       }
       if (!post) throw createError.notFound('Post not found');
 
       // Attempt DB-backed reaction update; tolerate failures in preview environments
       try {
-        await (storage as any).updatePostReaction(Number(id), { isLike: !!isLike, sessionId: req.sessionID });
+        await (storage as any).updatePostReaction(effectiveId, { isLike: !!isLike, sessionId: req.sessionID });
       } catch (e) {
         postsLogger.warn('Non-fatal: updatePostReaction failed, continuing with baseline totals', {
           postId: id,
@@ -519,14 +571,16 @@ router.post('/:id/reaction',
         });
       }
 
-      const counts = await (storage as any).getPostLikeCounts(Number(id));
+      const counts = await (storage as any).getPostLikeCounts(effectiveId);
       let baselineLikes = Number((post as any).baselineLikes ?? 0);
       let baselineDislikes = Number((post as any).baselineDislikes ?? 0);
 
       // Fallback seeding: if baselines are zero, compute deterministic values and persist
       if (baselineLikes === 0 || baselineDislikes === 0) {
         const slug = String((post as any).slug || '');
-        const seedNumber = slug ? (() => { let h = 0; for (let i = 0; i < slug.length; i++) { h = (h << 5) - h + slug.charCodeAt(i); h |= 0; } return Math.abs(h); })() : Number(id);
+        const seedNumber = slug
+          ? (() => { let h = 0; for (let i = 0; i < slug.length; i++) { h = (h << 5) - h + slug.charCodeAt(i); h |= 0; } return Math.abs(h); })()
+          : effectiveId;
         const seed = seedNumber * 12345;
         const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
         const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80; // 80–200
@@ -535,7 +589,7 @@ router.post('/:id/reaction',
         try {
           await db.update(postsTable)
             .set({ baselineLikes: likesBase, baselineDislikes: dislikesBase })
-            .where(eq(postsTable.id, Number(id)));
+            .where(eq(postsTable.id, effectiveId));
           baselineLikes = likesBase;
           baselineDislikes = dislikesBase;
         } catch (_) {
@@ -546,7 +600,7 @@ router.post('/:id/reaction',
 
       return res.json({
         success: true,
-        postId: Number(id),
+        postId: effectiveId,
         baselineLikes,
         baselineDislikes,
         likesCount: Number(counts.likesCount ?? 0),

@@ -31,7 +31,7 @@ const DEFAULT_SITE_CONFIG = {
   // Use a stable icon path for default social previews
   // Use a rectangular OG image for previews so it isn't rounded/cropped like a favicon
   // Add version param to force refresh after updates
-  defaultImage: '/og-image-1200x630.png?v=5',
+  defaultImage: 'https://bubblescafe.space/og-image-1200x630.png?v=5',
   siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://bubblescafe.space',
   locale: 'en_US',
   twitterSite: '@bubblescafe',
@@ -183,9 +183,8 @@ export default function SEO({
     setLinkTag('dns-prefetch', 'https://pixel.wp.com');
     
     // Favicon and app icons (use provided PNG favicon from client/public), add cache-bust
-    setLinkTag('icon', '/favicon.png?v=3', { type: 'image/png', sizes: 'any' });
-    setLinkTag('shortcut icon', '/favicon.ico');
-    setLinkTag('apple-touch-icon', '/icons/apple-touch-icon.png?v=3');
+    setLinkTag('icon', 'https://bubblescafe.space/icons/favicon-32x32.png?v=3', { type: 'image/png', sizes: '32x32' });
+    setLinkTag('shortcut icon',-touch-icon', '/icons/apple-touch-icon.png?v=3');
     
     // Generate and set JSON-LD structured data
     const generateStructuredData = () => {
@@ -209,7 +208,7 @@ export default function SEO({
           url: siteUrl,
           logo: {
             '@type': 'ImageObject',
-            url: `${siteUrl}/icons/icon-512x512.png`,
+            url: `https://bubblescafe.space/icons/icon-512x512.png`,
             alt: `${siteName} Logo`
           },
           sameAs: [
