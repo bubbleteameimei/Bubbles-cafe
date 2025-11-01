@@ -2,12 +2,13 @@ import React from 'react';
 import { BookmarkList } from '@/components/ui/BookmarkList';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
-import { Link } from 'wouter';
+import { useLocation } from 'wouter';
 // import { useLoading } from '@/contexts/loading-context';
 import ApiLoader from '@/components/api-loader';
 
 export default function BookmarksPage() {
   const { user, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
 
   // Use ApiLoader to show global loading state via the portal-based system
   if (isLoading) {
@@ -37,9 +38,7 @@ export default function BookmarksPage() {
       <div className="container max-w-4xl mx-auto py-12 px-4">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Bookmarks</h1>
-          <Link href="/index">
-            <Button variant="outline" size="sm">Browse Index</Button>
-          </Link>
+          <Button variant="outline" size="sm" onClick={() => setLocation('/index')}>Browse Index</Button>
         </div>
         
         <div className="mb-6">
@@ -57,9 +56,7 @@ export default function BookmarksPage() {
     <div className="container max-w-4xl mx-auto py-12 px-4">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Your Bookmarks</h1>
-        <Link href="/index">
-          <Button variant="outline" size="sm">Browse Index</Button>
-        </Link>
+        <Button variant="outline" size="sm" onClick={() => setLocation('/index')}>Browse Index</Button>
       </div>
       
       <div className="mb-6">

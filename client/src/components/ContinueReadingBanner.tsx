@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { BookOpen, X } from "lucide-react";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 
 type SavedPosition = {
   scrollY: number;
@@ -38,6 +38,7 @@ function sanitize(html: string) {
 
 export default function ContinueReadingBanner() {
   const [dismissed, setDismissed] = useState(false);
+  const [, setLocation] = useLocation();
 
   const latest = useMemo(() => {
     try {
@@ -126,12 +127,14 @@ export default function ContinueReadingBanner() {
               <Progress value={Math.round(pct)} className="h-1.5" />
             </div>
             <div className="mt-3 flex items-center gap-2">
-              <Link href={`/reader/${encodeURIComponent(slug)}`}>
-                <Button size="sm" className="gap-1.5">
-                  <BookOpen className="h-4 w-4" />
-                  Continue
-                </Button>
-              </Link>
+              <Button
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setLocation(`/reader/${encodeURIComponent(slug)}`)}
+              >
+                <BookOpen className="h-4 w-4" />
+                Continue
+              </Button>
               <Button
                 size="sm"
                 variant="outline"

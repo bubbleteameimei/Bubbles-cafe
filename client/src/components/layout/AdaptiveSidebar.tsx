@@ -116,22 +116,23 @@ interface NavItemProps {
 const NavItem: React.FC<NavItemProps> = ({ isOpen, icon, text, href }) => {
   return (
     <li>
-      <Link href={href}>
-        <a className="flex items-center px-4 py-3 text-foreground hover:bg-accent/10 transition-colors rounded-md mx-2">
-          <span className="mr-4">{icon}</span>
-          <AnimatePresence>
-            {isOpen && (
-              <motion.span
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                {text}
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </a>
+      <Link
+        href={href}
+        className="flex items-center px-4 py-3 text-foreground hover:bg-accent/10 transition-colors rounded-md mx-2"
+      >
+        <span className="mr-4">{icon}</span>
+        <AnimatePresence>
+          {isOpen && (
+            <motion.span
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: 'auto' }}
+              exit={{ opacity: 0, width: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {text}
+            </motion.span>
+          )}
+        </AnimatePresence>
       </Link>
     </li>
   );

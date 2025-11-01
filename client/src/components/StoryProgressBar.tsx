@@ -59,7 +59,7 @@ const StoryProgressBar: React.FC<StoryProgressBarProps> = ({
     return () => window.removeEventListener("scroll", updateProgress);
   }, []);
 
-  // Track navbar state via CSS variables set by AutoHideNavbar
+  // Track navbar state via CSS variables set by AppNavbar
   useEffect(() => {
     const computeTop = () => {
       const docEl = document.documentElement;

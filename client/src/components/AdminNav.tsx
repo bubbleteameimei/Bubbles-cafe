@@ -11,20 +11,14 @@ export function AdminNav() {
 
   return (
     <nav className="flex items-center space-x-4">
-      <Link href="/admin/dashboard">
-        <a className="text-sm font-medium transition-colors hover:text-primary">
-          Admin Dashboard
-        </a>
+      <Link href="/admin/dashboard" className="text-sm font-medium transition-colors hover:text-primary">
+        Admin Dashboard
       </Link>
-      <Link href="/admin/manage-posts">
-        <a className="text-sm font-medium transition-colors hover:text-primary">
-          Manage Posts
-        </a>
+      <Link href="/admin/manage-posts" className="text-sm font-medium transition-colors hover:text-primary">
+        Manage Posts
       </Link>
-      <Link href="/admin/comments">
-        <a className="text-sm font-medium transition-colors hover:text-primary">
-          Manage Comments
-        </a>
+      <Link href="/admin/comments" className="text-sm font-medium transition-colors hover:text-primary">
+        Manage Comments
       </Link>
     </nav>
   );

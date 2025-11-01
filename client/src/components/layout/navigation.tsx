@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
 import { Menu, Search, Moon, Sun, User, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { DropdownMenu } from "@/components/ui/dropdown-menu";
+
 import { useTheme } from "@/components/theme-provider";
 import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/contexts/notification-context";
@@ -43,6 +43,7 @@ export default function Navigation() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [noMatches, setNoMatches] = useState(false);
+  const [showNoMatchesPrelim, setShowNoMatchesPrelim] = useState(false);
   const [suggestions, setSuggestions] = useState<{ community: any[]; reader: any[] }>({
     community: [],
     reader: []
@@ -229,8 +230,15 @@ export default function Navigation() {
           community: normalizeQuick(communityQuick),
           reader: normalizeQuick(readerQuick),
         });
+        // Show a preliminary "no matches" message faster when nothing matches locally
+        setShowNoMatchesPrelim(
+          (communityQuick.length + readerQuick.length === 0) && q.length >= 2
+        );
+      } else {
+        // If we have no previous results, still show preliminary message for longer queries
+        setShowNoMatchesPrelim(q.length >= 2);
       }
-    } catch {}
+    } catch { setShowNoMatchesPrelim(q.length >= 2); }
     const controller = new AbortController();
     const t = setTimeout(async () => {
       try {
@@ -288,14 +296,16 @@ export default function Navigation() {
           setSuggestions({ community: normalize(community), reader: normalize(reader) });
         }
         setNoMatches(community.length === 0 && reader.length === 0);
+        setShowNoMatchesPrelim(false);
       } catch {
         if (!active) return;
         setSuggestions({ community: [], reader: [] });
         setNoMatches(true);
+        setShowNoMatchesPrelim(false);
       } finally {
         if (active) setLoadingSuggestions(false);
       }
-    }, 50);
+    }, 25);
     return () => {
       active = false;
       clearTimeout(t);
@@ -306,7 +316,7 @@ export default function Navigation() {
   // Compute "Did you mean" when no matches
   useEffect(() => {
     const q = searchValue.trim();
-    if (!noMatches || q.length < 2) {
+    if (!(noMatches || showNoMatchesPrelim) || q.length < 2) {
       setDidYouMean(null);
       return;
     }
@@ -343,7 +353,7 @@ export default function Navigation() {
       }
     })();
     return () => { active = false; controller.abort(); };
-  }, [noMatches, searchValue]);
+  }, [noMatches, showNoMatchesPrelim, searchValue]);
 
   // Close the sidebar drawer proactively on route changes to avoid layout reflow
   useEffect(() => {
@@ -458,20 +468,7 @@ export default function Navigation() {
     }
   };
 
-  // Click handler that waits briefly for the chunk to be ready before navigating
-  const handleNav = (href: string, e?: React.MouseEvent) => {
-    try {
-      if (e) e.preventDefault();
-      const done = prefetchRouteAsync(href).catch(() => {});
-      const cap = new Promise<void>((resolve) => setTimeout(resolve, 150));
-      Promise.race([done, cap]).then(() => {
-        setLocation(href);
-      });
-    } catch {
-      // Fallback navigation
-      window.location.href = href;
-    }
-  };
+  
 
   return (
     <>
@@ -498,12 +495,11 @@ export default function Navigation() {
                   className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
                   aria-label="Open menu"
                   onClick={() => setIsOpen((v) => !v)}
-                  noOutline
                 >
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-[300px] max-w-[85vw] h-full bg-transparent backdrop-blur-md border-r border-border/50 shadow-2xl">
+              <SheetContent side="left" data-sidebar="sidebar" data-mobile="true" className="p-0 w-[300px] max-w-[85vw] h-full bg-transparent backdrop-blur-md border-r border-border/50 shadow-2xl">
                 <div className="border-b border-border/30" />
                 <SidebarNavigation onNavigate={() => setIsOpen(false)} />
               </SheetContent>
@@ -527,7 +523,6 @@ export default function Navigation() {
                 aria-current={location === href ? "page" : undefined}
                 onMouseEnter={() => prefetchRoute(href)}
                 onFocus={() => prefetchRoute(href)}
-                onClick={(e) => handleNav(href, e)}
               >
                 {label}
               </Link>
@@ -543,7 +538,6 @@ export default function Navigation() {
               size="icon"
               className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
               aria-label="Search"
-              noOutline
               onClick={() => setSearchOpen((v) => !v)}
             >
               <Search className="h-5 w-5" />
@@ -553,7 +547,6 @@ export default function Navigation() {
 
             <NotificationIcon
               className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
-              noOutline
             />
 
             <Button
@@ -562,7 +555,6 @@ export default function Navigation() {
               onClick={smoothThemeToggle}
               className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
               aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              noOutline
             >
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
@@ -585,7 +577,6 @@ export default function Navigation() {
                 }}
                 className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
                 aria-label="Sign in"
-                noOutline
               >
                 <User className="h-5 w-5" />
               </Button>
@@ -594,7 +585,6 @@ export default function Navigation() {
                 variant="ghost"
                 size="icon"
                 className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
-                noOutline
               >
                 <User className="h-5 w-5" />
               </Button>
@@ -610,7 +600,7 @@ export default function Navigation() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -4, scale: 0.98 }}
               transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="absolute left-0 right-0 top-full mt-2 z-50"
+              className="absolute left-0 right-0 top-full mt-2 z-[120]"
             >
               {/* Spacious search bar under the header, centered, with teardrop anchor */}
               <div ref={panelRef} className="relative mx-auto" style={{ width: 'min(calc(100vw - 48px), 600px)' }}>
@@ -620,12 +610,15 @@ export default function Navigation() {
                 <div
                   className="rounded-[10px]"
                   style={{
-                    background: "#242424",
+                    // Lighter gray than before
+                    background: "#404040",
                     color: "#E0E0E0",
-                    boxShadow: isFocused ? "inset 0 0 0 2px #7B61FF" : "inset 0 0 0 1px rgba(255,255,255,0.06)"
+                    // Outer slim border instead of inner border
+                    border: "1px solid #7B61FF",
+                    overflow: "hidden"
                   }}
                 >
-                  <div className="relative h-9">
+                  <div className="relative h-9 w-full">
                     <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "#AFAFAF" }} />
                     <Input
                       ref={searchInputRef}
@@ -673,7 +666,8 @@ export default function Navigation() {
                           setSearchOpen(false);
                         }
                       }}
-                      className="pl-12 pr-20 h-9 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none text-[#E0E0E0] placeholder-[#AFAFAF] caret-[#7B61FF]"
+                      className="w-full pl-12 pr-32 h-9 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none text-[#E0E0E0] placeholder-[#AFAFAF] caret-[#7B61FF]"
+                      style={{ background: 'transparent', border: 'none' }}
                       role="combobox"
                       aria-expanded={true}
                       aria-controls="nav-suggestions-list"
@@ -684,47 +678,32 @@ export default function Navigation() {
                           : undefined
                       }
                     />
-                    {loadingSuggestions && (
-                      <Loader2 className="h-4 w-4 absolute right-8 top-1/2 -translate-y-1/2 animate-spin opacity-80" style={{ color: "#7B61FF" }} />
-                    )}
-                    {searchValue.trim().length > 0 && (
-                      <button
-                        aria-label="Clear search"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-7 h-7 text-[#AFAFAF] hover:text-[#E0E0E0] transition-colors select-none"
-                        onClick={() => {
-                          setSearchValue("");
-                          setSuggestions({ community: [], reader: [] });
-                          setNoMatches(false);
-                          setLoadingSuggestions(false);
-                        }}
-                        title="Clear"
-                        style={{ zIndex: 2 }}
-                      >
-                        <span className="text-[20px] leading-none">×</span>
-                      </button>
-                    )}
+                    
+                    
                   </div>
                 </div>
 
                 {/* Advanced Search bar - same dimensions, tiny gap */}
-                <div className="mt-1 rounded-[10px]" style={{ background: "#242424", color: "#E0E0E0", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" }}>
-                  <button
-                    className="w-full h-9 text-center transition-colors"
-                    style={{ color: "#7B61FF" }}
-                    onClick={() => {
-                      const href = "/search";
-                      const done = prefetchRouteAsync(href).catch(() => {});
-                      const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
-                      Promise.race([done, cap]).then(() => {
-                        setSearchOpen(false);
-                        const q = encodeURIComponent(searchValue.trim());
-                        setLocation(q ? `/search?q=${q}` : "/search");
-                      });
-                    }}
-                    title="Open advanced search"
-                  >
-                    Advanced Search
-                  </button>
+                <div className="mt-1 rounded-[10px]" style={{ background: "#1a1a1a", color: "#E0E0E0", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                  <div className="h-9 w-full flex items-center justify-center">
+                    <button
+                      className="flex items-center justify-center w-full h-full text-base leading-none transition-colors"
+                      style={{ color: "#6A54E6" }}
+                      onClick={() => {
+                        const href = "/search";
+                        const done = prefetchRouteAsync(href).catch(() => {});
+                        const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                        Promise.race([done, cap]).then(() => {
+                          setSearchOpen(false);
+                          const q = encodeURIComponent(searchValue.trim());
+                          setLocation(q ? `/search?q=${q}` : "/search");
+                        });
+                      }}
+                      title="Open advanced search"
+                    >
+                      Advanced Search
+                    </button>
+                  </div>
                 </div>
 
                 {/* Suggestions dropdown, contained under the search bar */}
@@ -849,7 +828,7 @@ export default function Navigation() {
                           )}
                         </div>
                       ) : (
-                        noMatches && (
+                        (noMatches || showNoMatchesPrelim) && (
                           <div className="space-y-1" aria-live="polite">
                             <div className="text-sm" style={{ color: "#AFAFAF" }}>No stories found</div>
                             {didYouMean && (
