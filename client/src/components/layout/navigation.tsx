@@ -529,7 +529,6 @@ export default function Navigation() {
                       </button>
                     </div>
                   </div>
-                    </div>
 
                     {/* Suggestions and Advanced Search panel */}
                     <div className="mt-2 rounded-2xl bg-background border border-border shadow-lg overflow-hidden">
