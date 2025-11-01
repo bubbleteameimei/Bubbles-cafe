@@ -680,8 +680,7 @@ export default function Navigation() {
                       <Loader2 className="h-4 w-4 absolute right-12 top-1/2 -translate-y-1/2 animate-spin opacity-80" style={{ color: "#7B61FF" }} />
                     )}
                     {searchValue.trim().length > 0 && (
-                     <<button
-                        aria-label="Clear search"
+                     <button                        aria-label="Clear search"
                         type="button"
                         className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-8 h-8 text-[#AFAFAF] hover:text-[#E0E0E0] transition-colors select-none"
                         onClick={() => {
