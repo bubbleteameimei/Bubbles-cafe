@@ -172,18 +172,20 @@ export default function Navigation() {
   useEffect(() => {
     let active = true;
     const q = searchValue.trim();
-    if (q.lengt << 2) {
+    if (q.length < 2) {
       setSuggestions({ community: [], reader: [] });
       setNoMatches(false);
       setLoadingSuggestions(false);
       return;
     }
     setLoadingSuggestions(true);
+    const controller = new AbortController();
     const t = setTimeout(async () => {
       try {
         // Primary: server-side search
         const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&types=posts&limit=8`, {
-          credentials: "include"
+          credentials: "include",
+          signal: controller.signal,
         });
         const data = await res.json().catch(() => ({ results: [] }));
         let results = Array.isArray(data?.results) ? data.results : [];
@@ -592,14 +594,9 @@ export default function Navigation() {
                 {/* Suggestions panel */}
                 <div className="mt-1.5 rounded-2xl bg-background border border-border shadow-lg overflow-hidden">
                   <div className="p-3" id="nav-suggestions-list" role="listbox" aria-label="Search suggestions">
-                    {loadingSuggestions ? (
-                     ></iv>
-lassName="py-3 px-3">
-                        <Loader2 className="h-4 w-4 animate-spin text-white/60" />
-                      </div>
-                    ) : (
+                    {loadingSuggestions ? null : (
                       <>
-                        {suggestions.community.length > 0 || suggestions.reader.length > 0 ? (
+                        {(suggestions.community.length > 0 || suggestions.reader.length > 0) ? (
                           <div className="space-y-4">
                             {suggestions.reader.length > 0 && (
                               <div>
