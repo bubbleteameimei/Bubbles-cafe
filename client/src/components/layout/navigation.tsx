@@ -620,37 +620,36 @@ export default function Navigation() {
                   </div>
                 </div>
 
-                {/* Advanced bar (same dimensions, tiny gap) */}
-                <div className="mt-1 rounded-xl bg-background border border-border/40 shadow-none">
-                  <button
-                    className="w-full h-10 text-center text-indigo-400 hover:text-indigo-300 transition-colors text-base"
-                    onClick={() => {
-                      const href = "/search";
-                      const done = prefetchRouteAsync(href).catch(() => {});
-                      const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
-                      Promise.race([done, cap]).then(() => {
-                        setSearchOpen(false);
-                        const q = encodeURIComponent(searchValue.trim());
-                        setLocation(q ? `/search?q=${q}` : "/search");
-                      });
-                    }}
-                    title="Open advanced search"
-                  >
-                    Advanced Search
-                  </button>
-                </div>
+                {/* Stacked actions and suggestions */}
+                <div className="mt-1 space-y-1.5">
+                  <div className="rounded-xl bg-background border border-border/40 shadow-none">
+                    <button
+                      className="w-full h-9 text-center text-indigo-400 hover:text-indigo-300 transition-colors text-base"
+                      onClick={() => {
+                        const href = "/search";
+                        const done = prefetchRouteAsync(href).catch(() => {});
+                        const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                        Promise.race([done, cap]).then(() => {
+                          setSearchOpen(false);
+                          const q = encodeURIComponent(searchValue.trim());
+                          setLocation(q ? `/search?q=${q}` : "/search");
+                        });
+                      }}
+                      title="Open advanced search"
+                    >
+                      Advanced Search
+                    </button>
+                  </div>
 
-                {/* Suggestions (minimal list, natural stacking) */}
-                <div className="mt-2">
                   <div id="nav-suggestions-list" role="listbox" aria-label="Search suggestions">
-                    {(suggestions.community.length > 0 || suggestions.reader.length > 0) ? (
+                    {(suggestions.community.length + suggestions.reader.length > 0) ? (
                       <div className="space-y-3">
                         {suggestions.reader.length > 0 && (
                           <div>
-                            <div className="text-xs text-white/50 mb-1">Reader</div>
-                            <ul className="divide-y divide-border/30">
+                            <div className="text-xs text-white/60 mb-1">Reader</div>
+                            <ul className="space-y-1">
                               {suggestions.reader.map((s: any) => (
-                                <li key={s.id} className="py-1">
+                                <li key={s.id}>
                                   <button
                                     id={`nav-suggestion-reader-${s.id}`}
                                     role="option"
@@ -681,9 +680,7 @@ export default function Navigation() {
                                       const done = prefetchRouteAsync("/reader").catch(() => {});
                                       const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
                                       Promise.race([done, cap]).then(() => {
-                                        try {
-                                          sessionStorage.removeItem("nav-search-query");
-                                        } catch {}
+                                        try { sessionStorage.removeItem("nav-search-query"); } catch {}
                                         setSearchOpen(false);
                                         setLocation(href);
                                       });
@@ -702,10 +699,10 @@ export default function Navigation() {
                         )}
                         {suggestions.community.length > 0 && (
                           <div>
-                            <div className="text-xs text-white/50 mb-1">Community</div>
-                            <ul className="divide-y divide-border/30">
+                            <div className="text-xs text-white/60 mb-1">Community</div>
+                            <ul className="space-y-1">
                               {suggestions.community.map((s: any) => (
-                                <li key={s.id} className="py-1">
+                                <li key={s.id}>
                                   <button
                                     id={`nav-suggestion-community-${s.id}`}
                                     role="option"
@@ -736,9 +733,7 @@ export default function Navigation() {
                                       const done = prefetchRouteAsync(href).catch(() => {});
                                       const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
                                       Promise.race([done, cap]).then(() => {
-                                        try {
-                                          sessionStorage.removeItem("nav-search-query");
-                                        } catch {}
+                                        try { sessionStorage.removeItem("nav-search-query"); } catch {}
                                         setSearchOpen(false);
                                         setLocation(href);
                                       });
