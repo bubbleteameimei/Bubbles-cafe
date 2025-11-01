@@ -915,10 +915,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           transition: opacity 0.2s ease;
         }
         .story-content {
-          transition: width 0.8s ease-in-out;
-        }
-        .distraction-free-active .story-content {
-          width: 100%;
+          /* width transition removed to avoid reflow */
         }
         
         /* Distraction-free mode: keep navbar visible but subtle */

@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
 import { X } from "lucide-react";
+import { lockBodyScroll, unlockBodyScroll } from "@/lib/scroll-lock";
 
 interface ModalProps {
   isOpen: boolean;
@@ -29,16 +30,16 @@ export const Modal: React.FC<ModalProps> = ({
 
     document.addEventListener('keydown', handleEscKey);
     
-    // Prevent body scrolling when modal is open
+    // Standardized body scroll lock to minimize layout shifts
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      lockBodyScroll('modal');
     } else {
-      document.body.style.overflow = 'auto';
+      unlockBodyScroll('modal');
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscKey);
-      document.body.style.overflow = 'auto';
+      unlockBodyScroll('modal');
     };
   }, [isOpen, onClose]);
 

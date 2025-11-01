@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Link } from 'wouter';
 import { createPortal } from 'react-dom';
 import '@/styles/eyeball-loader.css';
+import { lockBodyScroll, unlockBodyScroll } from '@/lib/scroll-lock';
 
 interface SimplifiedErrorPageProps {
   statusCode: number;
@@ -31,14 +32,8 @@ const SimplifiedErrorPage: React.FC<SimplifiedErrorPageProps> = ({
   // Mark body so global layout can hide non-error-only elements like the footer
   useEffect(() => {
     document.body.classList.add('error-page-active');
-    // Lock scroll while overlay is visible
-    const prevOverflow = document.body.style.overflow;
-    const prevPaddingRight = document.body.style.paddingRight;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-    document.body.style.overflow = 'hidden';
-    if (scrollbarWidth > 0) {
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
-    }
+    // Lock scroll while overlay is visible (standardized to avoid layout shifts)
+    lockBodyScroll('error-page');
 
     // Focus the primary action for accessibility
     const id = requestAnimationFrame(() => {
@@ -49,8 +44,7 @@ const SimplifiedErrorPage: React.FC<SimplifiedErrorPageProps> = ({
 
     return () => {
       document.body.classList.remove('error-page-active');
-      document.body.style.overflow = prevOverflow;
-      document.body.style.paddingRight = prevPaddingRight;
+      unlockBodyScroll('error-page');
       cancelAnimationFrame(id);
     };
   }, []);

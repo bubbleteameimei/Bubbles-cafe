@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { createPortal } from "react-dom";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
+import { lockBodyScroll, unlockBodyScroll } from "@/lib/scroll-lock";
 
 export function CookieConsent() {
   // Use our enhanced cookie consent hook
@@ -15,21 +16,14 @@ export function CookieConsent() {
   // Lock body scroll and handle focus only when banner is visible
   useEffect(() => {
     if (!showConsentBanner) return;
-    const prevOverflow = document.body.style.overflow;
-    const prevPaddingRight = document.body.style.paddingRight;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-    document.body.style.overflow = "hidden";
-    if (scrollbarWidth > 0) {
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
-    }
+    lockBodyScroll('cookie-consent');
     const id = requestAnimationFrame(() => {
       try {
         acceptBtnRef.current?.focus();
       } catch {}
     });
     return () => {
-      document.body.style.overflow = prevOverflow;
-      document.body.style.paddingRight = prevPaddingRight;
+      unlockBodyScroll('cookie-consent');
       cancelAnimationFrame(id);
     };
   }, [showConsentBanner]);
