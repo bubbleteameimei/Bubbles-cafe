@@ -4,13 +4,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
-import { Menu, Search, Moon, Sun, User } from "lucide-react";
+import { Menu, Search, Moon, Sun, User, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/components/theme-provider";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/contexts/notification-context";
+import { motion, AnimatePresence } from "framer-motion";
 
 function prefetchAuthPages() {
   try {
@@ -37,6 +37,64 @@ export default function Navigation() {
   const { notifications } = useNotifications();
   const { theme, setTheme } = useTheme();
   const [searchValue, setSearchValue] = useState("");
+
+  // New: main nav search panel state and suggestions
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [noMatches, setNoMatches] = useState(false);
+  const [suggestions, setSuggestions] = useState<{ community: any[]; reader: any[] }>({
+    community: [],
+    reader: []
+  });
+
+  // Persist nav search input across open/close and no-match states
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('nav-search-query');
+      if (saved) setSearchValue(saved);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('nav-search-query', searchValue);
+    } catch {}
+  }, [searchValue]);
+
+  // Debounced suggestions fetch from server search API (distinguishes community vs reader)
+  useEffect(() => {
+    let active = true;
+    const q = searchValue.trim();
+    if (q.length < 2) {
+      setSuggestions({ community: [], reader: [] });
+      setNoMatches(false);
+      setLoadingSuggestions(false);
+      return;
+    }
+    setLoadingSuggestions(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&types=posts&limit=8`, { credentials: 'include' });
+        const data = await res.json().catch(() => ({ results: [] }));
+        const results = Array.isArray(data?.results) ? data.results : [];
+        const community = results.filter((r: any) => typeof r?.url === 'string' && r.url.startsWith('/community-story'));
+        const reader = results.filter((r: any) => typeof r?.url === 'string' && r.url.startsWith('/reader'));
+        if (!active) return;
+        setSuggestions({ community, reader });
+        setNoMatches(community.length === 0 && reader.length === 0);
+      } catch {
+        if (!active) return;
+        setSuggestions({ community: [], reader: [] });
+        setNoMatches(true);
+      } finally {
+        if (active) setLoadingSuggestions(false);
+      }
+    }, 250);
+    return () => {
+      active = false;
+      clearTimeout(t);
+    };
+  }, [searchValue]);
 
   // Reader route progress state (for in-header progress bar)
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -87,15 +145,7 @@ export default function Navigation() {
   }, [isReaderRoute]);
 
   
-  const handleSearch = () => {
-    const q = searchValue.trim();
-    if (!q) return;
-    try {
-      setLocation(`/search?q=${encodeURIComponent(q)}`);
-    } catch {
-      window.location.href = `/search?q=${encodeURIComponent(q)}`;
-    }
-  };
+  
 
   const smoothThemeToggle = () => {
     try {
@@ -227,48 +277,139 @@ export default function Navigation() {
         </nav>
 
         {/* Right actions */}
-        <div className="flex items-center space-x-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
-                aria-label="Search"
-                noOutline
+        <div className="relative flex items-center space-x-2">
+          {/* Search toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
+            aria-label="Search"
+            noOutline
+            onClick={() => setSearchOpen((v) => !v)}
+          >
+            <Search className="h-5 w-5" />
+          </Button>
+
+          {/* Animated search panel */}
+          <AnimatePresence>
+            {searchOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
+                className="absolute right-0 top-full mt-2 w-80 p-3 bg-background/70 supports-[backdrop-filter]:bg-background/40 backdrop-blur-sm border border-border/50 rounded-md shadow-lg z-50"
               >
-                <Search className="h-5 w-5" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-72 p-3 bg-background/70 supports-[backdrop-filter]:bg-background/40 backdrop-blur-sm border border-border/50">
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Search stories…"
-                  value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
-                  className="h-9 text-sm bg-background/40 supports-[backdrop-filter]:bg-background/20 border-border/40 flex-1"
-                />
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="h-9 bg-background/40 supports-[backdrop-filter]:bg-background/20 hover:bg-background/30 transition-colors"
-                  onClick={() => {
-                    if (!searchValue.trim()) return;
-                    const href = '/search';
-                    const done = prefetchRouteAsync(href).catch(() => {});
-                    const cap = new Promise<void>((resolve) => setTimeout(resolve, 150));
-                    Promise.race([done, cap]).then(() => {
-                      setLocation(href);
-                    });
-                  }}
-                  disabled={!searchValue.trim()}
-                >
-                  Go
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
+                {/* Search bar */}
+                <div className="relative">
+                  <Search className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Stories for stories"
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                    className="pl-8 pr-9 h-9 text-sm bg-background/40 supports-[backdrop-filter]:bg-background/20 border-border/40 w-full"
+                    autoFocus
+                  />
+                  <button
+                    aria-label="Close search"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={() => setSearchOpen(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Suggestions */}
+                <div className="mt-3">
+                  {loadingSuggestions ? (
+                    <div className="text-xs text-muted-foreground">Searching…</div>
+                  ) : (
+                    <>
+                      {(suggestions.community.length > 0 || suggestions.reader.length > 0) ? (
+                        <div className="space-y-2">
+                          {suggestions.community.length > 0 && (
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Community</div>
+                              <ul className="space-y-1">
+                                {suggestions.community.map((s: any) => (
+                                  <li key={s.id}>
+                                    <button
+                                      className="w-full text-left text-sm hover:text-primary"
+                                      onClick={() => {
+                                        const href = String(s.url || '');
+                                        const done = prefetchRouteAsync(href).catch(() => {});
+                                        const cap = new Promise<void>((resolve) => setTimeout(resolve, 120));
+                                        Promise.race([done, cap]).then(() => {
+                                          try { sessionStorage.removeItem('nav-search-query'); } catch {}
+                                          setSearchOpen(false);
+                                          setLocation(href);
+                                        });
+                                      }}
+                                      title={String(s.title || '')}
+                                    >
+                                      {String(s.title || '')}
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {suggestions.reader.length > 0 && (
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Reader</div>
+                              <ul className="space-y-1">
+                                {suggestions.reader.map((s: any) => (
+                                  <li key={s.id}>
+                                    <button
+                                      className="w-full text-left text-sm hover:text-primary"
+                                      onClick={() => {
+                                        const href = String(s.url || '');
+                                        const done = prefetchRouteAsync('/reader').catch(() => {});
+                                        const cap = new Promise<void>((resolve) => setTimeout(resolve, 120));
+                                        Promise.race([done, cap]).then(() => {
+                                          try { sessionStorage.removeItem('nav-search-query'); } catch {}
+                                          setSearchOpen(false);
+                                          setLocation(href);
+                                        });
+                                      }}
+                                      title={String(s.title || '')}
+                                    >
+                                      {String(s.title || '')}
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        noMatches && <div className="text-sm text-muted-foreground">No stories found</div>
+                      )}
+
+                      {/* Advanced search */}
+                      <div className="mt-3">
+                        <button
+                          className="w-full text-left text-xs text-muted-foreground underline hover:text-primary"
+                          onClick={() => {
+                            const href = '/search';
+                            const done = prefetchRouteAsync(href).catch(() => {});
+                            const cap = new Promise<void>((resolve) => setTimeout(resolve, 120));
+                            Promise.race([done, cap]).then(() => {
+                              setSearchOpen(false);
+                              setLocation(`/search?q=${encodeURIComponent(searchValue.trim())}`);
+                            });
+                          }}
+                          title="Open advanced search"
+                        >
+                          Advanced search
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <NotificationIcon
             className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
