@@ -625,7 +625,7 @@ export default function Navigation() {
                     <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "#AFAFAF" }} />
                     <Input
                       ref={searchInputRef}
-                      placeholder="Search for novels..."
+                      placeholder="Search for stories..."
                       value={searchValue}
                       onChange={(e) => {
                         setSearchValue(e.target.value);
