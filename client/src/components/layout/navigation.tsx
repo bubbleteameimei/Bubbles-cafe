@@ -65,7 +65,7 @@ export default function Navigation() {
   const [searchLeft, setSearchLeft] = useState<number>(56);
   useEffect(() => {
     const computeLeft = (_e?: Event): void => {uteLeft = (): void =>      try {
-        const el = document.querySelector('header .main-header button[aria-label="Open menu"]') as HTMLElement | null;
+        const el = document.getElementById('sidebar-toggle') as HTMLElement | null;
         if (el) {
           const rect = el.getBoundingClientRect();
           // Add small gap after the menu button
@@ -291,6 +291,7 @@ export default function Navigation() {
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
                 <Button
+                  id="sidebar-toggle"
                   variant="ghost"
                   size="icon"
                   className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
