@@ -607,12 +607,14 @@ export default function Navigation() {
                 
 
                 {/* Search bar */}
-               <div
+                <div
                   className="rounded-[10px]"
                   style={{
-                    background: "#3a3a3a",
+                    // Lighter gray than before
+                    background: "#404040",
                     color: "#E0E0E0",
-                    boxShadow: "inset 0 0 0 2px #7B61FF",
+                    // Outer slim border instead of inner border
+                    border: "1px solid #7B61FF",
                     overflow: "hidden"
                   }}
                 >
@@ -698,7 +700,7 @@ export default function Navigation() {
                 </div>
 
                 {/* Advanced Search bar - same dimensions, tiny gap */}
-                <div className="mt-1 rounded-[10px]" style={{ background: "#242424", color: "#E0E0E0", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" }}>
+                <div className="mt-1 rounded-[10px]" style={{ background: "#1a1a1a", color: "#E0E0E0", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" }}>
                   <button
                     className="w-full h-9 text-center transition-colors"
                     style={{ color: "#7B61FF" }}
