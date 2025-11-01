@@ -86,6 +86,7 @@ export default function Navigation() {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [arrowLeft, setArrowLeft] = useState<number>(12);
+  const lastResultsRef = useRef<any[]>([]);
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -179,6 +180,33 @@ export default function Navigation() {
       return;
     }
     setLoadingSuggestions(true);
+    // Quick filter from previous results to keep suggestions visible while typing
+    try {
+      const prev = lastResultsRef.current;
+      const qLower = q.toLowerCase();
+      if (prev && prev.length && qLower) {
+        const filtered = prev.filter((r: any) =>
+          String(r?.title || "").toLowerCase().includes(qLower)
+        );
+        const communityQuick = filtered.filter(
+          (r: any) => typeof r?.url === "string" && r.url.startsWith("/community-story")
+        );
+        const readerQuick = filtered.filter(
+          (r: any) => typeof r?.url === "string" && r.url.startsWith("/reader")
+        );
+        const normalizeQuick = (arr: any[]) =>
+          arr.map((r: any) => ({
+            id: r.id,
+            title: String(r.title || "Untitled"),
+            url: String(r.url || ""),
+            excerpt: typeof r.excerpt === "string" ? r.excerpt : "",
+          }));
+        setSuggestions({
+          community: normalizeQuick(communityQuick),
+          reader: normalizeQuick(readerQuick),
+        });
+      }
+    } catch {}
     const controller = new AbortController();
     const t = setTimeout(async () => {
       try {
@@ -228,6 +256,7 @@ export default function Navigation() {
                 : ""
           }));
         if (!active) return;
+        lastResultsRef.current = results;
         setSuggestions({ community: normalize(community), reader: normalize(reader) });
         setNoMatches(community.length === 0 && reader.length === 0);
       } catch {
@@ -525,7 +554,7 @@ export default function Navigation() {
                     <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-white/70" />
                     <Input
                       ref={searchInputRef}
-                      placeholder="Search for novels..."
+                      placeholder="Search for stories..."
                       value={searchValue}
                       onChange={(e) => {
                         setSearchValue(e.target.value);
@@ -583,7 +612,7 @@ export default function Navigation() {
                     )}
                     <button
                       aria-label="Close search"
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white z-10"
                       onClick={() => setSearchOpen(false)}
                     >
                       <X className="h-5 w-5" />
@@ -592,19 +621,10 @@ export default function Navigation() {
                 </div>
 
                 {/* Suggestions panel */}
-                <div className="mt-1 rounded-2xl bg-background border border-border shadow-lg overflow-hidden">
+                <div className="mt-1 rounded-2xl bg-background border border-border/50 overflow-hidden">
                   <div className="p-3" id="nav-suggestions-list" role="listbox" aria-label="Search suggestions">
-                    {loadingSuggestions ? (
-                      <ul className="space-y-2">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <li key={i}>
-                            <div className="h-4 rounded bg-white/10 animate-pulse" />
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <>
-                        {(suggestions.community.length > 0 || suggestions.reader.length > 0) ? (
+                    <>
+                      {(suggestions.community.length > 0 || suggestions.reader.length > 0) ? (
                           <div className="space-y-4">
                             {suggestions.reader.length > 0 && (
                               <div>
@@ -725,12 +745,11 @@ export default function Navigation() {
                           )
                         )}
                       </>
-                    )}
                   </div>
                 </div>
 
                 {/* Advanced bar (same dimensions, tiny gap) */}
-                <div className="mt-0.5 rounded-2xl bg-background text-white shadow-xl" style={{ boxShadow: "inset 0 0 0 2px hsl(var(--primary))" }}>
+                <div className="mt-1 rounded-2xl bg-background border border-border/50 overflow-hidden">
                   <button
                     className="w-full h-10 text-center text-indigo-400 hover:text-indigo-300 transition-colors text-base"
                     onClick={() => {
