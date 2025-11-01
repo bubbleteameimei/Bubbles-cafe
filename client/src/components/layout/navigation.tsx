@@ -606,7 +606,7 @@ export default function Navigation() {
                     boxShadow: "inset 0 0 0 2px #7B61FF"
                   }}
                 >
-                  <div className="relative h-9">
+                  <div className="relative h-9 w-full">
                     <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "#AFAFAF" }} />
                     <Input
                       ref={searchInputRef}
@@ -654,7 +654,7 @@ export default function Navigation() {
                           setSearchOpen(false);
                         }
                       }}
-                      className="pl-12 pr-24 h-9 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none text-[#E0E0E0] placeholder-[#AFAFAF] caret-[#7B61FF]"
+                      className="w-full pl-12 pr-28 h-9 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none text-[#E0E0E0] placeholder-[#AFAFAF] caret-[#7B61FF]"
                       role="combobox"
                       aria-expanded={true}
                       aria-controls="nav-suggestions-list"
@@ -666,7 +666,7 @@ export default function Navigation() {
                       }
                     />
                     {loadingSuggestions && (
-                      <Loader2 className="h-4 w-4 absolute right-9 top-1/2 -translate-y-1/2 animate-spin opacity-80" style={{ color: "#7B61FF" }} />
+                     <<Loader2 className="h-4 w-4 absolute right-9 top-1/2 -translate-y-1/2 animate-spin opacity-80" style={{ color: "#7B61FF" }} />
                     )}
                     {searchValue.trim().length > 0 && (
                       <button
