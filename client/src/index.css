@@ -485,6 +485,11 @@ div.sidebar-menu-container {
   will-change: transform;
 }
 
+/* Hide BackToTop button when any overlay is active to avoid visual gaps above overlays */
+body.overlay-active .back-to-top-fixed {
+  display: none !important;
+}
+
 /* Non-homepages: remove forced full-height that can create a visible bottom band */
 /* Non-homepages: remove forced full-height that can create a visible bottom band */
 body:not(:has(.home-page)) .min-h-screen {

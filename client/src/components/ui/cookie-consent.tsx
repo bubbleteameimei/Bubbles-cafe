@@ -16,6 +16,7 @@ export function CookieConsent() {
   // Lock body scroll and handle focus only when banner is visible
   useEffect(() => {
     if (!showConsentBanner) return;
+    document.body.classList.add('overlay-active', 'cookie-consent-active');
     lockBodyScroll('cookie-consent');
     const id = requestAnimationFrame(() => {
       try {
@@ -23,6 +24,7 @@ export function CookieConsent() {
       } catch {}
     });
     return () => {
+      document.body.classList.remove('overlay-active', 'cookie-consent-active');
       unlockBodyScroll('cookie-consent');
       cancelAnimationFrame(id);
     };
@@ -78,9 +80,10 @@ export function CookieConsent() {
   const overlay = (
     <motion.div
       ref={overlayRef}
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.98 }}
+      // Don't transform the full-screen overlay (fixed + inset-0) to avoid viewport coverage bugs on mobile
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       transition={{
         duration: 0.25,
         ease: [0.4, 0, 0.2, 1]
@@ -91,7 +94,13 @@ export function CookieConsent() {
       aria-labelledby="cookie-consent-title"
       aria-describedby="cookie-consent-description"
     >
-      <div className="max-w-[320px] w-full mx-auto bg-card rounded-lg shadow-xl border border-border/50 p-6 space-y-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98, y: 4 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.98, y: 4 }}
+        transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+        className="max-w-[320px] w-full mx-auto bg-card rounded-lg shadow-xl border border-border/50 p-6 space-y-4"
+      >
         <div className="flex justify-center relative">
           <svg
             className="w-[50px] h-[50px] transition-all duration-300 hover:rotate-12 hover:scale-110"
@@ -149,7 +158,7 @@ export function CookieConsent() {
             Decline
           </button>
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   );
 
