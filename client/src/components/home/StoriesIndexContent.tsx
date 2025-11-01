@@ -765,7 +765,7 @@ export default function StoriesIndexContent() {
   }
 
   return (
-      <div className="min-h-screen bg-background flex flex-col overflow-x-hidden overflow-y-auto">
+      <div className="min-h-screen bg-background flex flex-col overflow-x-hidden overflow-y-auto" data-scroll-container="true">
         {/* Canonical for stories index */}
         <SEO
           title="Index"

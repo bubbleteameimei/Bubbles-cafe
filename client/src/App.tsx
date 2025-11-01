@@ -670,6 +670,15 @@ function App() {
     initSmoothScroll();
   }, []);
 
+  // Disable browser scroll restoration to avoid competing with app-managed resets
+  useEffect(() => {
+    try {
+      if ('scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'manual';
+      }
+    } catch {}
+  }, []);
+
   // Set up global error handlers
   useEffect(() => {
     setupGlobalErrorHandlers();
