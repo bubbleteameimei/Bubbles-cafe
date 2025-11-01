@@ -32,11 +32,11 @@ export function PrimaryNav() {
             className="mr-6 flex items-center space-x-2"
             style={{ touchAction: 'manipulation' }}
           >
-            <span className="hidden font-bold sm:inline-block">Stories</span>
+            <span className="hidden font-bold sm:inline-block">Index</span>
           </button>
           <nav className="flex items-center space-x-6 text-sm font-medium">
             <NavLink to="/" label="Home" />
-            <NavLink to="/stories" label="Stories" />
+            <NavLink to="/index" label="Index" />
             <NavLink to="/reader" label="Reader" />
             <NavLink to="/community" label="Community" />
           </nav>

@@ -35,8 +35,8 @@ export const BuyMeCoffeeButton = ({ authorId }: BuyMeCoffeeButtonProps) => {
         transition={{ duration: 2.4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
       >
         <motion.span
-          animate={{ x: [-2, 2, -2], y: [0, -3, 0], rotate: [0, 8, -8, 0] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+          animate={{ rotate: [0, 8, -8, 0] }}
+          transition={{ duration: 1.8, repeat: Infinity, repeatType: "reverse" }}
           className="inline-flex"
         >
           <Coffee className="w-5 h-5 drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]" />

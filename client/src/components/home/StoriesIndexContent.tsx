@@ -727,7 +727,7 @@ export default function StoriesIndexContent() {
     });
 
     return sortedByEngagement[0];
-  }, [sortedPosts, sort, reactionTotals]);
+  }, [sortedPosts, sort, reactionTotals, search, closestTitleMatch]);
 
   // Persist last featured theme for diversity in subsequent sessions
   useEffect(() => {
@@ -768,9 +768,9 @@ export default function StoriesIndexContent() {
       <div className="min-h-screen bg-background flex flex-col overflow-x-hidden overflow-y-auto">
         {/* Canonical for stories index */}
         <SEO
-          title="Stories"
-          description="Browse dark, psychological, and gothic fiction stories at Bubble’s Cafe."
-          canonical="/stories"
+          title="Index"
+          description="Browse the index of dark, psychological, and gothic fiction at Bubble’s Cafe."
+          canonical="/index"
           type="website"
         />
         {/* Continue Reading ribbon (local progress) */}

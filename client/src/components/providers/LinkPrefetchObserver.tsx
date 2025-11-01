@@ -17,8 +17,8 @@ export function LinkPrefetchObserver() {
         if (href.startsWith("/reader") || href.startsWith("/story") || href.startsWith("/community-story")) {
           // Warm the Reader route chunk
           await import("../../pages/reader");
-        } else if (href.startsWith("/stories")) {
-          // Warm the Stories route chunk
+        } else if (href.startsWith("/stories") || href.startsWith("/index")) {
+          // Warm the Index route chunk
           await import("../../pages/index");
         }
       } catch {
@@ -50,7 +50,7 @@ export function LinkPrefetchObserver() {
       try {
         const anchors = Array.from(
           document.querySelectorAll<HTMLAnchorElement>(
-            'a[href^="/reader"], a[href^="/story"], a[href^="/community-story"], a[href^="/stories"]'
+            'a[href^="/reader"], a[href^="/story"], a[href^="/community-story"], a[href^="/stories"], a[href^="/index"]'
           )
         );
         anchors.forEach((a) => observer.observe(a));

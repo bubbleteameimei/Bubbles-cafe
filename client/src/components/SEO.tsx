@@ -251,13 +251,13 @@ export default function SEO({
         {
           '@context': 'https://schema.org',
           '@type': 'SiteNavigationElement',
-          name: 'Stories',
-          url: `${siteUrl}/stories`
+          name: 'Index',
+          url: `${siteUrl}/index`
         },
         {
           '@context': 'https://schema.org',
           '@type': 'SiteNavigationElement',
-          name: 'Browse Stories',
+          name: 'Reader',
           url: `${siteUrl}/reader`
         },
         {
@@ -363,13 +363,13 @@ export default function SEO({
             const seg = segments[i].toLowerCase();
             cumulative += `/${segments[i]}`;
 
-            // Special handling: map "reader" to "Stories"
+            // Special handling: map "reader" to "Reader"
             if (seg === 'reader') {
               items.push({
                 '@type': 'ListItem',
                 position: position++,
-                name: 'Stories',
-                item: `${baseUrl}/stories`
+                name: 'Reader',
+                item: `${baseUrl}/reader`
               });
               continue;
             }

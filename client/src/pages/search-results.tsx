@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, Link } from "wouter";
 import { Loader2, Search, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { apiJson } from "@/lib/api";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { fetchWordPressPosts, getExcerpt } from "@/lib/wordpress-api";
 
 
 interface SearchResult {
@@ -42,12 +44,52 @@ export default function SearchResultsPage() {
   const [recent, setRecent] = useState<string[]>([]);
   
 
-  // Perform search across all content
+  // Helpers for WordPress fallback: strip HTML and extract context around matched terms
+  const stripHtml = (html: string) => {
+    try {
+      return html.replace(/<[^>]+>/g, " ").replace(/\\s+/g, " ").trim();
+    } catch {
+      return html;
+    }
+  };
+  const extractContexts = (text: string, query: string, max = 3): { context: string; position: number }[] => {
+    const q = query.trim();
+    if (!text || !q) return [];
+    const lower = text.toLowerCase();
+    const qLower = q.toLowerCase();
+    const contexts: { context: string; position: number }[] = [];
+    let start = 0;
+    while (contexts.length < max) {
+      const idx = lower.indexOf(qLower, start);
+      if (idx === -1) break;
+      const snippetStart = Math.max(0, idx - 80);
+      const snippetEnd = Math.min(text.length, idx + q.length + 80);
+      const snippet = text.slice(snippetStart, snippetEnd).trim();
+      contexts.push({ context: snippet, position: idx });
+      start = idx + q.length;
+    }
+    return contexts;
+  };
+  const levenshtein = (a: string, b: string) => {
+    const m = a.length, n = b.length;
+    const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+      }
+    }
+    return dp[m][n];
+  };
+
+  // Perform search across all content with WordPress fallback when local DB returns no results
   const performSearch = useCallback(async (query: string, pageNum = 1) => {
     if (!query.trim()) return;
-    
+
     setIsSearching(true);
-    
+
     try {
       const qs = new URLSearchParams();
       qs.set('q', query);
@@ -56,7 +98,9 @@ export default function SearchResultsPage() {
       qs.set('page', String(pageNum));
       if (from !== 'all') qs.set('from', from);
       if (category !== 'all') qs.set('category', category);
+
       const { results, meta } = await apiJson<any>('GET', `/api/search?${qs.toString()}`);
+
       const mapped: SearchResult[] = (results || []).map((r: any) => ({
         id: r.id,
         title: r.title,
@@ -64,27 +108,117 @@ export default function SearchResultsPage() {
         content: '',
         type: (r.type === 'post' || r.type === 'page') ? r.type : 'post',
         url: r.url,
-        matches: (r.matches || []).map((m: any, idx: number) => ({ field: 'content', text: m.context || m.text || '', position: 0 }))
+        matches: (r.matches || []).map((m: any) => ({ field: 'content', text: m.context || m.text || '', position: 0 }))
       }));
-      setSearchResults(mapped);
-      setPage(meta?.page || 1);
-      setPages(meta?.pages || 1);
-      setDidYouMean(meta?.didYouMean || null);
-      
+
+      let finalResults = mapped;
+      let finalPages = meta?.pages || 1;
+      let finalPage = meta?.page || pageNum;
+      let finalTotal = meta?.total ?? mapped.length;
+      let usedFallback = false;
+      let finalDidYouMean: string | null = meta?.didYouMean || null;
+
+      // Fallback to WordPress when no local results
+      if (mapped.length === 0) {
+        try {
+          const wp = await fetchWordPressPosts({ perPage: 20, includeContent: true, search: query });
+          const wpPosts = Array.isArray((wp as any)?.posts) ? (wp as any).posts : [];
+          const wpMapped: SearchResult[] = wpPosts.map((p: any) => {
+            const title = p?.title?.rendered || 'Untitled';
+            const rawExcerpt = p?.excerpt?.rendered || '';
+            const rawContent = p?.content?.rendered || '';
+            const text = stripHtml(rawContent || rawExcerpt);
+            const contexts = extractContexts(text, query, 3);
+            return {
+              id: p.id,
+              title,
+              excerpt: getExcerpt(rawExcerpt || rawContent || ''),
+              content: '',
+              type: 'post',
+              url: `/reader/${p.slug || p.id}`,
+              matches: contexts.map((c) => ({ field: 'content', text: c.context, context: c.context, position: c.position }))
+            };
+          });
+          finalResults = wpMapped;
+          finalPages = 1;
+          finalPage = 1;
+          finalTotal = wpMapped.length;
+          usedFallback = true;
+
+          // Did you mean from WordPress titles (closest by Levenshtein, only when improvement is meaningful)
+          if (!finalDidYouMean && wpMapped.length > 0) {
+            const qNorm = query.trim().toLowerCase();
+            let best = { title: '', dist: Infinity };
+            for (const r of wpMapped) {
+              const t = r.title.toLowerCase();
+              const d = levenshtein(qNorm, t);
+              if (d < best.dist) best = { title: r.title, dist: d };
+            }
+            if (best.dist > 0 && best.dist <= Math.max(2, Math.floor(qNorm.length * 0.3))) {
+              finalDidYouMean = best.title;
+            }
+          }
+        } catch {
+          // swallow WP fallback errors to avoid breaking UX
+        }
+      }
+
+      setSearchResults(finalResults);
+      setPage(finalPage);
+      setPages(finalPages);
+      setDidYouMean(finalDidYouMean);
+
       // Show toast with result count
       toast({
         title: `Search Results for "${query}"`,
-        description: meta?.total !== undefined ? `${meta.total} total results` : `Found ${mapped.length} ${mapped.length === 1 ? 'result' : 'results'}`,
+        description:
+          (finalTotal !== undefined
+            ? `${finalTotal} total results`
+            : `Found ${finalResults.length} ${finalResults.length === 1 ? 'result' : 'results'}`) +
+          (usedFallback && finalResults.length > 0 ? ' (via WordPress)' : ''),
         duration: 3000
       });
     } catch (error) {
       console.error('Search error:', error);
-      toast({
-        title: "Search Error",
-        description: "Failed to complete your search. Please try again.",
-        variant: "destructive",
-        duration: 3000
-      });
+      // Try WordPress fallback on error as well
+      try {
+        const wp = await fetchWordPressPosts({ perPage: 20, includeContent: true, search: query });
+        const wpPosts = Array.isArray((wp as any)?.posts) ? (wp as any).posts : [];
+        const wpMapped: SearchResult[] = wpPosts.map((p: any) => {
+          const title = p?.title?.rendered || 'Untitled';
+          const rawExcerpt = p?.excerpt?.rendered || '';
+          const rawContent = p?.content?.rendered || '';
+          const text = stripHtml(rawContent || rawExcerpt);
+          const contexts = extractContexts(text, query, 3);
+          return {
+            id: p.id,
+            title,
+            excerpt: getExcerpt(rawExcerpt || rawContent || ''),
+            content: '',
+            type: 'post',
+            url: `/reader/${p.slug || p.id}`,
+            matches: contexts.map((c) => ({ field: 'content', text: c.context, context: c.context, position: c.position }))
+          };
+        });
+
+        setSearchResults(wpMapped);
+        setPage(1);
+        setPages(1);
+        setDidYouMean(null);
+
+        toast({
+          title: `Search Results for "${query}"`,
+          description: `Found ${wpMapped.length} ${wpMapped.length === 1 ? 'result' : 'results'} (via WordPress)`,
+          duration: 3000
+        });
+      } catch {
+        toast({
+          title: "Search Error",
+          description: "Failed to complete your search. Please try again.",
+          variant: "destructive",
+          duration: 3000
+        });
+      }
     } finally {
       setIsSearching(false);
     }
@@ -177,6 +311,11 @@ export default function SearchResultsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
+              role="combobox"
+              aria-expanded={showSuggest}
+              aria-controls="advanced-search-suggestions"
+              aria-autocomplete="list"
+              aria-activedescendant={activeIndex >= 0 && suggestions[activeIndex] ? `advanced-suggestion-${suggestions[activeIndex].id}` : undefined}
               onFocus={() => { if (suggestions.length > 0) setShowSuggest(true); }}
               onBlur={() => setTimeout(() => setShowSuggest(false), 120)}
               onKeyDown={(e) => {
@@ -193,14 +332,16 @@ export default function SearchResultsPage() {
                   } else if (searchQuery.trim()) {
                     performSearch(searchQuery, 1);
                   }
+                } else if (e.key === 'Escape') {
+                  setShowSuggest(false);
                 }
               }}
             />
             {showSuggest && suggestions.length > 0 && (
-              <div className="absolute z-20 mt-1 w-full bg-background border border-border rounded-md shadow-sm">
+              <div className="absolute z-20 mt-1 w-full bg-background border border-border rounded-md shadow-sm" role="listbox" id="advanced-search-suggestions" aria-label="Suggestions">
                 <ul className="max-h-64 overflow-auto py-1">
                   {suggestions.map((s, idx) => (
-                    <li key={s.id}>
+                    <li key={s.id} role="option" aria-selected={idx === activeIndex} id={`advanced-suggestion-${s.id}`}>
                       <Link href={s.url}>
                         <a className={`block px-3 py-2 text-sm hover:bg-accent/30 ${idx === activeIndex ? 'bg-accent/20' : ''}`}>{s.title}</a>
                       </Link>
@@ -316,12 +457,13 @@ export default function SearchResultsPage() {
             const communityResults = searchResults.filter(r => r.url?.startsWith('/community-story/'));
             return (
               <div className="space-y-10">
-                <section>
+                <motion.section initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
                   <h2 className="text-lg font-semibold mb-3">Reader Stories</h2>
                   {readerResults.length > 0 ? (
                     <div className="space-y-6">
                       {readerResults.map(result => (
-                        <div key={`reader-${result.id}`} className="border rounded-lg p-4 shadow-sm">
+                        <motion.div key={`reader-${result.id}`} className="border rounded-lg p-4 shadow-sm"
+                          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
                           <h3 className="text-xl font-semibold mb-2">
                             <Link href={result.url}>
                               {highlightText(result.title, searchQuery)}
@@ -348,20 +490,21 @@ export default function SearchResultsPage() {
                               </Link>
                             </Button>
                           </div>
-                        </div>
+                        </motion.div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-foreground/60">No reader stories matched.</p>
+                    <p className="text-sm text-foreground/60" aria-live="polite">No reader stories matched.</p>
                   )}
-                </section>
+                </motion.section>
 
-                <section>
+                <motion.section initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
                   <h2 className="text-lg font-semibold mb-3">Community Stories</h2>
                   {communityResults.length > 0 ? (
                     <div className="space-y-6">
                       {communityResults.map(result => (
-                        <div key={`community-${result.id}`} className="border rounded-lg p-4 shadow-sm">
+                        <motion.div key={`community-${result.id}`} className="border rounded-lg p-4 shadow-sm"
+                          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
                           <h3 className="text-xl font-semibold mb-2">
                             <Link href={result.url}>
                               {highlightText(result.title, searchQuery)}
@@ -388,13 +531,13 @@ export default function SearchResultsPage() {
                               </Link>
                             </Button>
                           </div>
-                        </div>
+                        </motion.div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-foreground/60">No community stories matched.</p>
+                    <p className="text-sm text-foreground/60" aria-live="polite">No community stories matched.</p>
                   )}
-                </section>
+                </motion.section>
               </div>
             );
           })()}

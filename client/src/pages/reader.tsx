@@ -681,6 +681,26 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   // Removed duplicate deleted posts detection useEffect block
 
+  // Stabilize posts array and index; set up canonical URL synchronization before any early returns
+  const posts = useMemo(() => postsData?.posts ?? [], [postsData?.posts]);
+  const validCurrentIndex = useMemo(
+    () => Math.max(0, Math.min(currentIndex, posts.length - 1)),
+    [currentIndex, posts.length]
+  );
+
+  const ensuredCanonicalRef = useRef(false);
+  useEffect(() => {
+    try {
+      if (!ensuredCanonicalRef.current && posts.length > 0 && !routeSlug) {
+        ensuredCanonicalRef.current = true;
+        const slugToUse = String(posts[validCurrentIndex]?.slug ?? posts[validCurrentIndex]?.id);
+        if (slugToUse) {
+          setLocation(`/reader/${encodeURIComponent(slugToUse)}`);
+        }
+      }
+    } catch {}
+  }, [posts, validCurrentIndex, routeSlug, setLocation]);
+
   // Let's make sure we have posts data and current post before rendering
   if (isLoading) {
     // Avoid showing an inline loader; let the header remain and page content appear when ready
@@ -699,12 +719,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     );
   }
 
-  // Extract posts from data structure
-  const posts = postsData?.posts || [];
-  
-  // Ensure currentIndex is valid
-  const validCurrentIndex = Math.max(0, Math.min(currentIndex, posts.length - 1));
-  
   if (posts.length === 0) {
     return (
       <SimplifiedErrorPage
@@ -809,6 +823,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
       checkRapidNavigation();
       setCurrentIndex(randomIndex);
+      try {
+        const nextSlug = String(posts[randomIndex]?.slug ?? posts[randomIndex]?.id);
+        if (nextSlug) {
+          setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
+        }
+      } catch {}
       window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
     }
   };
@@ -820,6 +840,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       const newIndex = currentIndex - 1;
       checkRapidNavigation();
       setCurrentIndex(newIndex);
+      try {
+        const nextSlug = String(posts[newIndex]?.slug ?? posts[newIndex]?.id);
+        if (nextSlug) {
+          setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
+        }
+      } catch {}
       window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
     }
   };
@@ -831,6 +857,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       const newIndex = currentIndex + 1;
       checkRapidNavigation();
       setCurrentIndex(newIndex);
+      try {
+        const nextSlug = String(posts[newIndex]?.slug ?? posts[newIndex]?.id);
+        if (nextSlug) {
+          setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
+        }
+      } catch {}
       window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
     }
   };
