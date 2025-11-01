@@ -690,16 +690,17 @@ export default function Navigation() {
                     {searchValue.trim().length > 0 && (
                       <button
                         aria-label="Clear search"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 hover:opacity-90"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center h-6 w-6 rounded-full transition-colors"
                         onClick={() => {
                           setSearchValue("");
                           setSuggestions({ community: [], reader: [] });
                           setNoMatches(false);
                           setLoadingSuggestions(false);
                         }}
-                        style={{ color: "#AFAFAF" }}
+                        style={{ color: "#E0E0E0", background: "rgba(255,255,255,0.08)" }}
+                        title="Clear"
                       >
-                        <X className="h-5 w-5" />
+                        <X className="h-4 w-4" />
                       </button>
                     )}
                   </div>
