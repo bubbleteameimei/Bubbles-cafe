@@ -43,6 +43,7 @@ export default function Navigation() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [noMatches, setNoMatches] = useState(false);
+  const [showNoMatchesPrelim, setShowNoMatchesPrelim] = useState(false);
   const [suggestions, setSuggestions] = useState<{ community: any[]; reader: any[] }>({
     community: [],
     reader: []
@@ -229,8 +230,15 @@ export default function Navigation() {
           community: normalizeQuick(communityQuick),
           reader: normalizeQuick(readerQuick),
         });
+        // Show a preliminary "no matches" message faster when nothing matches locally
+        setShowNoMatchesPrelim(
+          (communityQuick.length + readerQuick.length === 0) && q.length >= 2
+        );
+      } else {
+        // If we have no previous results, still show preliminary message for longer queries
+        setShowNoMatchesPrelim(q.length >= 2);
       }
-    } catch {}
+    } catch { setShowNoMatchesPrelim(q.length >= 2); }
     const controller = new AbortController();
     const t = setTimeout(async () => {
       try {
@@ -288,6 +296,16 @@ export default function Navigation() {
           setSuggestions({ community: normalize(community), reader: normalize(reader) });
         }
         setNoMatches(community.length === 0 && reader.length === 0);
+        setShowNoMatchesPrelim(false);
+      } catch {
+        if (!active) return;
+        setSuggestions({ community: [], reader: [] });
+        setNoMatches(true);
+        setShowNoMatchesPrelim(false);
+      } finally {
+        if (active) setLoadingSuggestions(false);
+      }
+    }, 25);ommunity.length === 0 && reader.length === 0);
       } catch {
         if (!active) return;
         setSuggestions({ community: [], reader: [] });
@@ -295,7 +313,7 @@ export default function Navigation() {
       } finally {
         if (active) setLoadingSuggestions(false);
       }
-    }, 50);
+    }, 25);
     return () => {
       active = false;
       clearTimeout(t);
@@ -306,7 +324,7 @@ export default function Navigation() {
   // Compute "Did you mean" when no matches
   useEffect(() => {
     const q = searchValue.trim();
-    if (!noMatches || q.length < 2) {
+    if (!(noMatches || showNoMatchesPrelim) || q.length < 2) {
       setDidYouMean(null);
       return;
     }
@@ -343,7 +361,7 @@ export default function Navigation() {
       }
     })();
     return () => { active = false; controller.abort(); };
-  }, [noMatches, searchValue]);
+  }, [noMatches, showNoMatchesPrelim, searchValue]);
 
   // Close the sidebar drawer proactively on route changes to avoid layout reflow
   useEffect(() => {
@@ -593,11 +611,11 @@ export default function Navigation() {
               className="absolute left-0 right-0 top-full mt-2 z-[120]"
             >
               {/* Spacious search bar under the header, centered, with teardrop anchor */}
-              <div ref={panelRef} className="relative mx-auto" style={{ width: 'min(calc(100vw - 48px), 600px)' }}>
+             <<div ref={panelRef} className="relative mx-auto" style={{ width: 'min(calc(100vw - 48px), 600px)' }}>
                 
 
                 {/* Search bar */}
-                <div
+               <<div
                   className="rounded-[10px]"
                   style={{
                     background: "#2b2b2b",
@@ -654,7 +672,8 @@ export default function Navigation() {
                           setSearchOpen(false);
                         }
                       }}
-                      className="w-full pl-12 pr-28 h-9 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none text-[#E0E0E0] placeholder-[#AFAFAF] caret-[#7B61FF]"
+                      className="w-full pl-12 pr-32 h-9 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none text-[#E0E0E0] placeholder-[#AFAFAF] caret-[#7B61FF]"
+                      style={{ background: 'transparent', border: 'none' }}
                       role="combobox"
                       aria-expanded={true}
                       aria-controls="nav-suggestions-list"
@@ -688,7 +707,7 @@ export default function Navigation() {
                 </div>
 
                 {/* Advanced Search bar - same dimensions, tiny gap */}
-                <div className="mt-1 rounded-[10px]" style={{ background: "#242424", color: "#E0E0E0", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" }}>
+                <div className="mt-1 rounded-[10px]" style={{ background: "#3a3a3a", color: "#E0E0E0", boxShadow: "inset 0 0 0 2px #7B61FF" }}>
                   <button
                     className="w-full h-9 text-center transition-colors"
                     style={{ color: "#7B61FF" }}
@@ -830,7 +849,7 @@ export default function Navigation() {
                           )}
                         </div>
                       ) : (
-                        noMatches && (
+                        (noMatches || showNoMatchesPrelim) && (
                           <div className="space-y-1" aria-live="polite">
                             <div className="text-sm" style={{ color: "#AFAFAF" }}>No stories found</div>
                             {didYouMean && (
