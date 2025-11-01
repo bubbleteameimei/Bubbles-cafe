@@ -65,10 +65,28 @@ export default function Navigation() {
     if (!text) return text;
     const q = query.trim();
     if (!q) return text;
+    const escaped = q.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\// Highlight matched query in suggestion titles
+  const highlight = (text: string, query: string) => {
+    if (!text) return text;
+    const q = query.trim();
+    if (!q) return text;
     const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\const [suggestions, setSuggestions] = useState<{ community: any[]; reader: any[] }>({
     community: [],
     reader: []
   });');
+    const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+    return (
+      <>
+        {parts.map((part, i) =>
+          part.toLowerCase() === q.toLowerCase() ? (
+            <mark key={i} className="bg-indigo-500/30 text-white rounded px-0.5">{part}</mark>
+          ) : (
+            <span key={i}>{part}</span>
+          )
+        )}
+      </>
+    );
+  };');
     const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
     return (
       <>
