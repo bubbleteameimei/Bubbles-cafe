@@ -78,12 +78,18 @@ export default [
 			'import/no-duplicates': 'warn',
 			'import/no-named-as-default': 'off',
 			'import/no-named-as-default-member': 'off',
-			// A11y additions - fix anchor issues
+			// A11y additions - fix anchor issues and nested interactive elements
 			'jsx-a11y/anchor-is-valid': ['error', {
 				components: ['Link'],
 				specialLink: ['hrefLeft', 'hrefRight'],
 				aspects: ['invalidHref', 'preferButton']
-			}]
+			}],
+			'jsx-a11y/no-nested-interactive': 'error',
+			'jsx-a11y/interactive-supports-focus': 'error',
+			'jsx-a11y/click-events-have-key-events': 'error',
+			'jsx-a11y/no-static-element-interactions': 'error',
+			'jsx-a11y/tabindex-no-positive': 'error',
+			'jsx-a11y/no-autofocus': 'warn'
 		},
 	},
 	{
@@ -119,7 +125,13 @@ export default [
 				components: ['Link'],
 				specialLink: ['hrefLeft', 'hrefRight'],
 				aspects: ['invalidHref', 'preferButton']
-			}]
+			}],
+			'jsx-a11y/no-nested-interactive': 'error',
+			'jsx-a11y/interactive-supports-focus': 'error',
+			'jsx-a11y/click-events-have-key-events': 'error',
+			'jsx-a11y/no-static-element-interactions': 'error',
+			'jsx-a11y/tabindex-no-positive': 'error',
+			'jsx-a11y/no-autofocus': 'warn'
 		}
 	},
 	{ 

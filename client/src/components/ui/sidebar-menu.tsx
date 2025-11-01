@@ -471,7 +471,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     "transition-all duration-150 ease-out",
     // fully transparent hover
     "hover:bg-transparent hover:shadow-none",
-    "focus:outline-none focus:ring-0 focus-visible:ring-0",
     // simple active state: no box/backgrounds
     "data-[active=true]:bg-transparent data-[active=true]:text-sidebar-foreground data-[active=true]:font-semibold",
     "whitespace-nowrap overflow-hidden",
@@ -479,7 +478,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   );
 
   // Submenu styling - transparent, subtle active (no boxes)
-  const submenuItemClass = "px-2 py-1 pr-8 text-[12px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[28px] flex items-center -mb-0.5 rounded-sm transition-colors duration-150 ease-out hover:bg-transparent focus:bg-transparent border-l border-transparent data-[active=true]:border-l-primary/40 focus:outline-none focus:ring-0 focus-visible:ring-0";
+  const submenuItemClass = "px-2 py-1 pr-8 text-[12px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[28px] flex items-center -mb-0.5 rounded-sm transition-colors duration-150 ease-out hover:bg-transparent focus:bg-transparent border-l border-transparent data-[active=true]:border-l-primary/40";
 
 
 
@@ -1219,7 +1218,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             className="w-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider px-4 py-2"
             onClick={() => handleNavigation("/auth")}
             aria-label="Sign in to your account"
-            noOutline
           >
             SIGN IN
           </Button>
@@ -1234,7 +1232,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               }
             }}
             aria-label="Sign out of your account"
-            noOutline
           >
             SIGN OUT
           </Button>
@@ -1245,7 +1242,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           whileHover={{ scale: 1.02, translateX: 2 }}
           whileTap={{ scale: 0.98 }}
           className={cn(
-            "mt-2 mb-0 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
+            "mt-2 mb-0 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-1",
             location === '/report-bug'
               ? "text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-accent))]"
               : "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-primary))] hover:bg-[hsl(var(--sidebar-accent))]"

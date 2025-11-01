@@ -28,7 +28,7 @@ import './components/transition.css';
 import ScrollEffectsProvider from './components/ScrollEffectsProvider';
 const SEO = React.lazy(() => import('@/components/SEO'));
 
-import AutoHideNavbar from './components/layout/AutoHideNavbar';
+import AppNavbar from './components/layout/AppNavbar';
 // Import our notification system components
 import { NotificationProvider } from './contexts/notification-context';
 import ErrorToastProvider from './components/providers/error-toast-provider';
@@ -434,7 +434,7 @@ const AppContent = () => {
           m-0 p-0 px-0 mx-0 flex flex-col`}
          style={{ width: '100%', minWidth: '100%', maxWidth: '100%', margin: '0 auto', paddingTop: isReaderLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)' }}>
         {/* Main navigation bar */}
-        <AutoHideNavbar />
+        <AppNavbar />
         {/* Main content */}
         <React.Suspense fallback={null}>
           {/* Main content landmark for accessibility */}
