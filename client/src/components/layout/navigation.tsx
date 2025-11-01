@@ -458,20 +458,7 @@ export default function Navigation() {
     }
   };
 
-  // Click handler that waits briefly for the chunk to be ready before navigating
-  const handleNav = (href: string, e?: React.MouseEvent) => {
-    try {
-      if (e) e.preventDefault();
-      const done = prefetchRouteAsync(href).catch(() => {});
-      const cap = new Promise<void>((resolve) => setTimeout(resolve, 150));
-      Promise.race([done, cap]).then(() => {
-        setLocation(href);
-      });
-    } catch {
-      // Fallback navigation
-      window.location.href = href;
-    }
-  };
+  
 
   return (
     <>
@@ -526,7 +513,6 @@ export default function Navigation() {
                 aria-current={location === href ? "page" : undefined}
                 onMouseEnter={() => prefetchRoute(href)}
                 onFocus={() => prefetchRoute(href)}
-                onClick={(e) => handleNav(href, e)}
               >
                 {label}
               </Link>
@@ -543,7 +529,6 @@ export default function Navigation() {
               className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
               aria-label="Search"
               onClick={() => setSearchOpen((v) => !v)}
-         _code) => !v)}
             >
               <Search className="h-5 w-5" />
             </Button>
@@ -582,7 +567,6 @@ export default function Navigation() {
                 }}
                 className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
                 aria-label="Sign in"
-           _codenoOutline
               >
                 <User className="h-5 w-5" />
               </Button>
@@ -591,7 +575,6 @@ export default function Navigation() {
                 variant="ghost"
                 size="icon"
                 className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
-           _codenoOutline
               >
                 <User className="h-5 w-5" />
               </Button>
