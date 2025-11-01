@@ -608,7 +608,7 @@ export default function Navigation() {
                       }
                     />
                     {loadingSuggestions && (
-                     <<Loader2 className="h-4 w-4 absolute right-10 top-1/2 -translate-y-1/2 animate-spin text-white/60" />
+                      <Loader2 className="h-4 w-4 absolute right-8 top-1/2 -translate-y-1/2 animate-spin opacity-80 text-primary" />
                     )}
                     <button
                       aria-label="Close search"
