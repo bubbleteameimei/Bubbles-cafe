@@ -81,6 +81,28 @@ export default function Navigation() {
       </>
     );
   };
+  // Simple Levenshtein distance for "Did you mean" suggestions
+  const levenshtein = (a: string, b: string): number => {
+    const m = a.length, n = b.length;
+    if (m === 0) return n;
+    if (n === 0) return m;
+    const dp = new Array(n + 1);
+    for (let j = 0; j <= n; j++) dp[j] = j;
+    for (let i = 1; i <= m; i++) {
+      let prev = dp[0];
+      dp[0] = i;
+      for (let j = 1; j <= n; j++) {
+        const tmp = dp[j];
+        dp[j] = Math.min(
+          dp[j] + 1,
+          dp[j - 1] + 1,
+          prev + (a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1)
+        );
+        prev = tmp;
+      }
+    }
+    return dp[n];
+  };
 
   // Focus management: programmatic focus for accessibility (no autoFocus prop)
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -88,6 +110,7 @@ export default function Navigation() {
   const [arrowLeft, setArrowLeft] = useState<number>(12);
   const lastResultsRef = useRef<any[]>([]);
   const [isFocused, setIsFocused] = useState(false);
+  const [didYouMean, setDidYouMean] = useState<{ title: string; url: string } | null>(null);
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -272,7 +295,7 @@ export default function Navigation() {
       } finally {
         if (active) setLoadingSuggestions(false);
       }
-    }, 80);
+    }, 50);
     return () => {
       active = false;
       clearTimeout(t);
@@ -280,9 +303,47 @@ export default function Navigation() {
     };
   }, [searchValue]);
 
-  // Reader route progress state (for in-header progress bar)
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const isReaderRoute = typeof location === "string" && location.includes("/reader");
+  // Compute "Did you mean" when no matches
+  useEffect(() => {
+    const q = searchValue.trim();
+    if (!noMatches || q.length < 2) {
+      setDidYouMean(null);
+      return;
+    }
+    let active = true;
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const wpResult = await fetchWordPressPosts({ perPage: 24, includeContent: false, search: q, signal: controller.signal } as any);
+        const wpPosts = Array.isArray((wpResult as any)?.posts) ? (wpResult as any).posts : [];
+        let best: any = null;
+        let bestScore = Infinity;
+        const qLower = q.toLowerCase();
+        for (const p of wpPosts) {
+          const t = String(p?.title?.rendered || "").toLowerCase();
+          if (!t) continue;
+          const score = levenshtein(qLower, t.slice(0, Math.max(qLower.length, 16)));
+          if (score < bestScore) {
+            bestScore = score;
+            best = p;
+          }
+        }
+        if (active && best) {
+          const threshold = Math.max(1, Math.round(qLower.length * 0.3));
+          if (bestScore <= threshold) {
+            setDidYouMean({ title: best?.title?.rendered || "Untitled", url: `/reader/${encodeURIComponent(best?.slug || best?.id)}` });
+          } else {
+            setDidYouMean(null);
+          }
+        } else if (active) {
+          setDidYouMean(null);
+        }
+      } catch {
+        if (active) setDidYouMean(null);
+      }
+    })();
+    return () => { active = false; controller.abort(); };
+  }, [noMatches, searchValue]);
 
   // Close the sidebar drawer proactively on route changes to avoid layout reflow
   useEffect(() => {
@@ -548,7 +609,7 @@ export default function Navigation() {
               className="absolute left-0 right-0 top-full mt-2 z-50"
             >
               {/* Spacious search bar under the header, centered, with teardrop anchor */}
-              <div ref={panelRef} className="relative mx-auto" style={{ width: 'min(calc(100vw - 24px), 800px)' }}>
+              <div ref={panelRef} className="relative mx-auto" style={{ width: 'min(calc(100vw - 48px), 600px)' }}>
                 
 
                 {/* Search bar */}
@@ -557,14 +618,14 @@ export default function Navigation() {
                   style={{
                     background: "#242424",
                     color: "#E0E0E0",
-                    boxShadow: isFocused ? "0 0 0 2px #7B61FF" : "0 0 0 1px rgba(255,255,255,0.06)"
+                    boxShadow: isFocused ? "inset 0 0 0 2px #7B61FF" : "inset 0 0 0 1px rgba(255,255,255,0.06)"
                   }}
                 >
                   <div className="relative h-9">
                     <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "#AFAFAF" }} />
                     <Input
                       ref={searchInputRef}
-                      placeholder="Search for stories..."
+                      placeholder="Search for novels..."
                       value={searchValue}
                       onChange={(e) => {
                         setSearchValue(e.target.value);
@@ -638,6 +699,27 @@ export default function Navigation() {
                       </button>
                     )}
                   </div>
+                </div>
+
+                {/* Advanced Search bar - same dimensions, tiny gap */}
+                <div className="mt-1 rounded-[10px]" style={{ background: "#242424", color: "#E0E0E0", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" }}>
+                  <button
+                    className="w-full h-9 text-center transition-colors"
+                    style={{ color: "#7B61FF" }}
+                    onClick={() => {
+                      const href = "/search";
+                      const done = prefetchRouteAsync(href).catch(() => {});
+                      const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                      Promise.race([done, cap]).then(() => {
+                        setSearchOpen(false);
+                        const q = encodeURIComponent(searchValue.trim());
+                        setLocation(q ? `/search?q=${q}` : "/search");
+                      });
+                    }}
+                    title="Open advanced search"
+                  >
+                    Advanced Search
+                  </button>
                 </div>
 
                 {/* Suggestions dropdown, contained under the search bar */}
@@ -763,8 +845,29 @@ export default function Navigation() {
                         </div>
                       ) : (
                         noMatches && (
-                          <div className="text-sm" style={{ color: "#AFAFAF" }} aria-live="polite">
-                            No stories found
+                          <div className="space-y-1" aria-live="polite">
+                            <div className="text-sm" style={{ color: "#AFAFAF" }}>No stories found</div>
+                            {didYouMean && (
+                              <button
+                                className="text-sm underline"
+                                style={{ color: "#7B61FF" }}
+                                onClick={() => {
+                                  const href = String(didYouMean?.url || "");
+                                  const done = prefetchRouteAsync(href.startsWith("/reader") ? "/reader" : href).catch(() => {});
+                                  const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                                  Promise.race([done, cap]).then(() => {
+                                    setSearchOpen(false);
+                                    setLocation(href);
+                                  });
+                                }}
+                                title={String(didYouMean?.title || "")}
+                              >
+                                Did you mean “{String(didYouMean?.title || "")}”?
+                              </button>
+                            )}
+                            <div className="text-xs" style={{ color: "#AFAFAF" }}>
+                              Try Advanced Search for more results.
+                            </div>
                           </div>
                         )
                       )}
