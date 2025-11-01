@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,41 @@ export default function Navigation() {
     reader: []
   });
 
+  // Keyboard navigation state for suggestions
+  const [activeIdx, setActiveIdx] = useState<number>(-1);
+
+  // Flatten suggestions for easier keyboard navigation
+  const flatSuggestions = useMemo(
+    () => [
+      ...suggestions.reader.map((s: any) => ({ ...s, group: 'reader' as const })),
+      ...suggestions.community.map((s: any) => ({ ...s, group: 'community' as const }))
+    ],
+    [suggestions.reader, suggestions.community]
+  );
+
+  // Highlight matched query in suggestion titles
+  const highlight = (text: string, query: string) => {
+    if (!text) return text;
+    const q = query.trim();
+    if (!q) return text;
+    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\const [suggestions, setSuggestions] = useState<{ community: any[]; reader: any[] }>({
+    community: [],
+    reader: []
+  });');
+    const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+    return (
+      <>
+        {parts.map((part, i) =>
+          part.toLowerCase() === q.toLowerCase() ? (
+            <mark key={i} className="bg-indigo-500/30 text-white rounded px-0.5">{part}</mark>
+          ) : (
+            <span key={i}>{part}</span>
+          )
+        )}
+      </>
+    );
+  };
+
   // Focus management: programmatic focus for accessibility (no autoFocus prop)
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
@@ -64,7 +99,8 @@ export default function Navigation() {
   // Positioning: compute left offset so the search bar covers nav and right actions, but not the sidebar button
   const [searchLeft, setSearchLeft] = useState<number>(56);
   useEffect(() => {
-    const computeLeft = (_e?: Event): void => {uteLeft = (): void =>      try {
+    const computeLeft = (_e?: Event): void => {
+      try {
         const el = document.getElementById('sidebar-toggle') as HTMLElement | null;
         if (el) {
           const rect = el.getBoundingClientRect();
@@ -375,8 +411,47 @@ export default function Navigation() {
                         ref={searchInputRef}
                         placeholder="Search for novels..."
                         value={searchValue}
-                        onChange={(e) => setSearchValue(e.target.value)}
+                        onChange={(e) => { setSearchValue(e.target.value); setActiveIdx(-1); }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            setActiveIdx(prev => Math.min(flatSuggestions.length - 1, prev + 1));
+                          } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            setActiveIdx(prev => Math.max(0, prev - 1));
+                          } else if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const item = flatSuggestions[activeIdx];
+                            if (item) {
+                              const href = String(item.url || '');
+                              const done = prefetchRouteAsync(item.group === 'reader' ? '/reader' : href).catch(() => {});
+                              const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                              Promise.race([done, cap]).then(() => {
+                                try { sessionStorage.removeItem('nav-search-query'); } catch {}
+                                setSearchOpen(false);
+                                setLocation(href);
+                              });
+                            } else {
+                              const q = searchValue.trim();
+                              const href = '/search';
+                              const done = prefetchRouteAsync(href).catch(() => {});
+                              const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                              Promise.race([done, cap]).then(() => {
+                                setSearchOpen(false);
+                                setLocation(q ? `/search?q=${encodeURIComponent(q)}` : '/search');
+                              });
+                            }
+                          } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            setSearchOpen(false);
+                          }
+                        }}
                         className="pl-11 pr-10 h-12 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none"
+                        role="combobox"
+                        aria-expanded={true}
+                        aria-controls="nav-suggestions-list"
+                        aria-autocomplete="list"
+                        aria-activedescendant={activeIdx >= 0 && flatSuggestions[activeIdx] ? `nav-suggestion-${flatSuggestions[activeIdx].group}-${flatSuggestions[activeIdx].id}` : undefined}
                       />
                       <button
                         aria-label="Close search"
@@ -390,7 +465,7 @@ export default function Navigation() {
 
                   {/* Suggestions and Advanced Search panel */}
                   <div className="mt-2 rounded-2xl bg-[#121212] border border-white/10 shadow-lg overflow-hidden">
-                    <div className="p-3">
+                    <div className="p-3" id="nav-suggestions-list" role="listbox" aria-label="Search suggestions">
                       {loadingSuggestions ? (
                         <div className="text-xs text-white/70">Searching…</div>
                       ) : (
@@ -404,7 +479,18 @@ export default function Navigation() {
                                     {suggestions.reader.map((s: any) => (
                                       <li key={s.id}>
                                         <button
-                                          className="w-full text-left text-sm text-white hover:text-indigo-400 transition-colors"
+                                          id={`nav-suggestion-reader-${s.id}`}
+                                          role="option"
+                                          aria-selected={flatSuggestions[activeIdx]?.id === s.id && flatSuggestions[activeIdx]?.group === 'reader'}
+                                          className={`w-full text-left text-sm text-white hover:text-indigo-400 transition-colors ${flatSuggestions[activeIdx]?.id === s.id && flatSuggestions[activeIdx]?.group === 'reader' ? 'bg-white/10 rounded-md' : ''}`}
+                                          onMouseEnter={() => {
+                                            const idx = flatSuggestions.findIndex(i => i.id === s.id && i.group === 'reader');
+                                            if (idx >= 0) setActiveIdx(idx);
+                                          }}
+                                          onFocus={() => {
+                                            const idx = flatSuggestions.findIndex(i => i.id === s.id && i.group === 'reader');
+                                            if (idx >= 0) setActiveIdx(idx);
+                                          }}
                                           onClick={() => {
                                             const href = String(s.url || '');
                                             const done = prefetchRouteAsync('/reader').catch(() => {});
@@ -417,7 +503,7 @@ export default function Navigation() {
                                           }}
                                           title={String(s.title || '')}
                                         >
-                                          {String(s.title || '')}
+                                          {highlight(String(s.title || ''), searchValue)}
                                         </button>
                                       </li>
                                     ))}
@@ -431,7 +517,18 @@ export default function Navigation() {
                                     {suggestions.community.map((s: any) => (
                                       <li key={s.id}>
                                         <button
-                                          className="w-full text-left text-sm text-white hover:text-indigo-400 transition-colors"
+                                          id={`nav-suggestion-community-${s.id}`}
+                                          role="option"
+                                          aria-selected={flatSuggestions[activeIdx]?.id === s.id && flatSuggestions[activeIdx]?.group === 'community'}
+                                          className={`w-full text-left text-sm text-white hover:text-indigo-400 transition-colors ${flatSuggestions[activeIdx]?.id === s.id && flatSuggestions[activeIdx]?.group === 'community' ? 'bg-white/10 rounded-md' : ''}`}
+                                          onMouseEnter={() => {
+                                            const idx = flatSuggestions.findIndex(i => i.id === s.id && i.group === 'community');
+                                            if (idx >= 0) setActiveIdx(idx);
+                                          }}
+                                          onFocus={() => {
+                                            const idx = flatSuggestions.findIndex(i => i.id === s.id && i.group === 'community');
+                                            if (idx >= 0) setActiveIdx(idx);
+                                          }}
                                           onClick={() => {
                                             const href = String(s.url || '');
                                             const done = prefetchRouteAsync(href).catch(() => {});
@@ -444,7 +541,7 @@ export default function Navigation() {
                                           }}
                                           title={String(s.title || '')}
                                         >
-                                          {String(s.title || '')}
+                                          {highlight(String(s.title || ''), searchValue)}
                                         </button>
                                       </li>
                                     ))}
@@ -453,7 +550,7 @@ export default function Navigation() {
                               )}
                             </div>
                           ) : (
-                            noMatches && <div className="text-sm text-white/70">No stories found</div>
+                            noMatches && <div className="text-sm text-white/70" aria-live="polite">No stories found</div>
                           )}
                         </>
                       )}

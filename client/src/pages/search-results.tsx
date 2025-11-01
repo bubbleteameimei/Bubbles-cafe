@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, Link } from "wouter";
 import { Loader2, Search, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -380,12 +381,13 @@ export default function SearchResultsPage() {
             const communityResults = searchResults.filter(r => r.url?.startsWith('/community-story/'));
             return (
               <div className="space-y-10">
-                <section>
+                <motion.section initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
                   <h2 className="text-lg font-semibold mb-3">Reader Stories</h2>
                   {readerResults.length > 0 ? (
                     <div className="space-y-6">
                       {readerResults.map(result => (
-                        <div key={`reader-${result.id}`} className="border rounded-lg p-4 shadow-sm">
+                        <motion.div key={`reader-${result.id}`} className="border rounded-lg p-4 shadow-sm"
+                          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
                           <h3 className="text-xl font-semibold mb-2">
                             <Link href={result.url}>
                               {highlightText(result.title, searchQuery)}
@@ -412,20 +414,21 @@ export default function SearchResultsPage() {
                               </Link>
                             </Button>
                           </div>
-                        </div>
+                        </motion.div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-foreground/60">No reader stories matched.</p>
+                    <p className="text-sm text-foreground/60" aria-live="polite">No reader stories matched.</p>
                   )}
-                </section>
+                </motion.section>
 
-                <section>
+                <motion.section initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
                   <h2 className="text-lg font-semibold mb-3">Community Stories</h2>
                   {communityResults.length > 0 ? (
                     <div className="space-y-6">
                       {communityResults.map(result => (
-                        <div key={`community-${result.id}`} className="border rounded-lg p-4 shadow-sm">
+                        <motion.div key={`community-${result.id}`} className="border rounded-lg p-4 shadow-sm"
+                          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
                           <h3 className="text-xl font-semibold mb-2">
                             <Link href={result.url}>
                               {highlightText(result.title, searchQuery)}
@@ -452,13 +455,13 @@ export default function SearchResultsPage() {
                               </Link>
                             </Button>
                           </div>
-                        </div>
+                        </motion.div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-foreground/60">No community stories matched.</p>
+                    <p className="text-sm text-foreground/60" aria-live="polite">No community stories matched.</p>
                   )}
-                </section>
+                </motion.section>
               </div>
             );
           })()}
