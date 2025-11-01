@@ -678,46 +678,32 @@ export default function Navigation() {
                           : undefined
                       }
                     />
-                    {loadingSuggestions && (
-                      <Loader2 className="h-4 w-4 absolute right-12 top-1/2 -translate-y-1/2 animate-spin opacity-80" style={{ color: "#7B61FF" }} />
-                    )}
-                    {searchValue.trim().length > 0 && (
-                     <button                        aria-label="Clear search"
-                        type="button"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-8 h-8 text-[#AFAFAF] hover:text-[#E0E0E0] transition-colors select-none"
-                        onClick={() => {
-                          setSearchValue("");
-                          setSuggestions({ community: [], reader: [] });
-                          setNoMatches(false);
-                          setLoadingSuggestions(false);
-                        }}
-                        title="Clear"
-                              >
-                        <span className="text-[24px] leading-none">×</span>
-                      </button>
-                    )}
+                    
+                    
                   </div>
                 </div>
 
                 {/* Advanced Search bar - same dimensions, tiny gap */}
-                <div className="mt-1 rounded-[10px]" style={{ background: "#1a1a1a", color: "#E0E0E0", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" }}>
-                  <button
-                    className="w-full h-9 text-center transition-colors"
-                    style={{ color: "#7B61FF" }}
-                    onClick={() => {
-                      const href = "/search";
-                      const done = prefetchRouteAsync(href).catch(() => {});
-                      const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
-                      Promise.race([done, cap]).then(() => {
-                        setSearchOpen(false);
-                        const q = encodeURIComponent(searchValue.trim());
-                        setLocation(q ? `/search?q=${q}` : "/search");
-                      });
-                    }}
-                    title="Open advanced search"
-                  >
-                    Advanced Search
-                  </button>
+                <div className="mt-1 rounded-[10px]" style={{ background: "#1a1a1a", color: "#E0E0E0", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                  <div className="h-9 w-full">
+                    <button
+                      className="w-full h-9 text-center transition-colors"
+                      style={{ color: "#6A54E6" }}
+                      onClick={() => {
+                        const href = "/search";
+                        const done = prefetchRouteAsync(href).catch(() => {});
+                        const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                        Promise.race([done, cap]).then(() => {
+                          setSearchOpen(false);
+                          const q = encodeURIComponent(searchValue.trim());
+                          setLocation(q ? `/search?q=${q}` : "/search");
+                        });
+                      }}
+                      title="Open advanced search"
+                    >
+                      Advanced Search
+                    </button>
+                  </div>
                 </div>
 
                 {/* Suggestions dropdown, contained under the search bar */}
