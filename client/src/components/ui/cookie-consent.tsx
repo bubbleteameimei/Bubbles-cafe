@@ -17,6 +17,7 @@ export function CookieConsent() {
   useEffect(() => {
     if (!showConsentBanner) return;
     document.body.classList.add('overlay-active', 'cookie-consent-active');
+    document.documentElement.classList.add('overlay-active', 'cookie-consent-active');
     lockBodyScroll('cookie-consent');
     const id = requestAnimationFrame(() => {
       try {
@@ -25,6 +26,7 @@ export function CookieConsent() {
     });
     return () => {
       document.body.classList.remove('overlay-active', 'cookie-consent-active');
+      document.documentElement.classList.remove('overlay-active', 'cookie-consent-active');
       unlockBodyScroll('cookie-consent');
       cancelAnimationFrame(id);
     };
