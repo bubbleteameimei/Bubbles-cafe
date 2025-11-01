@@ -64,7 +64,7 @@ export default function Navigation() {
   // Positioning: compute left offset so the search bar covers nav and right actions, but not the sidebar button
   const [searchLeft, setSearchLeft] = useState<number>(56);
   useEffect(() => {
-    const computeLeft = (): void =>      try {
+    const computeLeft = (_e?: Event): void => {uteLeft = (): void =>      try {
         const el = document.querySelector('header .main-header button[aria-label="Open menu"]') as HTMLElement | null;
         if (el) {
           const rect = el.getBoundingClientRect();
@@ -78,8 +78,8 @@ export default function Navigation() {
       }
     };
     computeLeft();
-    window.addEventListener('resize', computeLeft, { passive: true } as any);
-    return () => window.removeEventListener('resize', computeLeft as any);
+    window.addEventListener('resize', computeLeft);
+    return () => window.removeEventListener('resize', computeLeft);
   }, []);
 
   // Persist nav search input across open/close and no-match states
