@@ -87,6 +87,7 @@ export default function Navigation() {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [arrowLeft, setArrowLeft] = useState<number>(12);
   const lastResultsRef = useRef<any[]>([]);
+  const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -256,8 +257,13 @@ export default function Navigation() {
                 : ""
           }));
         if (!active) return;
+        const ids = (results || []).map((r: any) => r.id);
+        const prevIds = (lastResultsRef.current || []).map((r: any) => r.id);
+        const same = ids.length === prevIds.length && ids.every((id: any, i: number) => id === prevIds[i]);
         lastResultsRef.current = results;
-        setSuggestions({ community: normalize(community), reader: normalize(reader) });
+        if (!same) {
+          setSuggestions({ community: normalize(community), reader: normalize(reader) });
+        }
         setNoMatches(community.length === 0 && reader.length === 0);
       } catch {
         if (!active) return;
@@ -266,7 +272,7 @@ export default function Navigation() {
       } finally {
         if (active) setLoadingSuggestions(false);
       }
-    }, 120);
+    }, 80);
     return () => {
       active = false;
       clearTimeout(t);
@@ -547,11 +553,15 @@ export default function Navigation() {
 
                 {/* Search bar */}
                 <div
-                  className="rounded-xl bg-background text-white shadow-xl"
-                  style={{ boxShadow: "inset 0 0 0 2px hsl(var(--primary))" }}
+                  className="rounded-[10px]"
+                  style={{
+                    background: "#242424",
+                    color: "#E0E0E0",
+                    boxShadow: isFocused ? "0 0 0 2px #7B61FF" : "0 0 0 1px rgba(255,255,255,0.06)"
+                  }}
                 >
                   <div className="relative h-9">
-                    <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-white/70" />
+                    <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "#AFAFAF" }} />
                     <Input
                       ref={searchInputRef}
                       placeholder="Search for stories..."
@@ -560,6 +570,8 @@ export default function Navigation() {
                         setSearchValue(e.target.value);
                         setActiveIdx(-1);
                       }}
+                      onFocus={() => setIsFocused(true)}
+                      onBlur={() => setIsFocused(false)}
                       onKeyDown={(e) => {
                         if (e.key === "ArrowDown") {
                           e.preventDefault();
@@ -596,7 +608,7 @@ export default function Navigation() {
                           setSearchOpen(false);
                         }
                       }}
-                      className="pl-12 pr-20 h-9 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none"
+                      className="pl-12 pr-20 h-9 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none text-[#E0E0E0] placeholder-[#AFAFAF] caret-[#7B61FF]"
                       role="combobox"
                       aria-expanded={true}
                       aria-controls="nav-suggestions-list"
@@ -608,158 +620,157 @@ export default function Navigation() {
                       }
                     />
                     {loadingSuggestions && (
-                      <Loader2 className="h-4 w-4 absolute right-8 top-1/2 -translate-y-1/2 animate-spin opacity-80 text-primary" />
+                      <Loader2 className="h-4 w-4 absolute right-8 top-1/2 -translate-y-1/2 animate-spin opacity-80" style={{ color: "#7B61FF" }} />
                     )}
-                    <button
-                      aria-label="Close search"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white z-10"
-                      onClick={() => setSearchOpen(false)}
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
+                    {searchValue.trim().length > 0 && (
+                      <button
+                        aria-label="Clear search"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 hover:opacity-90"
+                        onClick={() => {
+                          setSearchValue("");
+                          setSuggestions({ community: [], reader: [] });
+                          setNoMatches(false);
+                          setLoadingSuggestions(false);
+                        }}
+                        style={{ color: "#AFAFAF" }}
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                {/* Stacked actions and suggestions */}
-                <div className="mt-1 space-y-1.5">
-                  <div className="rounded-xl bg-background border border-border/40 shadow-none">
-                    <button
-                      className="w-full h-9 text-center text-indigo-400 hover:text-indigo-300 transition-colors text-base"
-                      onClick={() => {
-                        const href = "/search";
-                        const done = prefetchRouteAsync(href).catch(() => {});
-                        const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
-                        Promise.race([done, cap]).then(() => {
-                          setSearchOpen(false);
-                          const q = encodeURIComponent(searchValue.trim());
-                          setLocation(q ? `/search?q=${q}` : "/search");
-                        });
-                      }}
-                      title="Open advanced search"
-                    >
-                      Advanced Search
-                    </button>
-                  </div>
-
-                  <div id="nav-suggestions-list" role="listbox" aria-label="Search suggestions">
-                    {(suggestions.community.length + suggestions.reader.length > 0) ? (
-                      <div className="space-y-3">
-                        {suggestions.reader.length > 0 && (
-                          <div>
-                            <div className="text-xs text-white/60 mb-1">Reader</div>
-                            <ul className="space-y-1">
-                              {suggestions.reader.map((s: any) => (
-                                <li key={s.id}>
-                                  <button
-                                    id={`nav-suggestion-reader-${s.id}`}
-                                    role="option"
-                                    aria-selected={
-                                      flatSuggestions[activeIdx]?.id === s.id &&
-                                      flatSuggestions[activeIdx]?.group === "reader"
-                                    }
-                                    className={`w-full text-left text-sm text-white hover:text-indigo-400 transition-colors ${
-                                      flatSuggestions[activeIdx]?.id === s.id &&
-                                      flatSuggestions[activeIdx]?.group === "reader"
-                                        ? "bg-white/10 rounded-md"
-                                        : ""
-                                    }`}
-                                    onMouseEnter={() => {
-                                      const idx = flatSuggestions.findIndex(
-                                        (i) => i.id === s.id && i.group === "reader"
-                                      );
-                                      if (idx >= 0) setActiveIdx(idx);
-                                    }}
-                                    onFocus={() => {
-                                      const idx = flatSuggestions.findIndex(
-                                        (i) => i.id === s.id && i.group === "reader"
-                                      );
-                                      if (idx >= 0) setActiveIdx(idx);
-                                    }}
-                                    onClick={() => {
-                                      const href = String(s.url || "");
-                                      const done = prefetchRouteAsync("/reader").catch(() => {});
-                                      const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
-                                      Promise.race([done, cap]).then(() => {
-                                        try { sessionStorage.removeItem("nav-search-query"); } catch {}
-                                        setSearchOpen(false);
-                                        setLocation(href);
-                                      });
-                                    }}
-                                    title={String(s.title || "")}
-                                  >
-                                    <div className="text-left">
-                                      <div className="text-sm">{highlight(String(s.title || ""), searchValue)}</div>
-                                      <div className="text-xs text-white/60 truncate mt-0.5">{String(s.excerpt || "")}</div>
-                                    </div>
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {suggestions.community.length > 0 && (
-                          <div>
-                            <div className="text-xs text-white/60 mb-1">Community</div>
-                            <ul className="space-y-1">
-                              {suggestions.community.map((s: any) => (
-                                <li key={s.id}>
-                                  <button
-                                    id={`nav-suggestion-community-${s.id}`}
-                                    role="option"
-                                    aria-selected={
-                                      flatSuggestions[activeIdx]?.id === s.id &&
-                                      flatSuggestions[activeIdx]?.group === "community"
-                                    }
-                                    className={`w-full text-left text-sm text-white hover:text-indigo-400 transition-colors ${
-                                      flatSuggestions[activeIdx]?.id === s.id &&
-                                      flatSuggestions[activeIdx]?.group === "community"
-                                        ? "bg-white/10 rounded-md"
-                                        : ""
-                                    }`}
-                                    onMouseEnter={() => {
-                                      const idx = flatSuggestions.findIndex(
-                                        (i) => i.id === s.id && i.group === "community"
-                                      );
-                                      if (idx >= 0) setActiveIdx(idx);
-                                    }}
-                                    onFocus={() => {
-                                      const idx = flatSuggestions.findIndex(
-                                        (i) => i.id === s.id && i.group === "community"
-                                      );
-                                      if (idx >= 0) setActiveIdx(idx);
-                                    }}
-                                    onClick={() => {
-                                      const href = String(s.url || "");
-                                      const done = prefetchRouteAsync(href).catch(() => {});
-                                      const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
-                                      Promise.race([done, cap]).then(() => {
-                                        try { sessionStorage.removeItem("nav-search-query"); } catch {}
-                                        setSearchOpen(false);
-                                        setLocation(href);
-                                      });
-                                    }}
-                                    title={String(s.title || "")}
-                                  >
-                                    <div className="text-left">
-                                      <div className="text-sm">{highlight(String(s.title || ""), searchValue)}</div>
-                                      <div className="text-xs text-white/60 truncate mt-0.5">{String(s.excerpt || "")}</div>
-                                    </div>
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      noMatches && (
-                        <div className="text-sm text-white/70" aria-live="polite">
-                          No stories found
+                {/* Suggestions dropdown, contained under the search bar */}
+                {searchValue.trim().length > 0 && (
+                  <div
+                    className="mt-1 rounded-[10px] overflow-hidden"
+                    style={{
+                      background: "#242424",
+                      boxShadow: "0 0 0 1px rgba(255,255,255,0.06)"
+                    }}
+                  >
+                    <div className="p-3" id="nav-suggestions-list" role="listbox" aria-label="Search suggestions">
+                      {(suggestions.community.length + suggestions.reader.length > 0) ? (
+                        <div className="space-y-3">
+                          {suggestions.reader.length > 0 && (
+                            <div>
+                              <div className="text-xs" style={{ color: "#AFAFAF" }}>Reader</div>
+                              <ul className="space-y-1">
+                                {suggestions.reader.map((s: any) => (
+                                  <li key={s.id}>
+                                    <button
+                                      id={`nav-suggestion-reader-${s.id}`}
+                                      role="option"
+                                      aria-selected={
+                                        flatSuggestions[activeIdx]?.id === s.id &&
+                                        flatSuggestions[activeIdx]?.group === "reader"
+                                      }
+                                      className={`w-full text-left text-sm transition-colors ${
+                                        flatSuggestions[activeIdx]?.id === s.id &&
+                                        flatSuggestions[activeIdx]?.group === "reader"
+                                          ? "bg-white/10 rounded-md"
+                                          : ""
+                                      }`}
+                                      onMouseEnter={() => {
+                                        const idx = flatSuggestions.findIndex(
+                                          (i) => i.id === s.id && i.group === "reader"
+                                        );
+                                        if (idx >= 0) setActiveIdx(idx);
+                                      }}
+                                      onFocus={() => {
+                                        const idx = flatSuggestions.findIndex(
+                                          (i) => i.id === s.id && i.group === "reader"
+                                        );
+                                        if (idx >= 0) setActiveIdx(idx);
+                                      }}
+                                      onClick={() => {
+                                        const href = String(s.url || "");
+                                        const done = prefetchRouteAsync("/reader").catch(() => {});
+                                        const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                                        Promise.race([done, cap]).then(() => {
+                                          try { sessionStorage.removeItem("nav-search-query"); } catch {}
+                                          setSearchOpen(false);
+                                          setLocation(href);
+                                        });
+                                      }}
+                                      title={String(s.title || "")}
+                                      style={{ color: "#E0E0E0" }}
+                                    >
+                                      <div className="text-left">
+                                        <div className="text-sm">{highlight(String(s.title || ""), searchValue)}</div>
+                                        <div className="text-xs truncate mt-0.5" style={{ color: "#AFAFAF" }}>{String(s.excerpt || "")}</div>
+                                      </div>
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {suggestions.community.length > 0 && (
+                            <div>
+                              <div className="text-xs" style={{ color: "#AFAFAF" }}>Community</div>
+                              <ul className="space-y-1">
+                                {suggestions.community.map((s: any) => (
+                                  <li key={s.id}>
+                                    <button
+                                      id={`nav-suggestion-community-${s.id}`}
+                                      role="option"
+                                      aria-selected={
+                                        flatSuggestions[activeIdx]?.id === s.id &&
+                                        flatSuggestions[activeIdx]?.group === "community"
+                                      }
+                                      className={`w-full text-left text-sm transition-colors ${
+                                        flatSuggestions[activeIdx]?.id === s.id &&
+                                        flatSuggestions[activeIdx]?.group === "community"
+                                          ? "bg-white/10 rounded-md"
+                                          : ""
+                                      }`}
+                                      onMouseEnter={() => {
+                                        const idx = flatSuggestions.findIndex(
+                                          (i) => i.id === s.id && i.group === "community"
+                                        );
+                                        if (idx >= 0) setActiveIdx(idx);
+                                      }}
+                                      onFocus={() => {
+                                        const idx = flatSuggestions.findIndex(
+                                          (i) => i.id === s.id && i.group === "community"
+                                        );
+                                        if (idx >= 0) setActiveIdx(idx);
+                                      }}
+                                      onClick={() => {
+                                        const href = String(s.url || "");
+                                        const done = prefetchRouteAsync(href).catch(() => {});
+                                        const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                                        Promise.race([done, cap]).then(() => {
+                                          try { sessionStorage.removeItem("nav-search-query"); } catch {}
+                                          setSearchOpen(false);
+                                          setLocation(href);
+                                        });
+                                      }}
+                                      title={String(s.title || "")}
+                                      style={{ color: "#E0E0E0" }}
+                                    >
+                                      <div className="text-left">
+                                        <div className="text-sm">{highlight(String(s.title || ""), searchValue)}</div>
+                                        <div className="text-xs truncate mt-0.5" style={{ color: "#AFAFAF" }}>{String(s.excerpt || "")}</div>
+                                      </div>
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
-                      )
-                    )}
+                      ) : (
+                        noMatches && (
+                          <div className="text-sm" style={{ color: "#AFAFAF" }} aria-live="polite">
+                            No stories found
+                          </div>
+                        )
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 
               </div>
