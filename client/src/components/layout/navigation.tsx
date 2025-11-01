@@ -85,14 +85,11 @@ export default function Navigation() {
   // Focus management: programmatic focus for accessibility (no autoFocus prop)
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
-    if (searchOpen) {
-      try {
-        const raf = requestAnimationFrame(() => {
-          searchInputRef.current?.focus();
-        });
-        return () => cancelAnimationFrame(raf);
-      } catch {}
-    }
+    if (!searchOpen) return;
+    const raf = requestAnimationFrame(() => {
+      searchInputRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(raf);
   }, [searchOpen]);
 
   // Positioning: compute left offset so the search bar covers nav and right actions, but not the sidebar button
