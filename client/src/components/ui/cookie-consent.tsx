@@ -85,7 +85,7 @@ export function CookieConsent() {
         duration: 0.25,
         ease: [0.4, 0, 0.2, 1]
       }}
-      className="fixed inset-0 z-[1300] bg-black/60 backdrop-blur-sm pointer-events-auto flex items-center justify-center p-4"
+      className="fixed inset-0 z-[1300] bg-black/60 backdrop-blur-sm pointer-events-auto flex items-center justify-center p-4 w-screen min-h-[100svh]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="cookie-consent-title"
