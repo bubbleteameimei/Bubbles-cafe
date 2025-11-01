@@ -305,14 +305,6 @@ export default function Navigation() {
       } finally {
         if (active) setLoadingSuggestions(false);
       }
-    }, 25);ommunity.length === 0 && reader.length === 0);
-      } catch {
-        if (!active) return;
-        setSuggestions({ community: [], reader: [] });
-        setNoMatches(true);
-      } finally {
-        if (active) setLoadingSuggestions(false);
-      }
     }, 25);
     return () => {
       active = false;
@@ -611,17 +603,17 @@ export default function Navigation() {
               className="absolute left-0 right-0 top-full mt-2 z-[120]"
             >
               {/* Spacious search bar under the header, centered, with teardrop anchor */}
-             <<div ref={panelRef} className="relative mx-auto" style={{ width: 'min(calc(100vw - 48px), 600px)' }}>
+              <div ref={panelRef} className="relative mx-auto" style={{ width: 'min(calc(100vw - 48px), 600px)' }}>
                 
 
                 {/* Search bar */}
-               <<div
+               <div
                   className="rounded-[10px]"
                   style={{
-                    background: "#2b2b2b",
+                    background: "#3a3a3a",
                     color: "#E0E0E0",
-                    // Always show inner border in the same color as "Advanced Search" text
-                    boxShadow: "inset 0 0 0 2px #7B61FF"
+                    boxShadow: "inset 0 0 0 2px #7B61FF",
+                    overflow: "hidden"
                   }}
                 >
                   <div className="relative h-9 w-full">
