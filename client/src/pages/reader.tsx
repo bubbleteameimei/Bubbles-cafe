@@ -217,8 +217,28 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const skipCountRef = useRef(0);
   const lastNavigationTimeRef = useRef(Date.now());
 
-  
-  
+  // Ensure horror modal behaves as a true overlay: lock scroll and mark overlay-active for CSS
+  useEffect(() => {
+    try {
+      if (showHorrorMessage) {
+        document.body.classList.add('overlay-active', 'horror-active');
+        document.documentElement.classList.add('overlay-active', 'horror-active');
+        lockBodyScroll('horror-modal');
+      } else {
+        document.body.classList.remove('overlay-active', 'horror-active');
+        document.documentElement.classList.remove('overlay-active', 'horror-active');
+        unlockBodyScroll('horror-modal');
+      }
+    } catch {}
+    return () => {
+      try {
+        document.body.classList.remove('overlay-active', 'horror-active');
+        document.documentElement.classList.remove('overlay-active', 'horror-active');
+        unlockBodyScroll('horror-modal');
+      } catch {}
+    };
+  }, [showHorrorMessage]);
+
   // Create a ref for the content container to attach swipe events and copy protection
   const contentRef = useCopyProtection(true);
   // Removed positionRestoredRef as we no longer save reading position
