@@ -687,7 +687,7 @@ export default function Navigation() {
                 <div className="mt-1 rounded-[10px]" style={{ background: "#1a1a1a", color: "#E0E0E0", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)", overflow: "hidden" }}>
                   <div className="h-9 w-full">
                     <button
-                      className="w-full h-9 text-center transition-colors"
+                      className="inline-flex items-center justify-center w-full h-9 transition-colors"
                       style={{ color: "#6A54E6" }}
                       onClick={() => {
                         const href = "/search";
