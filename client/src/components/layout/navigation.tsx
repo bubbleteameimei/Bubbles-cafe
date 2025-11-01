@@ -361,6 +361,10 @@ export default function Navigation() {
     prefetchAuthPages();
   }, []);
 
+  // Reader route progress state (for in-header progress bar)
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const isReaderRoute = typeof location === "string" && location.includes("/reader");
+
   // Track page scroll to drive the in-header progress bar on reader routes
   useEffect(() => {
     if (!isReaderRoute) return;
