@@ -153,6 +153,6 @@
 #root {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 100svh; /* Dynamic viewport height to avoid cut-off on mobile */
   isolation: isolate; /* Create stacking context */
 }

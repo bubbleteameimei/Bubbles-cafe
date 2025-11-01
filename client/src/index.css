@@ -490,6 +490,18 @@ body.overlay-active .back-to-top-fixed {
   display: none !important;
 }
 
+/* Overlay-active: lock root scrolling and disable overscroll/touch to prevent header misplacement and inertial scroll */
+html.overlay-active,
+body.overlay-active {
+  overflow: hidden !important;
+  overflow-y: hidden !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: none !important;
+  overscroll-behavior-y: none !important;
+  touch-action: none !important;
+  height: 100% !important;
+}
+
 /* Non-homepages: remove forced full-height that can create a visible bottom band */
 /* Non-homepages: remove forced full-height that can create a visible bottom band */
 body:not(:has(.home-page)) .min-h-screen {
