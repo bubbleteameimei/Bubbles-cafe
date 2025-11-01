@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
-import { Menu, Search, Moon, Sun, User, X, Loader2 } from "lucide-react";
+import { Menu, Search, Moon, Sun, User, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/components/theme-provider";
@@ -690,17 +690,16 @@ export default function Navigation() {
                     {searchValue.trim().length > 0 && (
                       <button
                         aria-label="Clear search"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center h-6 w-6 rounded-full transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#AFAFAF] hover:text-[#E0E0E0] transition-colors"
                         onClick={() => {
                           setSearchValue("");
                           setSuggestions({ community: [], reader: [] });
                           setNoMatches(false);
                           setLoadingSuggestions(false);
                         }}
-                        style={{ color: "#E0E0E0", background: "rgba(255,255,255,0.08)" }}
                         title="Clear"
                       >
-                        <X className="h-4 w-4" />
+                        ×
                       </button>
                     )}
                   </div>
