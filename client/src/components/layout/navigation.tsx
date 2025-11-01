@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,19 @@ export default function Navigation() {
     community: [],
     reader: []
   });
+
+  // Focus management: programmatic focus for accessibility (no autoFocus prop)
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (searchOpen) {
+      try {
+        const raf = requestAnimationFrame(() => {
+          searchInputRef.current?.focus();
+        });
+        return () => cancelAnimationFrame(raf);
+      } catch {}
+    }
+  }, [searchOpen]);
 
   // Persist nav search input across open/close and no-match states
   useEffect(() => {
@@ -304,11 +317,11 @@ export default function Navigation() {
                 <div className="relative">
                   <Search className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input
+                    ref={searchInputRef}
                     placeholder="Stories for stories"
                     value={searchValue}
                     onChange={(e) => setSearchValue(e.target.value)}
                     className="pl-8 pr-9 h-9 text-sm bg-background/40 supports-[backdrop-filter]:bg-background/20 border-border/40 w-full"
-                    autoFocus
                   />
                   <button
                     aria-label="Close search"
