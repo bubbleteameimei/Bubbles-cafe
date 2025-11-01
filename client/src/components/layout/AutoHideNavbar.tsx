@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Navigation from './navigation';
+import { useLocation } from 'wouter';
 
 interface AutoHideNavbarProps {
 	// threshold?: number;
@@ -34,21 +35,12 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 		return () => window.removeEventListener('scroll', handleScroll as any);
 	}, []);
 
+	const [location] = useLocation();
+
 	useEffect(() => {
-		// Update current path when component mounts
-		setCurrentPath(window.location.pathname);
-
-		// Listen for pathname changes
-		const handlePathnameChange = () => {
-			setCurrentPath(window.location.pathname);
-		};
-
-		window.addEventListener('popstate', handlePathnameChange);
-		
-		return () => {
-			window.removeEventListener('popstate', handlePathnameChange);
-		};
-	}, []);
+		// Update current path whenever the router location changes
+		setCurrentPath(location);
+	}, [location]);
 
 	// Check if current path is in the hideOnPaths array
 	const shouldHideOnCurrentPath = hideOnPaths.some(path => 

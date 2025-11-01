@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
 import { Menu, Search, Moon, Sun, User, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { DropdownMenu } from "@/components/ui/dropdown-menu";
+
 import { useTheme } from "@/components/theme-provider";
 import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/contexts/notification-context";
@@ -498,12 +498,11 @@ export default function Navigation() {
                   className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
                   aria-label="Open menu"
                   onClick={() => setIsOpen((v) => !v)}
-                  noOutline
                 >
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-[300px] max-w-[85vw] h-full bg-transparent backdrop-blur-md border-r border-border/50 shadow-2xl">
+              <SheetContent side="left" data-sidebar="sidebar" data-mobile="true" className="p-0 w-[300px] max-w-[85vw] h-full bg-transparent backdrop-blur-md border-r border-border/50 shadow-2xl">
                 <div className="border-b border-border/30" />
                 <SidebarNavigation onNavigate={() => setIsOpen(false)} />
               </SheetContent>
@@ -543,8 +542,8 @@ export default function Navigation() {
               size="icon"
               className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
               aria-label="Search"
-              noOutline
               onClick={() => setSearchOpen((v) => !v)}
+         _code) => !v)}
             >
               <Search className="h-5 w-5" />
             </Button>
@@ -553,7 +552,6 @@ export default function Navigation() {
 
             <NotificationIcon
               className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
-              noOutline
             />
 
             <Button
@@ -562,7 +560,6 @@ export default function Navigation() {
               onClick={smoothThemeToggle}
               className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
               aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              noOutline
             >
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
@@ -585,7 +582,7 @@ export default function Navigation() {
                 }}
                 className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
                 aria-label="Sign in"
-                noOutline
+           _codenoOutline
               >
                 <User className="h-5 w-5" />
               </Button>
@@ -594,7 +591,7 @@ export default function Navigation() {
                 variant="ghost"
                 size="icon"
                 className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
-                noOutline
+           _codenoOutline
               >
                 <User className="h-5 w-5" />
               </Button>
@@ -610,7 +607,7 @@ export default function Navigation() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -4, scale: 0.98 }}
               transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="absolute left-0 right-0 top-full mt-2 z-50"
+              className="absolute left-0 right-0 top-full mt-2 z-[120]"
             >
               {/* Spacious search bar under the header, centered, with teardrop anchor */}
               <div ref={panelRef} className="relative mx-auto" style={{ width: 'min(calc(100vw - 48px), 600px)' }}>
