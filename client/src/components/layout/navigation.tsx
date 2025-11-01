@@ -172,7 +172,7 @@ export default function Navigation() {
   useEffect(() => {
     let active = true;
     const q = searchValue.trim();
-    if (q.length < 2) {
+    if (q.length &lt; 1) {
       setSuggestions({ community: [], reader: [] });
       setNoMatches(false);
       setLoadingSuggestions(false);
@@ -237,7 +237,7 @@ export default function Navigation() {
       } finally {
         if (active) setLoadingSuggestions(false);
       }
-    }, 250);
+    }, 120);
     return () => {
       active = false;
       clearTimeout(t);
@@ -520,8 +520,11 @@ export default function Navigation() {
                 </span>
 
                 {/* Search bar */}
-                <div className="rounded-2xl bg-background text-white shadow-xl border border-border">
-                  <div className="relative h-14">
+                <div
+                  className="rounded-2xl bg-background text-white shadow-xl border border-border"
+                  style={{ boxShadow: "inset 0 0 0 2px hsl(var(--primary))" }}
+                >
+                  <div className="relative h-12">
                     <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-white/70" />
                     <Input
                       ref={searchInputRef}
@@ -567,7 +570,7 @@ export default function Navigation() {
                           setSearchOpen(false);
                         }
                       }}
-                      className="pl-12 pr-20 h-14 text-lg bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none"
+                      className="pl-12 pr-20 h-12 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none"
                       role="combobox"
                       aria-expanded={true}
                       aria-controls="nav-suggestions-list"
@@ -592,7 +595,7 @@ export default function Navigation() {
                 </div>
 
                 {/* Suggestions panel */}
-                <div className="mt-1.5 rounded-2xl bg-background border border-border shadow-lg overflow-hidden">
+                <div className="mt-1 rounded-2xl bg-background border border-border shadow-lg overflow-hidden">
                   <div className="p-3" id="nav-suggestions-list" role="listbox" aria-label="Search suggestions">
                     {loadingSuggestions ? null : (
                       <>
@@ -722,9 +725,9 @@ export default function Navigation() {
                 </div>
 
                 {/* Advanced bar (same dimensions, tiny gap) */}
-                <div className="mt-1.5 rounded-2xl bg-background border border-border shadow-lg overflow-hidden">
+                <div className="mt-1 rounded-2xl bg-background border border-border shadow-lg overflow-hidden">
                   <button
-                    className="w-full h-14 text-center text-indigo-400 hover:text-indigo-300 transition-colors text-base"
+                    className="w-full h-12 text-center text-indigo-400 hover:text-indigo-300 transition-colors text-base"
                     onClick={() => {
                       const href = "/search";
                       const done = prefetchRouteAsync(href).catch(() => {});
