@@ -680,9 +680,10 @@ export default function Navigation() {
                       <Loader2 className="h-4 w-4 absolute right-12 top-1/2 -translate-y-1/2 animate-spin opacity-80" style={{ color: "#7B61FF" }} />
                     )}
                     {searchValue.trim().length > 0 && (
-                      <button
+                     <<button
                         aria-label="Clear search"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-8 h-8 text-[#AFAFAF] hover:text-[#E0E0E0] transition-colors select-none"
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-8 h-8 text-[#AFAFAF] hover:text-[#E0E0E0] transition-colors select-none"
                         onClick={() => {
                           setSearchValue("");
                           setSuggestions({ community: [], reader: [] });
@@ -690,8 +691,7 @@ export default function Navigation() {
                           setLoadingSuggestions(false);
                         }}
                         title="Clear"
-                        style={{ zIndex: 2 }}
-                      >
+                              >
                         <span className="text-[24px] leading-none">×</span>
                       </button>
                     )}
@@ -699,7 +699,7 @@ export default function Navigation() {
                 </div>
 
                 {/* Advanced Search bar - same dimensions, tiny gap */}
-                <div className="mt-1 rounded-[10px]" style={{ background: "#3a3a3a", color: "#E0E0E0", boxShadow: "inset 0 0 0 2px #7B61FF" }}>
+                <div className="mt-1 rounded-[10px]" style={{ background: "#242424", color: "#E0E0E0", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" }}>
                   <button
                     className="w-full h-9 text-center transition-colors"
                     style={{ color: "#7B61FF" }}
