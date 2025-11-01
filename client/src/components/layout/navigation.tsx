@@ -514,17 +514,14 @@ export default function Navigation() {
             >
               {/* Spacious search bar under the header, centered, with teardrop anchor */}
               <div ref={panelRef} className="relative mx-auto" style={{ width: 'min(calc(100vw - 24px), 800px)' }}>
-                {/* Teardrop/diamond pointer anchored to the toggle button */}
-                <span className="pointer-events-none absolute -top-2" style={{ left: `${arrowLeft}px` }}>
-                  <span className="block w-3.5 h-3.5 bg-primary rotate-45 rounded-[6px]" />
-                </span>
+                
 
                 {/* Search bar */}
                 <div
-                  className="rounded-2xl bg-background text-white shadow-xl border border-border"
+                  className="rounded-2xl bg-background text-white shadow-xl"
                   style={{ boxShadow: "inset 0 0 0 2px hsl(var(--primary))" }}
                 >
-                  <div className="relative h-12">
+                  <div className="relative h-10">
                     <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-white/70" />
                     <Input
                       ref={searchInputRef}
@@ -570,7 +567,7 @@ export default function Navigation() {
                           setSearchOpen(false);
                         }
                       }}
-                      className="pl-12 pr-20 h-12 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none"
+                      className="pl-12 pr-20 h-10 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none"
                       role="combobox"
                       aria-expanded={true}
                       aria-controls="nav-suggestions-list"
@@ -597,7 +594,15 @@ export default function Navigation() {
                 {/* Suggestions panel */}
                 <div className="mt-1 rounded-2xl bg-background border border-border shadow-lg overflow-hidden">
                   <div className="p-3" id="nav-suggestions-list" role="listbox" aria-label="Search suggestions">
-                    {loadingSuggestions ? null : (
+                    {loadingSuggestions ? (
+                      <ul className="space-y-2">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <li key={i}>
+                            <div className="h-4 rounded bg-white/10 animate-pulse" />
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
                       <>
                         {(suggestions.community.length > 0 || suggestions.reader.length > 0) ? (
                           <div className="space-y-4">
@@ -725,9 +730,9 @@ export default function Navigation() {
                 </div>
 
                 {/* Advanced bar (same dimensions, tiny gap) */}
-                <div className="mt-1 rounded-2xl bg-background border border-border shadow-lg overflow-hidden">
+                <div className="mt-0.5 rounded-2xl bg-background text-white shadow-xl" style={{ boxShadow: "inset 0 0 0 2px hsl(var(--primary))" }}>
                   <button
-                    className="w-full h-12 text-center text-indigo-400 hover:text-indigo-300 transition-colors text-base"
+                    className="w-full h-10 text-center text-indigo-400 hover:text-indigo-300 transition-colors text-base"
                     onClick={() => {
                       const href = "/search";
                       const done = prefetchRouteAsync(href).catch(() => {});
