@@ -596,7 +596,7 @@ export default function Navigation() {
                           setSearchOpen(false);
                         }
                       }}
-                      className="pl-12 pr-20 h-9 text-base bg-transparent border-none focus-visible:ringg-0 focus-visible:outline-none focus:ring-0 focus:outline-none"
+                      className="pl-12 pr-20 h-9 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none"
                       role="combobox"
                       aria-expanded={true}
                       aria-controls="nav-suggestions-list"
@@ -761,25 +761,7 @@ export default function Navigation() {
                   </div>
                 </div>
 
-                {/* Advanced bar (same dimensions, tiny gap) */}
-                <div className="mt-1 rounded-2xl bg-background border border-border/50 overflow-hidden">
-                  <button
-                    className="w-full h-10 text-center text-indigo-400 hover:text-indigo-300 transition-colors text-base"
-                    onClick={() => {
-                      const href = "/search";
-                      const done = prefetchRouteAsync(href).catch(() => {});
-                      const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
-                      Promise.race([done, cap]).then(() => {
-                        setSearchOpen(false);
-                        const q = encodeURIComponent(searchValue.trim());
-                        setLocation(q ? `/search?q=${q}` : "/search");
-                      });
-                    }}
-                    title="Open advanced search"
-                  >
-                    Advanced Search
-                  </button>
-                </div>
+                
               </div>
             </motion.div>
           )}
