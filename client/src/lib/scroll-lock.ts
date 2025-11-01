@@ -144,5 +144,3 @@ export function unlockBodyScroll(_source: string = 'default'): void {
     }
   }
 }
-  }
-}
