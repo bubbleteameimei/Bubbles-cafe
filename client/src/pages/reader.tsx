@@ -40,6 +40,7 @@ import { sanitizeHtml } from "@/lib/sanitize";
 import { trackWordPressRead } from "@/lib/wp-reads";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
 import { trackInteraction } from "@/lib/metrics";
+import { lockBodyScroll, unlockBodyScroll } from "@/lib/scroll-lock";
 
 
 import {
@@ -370,8 +371,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   });
 
-  const { data: postsData, isLoading, error } = useQuery({
-    queryKey: ["wordpress", "reader", routeSlug ?? "", isCommunityContent ? "community" : "regular"],
+  const { data: postsData, isLoading, error, isFetching } = useQuery({
+    // Use a stable key across slug changes to avoid unnecessary refetch and flicker
+    queryKey: ["wordpress", "reader", isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
       if (import.meta.env?.DEV) {
         console.log('[Reader] Fetching WordPress posts list...', { routeSlug });
@@ -387,9 +389,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         throw error;
       }
     },
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true
+    // Keep previous data visible during background refetch to avoid flicker
+    keepPreviousData: true,
+    // Cache reads for a while to keep navigation smooth without blank frames
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false
   });
 
   
@@ -999,22 +1005,25 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       {/* Horror message modal */}
       {showHorrorMessage && (
         <motion.div
+          onClick={() => setShowHorrorMessage(false)}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md"
-          // Removed onClick handler to prevent closing by clicking outside
+          transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+          className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/80 backdrop-blur-md w-screen min-h-[100svh]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="horror-modal-title"
         >
           <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ 
-              type: "spring", 
-              stiffness: 300, 
-              damping: 30 
-            }}
+            onClick={(e) => e.stopPropagation()}
+            initial={{ scale: 0.98, opacity: 0, y: 4 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.98, opacity: 0, y: 4 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
             className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-full text-center border border-[#ff0000]/80"
           >
+            <h2 id="horror-modal-title" className="sr-only">Notice</h2>
             <div className="absolute inset-0 rounded-lg bg-[#ff0000]/10 animate-pulse" />
             <div className="relative z-10">
               <div className="mb-6">
@@ -1024,7 +1033,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   intensityFactor={8}
                 />
               </div>
-              {/* The button is wrapped in a div with no animations to keep it stable */}
               <div className="mt-4">
                 <Button
                   variant="outline"
@@ -1039,14 +1047,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         </motion.div>
       )}
       
-      {/* Overlay to prevent interaction with the page when horror message is shown */}
-      {showHorrorMessage && (
-        <div 
-          className="fixed inset-0 z-[999]" 
-          style={{ pointerEvents: 'all' }}
-          aria-hidden="true"
-        />
-      )}
+      
       
       
       
@@ -1709,7 +1710,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   tabIndex={0}
                   aria-label="Toggle user interface visibility"
                   aria-pressed={isUIHidden}
-                  style={{ fontSize: `${fontSize}px` }}
                 />
               </div>
             </SwipeNavigation>

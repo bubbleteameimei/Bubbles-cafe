@@ -19,11 +19,13 @@
   color: hsl(var(--foreground));
   max-width: 100%; /* Allow full width */
   margin: 0 auto;
-  font-size: var(--base-font-size, 16px); /* Use the base font size variable with fallback */
+  font-size: var(--reader-font-size, 16px); /* Align with Reader variable */
   width: 100%; /* Ensure full width */
   box-sizing: border-box; /* Include padding in width calculation */
   overflow-wrap: break-word; /* Prevent text overflow by breaking words */
   word-wrap: break-word; /* Fallback for older browsers */
+  transition: font-size 0.2s ease-out; /* Smooth font-size transitions */
+  will-change: font-size;
 }
 
 .story-content p {
@@ -34,8 +36,8 @@
   hyphens: auto;
   font-kerning: normal; /* Improved kerning for better character spacing */
   font-feature-settings: "kern", "liga", "clig", "calt"; /* Typography enhancements */
-  font-size: var(--base-font-size, 16px); /* Use the base font size variable with fallback */
-  transition: font-size 0.2s ease; /* Smooth transition when font size changes */
+  font-size: inherit; /* Inherit reader font size from container */
+  transition: inherit; /* Avoid per-element transitions to reduce jank */
 }
 
 .story-content p + p {
@@ -265,11 +267,12 @@
   max-width: 65ch;
   margin-left: auto;
   margin-right: auto;
-  font-size: 1.125rem;
+  font-size: var(--reader-font-size, 1.125rem);
   line-height: 1.8;
   letter-spacing: 0.01em;
   overflow-x: hidden;
-  transition: font-size 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth font size transition */
+  transition: font-size 0.2s ease-out; /* Smooth font size transition */
+  will-change: font-size;
 }
 
 /* Responsive adjustments - optimized for different devices */
@@ -472,5 +475,4 @@
 /* Prevent font flash during changes */
 .story-content * {
   font-family: inherit;
-  transition: font-size 0.15s ease-in-out;
 }
