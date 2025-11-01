@@ -172,7 +172,7 @@ export default function Navigation() {
   useEffect(() => {
     let active = true;
     const q = searchValue.trim();
-    if (q.length &lt; 1) {
+    if (q.length < 1) {
       setSuggestions({ community: [], reader: [] });
       setNoMatches(false);
       setLoadingSuggestions(false);
