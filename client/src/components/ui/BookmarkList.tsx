@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { format } from 'date-fns';
 import { Bookmark, Clock, Tag, X, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,6 +41,7 @@ interface BookmarkListProps {
 
 export function BookmarkList({ className, limit, showFilter = true }: BookmarkListProps) {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [filterTag, setFilterTag] = useState<string>('');
@@ -281,9 +282,9 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
           <p className="text-sm text-muted-foreground mb-4">
             Create a free account to bookmark stories and track your reading progress.
           </p>
-          <Link href="/auth">
-            <Button variant="default" size="sm">Sign in to get started</Button>
-          </Link>
+          <Button variant="default" size="sm" onClick={() => setLocation('/auth')}>
+            Sign in to get started
+          </Button>
         </div>
         
         {/* Show loading state for either anonymous bookmarks or recommended stories */}
@@ -365,12 +366,15 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
                   </CardContent>
                 
                   <CardFooter>
-                    <Link href={`/reader/${bookmark.post.slug}`}>
-                      <Button variant="outline" size="sm" className="w-full">
-                        Continue Reading
-                        <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
-                    </Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setLocation(`/reader/${bookmark.post.slug}`)}
+                    >
+                      Continue Reading
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
                   </CardFooter>
                 </Card>
               ))}
@@ -404,12 +408,15 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
                   </CardContent>
                   
                   <CardFooter>
-                    <Link href={`/reader/${story.slug}`}>
-                      <Button variant="outline" size="sm" className="w-full">
-                        Read Story
-                        <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
-                    </Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setLocation(`/reader/${story.slug}`)}
+                    >
+                      Read Story
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
                   </CardFooter>
                 </Card>
               ))}
@@ -568,21 +575,24 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
               </CardContent>
               
               <CardFooter>
-                <Link href={`/reader/${bookmark.post.slug}`}>
-                  <Button variant="outline" size="sm" className="w-full">
-                    Continue Reading
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </Link>
+                <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => setLocation(`/reader/${bookmark.post.slug}`)}
+              >
+                Continue Reading
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
               </CardFooter>
             </Card>
           ))}
           
           {limit && filteredBookmarks.length > limit && (
             <div className="text-center pt-2">
-              <Link href="/bookmarks">
-                <Button variant="link">View all bookmarks</Button>
-              </Link>
+              <Button variant="link" onClick={() => setLocation('/bookmarks')}>
+                View all bookmarks
+              </Button>
             </div>
           )}
         </div>

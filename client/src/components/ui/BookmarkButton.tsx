@@ -5,7 +5,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
 import { Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import {
   Dialog,
   DialogContent,
@@ -47,6 +47,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [open, setOpen] = useState(false);
   const [notes, setNotes] = useState('');
   const [tagsInput, setTagsInput] = useState('');
@@ -344,19 +345,20 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
             <Button type="submit" onClick={handleAddBookmark} disabled={createMutation.isPending}>
               Add Bookmark with Details
             </Button>
-            <Link href="/bookmarks">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => {
-                    // Close the dialog
-                    setOpen(false);
-                  }}
-                  data-testid="bookmark-view-all"
-                >
-                  View All Bookmarks
-                </Button>
-              </Link>
+            <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  // Close the dialog
+                  setOpen(false);
+                  // Navigate programmatically to avoid nested interactive elements
+                  const [, setLocation] = useLocation();
+                  setLocation('/bookmarks');
+                }}
+                data-testid="bookmark-view-all"
+              >
+                View All Bookmarks
+              </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -477,18 +479,17 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
               <Button type="submit" onClick={handleAddBookmark} disabled={createMutation.isPending} data-testid={`bookmark-add-details-default-${postId}`}>
                 Add Bookmark with Details
               </Button>
-              <Link href="/bookmarks">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => {
-                    // Close the dialog
-                    setOpen(false);
-                  }}
-                >
-                  View All Bookmarks
-                </Button>
-              </Link>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  // Close the dialog
+                  setOpen(false);
+                  setLocation('/bookmarks');
+                }}
+              >
+                View All Bookmarks
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

@@ -84,7 +84,6 @@ export default [
 				specialLink: ['hrefLeft', 'hrefRight'],
 				aspects: ['invalidHref', 'preferButton']
 			}],
-			'jsx-a11y/no-nested-interactive': 'error',
 			'jsx-a11y/interactive-supports-focus': 'error',
 			'jsx-a11y/click-events-have-key-events': 'error',
 			'jsx-a11y/no-static-element-interactions': 'error',
@@ -126,7 +125,6 @@ export default [
 				specialLink: ['hrefLeft', 'hrefRight'],
 				aspects: ['invalidHref', 'preferButton']
 			}],
-			'jsx-a11y/no-nested-interactive': 'error',
 			'jsx-a11y/interactive-supports-focus': 'error',
 			'jsx-a11y/click-events-have-key-events': 'error',
 			'jsx-a11y/no-static-element-interactions': 'error',
