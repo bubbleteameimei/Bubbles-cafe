@@ -352,7 +352,6 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
                   // Close the dialog
                   setOpen(false);
                   // Navigate programmatically to avoid nested interactive elements
-                  const [, setLocation] = useLocation();
                   setLocation('/bookmarks');
                 }}
                 data-testid="bookmark-view-all"
