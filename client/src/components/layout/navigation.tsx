@@ -172,7 +172,7 @@ export default function Navigation() {
   useEffect(() => {
     let active = true;
     const q = searchValue.trim();
-    if (q.length < 2) {
+    if (q.lengt << 2) {
       setSuggestions({ community: [], reader: [] });
       setNoMatches(false);
       setLoadingSuggestions(false);
@@ -239,6 +239,7 @@ export default function Navigation() {
     return () => {
       active = false;
       clearTimeout(t);
+      controller.abort();
     };
   }, [searchValue]);
 
@@ -446,247 +447,7 @@ export default function Navigation() {
               <Search className="h-5 w-5" />
             </Button>
 
-            {/* Animated search panel */}
-            <AnimatePresence>
-              {searchOpen && (
-                <motion.div
-                initial={{ opacity: 0, y: -8, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -4, scale: 0.98 }}
-                transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
-                className="absolute left-0 right-0 top-full mt-3 z-50"
-              >
-                {/* Spacious search bar under the header, centered, with teardrop anchor */}
-                <div ref={panelRef} className="relative mx-auto w-[min(92vw,800px)]">
-                  {/* Teardrop/diamond pointer anchored to the toggle button */}
-                  <span className="pointer-events-none absolute -top-1.5" style={{ left: `${arrowLeft}px` }}>
-                    <span className="block w-3.5 h-3.5 bg-primary rotate-45 rounded-[6px]" />
-                  </span>
-                  <div className="rounded-2xl ring-2 ring-primary bg-background text-white shadow-xl">
-                    <div className="relative h-14">
-                      <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-white/70" />
-                      <Input
-                        ref={searchInputRef}
-                        placeholder="Search for novels..."
-                        value={searchValue}
-                        onChange={(e) => {
-                          setSearchValue(e.target.value);
-                          setActiveIdx(-1);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "ArrowDown") {
-                            e.preventDefault();
-                            setActiveIdx((prev) => Math.min(flatSuggestions.length - 1, prev + 1));
-                          } else if (e.key === "ArrowUp") {
-                            e.preventDefault();
-                            setActiveIdx((prev) => Math.max(0, prev - 1));
-                          } else if (e.key === "Enter") {
-                            e.preventDefault();
-                            const item = flatSuggestions[activeIdx];
-                            if (item) {
-                              const href = String(item.url || "");
-                              const done = prefetchRouteAsync(item.group === "reader" ? "/reader" : href).catch(() => {});
-                              const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
-                              Promise.race([done, cap]).then(() => {
-                                try {
-                                  sessionStorage.removeItem("nav-search-query");
-                                } catch {}
-                                setSearchOpen(false);
-                                setLocation(href);
-                              });
-                            } else {
-                              const q = searchValue.trim();
-                              const href = "/search";
-                              const done = prefetchRouteAsync(href).catch(() => {});
-                              const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
-                              Promise.race([done, cap]).then(() => {
-                                setSearchOpen(false);
-                                setLocation(q ? `/search?q=${encodeURIComponent(q)}` : "/search");
-                              });
-                            }
-                          } else if (e.key === "Escape") {
-                            e.preventDefault();
-                            setSearchOpen(false);
-                          }
-                        }}
-                        className="pl-12 pr-12 h-14 text-lg bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none"
-                        role="combobox"
-                        aria-expanded={true}
-                        aria-controls="nav-suggestions-list"
-                        aria-autocomplete="list"
-                        aria-activedescendant={
-                          activeIdx >= 0 && flatSuggestions[activeIdx]
-                            ? `nav-suggestion-${flatSuggestions[activeIdx].group}-${flatSuggestions[activeIdx].id}`
-                            : undefined
-                        }
-                      />
-                      <button
-                        aria-label="Close search"
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white"
-                        onClick={() => setSearchOpen(false)}
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </div>
-
-                    {/* Suggestions and Advanced Search panel */}
-                    <div className="mt-2 rounded-2xl bg-background border border-border shadow-lg overflow-hidden">
-                      <div className="p-3" id="nav-suggestions-list" role="listbox" aria-label="Search suggestions">
-                        {loadingSuggestions ? (
-                          <div className="py-3 px-3">
-                            <Loader2 className="h-4 w-4 animate-spin text-white/60" />
-                          </div>
-                        ) : (
-                          <>
-                            {suggestions.community.length > 0 || suggestions.reader.length > 0 ? (
-                              <div className="space-y-4">
-                                {suggestions.reader.length > 0 && (
-                                  <div>
-                                    <div className="text-xs text-white/60 mb-1">Reader</div>
-                                    <ul className="space-y-1">
-                                      {suggestions.reader.map((s: any) => (
-                                        <li key={s.id}>
-                                          <button
-                                            id={`nav-suggestion-reader-${s.id}`}
-                                            role="option"
-                                            aria-selected={
-                                              flatSuggestions[activeIdx]?.id === s.id &&
-                                              flatSuggestions[activeIdx]?.group === "reader"
-                                            }
-                                            className={`w-full text-left text-sm text-white hover:text-indigo-400 transition-colors ${
-                                              flatSuggestions[activeIdx]?.id === s.id &&
-                                              flatSuggestions[activeIdx]?.group === "reader"
-                                                ? "bg-white/10 rounded-md"
-                                                : ""
-                                            }`}
-                                            onMouseEnter={() => {
-                                              const idx = flatSuggestions.findIndex(
-                                                (i) => i.id === s.id && i.group === "reader"
-                                              );
-                                              if (idx >= 0) setActiveIdx(idx);
-                                            }}
-                                            onFocus={() => {
-                                              const idx = flatSuggestions.findIndex(
-                                                (i) => i.id === s.id && i.group === "reader"
-                                              );
-                                              if (idx >= 0) setActiveIdx(idx);
-                                            }}
-                                            onClick={() => {
-                                              const href = String(s.url || "");
-                                              const done = prefetchRouteAsync("/reader").catch(() => {});
-                                              const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
-                                              Promise.race([done, cap]).then(() => {
-                                                try {
-                                                  sessionStorage.removeItem("nav-search-query");
-                                                } catch {}
-                                                setSearchOpen(false);
-                                                setLocation(href);
-                                              });
-                                            }}
-                                            title={String(s.title || "")}
-                                          >
-                                            <div className="text-left">
-                                              <div className="text-sm">{highlight(String(s.title || ""), searchValue)}</div>
-                                              <div className="text-xs text-white/60 truncate mt-0.5">{String(s.excerpt || "")}</div>
-                                            </div>
-                                          </button>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-                                {suggestions.community.length > 0 && (
-                                  <div>
-                                    <div className="text-xs text-white/60 mb-1">Community</div>
-                                    <ul className="space-y-1">
-                                      {suggestions.community.map((s: any) => (
-                                        <li key={s.id}>
-                                          <button
-                                            id={`nav-suggestion-community-${s.id}`}
-                                            role="option"
-                                            aria-selected={
-                                              flatSuggestions[activeIdx]?.id === s.id &&
-                                              flatSuggestions[activeIdx]?.group === "community"
-                                            }
-                                            className={`w-full text-left text-sm text-white hover:text-indigo-400 transition-colors ${
-                                              flatSuggestions[activeIdx]?.id === s.id &&
-                                              flatSuggestions[activeIdx]?.group === "community"
-                                                ? "bg-white/10 rounded-md"
-                                                : ""
-                                            }`}
-                                            onMouseEnter={() => {
-                                              const idx = flatSuggestions.findIndex(
-                                                (i) => i.id === s.id && i.group === "community"
-                                              );
-                                              if (idx >= 0) setActiveIdx(idx);
-                                            }}
-                                            onFocus={() => {
-                                              const idx = flatSuggestions.findIndex(
-                                                (i) => i.id === s.id && i.group === "community"
-                                              );
-                                              if (idx >= 0) setActiveIdx(idx);
-                                            }}
-                                            onClick={() => {
-                                              const href = String(s.url || "");
-                                              const done = prefetchRouteAsync(href).catch(() => {});
-                                              const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
-                                              Promise.race([done, cap]).then(() => {
-                                                try {
-                                                  sessionStorage.removeItem("nav-search-query");
-                                                } catch {}
-                                                setSearchOpen(false);
-                                                setLocation(href);
-                                              });
-                                            }}
-                                            title={String(s.title || "")}
-                                          >
-                                            <div className="text-left">
-                                              <div className="text-sm">{highlight(String(s.title || ""), searchValue)}</div>
-                                              <div className="text-xs text-white/60 truncate mt-0.5">{String(s.excerpt || "")}</div>
-                                            </div>
-                                          </button>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              noMatches && (
-                                <div className="text-sm text-white/70" aria-live="polite">
-                                  No stories found
-                                </div>
-                              )
-                            )}
-                          </>
-                        )}
-                      </div>
-
-                      {/* Advanced search bar */}
-                      <div className="border-t border-white/10">
-                        <button
-                          className="w-full text-center py-3 text-indigo-400 hover:text-indigo-300 transition-colors text-base"
-                          onClick={() => {
-                            const href = "/search";
-                            const done = prefetchRouteAsync(href).catch(() => {});
-                            const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
-                            Promise.race([done, cap]).then(() => {
-                              setSearchOpen(false);
-                              const q = encodeURIComponent(searchValue.trim());
-                              setLocation(q ? `/search?q=${q}` : "/search");
-                            });
-                          }}
-                          title="Open advanced search"
-                        >
-                          Advanced Search
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            
 
             <NotificationIcon
               className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
@@ -738,6 +499,254 @@ export default function Navigation() {
             )}
           </div>
         </div>
+
+        {/* Animated search panel positioned relative to header */}
+        <AnimatePresence>
+          {searchOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -4, scale: 0.98 }}
+              transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="absolute left-0 right-0 top-full mt-2 z-50"
+            >
+              {/* Spacious search bar under the header, centered, with teardrop anchor */}
+              <div ref={panelRef} className="relative mx-auto" style={{ width: 'min(calc(100vw - 24px), 800px)' }}>
+                {/* Teardrop/diamond pointer anchored to the toggle button */}
+                <span className="pointer-events-none absolute -top-2" style={{ left: `${arrowLeft}px` }}>
+                  <span className="block w-3.5 h-3.5 bg-primary rotate-45 rounded-[6px]" />
+                </span>
+
+                {/* Search bar */}
+                <div className="rounded-2xl bg-background text-white shadow-xl border border-border">
+                  <div className="relative h-14">
+                    <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-white/70" />
+                    <Input
+                      ref={searchInputRef}
+                      placeholder="Search for novels..."
+                      value={searchValue}
+                      onChange={(e) => {
+                        setSearchValue(e.target.value);
+                        setActiveIdx(-1);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowDown") {
+                          e.preventDefault();
+                          setActiveIdx((prev) => Math.min(flatSuggestions.length - 1, prev + 1));
+                        } else if (e.key === "ArrowUp") {
+                          e.preventDefault();
+                          setActiveIdx((prev) => Math.max(0, prev - 1));
+                        } else if (e.key === "Enter") {
+                          e.preventDefault();
+                          const item = flatSuggestions[activeIdx];
+                          if (item) {
+                            const href = String(item.url || "");
+                            const done = prefetchRouteAsync(item.group === "reader" ? "/reader" : href).catch(() => {});
+                            const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                            Promise.race([done, cap]).then(() => {
+                              try {
+                                sessionStorage.removeItem("nav-search-query");
+                              } catch {}
+                              setSearchOpen(false);
+                              setLocation(href);
+                            });
+                          } else {
+                            const q = searchValue.trim();
+                            const href = "/search";
+                            const done = prefetchRouteAsync(href).catch(() => {});
+                            const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                            Promise.race([done, cap]).then(() => {
+                              setSearchOpen(false);
+                              setLocation(q ? `/search?q=${encodeURIComponent(q)}` : "/search");
+                            });
+                          }
+                        } else if (e.key === "Escape") {
+                          e.preventDefault();
+                          setSearchOpen(false);
+                        }
+                      }}
+                      className="pl-12 pr-20 h-14 text-lg bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none"
+                      role="combobox"
+                      aria-expanded={true}
+                      aria-controls="nav-suggestions-list"
+                      aria-autocomplete="list"
+                      aria-activedescendant={
+                        activeIdx >= 0 && flatSuggestions[activeIdx]
+                          ? `nav-suggestion-${flatSuggestions[activeIdx].group}-${flatSuggestions[activeIdx].id}`
+                          : undefined
+                      }
+                    />
+                    {loadingSuggestions && (
+                      <Loader2 className="h-4 w-4 absolute right-10 top-1/2 -translate-y-1/2 animate-spin text-white/60" />
+                    )}
+                    <button
+                      aria-label="Close search"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white"
+                      onClick={() => setSearchOpen(false)}
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Suggestions panel */}
+                <div className="mt-1.5 rounded-2xl bg-background border border-border shadow-lg overflow-hidden">
+                  <div className="p-3" id="nav-suggestions-list" role="listbox" aria-label="Search suggestions">
+                    {loadingSuggestions ? (
+                     ></iv>
+lassName="py-3 px-3">
+                        <Loader2 className="h-4 w-4 animate-spin text-white/60" />
+                      </div>
+                    ) : (
+                      <>
+                        {suggestions.community.length > 0 || suggestions.reader.length > 0 ? (
+                          <div className="space-y-4">
+                            {suggestions.reader.length > 0 && (
+                              <div>
+                                <div className="text-xs text-white/60 mb-1">Reader</div>
+                                <ul className="space-y-1">
+                                  {suggestions.reader.map((s: any) => (
+                                    <li key={s.id}>
+                                      <button
+                                        id={`nav-suggestion-reader-${s.id}`}
+                                        role="option"
+                                        aria-selected={
+                                          flatSuggestions[activeIdx]?.id === s.id &&
+                                          flatSuggestions[activeIdx]?.group === "reader"
+                                        }
+                                        className={`w-full text-left text-sm text-white hover:text-indigo-400 transition-colors ${
+                                          flatSuggestions[activeIdx]?.id === s.id &&
+                                          flatSuggestions[activeIdx]?.group === "reader"
+                                            ? "bg-white/10 rounded-md"
+                                            : ""
+                                        }`}
+                                        onMouseEnter={() => {
+                                          const idx = flatSuggestions.findIndex(
+                                            (i) => i.id === s.id && i.group === "reader"
+                                          );
+                                          if (idx >= 0) setActiveIdx(idx);
+                                        }}
+                                        onFocus={() => {
+                                          const idx = flatSuggestions.findIndex(
+                                            (i) => i.id === s.id && i.group === "reader"
+                                          );
+                                          if (idx >= 0) setActiveIdx(idx);
+                                        }}
+                                        onClick={() => {
+                                          const href = String(s.url || "");
+                                          const done = prefetchRouteAsync("/reader").catch(() => {});
+                                          const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                                          Promise.race([done, cap]).then(() => {
+                                            try {
+                                              sessionStorage.removeItem("nav-search-query");
+                                            } catch {}
+                                            setSearchOpen(false);
+                                            setLocation(href);
+                                          });
+                                        }}
+                                        title={String(s.title || "")}
+                                      >
+                                        <div className="text-left">
+                                          <div className="text-sm">{highlight(String(s.title || ""), searchValue)}</div>
+                                          <div className="text-xs text-white/60 truncate mt-0.5">{String(s.excerpt || "")}</div>
+                                        </div>
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {suggestions.community.length > 0 && (
+                              <div>
+                                <div className="text-xs text-white/60 mb-1">Community</div>
+                                <ul className="space-y-1">
+                                  {suggestions.community.map((s: any) => (
+                                    <li key={s.id}>
+                                      <button
+                                        id={`nav-suggestion-community-${s.id}`}
+                                        role="option"
+                                        aria-selected={
+                                          flatSuggestions[activeIdx]?.id === s.id &&
+                                          flatSuggestions[activeIdx]?.group === "community"
+                                        }
+                                        className={`w-full text-left text-sm text-white hover:text-indigo-400 transition-colors ${
+                                          flatSuggestions[activeIdx]?.id === s.id &&
+                                          flatSuggestions[activeIdx]?.group === "community"
+                                            ? "bg-white/10 rounded-md"
+                                            : ""
+                                        }`}
+                                        onMouseEnter={() => {
+                                          const idx = flatSuggestions.findIndex(
+                                            (i) => i.id === s.id && i.group === "community"
+                                          );
+                                          if (idx >= 0) setActiveIdx(idx);
+                                        }}
+                                        onFocus={() => {
+                                          const idx = flatSuggestions.findIndex(
+                                            (i) => i.id === s.id && i.group === "community"
+                                          );
+                                          if (idx >= 0) setActiveIdx(idx);
+                                        }}
+                                        onClick={() => {
+                                          const href = String(s.url || "");
+                                          const done = prefetchRouteAsync(href).catch(() => {});
+                                          const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                                          Promise.race([done, cap]).then(() => {
+                                            try {
+                                              sessionStorage.removeItem("nav-search-query");
+                                            } catch {}
+                                            setSearchOpen(false);
+                                            setLocation(href);
+                                          });
+                                        }}
+                                        title={String(s.title || "")}
+                                      >
+                                        <div className="text-left">
+                                          <div className="text-sm">{highlight(String(s.title || ""), searchValue)}</div>
+                                          <div className="text-xs text-white/60 truncate mt-0.5">{String(s.excerpt || "")}</div>
+                                        </div>
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          noMatches && (
+                            <div className="text-sm text-white/70" aria-live="polite">
+                              No stories found
+                            </div>
+                          )
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Advanced bar (same dimensions, tiny gap) */}
+                <div className="mt-1.5 rounded-2xl bg-background border border-border shadow-lg overflow-hidden">
+                  <button
+                    className="w-full h-14 text-center text-indigo-400 hover:text-indigo-300 transition-colors text-base"
+                    onClick={() => {
+                      const href = "/search";
+                      const done = prefetchRouteAsync(href).catch(() => {});
+                      const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                      Promise.race([done, cap]).then(() => {
+                        setSearchOpen(false);
+                        const q = encodeURIComponent(searchValue.trim());
+                        setLocation(q ? `/search?q=${q}` : "/search");
+                      });
+                    }}
+                    title="Open advanced search"
+                  >
+                    Advanced Search
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Full-bleed demarcation line (exactly like footer) */}
         <div
