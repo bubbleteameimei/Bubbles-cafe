@@ -666,7 +666,7 @@ export default function Navigation() {
                       }
                     />
                     {loadingSuggestions && (
-                     <<Loader2 className="h-4 w-4 absolute right-9 top-1/2 -translate-y-1/2 animate-spin opacity-80" style={{ color: "#7B61FF" }} />
+                      <Loader2 className="h-4 w-4 absolute right-12 top-1/2 -translate-y-1/2 animate-spin opacity-80" style={{ color: "#7B61FF" }} />
                     )}
                     {searchValue.trim().length > 0 && (
                       <button
