@@ -13,7 +13,7 @@ import { useNotifications } from "@/contexts/notification-context";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 
-function prefetchAuthPages() {
+function prefetchAuthPages(): void {
   try {
     const run = () => {
       // Warm the chunks for auth routes so Suspense doesn't show layout-changing fallbacks
@@ -64,8 +64,7 @@ export default function Navigation() {
   // Positioning: compute left offset so the search bar covers nav and right actions, but not the sidebar button
   const [searchLeft, setSearchLeft] = useState<number>(56);
   useEffect(() => {
-    const computeLeft = () => {
-      try {
+    const computeLeft = (): void =>      try {
         const el = document.querySelector('header .main-header button[aria-label="Open menu"]') as HTMLElement | null;
         if (el) {
           const rect = el.getBoundingClientRect();

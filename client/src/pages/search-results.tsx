@@ -8,6 +8,7 @@ import { apiJson } from "@/lib/api";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { fetchWordPressPosts, getExcerpt } from "@/lib/wordpress-api";
 
 
 interface SearchResult {
@@ -42,12 +43,12 @@ export default function SearchResultsPage() {
   const [recent, setRecent] = useState<string[]>([]);
   
 
-  // Perform search across all content
+  // Perform search across all content with WordPress fallback when local DB returns no results
   const performSearch = useCallback(async (query: string, pageNum = 1) => {
     if (!query.trim()) return;
-    
+
     setIsSearching(true);
-    
+
     try {
       const qs = new URLSearchParams();
       qs.set('q', query);
@@ -56,7 +57,9 @@ export default function SearchResultsPage() {
       qs.set('page', String(pageNum));
       if (from !== 'all') qs.set('from', from);
       if (category !== 'all') qs.set('category', category);
+
       const { results, meta } = await apiJson<any>('GET', `/api/search?${qs.toString()}`);
+
       const mapped: SearchResult[] = (results || []).map((r: any) => ({
         id: r.id,
         title: r.title,
@@ -66,25 +69,86 @@ export default function SearchResultsPage() {
         url: r.url,
         matches: (r.matches || []).map((m: any, idx: number) => ({ field: 'content', text: m.context || m.text || '', position: 0 }))
       }));
-      setSearchResults(mapped);
-      setPage(meta?.page || 1);
-      setPages(meta?.pages || 1);
+
+      let finalResults = mapped;
+      let finalPages = meta?.pages || 1;
+      let finalPage = meta?.page || pageNum;
+      let finalTotal = meta?.total ?? mapped.length;
+      let usedFallback = false;
+
+      // Fallback to WordPress when no local results
+      if (mapped.length === 0) {
+        try {
+          const wp = await fetchWordPressPosts({ perPage: 20, includeContent: false, search: query });
+          const wpPosts = Array.isArray((wp as any)?.posts) ? (wp as any).posts : [];
+          const wpMapped: SearchResult[] = wpPosts.map((p: any) => ({
+            id: p.id,
+            title: p?.title?.rendered || 'Untitled',
+            excerpt: getExcerpt(p?.excerpt?.rendered || ''),
+            content: '',
+            type: 'post',
+            url: `/reader/${p.slug || p.id}`,
+            matches: []
+          }));
+          finalResults = wpMapped;
+          finalPages = 1;
+          finalPage = 1;
+          finalTotal = wpMapped.length;
+          usedFallback = true;
+        } catch {
+          // swallow WP fallback errors to avoid breaking UX
+        }
+      }
+
+      setSearchResults(finalResults);
+      setPage(finalPage);
+      setPages(finalPages);
       setDidYouMean(meta?.didYouMean || null);
-      
+
       // Show toast with result count
       toast({
         title: `Search Results for "${query}"`,
-        description: meta?.total !== undefined ? `${meta.total} total results` : `Found ${mapped.length} ${mapped.length === 1 ? 'result' : 'results'}`,
+        description:
+          (finalTotal !== undefined
+            ? `${finalTotal} total results`
+            : `Found ${finalResults.length} ${finalResults.length === 1 ? 'result' : 'results'}`) +
+          (usedFallback && finalResults.length > 0 ? ' (via WordPress)' : ''),
         duration: 3000
       });
     } catch (error) {
       console.error('Search error:', error);
-      toast({
-        title: "Search Error",
-        description: "Failed to complete your search. Please try again.",
-        variant: "destructive",
-        duration: 3000
-      });
+      // Try WordPress fallback on error as well
+      try {
+        const wp = await fetchWordPressPosts({ perPage: 20, includeContent: false, search: query });
+        const wpPosts = Array.isArray((wp as any)?.posts) ? (wp as any).posts : [];
+        const wpMapped: SearchResult[] = wpPosts.map((p: any) => ({
+          id: p.id,
+          title: p?.title?.rendered || 'Untitled',
+          excerpt: getExcerpt(p?.excerpt?.rendered || ''),
+          content: '',
+          type: 'post',
+          url: `/reader/${p.slug || p.id}`,
+          matches: []
+        }));
+
+        setSearchResults(wpMapped);
+        setPage(1);
+        setPages(1);
+        setDidYouMean(null);
+
+        toast({
+          title: `Search Results for "${query}"`,
+          description: `Found ${wpMapped.length} ${wpMapped.length === 1 ? 'result' : 'results'} (via WordPress)`,
+          duration: 3000
+        });
+      } catch {
+        toast({
+          title: "Search Error",
+          description: "Failed to complete your search. Please try again.",
+          variant: "destructive",
+          duration: 3000
+        });
+      }
     } finally {
       setIsSearching(false);
     }
