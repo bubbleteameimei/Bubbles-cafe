@@ -600,9 +600,10 @@ export default function Navigation() {
                 <div
                   className="rounded-[10px]"
                   style={{
-                    background: "#242424",
+                    background: "#2b2b2b",
                     color: "#E0E0E0",
-                    boxShadow: isFocused ? "inset 0 0 0 2px #7B61FF" : "inset 0 0 0 1px rgba(255,255,255,0.06)"
+                    // Always show inner border in the same color as "Advanced Search" text
+                    boxShadow: "inset 0 0 0 2px #7B61FF"
                   }}
                 >
                   <div className="relative h-9">
@@ -653,7 +654,7 @@ export default function Navigation() {
                           setSearchOpen(false);
                         }
                       }}
-                      className="pl-12 pr-20 h-9 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none text-[#E0E0E0] placeholder-[#AFAFAF] caret-[#7B61FF]"
+                      className="pl-12 pr-24 h-9 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none text-[#E0E0E0] placeholder-[#AFAFAF] caret-[#7B61FF]"
                       role="combobox"
                       aria-expanded={true}
                       aria-controls="nav-suggestions-list"
@@ -665,12 +666,12 @@ export default function Navigation() {
                       }
                     />
                     {loadingSuggestions && (
-                      <Loader2 className="h-4 w-4 absolute right-8 top-1/2 -translate-y-1/2 animate-spin opacity-80" style={{ color: "#7B61FF" }} />
+                      <Loader2 className="h-4 w-4 absolute right-9 top-1/2 -translate-y-1/2 animate-spin opacity-80" style={{ color: "#7B61FF" }} />
                     )}
                     {searchValue.trim().length > 0 && (
                       <button
                         aria-label="Clear search"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-7 h-7 text-[#AFAFAF] hover:text-[#E0E0E0] transition-colors select-none"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-8 h-8 text-[#AFAFAF] hover:text-[#E0E0E0] transition-colors select-none"
                         onClick={() => {
                           setSearchValue("");
                           setSuggestions({ community: [], reader: [] });
@@ -680,7 +681,7 @@ export default function Navigation() {
                         title="Clear"
                         style={{ zIndex: 2 }}
                       >
-                        <span className="text-[20px] leading-none">×</span>
+                        <span className="text-[24px] leading-none">×</span>
                       </button>
                     )}
                   </div>
