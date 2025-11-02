@@ -818,48 +818,44 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Apply theme detection to current post
   const detectedThemes = detectThemes(currentPost.content?.rendered || currentPost.content || '');
 
-  // Horror easter egg function
-  const checkRapidNavigation = () => {
+  // Horror easter egg function: returns true if overlay was triggered (used to prevent immediate route changes)
+  const checkRapidNavigation = (): boolean => {
     const now = Date.now();
     const timeSinceLastNavigation = now - lastNavigationTimeRef.current;
-    
-    // Check if rapid navigation (less than 1.5 seconds between skips)
+    let overlayTriggered = false;
+
+    // Rapid navigation detection (less than 1.5 seconds between skips)
     if (timeSinceLastNavigation < 1500) {
       skipCountRef.current += 1;
-      
-      // After 3 rapid skips, show the horror Easter egg
+
+      // After 3 rapid skips, show the horror Easter egg overlay
       if (skipCountRef.current >= 3 && !showHorrorMessage) {
         if (import.meta.env?.DEV) {
           console.log('[Reader] Horror Easter egg triggered after rapid navigation');
         }
-        
-        // Highly threatening message for maximum creepiness with subtle psychological impact
         const message = "I SEE YOU SKIPPING!!!";
         setHorrorMessageText(message);
         setShowHorrorMessage(true);
-        
-        // Show toast with extremely creepy text using maximum intensity
-        // The CreepyTextGlitch component has been enhanced for a rapid, unnerving effect
         toast({
           title: "NOTICE",
           description: <CreepyTextGlitch text={message} intensityFactor={8} />,
           variant: "destructive",
           duration: 9000,
         });
-        
-        // Reset after showing - match the extended toast duration
         setTimeout(() => {
           setShowHorrorMessage(false);
           skipCountRef.current = 0;
-        }, 9000); // Extended to match the 9000ms toast duration
+        }, 9000);
+        overlayTriggered = true;
       }
     } else {
       // If navigation is slow, gradually reduce the skip count
       skipCountRef.current = Math.max(0, skipCountRef.current - 1);
     }
-    
+
     // Update last navigation time
     lastNavigationTimeRef.current = now;
+    return overlayTriggered;
   };
 
   // These navigation function declarations need to be hoisted to avoid errors with hooks
@@ -871,7 +867,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       do {
         randomIndex = Math.floor(Math.random() * posts.length);
       } while (randomIndex === currentIndex);
-      
+
+     
       checkRapidNavigation();
       setCurrentIndex(randomIndex);
       try {
@@ -889,7 +886,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     // Only execute logic if we have posts and we're not at the first one
     if (posts && posts.length > 1 && currentIndex > 0) {
       const newIndex = currentIndex - 1;
-      checkRapidNavigation();
+
+     checkRapidNavigation();
       setCurrentIndex(newIndex);
       try {
         const nextSlug = String(posts[newIndex]?.slug ?? posts[newIndex]?.id);
@@ -906,7 +904,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     // Only execute logic if we have posts and we're not at the last one
     if (posts && posts.length > 1 && currentIndex < posts.length - 1) {
       const newIndex = currentIndex + 1;
-      checkRapidNavigation();
+
+      const overlayTriggered = checkRapidNavigation();
+      if (overlayTriggered) {
+        // Don't navigate away; let the overlay display
+        return;
+      }
+
       setCurrentIndex(newIndex);
       try {
         const nextSlug = String(posts[newIndex]?.slug ?? posts[newIndex]?.id);
