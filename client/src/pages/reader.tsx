@@ -131,9 +131,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [fontDialogOpen, setFontDialogOpen] = useState(false);
   const [contentsDialogOpen, setContentsDialogOpen] = useState(false);
 
-  // Smooth TOC dialog open/close: lock scroll to prevent underlying jank);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
+  // Smooth TOC dialog open/close: lock scroll to prevent underlying jank and ensure consistent overlay behavior
+  useEffect(() => {
+    try {
+      if (contentsDialogOpen)
   // Inline admin theme editor state
   const [themeEditorOpen, setThemeEditorOpen] = useState(false);
   const [selectedThemeCat, setSelectedThemeCat] = useState<string>('');
@@ -413,7 +414,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     },
     // Keep previous data visible during background refetch to avoid flicker
     keepPreviousData: true,
-    // Provide placeholder data from cache immediately to avoid any null frame on remountme: 5 * 60 * 1000,
+    // Provide placeholder data from cache immediately to avoid any null frame on remounts
+    placeholderData: () =>
+      queryClient.getQueryData(["wordpress", "reader", isCommunityContent ? "community" : "regular"]) as any,
+    // Cache reads for a while to keep navigation smooth without blank frames
+    staleTime: 5 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false
@@ -761,8 +766,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Get current post
   const currentPost = posts[validCurrentIndex];
 
-  // Scroll to top once when the current post changes to avoid visiblery
-  const stripHtml = (s: string) => s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '';
+  // Scroll to top once when the current post changes to avoid visible pre-reset jank
+  useEffect(() => {
+    try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
   const titleText = stripHtml(currentPost.title?.rendered || currentPost.title || 'Story');
   const rawContent = currentPost.content?.rendered || currentPost.content || '';
   const descriptionText = getExcerpt(rawContent, 160);
@@ -888,11 +894,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+      // Removed auto scroll reset to avoid jank; reader will reset once after content changes
     }
   };
   
-  // Check if we're at first or last story
+  // Check if we're atirst or last story
   const isFirstStory = currentIndex === 0;
   const isLastStory = currentIndex === posts.length - 1;
 
