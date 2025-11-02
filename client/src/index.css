@@ -382,7 +382,7 @@ div[data-reader-page="true"] .container,
 
 /* Reader page specific styling */
 .reader-page {
-  margin-top: -8px !important; /* Pull content up closer to header */
+  margin-top: 0 !important; /* Avoid cutting controls under fixed header */
 }
 
 /* Full-bleed overrides for reader page: allow viewport-wide separators */
@@ -484,13 +484,14 @@ div.sidebar-menu-container {
   contain: layout paint style;
   will-change: transform;
 }
+ /* Hide BackToTop button when any overlay is active to avoid visual gaps above overlays */
+  body.overlay-active .back-to-top-fixed {
+    display: none !important;
+  }
 
-/* Hide BackToTop button when any overlay is active to avoid visual gaps above overlays */
-body.overlay-active .back-to-top-fixed {
-  display: none !important;
-}
-
-/* Overlay-active: lock root scrolling and disable overscroll/touch to prevent header misplacement and inertial scroll */
+  /* Global inactive state normalization for buttons and button-like elements */
+  button[disabled],
+  Overlay-active: lock root scrolling and disable overscroll/touch to prevent header misplacement and inertial scroll */
 html.overlay-active,
 body.overlay-active {
   overflow: hidden !important;

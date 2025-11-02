@@ -130,6 +130,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // State for dialog controls
   const [fontDialogOpen, setFontDialogOpen] = useState(false);
   const [contentsDialogOpen, setContentsDialogOpen] = useState(false);
+
+  // Smooth TOC dialog open/close: lock scroll to prevent underlying jank);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Inline admin theme editor state
@@ -1202,6 +1204,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       (selected.slug && p.slug === selected.slug) || p.id === selected.id
                     );
                     if (foundIndex >= 0) {
+                      // Count as a navigation event (enables horror modal trigger consistency)
+                      checkRapidNavigation();
                       setCurrentIndex(foundIndex);
                       // Keep URL in sync with selected story to fix TOC routing
                       setLocation(`/reader/${encodeURIComponent(String(posts[foundIndex].slug || posts[foundIndex].id))}`);
@@ -1224,8 +1228,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           style={{ width: '100%', position: 'relative', left: 0, transform: 'none' }}
         />
       
-        <article
+        <motion.article
             key={currentPost.id}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
             className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
           >
             {/* Navigation buttons above story content removed; now placed under time-to-read */}
@@ -1886,7 +1894,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             <div className={`mt-8 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
               <SimpleCommentSection postId={currentPost.id} />
             </div>
-        </article>
+        </motion.arti_codeclnewe</>
+e>
       </div>
       <Footer />
     </div>

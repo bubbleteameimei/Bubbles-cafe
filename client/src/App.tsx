@@ -540,7 +540,7 @@ const AppContent = () => {
               </div>
             ) : (
               <PageTransition>
-                  <div className="page-content">
+                  <div className="page-content" key={locationStr}>
                     <Switch>
                       {/* Main Pages */}
                       <Route path="/" component={HomePage} />
