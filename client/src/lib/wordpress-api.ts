@@ -27,7 +27,7 @@ const WP_BASES: string[] = [
 const SERVER_FALLBACK_API = '/api/wordpress/posts';
 
 // Cache configuration
-const CACHE_KEY_PREFIX = 'wp_cache_';
+const CACHE_KEY_PREFIX = 'wp_cache_v2_';
 const CACHE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 const LAST_ERROR_KEY = 'wp_last_error';
 
@@ -195,8 +195,27 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
     const cachedResult = cacheUtils.getFromCache(cacheKey);
 
     if (cachedResult) {
-      logger.info(`[WordPress] Using cached data for page ${page}`);
-      return cachedResult;
+      // Guard: if the caller requested full content, ensure cached posts have content.rendered
+      if (includeContent) {
+        try {
+          const posts = Array.isArray(cachedResult.posts) ? cachedResult.posts : [];
+          const hasMissingContent = posts.some((p: any) => {
+            const rendered = p?.content?.rendered;
+            return !rendered || typeof rendered !== 'string' || rendered.trim().length === 0 || rendered === 'Content unavailable';
+          });
+          if (hasMissingContent) {
+            logger.info('[WordPress] Cached result lacks full content; refetching');
+          } else {
+            logger.info(`[WordPress] Using cached data for page ${page}`);
+            return cachedResult;
+          }
+        } catch {
+          // If validation throws, fall through to network fetch
+        }
+      } else {
+        logger.info(`[WordPress] Using cached data for page ${page}`);
+        return cachedResult;
+      }
     }
   }
 
