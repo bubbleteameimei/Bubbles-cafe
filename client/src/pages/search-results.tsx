@@ -508,7 +508,7 @@ export default function SearchResultsPage() {
         {/* Search form */}
         <form onSubmit={handleSearchSubmit} className="mb-4">
           <div className="flex flex-col gap-3">
-            <div className="relative flex-1">
+            <div className="relative w-full">
               <Input
                 type="search"
                 placeholder="Search for keywords..."
@@ -554,16 +554,16 @@ export default function SearchResultsPage() {
               />
               <Button
                 type="submit"
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-3"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-3 bg-transparent shadow-none ring-0 border-0 text-foreground/80 hover:text-foreground"
                 disabled={isSearching || !searchQuery.trim()}
               >
                 {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Search'}
               </Button>
               {showSuggest && suggestions.length > 0 && (
                 <div
-                  className="absolute z-20 mt-1 w-full bg-background border border-border rounded-md shadow-sm overflow-hidden"
+                  className="absolute z-20 mt-0.5 w-full bg-background border border-border rounded-md shadow-sm overflow-hidden"
                   role="listbox"
                   id="advanced-search-suggestions"
                   aria-label="Suggestions"
@@ -585,7 +585,7 @@ export default function SearchResultsPage() {
               )}
             </div>
 
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex justify-end">
               <Button
                 type="button"
                 variant="outline"
@@ -601,55 +601,60 @@ export default function SearchResultsPage() {
               </Button>
             </div>
 
-            <AnimatePresence initial={false}>
-              {showFilters && (
-                <motion.div
-                  id="advanced-filter-panel"
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <div className="flex items-center gap-2 pt-2">
-                    <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All categories</SelectItem>
-                        <SelectItem value="gothic">Gothic</SelectItem>
-                        <SelectItem value="dark-academia">Dark Academia</SelectItem>
-                        <SelectItem value="supernatural">Supernatural</SelectItem>
-                      </SelectContent>
-                    </Select>
+            <div className="flex justify-end">
+              <AnimatePresence initial={false}>
+                {showFilters && (
+                  <motion.div
+                    id="advanced-filter-panel"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="flex items-center gap-2 pt-2">
+                      <Select value={category} onValueChange={setCategory}>
+                        <SelectTrigger className="w-[200px]">
+                          <SelectValue placeholder="Category" />
+                        </SelectTrigger>
+                        <SelectContent align="end">
+                          <SelectItem value="all">All Categories</SelectItem>
+                          <SelectItem value="PSYCHOLOGICAL">Psychological</SelectItem>
+                          <SelectItem value="SUPERNATURAL">Supernatural</SelectItem>
+                          <SelectItem value="TECHNOLOGICAL">Technological</SelectItem>
+                          <SelectItem value="BODY_HORROR">Body Horror</SelectItem>
+                          <SelectItem value="GOTHIC">Gothic</SelectItem>
+                          <SelectItem value="APOCALYPTIC">Apocalyptic</SelectItem>
+                        </SelectContent>
+                      </Select>
 
-                    <Select value={from} onValueChange={setFrom}>
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue placeholder="Any time" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Any time</SelectItem>
-                        <SelectItem value="7">Past 7 days</SelectItem>
-                        <SelectItem value="30">Past 30 days</SelectItem>
-                        <SelectItem value="365">Past year</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <Select value={from} onValueChange={setFrom}>
+                        <SelectTrigger className="w-[160px]">
+                          <SelectValue placeholder="Any time" />
+                        </SelectTrigger>
+                        <SelectContent align="end">
+                          <SelectItem value="all">Any time</SelectItem>
+                          <SelectItem value="7">Past 7 days</SelectItem>
+                          <SelectItem value="30">Past 30 days</SelectItem>
+                          <SelectItem value="365">Past year</SelectItem>
+                        </SelectContent>
+                      </Select>
 
-                    <Select value={sort} onValueChange={(v) => setSort(v as any)}>
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue placeholder="Sort by" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="relevance">Relevance</SelectItem>
-                        <SelectItem value="newest">Newest</SelectItem>
-                        <SelectItem value="oldest">Oldest</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                      <Select value={sort} onValueChange={(v) => setSort(v as any)}>
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue placeholder="Sort by" />
+                        </SelectTrigger>
+                        <SelectContent align="end">
+                          <SelectItem value="relevance">Relevance</SelectItem>
+                          <SelectItem value="newest">Newest</SelectItem>
+                          <SelectItem value="oldest">Oldest</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </form>
 
