@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, Link } from "wouter";
-import { Loader2, BookOpen } from "lucide-react";
+import { Loader2, BookOpen, SlidersHorizontal, ChevronDown, X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -41,6 +41,7 @@ export default function SearchResultsPage() {
   const [suggestions, setSuggestions] = useState<{ id: number | string; title: string; url: string }[]>([]);
   const [showSuggest, setShowSuggest] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
+  const [showFilters, setShowFilters] = useState<boolean>(fal_codesenew)</;
 
   // Filters
   const [category, setCategory] = useState<string>("all");
@@ -207,6 +208,60 @@ export default function SearchResultsPage() {
           }
         }
 
+        // Final safety net: if still no results, use client-side heuristics from preloaded titles
+        if (finalResults.length === 0 && indexPosts.length > 0) {
+          const normalizeText = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          const tokenize = (s: string) => normalizeText(s.toLowerCase()).split(/[^a-z0-9]+/).filter(Boolean);
+          const jaccard = (a: string[], b: string[]) => {
+            if (!a.length || !b.length) return 0;
+            const setA = new Set(a);
+            const setB = new Set(b);
+            const inter = [...setA].filter((x) => setB.has(x)).length;
+            const union = new Set([...a, ...b]).size;
+            return inter / union;
+          };
+          const qTokens = tokenize(query);
+          const qLower = query.toLowerCase();
+
+          const scored = indexPosts.map((p) => {
+            const t = String(p.title || "");
+            const tTokens = tokenize(t);
+            let minD = Infinity;
+            for (const qt of qTokens) {
+              for (const tt of tTokens) {
+                const d = levenshtein(qt, tt);
+                if (d < minD) minD = d;
+              }
+            }
+            const includesBonus = t.toLowerCase().includes(qLower) ? 3 : 0;
+            const j = jaccard(qTokens, tTokens);
+            const distanceBoost = Number.isFinite(minD) ? (minD <= 2 ? 2 - minD : -minD * 0.15) : 0;
+            const score = includesBonus + j * 2 + distanceBoost;
+            return { p, score };
+          });
+
+          const top = scored
+            .filter((x) => x.score > 0.5)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 10)
+            .map((x) => ({
+              id: x.p.id,
+              title: x.p.title,
+              excerpt: "",
+              content: "",
+              type: "post" as const,
+              url: `/reader/${encodeURIComponent(x.p.slug)}`,
+              matches: [],
+            }));
+
+          if (top.length > 0) {
+            finalResults = top;
+            finalPages = 1;
+            finalPage = 1;
+            finalTotal = top.length;
+          }
+        }
+
         setSearchResults(finalResults);
         setPage(finalPage);
         setPages(finalPages);
@@ -285,7 +340,7 @@ export default function SearchResultsPage() {
         setIsSearching(false);
       }
     },
-    [toast, category, from, sort]
+    [toast, category, from, sort, indexPosts]
   );
 
   // Extract search query from URL
@@ -408,6 +463,14 @@ export default function SearchResultsPage() {
     } catch {}
   };
 
+  const removeRecent = (term: string) => {
+    try {
+      const arr = recent.filter((r) => r !== term);
+      setRecent(arr);
+      localStorage.setItem("recent-searches", JSON.stringify(arr));
+    } catch {}
+  };
+
   // Handle search form submission
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -451,7 +514,7 @@ export default function SearchResultsPage() {
                 placeholder="Search for keywords..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-3 pr-24"
+                className="pr-28"
                 role="combobox"
                 aria-expanded={showSuggest}
                 aria-controls="advanced-search-suggestions"
@@ -500,17 +563,19 @@ export default function SearchResultsPage() {
               </Button>
               {showSuggest && suggestions.length > 0 && (
                 <div
-                  className="absolute z-20 mt-1 w-full bg-background border border-border rounded-md shadow-sm"
+                  className="absolute z-20 mt-1 w-full bg-background border border-border rounded-md shadow-sm overflow-hidden"
                   role="listbox"
                   id="advanced-search-suggestions"
                   aria-label="Suggestions"
                 >
+                  <div className="px-3 py-2 text-xs font-medium text-foreground/70 border-b">Suggestions</div>
                   <ul className="max-h-64 overflow-auto py-1">
                     {suggestions.map((s, idx) => (
                       <li key={s.id} role="option" aria-selected={idx === activeIndex} id={`advanced-suggestion-${s.id}`}>
                         <Link href={s.url}>
-                          <a className={`block px-3 py-2 text-sm hover:bg-accent/30 ${idx === activeIndex ? "bg-accent/20" : ""}`}>
-                            {s.title}
+                          <a className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent/30 ${idx === activeIndex ? "bg-accent/20" : ""}`}>
+                            <Search className="h-3.5 w-3.5 text-foreground/60" />
+                            <span className="truncate">{highlightText(s.title, searchQuery)}</span>
                           </a>
                         </Link>
                       </li>
@@ -520,42 +585,71 @@ export default function SearchResultsPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-2">
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All categories</SelectItem>
-                  <SelectItem value="gothic">Gothic</SelectItem>
-                  <SelectItem value="dark-academia">Dark Academia</SelectItem>
-                  <SelectItem value="supernatural">Supernatural</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={from} onValueChange={setFrom}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Any time" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Any time</SelectItem>
-                  <SelectItem value="7">Past 7 days</SelectItem>
-                  <SelectItem value="30">Past 30 days</SelectItem>
-                  <SelectItem value="365">Past year</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={sort} onValueChange={(v) => setSort(v as any)}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="relevance">Relevance</SelectItem>
-                  <SelectItem value="newest">Newest</SelectItem>
-                  <SelectItem value="oldest">Oldest</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center justify-between gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(v => !v)}
+                aria-expanded={showFilters}
+                aria-controls="advanced-filter-panel"
+                className="inline-flex items-center gap-2"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                <ChevronDown className={`h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+              </Button>
             </div>
+
+            <AnimatePresence initial={false}>
+              {showFilters && (
+                <motion.div
+                  id="advanced-filter-panel"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex items-center gap-2 pt-2">
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All categories</SelectItem>
+                        <SelectItem value="gothic">Gothic</SelectItem>
+                        <SelectItem value="dark-academia">Dark Academia</SelectItem>
+                        <SelectItem value="supernatural">Supernatural</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={from} onValueChange={setFrom}>
+                      <SelectTrigger className="w-[160px]">
+                        <SelectValue placeholder="Any time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Any time</SelectItem>
+                        <SelectItem value="7">Past 7 days</SelectItem>
+                        <SelectItem value="30">Past 30 days</SelectItem>
+                        <SelectItem value="365">Past year</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={sort} onValueChange={(v) => setSort(v as any)}>
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="relevance">Relevance</SelectItem>
+                        <SelectItem value="newest">Newest</SelectItem>
+                        <SelectItem value="oldest">Oldest</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </form>
 
@@ -565,9 +659,19 @@ export default function SearchResultsPage() {
             <div className="mb-2 text-foreground/70">Recent searches:</div>
             <div className="flex flex-wrap gap-2">
               {recent.map((r) => (
-                <Button key={r} variant="outline" size="sm" onClick={() => { setSearchQuery(r); performSearch(r, 1); }}>
-                  {r}
-                </Button>
+                <div key={r} className="relative">
+                  <button
+                    type="button"
+                    aria-label={`Remove ${r} from recent searches`}
+                    className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-muted text-foreground/70 hover:text-foreground flex items-center justify-center"
+                    onClick={(e) => { e.stopPropagation(); removeRecent(r); }}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                  <Button variant="outline" size="sm" onClick={() => { setSearchQuery(r); performSearch(r, 1); }}>
+                    {r}
+                  </Button>
+                </div>
               ))}
             </div>
           </div>
