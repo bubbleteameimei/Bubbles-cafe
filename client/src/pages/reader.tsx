@@ -153,6 +153,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     };
   }, [contentsDialogOpen]);
 
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
   // Inline admin theme editor state
   const [themeEditorOpen, setThemeEditorOpen] = useState(false);
   const [selectedThemeCat, setSelectedThemeCat] = useState<string>('');
@@ -430,8 +432,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         throw error;
       }
     },
-    // Keep previous data visible during background refetch to avoid flicker
-    keepPreviousData: true,
     // Provide placeholder data from cache immediately to avoid any null frame on remounts
     placeholderData: () =>
       queryClient.getQueryData(["wordpress", "reader", isCommunityContent ? "community" : "regular"]) as any,
