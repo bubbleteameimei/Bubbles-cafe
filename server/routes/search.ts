@@ -74,7 +74,8 @@ router.get('/', async (req, res) => {
       page = '1',
       from, // can be number of days or ISO date
       category,
-      tags // comma-separated string or repeated array: tag1,tag2 or ["tag1","tag2"]
+      tags, // comma-separated string or repeated array: tag1,tag2 or ["tag1","tag2"]
+      sort: sortRaw
     } = req.query;
 
     if (!q || typeof q !== 'string') {
@@ -125,8 +126,8 @@ router.get('/', async (req, res) => {
       .map((t) => t.trim().toLowerCase())
       .filter((t) => t.length > 0);
 
-    const cacheParams = { q: searchQuery, types: contentTypes, limit: resultLimit, page: pageNum, from: fromDate?.toISOString() || null, category: category || null, tags: tagFilters };
-    const key = makeCacheKey(cacheParams);
+    const sort = typeof sortRaw === 'string' ? String(sortRaw).toLowerCase() : 'relevance';
+    const cacheParams = { q: searchQuery, types: contentTypes, limit: resultLimit, page: pageNum, from: fromDate?.toISOString() || null, category: category || null, tags: tag    const key = makeCacheKey(cacheParams);
     const cached = searchCache.get(key);
     if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
       return res.json(cached.data);
@@ -271,11 +272,9 @@ router.get('/', async (req, res) => {
             themeCategory: post.themeCategory || null,
             tags,
             readingTimeMinutes,
+            popularity: (Number((post as any)?.likesCount) || 0) + (Number((post as any)?.baselineLikes) || 0),
             score
-          };
-          return result;
-        });
-
+         
       if (fromDate) {
         postResults = postResults.filter((r: any) => new Date(r.createdAt || 0) >= fromDate!);
       }
@@ -725,22 +724,37 @@ router.get('/', async (req, res) => {
       }
     }
     
-    // Sort results by relevance (prioritize title/excerpt matches), then match count, then date
-    results.sort((a, b) => {
-      const scoreA = typeof a.score === 'number' ? a.score : 0;
-      const scoreB = typeof b.score === 'number' ? b.score : 0;
-      const scoreDiff = scoreB - scoreA;
-      if (scoreDiff !== 0) return scoreDiff;
+    // Sort results based on selected sort option
+    if (sort === 'newest') {
+      results.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
+    } else if (sort === 'popular') {
+      results.sort((a, b) => {
+        const popA = typeof a.popularity === 'number' ? a.popularity : 0;
+        const popB = typeof b.popularity === 'number' ? b.popularity : 0;
+        return popB - popA;
+      });
+    } else {
+      // relevance (default): prioritize title/excerpt matches, then match count, then date
+      results.sort((a, b) => {
+        const scoreA = typeof a.score === 'number' ? a.score : 0;
+        const scoreB = typeof b.score === 'number' ? b.score : 0;
+        const scoreDiff = scoreB - scoreA;
+        if (scoreDiff !== 0) return scoreDiff;
 
-      const matchesA = Array.isArray(a.matches) ? a.matches.length : 0;
-      const matchesB = Array.isArray(b.matches) ? b.matches.length : 0;
-      const matchDiff = matchesB - matchesA;
-      if (matchDiff !== 0) return matchDiff;
+        const matchesA = Array.isArray(a.matches) ? a.matches.length : 0;
+        const matchesB = Array.isArray(b.matches) ? b.matches.length : 0;
+        const matchDiff = matchesB - matchesA;
+        if (matchDiff !== 0) return matchDiff;
 
-      const dateA = new Date(a.createdAt || 0).getTime();
-      const dateB = new Date(b.createdAt || 0).getTime();
-      return dateB - dateA;
-    });
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
+    }
     
     // Pagination
     const total = results.length;
@@ -774,9 +788,11 @@ router.get('/', async (req, res) => {
         from: fromDate?.toISOString() || null,
         category: category || null,
         tags: tagFilters,
+        sort,
         didYouMean: didYouMean || null
       }
-    };
+  _code  new}</;
+
     searchCache.set(key, { ts: Date.now(), data: payload });
     return res.json(payload);
     

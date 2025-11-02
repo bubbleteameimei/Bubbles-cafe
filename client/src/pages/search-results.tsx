@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, Link } from "wouter";
-import { Loader2, Search, BookOpen, Clock } from "lucide-react";
+import { Loader2, Search, BookOpen, Clock, Tag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +39,7 @@ export default function SearchResultsPage() {
   const [location] = useLocation();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeQuery, setActiveQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [page, setPage] = useState(1);
@@ -49,10 +50,22 @@ export default function SearchResultsPage() {
   const [activeIndex, setActiveIndex] = useState<number>(-1);
   const [category, setCategory] = useState<string>("all");
   const [from, setFrom] = useState<string>("all");
+  const [sort, setSort] = useState<string>("relevance");
   const [recent, setRecent] = useState<string[]>([]);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const popularSearches = ["mind", "mirror", "devotion"];
-  const trySearches = ["fear", "hunger", "machine"];
+  const randomIdeaPool = ["fear", "hunger", "machine", "threshold", "mist", "mirror", "devotion", "identity", "madness"];
+  const getDailyIdeas = () => {
+    try {
+      const now = new Date();
+      const idx = (now.getDate() + now.getMonth() * 31) % randomIdeaPool.length;
+      const arr = [randomIdeaPool[idx], randomIdeaPool[(idx + 2) % randomIdeaPool.length], randomIdeaPool[(idx + 4) % randomIdeaPool.length]];
+      return Array.from(new Set(arr));
+    } catch {
+      return ["fear", "hunger", "machine"];
+    }
+  };
+  const trySearches = getDailyIdeas();
   
 
   // Helpers for WordPress fallback: strip HTML and extract context around matched terms
@@ -110,7 +123,7 @@ export default function SearchResultsPage() {
       if (from !== 'all') qs.set('from', from);
       if (category !== 'all') qs.set('category', category);
       if (tagFilters.length > 0) qs.set('tags', tagFilters.join(','));
-
+      if (sort) qs
       const { results, meta } = await apiJson<any>('GET', `/api/search?${qs.toString()}`);
 
       const mapped: SearchResult[] = (results || []).map((r: any) => ({
@@ -251,7 +264,8 @@ export default function SearchResultsPage() {
     const params = new URLSearchParams(location.split('?')[1]);
     const query = params.get('q');
     if (query) {
-      setSearchQuery(query);
+      setActiveQuery(query);
+      setSearchQuery('');
       performSearch(query);
     }
   }, [location, performSearch]);
@@ -294,10 +308,13 @@ export default function SearchResultsPage() {
   // Handle search form submission
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      window.history.pushState(null, '', `/search?q=${encodeURIComponent(searchQuery)}`);
-      performSearch(searchQuery, 1);
-      pushRecent(searchQuery.trim());
+    const q = searchQuery.trim();
+    if (q) {
+      window.history.pushState(null, '', `/search?q=${encodeURIComponent(q)}`);
+      setActiveQuery(q);
+      performSearch(q, 1);
+      pushRecent(q);
+      setSearchQuery('');
     }
   };
 
@@ -329,10 +346,10 @@ export default function SearchResultsPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
             <Input
               type="search"
-              placeholder="Search by title, theme, or word..."
+              placeholder="Search projects, themes, or keywords..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 pr-28"
               role="combobox"
               aria-expanded={showSuggest}
               aria-controls="advanced-search-suggestions"
@@ -353,14 +370,52 @@ export default function SearchResultsPage() {
                   } else if (searchResults.length > 0) {
                     window.location.href = searchResults[0].url;
                   } else if (searchQuery.trim()) {
+                    setActiveQuery(searchQuery.trim());
                     performSearch(searchQuery, 1);
+                    setSearchQuery('');
                   }
                 } else if (e.key === 'Escape') {
                   setShowSuggest(false);
                 }
               }}
             />
-            <div className="mt-1 text-xs text-muted-foreground">You can search by title, theme, or word.</div>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" title="Filter by tags">
+                    <Tag className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuLabel>Filter by tags</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {["identity", "madness", "devotion", "fear", "hunger", "machine"].map((tag) => (
+                    <DropdownMenuCheckboxItem
+                      key={tag}
+                      checked={tagFilters.includes(tag)}
+                      onCheckedChange={(checked: any) => {
+                        setTagFilters((prev) => {
+                          const next = checked ? [...prev, tag] : prev.filter((t) => t !== tag);
+                          return Array.from(new Set(next)).slice(0, 8);
+                        });
+                      }}
+                    >
+                      {tag}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button type="submit" size="sm" disabled={isSearching || !searchQuery.trim()}>
+                {isSearching ? (
+                  <>
+                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                    Searching
+                  </>
+                ) : (
+                  "Search"
+                )}
+              </Button>
+            </div>
             {showSuggest && suggestions.length > 0 && (
               <div className="absolute z-20 mt-1 w-full bg-background border border-border rounded-md shadow-sm" role="listbox" id="advanced-search-suggestions" aria-label="Suggestions">
                 <ul className="max-h-64 overflow-auto py-1">
@@ -395,39 +450,14 @@ export default function SearchResultsPage() {
                 <SelectItem value="365">Past year</SelectItem>
               </SelectContent>
             </Select>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="min-w-[180px]">Tags</Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuLabel>Filter by tags</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {["identity", "madness", "devotion", "fear", "hunger", "machine"].map((tag) => (
-                  <DropdownMenuCheckboxItem
-                    key={tag}
-                    checked={tagFilters.includes(tag)}
-                    onCheckedChange={(checked: any) => {
-                      setTagFilters((prev) => {
-                        const next = checked ? [...prev, tag] : prev.filter((t) => t !== tag);
-                        return Array.from(new Set(next)).slice(0, 8);
-                      });
-                    }}
-                  >
-                    {tag}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button type="submit" disabled={isSearching || !searchQuery.trim()}>
-              {isSearching ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Searching...
-                </>
-              ) : (
-                "Search"
-              )}
-            </Button>
+            <Select value={sort} onValueChange={setSort}>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Sort by" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="relevance">Relevance</SelectItem>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="popular">Most Popular</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </form>
@@ -438,9 +468,18 @@ export default function SearchResultsPage() {
           <div className="mb-2 text-foreground/70">Recent searches:</div>
           <div className="flex flex-wrap gap-2">
             {recent.map(r => (
-              <Button key={r} variant="outline" size="sm" onClick={() => { setSearchQuery(r); performSearch(r, 1); }}>
-                {r}
-              </Button>
+              <div key={r} className="flex items-center gap-1">
+                <Button variant="outline" size="sm" onClick={() => { setSearchQuery(r); setActiveQuery(r); performSearch(r, 1); }}>
+                  {r}
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => {
+                  const next = recent.filter(item => item !== r);
+                  setRecent(next);
+                  try { localStorage.setItem('recent-searches', JSON.stringify(next)); } catch {}
+                }} aria-label={`Remove ${r} from history`}>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             ))}
           </div>
         </div>
@@ -448,28 +487,35 @@ export default function SearchResultsPage() {
 
       {/* Popular and suggested searches */}
       <div className="mb-6 text-sm">
-        <div className="mb-2 text-foreground/70">Popular searches:</div>
-        <div className="flex flex-wrap gap-2 mb-3">
-          {popularSearches.map((term) => (
-            <Button key={term} variant="secondary" size="sm" onClick={() => { setSearchQuery(term); performSearch(term, 1); }}>
-              {term}
-            </Button>
-          ))}
+          <div className="mb-2 text-foreground/70">Trending Themes</div>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {popularSearches.map((term) => (
+              <Button key={term} variant="secondary" size="sm" onClick={() => { setSearchQuery(term); setActiveQuery(term); performSearch(term, 1); }}>
+                {term}
+              </Button>
+            ))}
+          </div>
+          <div className="text-foreground/70 mb-2">Discover Unexpected Themes</div>
+          <div className="flex flex-wrap gap-2">
+            {trySearches.map((term) => (
+              <Button key={term} variant="ghost" size="sm" onClick={() => { setSearchQuery(term); setActiveQuery(term); performSearch(term, 1); }}>
+                {term}
+              </Button>
+            ))}
+          </div>
         </div>
-        <div className="text-foreground/70 mb-2">Try searching for:</div>
-        <div className="flex flex-wrap gap-2">
-          {trySearches.map((term) => (
-            <Button key={term} variant="ghost" size="sm" onClick={() => { setSearchQuery(term); performSearch(term, 1); }}>
-              {term}
-            </Button>
-          ))}
-        </div>
-      </div>
       
       {/* Did you mean */}
       {didYouMean && (
-        <div className="mb-4 text-sm">
+        <div className="mb-2 text-sm">
           Did you mean: <Link href={`/search?q=${encodeURIComponent(didYouMean)}`} className="text-primary underline">{didYouMean}</Link>?
+        </div>
+      )}
+
+      {/* Active query */}
+      {activeQuery && (
+        <div className="mb-4 text-sm text-foreground/70">
+          Results for “{activeQuery}”
         </div>
       )}
 
@@ -500,7 +546,7 @@ export default function SearchResultsPage() {
               >
                 <h3 className="text-xl font-semibold mb-1">
                   <Link href={result.url}>
-                    {highlightText(result.title, searchQuery)}
+                    {highlightText(result.title, activeQuery)}
                   </Link>
                 </h3>
                 <div className="text-sm text-muted-foreground mt-2">

@@ -531,17 +531,19 @@ export default function Navigation() {
 
           {/* Right actions */}
           <div className="relative flex items-center space-x-2">
-            {/* Search toggle */}
-            <Button
-              id="nav-search-button"
-              variant="ghost"
-              size="icon"
-              className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
-              aria-label="Search"
-              onClick={() => setSearchOpen((v) => !v)}
-            >
-              <Search className="h-5 w-5" />
-            </Button>
+            {/* Search toggle (hidden on search page) */}
+            {!(typeof location === 'string' && location.includes('/search')) && (
+              <Button
+                id="nav-search-button"
+                variant="ghost"
+                size="icon"
+                className="h-12 w-12 rounded-lg border border-border/20 bg-background/20 supports-[backdrop-filter]:bg-background/10 hover:bg-background/30 supports-[backdrop-filter]:hover:bg-background/20 text-white transition-colors transition-transform duration-200 ease-out active:scale-95"
+                aria-label="Search"
+                onClick={() => setSearchOpen((v) => !v)}
+              >
+                <Search className="h-5 w-5" />
+              </Button>
+            )}
 
             
 
