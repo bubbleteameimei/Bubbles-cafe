@@ -818,8 +818,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Apply theme detection to current post
   const detectedThemes = detectThemes(currentPost.content?.rendered || currentPost.content || '');
 
-  // Horror easter egg function: returns true if overlay was triggered (used to prevent immediate route changes)
-  const checkRapidNavigation = (): boolean => {
+  // Horror easter egg function: persists state across route changes; returns true if overlay was triggered
+  const checkRapidNavigation =ion = (): boolean => {
     const now = Date.now();
     const timeSinceLastNavigation = now - lastNavigationTimeRef.current;
     let overlayTriggered = false;
@@ -1234,16 +1234,16 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       (selected.slug && p.slug === selected.slug) || p.id === selected.id
                     );
                     if (foundIndex >= 0) {
-                      // Count as a navigation event (enables horror modal trigger consistency)
-                      checkRapidNavigation();
+                      const overlayTriggered = checkRapidNavigation();
+                      if (overlayTriggered) {
+                        // Keep current content; overlay is shown and blocks interaction
+                        return;
+                      }
                       setCurrentIndex(foundIndex);
                       // Keep URL in sync with selected story to fix TOC routing
                       setLocation(`/reader/${encodeURIComponent(String(posts[foundIndex].slug || posts[foundIndex].id))}`);
                     }
-                  } catch (err) {
-                    console.error('[Reader] TOC onSelect error:', err);
-                  } finally {
-                    setContentsDialogOpen(false);
+                  }                 setContentsDialogOpen(false);
                   }
                 }}
                 onClose={() => setContentsDialogOpen(false)} 
