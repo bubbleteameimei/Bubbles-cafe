@@ -1,48 +1,25 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge"; 
+import { Badge } from "@/components/ui/badge";
 import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
 import { useCopyProtection } from "@/hooks/useCopyProtection";
-import ReaderTooltip from "@/components/reader/ReaderTooltip";
 import TableOfContents from "@/components/reader/TableOfContents";
 import SwipeNavigation from "@/components/reader/SwipeNavigation";
 import "@/styles/reader-fixes.css";
-import { 
-  Share2, Minus, Plus, Shuffle, ChevronLeft, ChevronRight,
-  Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
-  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog, BookText, Trash, X, Pencil, Clock,
-  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Bone
-} from "lucide-react";
+import { Share2, Shuffle, ChevronLeft, ChevronRight, BookText, Trash } from "lucide-react";
 import { motion } from "framer-motion";
-import { format } from 'date-fns';
+import { format } from "date-fns";
 import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
-import { useFontSize } from "@/hooks/use-font-size";
-import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
-import { detectThemes, THEME_CATEGORIES, getExcerpt } from "@/lib/content-analysis";
-import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
-import { BookmarkButton } from "@/components/ui/BookmarkButton";
-import { useTheme } from "@/components/theme-provider";
-import { useAuth } from "@/hooks/use-auth";
-import ApiLoader from "@/components/api-loader";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import SimplifiedErrorPage from "@/components/errors/SimplifiedErrorPage";
 import { useToast } from "@/hooks/use-toast";
-
-
-import { SupportWritingCard } from "@/components/SupportWritingCard";
-import { resolveAuthorId } from "@/lib/reader-navigation";
+import { useAuth } from "@/hooks/use-auth";
 import Footer from "@/components/layout/footer";
-import SEO from "@/components/SEO";
-import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
+import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { sanitizeHtml } from "@/lib/sanitize";
-import { trackWordPressRead } from "@/lib/wp-reads";
-import { useCookieConsent } from "@/hooks/use-cookie-consent";
-import { trackInteraction } from "@/lib/metrics";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/scroll-lock";
-
-
 import {
   Dialog,
   DialogContent,
@@ -51,503 +28,192 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } from "@shared/theme-categories";
-import { getStoryThemeOverride } from "@shared/story-theme-overrides";
-import { getThemeDefinitionOverride, syncThemeDefinitionOverridesFromServer } from "@/shared/theme-definitions";
-import { Icon } from "@iconify/react";
-import { getBadgeTint } from "@/lib/theme-badges";
 
-import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
-
-// Native HTML sanitization function (now powered by DOMPurify with extra hardening)
-  const sanitizeHtmlContent = (html: string): string => {
-    try {
-      return sanitizeHtml(html);
-    } catch (error) {
-      console.error('[Reader] Error sanitizing HTML:', error);
-      return html;
-    }
-  };
-  interface ReaderPageProps {
+interface ReaderPageProps {
   slug?: string;
   params?: { slug?: string };
   isCommunityContent?: boolean;
 }
 
-export default function ReaderPage({ slug, params, isCommunityContent = false }: ReaderPageProps) {
-  // Log params for debugging (dev only)
-  if (import.meta.env?.DEV) {
-    console.log('[ReaderPage] Initializing with params:', { routeSlug: params?.slug || slug, params, slug });
+const sanitizeHtmlContent = (html: string): string => {
+  try {
+    return sanitizeHtml(html);
+  } catch {
+    return html;
   }
-  // Extract slug from route params if provided
+};
+
+export default function ReaderPage({ slug, params, isCommunityContent = false }: ReaderPageProps) {
   const routeSlug = params?.slug || slug;
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  // Add authentication hook to check user role for admin actions
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const isAdmin = user?.isAdmin === true;
-  
-  // Theme is now managed by the useTheme hook
-  const { theme, toggleTheme } = useTheme();
-  
-  // Font size and family adjustments
-  const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
-  const { fontFamily, availableFonts, updateFontFamily } = useFontFamily();
-  
-  // Night mode functionality has been completely removed
-  
-  // One-click distraction-free mode - toggle UI visibility with click
-  const { isUIHidden, toggleUI, showTooltip } = useReaderUIToggle();
 
-  // Reading progress state - moved to top level with other state hooks
-  const [readingProgress, setReadingProgress] = useState(0);
-  // Smooth, GPU-accelerated animated progress value
-  const [animatedProgress, setAnimatedProgress] = useState(0);
-  const progressCurrentRef = useRef(0);
-  const progressTargetRef = useRef(0);
-  const progressRAFRef = useRef<number | null>(null);
-  
-  // Will initialize this after data is loaded
-  const [autoSaveSlug, setAutoSaveSlug] = useState<string>("");
+  const { isUIHidden, toggleUI } = useReaderUIToggle();
 
-  // Fixed constants for better text readability (replacing auto-contrast)
-  const DARK_TEXT_COLOR = 'rgba(255, 255, 255, 0.95)';
-  const LIGHT_TEXT_COLOR = 'rgba(0, 0, 0, 0.95)';
-  
-  // State for dialog controls
-  const [fontDialogOpen, setFontDialogOpen] = useState(false);
   const [contentsDialogOpen, setContentsDialogOpen] = useState(false);
-
-  // Smooth TOC dialog open/close: lock scroll to prevent underlying jank and ensure consistent overlay behavior
   useEffect(() => {
     try {
       if (contentsDialogOpen) {
-        document.body.classList.add('overlay-active', 'toc-active');
-        document.documentElement.classList.add('overlay-active', 'toc-active');
-        lockBodyScroll('reader-toc');
+        document.body.classList.add("overlay-active", "toc-active");
+        document.documentElement.classList.add("overlay-active", "toc-active");
+        lockBodyScroll("reader-toc");
       } else {
-        document.body.classList.remove('overlay-active', 'toc-active');
-        document.documentElement.classList.remove('overlay-active', 'toc-active');
-        unlockBodyScroll('reader-toc');
+        document.body.classList.remove("overlay-active", "toc-active");
+        document.documentElement.classList.remove("overlay-active", "toc-active");
+        unlockBodyScroll("reader-toc");
       }
     } catch {}
     return () => {
       try {
-        document.body.classList.remove('overlay-active', 'toc-active');
-        document.documentElement.classList.remove('overlay-active', 'toc-active');
-        unlockBodyScroll('reader-toc');
+        document.body.classList.remove("overlay-active", "toc-active");
+        document.documentElement.classList.remove("overlay-active", "toc-active");
+        unlockBodyScroll("reader-toc");
       } catch {}
     };
   }, [contentsDialogOpen]);
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
-  // Inline admin theme editor state
-  const [themeEditorOpen, setThemeEditorOpen] = useState(false);
-  const [selectedThemeCat, setSelectedThemeCat] = useState<string>('');
-  const [selectedThemeIcon, setSelectedThemeIcon] = useState<string>('');
-  const [savingTheme, setSavingTheme] = useState(false);
-  const [overrideThemeCategory, setOverrideThemeCategory] = useState<string | null>(null);
-  const [overrideThemeIcon, setOverrideThemeIcon] = useState<string | null>(null);
-  
-  
-  
-  // Helper function to close dialogs safely
-  const safeCloseDialog = () => {
-    const closeButton = document.querySelector('[aria-label="Close"]');
-    if (closeButton instanceof HTMLElement) {
-      closeButton.click();
-    }
-  };
-  
-  // Reading progress tracking with scroll-based calculation and rAF smoothing
-  useEffect(() => {
-    let ticking = false;
-    let scrollRafId: number | null = null;
-
-    const animate = () => {
-      const target = progressTargetRef.current;
-      const current = progressCurrentRef.current;
-      // Use direction-aware smoothing: slower when decreasing (scrolling up), faster when increasing
-      const factor = target < current ? 0.12 : 0.24;
-      const next = current + (target - current) * factor;
-      progressCurrentRef.current = next;
-      setAnimatedProgress(next);
-      if (Math.abs(target - next) > 0.08) {
-        progressRAFRef.current = requestAnimationFrame(animate);
-      } else {
-        progressCurrentRef.current = target;
-        setAnimatedProgress(target);
-        progressRAFRef.current = null;
-      }
-    };
-
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const scrollPercent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-      const progress = Math.min(100, Math.max(0, scrollPercent));
-      setReadingProgress(progress);
-      progressTargetRef.current = progress;
-      if (!progressRAFRef.current) {
-        progressRAFRef.current = requestAnimationFrame(animate);
-      }
-    };
-
-    // Throttle scroll events for better performance
-    const throttledHandleScroll = () => {
-      if (!ticking) {
-        scrollRafId = requestAnimationFrame(() => {
-          handleScroll();
-          ticking = false;
-          scrollRafId = null;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', throttledHandleScroll, { passive: true });
-    
-    // Initial calculation
-    handleScroll();
-    
-    return () => {
-      window.removeEventListener('scroll', throttledHandleScroll);
-      if (scrollRafId) cancelAnimationFrame(scrollRafId);
-      if (progressRAFRef.current) {
-        cancelAnimationFrame(progressRAFRef.current);
-        progressRAFRef.current = null;
-      }
-    };
-  }, []);
-  
-  // Horror easter egg - track rapid navigation
-  const [showHorrorMessage, setShowHorrorMessage] = useState(false);
-  const [horrorMessageText, setHorrorMessageText] = useState("Are you avoiding something?");
-  const skipCountRef = useRef(0);
-  const lastNavigationTimeRef = useRef(Date.now());
-
-  // Ensure horror modal behaves as a true overlay: lock scroll and mark overlay-active for CSS
-  useEffect(() => {
-    try {
-      if (showHorrorMessage) {
-        document.body.classList.add('overlay-active', 'horror-active');
-        document.documentElement.classList.add('overlay-active', 'horror-active');
-        lockBodyScroll('horror-modal');
-      } else {
-        document.body.classList.remove('overlay-active', 'horror-active');
-        document.documentElement.classList.remove('overlay-active', 'horror-active');
-        unlockBodyScroll('horror-modal');
-      }
-    } catch {}
-    return () => {
-      try {
-        document.body.classList.remove('overlay-active', 'horror-active');
-        document.documentElement.classList.remove('overlay-active', 'horror-active');
-        unlockBodyScroll('horror-modal');
-      } catch {}
-    };
-  }, [showHorrorMessage]);
-
-  // Create a ref for the content container to attach swipe events and copy protection
-  const contentRef = useCopyProtection(true);
-  // Removed positionRestoredRef as we no longer save reading position
-  
-  // Delete Post Mutation for admin actions
   const deleteMutation = useMutation({
     mutationFn: async (postId: number) => {
-      if (import.meta.env?.DEV) {
-        console.log(`[Reader] Attempting to delete post with ID: ${postId}`);
-      }
       const csrfToken = document.cookie.replace(/(?:(?:^|.*;\s*)XSRF-TOKEN\s*\=\s*([^;]*).*$)|^.*$/, "$1");
-      if (import.meta.env?.DEV) {
-        console.log('[Reader] Using CSRF token for deletion');
-      }
-      
       const response = await fetch(`/api/posts/${postId}`, {
-        method: 'DELETE',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken
-        },
-        credentials: 'include'
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+        credentials: "include",
       });
-
-      // Handle 204 No Content without parsing
-      if (response.status === 204) {
-        return { ok: true };
-      }
-
-      // Parse JSON only if content-type indicates JSON
+      if (response.status === 204) return { ok: true };
+      const contentType = response.headers.get("content-type") || "";
       let data: any = null;
-      const contentType = response.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
+      if (contentType.includes("application/json")) {
         try {
           data = await response.json();
         } catch {
           data = null;
         }
       }
-
       if (!response.ok) {
-        console.error(`[Reader] Delete failed with status: ${response.status}`, data);
-        if (response.status === 401) {
-          throw new Error('Please log in to delete this story');
-        } else {
-          throw new Error((data && data.message) ? data.message : `Failed to delete post (status ${response.status})`);
-        }
+        throw new Error((data && data.message) ? data.message : `Failed to delete post (status ${response.status})`);
       }
-      
       return data ?? { ok: true };
     },
     onSuccess: () => {
-      // Invalidate related queries to ensure cache is properly cleared
-      if (import.meta.env?.DEV) {
-        console.log('[Reader] Invalidating related query caches');
-      }
-      
-      // Invalidate community posts list only when applicable
       if (isCommunityContent) {
-        queryClient.invalidateQueries({ queryKey: ['/api/posts/community'] });
+        queryClient.invalidateQueries({ queryKey: ["/api/posts/community"] });
       }
-      
-      // Invalidate specific post endpoints
-      if (currentPost?.id) {
-        if (import.meta.env?.DEV) {
-          console.log(`[Reader] Invalidating specific post cache for ID: ${currentPost.id}`);
-        }
-        queryClient.invalidateQueries({ 
-          queryKey: ['/api/posts', currentPost.id.toString()]
-        });
-      }
-      
-      // Also invalidate the specific post query based on the slug
       if (routeSlug) {
-        if (import.meta.env?.DEV) {
-          console.log('[Reader] Invalidating specific post cache for slug:', routeSlug);
-        }
-        queryClient.invalidateQueries({ 
-          queryKey: ["wordpress", "posts", "reader", routeSlug] 
-        });
-        queryClient.invalidateQueries({ 
-          queryKey: ['/api/posts', routeSlug] 
-        });
+        queryClient.invalidateQueries({ queryKey: ["wordpress", "posts", "reader", routeSlug] });
+        queryClient.invalidateQueries({ queryKey: ["/api/posts", routeSlug] });
       }
-      
       setShowDeleteDialog(false);
-      
-      toast({
-        title: 'Story Deleted',
-        description: isAdmin && user?.id !== (currentPost as any)?.authorId
-          ? 'Community story has been deleted by admin.'
-          : 'Your story has been deleted successfully.',
-      });
-      
-      // Force navigation back to the community page after deletion
-      if (import.meta.env?.DEV) {
-        console.log('[Reader] Navigating back to community page');
-      }
-      // Immediate navigation to prevent page from trying to load deleted content
-      setLocation('/community');
+      toast({ title: "Story Deleted", description: isAdmin ? "Community story has been deleted by admin." : "Your story has been deleted successfully." });
+      setLocation("/community");
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Delete Failed',
-        description: error.message,
-        variant: 'destructive'
-      });
+      toast({ title: "Delete Failed", description: error.message, variant: "destructive" });
       setShowDeleteDialog(false);
-    }
+    },
   });
 
-  if (import.meta.env?.DEV) {
-    console.log('[Reader] Component mounted with slug:', routeSlug);
-  }
-  
-  // Clear any cached data to ensure fresh fetch after sample story removal
-  useEffect(() => {
-    if (import.meta.env?.DEV) {
-      console.log('[Reader] Clearing query cache to ensure fresh data');
-    }
-    queryClient.invalidateQueries({ queryKey: ["posts"] });
-    queryClient.removeQueries({ queryKey: ["posts"] });
-  }, [queryClient]);
-
-  // Initialize currentIndex with validation
   const [currentIndex, setCurrentIndex] = useState(() => {
     try {
-      const savedIndex = sessionStorage.getItem('selectedStoryIndex');
-      if (import.meta.env?.DEV) {
-        console.log('[Reader] Retrieved saved index:', savedIndex);
-      }
-
-      if (!savedIndex) {
-        if (import.meta.env?.DEV) {
-          console.log('[Reader] No saved index found, defaulting to 0');
-        }
-        return 0;
-      }
-
-      const parsedIndex = parseInt(savedIndex, 10);
-      if (isNaN(parsedIndex) || parsedIndex < 0) {
-        console.log('[Reader] Invalid saved index, defaulting to 0');
-        return 0;
-      }
-
-      return parsedIndex;
-    } catch (error) {
-      console.error('[Reader] Error reading from sessionStorage:', error);
+      const savedIndex = sessionStorage.getItem("selectedStoryIndex");
+      if (!savedIndex) return 0;
+      const parsed = parseInt(savedIndex, 10);
+      return isNaN(parsed) || parsed < 0 ? 0 : parsed;
+    } catch {
       return 0;
     }
   });
 
-  const { data: postsData, isLoading, error, isFetching } = useQuery({
-    // Use a stable key across slug changes to avoid unnecessary refetch and flicker
+  const { data: postsData, isLoading, error } = useQuery({
     queryKey: ["wordpress", "reader", isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
-      if (import.meta.env?.DEV) {
-        console.log('[Reader] Fetching WordPress posts list...', { routeSlug });
-      }
-
-      try {
-        // Always fetch a list of posts to preserve global navigation context
-        const result = await fetchWordPressPosts({ perPage: 100, includeContent: true });
-        const posts = Array.isArray(result.posts) ? result.posts : [];
-        return { posts, totalPages: result.totalPages ?? 1, total: result.total ?? posts.length };
-      } catch (error) {
-        console.error('[Reader] Error fetching WordPress posts via proxy:', error);
-        throw error;
-      }
+      const result = await fetchWordPressPosts({ perPage: 100, includeContent: true });
+      const posts = Array.isArray(result.posts) ? result.posts : [];
+      return { posts, totalPages: result.totalPages ?? 1, total: result.total ?? posts.length };
     },
-    // Provide placeholder data from cache immediately to avoid any null frame on remounts
     placeholderData: () =>
       queryClient.getQueryData(["wordpress", "reader", isCommunityContent ? "community" : "regular"]) as any,
-    // Cache reads for a while to keep navigation smooth without blank frames
     staleTime: 5 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
-    refetchOnReconnect: false
+    refetchOnReconnect: false,
   });
 
-  
-
-  // Validate and update currentIndex when posts data changes; align index by slug if present
   useEffect(() => {
-    if (postsData?.posts && postsData.posts.length > 0) {
-      // If we have a slug in the route, align the index to that post
+    if (postsData?.posts?.length) {
       if (routeSlug) {
-        const bySlug = postsData.posts.findIndex((p: any) => String(p.slug || '') === String(routeSlug));
+        const bySlug = postsData.posts.findIndex((p: any) => String(p.slug || "") === String(routeSlug));
         if (bySlug >= 0 && bySlug !== currentIndex) {
           setCurrentIndex(bySlug);
-          sessionStorage.setItem('selectedStoryIndex', String(bySlug));
+          sessionStorage.setItem("selectedStoryIndex", String(bySlug));
         }
       }
-
-      // Ensure currentIndex is within bounds
       if (currentIndex >= postsData.posts.length) {
         setCurrentIndex(0);
-        sessionStorage.setItem('selectedStoryIndex', '0');
+        sessionStorage.setItem("selectedStoryIndex", "0");
       } else {
-        sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
-      }
-
-      // Log current post details
-      const currentPost = postsData.posts[currentIndex];
-
-      // Now that we have the post data, update our slug for auto-saving
-      if (currentPost) {
-        const newSlug = routeSlug || (currentPost.slug || `post-${currentPost.id}`);
-        setAutoSaveSlug(newSlug);
+        sessionStorage.setItem("selectedStoryIndex", String(currentIndex));
       }
     }
-  }, [currentIndex, postsData?.posts, routeSlug]);
+  }, [postsData?.posts, routeSlug, currentIndex]);
 
-  // Position restoration notification has been removed as requested
-
-  useEffect(() => {
-    if (import.meta.env?.DEV) {
-      console.log('[Reader] Verifying social icons:', {
-        twitter: !!FaTwitter,
-        wordpress: !!FaWordpress,
-        instagram: !!FaInstagram
-      });
-    }
-    // Sync theme definition overrides from server to ensure global labels/icons are up to date
-    (async () => {
-      try { await syncThemeDefinitionOverridesFromServer(); } catch {}
-    })();
-  }, []);
-
-  // WordPress read tracking: compute current post id/link and gate by time-on-page and scroll depth.
-  const currentPostId = useMemo(() => {
-    try {
-      const post = postsData?.posts?.[currentIndex];
-      return post?.id as number | undefined;
-    } catch {
-      return undefined;
-    }
-  }, [postsData?.posts, currentIndex]);
-
-  const currentPostLink = useMemo(() => {
-    try {
-      const post = postsData?.posts?.[currentIndex];
-      return (post as any)?.link as string | undefined;
-    } catch {
-      return undefined;
-    }
-  }, [postsData?.posts, currentIndex]);
-
-  // Stabilize posts array and index
   const posts = useMemo(() => postsData?.posts ?? [], [postsData?.posts]);
   const validCurrentIndex = useMemo(
     () => Math.max(0, Math.min(currentIndex, posts.length - 1)),
     [currentIndex, posts.length]
   );
 
-  // Ensure canonical slug when route slug missing
   const ensuredCanonicalRef = useRef(false);
   useEffect(() => {
     try {
       if (!ensuredCanonicalRef.current && posts.length > 0 && !routeSlug) {
         ensuredCanonicalRef.current = true;
         const slugToUse = String(posts[validCurrentIndex]?.slug ?? posts[validCurrentIndex]?.id);
-        if (slugToUse) {
-          setLocation(`/reader/${encodeURIComponent(slugToUse)}`);
-        }
+        if (slugToUse) setLocation(`/reader/${encodeURIComponent(slugToUse)}`);
       }
     } catch {}
   }, [posts, validCurrentIndex, routeSlug, setLocation]);
 
-  // Current post
   const currentPost = posts[validCurrentIndex];
 
-  // Scroll to top once when current post changes
   useEffect(() => {
-    try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (e) {}
+    try { window.scrollTo({ top: 0, behavior: "auto" }); } catch {}
   }, [currentPost?.id]);
 
-  // Compute display text and reading metrics
-  const stripHtml = (s: string) => s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '';
-  const titleText = stripHtml(currentPost?.title?.rendered || (currentPost as any)?.title || 'Story');
-  const rawContent = currentPost?.content?.rendered || (currentPost as any)?.content || '';
+  const stripHtml = (s: string) => (s ? s.replace(/<\/?[^>]+(>|$)/g, "").trim() : "");
+  const titleText = stripHtml(currentPost?.title?.rendered || (currentPost as any)?.title || "Story");
+  const rawContent = currentPost?.content?.rendered || (currentPost as any)?.content || "";
   const plainText = stripHtml(rawContent);
-  const wordCount = plainText ? plainText.split(/\s+/).filter(Boolean).length : 0;
-  const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
 
-  // Horror easter egg function: persists state across route changes; returns true if overlay was triggered
+  // Horror overlay state
+  const [showHorrorMessage, setShowHorrorMessage] = useState(false);
+  useEffect(() => {
+    try {
+      if (showHorrorMessage) {
+        document.body.classList.add("overlay-active", "horror-active");
+        document.documentElement.classList.add("overlay-active", "horror-active");
+        lockBodyScroll("horror-modal");
+      } else {
+        document.body.classList.remove("overlay-active", "horror-active");
+        document.documentElement.classList.remove("overlay-active", "horror-active");
+        unlockBodyScroll("horror-modal");
+      }
+    } catch {}
+    return () => {
+      try {
+        document.body.classList.remove("overlay-active", "horror-active");
+        document.documentElement.classList.remove("overlay-active", "horror-active");
+        unlockBodyScroll("horror-modal");
+      } catch {}
+    };
+  }, [showHorrorMessage]);
+
+  // Rapid navigation detection persisted via sessionStorage
   const checkRapidNavigation = (): boolean => {
     const now = Date.now();
     const getInt = (key: string) => {
@@ -559,28 +225,18 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       }
     };
     const setInt = (key: string, val: number) => {
-      try {
-        sessionStorage.setItem(key, String(val));
-      } catch { /* no-op */ }
+      try { sessionStorage.setItem(key, String(val)); } catch {}
     };
-
-    const lastTs = getInt('reader_last_nav_ts');
+    const lastTs = getInt("reader_last_nav_ts");
     const timeSince = lastTs ? now - lastTs : Number.POSITIVE_INFINITY;
-    let count = getInt('reader_skip_count');
+    let count = getInt("reader_skip_count");
     let overlayTriggered = false;
 
-    // Rapid navigation detection (less than 1.5 seconds between skips)
     if (timeSince < 1500) {
       count += 1;
-      setInt('reader_skip_count', count);
-
-      // After 2 rapid skips, show the horror Easter egg overlay
+      setInt("reader_skip_count", count);
       if (count >= 2 && !showHorrorMessage) {
-        if (import.meta.env?.DEV) {
-          console.log('[Reader] Horror Easter egg triggered after rapid navigation');
-        }
         const message = "I SEE YOU SKIPPING!!!";
-        setHorrorMessageText(message);
         setShowHorrorMessage(true);
         toast({
           title: "NOTICE",
@@ -589,23 +245,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           duration: 9000,
         });
         setTimeout(() => {
-          try { setShowHorrorMessage(false); } catch (e) {}
-          setInt('reader_skip_count', 0);
+          try { setShowHorrorMessage(false); } catch {}
+          setInt("reader_skip_count", 0);
         }, 9000);
         overlayTriggered = true;
       }
     } else {
-      // If navigation is slow, gradually reduce the skip count
       count = Math.max(0, count - 1);
-      setInt('reader_skip_count', count);
+      setInt("reader_skip_count", count);
     }
-
-    // Update last navigation time
-    setInt('reader_last_nav_ts', now);
+    setInt("reader_last_nav_ts", now);
     return overlayTriggered;
   };
 
-  // Navigation helpers
   const goToRandomStory = () => {
     if (posts && posts.length > 1) {
       let randomIndex;
@@ -614,16 +266,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       } while (randomIndex === validCurrentIndex);
 
       const overlayTriggered = checkRapidNavigation();
-      if (overlayTriggered) {
-        return;
-      }
+      if (overlayTriggered) return;
 
       setCurrentIndex(randomIndex);
       try {
         const nextSlug = String(posts[randomIndex]?.slug ?? posts[randomIndex]?.id);
-        if (nextSlug) {
-          setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
-        }
+        if (nextSlug) setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
       } catch {}
     }
   };
@@ -631,18 +279,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const goToPreviousStory = () => {
     if (posts && posts.length > 1 && validCurrentIndex > 0) {
       const newIndex = validCurrentIndex - 1;
-
       const overlayTriggered = checkRapidNavigation();
-      if (overlayTriggered) {
-        return;
-      }
-
+      if (overlayTriggered) return;
       setCurrentIndex(newIndex);
       try {
         const nextSlug = String(posts[newIndex]?.slug ?? posts[newIndex]?.id);
-        if (nextSlug) {
-          setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
-        }
+        if (nextSlug) setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
       } catch {}
     }
   };
@@ -650,18 +292,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const goToNextStory = () => {
     if (posts && posts.length > 1 && validCurrentIndex < posts.length - 1) {
       const newIndex = validCurrentIndex + 1;
-
       const overlayTriggered = checkRapidNavigation();
-      if (overlayTriggered) {
-        return;
-      }
-
+      if (overlayTriggered) return;
       setCurrentIndex(newIndex);
       try {
         const nextSlug = String(posts[newIndex]?.slug ?? posts[newIndex]?.id);
-        if (nextSlug) {
-          setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
-        }
+        if (nextSlug) setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
       } catch {}
     }
   };
@@ -669,375 +305,398 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const isFirstStory = validCurrentIndex === 0;
   const isLastStory = validCurrentIndex === posts.length - 1;
 
-  
-        return (
+  if (isLoading) {
+    return null;
+  }
+  if (error) {
+    return (
+      <SimplifiedErrorPage
+        statusCode={404}
+        title="Story Not Found"
+        message={error instanceof Error ? error.message : "The requested story could not be found."}
+        actionText="Browse Stories"
+        actionLink="/reader"
+      />
+    );
+  }
+  if (posts.length === 0 || !currentPost) {
+    return (
+      <SimplifiedErrorPage
+        statusCode={404}
+        title="Story Not Found"
+        message="The requested story could not be found."
+        actionText="Browse Stories"
+        actionLink="/reader"
+      />
+    );
+  }
+
+  const contentRef = useCopyProtection(true);
+
+  return (
     <div className="reader-page w-full">
-        {/* Full-bleed separator under controls row (thin, end-to-end) */}
-        <div
-          aria-hidden="true"
-          className="border-b border-border/20"
-          style={{ width: '100%', position: 'relative', left: 0, transform: 'none' }}
-        />
-      
-        <motion.article
-            key={currentPost.id}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
+      {/* Horror overlay */}
+      {showHorrorMessage && (
+        <motion.div
+          onClick={() => setShowHorrorMessage(false)}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+          className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/80 backdrop-blur-md w-screen min-h-[100svh]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="horror-modal-title"
+        >
+          <motion.div
+            onClick={(e) => e.stopPropagation()}
+            initial={{ scale: 0.98, opacity: 0, y: 4 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.98, opacity: 0, y: 4 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-full text-center border border-[#ff0000]/80"
           >
-            {/* Navigation buttons above story content removed; now placed under time-to-read */}
-
-            {/* Full-bleed separator above story title (thin, end-to-end) */}
-            <div
-              aria-hidden="true"
-              className="border-b border-border/20"
-              style={{ width: '100%', position: 'relative', left: 0, transform: 'none' }}
-            />
-
-            <div className="flex flex-col items-center mb-2 mt-0">
-              <div className="relative flex flex-col items-center">
-                {isCommunityContent && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge 
-                      variant="secondary" 
-                      className="bg-primary/10 text-foreground border-primary/20"
-                    >
-                      Community Story
-                    </Badge>
-                    {/* Show delete button for admins or post authors */}
-                    {(isAdmin || (isCommunityContent && user?.id === (currentPost as any)?.authorId)) && isCommunityContent && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-7 px-2 border-red-200 bg-red-50 hover:bg-red-100 text-red-600"
-                        onClick={() => setShowDeleteDialog(true)}
-                      >
-                        <Trash className="h-3.5 w-3.5 mr-1" />
-                        <span className="text-xs">Delete</span>
-                      </Button>
-                    )}
-                  </div>
-                )}
-                <h1
-                  className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(currentPost.title?.rendered || currentPost.title || 'Story') }}
+            <h2 id="horror-modal-title" className="sr-only">Notice</h2>
+            <div className="absolute inset-0 rounded-lg bg-[#ff0000]/10 animate-pulse" />
+            <div className="relative z-10">
+              <div className="mb-6">
+                <CreepyTextGlitch
+                  text="I SEE YOU SKIPPING!!!"
+                  className="text-4xl font-bold"
+                  intensityFactor={8}
                 />
               </div>
-              
-              {/* Story Delete Dialog */}
-              <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center text-xl">
-                      <Trash className="h-5 w-5 mr-2 text-red-500" />
-                      {isAdmin && user?.id !== (currentPost as any)?.authorId ? 
-                        "Delete Community Story" : 
-                        "Delete Your Story"}
-                    </DialogTitle>
-                    <DialogDescription className="pt-2 text-sm">
-                      {isAdmin && user?.id !== (currentPost as any)?.authorId ? 
-                        "As an admin, you are about to delete a user-submitted community story. This action cannot be undone." : 
-                        "You are about to delete your community story. This action cannot be undone."}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="flex items-center justify-between border p-3 rounded-md bg-muted/50 mt-2">
-                    <div className="font-medium truncate pr-2">
-                      {currentPost.title?.rendered || currentPost.title || 'Story'}
-                    </div>
-                    <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
-                      Community
-                    </Badge>
-                  </div>
-                  <DialogFooter className="gap-2 sm:gap-0 mt-4">
-                    <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-                      Cancel
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      onClick={() => deleteMutation.mutate(currentPost.id)}
-                      disabled={deleteMutation.isPending}
-                    >
-                      {deleteMutation.isPending ? 'Deleting...' : 'Delete Story'}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <div className="mt-4">
+                <Button
+                  variant="outline"
+                  className="border-[#ff0000]/60 bg-background hover:bg-background/90 text-foreground w-full py-6"
+                  onClick={() => setShowHorrorMessage(false)}
+                >
+                  <span className="mx-auto text-lg font-medium">I understand, I'm sorry</span>
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
 
-              <div className="flex flex-col items-center gap-1">
-                <div className={`flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-primary/10 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-                  {/* Story theme category with icon (index as source of truth) */}
-                  {(() => {
-                    const md: any = (currentPost as any)?.metadata || {};
+      {/* TOC trigger */}
+      <div className="flex justify-end items-center gap-2 px-6 pt-4">
+        <Dialog open={contentsDialogOpen} onOpenChange={setContentsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              variant="default"
+              size="sm"
+              className="h-8 px-3 bg-primary hover:bg-primary/90 text-white flex items-center gap-1.5 rounded-md w-fit"
+            >
+              <BookText className="h-4 w-4 flex-shrink-0" />
+              <span className="text-xs font-semibold tracking-wide">TOC</span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md" aria-labelledby="toc-dialog-title" aria-describedby="toc-dialog-description">
+            <div className="flex items-center">
+              <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
+            </div>
+            <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
+            <TableOfContents
+              currentPostId={currentPost.id}
+              posts={posts.map((p: any) => ({
+                id: p.id,
+                title: (p.title?.rendered || p.title || "Untitled") as string,
+                slug: (p.slug || `post-${p.id}`) as string,
+                date: (p.date || p.createdAt || new Date().toISOString()) as string,
+              }))}
+              onSelect={(selected) => {
+                try {
+                  const foundIndex = posts.findIndex((p: any) =>
+                    (selected.slug && p.slug === selected.slug) || p.id === selected.id
+                  );
+                  if (foundIndex >= 0) {
+                    const overlayTriggered = checkRapidNavigation();
+                    if (overlayTriggered) return;
+                    setCurrentIndex(foundIndex);
+                    setLocation(`/reader/${encodeURIComponent(String(posts[foundIndex].slug || posts[foundIndex].id))}`);
+                  }
+                } catch (err) {
+                  console.error("[Reader] TOC onSelect error:", err);
+                } finally {
+                  setContentsDialogOpen(false);
+                }
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
 
-                    // Determine primary theme: override -> metadata -> shared detection from title/content
-                    const primaryThemeRaw =
-                      overrideThemeCategory ||
-                      md.themeCategory ||
-                      determineThemeCategory(
-                        titleText || 'Story',
-                        plainText || ''
-                      );
+      {/* Separator */}
+      <div aria-hidden="true" className="border-b border-border/20 mt-2" />
 
-                    // Story-specific override mapping by slug/title
-                    const override = getStoryThemeOverride((currentPost as any)?.slug as any, titleText as any);
+      <motion.article
+        key={currentPost.id}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+        className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
+      >
+        {/* Separator above title */}
+        <div aria-hidden="true" className="border-b border-border/20" />
 
-                    // Resolve shared theme key from label or raw category when no override
-                    const derivedKey = (() => {
-                      const raw = String(primaryThemeRaw || '').trim();
-                      if (!raw) return 'HORROR';
-                      for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-                        if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-                      }
-                      return raw.toUpperCase().replace(/\s+/g, '_');
-                    })();
+        <div className="flex flex-col items-center mb-2 mt-0">
+          <div className="relative flex flex-col items-center">
+            {isCommunityContent && (
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="secondary" className="bg-primary/10 text-foreground border-primary/20">
+                  Community Story
+                </Badge>
+                {(isAdmin || (isCommunityContent && user?.id === (currentPost as any)?.authorId)) && isCommunityContent && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 border-red-200 bg-red-50 hover:bg-red-100 text-red-600"
+                    onClick={() => setShowDeleteDialog(true)}
+                  >
+                    <Trash className="h-3.5 w-3.5 mr-1" />
+                    <span className="text-xs">Delete</span>
+                  </Button>
+                )}
+              </div>
+            )}
+            <h1
+              className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(currentPost.title?.rendered || (currentPost as any)?.title || "Story") }}
+            />
+          </div>
 
-                    const themeKey = override?.key || derivedKey;
-
-                    const defOverride = getThemeDefinitionOverride(themeKey);
-
-                    // Icon slug priority: story override -> editor override -> metadata -> global override -> shared definition -> ghost
-                    const chosenIconSlug =
-                      override?.icon ||
-                      overrideThemeIcon ||
-                      md.themeIcon ||
-                      defOverride?.icon ||
-                      (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
-                      'ghost';
-
-                    // Lucide icon mapping with broader coverage and theme-key fallbacks
-                    const ThemeIcon = (() => {
-                      const slug = String(chosenIconSlug).toLowerCase();
-                      switch (slug) {
-                        case 'skull': return Skull;
-                        case 'brain': return Brain;
-                        case 'pill': return Pill;
-                        case 'cpu': return Cpu;
-                        case 'dna': return Dna;
-                        case 'ghost': return Ghost;
-                        case 'umbrella': return Umbrella;
-                        case 'footprints': return Footprints;
-                        case 'cloud-rain':
-                        case 'cloudrain': return CloudRain;
-                        case 'castle': return Castle;
-                        case 'bug': return Bug;
-                        case 'radiation': return Radiation;
-                        case 'user-minus2':
-                        case 'userminus2': return UserMinus2;
-                        case 'user-plus':
-                        case 'userplus': return UserPlus;
-                        case 'anchor': return Anchor;
-                        case 'alert-triangle':
-                        case 'alerttriangle': return AlertTriangle;
-                        case 'building': return Building;
-                        case 'worm': return Worm;
-                        case 'cloud': return Cloud;
-                        case 'cloud-fog':
-                        case 'cloudfog': return CloudFog;
-                        case 'eye': return Eye;
-                        case 'hourglass': return Hourglass;
-                        case 'knife': return ForkKnife;
-                        case 'utensils':
-                        case 'fork-knife':
-                        case 'forkknife': return ForkKnife;
-                        case 'cat': return Cat;
-                        case 'moon': return Moon;
-                        case 'dog': return Dog;
-                        case 'radio': return Radio;
-                        case 'moon-star':
-                        case 'moonstar': return MoonStar;
-                        case 'box': return Box;
-                        case 'car': return Car;
-                        case 'alien': return Moon;
-                        case 'flask': return FlaskConical;
-                        case 'trees':
-                        case 'tree': return Trees;
-                      }
-                      // Fallback by theme key for diversity when slug is unknown
-                      switch (themeKey) {
-                        case 'TECHNOLOGICAL': return Cpu;
-                        case 'PSYCHOLOGICAL': return Brain;
-                        case 'SUPERNATURAL': return Ghost;
-                        case 'UNCANNY': return Eye;
-                        case 'EXISTENTIAL': return Hourglass;
-                        case 'DOPPELGANGER': return UserPlus;
-                        case 'CANNIBALISM': return ForkKnife;
-                        case 'SLASHER': return Skull;
-                        case 'MONSTER': return Cat;
-                        case 'ZOMBIE': return Footprints;
-                        case 'VAMPIRE': return Moon;
-                        case 'WEREWOLF': return Dog;
-                        case 'PARANORMAL': return Radio;
-                        case 'DREAM_HORROR': return MoonStar;
-                        case 'CURSED_OBJECT': return Box;
-                        case 'TIME_HORROR': return Clock;
-                        case 'APOCALYPTIC': return Radiation;
-                        case 'SCIENCE_HORROR': return FlaskConical;
-                        case 'FOLK_HORROR': return Trees;
-                        case 'GOTHIC': return Castle;
-                        case 'COSMIC': return Moon;
-                        case 'VEHICULAR': return Car;
-                        default: return Ghost;
-                      }
-                    })();
-
-                    // Human-friendly label with specific "Horror" suffixes; prefer override label
-                    const baseLabel =
-                      override?.label ||
-                      defOverride?.label ||
-                      (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
-                      primaryThemeRaw ||
-                      'Horror';
-
-                    const prettyLabel = (() => {
-                      if (override?.label) return override.label;
-                      const l = String(baseLabel).toLowerCase();
-                      if (l.includes('cosmic')) return 'Cosmic Horror';
-                      if (l.includes('existential')) return 'Existential Horror';
-                      if (l.includes('vehicular')) return 'Vehicular Horror';
-                      if (l.includes('psychological')) return 'Psychological Horror';
-                      if (l.includes('supernatural')) return 'Supernatural Horror';
-                      if (l.includes('technological')) return 'Technological Horror';
-                      if (l.includes('uncanny')) return 'Uncanny Horror';
-                      return baseLabel;
-                    })();
-
-                    // Tinted badge styles per theme
-                    const badgeTint = getBadgeTint(themeKey);
-
-                    return (
-                      <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border ${badgeTint}`}>
-                        {String(chosenIconSlug).includes(':')
-                          ? (<Icon icon={String(chosenIconSlug)} className="h-4 w-4" />)
-                          : (<ThemeIcon className="h-4 w-4" />)
-                        }
-                        <span className="text-xs font-medium">{prettyLabel}</span>
-                      </div>
-                    );
-                  })()}
-                  
-                  <span className="text-muted-foreground">•</span>
-                  
-                  {/* Date indicator */}
-                  <span className="text-xs px-2 py-1 bg-muted/50 rounded-md">
-                    {currentPost.date ? format(new Date(currentPost.date), 'MMM d, yyyy') : 'No date'}
-                  </span>
-                  
-                  <span className="text-muted-foreground">•</span>
-                  
-                  {/* Estimated reading time */}
-                  <span className="text-xs px-2 py-1 bg-accent/50 rounded-md">
-                    {readingMinutes} min read
-                  </span>
-
-                  {/* Admin: inline edit theme */}
-                  {isAdmin && (
-                    <>
-                      <span className="text-muted-foreground">•</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2"
-                        onClick={() => {
-                          try {
-                            const currentCat =
-                              (currentPost as any)?.themeCategory ||
-                              (currentPost as any)?.metadata?.themeCategory ||
-                              '';
-                            const auto = determineThemeCategory(
-                              titleText || 'Story',
-                              plainText || ''
-                            );
-                            const initCat = String(currentCat || auto || 'HORROR');
-                            setSelectedThemeCat(initCat);
-                            const metaIcon = (currentPost as any)?.metadata?.themeIcon as string | undefined;
-                            const defIcon =
-                              SHARED_THEME_CATEGORIES[
-                                initCat as keyof typeof SHARED_THEME_CATEGORIES
-                              ]?.icon || 'ghost';
-                            setSelectedThemeIcon(String(metaIcon || defIcon));
-                            setThemeEditorOpen(true);
-                          } catch {
-                            setSelectedThemeCat('HORROR');
-                            setSelectedThemeIcon('ghost');
-                            setThemeEditorOpen(true);
-                          }
-                        }}
-                      >
-                        <Pencil className="h-3.5 w-3.5 mr-1" />
-                        <span className="text-xs">Edit theme</span>
-                      </Button>
-                    </>
-                  )}
+          {/* Delete dialog */}
+          <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center text-xl">
+                  <Trash className="h-5 w-5 mr-2 text-red-500" />
+                  {isAdmin && user?.id !== (currentPost as any)?.authorId ? "Delete Community Story" : "Delete Your Story"}
+                </DialogTitle>
+                <DialogDescription className="pt-2 text-sm">
+                  {isAdmin && user?.id !== (currentPost as any)?.authorId
+                    ? "As an admin, you are about to delete a user-submitted community story. This action cannot be undone."
+                    : "You are about to delete your community story. This action cannot be undone."}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex items-center justify-between border p-3 rounded-md bg-muted/50 mt-2">
+                <div className="font-medium truncate pr-2">
+                  {currentPost.title?.rendered || (currentPost as any)?.title || "Story"}
                 </div>
+                <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+                  Community
+                </Badge>
+              </div>
+              <DialogFooter className="gap-2 sm:gap-0 mt-4">
+                <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => deleteMutation.mutate(currentPost.id)}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? "Deleting..." : "Delete Story"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
-                {/* Admin Theme Editor Dialog */}
-                {isAdmin && (
-                  <Dialog open={themeEditorOpen} onOpenChange={setThemeEditorOpen}>
-                    <DialogContent className="max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Edit Story Theme</DialogTitle>
-                        <DialogDescription>
-                          Choose the theme category and icon shown on this story.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-2">
-                        <div className="space-y-2">
-                          <span id="theme-category-label" className="text-sm font-medium">Theme category</span>
-                          <Select
-                            value={selectedThemeCat}
-                            onValueChange={(v) => {
-                              setSelectedThemeCat(v);
-                              // Update default icon when category changes
-                              const def =
-                                SHARED_THEME_CATEGORIES[
-                                  v as keyof typeof SHARED_THEME_CATEGORIES
-                                ]?.icon || 'ghost';
-                              setSelectedThemeIcon(def);
-                            }}
-                          >
-                            <SelectTrigger className="w-full" aria-labelledby="theme-category-label">
-                              <SelectValue placeholder="Select a theme" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(SHARED_THEME_CATEGORIES as Record<string, { label: string; icon: string }>).map(([key, info]) => {
-                                const base = info.label;
-                                const l = String(base).toLowerCase();
-                                const refined = (() => {
-                                  if (l.includes('cosmic')) return 'Cosmic Horror';
-                                  if (l.includes('existential')) return 'Existential Horror';
-                                  if (l.includes('vehicular')) return 'Vehicular Horror';
-                                  if (l.includes('psychological')) return 'Psychological Horror';
-                                  if (l.includes('supernatural')) return 'Supernatural Horror';
-                                  if (l.includes('technological')) return 'Technological Horror';
-                                  if (l.includes('uncanny')) return 'Uncanny Horror';
-                                  if (l.includes('gothic')) return 'Gothic Horror';
-                                  if (l.includes('folk')) return 'Folk Horror';
-                                  if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
-                                  if (l.includes('cannibal')) return 'Cannibalism Horror';
-                                  if (l.includes('science')) return 'Science Horror';
-                                  if (l.includes('apocalyptic')) return 'Apocalyptic Horror';
-                                  if (l.includes('stalking')) return 'Stalker/Pursuit Horror';
-                                  if (l.includes('doppelganger')) return 'Identity Horror';
-                                  return base;
-                                })();
-                                return (
-                                  <SelectItem key={key} value={key}>
-                                    {refined}
-                                  </SelectItem>
-                                );
-                              })}
-                            </SelectContent>
-                          </Select>
-                        </div>
+          {/* Navigation controls */}
+          <div className="flex justify-center items-center gap-4 py-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToPreviousStory}
+              disabled={posts.length <= 1 || isFirstStory}
+              className="h-9 px-4 bg-background/80 hover:bg-background/60 border-border/50 disabled:opacity-30"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="theme-icon" className="text-sm font-medium">Icon (slug)</Label>
-                          <Input
-                            id="theme-icon"
-                            value={selectedThemeIcon}
-                            onChange={(e) => setSelectedThemeIcon(e.target.value)}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToRandomStory}
+              disabled={posts.length <= 1}
+              className="h-9 px-4 bg-background/80 hover:bg-background/60 border-border/50 disabled:opacity-30"
+            >
+              <Shuffle className="h-4 w-4 mr-1" />
+              Random
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToNextStory}
+              disabled={posts.length <= 1 || isLastStory}
+              className="h-9 px-4 bg-background/80 hover:bg-background/60 border-border/50 disabled:opacity-30"
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Content area with swipe navigation */}
+        <SwipeNavigation onPrevious={goToPreviousStory} onNext={goToNextStory} disabled={showHorrorMessage || posts.length <= 1}>
+          <div className="story-container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
+            <div
+              className="story-content cursor-pointer text-justify"
+              ref={contentRef}
+              dangerouslySetInnerHTML={{
+                __html: sanitizeHtmlContent(currentPost.content?.rendered || (currentPost as any)?.content || "No content available."),
+              }}
+              onClick={toggleUI}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggleUI();
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label="Toggle user interface visibility"
+              aria-pressed={isUIHidden}
+            />
+          </div>
+        </SwipeNavigation>
+
+        {/* Compact bottom pagination */}
+        <div className="flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center">
+          <div className="relative overflow-visible flex items-center justify-center gap-1 bg-background/90 backdrop-blur-md border border-transparent rounded-full h-16 px-1.5 shadow-sm">
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rounded-full"
+              style={{ border: "1px solid", borderColor: "hsl(var(--border) / 0.4)", transform: "translateY(-1px)" }}
+            />
+            <div className="flex items-center gap-1 translate-y-2">
+              {/* Previous story button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={goToPreviousStory}
+                className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
+                  isFirstStory
+                    ? "opacity-30 cursor-not-allowed text-muted-foreground"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300"
+                }`}
+                aria-label="Previous story"
+                disabled={posts.length <= 1 || isFirstStory}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+                <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                  Previous Story
+                </span>
+              </Button>
+
+              {/* Counter */}
+              <div className="px-1 h-5 flex items-center -translate-y-2.5 text-[10px] leading-none text-muted-foreground font-medium">
+                {validCurrentIndex + 1} of {posts.length}
+              </div>
+
+              {/* Next story button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={goToNextStory}
+                className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
+                  isLastStory
+                    ? "opacity-30 cursor-not-allowed text-muted-foreground"
+                    : "text-slate-700 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300"
+                }`}
+                aria-label="Next story"
+                disabled={posts.length <= 1 || isLastStory}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+                <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                  Next Story
+                </span>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Separator above reactions/share */}
+        <div aria-hidden="true" className="border-b border-border/20" />
+
+        <div className="mt-2 pt-3">
+          <div className="flex flex-col items-center justify-center gap-6">
+            <div className="flex justify-center w-full">
+              <LikeDislike postId={currentPost.id} slug={currentPost.slug} source="wp" variant="reader" />
+            </div>
+
+            <div className="flex flex-col items-center gap-3">
+              <p className="text-sm text-muted-foreground font-medium">✨ Loved the story? Share it or follow for more! ✨</p>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({ title: currentPost.title?.rendered || (currentPost as any)?.title || "Story", url: window.location.href });
+                    } else {
+                      navigator.clipboard.writeText(window.location.href);
+                      toast({ title: "Link Copied", description: "Story link copied to clipboard!" });
+                    }
+                  }}
+                  className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                >
+                  <Share2 className="h-4 w-4" />
+                  <span className="sr-only">Share</span>
+                </Button>
+
+                {/* Social links */}
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      window.open("https://twitter.com/Bubbleteameimei", "_blank", "noopener,noreferrer");
+                    }}
+                    className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" className="h-4 w-4"><path fill="currentColor" d="M22.46 6c-.77.35-1.6.58-2.46.69a4.27 4.27 0 0 0 1.87-2.36 8.56 8.56 0 0 1-2.71 1.04 4.25 4.25 0 0 0-7.24 3.88A12.07 12.07 0 0 1 3.15 4.94a4.25 4.25 0 0 0 1.32 5.67 4.22 4.22 0 0 1-1.92-.53v.05a4.25 4.25 0 0 0 3.41 4.17 4.28 4.28 0 0 1-1.91.07 4.25 4.25 0 0 0 3.96 2.94A8.52 8.52 0 0 1 2 19.54a12.05 12.05 0 0 0 6.53 1.91c7.84 0 12.12-6.49 12.12-12.12v-.55A8.68 8.68 0 0 0 24 6.36a8.44 8.44 0 0 1-2.54.7z"/></svg>
+                    <span className="sr-only">Follow on Twitter</span>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      window.open("https://bubbleteameimei.wordpress.com/", "_blank", "noopener,noreferrer");
+                    }}
+                    className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2C6.48 2 2 6.43 2 11.92c0 4.83 3.42 8.86 7.98 9.77l2.02-5.25l-4.07-11.2L12 8.89l4.07-3.65l-4.07 11.2l2.02 5.25c4.56-.91 7.98-4.94 7.98-9.77C22 6.43 17.52 2 12 2z"/></svg>
+                    <span className="sr-only">Follow on WordPress</span>
+                  </Button>
+
+                  <Button asChild variant="outline" size="icon" className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200">
+                    <a href="https://www.instagram.com/Bubbleteameimei/" target="_blank" rel="noreferrer">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm10 2H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3Zm-5 3a5 5 0 1 1 0 10a5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6a3 3 0 0 0 0-6Zm5.5-.75a1.25 1.25 0 1 1-2.5 0a1.25 1.25 0 0 1 2.5 0Z"/></svg>
+                      <span className="sr-only">Follow on Instagram</span>
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.article>
+
+      <Footer />
+    </div>
+  );
+}
                             placeholder="e.g., ghost, skull, brain"
                           />
                           <p className="text-xs text-muted-foreground">
