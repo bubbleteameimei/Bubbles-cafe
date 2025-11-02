@@ -127,7 +127,8 @@ router.get('/', async (req, res) => {
       .filter((t) => t.length > 0);
 
     const sort = typeof sortRaw === 'string' ? String(sortRaw).toLowerCase() : 'relevance';
-    const cacheParams = { q: searchQuery, types: contentTypes, limit: resultLimit, page: pageNum, from: fromDate?.toISOString() || null, category: category || null, tags: tag    const key = makeCacheKey(cacheParams);
+    const cacheParams = { q: searchQuery, types: contentTypes, limit: resultLimit, page: pageNum, from: fromDate?.toISOString() || null, category: category || null, tags: tagFilters, sort };
+    const key = makeCacheKey(cacheParams);
     const cached = searchCache.get(key);
     if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
       return res.json(cached.data);
@@ -274,7 +275,10 @@ router.get('/', async (req, res) => {
             readingTimeMinutes,
             popularity: (Number((post as any)?.likesCount) || 0) + (Number((post as any)?.baselineLikes) || 0),
             score
-         
+          };
+          return result;
+        });
+      
       if (fromDate) {
         postResults = postResults.filter((r: any) => new Date(r.createdAt || 0) >= fromDate!);
       }
@@ -791,8 +795,7 @@ router.get('/', async (req, res) => {
         sort,
         didYouMean: didYouMean || null
       }
-  _code  new}</;
-
+    };
     searchCache.set(key, { ts: Date.now(), data: payload });
     return res.json(payload);
     
