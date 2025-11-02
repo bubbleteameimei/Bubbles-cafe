@@ -9,7 +9,6 @@ import SwipeNavigation from "@/components/reader/SwipeNavigation";
 import "@/styles/reader-fixes.css";
 import { Share2, Shuffle, ChevronLeft, ChevronRight, BookText, Trash } from "lucide-react";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
 import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
@@ -664,7 +663,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     }}
                     className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" className="h-4 w-4"><path fill="currentColor" d="M22.46 6c-.77.35-1.6.58-2.46.69a4.27 4.27 0 0 0 1.87-2.36 8.56 8.56 0 0 1-2.71 1.04 4.25 4.25 0 0 0-7.24 3.88A12.07 12.07 0 0 1 3.15 4.94a4.25 4.25 0 0 0 1.32 5.67 4.22 4.22 0 0 1-1.92-.53v.05a4.25 4.25 0 0 0 3.41 4.17 4.28 4.28 0 0 1-1.91.07 4.25 4.25 0 0 0 3.96 2.94A8.52 8.52 0 0 1 2 19.54a12.05 12.05 0 0 0 6.53 1.91c7.84 0 12.12-6.49 12.12-12.12v-.55A8.68 8.68 0 0 0 24 6.36a8.44 8.44 0 0 1-2.54.7z"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" className="h-4 w-4"><path fill="currentColor" d="M22.46 6c-.77.35-1.6 .58-2.46 .69a4.27 4.27 0 0 0 1.87-2.36 8.56 8.56 0 0 1-2.71 1.04 4.25 4.25 0 0 0-7.24 3.88A12.07 12.07 0 0 1 3.15 4.94a4.25 4.25 0 0 0 1.32 5.67 4.22 4.22 0 0 1-1.92-.53v.05a4.25 4.25 0 0 0 3.41 4.17 4.28 4.28 0 0 1-1.91 .07 4.25 4.25 0 0 0 3.96 2.94A8.52 8.52 0 0 1 2 19.54a12.05 12.05 0 0 0 6.53 1.91c7.84 0 12.12-6.49 12.12-12.12v-.55A8.68 8.68 0 0 0 24 6.36a8.44 8.44 0 0 1-2.54 .7z"/></svg>
                     <span className="sr-only">Follow on Twitter</span>
                   </Button>
 
