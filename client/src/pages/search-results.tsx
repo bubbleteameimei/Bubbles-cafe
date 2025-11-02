@@ -43,7 +43,6 @@ export default function SearchResultsPage() {
 
   // Filters
   const [category, setCategory] = useState<string>("all");
-  const [from, setFrom] = useState<string>("all");
 
   // Recent searches
   const [recent, setRecent] = useState<string[]>([]);
@@ -105,7 +104,6 @@ export default function SearchResultsPage() {
         qs.set("types", "posts"); // focus on stories
         qs.set("limit", "10");
         qs.set("page", String(pageNum));
-        if (from !== "all") qs.set("from", from);
         if (category !== "all") qs.set("category", category);
 
         const { results, meta } = await apiJson<any>("GET", `/api/search?${qs.toString()}`);
@@ -236,7 +234,7 @@ export default function SearchResultsPage() {
         setIsSearching(false);
       }
     },
-    [toast, from, category]
+    [toast, category]
   );
 
   // Extract search query from URL
@@ -396,7 +394,7 @@ export default function SearchResultsPage() {
                 placeholder="Search for keywords..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 pr-10"
                 role="combobox"
                 aria-expanded={showSuggest}
                 aria-controls="advanced-search-suggestions"
@@ -434,6 +432,16 @@ export default function SearchResultsPage() {
                   }
                 }}
               />
+              <Button
+                type="submit"
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                aria-label="Search"
+                disabled={isSearching || !searchQuery.trim()}
+              >
+                {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              </Button>
               {showSuggest && suggestions.length > 0 && (
                 <div
                   className="absolute z-20 mt-1 w-full bg-background border border-border rounded-md shadow-sm"
@@ -468,27 +476,8 @@ export default function SearchResultsPage() {
                   <SelectItem value="supernatural">Supernatural</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={from} onValueChange={setFrom}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Any time" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Any time</SelectItem>
-                  <SelectItem value="7">Past 7 days</SelectItem>
-                  <SelectItem value="30">Past 30 days</SelectItem>
-                  <SelectItem value="365">Past year</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button type="submit" disabled={isSearching || !searchQuery.trim()}>
-                {isSearching ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Searching...
-                  </>
-                ) : (
-                  "Search"
-                )}
-              </Button>
+              
+              
             </div>
           </div>
         </form>
