@@ -20,6 +20,9 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const searchCache = new Map<string, { ts: number; data: any }>();
 const trendingQueries = new Map<string, number>();
 
+// Pre-seed some popular queries to make suggestions useful even on cold start
+['mind','mirror','devotion'].forEach((q, i) => trendingQueries.set(q, 10 - i));
+
 function makeCacheKey(params: Record<string, unknown>) {
   return JSON.stringify(params);
 }
@@ -48,6 +51,17 @@ function levenshtein(a: string, b: string) {
     }
   }
   return dp[m][n];
+}
+
+// Utility: estimate reading time in minutes from content
+function estimateReadingMinutes(text: string, wpm = 225): number {
+  const words = String(text || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+  return Math.max(1, Math.ceil(words / wpm));
 }
 
 // Search content types interface
@@ -239,15 +253,46 @@ router.get('/', async (req, res) => {
           if (matches.length > 0) {
             excerpt = matches[0].context;
           } else {
-            excerpt = plainContent.substring(0, 150) + '...';
+            excerpt = plainContent.substring(0, 180) + '...';
           }
           
           // Determine community vs reader based on metadata flag
           let isCommunity = false;
+          let meta: any = {};
           try {
-            const meta: any = (post as any).metadata || {};
+            meta = (post as any).metadata || {};
             isCommunity = Boolean(meta?.isCommunityPost);
           } catch {}
+
+          // Collect tags for UI (theme tags + metadata tags)
+          const tags: string[] = [];
+          try {
+            if (Array.isArray(meta.tags)) {
+              meta.tags.forEach((t: any) => {
+                const s = String(t || '').trim();
+                if (s) tags.push(s);
+              });
+            }
+          } catch {}
+          if (typeof post.themeCategory === 'string' && post.themeCategory.trim()) {
+            tags.push(String(post.themeCategory).trim());
+          }
+
+          // Estimate reading time minutes (prefer stored value)
+          const readingMinutes = Number.isFinite(post.readingTimeMinutes as any)
+            ? Number(post.readingTimeMinutes)
+            : estimateReadingMinutes(plainContent);
+
+          // Simple relevance score: prioritize title hits, then excerpt/match count, then recency
+          const titleLower = title.toLowerCase();
+          const excerptLower = excerpt.toLowerCase();
+          const titleHits = searchTerms.reduce((acc, t) => acc + (titleLower.includes(t) ? 1 : 0), 0);
+          const excerptHits = searchTerms.reduce((acc, t) => acc + (excerptLower.includes(t) ? 1 : 0), 0);
+          const recencyBoost = (() => {
+            const ageDays = Math.max(0, (Date.now() - new Date(post.createdAt || 0).getTime()) / (24 * 60 * 60 * 1000));
+            return ageDays < 30 ? 1 : 0; // small boost for recent posts
+          })();
+          const relevanceScore = titleHits * 6 + excerptHits * 3 + matches.length * 1 + recencyBoost;
 
           const result = {
             id: post.id,
@@ -257,7 +302,10 @@ router.get('/', async (req, res) => {
             // Prefer slug for proper routing; route differs for community content
             url: `${isCommunity ? '/community-story' : '/reader'}/${post.slug || post.id}`,
             matches,
-            createdAt: post.createdAt
+            createdAt: post.createdAt,
+            tags,
+            readingTime: `${Math.max(1, readingMinutes)} min`,
+            relevanceScore
           };
           return result;
         });
@@ -331,9 +379,16 @@ router.get('/', async (req, res) => {
             if (matches.length > 0) {
               excerpt = matches[0].context;
             } else {
-              excerpt = plainContent.substring(0, 150) + '...';
+              excerpt = plainContent.substring(0, 180) + '...';
             }
-            
+
+            // Title and excerpt hits for relevance
+            const titleLower = title.toLowerCase();
+            const excerptLower = excerpt.toLowerCase();
+            const titleHits = searchTerms.reduce((acc, t) => acc + (titleLower.includes(t) ? 1 : 0), 0);
+            const excerptHits = searchTerms.reduce((acc, t) => acc + (excerptLower.includes(t) ? 1 : 0), 0);
+            const relevanceScore = titleHits * 6 + excerptHits * 3 + matches.length * 1;
+
             return {
               id: post.id,
               title: post.title,
@@ -341,7 +396,8 @@ router.get('/', async (req, res) => {
               type: 'page',
               url: `/page/${post.slug}`,
               matches,
-              createdAt: post.createdAt
+              createdAt: post.createdAt,
+              relevanceScore
             };
           });
           
@@ -386,6 +442,12 @@ router.get('/', async (req, res) => {
             // Get summary
             let excerpt = plainContent.substring(0, 150) + '...';
             
+            const titleLower = `comment`.toLowerCase();
+            const excerptLower = excerpt.toLowerCase();
+            const titleHits = searchTerms.reduce((acc, t) => acc + (titleLower.includes(t) ? 1 : 0), 0);
+            const excerptHits = searchTerms.reduce((acc, t) => acc + (excerptLower.includes(t) ? 1 : 0), 0);
+            const relevanceScore = titleHits * 6 + excerptHits * 3 + matches.length * 1;
+
             const result = {
               id: comment.id,
               title: `Comment on post #${comment.postId}`,
@@ -395,7 +457,8 @@ router.get('/', async (req, res) => {
               matches,
               createdAt: comment.createdAt,
               postId: comment.postId,
-              userId: comment.userId
+              userId: comment.userId,
+              relevanceScore
             };
             return result;
           });
@@ -446,6 +509,12 @@ router.get('/', async (req, res) => {
               }
             });
             
+            const titleLower = (user.username || '').toLowerCase();
+            const excerptLower = (user.email || '').toLowerCase();
+            const titleHits = searchTerms.reduce((acc, t) => acc + (titleLower.includes(t) ? 1 : 0), 0);
+            const excerptHits = searchTerms.reduce((acc, t) => acc + (excerptLower.includes(t) ? 1 : 0), 0);
+            const relevanceScore = titleHits * 6 + excerptHits * 3 + matches.length * 1;
+
             return {
               id: user.id,
               title: user.username,
@@ -454,7 +523,8 @@ router.get('/', async (req, res) => {
               url: `/admin/users/${user.id}`,
               matches,
               createdAt: user.createdAt,
-              adminOnly: true
+              adminOnly: true,
+              relevanceScore
             };
           });
           
@@ -538,6 +608,12 @@ router.get('/', async (req, res) => {
               excerpt = page.content.substring(0, 150) + '...';
             }
             
+            const titleLower = page.title.toLowerCase();
+            const excerptLower = excerpt.toLowerCase();
+            const titleHits = searchTerms.reduce((acc, t) => acc + (titleLower.includes(t) ? 1 : 0), 0);
+            const excerptHits = searchTerms.reduce((acc, t) => acc + (excerptLower.includes(t) ? 1 : 0), 0);
+            const relevanceScore = titleHits * 6 + excerptHits * 3 + matches.length * 1;
+
             return {
               id: page.id,
               title: page.title,
@@ -545,7 +621,8 @@ router.get('/', async (req, res) => {
               type: 'legal',
               url: page.url,
               matches,
-              createdAt: new Date().toISOString() // Use current date since these are static pages
+              createdAt: new Date().toISOString(), // Use current date since these are static pages
+              relevanceScore
             };
           });
           
@@ -627,6 +704,232 @@ router.get('/', async (req, res) => {
               excerpt = matches[0].context;
             } else {
               excerpt = page.content.substring(0, 150) + '...';
+            }
+            
+            const titleLower = page.title.toLowerCase();
+            const excerptLower = excerpt.toLowerCase();
+            const titleHits = searchTerms.reduce((acc, t) => acc + (titleLower.includes(t) ? 1 : 0), 0);
+            const excerptHits = searchTerms.reduce((acc, t) => acc + (excerptLower.includes(t) ? 1 : 0), 0);
+            const relevanceScore = titleHits * 6 + excerptHits * 3 + matches.length * 1;
+
+            return {
+              id: page.id,
+              title: page.title,
+              excerpt,
+              type: 'settings',
+              url: page.url,
+              matches,
+              createdAt: new Date().toISOString(), // Use current date since these are static pages
+              relevanceScore
+            };
+          });
+          
+        results = [...results, ...settingsResults];
+      } catch (err) {
+        console.error('[Search] Error searching settings pages:', err);
+      }
+    }
+    
+    // 7. Search reported content if requested (admin only)
+    if (searchOptions.includeReported && searchOptions.isAdmin) {
+      try {
+        const allReported = await db.select().from(reportedContent);
+        
+        const reportedResults = allReported
+          .filter((report: ReportedContent) => {
+            const reason = report.reason?.toLowerCase() || '';
+            // Use status as additional searchable field since we don't have details
+            const status = report.status?.toLowerCase() || '';
+            
+            return searchTerms.some(term => {
+              return reason.includes(term) || status.includes(term);
+            });
+          })
+          .map((report: ReportedContent) => {
+            // Create matches
+            const matches: { text: string; context: string }[] = [];
+            
+            searchTerms.forEach(term => {
+              const reason = report.reason?.toLowerCase() || '';
+              const status = report.status?.toLowerCase() || '';
+              
+              if (reason.includes(term)) {
+                matches.push({
+                  text: term,
+                  context: `Reason: ${report.reason}`
+                });
+              }
+              
+              if (status.includes(term)) {
+                matches.push({
+                  text: term,
+                  context: `Status: ${report.status}`
+                });
+              }
+            });
+            
+            // Pick correct URL based on content type
+            let url = '/admin/reports';
+            if (report.contentType === 'post') {
+              url = `/reader/${report.contentId}`;
+            } else if (report.contentType === 'comment') {
+              // For comments, we need to find the related post - for now use a generic URL
+              url = `/admin/reports/${report.id}`;
+            }
+            
+            const titleLower = `reported ${report.contentType}`.toLowerCase();
+            const excerptLower = (report.reason || '').toLowerCase();
+            const titleHits = searchTerms.reduce((acc, t) => acc + (titleLower.includes(t) ? 1 : 0), 0);
+            const excerptHits = searchTerms.reduce((acc, t) => acc + (excerptLower.includes(t) ? 1 : 0), 0);
+            const relevanceScore = titleHits * 6 + excerptHits * 3 + matches.length * 1;
+
+            return {
+              id: report.id,
+              title: `Reported ${report.contentType} #${report.contentId}`,
+              excerpt: report.reason || 'No reason provided',
+              type: 'report',
+              url,
+              matches,
+              createdAt: report.createdAt,
+              adminOnly: true,
+              relevanceScore
+            };
+          });
+          
+        results = [...results, ...reportedResults];
+      } catch (err) {
+        console.error('[Search] Error searching reported content:', err);
+      }
+    }
+    
+    // Sort results by relevance and then date
+    results.sort((a, b) => {
+      // First by relevance score (higher first)
+      const scoreA = typeof a.relevanceScore === 'number' ? a.relevanceScore : (Array.isArray(a.matches) ? a.matches.length : 0);
+      const scoreB = typeof b.relevanceScore === 'number' ? b.relevanceScore : (Array.isArray(b.matches) ? b.matches.length : 0);
+      const diff = scoreB - scoreA;
+      if (diff !== 0) return diff;
+      
+      // Then by date (newer first) if scores are equal
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      return dateB - dateA;
+    });
+    
+    // Pagination
+    const total = results.length;
+    const totalPages = Math.max(Math.ceil(total / resultLimit), 1);
+    const start = (pageNum - 1) * resultLimit;
+    const paged = results.slice(start, start + resultLimit);
+
+    recordTrending(searchQuery);
+
+    console.log(`[Search] Found ${total} results for "${searchQuery}" (page ${pageNum}/${totalPages})`);
+
+    let didYouMean: string | undefined;
+    if (total === 0 && trendingQueries.size > 0) {
+      let best: { q: string; d: number } | null = null;
+      for (const [qstr] of trendingQueries) {
+        const d = levenshtein(searchQuery, qstr);
+        if (d <= 2 && (!best || d < best.d)) best = { q: qstr, d };
+      }
+      if (best) didYouMean = best.q;
+    }
+
+    const payload = { 
+      results: paged,
+      meta: {
+        query: searchQuery,
+        total,
+        page: pageNum,
+        pages: totalPages,
+        limit: resultLimit,
+        types: contentTypes,
+        from: fromDate?.toISOString() || null,
+        category: category || null,
+        tags: tagFilters,
+        didYouMean: didYouMean || null
+      }
+    };
+    searchCache.set(key, { ts: Date.now(), data: payload });
+    return res.json(payload);
+    
+  } catch (error) {
+    console.error('Search error:', error);
+    return res.status(500).json({ error: 'An error occurred during search', results: [] });
+  }
+});
+
+export default router;
+
+// Lightweight suggestions endpoint for typeahead
+router.get('/suggest', async (req, res) => {
+  try {
+    const { q, limit = '10' } = req.query;
+    const max = Math.min(Math.max(parseInt(limit as string, 10) || 10, 1), 20);
+
+    // If no query or too short, return trending queries as suggestions
+    if (!q || typeof q !== 'string' || q.trim().length < 2) {
+      const sorted = Array.from(trendingQueries.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, max)
+        .map(([term]) => ({ id: term, title: term, type: 'query', url: `/search?q=${encodeURIComponent(term)}` }));
+      return res.json({ suggestions: sorted });
+    }
+
+    const search = q.trim().toLowerCase();
+
+    // Fetch posts and filter by title first, then content as fallback
+    const allPosts = await db.select().from(posts);
+    const titleMatches = allPosts
+      .filter((p: any) => (p.title || '').toLowerCase().includes(search))
+      .slice(0, max);
+
+    const remaining = Math.max(0, max - titleMatches.length);
+    let contentMatches: any[] = [];
+    if (remaining > 0) {
+      contentMatches = allPosts
+        .filter((p: any) => !(p.title || '').toLowerCase().includes(search))
+        .filter((p: any) => (p.content || '').toLowerCase().includes(search))
+        .slice(0, remaining);
+    }
+
+    // Tag suggestions from metadata.tags and themeCategory
+    const tagSet = new Set<string>();
+    for (const p of allPosts) {
+      try {
+        const meta: any = (p as any).metadata || {};
+        if (Array.isArray(meta.tags)) {
+          for (const t of meta.tags) {
+            const s = String(t || '').trim();
+            if (s) tagSet.add(s);
+          }
+        }
+      } catch {}
+      const theme = String((p as any).themeCategory || '').trim();
+      if (theme) tagSet.add(theme);
+    }
+
+    const tagMatches = Array.from(tagSet)
+      .filter(t => t.toLowerCase().includes(search))
+      .slice(0, Math.max(0, Math.floor(max / 2))) // keep tag suggestions light
+      .map(t => ({ id: `tag:${t}`, title: t, type: 'tag', url: `/search?tags=${encodeURIComponent(t)}` }));
+
+    const combined = [...titleMatches, ...contentMatches];
+    const postSuggestions = combined.map((p: any) => ({
+      id: p.id,
+      title: p.title || 'Untitled',
+      type: 'post',
+      // Prefer slug when available to match client routes
+      url: `/reader/${p.slug || p.id}`
+    }));
+
+    return res.json({ suggestions: [...postSuggestions, ...tagMatches] });
+  } catch (error) {
+    console.error('[Search] Suggest error:', error);
+    return res.status(500).json({ suggestions: [] });
+  }
+});
             }
             
             return {
