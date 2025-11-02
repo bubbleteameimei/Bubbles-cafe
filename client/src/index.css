@@ -491,7 +491,16 @@ div.sidebar-menu-container {
 
   /* Global inactive state normalization for buttons and button-like elements */
   button[disabled],
-  Overlay-active: lock root scrolling and disable overscroll/touch to prevent header misplacement and inertial scroll */
+  .btn[disabled],
+  [aria-disabled="true"],
+  .disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    filter: saturate(0.4) brightness(0.98) !important;
+  }
+
+  /* Overlay-active: lock root scrolling and disable overscroll/touch to prevent header misplacement and inertial scroll */
 html.overlay-active,
 body.overlay-active {
   overflow: hidden !important;
