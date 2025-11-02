@@ -751,6 +751,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     } catch {}
   }, [posts, validCurrentIndex, routeSlug, setLocation]);
 
+  // Get current post and reset scroll position when it changes
+  const currentPost = posts[validCurrentIndex];
+
+  useEffect(() => {
+    try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
+  }, [currentPost?.id]);
+
   // Let's make sure we have posts data and current post before rendering
   if (isLoading) {
     // Avoid showing an inline loader; let the header remain and page content appear when ready
@@ -780,14 +787,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       />
     );
   }
-
-  // Get current post
-  const currentPost = posts[validCurrentIndex];
-
-  // Scroll to top once when the current post changes to avoid visible pre-reset jank
-  useEffect(() => {
-    try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
-  }, [currentPost?.id]);
 
   const stripHtml = (s: string) => s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '';
   const titleText = stripHtml(currentPost.title?.rendered || currentPost.title || 'Story');
