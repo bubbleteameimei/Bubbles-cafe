@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, Link } from "wouter";
 import { Loader2, BookOpen, SlidersHorizontal, ChevronDown, X, Search } from "lucide-react";
@@ -10,6 +10,7 @@ import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchWordPressPosts, getExcerpt } from "@/lib/wordpress-api";
+import { THEME_CATEGORIES } from "@/lib/content-analysis";
 
 interface SearchResult {
   id: number;
@@ -46,13 +47,25 @@ export default function SearchResultsPage() {
   // Filters
   const [category, setCategory] = useState<string>("all");
   const [from, setFrom] = useState<string>("all");
-  const [sort, setSort] = useState<'relevance' | 'newest' | 'oldest'>('relevance');
 
   // Recent searches
   const [recent, setRecent] = useState<string[]>([]);
 
   // Locally cached posts for suggestion scoring (mirrors Index page behavior)
   const [indexPosts, setIndexPosts] = useState<Array<{ id: number; title: string; slug: string }>>([]);
+
+  // Theme counts for dropdown (combined Reader + Community)
+  const [themeCounts, setThemeCounts] = useState<Record<string, { total: number; community: number; reader: number }>>({});
+
+  // Popular stories when no results
+  const [popular, setPopular] = useState<SearchResult[]>([]);
+
+  // Merge known themes with those present in data, sorted alphabetically
+  const themeKeys = useMemo(() => {
+    const known = Object.keys(THEME_CATEGORIES || {}) as string[];
+    const present = Object.keys(themeCounts || {});
+    return Array.from(new Set([...known, ...present])).sort((a, b) => a.localeCompare(b));
+  }, [themeCounts]);
 
   // Helpers for WordPress fallback: strip HTML and extract context around matched terms
   const stripHtml = (html: string) => {
@@ -148,15 +161,13 @@ export default function SearchResultsPage() {
         const applyFiltersAndSort = (arr: SearchResult[]) => {
           let out = arr;
           if (from !== "all") out = out.filter((r) => withinRange(r.date));
-          if (sort !== "relevance") {
-            out = [...out].sort((a, b) => {
-              const da = a.date ? new Date(a.date).getTime() : 0;
-              const db = b.date ? new Date(b.date).getTime() : 0;
-              return sort === "newest" ? db - da : da - db;
-            });
-          }
-          return out;
-        };
+          // Always sort by match count (desc), then by date (newest first) as tie-breaker
+          out = [...out].sort((a, b) => {
+            const matchDiff = (b.matches?.length || 0) - (a.matches?.length || 0);
+            if (matchDiff !== 0) return matchDiff;
+            const da = a.date ? new Date(a.date).getTime() : 0;
+            const db = b.date ? new Date(b.date).getTime() : 0;
+            return };
 
         // Apply on server results (in case server doesn't handle these)
         finalResults = applyFiltersAndSort(finalResults);
@@ -301,7 +312,7 @@ export default function SearchResultsPage() {
             };
           });
 
-          // Apply time filter and sort on fallback results
+          // Apply time filter and sort on fallback results (most matches first)
           const filteredSorted = wpMapped
             .filter((r) => {
               if (from === "all") return true;
@@ -312,10 +323,11 @@ export default function SearchResultsPage() {
               return d.getTime() >= cutoff;
             })
             .sort((a, b) => {
-              if (sort === "relevance") return 0;
+              const matchDiff = (b.matches?.length || 0) - (a.matches?.length || 0);
+              if (matchDiff !== 0) return matchDiff;
               const da = a.date ? new Date(a.date).getTime() : 0;
               const db = b.date ? new Date(b.date).getTime() : 0;
-              return sort === "newest" ? db - da : da - db;
+              return db - da;
             });
 
           setSearchResults(filteredSorted);
@@ -340,7 +352,7 @@ export default function SearchResultsPage() {
         setIsSearching(false);
       }
     },
-    [toast, category, from, sort, indexPosts]
+    [toast, category, from, indexPosts]
   );
 
   // Extract search query from URL
@@ -353,12 +365,12 @@ export default function SearchResultsPage() {
     }
   }, [location, performSearch]);
 
-  // Re-run search when filters/sort change
+  // Re-run search when filters/category change
   useEffect(() => {
     if (searchQuery.trim()) {
       performSearch(searchQuery, 1);
     }
-  }, [from, sort, performSearch]);
+  }, [from, category, performSearch]);
 
   // Preload posts for local suggestion scoring (mirrors Index page approach)
   useEffect(() => {
@@ -389,6 +401,33 @@ export default function SearchResultsPage() {
       mounted = false;
     };
   }, []);
+
+  // Load theme counts for dropdown labels (total count across Reader + Community)
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/posts/admin/themes");
+        if (!res.ok) return;
+        const data = await res.json();
+        const counts: Record<string, { total: number; community: number; reader: number }> = {};
+        for (const p of (Array.isArray(data) ? data : [])) {
+          const meta = (p?.metadata || {}) as any;
+          const theme = String(p?.themeCategory || p?.theme_category || meta?.themeCategory || "").trim();
+          if (!theme) continue;
+          const isCommunity = Boolean(meta?.isCommunityPost);
+          if (!counts[theme]) counts[theme] = { total: 0, community: 0, reader: 0 };
+          counts[theme].total += 1;
+          if (isCommunity) counts[theme].community += 1;
+          else counts[theme].reader += 1;
+        }
+        setThemeCounts(counts);
+      } catch {
+        // non-fatal
+      }
+    })();
+  }, []);
+
+  // Fetch popular stories when []);
 
   // Suggestions (typeahead) using the Index page scoring heuristics
   useEffect(() => {
@@ -587,75 +626,50 @@ export default function SearchResultsPage() {
               </Button>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-end items-center gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => setShowFilters(v => !v)}
                 aria-expanded={showFilters}
-                aria-controls="advanced-filter-panel"
+                aria-controls="advanced-filter-inline"
                 className="inline-flex items-center gap-2"
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 Filters
                 <ChevronDown className={`h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
               </Button>
-            </div>
 
-            <div className="flex justify-end">
-              <AnimatePresence initial={false}>
-                {showFilters && (
-                  <motion.div
-                    id="advanced-filter-panel"
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="flex items-center gap-2 pt-2">
-                      <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger className="w-[200px]">
-                          <SelectValue placeholder="Category" />
-                        </SelectTrigger>
-                        <SelectContent align="end">
-                          <SelectItem value="all">All Categories</SelectItem>
-                          <SelectItem value="PSYCHOLOGICAL">Psychological</SelectItem>
-                          <SelectItem value="SUPERNATURAL">Supernatural</SelectItem>
-                          <SelectItem value="TECHNOLOGICAL">Technological</SelectItem>
-                          <SelectItem value="BODY_HORROR">Body Horror</SelectItem>
-                          <SelectItem value="GOTHIC">Gothic</SelectItem>
-                          <SelectItem value="APOCALYPTIC">Apocalyptic</SelectItem>
-                        </SelectContent>
-                      </Select>
+              {showFilters && (
+                <>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger className="w-[220px]">
+                      <SelectValue placeholder="All Themes" />
+                    </SelectTrigger>
+                    <SelectContent align="end">
+                      <SelectItem value="all">All Themes</SelectItem>
+                      {themeKeys.map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {t} {typeof themeCounts[t]?.total === 'number' ? `(${themeCounts[t].total})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                      <Select value={from} onValueChange={setFrom}>
-                        <SelectTrigger className="w-[160px]">
-                          <SelectValue placeholder="Any time" />
-                        </SelectTrigger>
-                        <SelectContent align="end">
-                          <SelectItem value="all">Any time</SelectItem>
-                          <SelectItem value="7">Past 7 days</SelectItem>
-                          <SelectItem value="30">Past 30 days</SelectItem>
-                          <SelectItem value="365">Past year</SelectItem>
-                        </SelectContent>
-                      </Select>
-
-                      <Select value={sort} onValueChange={(v) => setSort(v as any)}>
-                        <SelectTrigger className="w-[140px]">
-                          <SelectValue placeholder="Sort by" />
-                        </SelectTrigger>
-                        <SelectContent align="end">
-                          <SelectItem value="relevance">Relevance</SelectItem>
-                          <SelectItem value="newest">Newest</SelectItem>
-                          <SelectItem value="oldest">Oldest</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  <Select value={from} onValueChange={setFrom}>
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue placeholder="Any time" />
+                    </SelectTrigger>
+                    <SelectContent align="end">
+                      <SelectItem value="all">Any time</SelectItem>
+                      <SelectItem value="7">Past 7 days</SelectItem>
+                      <SelectItem value="30">Past 30 days</SelectItem>
+                      <SelectItem value="365">Past year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
             </div>
           </div>
         </form>
@@ -670,10 +684,10 @@ export default function SearchResultsPage() {
                   <button
                     type="button"
                     aria-label={`Remove ${r} from recent searches`}
-                    className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-muted text-foreground/70 hover:text-foreground flex items-center justify-center"
+                    className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 rounded-full bg-foreground/10 hover:bg-foreground/20 text-foreground/80 flex items-center justify-cen_codetenewr</"
                     onClick={(e) => { e.stopPropagation(); removeRecent(r); }}
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-2.5 w-2.5" />
                   </button>
                   <Button variant="outline" size="sm" onClick={() => { setSearchQuery(r); performSearch(r, 1); }}>
                     {r}
@@ -741,8 +755,15 @@ export default function SearchResultsPage() {
         ) : searchResults.length > 0 ? (
           <>
             {(() => {
-              const readerResults = searchResults.filter((r) => r.url?.startsWith("/reader/"));
-              const communityResults = searchResults.filter((r) => r.url?.startsWith("/community-story/"));
+              const cmp = (a: SearchResult, b: SearchResult) => {
+                const m = (b.matches?.length || 0) - (a.matches?.length || 0);
+                if (m !== 0) return m;
+                const da = a.date ? new Date(a.date).getTime() : 0;
+                const db = b.date ? new Date(b.date).getTime() : 0;
+                return db - da;
+              };
+              const readerResults = [...searchResults.filter((r) => r.url?.startsWith("/reader/"))].sort(cmp);
+              const communityResults = [...search"));
               return (
                 <div className="space-y-10">
                   <motion.section initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
@@ -841,9 +862,34 @@ export default function SearchResultsPage() {
             })()}
           </>
         ) : searchQuery ? (
-          <div className="text-center py-12">
-            <p className="text-lg text-muted-foreground">No results found for "{searchQuery}"</p>
-            <p className="text-sm text-muted-foreground mt-2">Try different keywords or check your spelling</p>
+          <div className="space-y-6">
+            <h2 className="text-lg font-semibold">Popular Stories</h2>
+            {popular.length > 0 ? (
+              <div className="space-y-6">
+                {popular.map((result) => (
+                  <div key={`popular-${result.id}`} className="border rounded-lg p-4 shadow-sm">
+                    <h3 className="text-xl font-semibold mb-2">
+                      <Link href={result.url}>{highlightText(result.title, searchQuery)}</Link>
+                    </h3>
+                    {result.excerpt && (
+                      <div className="text-sm text-gray-700 dark:text-gray-300 bg-muted/50 p-2 rounded">
+                        {result.excerpt}
+                      </div>
+                    )}
+                    <div className="mt-3 flex justify-end">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={result.url} className="inline-flex items-center">
+                          <BookOpen className="mr-1 h-4 w-4" />
+                          Read More
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-foreground/60">Loading popular stories...</div>
+            )}
           </div>
         ) : null}
 
