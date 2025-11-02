@@ -167,15 +167,14 @@ router.get('/', async (req, res) => {
           const title = (post.title || '').toLowerCase();
           const rawContent = (post.content || '');
           const content = rawContent.toLowerCase();
+          const excerptField = (post.excerpt || '').toLowerCase();
 
-          // Must match at least one search term in title or content
-          const matchesQuery = searchTerms.some(term => title.includes(term) || content.includes(term));
-
+          // Must match at least one search term in title, excerpt, or content
+          const matchesQuery = searchTerms.some(term => title.includes(term) || excerptField.includes(term) || content.includes(term));
           if (!matchesQuery) return false;
 
           // If tag filters are provided, require a tag match as well
           if (tagFilters.length > 0) {
-            // Collect post tags from metadata (if any), themeCategory, and simple keyword heuristic
             let postTags: string[] = [];
             try {
               const meta: any = (post as any).metadata || {};
@@ -187,10 +186,9 @@ router.get('/', async (req, res) => {
               }
             } catch {}
 
-            // Also allow tag matching against title/content keywords as a fallback
             const matchesProvidedTags =
               tagFilters.some((t) => postTags.includes(t)) ||
-              tagFilters.some((t) => title.includes(t) || content.includes(t));
+              tagFilters.some((t) => title.includes(t) || excerptField.includes(t) || content.includes(t));
 
             if (!matchesProvidedTags) return false;
           }
@@ -200,64 +198,80 @@ router.get('/', async (req, res) => {
         .map((post: Post) => {
           const title = post.title || '';
           const content = post.content || '';
+          const rawExcerpt = post.excerpt || '';
           
           // Strip HTML tags to get plain text content
           const plainContent = content.replace(/<[^>]+>/g, '');
           
-          // Find matches with context
+          // Build an excerpt: prefer defined excerpt, otherwise first paragraph, otherwise plain text
+          const firstParagraph = (() => {
+            const pMatch = content.match(/<p[^>]*>(.*?)<\/p>/i);
+            if (pMatch && pMatch[1]) {
+              return String(pMatch[1]).replace(/<[^>]+>/g, '').trim();
+            }
+            const paragraphs = plainContent.split(/\n{2,}/).map(s => s.trim()).filter(Boolean);
+            return paragraphs[0] || plainContent;
+          })();
+          const baseExcerpt = (rawExcerpt?.trim() ? rawExcerpt.replace(/<[^>]+>/g, '') : firstParagraph).trim();
+          const excerpt = baseExcerpt.length > 180 ? baseExcerpt.slice(0, baseExcerpt.lastIndexOf(' ', 180) > 0 ? baseExcerpt.lastIndexOf(' ', 180) : 180) + '...' : baseExcerpt;
+
+          // Find matches with context (from content)
           const matches: { text: string; context: string }[] = [];
-  
           searchTerms.forEach(term => {
-            // Extract sentences containing the search term (rough heuristic)
             const regex = new RegExp(`[^.!?]*(?<=[.!?\\s]|^)${term}(?=[\\s.!?]|$)[^.!?]*[.!?]`, 'gi');
             const contextMatches = plainContent.match(regex);
-            
             if (contextMatches && contextMatches.length > 0) {
-              // Take the first 3 context matches per term
               contextMatches.slice(0, 3).forEach((context: string) => {
-                matches.push({
-                  text: term,
-                  context: context.trim()
-                });
+                matches.push({ text: term, context: context.trim() });
               });
             } else {
-              // If no clear sentence found, get some surrounding context
               const index = plainContent.toLowerCase().indexOf(term);
               if (index !== -1) {
                 const start = Math.max(0, index - 60);
                 const end = Math.min(plainContent.length, index + term.length + 60);
-                matches.push({
-                  text: term,
-                  context: plainContent.substring(start, end).trim()
-                });
+                matches.push({ text: term, context: plainContent.substring(start, end).trim() });
               }
             }
           });
-          
-          // Get a summary excerpt
-          let excerpt = '';
-          if (matches.length > 0) {
-            excerpt = matches[0].context;
-          } else {
-            excerpt = plainContent.substring(0, 150) + '...';
-          }
-          
-          // Determine community vs reader based on metadata flag
+
+          // Relevance score prioritizing title and excerpt
+          let score = 0;
+          const lcTitle = title.toLowerCase();
+          const lcExcerpt = excerpt.toLowerCase();
+          const lcContent = plainContent.toLowerCase();
+          searchTerms.forEach(term => {
+            if (lcTitle.includes(term)) score += 5;
+            if (lcExcerpt.includes(term)) score += 3;
+            if (lcContent.includes(term)) score += 1;
+          });
+
+          // Determine community vs reader based on metadata flag; and extract tags
           let isCommunity = false;
+          let tags: string[] = [];
           try {
             const meta: any = (post as any).metadata || {};
             isCommunity = Boolean(meta?.isCommunityPost);
+            if (Array.isArray(meta?.tags)) {
+              tags = meta.tags.map((t: any) => String(t));
+            }
           } catch {}
+
+          // Estimated reading time (fallback when not stored)
+          const words = plainContent.split(/\s+/).filter(Boolean).length;
+          const readingTimeMinutes = post.readingTimeMinutes || Math.max(1, Math.ceil(words / 225));
 
           const result = {
             id: post.id,
             title: post.title,
             excerpt,
             type: 'post',
-            // Prefer slug for proper routing; route differs for community content
             url: `${isCommunity ? '/community-story' : '/reader'}/${post.slug || post.id}`,
             matches,
-            createdAt: post.createdAt
+            createdAt: post.createdAt,
+            themeCategory: post.themeCategory || null,
+            tags,
+            readingTimeMinutes,
+            score
           };
           return result;
         });
@@ -711,15 +725,15 @@ router.get('/', async (req, res) => {
       }
     }
     
-    // Sort results by relevance (match count) and then date
+    // Sort results by relevance (prioritize title/excerpt matches), then match count, then date
     results.sort((a, b) => {
-      // First by match count (higher first)
-      const matchDiff = b.matches.length - a.matches.length;
+      const scoreDiff = (b.score ?? 0) - (a.score ?? 0);
+      if (scoreDiff !== 0) return scoreDiff;
+
+      const matchDiff = (Array.isArray(b.matches) ? b.matches.length : 0) - (Array.isArray(a.matches) ? a.matches.length : 0);
       if (matchDiff !== 0) return matchDiff;
-      
-      // Then by date (newer first) if matches are equal
-      const dateA = new Date(a.createdAt || 0).getTime();
-      const dateB = new Date(b.createdAt || 0).getTime();
+
+      const dateA;
       return dateB - dateA;
     });
     

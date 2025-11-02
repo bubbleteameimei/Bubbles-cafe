@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, Link } from "wouter";
-import { Loader2, Search, BookOpen } from "lucide-react";
+import { Loader2, Search, BookOpen, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -9,7 +9,11 @@ import { apiJson } from "@/lib/api";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchWordPressPosts, getExcerpt } from "@/lib/wordpress-api";
+import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { getBadgeTint } from "@/lib/theme-badges";
+import { THEME_CATEGORIES as THEMES_LITE } from "@/lib/themes-lite";
+import { fetchWordPressPosts, getExcerpt, getReadingTime } from "@/lib/wordpress-api";
 
 
 interface SearchResult {
@@ -25,6 +29,10 @@ interface SearchResult {
     context?: string;
     position: number;
   }[];
+  themeCategory?: string | null;
+  tags?: string[];
+  readingTimeMinutes?: number;
+  score?: number;
 }
 
 export default function SearchResultsPage() {
@@ -42,6 +50,9 @@ export default function SearchResultsPage() {
   const [category, setCategory] = useState<string>("all");
   const [from, setFrom] = useState<string>("all");
   const [recent, setRecent] = useState<string[]>([]);
+  const [tagFilters, setTagFilters] = useState<string[]>([]);
+  const popularSearches = ["mind", "mirror", "devotion"];
+  const trySearches = ["fear", "hunger", "machine"];
   
 
   // Helpers for WordPress fallback: strip HTML and extract context around matched terms
@@ -98,6 +109,7 @@ export default function SearchResultsPage() {
       qs.set('page', String(pageNum));
       if (from !== 'all') qs.set('from', from);
       if (category !== 'all') qs.set('category', category);
+      if (tagFilters.length > 0) qs.set('tags', tagFilters.join(','));
 
       const { results, meta } = await apiJson<any>('GET', `/api/search?${qs.toString()}`);
 
@@ -108,7 +120,11 @@ export default function SearchResultsPage() {
         content: '',
         type: (r.type === 'post' || r.type === 'page') ? r.type : 'post',
         url: r.url,
-        matches: (r.matches || []).map((m: any) => ({ field: 'content', text: m.context || m.text || '', position: 0 }))
+        matches: (r.matches || []).map((m: any) => ({ field: 'content', text: m.context || m.text || '', position: 0 })),
+        themeCategory: r.themeCategory || r.theme_category || null,
+        tags: Array.isArray(r.tags) ? r.tags : [],
+        readingTimeMinutes: typeof r.readingTimeMinutes === 'number' ? r.readingTimeMinutes : undefined,
+        score: typeof r.score === 'number' ? r.score : undefined
       }));
 
       let finalResults = mapped;
@@ -136,7 +152,10 @@ export default function SearchResultsPage() {
               content: '',
               type: 'post',
               url: `/reader/${p.slug || p.id}`,
-              matches: contexts.map((c) => ({ field: 'content', text: c.context, context: c.context, position: c.position }))
+              matches: contexts.map((c) => ({ field: 'content', text: c.context, context: c.context, position: c.position })),
+              themeCategory: null,
+              tags: [],
+              readingTimeMinutes: getReadingTime(rawContent || rawExcerpt || '')
             };
           });
           finalResults = wpMapped;
@@ -197,7 +216,10 @@ export default function SearchResultsPage() {
             content: '',
             type: 'post',
             url: `/reader/${p.slug || p.id}`,
-            matches: contexts.map((c) => ({ field: 'content', text: c.context, context: c.context, position: c.position }))
+            matches: contexts.map((c) => ({ field: 'content', text: c.context, context: c.context, position: c.position })),
+            themeCategory: null,
+            tags: [],
+            readingTimeMinutes: getReadingTime(rawContent || rawExcerpt || '')
           };
         });
 
@@ -222,7 +244,7 @@ export default function SearchResultsPage() {
     } finally {
       setIsSearching(false);
     }
-  }, [toast, from, category]);
+  }, [toast, from, category, tagFilters]);
 
   // Extract search query from URL
   useEffect(() => {
@@ -298,7 +320,7 @@ export default function SearchResultsPage() {
     <ErrorBoundary>
     <div className="container max-w-4xl mx-auto px-4 py-8">
       
-      <h1 className="text-2xl font-bold mb-6">Search Results</h1>
+      
       
       {/* Search form */}
       <form onSubmit={handleSearchSubmit} className="mb-4">
@@ -307,7 +329,7 @@ export default function SearchResultsPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
             <Input
               type="search"
-              placeholder="Search for keywords..."
+              placeholder="Search by title, theme, or word..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -319,16 +341,17 @@ export default function SearchResultsPage() {
               onFocus={() => { if (suggestions.length > 0) setShowSuggest(true); }}
               onBlur={() => setTimeout(() => setShowSuggest(false), 120)}
               onKeyDown={(e) => {
-                if (!showSuggest || suggestions.length === 0) return;
-                if (e.key === 'ArrowDown') {
+                if (e.key === 'ArrowDown' && showSuggest && suggestions.length > 0) {
                   e.preventDefault();
                   setActiveIndex((prev) => (prev + 1) % suggestions.length);
-                } else if (e.key === 'ArrowUp') {
+                } else if (e.key === 'ArrowUp' && showSuggest && suggestions.length > 0) {
                   e.preventDefault();
                   setActiveIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
                 } else if (e.key === 'Enter') {
-                  if (activeIndex >= 0 && activeIndex < suggestions.length) {
+                  if (showSuggest && suggestions.length > 0 && activeIndex >= 0 && activeIndex < suggestions.length) {
                     window.location.href = suggestions[activeIndex].url;
+                  } else if (searchResults.length > 0) {
+                    window.location.href = searchResults[0].url;
                   } else if (searchQuery.trim()) {
                     performSearch(searchQuery, 1);
                   }
@@ -337,6 +360,7 @@ export default function SearchResultsPage() {
                 }
               }}
             />
+            <div className="mt-1 text-xs text-muted-foreground">You can search by title, theme, or word.</div>
             {showSuggest && suggestions.length > 0 && (
               <div className="absolute z-20 mt-1 w-full bg-background border border-border rounded-md shadow-sm" role="listbox" id="advanced-search-suggestions" aria-label="Suggestions">
                 <ul className="max-h-64 overflow-auto py-1">
@@ -354,12 +378,12 @@ export default function SearchResultsPage() {
           
           <div className="flex items-center gap-2">
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Category" /></SelectTrigger>
+              <SelectTrigger className="w-[220px]"><SelectValue placeholder="Theme" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
-                <SelectItem value="gothic">Gothic</SelectItem>
-                <SelectItem value="dark-academia">Dark Academia</SelectItem>
-                <SelectItem value="supernatural">Supernatural</SelectItem>
+                <SelectItem value="all">All themes</SelectItem>
+                {Object.keys(THEMES_LITE).map((name) => (
+                  <SelectItem key={name} value={name.toLowerCase()}>{name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={from} onValueChange={setFrom}>
@@ -371,6 +395,29 @@ export default function SearchResultsPage() {
                 <SelectItem value="365">Past year</SelectItem>
               </SelectContent>
             </Select>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="min-w-[180px]">Tags</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>Filter by tags</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {["identity", "madness", "devotion", "fear", "hunger", "machine"].map((tag) => (
+                  <DropdownMenuCheckboxItem
+                    key={tag}
+                    checked={tagFilters.includes(tag)}
+                    onCheckedChange={(checked: any) => {
+                      setTagFilters((prev) => {
+                        const next = checked ? [...prev, tag] : prev.filter((t) => t !== tag);
+                        return Array.from(new Set(next)).slice(0, 8);
+                      });
+                    }}
+                  >
+                    {tag}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button type="submit" disabled={isSearching || !searchQuery.trim()}>
               {isSearching ? (
                 <>
@@ -387,7 +434,7 @@ export default function SearchResultsPage() {
 
       {/* Recent searches */}
       {recent.length > 0 && (
-        <div className="mb-6 text-sm">
+        <div className="mb-4 text-sm">
           <div className="mb-2 text-foreground/70">Recent searches:</div>
           <div className="flex flex-wrap gap-2">
             {recent.map(r => (
@@ -398,6 +445,26 @@ export default function SearchResultsPage() {
           </div>
         </div>
       )}
+
+      {/* Popular and suggested searches */}
+      <div className="mb-6 text-sm">
+        <div className="mb-2 text-foreground/70">Popular searches:</div>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {popularSearches.map((term) => (
+            <Button key={term} variant="secondary" size="sm" onClick={() => { setSearchQuery(term); performSearch(term, 1); }}>
+              {term}
+            </Button>
+          ))}
+        </div>
+        <div className="text-foreground/70 mb-2">Try searching for:</div>
+        <div className="flex flex-wrap gap-2">
+          {trySearches.map((term) => (
+            <Button key={term} variant="ghost" size="sm" onClick={() => { setSearchQuery(term); performSearch(term, 1); }}>
+              {term}
+            </Button>
+          ))}
+        </div>
+      </div>
       
       {/* Did you mean */}
       {didYouMean && (
@@ -408,148 +475,79 @@ export default function SearchResultsPage() {
 
       {/* Search results */}
       {isSearching ? (
-        <div className="space-y-10">
-          <section>
-            <h2 className="text-lg font-semibold mb-3">Reader Stories</h2>
-            <div className="space-y-6">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="border rounded-lg p-4 shadow-sm">
-                  <Skeleton className="h-6 w-2/3 mb-2" />
-                  <div className="space-y-2 mt-3">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-11/12" />
-                    <Skeleton className="h-4 w-10/12" />
-                  </div>
-                  <div className="mt-3 flex justify-between items-center">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-9 w-24" />
-                  </div>
-                </div>
-              ))}
+        <div className="space-y-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="border rounded-lg p-4 shadow-sm">
+              <Skeleton className="h-6 w-2/3 mb-2" />
+              <Skeleton className="h-4 w-full" />
+              <div className="mt-3 flex justify-between items-center">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-9 w-24" />
+              </div>
             </div>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold mb-3">Community Stories</h2>
-            <div className="space-y-6">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="border rounded-lg p-4 shadow-sm">
-                  <Skeleton className="h-6 w-2/3 mb-2" />
-                  <div className="space-y-2 mt-3">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-11/12" />
-                    <Skeleton className="h-4 w-10/12" />
-                  </div>
-                  <div className="mt-3 flex justify-between items-center">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-9 w-24" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+          ))}
         </div>
       ) : searchResults.length > 0 ? (
-        <>
-          {/* Split into Reader vs Community */}
-          {(() => {
-            const readerResults = searchResults.filter(r => r.url?.startsWith('/reader/'));
-            const communityResults = searchResults.filter(r => r.url?.startsWith('/community-story/'));
-            return (
-              <div className="space-y-10">
-                <motion.section initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-                  <h2 className="text-lg font-semibold mb-3">Reader Stories</h2>
-                  {readerResults.length > 0 ? (
-                    <div className="space-y-6">
-                      {readerResults.map(result => (
-                        <motion.div key={`reader-${result.id}`} className="border rounded-lg p-4 shadow-sm"
-                          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
-                          <h3 className="text-xl font-semibold mb-2">
-                            <Link href={result.url}>
-                              {highlightText(result.title, searchQuery)}
-                            </Link>
-                          </h3>
-                          <div className="space-y-2 mt-3">
-                            {result.matches
-                              .filter(m => m.field === 'content')
-                              .slice(0, 3)
-                              .map((match, idx) => (
-                                <div key={idx} className="text-sm text-gray-700 dark:text-gray-300 bg-muted/50 p-2 rounded">
-                                  ...{highlightText(match.context || match.text, searchQuery)}...
-                                </div>
-                              ))}
-                          </div>
-                          <div className="mt-3 flex justify-between items-center">
-                            <span className="text-xs text-gray-500">
-                              {result.matches.length} {result.matches.length === 1 ? 'match' : 'matches'}
-                            </span>
-                            <Button variant="outline" size="sm" asChild>
-                              <Link href={result.url} className="inline-flex items-center">
-                                <BookOpen className="mr-1 h-4 w-4" />
-                                Read More
-                              </Link>
-                            </Button>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-foreground/60" aria-live="polite">No reader stories matched.</p>
-                  )}
-                </motion.section>
-
-                <motion.section initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-                  <h2 className="text-lg font-semibold mb-3">Community Stories</h2>
-                  {communityResults.length > 0 ? (
-                    <div className="space-y-6">
-                      {communityResults.map(result => (
-                        <motion.div key={`community-${result.id}`} className="border rounded-lg p-4 shadow-sm"
-                          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
-                          <h3 className="text-xl font-semibold mb-2">
-                            <Link href={result.url}>
-                              {highlightText(result.title, searchQuery)}
-                            </Link>
-                          </h3>
-                          <div className="space-y-2 mt-3">
-                            {result.matches
-                              .filter(m => m.field === 'content')
-                              .slice(0, 3)
-                              .map((match, idx) => (
-                                <div key={idx} className="text-sm text-gray-700 dark:text-gray-300 bg-muted/50 p-2 rounded">
-                                  ...{highlightText(match.context || match.text, searchQuery)}...
-                                </div>
-                              ))}
-                          </div>
-                          <div className="mt-3 flex justify-between items-center">
-                            <span className="text-xs text-gray-500">
-                              {result.matches.length} {result.matches.length === 1 ? 'match' : 'matches'}
-                            </span>
-                            <Button variant="outline" size="sm" asChild>
-                              <Link href={result.url} className="inline-flex items-center">
-                                <BookOpen className="mr-1 h-4 w-4" />
-                                Read More
-                              </Link>
-                            </Button>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-foreground/60" aria-live="polite">No community stories matched.</p>
-                  )}
-                </motion.section>
-              </div>
-            );
-          })()}
-        </>
+        <motion.section initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+          <div className="space-y-6">
+            {searchResults.map((result) => (
+              <motion.div
+                key={result.id}
+                className="border rounded-lg p-4 shadow-sm"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.18 }}
+              >
+                <h3 className="text-xl font-semibold mb-1">
+                  <Link href={result.url}>
+                    {highlightText(result.title, searchQuery)}
+                  </Link>
+                </h3>
+                <div className="text-sm text-muted-foreground mt-2">
+                  {result.excerpt}
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {result.themeCategory ? (
+                    <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${getBadgeTint(String(result.themeCategory).toUpperCase())}`}>
+                      {String(result.themeCategory).replace(/_/g, ' ').toLowerCase()}
+                    </Badge>
+                  ) : null}
+                  {(result.tags || []).slice(0, 3).map((t, idx) => (
+                    <Badge key={`${result.id}-tag-${idx}`} variant="outline" className="text-[12px] font-medium tracking-wide px-2 py-0.5">
+                      {String(t).toLowerCase()}
+                    </Badge>
+                  ))}
+                  {typeof result.readingTimeMinutes === 'number' ? (
+                    <span className="ml-auto inline-flex items-center text-xs text-muted-foreground">
+                      <Clock className="h-4 w-4 mr-1" />
+                      {result.readingTimeMinutes} min read
+                    </span>
+                  ) : null}
+                </div>
+                <div className="mt-3 flex justify-end">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={result.url} className="inline-flex items-center">
+                      <BookOpen className="mr-1 h-4 w-4" />
+                      Read More
+                    </Link>
+                  </Button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.section>
       ) : searchQuery ? (
         <div className="text-center py-12">
           <p className="text-lg text-muted-foreground">
-            No results found for "{searchQuery}"
+            No matches found — maybe try another word.
           </p>
-          <p className="text-sm text-muted-foreground mt-2">
-            Try different keywords or check your spelling
-          </p>
+          <div className="mt-3 flex justify-center gap-2">
+            {trySearches.map((term) => (
+              <Button key={term} variant="ghost" size="sm" onClick={() => { setSearchQuery(term); performSearch(term, 1); }}>
+                {term}
+              </Button>
+            ))}
+          </div>
         </div>
       ) : null}
 
