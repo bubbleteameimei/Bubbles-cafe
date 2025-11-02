@@ -24,7 +24,7 @@ const RouteScrollManager: React.FC = () => {
     };
   }, []);
 
-  // On route changes, reset scroll unless it was a popstate or a hash navigation
+  // On route changes, reset scroll unless it was a popstate, a hash navigation, or the reader route
   useEffect(() => {
     try {
       const hasHash = typeof window !== 'undefined' ? !!window.location.hash : false;
@@ -34,84 +34,25 @@ const RouteScrollManager: React.FC = () => {
       const recentlyPop = Date.now() - lastPopTsRef.current < 200;
       if (recentlyPop) return;
 
-      const isOverlayActive = () => {
-        try {
-          const htmlHas = document.documentElement.classList.contains('overlay-active');
-          const bodyHas = document.body.classList.contains('overlay-active');
-          const htmlOverflow = getComputedStyle(document.documentElement).overflow;
-          const bodyOverflow = getComputedStyle(document.body).overflow;
-          return htmlHas || bodyHas || htmlOverflow.includes('hidden') || bodyOverflow.includes('hidden');
-        } catch {
-          return false;
-        }
-      };
+      // Skip auto-resets on reader pages to avoid perceptible jank during story switches.
+      const path = (typeof location === 'string' && location) ? location : (typeof window !== 'undefined' ? window.location.pathname : '');
+      if (String(path).startsWith('/reader')) {
+        return;
+      }
 
-      const resetAll = () => {
-        // Window
+      requestAnimationFrame(() => {
         try {
           window.scrollTo({ top: 0, behavior: 'auto' });
         } catch {}
 
-        // Main landmark and common containers
-        const main = document.getElementById('main-content');
-        if (main) {
-          try {
-            (main as any).scrollTo?.({ top: 0, behavior: 'auto' });
-          } catch {
-            (main as any).scrollTop = 0;
-          }
-        }
-
-        // Known scrollable containers
-        try {
-          const selectors = [
-            '.overflow-y-auto',
-            '.scroll-area',
-            '[data-scroll-container="true"]',
-            '[data-scrollable="true"]',
-          ].join(',');
-          const candidates = Array.from(document.querySelectorAll<HTMLElement>(selectors));
-          for (const el of candidates) {
-            try {
-              el.scrollTo?.({ top: 0, behavior: 'auto' });
-            } catch {
-              el.scrollTop = 0;
-            }
-          }
-        } catch {}
-
         // Accessibility: focus main content landmark
+        const main = document.getElementById('main-content');
         if (main && typeof (main as any).focus === 'function') {
           try {
             (main as any).focus({ preventScroll: true });
           } catch {}
         }
-      };
-
-      const runReset = () => {
-        if (isOverlayActive()) {
-          // Wait briefly for overlay to release scroll-lock, then reset
-          let tries = 0;
-          const it = setInterval(() => {
-            tries += 1;
-            if (!isOverlayActive() || tries > 10) {
-              clearInterval(it);
-              requestAnimationFrame(() => {
-                resetAll();
-                // Double RAF to avoid races with late layout writes
-                requestAnimationFrame(resetAll);
-              });
-            }
-          }, 100);
-        } else {
-          requestAnimationFrame(() => {
-            resetAll();
-            requestAnimationFrame(resetAll);
-          });
-        }
-      };
-
-      runReset();
+      });
     } catch {}
   }, [location]);
 

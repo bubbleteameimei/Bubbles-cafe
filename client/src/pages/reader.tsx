@@ -411,8 +411,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     },
     // Keep previous data visible during background refetch to avoid flicker
     keepPreviousData: true,
-    // Cache reads for a while to keep navigation smooth without blank frames
-    staleTime: 5 * 60 * 1000,
+    // Provide placeholder data from cache immediately to avoid any null frame on remountme: 5 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false
@@ -760,9 +759,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Get current post
   const currentPost = posts[validCurrentIndex];
 
-  
-
-  // SEO values for this story
+  // Scroll to top once when the current post changes to avoid visiblery
   const stripHtml = (s: string) => s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '';
   const titleText = stripHtml(currentPost.title?.rendered || currentPost.title || 'Story');
   const rawContent = currentPost.content?.rendered || currentPost.content || '';
@@ -855,11 +852,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+      // Removed auto scroll reset to avoid jank; reader will reset once after content changes
     }
   };
   
-  // Function to navigate to previous story
+  // Function to navigate to previous storytory
   const goToPreviousStory = () => {
     // Only execute logic if we have posts and we're not at the first one
     if (posts && posts.length > 1 && currentIndex > 0) {
@@ -872,7 +869,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+      // Removed auto scroll reset to avoid jank; reader will reset once after content changes
     }
   };
   
@@ -1208,8 +1205,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       setCurrentIndex(foundIndex);
                       // Keep URL in sync with selected story to fix TOC routing
                       setLocation(`/reader/${encodeURIComponent(String(posts[foundIndex].slug || posts[foundIndex].id))}`);
-                      // Scroll to top for a clean transition
-                      window.scrollTo({ top: 0, behavior: 'auto' });
                     }
                   } catch (err) {
                     console.error('[Reader] TOC onSelect error:', err);
