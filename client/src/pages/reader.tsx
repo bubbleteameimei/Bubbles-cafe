@@ -510,24 +510,166 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   }, [postsData?.posts, currentIndex]);
 
-  // Count as a navigation event (enables horror modal trigger consistency)
-                      const overlayTriggered = checkRapidNavigation();
-                      if (overlayTriggered) {
-                        // Keep current content; overlay is shown and blocks interaction
-                        return;
-                      }
-                      setCurrentIndex(foundIndex);
-                      // Keep URL in sync with selected story to fix TOC routing
-                      setLocation(`/reader/${encodeURIComponent(String(posts[foundIndex].slug || posts[foundIndex].id))}`);
-                    }
-                  }                 setContentsDialogOpen(false);
-                  }
-                }}
-                onClose={() => setContentsDialogOpen(false)} 
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
+  // Stabilize posts array and index
+  const posts = useMemo(() => postsData?.posts ?? [], [postsData?.posts]);
+  const validCurrentIndex = useMemo(
+    () => Math.max(0, Math.min(currentIndex, posts.length - 1)),
+    [currentIndex, posts.length]
+  );
+
+  // Ensure canonical slug when route slug missing
+  const ensuredCanonicalRef = useRef(false);
+  useEffect(() => {
+    try {
+      if (!ensuredCanonicalRef.current && posts.length > 0 && !routeSlug) {
+        ensuredCanonicalRef.current = true;
+        const slugToUse = String(posts[validCurrentIndex]?.slug ?? posts[validCurrentIndex]?.id);
+        if (slugToUse) {
+          setLocation(`/reader/${encodeURIComponent(slugToUse)}`);
+        }
+      }
+    } catch {}
+  }, [posts, validCurrentIndex, routeSlug, setLocation]);
+
+  // Current post
+  const currentPost = posts[validCurrentIndex];
+
+  // Scroll to top once when current post changes
+  useEffect(() => {
+    try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (e) {}
+  }, [currentPost?.id]);
+
+  // Compute display text and reading metrics
+  const stripHtml = (s: string) => s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '';
+  const titleText = stripHtml(currentPost?.title?.rendered || (currentPost as any)?.title || 'Story');
+  const rawContent = currentPost?.content?.rendered || (currentPost as any)?.content || '';
+  const plainText = stripHtml(rawContent);
+  const wordCount = plainText ? plainText.split(/\s+/).filter(Boolean).length : 0;
+  const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
+
+  // Horror easter egg function: persists state across route changes; returns true if overlay was triggered
+  const checkRapidNavigation = (): boolean => {
+    const now = Date.now();
+    const getInt = (key: string) => {
+      try {
+        const v = sessionStorage.getItem(key);
+        return v ? parseInt(v, 10) : 0;
+      } catch {
+        return 0;
+      }
+    };
+    const setInt = (key: string, val: number) => {
+      try {
+        sessionStorage.setItem(key, String(val));
+      } catch { /* no-op */ }
+    };
+
+    const lastTs = getInt('reader_last_nav_ts');
+    const timeSince = lastTs ? now - lastTs : Number.POSITIVE_INFINITY;
+    let count = getInt('reader_skip_count');
+    let overlayTriggered = false;
+
+    // Rapid navigation detection (less than 1.5 seconds between skips)
+    if (timeSince < 1500) {
+      count += 1;
+      setInt('reader_skip_count', count);
+
+      // After 2 rapid skips, show the horror Easter egg overlay
+      if (count >= 2 && !showHorrorMessage) {
+        if (import.meta.env?.DEV) {
+          console.log('[Reader] Horror Easter egg triggered after rapid navigation');
+        }
+        const message = "I SEE YOU SKIPPING!!!";
+        setHorrorMessageText(message);
+        setShowHorrorMessage(true);
+        toast({
+          title: "NOTICE",
+          description: <CreepyTextGlitch text={message} intensityFactor={8} />,
+          variant: "destructive",
+          duration: 9000,
+        });
+        setTimeout(() => {
+          try { setShowHorrorMessage(false); } catch (e) {}
+          setInt('reader_skip_count', 0);
+        }, 9000);
+        overlayTriggered = true;
+      }
+    } else {
+      // If navigation is slow, gradually reduce the skip count
+      count = Math.max(0, count - 1);
+      setInt('reader_skip_count', count);
+    }
+
+    // Update last navigation time
+    setInt('reader_last_nav_ts', now);
+    return overlayTriggered;
+  };
+
+  // Navigation helpers
+  const goToRandomStory = () => {
+    if (posts && posts.length > 1) {
+      let randomIndex;
+      do {
+        randomIndex = Math.floor(Math.random() * posts.length);
+      } while (randomIndex === validCurrentIndex);
+
+      const overlayTriggered = checkRapidNavigation();
+      if (overlayTriggered) {
+        return;
+      }
+
+      setCurrentIndex(randomIndex);
+      try {
+        const nextSlug = String(posts[randomIndex]?.slug ?? posts[randomIndex]?.id);
+        if (nextSlug) {
+          setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
+        }
+      } catch {}
+    }
+  };
+
+  const goToPreviousStory = () => {
+    if (posts && posts.length > 1 && validCurrentIndex > 0) {
+      const newIndex = validCurrentIndex - 1;
+
+      const overlayTriggered = checkRapidNavigation();
+      if (overlayTriggered) {
+        return;
+      }
+
+      setCurrentIndex(newIndex);
+      try {
+        const nextSlug = String(posts[newIndex]?.slug ?? posts[newIndex]?.id);
+        if (nextSlug) {
+          setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
+        }
+      } catch {}
+    }
+  };
+
+  const goToNextStory = () => {
+    if (posts && posts.length > 1 && validCurrentIndex < posts.length - 1) {
+      const newIndex = validCurrentIndex + 1;
+
+      const overlayTriggered = checkRapidNavigation();
+      if (overlayTriggered) {
+        return;
+      }
+
+      setCurrentIndex(newIndex);
+      try {
+        const nextSlug = String(posts[newIndex]?.slug ?? posts[newIndex]?.id);
+        if (nextSlug) {
+          setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
+        }
+      } catch {}
+    }
+  };
+
+  const isFirstStory = validCurrentIndex === 0;
+  const isLastStory = validCurrentIndex === posts.length - 1;
+
+  
         {/* Full-bleed separator under controls row (thin, end-to-end) */}
         <div
           aria-hidden="true"
