@@ -670,6 +670,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const isLastStory = validCurrentIndex === posts.length - 1;
 
   
+        return (
+    <div className="reader-page w-full">
         {/* Full-bleed separator under controls row (thin, end-to-end) */}
         <div
           aria-hidden="true"
