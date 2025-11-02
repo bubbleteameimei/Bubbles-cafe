@@ -727,13 +727,18 @@ router.get('/', async (req, res) => {
     
     // Sort results by relevance (prioritize title/excerpt matches), then match count, then date
     results.sort((a, b) => {
-      const scoreDiff = (b.score ?? 0) - (a.score ?? 0);
+      const scoreA = typeof a.score === 'number' ? a.score : 0;
+      const scoreB = typeof b.score === 'number' ? b.score : 0;
+      const scoreDiff = scoreB - scoreA;
       if (scoreDiff !== 0) return scoreDiff;
 
-      const matchDiff = (Array.isArray(b.matches) ? b.matches.length : 0) - (Array.isArray(a.matches) ? a.matches.length : 0);
+      const matchesA = Array.isArray(a.matches) ? a.matches.length : 0;
+      const matchesB = Array.isArray(b.matches) ? b.matches.length : 0;
+      const matchDiff = matchesB - matchesA;
       if (matchDiff !== 0) return matchDiff;
 
-      const dateA;
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
       return dateB - dateA;
     });
     
