@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, Link } from "wouter";
-import { Loader2, Search, BookOpen, Clock, Tag, X } from "lucide-react";
+import { Loader2, Search, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -10,7 +10,6 @@ import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { getBadgeTint } from "@/lib/theme-badges";
 import { THEME_CATEGORIES as THEMES_LITE } from "@/lib/themes-lite";
 import { fetchWordPressPosts, getExcerpt, getReadingTime } from "@/lib/wordpress-api";
@@ -51,21 +50,8 @@ export default function SearchResultsPage() {
   const [category, setCategory] = useState<string>("all");
   const [from, setFrom] = useState<string>("all");
   const [sort, setSort] = useState<string>("relevance");
-  const [recent, setRecent] = useState<string[]>([]);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
-  const popularSearches = ["mind", "mirror", "devotion"];
-  const randomIdeaPool = ["fear", "hunger", "machine", "threshold", "mist", "mirror", "devotion", "identity", "madness"];
-  const getDailyIdeas = () => {
-    try {
-      const now = new Date();
-      const idx = (now.getDate() + now.getMonth() * 31) % randomIdeaPool.length;
-      const arr = [randomIdeaPool[idx], randomIdeaPool[(idx + 2) % randomIdeaPool.length], randomIdeaPool[(idx + 4) % randomIdeaPool.length]];
-      return Array.from(new Set(arr));
-    } catch {
-      return ["fear", "hunger", "machine"];
-    }
-  };
-  const trySearches = getDailyIdeas();
+  const [showFilters, setShowFilters] = useState(false);
   
 
   // Helpers for WordPress fallback: strip HTML and extract context around matched terms
@@ -123,7 +109,7 @@ export default function SearchResultsPage() {
       if (from !== 'all') qs.set('from', from);
       if (category !== 'all') qs.set('category', category);
       if (tagFilters.length > 0) qs.set('tags', tagFilters.join(','));
-      if (sort) qs
+      if (sort) qs.set('sort', sort);
       const { results, meta } = await apiJson<any>('GET', `/api/search?${qs.toString()}`);
 
       const mapped: SearchResult[] = (results || []).map((r: any) => ({
@@ -289,21 +275,7 @@ export default function SearchResultsPage() {
     return () => { clearTimeout(t); controller.abort(); };
   }, [searchQuery]);
 
-  // Load/save recent searches
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('recent-searches');
-      if (raw) setRecent(JSON.parse(raw));
-    } catch {}
-  }, []);
-
-  const pushRecent = (q: string) => {
-    try {
-      const arr = [q, ...recent.filter(r => r !== q)].slice(0, 8);
-      setRecent(arr);
-      localStorage.setItem('recent-searches', JSON.stringify(arr));
-    } catch {}
-  };
+  
 
   // Handle search form submission
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -313,7 +285,6 @@ export default function SearchResultsPage() {
       window.history.pushState(null, '', `/search?q=${encodeURIComponent(q)}`);
       setActiveQuery(q);
       performSearch(q, 1);
-      pushRecent(q);
       setSearchQuery('');
     }
   };
@@ -380,31 +351,9 @@ export default function SearchResultsPage() {
               }}
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" title="Filter by tags">
-                    <Tag className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuLabel>Filter by tags</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {["identity", "madness", "devotion", "fear", "hunger", "machine"].map((tag) => (
-                    <DropdownMenuCheckboxItem
-                      key={tag}
-                      checked={tagFilters.includes(tag)}
-                      onCheckedChange={(checked: any) => {
-                        setTagFilters((prev) => {
-                          const next = checked ? [...prev, tag] : prev.filter((t) => t !== tag);
-                          return Array.from(new Set(next)).slice(0, 8);
-                        });
-                      }}
-                    >
-                      {tag}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button variant="ghost" size="sm" onClick={() => setShowFilters((v) => !v)}>
+                Filters
+              </Button>
               <Button type="submit" size="sm" disabled={isSearching || !searchQuery.trim()}>
                 {isSearching ? (
                   <>
@@ -431,79 +380,66 @@ export default function SearchResultsPage() {
             )}
           </div>
           
-          <div className="flex items-center gap-2">
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="w-[220px]"><SelectValue placeholder="Theme" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All themes</SelectItem>
-                {Object.keys(THEMES_LITE).map((name) => (
-                  <SelectItem key={name} value={name.toLowerCase()}>{name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={from} onValueChange={setFrom}>
-              <SelectTrigger className="w-[160px]"><SelectValue placeholder="Any time" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Any time</SelectItem>
-                <SelectItem value="7">Past 7 days</SelectItem>
-                <SelectItem value="30">Past 30 days</SelectItem>
-                <SelectItem value="365">Past year</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sort} onValueChange={setSort}>
-              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Sort by" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="relevance">Relevance</SelectItem>
-                <SelectItem value="newest">Newest</SelectItem>
-                <SelectItem value="popular">Most Popular</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {showFilters && (
+            <div className="mt-2 rounded-md border bg-muted/20 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Select value={category} onValueChange={(v) => { setCategory(v); if (activeQuery) performSearch(activeQuery, 1); }}>
+                  <SelectTrigger className="w-[220px]"><SelectValue placeholder="Theme" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All themes</SelectItem>
+                    {Object.keys(THEMES_LITE).map((name) => (
+                      <SelectItem key={name} value={name.toLowerCase()}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={from} onValueChange={(v) => { setFrom(v); if (activeQuery) performSearch(activeQuery, 1); }}>
+                  <SelectTrigger className="w-[160px]"><SelectValue placeholder="Any time" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any time</SelectItem>
+                    <SelectItem value="7">Past 7 days</SelectItem>
+                    <SelectItem value="30">Past 30 days</SelectItem>
+                    <SelectItem value="365">Past year</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={sort} onValueChange={(v) => { setSort(v); if (activeQuery) performSearch(activeQuery, 1); }}>
+                  <SelectTrigger className="w-[180px]"><SelectValue placeholder="Sort by" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="relevance">Relevance</SelectItem>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="popular">Most Popular</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {["identity", "madness", "devotion", "fear", "hunger", "machine"].map((tag) => {
+                  const active = tagFilters.includes(tag);
+                  return (
+                    <Button
+                      key={tag}
+                      type="button"
+                      variant={active ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setTagFilters((prev) => {
+                          const next = active ? prev.filter((t) => t !== tag) : [...prev, tag];
+                          if (activeQuery) performSearch(activeQuery, 1);
+                          return Array.from(new Set(next)).slice(0, 8);
+                        });
+                      }}
+                    >
+                      {tag}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </form>
 
-      {/* Recent searches */}
-      {recent.length > 0 && (
-        <div className="mb-4 text-sm">
-          <div className="mb-2 text-foreground/70">Recent searches:</div>
-          <div className="flex flex-wrap gap-2">
-            {recent.map(r => (
-              <div key={r} className="flex items-center gap-1">
-                <Button variant="outline" size="sm" onClick={() => { setSearchQuery(r); setActiveQuery(r); performSearch(r, 1); }}>
-                  {r}
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => {
-                  const next = recent.filter(item => item !== r);
-                  setRecent(next);
-                  try { localStorage.setItem('recent-searches', JSON.stringify(next)); } catch {}
-                }} aria-label={`Remove ${r} from history`}>
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      
 
-      {/* Popular and suggested searches */}
-      <div className="mb-6 text-sm">
-          <div className="mb-2 text-foreground/70">Trending Themes</div>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {popularSearches.map((term) => (
-              <Button key={term} variant="secondary" size="sm" onClick={() => { setSearchQuery(term); setActiveQuery(term); performSearch(term, 1); }}>
-                {term}
-              </Button>
-            ))}
-          </div>
-          <div className="text-foreground/70 mb-2">Discover Unexpected Themes</div>
-          <div className="flex flex-wrap gap-2">
-            {trySearches.map((term) => (
-              <Button key={term} variant="ghost" size="sm" onClick={() => { setSearchQuery(term); setActiveQuery(term); performSearch(term, 1); }}>
-                {term}
-              </Button>
-            ))}
-          </div>
-        </div>
+      
       
       {/* Did you mean */}
       {didYouMean && (
@@ -570,14 +506,7 @@ export default function SearchResultsPage() {
                     </span>
                   ) : null}
                 </div>
-                <div className="mt-3 flex justify-end">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={result.url} className="inline-flex items-center">
-                      <BookOpen className="mr-1 h-4 w-4" />
-                      Read More
-                    </Link>
-                  </Button>
-                </div>
+                
               </motion.div>
             ))}
           </div>
@@ -585,24 +514,17 @@ export default function SearchResultsPage() {
       ) : searchQuery ? (
         <div className="text-center py-12">
           <p className="text-lg text-muted-foreground">
-            No matches found — maybe try another word.
+            No matches found.
           </p>
-          <div className="mt-3 flex justify-center gap-2">
-            {trySearches.map((term) => (
-              <Button key={term} variant="ghost" size="sm" onClick={() => { setSearchQuery(term); performSearch(term, 1); }}>
-                {term}
-              </Button>
-            ))}
-          </div>
         </div>
       ) : null}
 
       {/* Pagination */}
       {pages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-8">
-          <Button variant="outline" disabled={page <= 1} onClick={() => performSearch(searchQuery, page - 1)}>Prev</Button>
+          <Button variant="outline" disabled={page <= 1} onClick={() => performSearch(activeQuery, page - 1)}>Prev</Button>
           <span className="text-sm">Page {page} of {pages}</span>
-          <Button variant="outline" disabled={page >= pages} onClick={() => performSearch(searchQuery, page + 1)}>Next</Button>
+          <Button variant="outline" disabled={page >= pages} onClick={() => performSearch(activeQuery, page + 1)}>Next</Button>
         </div>
       )}
     </div>
