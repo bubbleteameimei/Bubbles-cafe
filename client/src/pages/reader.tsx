@@ -134,7 +134,25 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Smooth TOC dialog open/close: lock scroll to prevent underlying jank and ensure consistent overlay behavior
   useEffect(() => {
     try {
-      if (contentsDialogOpen)
+      if (contentsDialogOpen) {
+        document.body.classList.add('overlay-active', 'toc-active');
+        document.documentElement.classList.add('overlay-active', 'toc-active');
+        lockBodyScroll('reader-toc');
+      } else {
+        document.body.classList.remove('overlay-active', 'toc-active');
+        document.documentElement.classList.remove('overlay-active', 'toc-active');
+        unlockBodyScroll('reader-toc');
+      }
+    } catch {}
+    return () => {
+      try {
+        document.body.classList.remove('overlay-active', 'toc-active');
+        document.documentElement.classList.remove('overlay-active', 'toc-active');
+        unlockBodyScroll('reader-toc');
+      } catch {}
+    };
+  }, [contentsDialogOpen]);
+
   // Inline admin theme editor state
   const [themeEditorOpen, setThemeEditorOpen] = useState(false);
   const [selectedThemeCat, setSelectedThemeCat] = useState<string>('');
@@ -769,6 +787,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Scroll to top once when the current post changes to avoid visible pre-reset jank
   useEffect(() => {
     try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
+  }, [currentPost?.id]);
+
+  const stripHtml = (s: string) => s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '';
   const titleText = stripHtml(currentPost.title?.rendered || currentPost.title || 'Story');
   const rawContent = currentPost.content?.rendered || currentPost.content || '';
   const descriptionText = getExcerpt(rawContent, 160);
@@ -1808,7 +1829,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               className="border-b border-border/20"
               style={{ width: '100%', position: 'relative', left: 0, transform: 'none' }}
             />
-           
+
             <div className="mt-2 pt-3">
               <div className="flex flex-col items-center justify-center gap-6">
                 {/* Centered Like/Dislike buttons */}
@@ -1819,7 +1840,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 <div className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                   <p className="text-sm text-muted-foreground font-medium">✨ Loved the story? Share it or follow for more! ✨</p>
                   <div className="flex items-center gap-3">
-                    {/* Native Share Button */}
                     <Button
                       variant="outline"
                       size="icon"
@@ -1843,9 +1863,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       <span className="sr-only">Share</span>
                     </Button>
 
-                    {/* Social Icons */}
                     <div className="flex gap-3">
-                      {/* Twitter */}
                       <Button
                         variant="outline"
                         size="icon"
@@ -1857,8 +1875,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         <FaTwitter className="h-4 w-4" />
                         <span className="sr-only">Follow on Twitter</span>
                       </Button>
-                      
-                      {/* WordPress */}
+
                       <Button
                         variant="outline"
                         size="icon"
@@ -1870,8 +1887,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         <FaWordpress className="h-4 w-4" />
                         <span className="sr-only">Follow on WordPress</span>
                       </Button>
-                      
-                      {/* Instagram */}
+
                       <Button
                         asChild
                         variant="outline"
@@ -1888,20 +1904,17 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 </div>
               </div>
             </div>
-            
-            {/* Social sharing and support section  */}
-              <div className={`social-support-section mt-8 pt-6 border-t border-border ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-                
-                {/* Support writing card with auto-wired authorId */}
-                <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
-              </div>
+
+            {/* Social sharing and support section */}
+            <div className={`social-support-section mt-8 pt-6 border-t border-border ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+              <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
+            </div>
 
             {/* Comment section */}
             <div className={`mt-8 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
               <SimpleCommentSection postId={currentPost.id} />
             </div>
-        </motion.arti_codeclnewe</>
-e>
+        </motion.article>
       </div>
       <Footer />
     </div>
