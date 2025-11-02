@@ -77,8 +77,26 @@ export interface FetchPostsOptions {
 const cacheUtils = {
   getCacheKey(options: FetchPostsOptions): string {
     // Create a unique key based on request options
-    const { page = 1, perPage = 10, categories, tags, search, slug } = options;
-    const optionsKey = JSON.stringify({ page, perPage, categories, tags, search, slug });
+    // IMPORTANT: include includeContent in the key so trimmed-field prefetches
+    // (which omit content) do not collide with full-content queries.
+    const {
+      page = 1,
+      perPage = 10,
+      categories,
+      tags,
+      search,
+      slug,
+      includeContent = true,
+    } = options;
+    const optionsKey = JSON.stringify({
+      page,
+      perPage,
+      categories,
+      tags,
+      search,
+      slug,
+      includeContent,
+    });
     return `${CACHE_KEY_PREFIX}${btoa(optionsKey)}`;
   },
 
