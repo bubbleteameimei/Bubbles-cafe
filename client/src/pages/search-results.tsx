@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useLocation, Link } from "wouter";
 import { Loader2, BookOpen, SlidersHorizontal, ChevronDown, X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,8 @@ interface SearchResult {
 export default function SearchResultsPage() {
   const [location] = useLocation();
   const { toast } = useToast();
+
+  // Query and results
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -38,20 +40,20 @@ export default function SearchResultsPage() {
   const [pages, setPages] = useState(1);
   const [didYouMean, setDidYouMean] = useState<string | null>(null);
 
-  // Suggestion state
+  // Typeahead suggestions
   const [suggestions, setSuggestions] = useState<{ id: number | string; title: string; url: string }[]>([]);
   const [showSuggest, setShowSuggest] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
-  const [showFilters, setShowFilters] = useState<boolean>(false);
 
   // Filters
+  const [showFilters, setShowFilters] = useState<boolean>(false);
   const [category, setCategory] = useState<string>("all");
   const [from, setFrom] = useState<string>("all");
 
   // Recent searches
   const [recent, setRecent] = useState<string[]>([]);
 
-  // Locally cached posts for suggestion scoring (mirrors Index page behavior)
+  // Local cache for suggestion scoring
   const [indexPosts, setIndexPosts] = useState<Array<{ id: number; title: string; slug: string }>>([]);
 
   // Theme counts for dropdown (combined Reader + Community)
@@ -67,7 +69,7 @@ export default function SearchResultsPage() {
     return Array.from(new Set([...known, ...present])).sort((a, b) => a.localeCompare(b));
   }, [themeCounts]);
 
-  // Helpers for WordPress fallback: strip HTML and extract context around matched terms
+  // Helpers for WordPress fallback
   const stripHtml = (html: string) => {
     try {
       return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -75,6 +77,7 @@ export default function SearchResultsPage() {
       return html;
     }
   };
+
   const extractContexts = (text: string, query: string, max = 3): { context: string; position: number }[] => {
     const q = query.trim();
     if (!text || !q) return [];
@@ -93,9 +96,9 @@ export default function SearchResultsPage() {
     }
     return contexts;
   };
+
   const levenshtein = (a: string, b: string) => {
-    const m = a.length,
-      n = b.length;
+    const m = a.length, n = b.length;
     const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
     for (let i = 0; i <= m; i++) dp[i][0] = i;
     for (let j = 0; j <= n; j++) dp[0][j] = j;
@@ -108,17 +111,16 @@ export default function SearchResultsPage() {
     return dp[m][n];
   };
 
-  // Perform search across all content with WordPress fallback when local DB returns no results
+  // Perform search with server API and WordPress fallback
   const performSearch = useCallback(
     async (query: string, pageNum = 1) => {
       if (!query.trim()) return;
-
       setIsSearching(true);
 
       try {
         const qs = new URLSearchParams();
         qs.set("q", query);
-        qs.set("types", "posts"); // focus on stories
+        qs.set("types", "posts");
         qs.set("limit", "10");
         qs.set("page", String(pageNum));
         if (from !== "all") qs.set("from", from);
@@ -137,8 +139,8 @@ export default function SearchResultsPage() {
           matches: (r.matches || []).map((m: any) => ({
             field: "content",
             text: m.context || m.text || "",
-            position: 0,
-          })),
+            position: 0
+          }))
         }));
 
         let finalResults = mapped;
@@ -148,7 +150,7 @@ export default function SearchResultsPage() {
         let usedFallback = false;
         let finalDidYouMean: string | null = meta?.didYouMean || null;
 
-        // Helpers to apply client-side time filter and sorting when available
+        // Time range filter
         const withinRange = (dateStr?: string) => {
           if (!dateStr || from === "all") return true;
           const days = parseInt(from, 10);
@@ -158,22 +160,26 @@ export default function SearchResultsPage() {
           const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
           return d.getTime() >= cutoff;
         };
+
+        // Always sort by matches desc then date desc
         const applyFiltersAndSort = (arr: SearchResult[]) => {
           let out = arr;
           if (from !== "all") out = out.filter((r) => withinRange(r.date));
-          // Always sort by match count (desc), then by date (newest first) as tie-breaker
           out = [...out].sort((a, b) => {
             const matchDiff = (b.matches?.length || 0) - (a.matches?.length || 0);
             if (matchDiff !== 0) return matchDiff;
             const da = a.date ? new Date(a.date).getTime() : 0;
             const db = b.date ? new Date(b.date).getTime() : 0;
-            return };
+            return db - da;
+          });
+          return out;
+        };
 
-        // Apply on server results (in case server doesn't handle these)
+        // Apply to server results
         finalResults = applyFiltersAndSort(finalResults);
 
         // Fallback to WordPress when no local results
-        if (mapped.length === 0) {
+        if (finalResults.length === 0) {
           try {
             const wp = await fetchWordPressPosts({ perPage: 20, includeContent: true, search: query });
             const wpPosts = Array.isArray((wp as any)?.posts) ? (wp as any).posts : [];
@@ -191,20 +197,20 @@ export default function SearchResultsPage() {
                 type: "post",
                 url: `/reader/${p.slug || p.id}`,
                 date: p?.date,
-                matches: contexts.map((c) => ({ field: "content", text: c.context, context: c.context, position: c.position })),
+                matches: contexts.map((c) => ({ field: "content", text: c.context, context: c.context, position: c.position }))
               };
             });
-            const filteredSorted = applyFiltersAndSort(wpMapped);
-            finalResults = filteredSorted;
+
+            finalResults = applyFiltersAndSort(wpMapped);
             finalPages = 1;
             finalPage = 1;
-            finalTotal = filteredSorted.length;
+            finalTotal = finalResults.length;
             usedFallback = true;
 
-            // Did you mean from WordPress titles (closest by Levenshtein, only when improvement is meaningful)
+            // Did you mean from WordPress titles
             if (!finalDidYouMean && wpMapped.length > 0) {
               const qNorm = query.trim().toLowerCase();
-              let best = { title: "", dist: Infinity };
+              let best = { title: "", dist: Infinity as number };
               for (const r of wpMapped) {
                 const t = r.title.toLowerCase();
                 const d = levenshtein(qNorm, t);
@@ -215,11 +221,11 @@ export default function SearchResultsPage() {
               }
             }
           } catch {
-            // swallow WP fallback errors to avoid breaking UX
+            // ignore WP fallback errors
           }
         }
 
-        // Final safety net: if still no results, use client-side heuristics from preloaded titles
+        // Final safety net using local heuristic titles
         if (finalResults.length === 0 && indexPosts.length > 0) {
           const normalizeText = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
           const tokenize = (s: string) => normalizeText(s.toLowerCase()).split(/[^a-z0-9]+/).filter(Boolean);
@@ -262,7 +268,7 @@ export default function SearchResultsPage() {
               content: "",
               type: "post" as const,
               url: `/reader/${encodeURIComponent(x.p.slug)}`,
-              matches: [],
+              matches: []
             }));
 
           if (top.length > 0) {
@@ -278,7 +284,6 @@ export default function SearchResultsPage() {
         setPages(finalPages);
         setDidYouMean(finalDidYouMean);
 
-        // Show toast with result count
         toast({
           title: `Search Results for "${query}"`,
           description:
@@ -286,11 +291,10 @@ export default function SearchResultsPage() {
               ? `${finalTotal} total results`
               : `Found ${finalResults.length} ${finalResults.length === 1 ? "result" : "results"}`) +
             (usedFallback && finalResults.length > 0 ? " (via WordPress)" : ""),
-          duration: 3000,
+          duration: 3000
         });
       } catch (error) {
         console.error("Search error:", error);
-        // Try WordPress fallback on error as well
         try {
           const wp = await fetchWordPressPosts({ perPage: 20, includeContent: true, search: query });
           const wpPosts = Array.isArray((wp as any)?.posts) ? (wp as any).posts : [];
@@ -308,11 +312,10 @@ export default function SearchResultsPage() {
               type: "post",
               url: `/reader/${p.slug || p.id}`,
               date: p?.date,
-              matches: contexts.map((c) => ({ field: "content", text: c.context, context: c.context, position: c.position })),
+              matches: contexts.map((c) => ({ field: "content", text: c.context, context: c.context, position: c.position }))
             };
           });
 
-          // Apply time filter and sort on fallback results (most matches first)
           const filteredSorted = wpMapped
             .filter((r) => {
               if (from === "all") return true;
@@ -338,14 +341,14 @@ export default function SearchResultsPage() {
           toast({
             title: `Search Results for "${query}"`,
             description: `Found ${filteredSorted.length} ${filteredSorted.length === 1 ? "result" : "results"} (via WordPress)`,
-            duration: 3000,
+            duration: 3000
           });
         } catch {
           toast({
             title: "Search Error",
             description: "Failed to complete your search. Please try again.",
             variant: "destructive",
-            duration: 3000,
+            duration: 3000
           });
         }
       } finally {
@@ -365,20 +368,19 @@ export default function SearchResultsPage() {
     }
   }, [location, performSearch]);
 
-  // Re-run search when filters/category change
+  // Re-run search when filters change
   useEffect(() => {
     if (searchQuery.trim()) {
       performSearch(searchQuery, 1);
     }
-  }, [from, category, performSearch]);
+  }, [from, category, performSearch, searchQuery]);
 
-  // Preload posts for local suggestion scoring (mirrors Index page approach)
+  // Preload posts for local suggestion scoring
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         const collected: Array<{ id: number; title: string; slug: string }> = [];
-        // Fetch up to ~90 latest posts for rich suggestions without heavy payload
         for (let p = 1; p <= 3; p++) {
           const res = await fetchWordPressPosts({ page: p, perPage: 30, includeContent: false });
           const posts = Array.isArray((res as any)?.posts) ? (res as any).posts : [];
@@ -386,7 +388,7 @@ export default function SearchResultsPage() {
             collected.push({
               id: wp.id,
               title: String(wp?.title?.rendered || "Untitled"),
-              slug: String(wp?.slug || wp?.id),
+              slug: String(wp?.slug || wp?.id)
             });
           }
           if (posts.length < 30) break;
@@ -402,7 +404,7 @@ export default function SearchResultsPage() {
     };
   }, []);
 
-  // Load theme counts for dropdown labels (total count across Reader + Community)
+  // Load theme counts for dropdown labels (total across Reader + Community)
   useEffect(() => {
     (async () => {
       try {
@@ -427,9 +429,60 @@ export default function SearchResultsPage() {
     })();
   }, []);
 
-  // Fetch popular stories when []);
+  // Fetch popular stories when search yields no results
+  useEffect(() => {
+    if (searchQuery.trim() && searchResults.length === 0) {
+      (async () => {
+        try {
+          const res = await fetch("/api/trending-stories");
+          if (!res.ok) return;
+          const data = await res.json();
+          const posts = Array.isArray(data?.posts) ? data.posts : [];
+          const top5: SearchResult[] = posts.slice(0, 5).map((p: any) => ({
+            id: Number(p.id),
+            title: String(p?.title?.rendered || "Untitled"),
+            excerpt: getExcerpt(String(p?.excerpt?.rendered || "")),
+            content: "",
+            type: "post",
+            url: `/reader/${p.slug || p.id}`,
+            date: String(p?.date || ""),
+            matches: []
+          }));
+          setPopular(top5);
+        } catch {
+          setPopular([]);
+        }
+      })();
+    } else {
+      setPopular([]);
+    }
+  }, [searchQuery, searchResults.length]);
 
-  // Suggestions (typeahead) using the Index page scoring heuristics
+  // Load/save recent searches
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("recent-searches");
+      if (raw) setRecent(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  const pushRecent = (q: string) => {
+    try {
+      const arr = [q, ...recent.filter((r) => r !== q)].slice(0, 8);
+      setRecent(arr);
+      localStorage.setItem("recent-searches", JSON.stringify(arr));
+    } catch {}
+  };
+
+  const removeRecent = (term: string) => {
+    try {
+      const arr = recent.filter((r) => r !== term);
+      setRecent(arr);
+      localStorage.setItem("recent-searches", JSON.stringify(arr));
+    } catch {}
+  };
+
+  // Suggestions (typeahead)
   useEffect(() => {
     const q = searchQuery.trim();
     if (!q) {
@@ -456,7 +509,6 @@ export default function SearchResultsPage() {
     const scored = indexPosts.map((p) => {
       const t = String(p.title || "");
       const tTokens = tokenize(t);
-      // minimum edit distance between any token pair
       let minD = Infinity;
       for (const qt of qTokens) {
         for (const tt of tTokens) {
@@ -478,37 +530,13 @@ export default function SearchResultsPage() {
       .map((x) => ({
         id: x.p.id,
         title: x.p.title,
-        url: `/reader/${encodeURIComponent(x.p.slug)}`,
+        url: `/reader/${encodeURIComponent(x.p.slug)}`
       }));
 
     setSuggestions(top);
     setShowSuggest(top.length > 0);
     setActiveIndex(-1);
   }, [searchQuery, indexPosts]);
-
-  // Load/save recent searches
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("recent-searches");
-      if (raw) setRecent(JSON.parse(raw));
-    } catch {}
-  }, []);
-
-  const pushRecent = (q: string) => {
-    try {
-      const arr = [q, ...recent.filter((r) => r !== q)].slice(0, 8);
-      setRecent(arr);
-      localStorage.setItem("recent-searches", JSON.stringify(arr));
-    } catch {}
-  };
-
-  const removeRecent = (term: string) => {
-    try {
-      const arr = recent.filter((r) => r !== term);
-      setRecent(arr);
-      localStorage.setItem("recent-searches", JSON.stringify(arr));
-    } catch {}
-  };
 
   // Handle search form submission
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -523,7 +551,7 @@ export default function SearchResultsPage() {
   // Highlight matched text in a string
   const highlightText = (text: string, query: string) => {
     if (!text || !query) return text;
-    const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')})`, "gi"));
+    const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")})`, "gi"));
     return (
       <>
         {parts.map((part, i) =>
@@ -616,29 +644,25 @@ export default function SearchResultsPage() {
                   </div>
                 )}
               </div>
-              <Button
-                type="submit"
-                variant="default"
-                className="h-10 px-4"
-                disabled={isSearching || !searchQuery.trim()}
-              >
-                {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Search'}
+              <Button type="submit" variant="default" className="h-10 px-4" disabled={isSearching || !searchQuery.trim()}>
+                {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
               </Button>
             </div>
 
+            {/* Inline filters row */}
             <div className="flex justify-end items-center gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setShowFilters(v => !v)}
+                onClick={() => setShowFilters((v) => !v)}
                 aria-expanded={showFilters}
                 aria-controls="advanced-filter-inline"
                 className="inline-flex items-center gap-2"
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 Filters
-                <ChevronDown className={`h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-4 w-4 transition-transform ${showFilters ? "rotate-180" : ""}`} />
               </Button>
 
               {showFilters && (
@@ -651,7 +675,7 @@ export default function SearchResultsPage() {
                       <SelectItem value="all">All Themes</SelectItem>
                       {themeKeys.map((t) => (
                         <SelectItem key={t} value={t}>
-                          {t} {typeof themeCounts[t]?.total === 'number' ? `(${themeCounts[t].total})` : ''}
+                          {t} {typeof themeCounts[t]?.total === "number" ? `(${themeCounts[t].total})` : ""}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -684,8 +708,11 @@ export default function SearchResultsPage() {
                   <button
                     type="button"
                     aria-label={`Remove ${r} from recent searches`}
-                    className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 rounded-full bg-foreground/10 hover:bg-foreground/20 text-foreground/80 flex items-center justify-cen_codetenewr</"
-                    onClick={(e) => { e.stopPropagation(); removeRecent(r); }}
+                    className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 rounded-full bg-foreground/10 hover:bg-foreground/20 text-foreground/80 flex items-center justify-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeRecent(r);
+                    }}
                   >
                     <X className="h-2.5 w-2.5" />
                   </button>
@@ -709,7 +736,7 @@ export default function SearchResultsPage() {
           </div>
         )}
 
-        {/* Search results */}
+        {/* Results */}
         {isSearching ? (
           <div className="space-y-10">
             <section>
@@ -763,7 +790,7 @@ export default function SearchResultsPage() {
                 return db - da;
               };
               const readerResults = [...searchResults.filter((r) => r.url?.startsWith("/reader/"))].sort(cmp);
-              const communityResults = [...search"));
+              const communityResults = [...searchResults.filter((r) => r.url?.startsWith("/community-story/"))].sort(cmp);
               return (
                 <div className="space-y-10">
                   <motion.section initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
@@ -872,9 +899,7 @@ export default function SearchResultsPage() {
                       <Link href={result.url}>{highlightText(result.title, searchQuery)}</Link>
                     </h3>
                     {result.excerpt && (
-                      <div className="text-sm text-gray-700 dark:text-gray-300 bg-muted/50 p-2 rounded">
-                        {result.excerpt}
-                      </div>
+                      <div className="text-sm text-gray-700 dark:text-gray-300 bg-muted/50 p-2 rounded">{result.excerpt}</div>
                     )}
                     <div className="mt-3 flex justify-end">
                       <Button variant="outline" size="sm" asChild>
