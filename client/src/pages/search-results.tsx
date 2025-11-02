@@ -507,82 +507,84 @@ export default function SearchResultsPage() {
 
         {/* Search form */}
         <form onSubmit={handleSearchSubmit} className="mb-4">
-          <div className="flex flex-col gap-3">
-            <div className="relative w-full">
-              <Input
-                type="search"
-                placeholder="Search for keywords..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-28"
-                role="combobox"
-                aria-expanded={showSuggest}
-                aria-controls="advanced-search-suggestions"
-                aria-autocomplete="list"
-                aria-activedescendant={
-                  activeIndex >= 0 && suggestions[activeIndex] ? `advanced-suggestion-${suggestions[activeIndex].id}` : undefined
-                }
-                onFocus={() => {
-                  if (suggestions.length > 0) setShowSuggest(true);
-                }}
-                onBlur={() => setTimeout(() => setShowSuggest(false), 120)}
-                onKeyDown={(e) => {
-                  if (!showSuggest || suggestions.length === 0) {
-                    if (e.key === "Enter" && searchQuery.trim()) {
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/50" />
+                <Input
+                  type="search"
+                  placeholder="Search for keywords..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                  role="combobox"
+                  aria-expanded={showSuggest}
+                  aria-controls="advanced-search-suggestions"
+                  aria-autocomplete="list"
+                  aria-activedescendant={
+                    activeIndex >= 0 && suggestions[activeIndex] ? `advanced-suggestion-${suggestions[activeIndex].id}` : undefined
+                  }
+                  onFocus={() => {
+                    if (suggestions.length > 0) setShowSuggest(true);
+                  }}
+                  onBlur={() => setTimeout(() => setShowSuggest(false), 120)}
+                  onKeyDown={(e) => {
+                    if (!showSuggest || suggestions.length === 0) {
+                      if (e.key === "Enter" && searchQuery.trim()) {
+                        e.preventDefault();
+                        performSearch(searchQuery, 1);
+                      }
+                      return;
+                    }
+                    if (e.key === "ArrowDown") {
                       e.preventDefault();
-                      performSearch(searchQuery, 1);
+                      setActiveIndex((prev) => (prev + 1) % suggestions.length);
+                    } else if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      setActiveIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
+                    } else if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (activeIndex >= 0 && activeIndex < suggestions.length) {
+                        window.location.href = suggestions[activeIndex].url;
+                      } else if (searchQuery.trim()) {
+                        performSearch(searchQuery, 1);
+                      }
+                    } else if (e.key === "Escape") {
+                      setShowSuggest(false);
                     }
-                    return;
-                  }
-                  if (e.key === "ArrowDown") {
-                    e.preventDefault();
-                    setActiveIndex((prev) => (prev + 1) % suggestions.length);
-                  } else if (e.key === "ArrowUp") {
-                    e.preventDefault();
-                    setActiveIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
-                  } else if (e.key === "Enter") {
-                    e.preventDefault();
-                    if (activeIndex >= 0 && activeIndex < suggestions.length) {
-                      window.location.href = suggestions[activeIndex].url;
-                    } else if (searchQuery.trim()) {
-                      performSearch(searchQuery, 1);
-                    }
-                  } else if (e.key === "Escape") {
-                    setShowSuggest(false);
-                  }
-                }}
-              />
+                  }}
+                />
+                {showSuggest && suggestions.length > 0 && (
+                  <div
+                    className="absolute z-20 mt-0 w-full bg-background border border-border rounded-md shadow-sm overflow-hidden"
+                    role="listbox"
+                    id="advanced-search-suggestions"
+                    aria-label="Suggestions"
+                  >
+                    <div className="px-3 py-2 text-xs font-medium text-foreground/70 border-b">Suggestions</div>
+                    <ul className="max-h-64 overflow-auto py-1">
+                      {suggestions.map((s, idx) => (
+                        <li key={s.id} role="option" aria-selected={idx === activeIndex} id={`advanced-suggestion-${s.id}`}>
+                          <Link href={s.url}>
+                            <a className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent/30 ${idx === activeIndex ? "bg-accent/20" : ""}`}>
+                              <Search className="h-3.5 w-3.5 text-foreground/60" />
+                              <span className="truncate">{highlightText(s.title, searchQuery)}</span>
+                            </a>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
               <Button
                 type="submit"
-                variant="ghost"
-                size="sm"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-3 bg-transparent shadow-none ring-0 border-0 text-foreground/80 hover:text-foreground"
+                variant="default"
+                className="h-10 px-4"
                 disabled={isSearching || !searchQuery.trim()}
               >
                 {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Search'}
               </Button>
-              {showSuggest && suggestions.length > 0 && (
-                <div
-                  className="absolute z-20 mt-0.5 w-full bg-background border border-border rounded-md shadow-sm overflow-hidden"
-                  role="listbox"
-                  id="advanced-search-suggestions"
-                  aria-label="Suggestions"
-                >
-                  <div className="px-3 py-2 text-xs font-medium text-foreground/70 border-b">Suggestions</div>
-                  <ul className="max-h-64 overflow-auto py-1">
-                    {suggestions.map((s, idx) => (
-                      <li key={s.id} role="option" aria-selected={idx === activeIndex} id={`advanced-suggestion-${s.id}`}>
-                        <Link href={s.url}>
-                          <a className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent/30 ${idx === activeIndex ? "bg-accent/20" : ""}`}>
-                            <Search className="h-3.5 w-3.5 text-foreground/60" />
-                            <span className="truncate">{highlightText(s.title, searchQuery)}</span>
-                          </a>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
 
             <div className="flex justify-end">
