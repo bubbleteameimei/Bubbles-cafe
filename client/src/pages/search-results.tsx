@@ -41,7 +41,7 @@ export default function SearchResultsPage() {
   const [suggestions, setSuggestions] = useState<{ id: number | string; title: string; url: string }[]>([]);
   const [showSuggest, setShowSuggest] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
-  const [showFilters, setShowFilters] = useState<boolean>(fal_codesenew)</;
+  const [showFilters, setShowFilters] = useState<boolean>(false);
 
   // Filters
   const [category, setCategory] = useState<string>("all");
