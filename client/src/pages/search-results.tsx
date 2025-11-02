@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useLocation, Link } from "wouter";
-import { Loader2, Search, BookOpen } from "lucide-react";
+import { Loader2, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,7 @@ interface SearchResult {
   content: string;
   type: "post" | "page";
   url: string;
+  date?: string;
   matches: {
     field: string;
     text: string;
@@ -43,6 +44,8 @@ export default function SearchResultsPage() {
 
   // Filters
   const [category, setCategory] = useState<string>("all");
+  const [from, setFrom] = useState<string>("all");
+  const [sort, setSort] = useState<'relevance' | 'newest' | 'oldest'>('relevance');
 
   // Recent searches
   const [recent, setRecent] = useState<string[]>([]);
@@ -104,6 +107,7 @@ export default function SearchResultsPage() {
         qs.set("types", "posts"); // focus on stories
         qs.set("limit", "10");
         qs.set("page", String(pageNum));
+        if (from !== "all") qs.set("from", from);
         if (category !== "all") qs.set("category", category);
 
         const { results, meta } = await apiJson<any>("GET", `/api/search?${qs.toString()}`);
@@ -115,6 +119,7 @@ export default function SearchResultsPage() {
           content: "",
           type: r.type === "post" || r.type === "page" ? r.type : "post",
           url: r.url,
+          date: r.date || r.createdAt || r.publishedAt || r.updatedAt,
           matches: (r.matches || []).map((m: any) => ({
             field: "content",
             text: m.context || m.text || "",
@@ -128,6 +133,32 @@ export default function SearchResultsPage() {
         let finalTotal = meta?.total ?? mapped.length;
         let usedFallback = false;
         let finalDidYouMean: string | null = meta?.didYouMean || null;
+
+        // Helpers to apply client-side time filter and sorting when available
+        const withinRange = (dateStr?: string) => {
+          if (!dateStr || from === "all") return true;
+          const days = parseInt(from, 10);
+          if (!Number.isFinite(days)) return true;
+          const d = new Date(dateStr);
+          if (!Number.isFinite(d.getTime())) return true;
+          const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+          return d.getTime() >= cutoff;
+        };
+        const applyFiltersAndSort = (arr: SearchResult[]) => {
+          let out = arr;
+          if (from !== "all") out = out.filter((r) => withinRange(r.date));
+          if (sort !== "relevance") {
+            out = [...out].sort((a, b) => {
+              const da = a.date ? new Date(a.date).getTime() : 0;
+              const db = b.date ? new Date(b.date).getTime() : 0;
+              return sort === "newest" ? db - da : da - db;
+            });
+          }
+          return out;
+        };
+
+        // Apply on server results (in case server doesn't handle these)
+        finalResults = applyFiltersAndSort(finalResults);
 
         // Fallback to WordPress when no local results
         if (mapped.length === 0) {
@@ -147,13 +178,15 @@ export default function SearchResultsPage() {
                 content: "",
                 type: "post",
                 url: `/reader/${p.slug || p.id}`,
+                date: p?.date,
                 matches: contexts.map((c) => ({ field: "content", text: c.context, context: c.context, position: c.position })),
               };
             });
-            finalResults = wpMapped;
+            const filteredSorted = applyFiltersAndSort(wpMapped);
+            finalResults = filteredSorted;
             finalPages = 1;
             finalPage = 1;
-            finalTotal = wpMapped.length;
+            finalTotal = filteredSorted.length;
             usedFallback = true;
 
             // Did you mean from WordPress titles (closest by Levenshtein, only when improvement is meaningful)
@@ -208,18 +241,36 @@ export default function SearchResultsPage() {
               content: "",
               type: "post",
               url: `/reader/${p.slug || p.id}`,
+              date: p?.date,
               matches: contexts.map((c) => ({ field: "content", text: c.context, context: c.context, position: c.position })),
             };
           });
 
-          setSearchResults(wpMapped);
+          // Apply time filter and sort on fallback results
+          const filteredSorted = wpMapped
+            .filter((r) => {
+              if (from === "all") return true;
+              const days = parseInt(from, 10);
+              const d = r.date ? new Date(r.date) : null;
+              if (!d || !Number.isFinite(d.getTime())) return true;
+              const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+              return d.getTime() >= cutoff;
+            })
+            .sort((a, b) => {
+              if (sort === "relevance") return 0;
+              const da = a.date ? new Date(a.date).getTime() : 0;
+              const db = b.date ? new Date(b.date).getTime() : 0;
+              return sort === "newest" ? db - da : da - db;
+            });
+
+          setSearchResults(filteredSorted);
           setPage(1);
           setPages(1);
           setDidYouMean(null);
 
           toast({
             title: `Search Results for "${query}"`,
-            description: `Found ${wpMapped.length} ${wpMapped.length === 1 ? "result" : "results"} (via WordPress)`,
+            description: `Found ${filteredSorted.length} ${filteredSorted.length === 1 ? "result" : "results"} (via WordPress)`,
             duration: 3000,
           });
         } catch {
@@ -234,7 +285,7 @@ export default function SearchResultsPage() {
         setIsSearching(false);
       }
     },
-    [toast, category]
+    [toast, category, from, sort]
   );
 
   // Extract search query from URL
@@ -246,6 +297,13 @@ export default function SearchResultsPage() {
       performSearch(query);
     }
   }, [location, performSearch]);
+
+  // Re-run search when filters/sort change
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      performSearch(searchQuery, 1);
+    }
+  }, [from, sort, performSearch]);
 
   // Preload posts for local suggestion scoring (mirrors Index page approach)
   useEffect(() => {
@@ -388,13 +446,12 @@ export default function SearchResultsPage() {
         <form onSubmit={handleSearchSubmit} className="mb-4">
           <div className="flex flex-col gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
               <Input
                 type="search"
                 placeholder="Search for keywords..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-10"
+                className="pl-3 pr-24"
                 role="combobox"
                 aria-expanded={showSuggest}
                 aria-controls="advanced-search-suggestions"
@@ -434,13 +491,12 @@ export default function SearchResultsPage() {
               />
               <Button
                 type="submit"
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
-                aria-label="Search"
+                variant="outline"
+                size="sm"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-3"
                 disabled={isSearching || !searchQuery.trim()}
               >
-                {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Search'}
               </Button>
               {showSuggest && suggestions.length > 0 && (
                 <div
@@ -476,8 +532,29 @@ export default function SearchResultsPage() {
                   <SelectItem value="supernatural">Supernatural</SelectItem>
                 </SelectContent>
               </Select>
-              
-              
+
+              <Select value={from} onValueChange={setFrom}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Any time" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any time</SelectItem>
+                  <SelectItem value="7">Past 7 days</SelectItem>
+                  <SelectItem value="30">Past 30 days</SelectItem>
+                  <SelectItem value="365">Past year</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={sort} onValueChange={(v) => setSort(v as any)}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="relevance">Relevance</SelectItem>
+                  <SelectItem value="newest">Newest</SelectItem>
+                  <SelectItem value="oldest">Oldest</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </form>
