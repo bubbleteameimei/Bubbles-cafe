@@ -37,6 +37,7 @@ import { resolveAuthorId } from "@/lib/reader-navigation";
 import Footer from "@/components/layout/footer";
 import SEO from "@/components/SEO";
 import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
+import type { WordPressPost } from "@/lib/wordpress-api";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { trackWordPressRead } from "@/lib/wp-reads";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
@@ -414,7 +415,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   });
 
-  const { data: postsData, isLoading, error } = useQuery({
+  const { data: postsData, isLoading, error } = useQuery<{ posts: WordPressPost[]; totalPages: number; total: number }>({
     // Stabilize the query key so the list is reused across slug changes
     queryKey: ["wordpress", "reader", "list", isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
