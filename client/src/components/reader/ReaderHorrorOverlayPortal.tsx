@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
@@ -22,14 +22,43 @@ export default function ReaderHorrorOverlayPortal({
 }: ReaderHorrorOverlayPortalProps) {
   if (!visible || typeof document === "undefined") return null;
 
+  // Lock scroll while the overlay is visible and restore on close
+  useEffect(() => {
+    if (!visible) return;
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+    const prevOverscroll = body.style.overscrollBehavior;
+
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "contain";
+
+    return () => {
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overflow = prevBodyOverflow;
+      body.style.overscrollBehavior = prevOverscroll;
+    };
+  }, [visible]);
+
   return createPortal(
     <>
       {/* Horror message modal (unchanged content and classes) */}
       <motion.div
+        role="dialog"
+        aria-modal="true"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md"
+        style={{
+          zIndex: 2147483647,
+          width: "100vw",
+          height: "100vh",
+          top: 0,
+          left: 0,
+        }}
       >
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
@@ -63,7 +92,7 @@ export default function ReaderHorrorOverlayPortal({
       {/* Overlay to prevent interaction with the page when horror message is shown */}
       <div
         className="fixed inset-0 z-[999]"
-        style={{ pointerEvents: "all" }}
+        style={{ pointerEvents: "all", zIndex: 2147483646, width: "100vw", height: "100vh", top: 0, left: 0 }}
         aria-hidden="true"
       />
     </>,
