@@ -80,6 +80,20 @@ import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
       return html;
     }
   };
+
+  // Normalize WordPress fields (string or { rendered: string }) to a string
+  const getRenderedText = (value: any): string => {
+    try {
+      if (typeof value === 'string') return value;
+      if (value && typeof value === 'object' && typeof value.rendered === 'string') {
+        return value.rendered;
+      }
+      return '';
+    } catch {
+      return '';
+    }
+  };
+
   interface ReaderPageProps {
   slug?: string;
   params?: { slug?: string };
@@ -444,10 +458,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Validate and update currentIndex when posts data changes; align index by slug if present
   useEffect(() => {
-    if (postsData?.posts && postsData.posts.length > 0) {
+    const dataPosts: WordPressPost[] | undefined = (postsData as any)?.posts;
+    if (Array.isArray(dataPosts) && dataPosts.length > 0) {
       // If we have a slug in the route, align the index to that post
       if (routeSlug) {
-        const bySlug = postsData.posts.findIndex((p: any) => String(p.slug || '') === String(routeSlug));
+        const bySlug = dataPosts.findIndex((p: any) => String(p.slug || '') === String(routeSlug));
         if (bySlug >= 0 && bySlug !== currentIndex) {
           setCurrentIndex(bySlug);
           sessionStorage.setItem('selectedStoryIndex', String(bySlug));
@@ -455,7 +470,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       }
 
       // Ensure currentIndex is within bounds
-      if (currentIndex >= postsData.posts.length) {
+      if (currentIndex >= dataPosts.length) {
         setCurrentIndex(0);
         sessionStorage.setItem('selectedStoryIndex', '0');
       } else {
@@ -463,7 +478,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       }
 
       // Log current post details
-      const currentPost = postsData.posts[currentIndex];
+      const currentPost = dataPosts[currentIndex];
 
       // Now that we have the post data, update our slug for auto-saving
       if (currentPost) {
@@ -471,7 +486,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         setAutoSaveSlug(newSlug);
       }
     }
-  }, [currentIndex, postsData?.posts, routeSlug]);
+  }, [currentIndex, postsData, routeSlug]);
 
   // Position restoration notification has been removed as requested
 
@@ -492,21 +507,21 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // WordPress read tracking: compute current post id/link and gate by time-on-page and scroll depth.
   const currentPostId = useMemo(() => {
     try {
-      const post = postsData?.posts?.[currentIndex];
+      const post = posts?.[currentIndex];
       return post?.id as number | undefined;
     } catch {
       return undefined;
     }
-  }, [postsData?.posts, currentIndex]);
+  }, [posts, currentIndex]);
 
   const currentPostLink = useMemo(() => {
     try {
-      const post = postsData?.posts?.[currentIndex];
+      const post = posts?.[currentIndex];
       return (post as any)?.link as string | undefined;
     } catch {
       return undefined;
     }
-  }, [postsData?.posts, currentIndex]);
+  }, [posts, currentIndex]);
 
   // Cookie consent for analytics
   const { isCategoryAllowed } = useCookieConsent();
@@ -544,7 +559,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   useEffect(() => {
     try {
       if (!isAuthenticated) return;
-      const slug = routeSlug || autoSaveSlug || postsData?.posts?.[currentIndex]?.slug;
+      const slug = routeSlug || autoSaveSlug || posts?.[currentIndex]?.slug;
       if (!slug) return;
 
       const now = Date.now();
@@ -565,7 +580,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         }).catch(() => { /* non-fatal */ });
       }
     } catch { /* non-fatal */ }
-  }, [readingProgress, routeSlug, autoSaveSlug, postsData?.posts, currentIndex, isAuthenticated]);
+  }, [readingProgress, routeSlug, autoSaveSlug, posts, currentIndex, isAuthenticated]);
 
   // Reset active timers when post changes
   useEffect(() => {
@@ -661,7 +676,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           }
         } catch {}
         // Record local engagement metric
-        const post = postsData?.posts?.[currentIndex] as any;
+        const post = posts?.[currentIndex] as any;
         trackInteraction('finish_read', {
           postId: currentPostId,
           slug: post?.slug,
@@ -672,7 +687,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     } catch {
       // no-op
     }
-  }, [readingProgress, currentPostId, interactionCount, visibilityTick, isCategoryAllowed, currentIndex, postsData?.posts]);
+  }, [readingProgress, currentPostId, interactionCount, visibilityTick, isCategoryAllowed, currentIndex, posts]);
 
   // Create a function to generate the styles
   const generateStoryContentStyles = () => {
@@ -750,8 +765,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }, [posts, validCurrentIndex, routeSlug, setLocation]);
 
   // Let's make sure we have posts data and current post before rendering
-  // Keep previous story content visible while fetching; only return null if no data yet
-  if (isLoading && !(Array.isArray(postsData?.posts) && postsData.posts.length > 0)) {
+  // Keep previous story content visible while fetching; only return null if no cached data yet
+  const hasCachedPosts = Array.isArray((postsData as any)?.posts) && ((postsData as any)?.posts?.length > 0);
+  if (isLoading && !hasCachedPosts) {
     // Avoid showing an inline loader; let the header remain and page content appear when ready
     return null;
   }
@@ -787,8 +803,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // SEO values for this story
   const stripHtml = (s: string) => s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '';
-  const titleText = stripHtml(currentPost.title?.rendered || currentPost.title || 'Story');
-  const rawContent = currentPost.content?.rendered || currentPost.content || '';
+  const titleText = stripHtml(getRenderedText(currentPost.title) || 'Story');
+  const rawContent = getRenderedText(currentPost.content) || '';
   const descriptionText = getExcerpt(rawContent, 160);
   const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
   const published = currentPost.date || new Date().toISOString();
@@ -814,7 +830,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }
 
   // Apply theme detection to current post
-  const detectedThemes = detectThemes(currentPost.content?.rendered || currentPost.content || '');
+  const detectedThemes = detectThemes(getRenderedText(currentPost.content) || '');
 
   // Horror easter egg function
   const checkRapidNavigation = () => {
@@ -1071,57 +1087,20 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       {/* Reader content styles with smooth font transitions */}
       <style dangerouslySetInnerHTML={{ __html: generateStoryContentStyles() }} />
 
-      {/* Horror message modal */}
-      {showHorrorMessage && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md"
-          // Removed onClick handler to prevent closing by clicking outside
-        >
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ 
-              type: "spring", 
-              stiffness: 300, 
-              damping: 30 
-            }}
-            className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-full text-center border border-[#ff0000]/80"
-          >
-            <div className="absolute inset-0 rounded-lg bg-[#ff0000]/10 animate-pulse" />
-            <div className="relative z-10">
-              <div className="mb-6">
-                <CreepyTextGlitch 
-                  text={horrorMessageText} 
-                  className="text-4xl font-bold"
-                  intensityFactor={8}
-                />
-              </div>
-              {/* The button is wrapped in a div with no animations to keep it stable */}
-              <div className="mt-4">
-                <Button
-                  variant="outline"
-                  className="border-[#ff0000]/60 bg-background hover:bg-background/90 text-foreground w-full py-6"
-                  onClick={() => setShowHorrorMessage(false)}
-                >
-                  <span className="mx-auto text-lg font-medium">I understand, I'm sorry</span>
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-      
-      {/* Overlay to prevent interaction with the page when horror message is shown */}
-      {showHorrorMessage && (
-        <div 
-          className="fixed inset-0 z-[999]" 
-          style={{ pointerEvents: 'all' }}
-          aria-hidden="true"
-        />
-      )}
+      {/* Horror overlay rendered via portal to ensure visibility without scrolling; modal and text unchanged */}
+      <ReaderHorrorOverlayPortal
+        visible={showHorrorMessage}
+        message={horrorMessageText}
+        onClose={() => {
+          setShowHorrorMessage(false);
+          try {
+            sessionStorage.removeItem('reader_horror_active');
+            sessionStorage.removeItem('reader_horror_message');
+            sessionStorage.removeItem('reader_horror_expiry_ts');
+            sessionStorage.setItem('reader_skip_count', '0');
+          } catch {}
+        }}
+      />
       
       
       
@@ -1248,7 +1227,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 currentPostId={currentPost.id}
                 posts={posts.map((p: any) => ({
                   id: p.id,
-                  title: (p.title?.rendered || p.title || 'Untitled') as string,
+                  title: getRenderedText(p.title) || 'Untitled',
                   slug: (p.slug || `post-${p.id}`) as string,
                   date: (p.date || p.createdAt || new Date().toISOString()) as string
                 }))}
@@ -1322,7 +1301,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 )}
                 <h1
                   className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(currentPost.title?.rendered || currentPost.title || 'Story') }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(getRenderedText(currentPost.title) || 'Story') }}
                 />
               </div>
               
@@ -1344,7 +1323,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   </DialogHeader>
                   <div className="flex items-center justify-between border p-3 rounded-md bg-muted/50 mt-2">
                     <div className="font-medium truncate pr-2">
-                      {currentPost.title?.rendered || currentPost.title || 'Story'}
+                      {getRenderedText(currentPost.title) || 'Story'}
                     </div>
                     <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
                       Community
@@ -1771,7 +1750,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   className="story-content cursor-pointer text-justify"
                   ref={contentRef}
                   dangerouslySetInnerHTML={{ 
-                    __html: sanitizeHtmlContent(currentPost.content?.rendered || currentPost.content || 'No content available.') 
+                    __html: sanitizeHtmlContent(getRenderedText(currentPost.content) || 'No content available.') 
                   }}
                   onClick={toggleUI}
                   onKeyDown={(e) => {
@@ -1872,7 +1851,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       onClick={() => {
                         if (navigator.share) {
                           navigator.share({
-                            title: currentPost.title?.rendered || currentPost.title || 'Story',
+                            title: getRenderedText(currentPost.title) || 'Story',
                             url: window.location.href
                           });
                         } else {
