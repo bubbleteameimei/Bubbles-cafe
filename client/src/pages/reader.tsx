@@ -456,6 +456,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   
 
+  // Memoized posts array for consistent usage across hooks
+  const posts = useMemo<WordPressPost[]>(() => {
+    const dataPosts: WordPressPost[] | undefined = (postsData as any)?.posts;
+    return Array.isArray(dataPosts) ? dataPosts : [];
+  }, [postsData]);
+
   // Validate and update currentIndex when posts data changes; align index by slug if present
   useEffect(() => {
     const dataPosts: WordPressPost[] | undefined = (postsData as any)?.posts;
@@ -744,8 +750,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   // Removed duplicate deleted posts detection useEffect block
 
-  // Stabilize posts array and index; set up canonical URL synchronization before any early returns
-  const posts = useMemo(() => postsData?.posts ?? [], [postsData?.posts]);
+  // Stabilize index and set up canonical URL synchronization before any early returns
   const validCurrentIndex = useMemo(
     () => Math.max(0, Math.min(currentIndex, posts.length - 1)),
     [currentIndex, posts.length]
