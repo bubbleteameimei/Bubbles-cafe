@@ -216,6 +216,49 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const skipCountRef = useRef(0);
   const lastNavigationTimeRef = useRef(Date.now());
 
+  // Persist rapid navigation counters across remounts and restore overlay if active
+  useEffect(() => {
+    try {
+      // Restore counters
+      const savedSkip = parseInt(sessionStorage.getItem('reader_skip_count') || '0', 10);
+      if (Number.isFinite(savedSkip)) {
+        skipCountRef.current = savedSkip;
+      }
+      const savedLast = parseInt(sessionStorage.getItem('reader_last_nav_time') || '0', 10);
+      if (Number.isFinite(savedLast) && savedLast > 0) {
+        lastNavigationTimeRef.current = savedLast;
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      // Restore active overlay if still within expiry window
+      const active = sessionStorage.getItem('reader_horror_active') === '1';
+      const expiry = parseInt(sessionStorage.getItem('reader_horror_expiry_ts') || '0', 10);
+      const msg = sessionStorage.getItem('reader_horror_message') || '';
+      const now = Date.now();
+      if (active && Number.isFinite(expiry) && expiry > now) {
+        setHorrorMessageText(msg || "I SEE YOU SKIPPING!!!");
+        setShowHorrorMessage(true);
+        const remaining = expiry - now;
+        setTimeout(() => {
+          setShowHorrorMessage(false);
+          try {
+            sessionStorage.removeItem('reader_horror_active');
+            sessionStorage.removeItem('reader_horror_message');
+            sessionStorage.removeItem('reader_horror_expiry_ts');
+          } catch {}
+        }, remaining);
+      } else {
+        // Clean up stale overlay keys
+        sessionStorage.removeItem('reader_horror_active');
+        sessionStorage.removeItem('reader_horror_message');
+        sessionStorage.removeItem('reader_horror_expiry_ts');
+      }
+    } catch {}
+  }, []);
+
   
   
   // Create a ref for the content container to attach swipe events and copy protection
@@ -371,7 +414,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   });
 
   const { data: postsData, isLoading, error } = useQuery({
-    queryKey: ["wordpress", "reader", routeSlug ?? "", isCommunityContent ? "community" : "regular"],
+    // Stabilize the query key so the list is reused across slug changes
+    queryKey: ["wordpress", "reader", "list", isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
       if (import.meta.env?.DEV) {
         console.log('[Reader] Fetching WordPress posts list...', { routeSlug });
@@ -387,6 +431,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         throw error;
       }
     },
+    // Keep previous content visible while background fetching occurs
+    // We intentionally leave staleTime at 0 and refetch options unchanged to avoid changing network behavior.
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true
@@ -702,7 +748,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }, [posts, validCurrentIndex, routeSlug, setLocation]);
 
   // Let's make sure we have posts data and current post before rendering
-  if (isLoading) {
+  // Keep previous story content visible while fetching; only return null if no data yet
+  if (isLoading && !(Array.isArray(postsData?.posts) && postsData.posts.length > 0)) {
     // Avoid showing an inline loader; let the header remain and page content appear when ready
     return null;
   }
@@ -775,6 +822,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     // Check if rapid navigation (less than 1.5 seconds between skips)
     if (timeSinceLastNavigation < 1500) {
       skipCountRef.current += 1;
+      // Persist updated skip count
+      try {
+        sessionStorage.setItem('reader_skip_count', String(skipCountRef.current));
+      } catch {}
       
       // After 3 rapid skips, show the horror Easter egg
       if (skipCountRef.current >= 3 && !showHorrorMessage) {
@@ -786,6 +837,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         const message = "I SEE YOU SKIPPING!!!";
         setHorrorMessageText(message);
         setShowHorrorMessage(true);
+
+        // Persist overlay state with expiry so it survives route remounts
+        try {
+          sessionStorage.setItem('reader_horror_active', '1');
+          sessionStorage.setItem('reader_horror_message', message);
+          sessionStorage.setItem('reader_horror_expiry_ts', String(now + 9000));
+        } catch {}
         
         // Show toast with extremely creepy text using maximum intensity
         // The CreepyTextGlitch component has been enhanced for a rapid, unnerving effect
@@ -800,15 +858,27 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         setTimeout(() => {
           setShowHorrorMessage(false);
           skipCountRef.current = 0;
+          try {
+            sessionStorage.setItem('reader_skip_count', '0');
+            sessionStorage.removeItem('reader_horror_active');
+            sessionStorage.removeItem('reader_horror_message');
+            sessionStorage.removeItem('reader_horror_expiry_ts');
+          } catch {}
         }, 9000); // Extended to match the 9000ms toast duration
       }
     } else {
       // If navigation is slow, gradually reduce the skip count
       skipCountRef.current = Math.max(0, skipCountRef.current - 1);
+      try {
+        sessionStorage.setItem('reader_skip_count', String(skipCountRef.current));
+      } catch {}
     }
     
-    // Update last navigation time
+    // Update last navigation time (persisted)
     lastNavigationTimeRef.current = now;
+    try {
+      sessionStorage.setItem('reader_last_nav_time', String(now));
+    } catch {}
   };
 
   // These navigation function declarations need to be hoisted to avoid errors with hooks
