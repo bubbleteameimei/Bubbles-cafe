@@ -7,6 +7,7 @@ import { useCopyProtection } from "@/hooks/useCopyProtection";
 import ReaderTooltip from "@/components/reader/ReaderTooltip";
 import TableOfContents from "@/components/reader/TableOfContents";
 import SwipeNavigation from "@/components/reader/SwipeNavigation";
+import ReaderHorrorOverlayPortal from "@/components/reader/ReaderHorrorOverlayPortal";
 import "@/styles/reader-fixes.css";
 import { 
   Share2, Minus, Plus, Shuffle, ChevronLeft, ChevronRight,
