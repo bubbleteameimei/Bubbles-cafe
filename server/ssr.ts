@@ -24,6 +24,8 @@ export function ssrStreamHandler(req: Request, res: Response) {
 
   const origin = getOrigin(req);
   const canonical = `${origin}/`;
+  const gsc = process.env.GOOGLE_SITE_VERIFICATION || process.env.GSC_VERIFICATION;
+  const verificationMeta = gsc ? `<meta name="google-site-verification" content="${gsc}"/>` : '';
 
   // JSON-LD (Website + Organization) for generic SSR shell
   const jsonLd = JSON.stringify([
@@ -63,6 +65,7 @@ export function ssrStreamHandler(req: Request, res: Response) {
     <meta charset="utf-8"/>
     <title>Bubble’s Cafe - Dark, Psychological and Gothic Fiction</title>
     <link rel="canonical" href="${canonical}"/>
+    ${verificationMeta}
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png?${ICON_VERSION}"/>
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png?${ICON_VERSION}"/>
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png?${ICON_VERSION}"/>
@@ -100,6 +103,8 @@ export function readerPreviewHandler(req: Request, res: Response) {
 
   const origin = getOrigin(req);
   const canonical = `${origin}/reader/${encodeURIComponent(slug)}`;
+  const gsc = process.env.GOOGLE_SITE_VERIFICATION || process.env.GSC_VERIFICATION;
+  const verificationMeta = gsc ? `<meta name="google-site-verification" content="${gsc}"/>` : '';
 
   const jsonLd = JSON.stringify([
     {
@@ -156,6 +161,7 @@ export function readerPreviewHandler(req: Request, res: Response) {
     <meta charset="utf-8"/>
     <title>${safeTitle}</title>
     <link rel="canonical" href="${canonical}"/>
+    ${verificationMeta}
     <meta name="description" content="Dark, psychological and experimental short fiction on Bubble’s Cafe."/>
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png?${ICON_VERSION}"/>
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png?${ICON_VERSION}"/>
@@ -197,6 +203,8 @@ export function storyPreviewHandler(req: Request, res: Response) {
   const origin = getOrigin(req);
   // Canonical to reader path
   const canonical = `${origin}/reader/${encodeURIComponent(slug)}`;
+  const gsc = process.env.GOOGLE_SITE_VERIFICATION || process.env.GSC_VERIFICATION;
+  const verificationMeta = gsc ? `<meta name="google-site-verification" content="${gsc}"/>` : '';
 
   const jsonLd = JSON.stringify([
     {
@@ -237,6 +245,7 @@ export function storyPreviewHandler(req: Request, res: Response) {
     <meta charset="utf-8"/>
     <title>${safeTitle}</title>
     <link rel="canonical" href="${canonical}"/>
+    ${verificationMeta}
     <meta name="description" content="Dark, psychological and experimental short fiction on Bubble’s Cafe."/>
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png?${ICON_VERSION}"/>
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png?${ICON_VERSION}"/>
@@ -275,6 +284,8 @@ export function aboutPreviewHandler(req: Request, res: Response) {
   const title = 'About | Bubble’s Cafe';
   const desc = 'About Vanessa — writer, designer, and developer behind Bubble’s Cafe.';
   const canonical = `${origin}/about`;
+  const gsc = process.env.GOOGLE_SITE_VERIFICATION || process.env.GSC_VERIFICATION;
+  const verificationMeta = gsc ? `<meta name="google-site-verification" content="${gsc}"/>` : '';
 
   const jsonLd = JSON.stringify([
     {
@@ -304,6 +315,7 @@ export function aboutPreviewHandler(req: Request, res: Response) {
     <meta charset="utf-8"/>
     <title>${title}</title>
     <link rel="canonical" href="${canonical}"/>
+    ${verificationMeta}
     <meta name="description" content="${desc}"/>
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png?${ICON_VERSION}"/>
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png?${ICON_VERSION}"/>
