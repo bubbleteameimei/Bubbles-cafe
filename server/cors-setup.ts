@@ -14,8 +14,10 @@ import { Express, Request, Response, NextFunction } from "express";
 export function setupCors(app: Express) {
   // List of allowed origins
   const allowedOrigins = [
-    // Add frontend URL from environment variables for production
+    // Production frontend URL
     process.env.FRONTEND_URL,
+    // Public backend base URL (permit for non-browser clients and occasional same-origin fetches)
+    process.env.BACKEND_BASE_URL,
     // Allow Google Identity Services origin for redirect/One Tap posts
     "https://accounts.google.com",
     // Development URLs
@@ -23,7 +25,18 @@ export function setupCors(app: Express) {
     "http://localhost:5173",
     "http://localhost:5174"
   ].filter(Boolean); // Filter out undefined values
-  
+
+  // Normalize helper to compare by origin string
+  const normalize = (s: string) => {
+    try {
+      const u = new URL(s);
+      return `${u.protocol}//${u.host}`;
+    } catch {
+      return s;
+    }
+  };
+  const normalizedAllowed = new Set(allowedOrigins.map(normalize));
+
   // Replit preview allowlist patterns
   const isReplitOrigin = (o?: string) => !!o && (
     /\.repl\.co$/.test(o) || /\.replit\.dev$/.test(o) || /\.replit\.app$/.test(o) || o.includes('.replit.') || o.includes('repl.co')
@@ -36,13 +49,13 @@ export function setupCors(app: Express) {
 
   // CORS middleware
   app.use((req: Request, res: Response, next: NextFunction) => {
-    const origin = req.headers.origin;
-    
+    const origin = req.headers.origin ? String(req.headers.origin) : undefined;
+
     console.log(`[CORS] Request from origin: ${origin || 'none'}, NODE_ENV: ${process.env.NODE_ENV}`);
-    
+
     // Allow specific origins and include credentials
-    if (origin && allowedOrigins.includes(origin as string)) {
-      res.setHeader("Access-Control-Allow-Origin", origin as string);
+    if (origin && normalizedAllowed.has(normalize(origin))) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
       console.log(`[CORS] Allowed configured origin: ${origin}`);
     }
@@ -74,25 +87,25 @@ export function setupCors(app: Express) {
       res.setHeader("Access-Control-Allow-Origin", "*");
       console.log(`[CORS] Allowed request without origin header`);
     }
-    
+
     // Allow specific headers
     res.setHeader(
       "Access-Control-Allow-Headers",
       "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRF-Token"
     );
-    
+
     // Allow specific methods
     res.setHeader(
       "Access-Control-Allow-Methods",
       "GET, POST, PUT, PATCH, DELETE, OPTIONS"
     );
-    
+
     // Handle preflight requests
     if (req.method === "OPTIONS") {
       res.status(200).end();
       return;
     }
-    
+
     next();
   });
 

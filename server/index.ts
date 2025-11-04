@@ -403,6 +403,35 @@ async function startServer() {
 
       const { serveStatic } = await import('./vite');
 
+      // Redirect non-API traffic reaching the API domain to the canonical frontend
+      // This prevents loading the SPA from api.bubblescafe.space and avoids broken vendor paths (e.g., /_vercel/*)
+      try {
+        const frontendBase = (process.env.FRONTEND_URL || 'https://bubblescafe.space').replace(/\/$/, '');
+        const apiHost = (() => {
+          try {
+            const u = new URL(process.env.BACKEND_BASE_URL || 'https://api.bubblescafe.space');
+            return u.host.toLowerCase();
+          } catch {
+            return 'api.bubblescafe.space';
+          }
+        })();
+
+        app.use((req, res, next) => {
+          try {
+            const host = String(req.headers.host || '').toLowerCase();
+            if (host === apiHost || host.startsWith(apiHost + ':')) {
+              const p = req.path || '';
+              // Allow health and API endpoints to proceed on the API domain
+              if (p === '/health' || p.startsWith('/api')) return next();
+              // Redirect everything else (static/SPA routes) to the public frontend
+              const location = frontendBase + (req.originalUrl || '/');
+              return res.redirect(308, location);
+            }
+          } catch {}
+          next();
+        });
+      } catch {}
+
       // Canonicalize legacy routes
       app.get('/auth-success', (_req, res) => res.redirect(308, '/auth/success'));
       app.get('/admin/posts', (_req, res) => res.redirect(308, '/admin/manage-posts'));
