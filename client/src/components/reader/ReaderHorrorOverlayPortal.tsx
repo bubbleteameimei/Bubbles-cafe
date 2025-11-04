@@ -23,23 +23,62 @@ export default function ReaderHorrorOverlayPortal({
   // Determine client environment once per render
   const isClient = typeof document !== "undefined";
 
-  // Lock scroll while the overlay is visible and restore on close
+  // Robust scroll lock while the overlay is visible; restore on close
   useEffect(() => {
     if (!visible || !isClient) return;
+
     const html = document.documentElement;
     const body = document.body;
-    const prevHtmlOverflow = html.style.overflow;
-    const prevBodyOverflow = body.style.overflow;
-    const prevOverscroll = body.style.overscrollBehavior;
 
+    const prev = {
+      htmlOverflow: html.style.overflow,
+      htmlOverscroll: (html.style as any).overscrollBehavior,
+      bodyOverflow: body.style.overflow,
+      bodyOverscroll: body.style.overscrollBehavior,
+      bodyPosition: body.style.position,
+      bodyTop: body.style.top,
+      bodyLeft: body.style.left,
+      bodyRight: body.style.right,
+      bodyWidth: body.style.width,
+    };
+
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+
+    // Lock scrolling across browsers (including iOS Safari)
     html.style.overflow = "hidden";
+    (html.style as any).overscrollBehavior = "none";
     body.style.overflow = "hidden";
-    body.style.overscrollBehavior = "contain";
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overscrollBehavior = "none";
+
+    const prevent = (e: Event) => {
+      e.preventDefault();
+    };
+
+    // Prevent wheel/touch scroll bubbling
+    window.addEventListener("wheel", prevent, { passive: false });
+    window.addEventListener("touchmove", prevent, { passive: false });
 
     return () => {
-      html.style.overflow = prevHtmlOverflow;
-      body.style.overflow = prevBodyOverflow;
-      body.style.overscrollBehavior = prevOverscroll;
+      window.removeEventListener("wheel", prevent as any);
+      window.removeEventListener("touchmove", prevent as any);
+
+      html.style.overflow = prev.htmlOverflow;
+      (html.style as any).overscrollBehavior = prev.htmlOverscroll || "";
+      body.style.overflow = prev.bodyOverflow;
+      body.style.position = prev.bodyPosition;
+      body.style.top = prev.bodyTop;
+      body.style.left = prev.bodyLeft;
+      body.style.right = prev.bodyRight;
+      body.style.width = prev.bodyWidth;
+      body.style.overscrollBehavior = prev.bodyOverscroll || "";
+
+      // Restore original scroll position
+      window.scrollTo(0, scrollY);
     };
   }, [visible, isClient]);
 
@@ -55,13 +94,15 @@ export default function ReaderHorrorOverlayPortal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md"
+        className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md overflow-hidden"
         style={{
           zIndex: 2147483647,
           width: "100vw",
           height: "100vh",
           top: 0,
           left: 0,
+          touchAction: "none",
+          overscrollBehavior: "none",
         }}
       >
         <motion.div
@@ -76,7 +117,8 @@ export default function ReaderHorrorOverlayPortal({
         >
           <div className="absolute inset-0 rounded-lg bg-[#ff0000]/10 animate-pulse" />
           <div className="relative z-10">
-            <div className="mb-6">
+            {/* Reserve space for the glitch text to avoid pushing the button */}
+            <div className="mb-6 min-h-16 flex items-center justify-center whitespace-nowrap leading-none">
               <CreepyTextGlitch text={message} className="text-4xl font-bold" intensityFactor={8} />
             </div>
             {/* The button is wrapped in a div with no animations to keep it stable */}
