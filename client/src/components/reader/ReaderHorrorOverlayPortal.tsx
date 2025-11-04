@@ -94,7 +94,8 @@ export default function ReaderHorrorOverlayPortal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[1000] flex items-start justify-center bg-black/80 backdrop-blur-md overflow-hidden"
+        transition={{ duration: 0.28, ease: "easeOut" }}
+        className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md overflow-hidden"
         style={{
           zIndex: 2147483647,
           width: "100vw",
@@ -106,22 +107,22 @@ export default function ReaderHorrorOverlayPortal({
         }}
       >
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
+          initial={{ scale: 0.96, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{
             type: "spring",
-            stiffness: 300,
-            damping: 30,
+            stiffness: 280,
+            damping: 26,
           }}
-          className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-full text-center border border-[#ff0000]/80 mt-[12vh]"
+          className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-full text-center border border-[#ff0000]/80 -translate-y-[3vh]"
         >
           <div className="absolute inset-0 rounded-lg bg-[#ff0000]/10 animate-pulse" />
           <div className="relative z-10">
-            {/* Glitch text (no reserved height so layout breathes as before) */}
+            {/* Glitch text (original dynamic feel) */}
             <div className="mb-6">
               <CreepyTextGlitch text={message} className="text-4xl font-bold" intensityFactor={8} />
             </div>
-            {/* Button container unchanged from original feel */}
+            {/* Button container with original behavior */}
             <div className="mt-4">
               <Button
                 variant="outline"
