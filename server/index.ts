@@ -116,45 +116,10 @@ app.get('/api/health', async (_req, res) => {
 });
 
 // Alias for platforms expecting `/health` at root (no /api prefix)
-app.get('/health', async (_req, res) => {
-  const started = Date.now();
+// Keep this ultra-lightweight for external uptime pingers.
+app.get('/health', (_req, res) => {
   try { res.setHeader('Cache-Control', 'no-store, max-age=0'); } catch {}
-
-  const timeoutMs = Number(process.env.HEALTH_DB_TIMEOUT_MS || 200);
-  const hasDbUrl =
-    !!(process.env.DATABASE_URL ||
-      process.env.SUPABASE_POOLER_URL ||
-      process.env.SUPABASE_CONNECTION_POOLER_URL ||
-      process.env.DB_POOLER_URL);
-
-  let dbStatus: 'connected' | 'error' | 'timeout' | 'disabled' = 'disabled';
-
-  if (hasDbUrl) {
-    try {
-      const result = await Promise.race<string>([
-        (async () => {
-          try {
-            await db.select().from(posts).limit(1);
-            return 'connected';
-          } catch {
-            return 'error';
-          }
-        })(),
-        new Promise<string>((resolve) => setTimeout(() => resolve('timeout'), timeoutMs)),
-      ]);
-      dbStatus = (result as any);
-    } catch {
-      dbStatus = 'error';
-    }
-  }
-
-  res.json({
-    status: 'ok',
-    db: dbStatus,
-    uptimeSec: Math.round(process.uptime()),
-    latencyMs: Date.now() - started,
-    now: new Date().toISOString(),
-  });
+  res.json({ status: 'ok' });
 });
 
 // Favicon handler for legacy clients/bots that request /favicon.ico
