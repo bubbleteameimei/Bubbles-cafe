@@ -114,7 +114,8 @@ export default function ReaderHorrorOverlayPortal({
             stiffness: 280,
             damping: 26,
           }}
-          className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-full text-center border border-[#ff0000]/80 -translate-y-[4vh]"
+          className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-full text-center border border-[#ff0000]/80"
+          style={{ marginTop: '-6vh' }}
         >
           <div className="absolute inset-0 rounded-lg bg-[#ff0000]/10 animate-pulse" />
           <div className="relative z-10">
