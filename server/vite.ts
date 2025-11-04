@@ -123,7 +123,28 @@ function resolveStaticRoot(): string {
 export function serveStatic(app: Express) {
   const staticRoot = resolveStaticRoot();
 
-  app.use(express.static(staticRoot));
+  // Serve static assets with sensible caching
+  app.use(
+    express.static(staticRoot, {
+      setHeaders: (res, filePath) => {
+        try {
+          // Never cache HTML documents
+          if (filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+            return;
+          }
+          // Long cache for versioned assets
+          if (/\.(?:js|css|png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|otf|json|txt|map)$/i.test(filePath)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          }
+        } catch {
+          // ignore
+        }
+      },
+    })
+  );
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (req, res) => {
@@ -132,6 +153,7 @@ export function serveStatic(app: Express) {
       res.status(404).end('Not Found');
       return;
     }
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.resolve(staticRoot, "index.html"));
   });
 }

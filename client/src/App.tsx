@@ -43,6 +43,7 @@ import { useA11y } from '@/hooks/useA11y';
 
 // New: BackToTopButton (scroll-to-top)
 const BackToTopButton = React.lazy(() => import('./components/BackToTopButton'));
+import GA4 from './components/GA4';
 
 // Import essential pages lazily to keep main bundle small
 const HomePage = React.lazy(() => import('./pages/home'));
@@ -749,9 +750,8 @@ function App() {
                           <Sonner position="bottom-left" className="fixed-sonner" />
                         </React.Suspense>
                         {/* Vercel Analytics - production only */}
-                        {import.meta.env.PROD && <Analytics />}
-                      </RefreshProvider>
-                    </ErrorToastProvider>
+                        {import.meta.env.PROD & <<Analytics />}
+                        {/* GA4 (enabled when VITE_GA        </ErrorToastProvider>
                   </ScrollEffectsProvider>
                 </NotificationProvider>
               </SidebarProvider>
