@@ -20,11 +20,12 @@ export default function ReaderHorrorOverlayPortal({
   message,
   onClose,
 }: ReaderHorrorOverlayPortalProps) {
-  if (!visible || typeof document === "undefined") return null;
+  // Determine client environment once per render
+  const isClient = typeof document !== "undefined";
 
   // Lock scroll while the overlay is visible and restore on close
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || !isClient) return;
     const html = document.documentElement;
     const body = document.body;
     const prevHtmlOverflow = html.style.overflow;
@@ -40,7 +41,10 @@ export default function ReaderHorrorOverlayPortal({
       body.style.overflow = prevBodyOverflow;
       body.style.overscrollBehavior = prevOverscroll;
     };
-  }, [visible]);
+  }, [visible, isClient]);
+
+  // Early return after hooks to satisfy rules-of-hooks
+  if (!visible || !isClient) return null;
 
   return createPortal(
     <>
