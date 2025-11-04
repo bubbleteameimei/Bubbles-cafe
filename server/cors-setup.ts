@@ -24,7 +24,7 @@ export function setupCors(app: Express) {
     "http://localhost:3000",
     "http://localhost:5173",
     "http://localhost:5174"
-  ].filter(Boolean); // Filter out undefined values
+  ].filter((v): v is string => typeof v === 'string' && v.length > 0); // ensure string[]
 
   // Normalize helper to compare by origin string
   const normalize = (s: string) => {
@@ -35,7 +35,7 @@ export function setupCors(app: Express) {
       return s;
     }
   };
-  const normalizedAllowed = new Set(allowedOrigins.map(normalize));
+  const normalizedAllowed = new Set<string>(allowedOrigins.map((s) => normalize(s)));
 
   // Replit preview allowlist patterns
   const isReplitOrigin = (o?: string) => !!o && (

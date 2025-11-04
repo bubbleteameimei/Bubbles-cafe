@@ -191,7 +191,7 @@ const AppContent = () => {
 
   if (pathForSeo === '/') {
     seoTitle = 'Bubble’s Cafe';
-    seoDescription = 'Bubble’s Cafe publishes dark, psychological, and experimental short fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.';
+    seoDescription = "Bubble's Cafe publishes dark, psychological, and experimental fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.";
   } else if (pathForSeo.startsWith('/stories') || pathForSeo.startsWith('/index')) {
     seoTitle = 'Index';
     seoDescription = 'Browse the index of short fiction from Bubble’s Cafe — psychological and experimental stories of identity, obsession, and the strange grace of decay.';

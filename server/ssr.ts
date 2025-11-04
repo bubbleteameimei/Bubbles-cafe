@@ -20,16 +20,16 @@ export function ssrStreamHandler(req: Request, res: Response) {
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png?${ICON_VERSION}"/>
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png?${ICON_VERSION}"/>
     <link rel="shortcut icon" href="/favicon.ico"/>
-    <meta name="description" content="A home for dark, psychological and experimental short fiction — stories that explore the quiet violence beneath ordinary life."/>
+    <meta name="description" content="Bubble's Cafe publishes dark, psychological, and experimental fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind."/>
     <meta property="og:title" content="Bubble’s Cafe"/>
-    <meta property="og:description" content="Dark, psychological and experimental short fiction."/>
+    <meta property="og:description" content="Bubble's Cafe publishes dark, psychological, and experimental fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind."/>
     <meta property="og:type" content="website"/>
     <meta property="og:image" content="${OG_VERSIONED}"/>
     <meta property="og:image:width" content="1200"/>
     <meta property="og:image:height" content="630"/>
     <meta name="twitter:card" content="summary_large_image"/>
     <meta name="twitter:title" content="Bubble’s Cafe"/>
-    <meta name="twitter:description" content="Dark, psychological and experimental short fiction."/>
+    <meta name="twitter:description" content="Bubble's Cafe publishes dark, psychological, and experimental fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind."/>
     <meta name="twitter:image" content="${OG_VERSIONED}"/>
   </head><body>`);
 
