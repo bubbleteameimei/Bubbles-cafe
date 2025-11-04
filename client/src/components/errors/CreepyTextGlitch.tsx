@@ -17,12 +17,14 @@ const HEADER_FONTS = [
   "'Cormorant Garamond', serif"
 ];
 
+const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+
 export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: CreepyTextGlitchProps) {
   const [displayText, setDisplayText] = useState(text);
   const [blurActive, setBlurActive] = useState(false);
   const originalText = useRef(text);
   const timeoutIds = useRef<NodeJS.Timeout[]>([]);
-  
+
   // Ensure required display fonts are available for the glitch header
   useEffect(() => {
     const id = 'glitch-fonts-link';
@@ -34,76 +36,76 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
       document.head.appendChild(link);
     }
   }, []);
-  
+
   // Cleanup function to clear all timeouts
   const clearAllTimeouts = () => {
     timeoutIds.current.forEach(id => clearTimeout(id));
     timeoutIds.current = [];
   };
-  
-  // Schedule random, chaotic glitches
+
+  // Schedule controlled glitch pulses (clamped for readability)
   const scheduleRandomGlitches = useCallback(() => {
     clearAllTimeouts();
-    
-    // Completely random character replacement for chaotic effect
+
+    // Normalize intensity to [0, 1.5] to avoid runaway effects
+    const i = clamp(typeof intensityFactor === 'number' ? intensityFactor : 1, 0, 10);
+    const norm = i / 8; // With intensityFactor=8 -> norm=1
+
+    // Per-character glitch probability (cap so letters remain visible)
+    const glitchProb = clamp(0.12 + norm * 0.18, 0.12, 0.3); // max 30%
+
+    // Timing controls (ensure positive delays)
+    const minDelay = clamp(220 - norm * 120, 100, 220); // 100..220 ms
+    const variance = clamp(380 - norm * 200, 120, 380); // 120..380 ms
+    const initialShowMs = clamp(260 - norm * 120, 120, 260); // Initial time to show clean text
+    const revertMin = 90;
+    const revertVariance = 140;
+
     const randomGlitchEffect = () => {
-      // Convert text to array for character manipulation
       const chars = originalText.current.split('');
       const newChars = [...chars];
-      
-      // Each character has a random chance of being glitched
-      for (let i = 0; i < chars.length; i++) {
-        // Skip spaces
-        if (chars[i] === ' ') continue;
-        
-        // Random chance to glitch each character - higher with more intensity
-        if (Math.random() < 0.3 * intensityFactor) {
-          // Replace with a random glitch character
-          newChars[i] = GLITCH_CHARS.charAt(
-            Math.floor(Math.random() * GLITCH_CHARS.length)
-          );
+
+      for (let idx = 0; idx < chars.length; idx++) {
+        const ch = chars[idx];
+        if (ch === ' ') continue;
+        if (Math.random() < glitchProb) {
+          newChars[idx] = GLITCH_CHARS.charAt(Math.floor(Math.random() * GLITCH_CHARS.length));
         }
       }
-      
-      // Apply text with randomized glitched characters
+
       setDisplayText(newChars.join(''));
-      
-      // Random blur effect - more frequent and intense with higher intensity
-      if (Math.random() > 0.6 - (intensityFactor * 0.1)) {
+
+      // Occasional blur to enhance effect, bounded by intensity
+      if (Math.random() < clamp(0.25 + norm * 0.25, 0.25, 0.5)) {
         setBlurActive(true);
-        const blurDuration = 30 + Math.random() * 100;
-        setTimeout(() => setBlurActive(false), blurDuration);
+        const blurDuration = 40 + Math.random() * 120;
+        const blurTimeout = setTimeout(() => setBlurActive(false), blurDuration);
+        timeoutIds.current.push(blurTimeout);
       }
-      
-      // Revert to original text after a random time
-      const revertTime = 10 + Math.random() * 80; // Very random timing for unpredictability
+
+      // Always revert to original after a short, bounded interval
+      const revertTime = revertMin + Math.random() * revertVariance;
       const revertTimeout = setTimeout(() => {
-        // Small chance to not revert, creating sustained glitches
-        if (Math.random() > 0.1) {
-          setDisplayText(originalText.current);
-        }
+        setDisplayText(originalText.current);
       }, revertTime);
-      
       timeoutIds.current.push(revertTimeout);
     };
-    
-    // Schedule next glitch with highly variable timing
+
     const scheduleNext = () => {
-      // Completely random timing between glitches for unpredictable effect
-      const minDelay = Math.max(10, 40 - (intensityFactor * 15));
-      const maxVariance = 100 - (intensityFactor * 20);
-      const nextGlitchDelay = minDelay + Math.random() * maxVariance;
-      
+      const nextGlitchDelay = minDelay + Math.random() * variance;
       const timeout = setTimeout(() => {
         randomGlitchEffect();
         scheduleNext();
       }, nextGlitchDelay);
-      
       timeoutIds.current.push(timeout);
     };
-    
-    // Start the chaotic cycle
-    scheduleNext();
+
+    // Show clean text briefly before first glitch so the message is legible
+    const startTimeout = setTimeout(() => {
+      randomGlitchEffect();
+      scheduleNext();
+    }, initialShowMs);
+    timeoutIds.current.push(startTimeout);
   }, [intensityFactor]);
 
   // Initialize and cleanup glitch effect
@@ -111,44 +113,30 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
     originalText.current = text;
     setDisplayText(text);
     scheduleRandomGlitches();
-    
+
     return () => {
       clearAllTimeouts();
     };
   }, [text, intensityFactor, scheduleRandomGlitches]);
-  
-  // Initialize and cleanup glitch effect
-  useEffect(() => {
-    originalText.current = text;
-    setDisplayText(text);
-    scheduleRandomGlitches();
-    
-    return () => {
-      clearAllTimeouts();
-    };
-  }, [text, intensityFactor, scheduleRandomGlitches]);
-  
+
   // Generate randomized blur effect
   const getBlurStyle = () => {
     if (blurActive) {
-      const blurAmount = 0.5 + Math.random() * 3.5;
+      const blurAmount = 0.5 + Math.random() * 2.5;
       return `blur(${blurAmount}px)`;
     }
     return 'none';
   };
-  
+
   // Choose a random header font from the website's fonts
   const getRandomHeaderFont = () => {
-    // Default to first font if something goes wrong
     if (!HEADER_FONTS.length) return "'Castoro Titling', serif";
-    
-    // Randomly select one of the website's header fonts
     const randomIndex = Math.floor(Math.random() * HEADER_FONTS.length);
     return HEADER_FONTS[randomIndex];
   };
-  
+
   return (
-    <span 
+    <span
       className={`pure-red-text ${className}`} // Added pure-red-text class for targeted styling
       style={{
         position: 'relative',
@@ -156,13 +144,13 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
         color: '#ff0000', // Pure red, no RGB mixing
         fontFamily: getRandomHeaderFont(),
         fontWeight: 'bold',
-        letterSpacing: Math.random() < 0.5 ? '0.5px' : '-0.5px', // Random letter spacing for glitch effect
+        letterSpacing: Math.random() < 0.5 ? '0.5px' : '-0.5px',
         filter: getBlurStyle(),
-        transition: 'filter 0.05s ease, letter-spacing 0.1s ease', // Smooth transitions for subtle effects
-        textShadow: 'none', // No shadow at all to avoid color mixing
-        animation: 'none !important', // Force disable any inherited animations
-        WebkitTextFillColor: '#ff0000', // Ensure text is pure red in all browsers
-        WebkitTextStroke: '0 transparent', // No stroke to ensure pure color
+        transition: 'filter 0.08s ease, letter-spacing 0.12s ease',
+        textShadow: 'none',
+        animation: 'none !important',
+        WebkitTextFillColor: '#ff0000',
+        WebkitTextStroke: '0 transparent',
       }}
     >
       {displayText}
