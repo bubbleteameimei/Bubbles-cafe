@@ -1708,37 +1708,41 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
                 {/* Original navigation controls moved here under time-to-read */}
                 <div className={`flex justify-center items-center gap-4 py-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                  {/* Previous - match Next size and feel */}
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={goToPreviousStory}
                     disabled={posts.length <= 1 || isFirstStory}
-                    className="h-9 px-4 bg-background/80 hover:bg-background/60 border-border/50 disabled:opacity-30"
+                    className="h-10 w-28 rounded-full bg-background/90 border border-border/50 text-foreground hover:bg-accent/60 hover:text-accent-foreground active:translate-y-[1px] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
                   >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    <span className="font-medium">Previous</span>
                   </Button>
-                  
+
+                  {/* Random - icon only, circular */}
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="icon"
                     onClick={goToRandomStory}
                     disabled={posts.length <= 1}
-                    className="h-9 px-4 bg-background/80 hover:bg-background/60 border-border/50 disabled:opacity-30"
+                    aria-label="Random story"
+                    className="h-10 w-10 rounded-full bg-background/90 border border-border/50 text-foreground hover:bg-accent/60 hover:text-accent-foreground active:translate-y-[1px] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
                   >
-                    <Shuffle className="h-4 w-4 mr-1" />
-                    Random
+                    <Shuffle className="h-4 w-4" />
+                    <span className="sr-only">Random</span>
                   </Button>
-                  
+
+                  {/* Next - keep as baseline and match sizing */}
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={goToNextStory}
                     disabled={posts.length <= 1 || isLastStory}
-                    className="h-9 px-4 bg-background/80 hover:bg-background/60 border-border/50 disabled:opacity-30"
+                    className="h-10 w-28 rounded-full bg-background/90 border border-border/50 text-foreground hover:bg-accent/60 hover:text-accent-foreground active:translate-y-[1px] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
                   >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-1" />
+                    <span className="font-medium">Next</span>
+                    <ChevronRight className="h-4 w-4 ml-2" />
                   </Button>
                 </div>
               </div>
