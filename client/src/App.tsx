@@ -746,8 +746,10 @@ function App() {
                           <Toaster />
                         </React.Suspense>
                         <React.Suspense fallback={null}>
-                         <<Sonner position="bottom-left" className="fixed-sonner" />
+                          <Sonner position="bottom-left" className="fixed-sonner" />
                         </React.Suspense>
+                        {/* Vercel Analytics - production only */}
+                        {import.meta.env.PROD && <Analytics />}
                       </RefreshProvider>
                     </ErrorToastProvider>
                   </ScrollEffectsProvider>
