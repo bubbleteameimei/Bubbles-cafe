@@ -94,7 +94,7 @@ export default function ReaderHorrorOverlayPortal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md overflow-hidden"
+        className="fixed inset-0 z-[1000] flex items-start justify-center bg-black/80 backdrop-blur-md overflow-hidden"
         style={{
           zIndex: 2147483647,
           width: "100vw",
@@ -113,15 +113,15 @@ export default function ReaderHorrorOverlayPortal({
             stiffness: 300,
             damping: 30,
           }}
-          className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-full text-center border border-[#ff0000]/80"
+          className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-full text-center border border-[#ff0000]/80 mt-[12vh]"
         >
           <div className="absolute inset-0 rounded-lg bg-[#ff0000]/10 animate-pulse" />
           <div className="relative z-10">
-            {/* Reserve space for the glitch text to avoid pushing the button */}
-            <div className="mb-6 min-h-16 flex items-center justify-center whitespace-nowrap leading-none">
+            {/* Glitch text (no reserved height so layout breathes as before) */}
+            <div className="mb-6">
               <CreepyTextGlitch text={message} className="text-4xl font-bold" intensityFactor={8} />
             </div>
-            {/* The button is wrapped in a div with no animations to keep it stable */}
+            {/* Button container unchanged from original feel */}
             <div className="mt-4">
               <Button
                 variant="outline"
