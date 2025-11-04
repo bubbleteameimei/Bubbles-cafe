@@ -137,6 +137,8 @@ const GuidelinesPage = React.lazy(() => import('./pages/support/guidelines'));
 
 import { trackPageView } from '@/lib/metrics';
 import { usePrefersReducedMotion } from './hooks/use-prefers-reduced-motion';
+// Vercel Web Analytics (React)
+import { Analytics } from '@vercel/analytics/react';
 
 // Defer WordPress posts preloading until after initial page render
 // This improves initial load time significantly
@@ -746,6 +748,8 @@ function App() {
                         <React.Suspense fallback={null}>
                           <Sonner position="bottom-left" className="fixed-sonner" />
                         </React.Suspense>
+                        {/* Vercel Analytics - production only */}
+                        {import.meta.env.PROD && <Analytics />}
                       </RefreshProvider>
                     </ErrorToastProvider>
                   </ScrollEffectsProvider>

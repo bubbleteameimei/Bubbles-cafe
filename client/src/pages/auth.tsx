@@ -376,7 +376,7 @@ export default function AuthPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter your password"
-                      className="auth-input pr-10"
+                      className="auth-input pr-12"
                       required
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !isLoading) {
@@ -500,7 +500,7 @@ export default function AuthPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Create a password"
-                      className={`auth-input pr-10 ${password ? (passwordStrength >= 3 ? 'border-green-500' : 'border-yellow-500') : ''}`}
+                      className={`auth-input pr-12 ${password ? (passwordStrength >= 3 ? 'border-green-500' : 'border-yellow-500') : ''}`}
                       required
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !registerMutation.isPending && !isLoading) {
@@ -586,7 +586,7 @@ export default function AuthPage() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm your password"
-                      className={`auth-input pr-10 ${
+                      className={`auth-input pr-12 ${
                         confirmPassword 
                           ? (passwordsMatch === true 
                               ? 'border-green-500' 
