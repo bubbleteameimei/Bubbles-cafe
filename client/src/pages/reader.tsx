@@ -1794,8 +1794,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
                       isFirstStory 
                         ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
-                    }`}
+                        : 'text-foreground hover:bg-primary/60 hover:text-foreground dark:text-foreground dark:hover:bg-primary/35'
+                    } focus-visible:ring-2 focus-visible:ring-primary/70 hover:ring-2 hover:ring-primary/70 active:bg-primary/60`}
                     aria-label="Previous story"
                     disabled={posts.length <= 1 || isFirstStory}
                   >
@@ -1820,8 +1820,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
                       isLastStory 
                         ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
-                        : 'text-slate-700 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
-                    }`}
+                        : 'text-foreground hover:bg-primary/60 hover:text-foreground dark:text-foreground dark:hover:bg-primary/35'
+                    } focus-visible:ring-2 focus-visible:ring-primary/70 hover:ring-2 hover:ring-primary/70 active:bg-primary/60`}
                     aria-label="Next story"
                     disabled={posts.length <= 1 || isLastStory}
                   >
