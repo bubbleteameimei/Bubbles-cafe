@@ -9,7 +9,15 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping API /health
+      - name: Ping API and Frontend
         run: |
-          set -e
-          curl -fsS -m 6 https://api.bubblescafe.space/health >/dev/null || true
+          set +e
+          urls=(
+            "https://api.bubblescafe.space/health"
+            "https://api.bubblescafe.space/api/health"
+            "https://bubblescafe.space/"
+          )
+          for url in "${urls[@]}"; do
+            echo "Pinging $url"
+            curl -fsSL -m 8 -H "Cache-Control: no-cache" "$url" >/dev/null || true
+          done
