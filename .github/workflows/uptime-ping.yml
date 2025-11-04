@@ -13,11 +13,17 @@ jobs:
         run: |
           set +e
           urls=(
+            # API health
             "https://api.bubblescafe.space/health"
             "https://api.bubblescafe.space/api/health"
+            # Frontend warm pages
             "https://bubblescafe.space/"
+            "https://bubblescafe.space/about"
+            "https://bubblescafe.space/reader/memory"
+            "https://bubblescafe.space/community"
+            "https://bubblescafe.space/curated"
           )
           for url in "${urls[@]}"; do
             echo "Pinging $url"
-            curl -fsSL -m 8 -H "Cache-Control: no-cache" "$url" >/dev/null || true
+            curl -fsSL -m 8 -H "Cache-Control: no-cache" -A "uptime-ping/gh-actions" "$url" >/dev/null || true
           done
