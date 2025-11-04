@@ -106,35 +106,40 @@ export default function ReaderHorrorOverlayPortal({
           overscrollBehavior: "none",
         }}
       >
-        <motion.div
-          initial={{ scale: 0.96, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{
-            type: "spring",
-            stiffness: 280,
-            damping: 26,
-          }}
-          className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-full text-center border border-[#ff0000]/80"
-          style={{ marginTop: '-6vh' }}
+        {/* Deterministic position: center vertically then nudge up slightly via a non-animated wrapper */}
+        <div
+          className="absolute inset-x-0 flex justify-center"
+          style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%) translateY(-5vh)' }}
         >
-          <div className="absolute inset-0 rounded-lg bg-[#ff0000]/10 animate-pulse" />
-          <div className="relative z-10">
-            {/* Glitch text (original dynamic feel) */}
-            <div className="mb-6">
-              <CreepyTextGlitch text={message} className="text-4xl font-bold" intensityFactor={8} />
+          <motion.div
+            initial={{ scale: 0.96, opacity: 0, y: 12 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{
+              type: "spring",
+              stiffness: 280,
+              damping: 26,
+            }}
+            className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-full text-center border border-[#ff0000]/80"
+          >
+            <div className="absolute inset-0 rounded-lg bg-[#ff0000]/10 animate-pulse" />
+            <div className="relative z-10">
+              {/* Glitch text (original dynamic feel) */}
+              <div className="mb-6">
+                <CreepyTextGlitch text={message} className="text-4xl font-bold" intensityFactor={8} />
+              </div>
+              {/* Button container with original behavior */}
+              <div className="mt-4">
+                <Button
+                  variant="outline"
+                  className="border-[#ff0000]/60 bg-background hover:bg-background/90 text-foreground w-full py-6"
+                  onClick={onClose}
+                >
+                  <span className="mx-auto text-lg font-medium">I understand, I'm sorry</span>
+                </Button>
+              </div>
             </div>
-            {/* Button container with original behavior */}
-            <div className="mt-4">
-              <Button
-                variant="outline"
-                className="border-[#ff0000]/60 bg-background hover:bg-background/90 text-foreground w-full py-6"
-                onClick={onClose}
-              >
-                <span className="mx-auto text-lg font-medium">I understand, I'm sorry</span>
-              </Button>
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </motion.div>
 
       {/* Overlay to prevent interaction with the page when horror message is shown */}
