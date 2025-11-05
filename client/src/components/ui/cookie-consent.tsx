@@ -121,14 +121,23 @@ export function CookieConsent() {
         <div className="text-center space-y-2">
           <h2 id="cookie-consent-title" className="text-xl font-bold text-foreground">We use cookies</h2>
           <p id="cookie-consent-description" className="text-sm text-muted-foreground">
-            This website uses cookies to enhance your experience. By continuing to use this site, you agree to our{" "}
+            This website uses cookies to personalize content, analyze traffic, and enhance your experience. You can choose whether to accept all cookies or{" "}
+            <Link href="/settings/cookie-management" className="underline hover:text-foreground">
+              manage your preferences
+            </Link>
+            . By continuing to use this site, you agree to our{" "}
             <Link href="/privacy" className="underline hover:text-foreground">
               privacy policy
             </Link>.
           </p>
-          <p className="text-xs text-muted-foreground/80">
-            Accept: won't show for 3 months • Decline: won't show for 1 week
-          </p>
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-xs text-muted-foreground/80">
+              Accept: won't show for 6 months • Decline: won't show for 3 months
+            </p>
+            <Link href="/settings/cookie-management" className="text-xs underline text-muted-foreground hover:text-foreground">
+              Manage preferences
+            </Link>
+          </div>
         </div>
 
         <div className="flex justify-center gap-4">
