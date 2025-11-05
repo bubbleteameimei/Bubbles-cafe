@@ -202,8 +202,7 @@ export default function ManagePostsPage() {
   
   const bulkActionMutation = useMutation({
     mutationFn: async ({ action, postIds }: { action: string, postIds: number[] }) => {
-      const response = await fetch('/api/admin/posts/bulk', {
-        method: 'POST',
+      return await apiJson<any>('POST', '/api/admin/posts/bulk', {    method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -343,16 +342,6 @@ export default function ManagePostsPage() {
       queryClient.invalidateQueries({ queryKey: ['admin/posts'] });
     },
   });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to change feature status',
-        variant: 'destructive',
-      });
-    }
-  });
-  
   // Helper functions
   const handleSearch: React.FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
@@ -445,7 +434,12 @@ export default function ManagePostsPage() {
   };
   
   // Computed values
-  const posts = ((postsData?.posts || []) as any[]).map((p:];
+  const posts = ((postsData?.posts || []) as any[]).map((p: any) => {
+    const meta = (p?.metadata || {}) as any;
+    const published = String(meta.status || '').toLowerCase() === 'publish';
+    const featured = meta.featured === true;
+    return { ...p, published, featured } as ExtendedPost;
+  });
   const totalPosts = postsData?.total || 0;
   const isAllSelected = posts.length > 0 && selectedPosts.length === posts.length;
   const isIndeterminate = selectedPosts.length > 0 && selectedPosts.length < posts.length;
