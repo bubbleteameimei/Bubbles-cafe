@@ -190,14 +190,6 @@ export default function ManagePostsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin/posts'] });
       toast({
-        title:      });
-      
-      if (!response.ok) throw new Error('Failed to update post');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin/posts'] });
-      toast({
         title: 'Post Updated',
         description: 'The post has been successfully updated.',
       });
