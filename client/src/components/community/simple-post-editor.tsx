@@ -532,8 +532,9 @@ export default function SimplePostEditor({ postId, onClose: _onClose }: SimplePo
                 Cancel
               </Button>
               <Button type="submit" disabled={isPending}>
-                {isPending 
-                  ? 'Submitting...' Story' : 'Submit Horror Story'}
+                {isPending
+                  ? 'Submitting...'
+                  : (postId ? 'Update Story' : (isAuthenticated ? 'Submit Horror Story' : 'Sign in to Submit'))}
               </Button>
             </div>
           </form>
