@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (import.meta.env?.DEV) {
         console.log('[Auth] Supabase signInWithPassword:', { email });
       }
-      const { dataa, error: sError } = await supabase.auth.signInWithPassword({
+      const { data, error: sError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -132,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!access_token) {
         throw new Error('Login succeeded but no session token was returned');
       }
-      const serverUser = await finalizeServerSession(access_token);
+      const serverUser = await finalizeServerSession(access_token, rememberMe);
       return serverUser;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'An unknown error occurred';

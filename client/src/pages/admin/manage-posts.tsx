@@ -202,15 +202,8 @@ export default function ManagePostsPage() {
   
   const bulkActionMutation = useMutation({
     mutationFn: async ({ action, postIds }: { action: string, postIds: number[] }) => {
-      return await apiJson<any>('POST', '/api/admin/posts/bulk', {    method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action, postIds }),
-      });
-      
-      if (!response.ok) throw new Error(`Failed to ${action} posts`);
-      return response.json();
+      // CSRF-safe request via centralized helper
+      return await apiJson<any>('POST', '/api/admin/posts/bulk', { action, postIds });
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin/posts'] });
