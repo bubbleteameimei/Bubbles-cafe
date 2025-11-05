@@ -159,12 +159,8 @@ export default function ManagePostsPage() {
   // Mutations
   const deletePostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await fetch(`/api/admin/posts/${postId}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) throw new Error('Failed to delete post');
-      return response.json();
+      // Use centralized helper to include CSRF and credentials
+      return await apiJson<any>('DELETE', `/api/admin/posts/${postId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin/posts'] });
@@ -401,7 +397,7 @@ export default function ManagePostsPage() {
   };
   
   // Computed values
-  const posts = postsData?.posts || [];
+  const posts = ((postsData?.posts || []) as any[]).map((p:];
   const totalPosts = postsData?.total || 0;
   const isAllSelected = posts.length > 0 && selectedPosts.length === posts.length;
   const isIndeterminate = selectedPosts.length > 0 && selectedPosts.length < posts.length;

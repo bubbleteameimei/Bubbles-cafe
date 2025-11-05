@@ -47,15 +47,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       const API_BASE = getApiBaseUrl();
       const url = API_BASE ? `${API_BASE}/api/auth/status` : '/api/auth/status';
-      const response = await fetch(url, {
-        credentials: 'include',
-      });
+      const response = await fetch(url, { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         const isAuth = (data?.authenticated ?? data?.isAuthenticated) === true;
-        setUser(isAuth ? data.user : null);
+        if (isAuth) {
+          setUser(data.user);
+        } else {
+          // Attempt to re-establish a server session from Supabase if available
+          try {
+            const { data: s } = await supabase.auth.getSession();
+            const token = s?.session?.access_token;
+            if (token) {
+              await finalizeServerSession(token);
+            } else {
+              setUser(null);
+            }
+          } catch {
+            setUser(null);
+          }
+        }
       } else {
-        setUser(null);
+        // Non-200 response: try to finalize from Supabase token as a fallback
+        try {
+          const { data: s } = await supabase.auth.getSession();
+          const token = s?.session?.access_token;
+          if (token) {
+            await finalizeServerSession(token);
+          } else {
+            setUser(null);
+          }
+        } catch {
+          setUser(null);
+        }
       }
     } catch (error) {
       console.error('[Auth] Auth check error:', error);
@@ -70,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, []);
 
-  const finalizeServerSession = async (access_token: string) => {
+  const finalizeServerSession = async (access_token: string, rememberMe?: boolean) => {
     const API_BASE = getApiBaseUrl();
     const url = API_BASE ? `${API_BASE}/api/auth/supabase/login` : '/api/auth/supabase/login';
     const resp = await fetch(url, {
@@ -80,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         Authorization: `Bearer ${access_token}`,
       },
       credentials: 'include',
-      body: JSON.stringify({ access_token }),
+      body: JSON.stringify({ access_token, rememberMe: !!rememberMe }),
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) {
@@ -90,14 +114,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return (data as any)?.user;
   };
 
-  const login = async (email: string, password: string, _rememberMe = false) => {
+  const login = async (email: string, password: string, rememberMe = false) => {
     setIsLoading(true);
     setError(null);
     try {
       if (import.meta.env?.DEV) {
         console.log('[Auth] Supabase signInWithPassword:', { email });
       }
-      const { data, error: sError } = await supabase.auth.signInWithPassword({
+      const { dataa, error: sError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
