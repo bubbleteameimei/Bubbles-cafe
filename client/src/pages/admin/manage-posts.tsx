@@ -259,12 +259,8 @@ export default function ManagePostsPage() {
   
   const togglePublishMutation = useMutation({
     mutationFn: async ({ id, publish }: { id: number, publish: boolean }) => {
-      return await apiJson<any>('PATCH', `/api/posts/${id}/${publish ? 'publish' : 'unpublish'}`, {
-        method: 'PATCH',
-      });
-      
-      if (!response.ok) throw new Error(`Failed to ${publish ? 'publish' : 'unpublish'} post`);
-      return response.json();
+      // Use admin endpoints for publishing/unpublishing
+      return await apiJson<any>('PATCH', `/api/admin/posts/${id}/${publish ? 'publish' : 'unpublish'}`);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin/posts'] });
