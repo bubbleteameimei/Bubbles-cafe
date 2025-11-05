@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { apiJson } from "@/lib/api";
 
 interface CommentReactionButtonsProps {
   comment: {

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiJson } from '@/lib/api';
-import { fetchCsrfTokenIfNeeded, applyCSRFToken } from '@/lib/csrf-token';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, subYears, subMonths } from "date-fns";
 import { Card } from "@/components/ui/card";
@@ -502,18 +501,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   // Edit comment mutation
   const editMutation = useMutation({
     mutationFn: async ({ commentId, newContent }: { commentId: number; newContent: string }) => {
-      await fetchCsrfTokenIfNeeded();
-      const res = await fetch(`/api/comments/${commentId}`, applyCSRFToken({
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ content: newContent.trim() })
-      }));
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(t || `Failed to update comment (HTTP ${res.status})`);
-      }
-      return res.json();
+      return await apiJson<any>('PATCH', `/api/comments/${commentId}`, { content: newContent.trim() });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
@@ -529,16 +517,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   // Delete comment mutation
   const deleteMutation = useMutation({
     mutationFn: async (commentId: number) => {
-      await fetchCsrfTokenIfNeeded();
-      const res = await fetch(`/api/comments/${commentId}`, applyCSRFToken({
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include"
-      }));
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(t || `Failed to delete comment (HTTP ${res.status})`);
-      }
+      await apiJson<any>('DELETE', `/api/comments/${commentId}`);
       return true;
     },
     onSuccess: () => {

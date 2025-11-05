@@ -10,6 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { apiJson } from '@/lib/api';
 
 export default function ToastTest() {
   const { toast: hookToast } = useToast();
@@ -83,21 +84,7 @@ export default function ToastTest() {
       });
       
       // Make the API call
-      const response = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(feedbackData)
-      });
-      
-      // Handle response
-      if (!response.ok) {
-        throw new Error('Failed to submit feedback');
-      }
-      
-      // Parse the response data
-      const responseData = await response.json();
+      const responseData = await apiJson<any>('POST', '/api/feedback', feedbackData);
       
       // Success - dismiss loading toast and show success with the same ID
       toast.success('Feedback submitted successfully!', {

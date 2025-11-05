@@ -7,6 +7,7 @@ import {
   CardDescription, 
   CardFooter 
 } from "@/components/ui/card";
+import { apiJson } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -282,7 +283,7 @@ export default function ContentModerationPage() {
 
   const updateContentStatus = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      const response = await fetch(`/api/moderation/reported-content/${id}`, {
+      return await apiJson<any>('PATCH', `/api/moderation/re-content/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })

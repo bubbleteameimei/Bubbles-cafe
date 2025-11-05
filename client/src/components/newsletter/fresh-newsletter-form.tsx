@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Check, X, Loader2 } from 'lucide-react';
+import { apiJson } from '@/lib/api';
 
 export function FreshNewsletterForm() {
   const [email, setEmail] = useState('');
@@ -26,44 +27,23 @@ export function FreshNewsletterForm() {
     
     try {
       console.log('Submitting to newsletter API...');
-      
-      const response = await fetch('/api/newsletter/subscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        console.log('Successfully subscribed to newsletter:', data);
-        setSuccess(true);
-        setEmail('');
-        
-        toast({
-          title: "Subscription successful!",
-          description: "Check your inbox for a welcome email with our latest news.",
-          variant: "default",
-        });
-      } else {
-        console.error('Error subscribing to newsletter:', data);
-        setError(data.message || 'Failed to subscribe. Please try again.');
-        
-        toast({
-          title: "Subscription failed",
-          description: data.message || "There was a problem with your subscription. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } catch (err) {
-      console.error('Exception during newsletter subscription:', err);
-      setError('Network error. Please check your connection and try again.');
+      const data = await apiJson<any>('POST', '/api/newsletter/subscribe', { email });
+      console.log('Successfully subscribed to newsletter:', data);
+      setSuccess(true);
+      setEmail('');
       
       toast({
-        title: "Connection error",
-        description: "Couldn't connect to our servers. Please try again later.",
+        title: "Subscription successful!",
+        description: "Check your inbox for a welcome email with our latest news.",
+        variant: "default",
+      });
+    } catch (err: any) {
+      console.error('Exception during newsletter subscription:', err);
+      setError(err?.message || 'Network error. Please check your connection and try again.');
+      
+      toast({
+        title: "Subscription failed",
+        description: err?.message || "Couldn't connect to our servers. Please try again later.",
         variant: "destructive",
       });
     } finally {
