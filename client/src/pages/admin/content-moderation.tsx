@@ -283,13 +283,7 @@ export default function ContentModerationPage() {
 
   const updateContentStatus = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      return await apiJson<any>('PATCH', `/api/moderation/re-content/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
-      });
-      if (!response.ok) throw new Error('Failed to update content status');
-      return response.json();
+      return await apiJson<any>('PATCH', `/api/moderation/reported-content/${id}`, { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/moderation/reported-content'] });

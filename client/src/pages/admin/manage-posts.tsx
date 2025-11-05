@@ -73,6 +73,7 @@ import {
   BarChart,
   AlertCircle
 } from 'lucide-react';
+import { apiJson } from '@/lib/api';
 
 // Extended Post type with admin-specific properties
 interface ExtendedPost extends Post {
@@ -184,13 +185,12 @@ export default function ManagePostsPage() {
   
   const updatePostMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number, data: any }) => {
-      const response = await fetch(`/api/admin/posts/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      return await apiJson<any>('PATCH', `/api/admin/posts/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin/posts'] });
+      toast({
+        title:      });
       
       if (!response.ok) throw new Error('Failed to update post');
       return response.json();
@@ -267,7 +267,7 @@ export default function ManagePostsPage() {
   
   const togglePublishMutation = useMutation({
     mutationFn: async ({ id, publish }: { id: number, publish: boolean }) => {
-      const response = await fetch(`/api/admin/posts/${id}/${publish ? 'publish' : 'unpublish'}`, {
+      return await apiJson<any>('PATCH', `/api/posts/${id}/${publish ? 'publish' : 'unpublish'}`, {
         method: 'PATCH',
       });
       

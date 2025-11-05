@@ -48,7 +48,7 @@ export default function SimplePostEditor({ postId, onClose: _onClose }: SimplePo
   const [activeTab, setActiveTab] = useState<string>('write');
 
   // Get user information if available
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   
   // Form setup with default values
   const form = useForm<PostFormValues>({
@@ -139,6 +139,14 @@ export default function SimplePostEditor({ postId, onClose: _onClose }: SimplePo
 
   // Handle form submission
   const onSubmit = (data: PostFormValues) => {
+    if (!isAuthenticated) {
+      toast({
+        title: 'Sign in required',
+        description: 'Please sign in to submit your story.',
+      });
+      navigate('/auth');
+      return;
+    }
     submitPost(data);
   };
 
