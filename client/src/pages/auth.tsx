@@ -257,50 +257,7 @@ export default function AuthPage() {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
-  // Handle successful social authentication
-  const handleSocialLoginSuccess = async (socialUser: any) => {
-    try {
-      // Send social user data to backend to create / login user and establish session
-      const response = await fetch('/api/auth/social-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          socialId: socialUser.id,
-          email: socialUser.email,
-          username: socialUser.name,
-          provider: socialUser.provider,
-          photoURL: socialUser.photoURL,
-          token: socialUser.token
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.message || 'Social authentication failed');
-      }
-
-      toast({
-        title: 'Success',
-        description: 'You have been logged in successfully'
-      });
-
-      // Redirect after a slight delay so the toast is visible
-      setTimeout(() => {
-        setLocation('/');
-      }, 300);
-    } catch (err: any) {
-      console.error('[Auth] Social login error:', err);
-      toast({
-        title: 'Social Authentication Error',
-        description: err?.message || 'Unable to login with social account',
-        variant: 'destructive'
-      });
-    }
-  };
+  // Social login is handled via Supabase OAuth redirect; no client-side success handler required
 
   return (
     <div className="auth-container">
@@ -328,7 +285,6 @@ export default function AuthPage() {
               <div className="mb-4 space-y-2">
                 <h2 className="text-center text-2xl font-semibold mb-2">{isSignIn ? 'Sign In' : 'Sign Up'}</h2>
                 <SocialLoginButtons 
-                  onSuccess={handleSocialLoginSuccess}
                   onError={(err: Error) => toast({
                     title: 'Social Authentication Error',
                     description: err.message,

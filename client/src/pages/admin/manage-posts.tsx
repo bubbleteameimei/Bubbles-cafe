@@ -258,43 +258,91 @@ export default function ManagePostsPage() {
       // Use admin endpoints for publishing/unpublishing
       return await apiJson<any>('PATCH', `/api/admin/posts/${id}/${publish ? 'publish' : 'unpublish'}`);
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['admin/posts'] });
-      
+    onMutate: async ({ id, publish }) => {
+      // Cancel outgoing queries for smoother optimistic UI
+      await queryClient.cancelQueries({ queryKey: ['admin/posts'] });
+      const key = ['admin/posts', currentTab, statusFilter, categoryFilter, searchQuery] as const;
+      const previous = queryClient.getQueryData<any>(key);
+      try {
+        if (previous && Array.isArray(previous.posts)) {
+          const updated = {
+            ...previous,
+            posts: previous.posts.map((p: any) =>
+              p.id === id ? { ...p, metadata: { ...(p.metadata || {}), status: publish ? 'publish' : 'draft' } } : p
+            ),
+          };
+          queryClient.setQueryData(key, updated);
+        }
+      } catch {}
+      return { previous, key };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous && ctx?.key) {
+        queryClient.setQueryData(ctx.key as any, ctx.previous);
+      }
+      toast({
+        title: 'Error',
+        description: 'Failed to change post status',
+        variant: 'destructive',
+      });
+    },
+    onSuccess: (_data, variables) => {
       toast({
         title: variables.publish ? 'Post Published' : 'Post Unpublished',
-        description: variables.publish 
+        description: variables.publish
           ? 'The post is now visible to users.'
           : 'The post has been unpublished and is no longer visible to users.',
       });
     },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to change post status',
-        variant: 'destructive',
-      });
-    }
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin/posts'] });
+    },
   });
   
   const toggleFeatureMutation = useMutation({
     mutationFn: async ({ id, feature }: { id: number, feature: boolean }) => {
-      const response = await fetch(`/api/admin/posts/${id}/${feature ? 'feature' : 'unfeature'}`, {
-        method: 'PATCH',
-      });
-      
-      if (!response.ok) throw new Error(`Failed to ${feature ? 'feature' : 'unfeature'} post`);
-      return response.json();
+      // Use centralized helper to include CSRF and credentials
+      return await apiJson<any>('PATCH', `/api/admin/posts/${id}/${feature ? 'feature' : 'unfeature'}`);
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['admin/posts'] });
-      
+    onMutate: async ({ id, feature }) => {
+      await queryClient.cancelQueries({ queryKey: ['admin/posts'] });
+      const key = ['admin/posts', currentTab, statusFilter, categoryFilter, searchQuery] as const;
+      const previous = queryClient.getQueryData<any>(key);
+      try {
+        if (previous && Array.isArray(previous.posts)) {
+          const updated = {
+            ...previous,
+            posts: previous.posts.map((p: any) =>
+              p.id === id ? { ...p, metadata: { ...(p.metadata || {}), featured: !!feature } } : p
+            ),
+          };
+          queryClient.setQueryData(key, updated);
+        }
+      } catch {}
+      return { previous, key };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous && ctx?.key) {
+        queryClient.setQueryData(ctx.key as any, ctx.previous);
+      }
+      toast({
+        title: 'Error',
+        description: 'Failed to change feature status',
+        variant: 'destructive',
+      });
+    },
+    onSuccess: (_data, variables) => {
       toast({
         title: variables.feature ? 'Post Featured' : 'Post Unfeatured',
-        description: variables.feature 
+        description: variables.feature
           ? 'The post is now featured on the homepage.'
           : 'The post has been removed from featured content.',
       });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin/posts'] });
+    },
+  });
     },
     onError: (error: Error) => {
       toast({
