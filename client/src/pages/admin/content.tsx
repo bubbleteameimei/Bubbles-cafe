@@ -111,6 +111,10 @@ export default function ContentPage() {
     if (!posts) return [];
     
     return posts.filter(post => {
+      // Hide posts explicitly marked hidden in metadata (e.g., hidden WP posts)
+      const isHidden = (post as any)?.metadata?.isHidden === true;
+      if (isHidden) return false;
+
       // Filter by status
       if (statusFilter !== "all" && post.status !== statusFilter) {
         return false;
@@ -126,7 +130,7 @@ export default function ContentPage() {
         const query = searchQuery.toLowerCase();
         return (
           post.title.toLowerCase().includes(query) ||
-          post.excerpt?.toLowerCase().includes(query) ||
+          (post.excerpt?.toLowerCase?.().includes(query) ?? false) ||
           post.slug.toLowerCase().includes(query)
         );
       }

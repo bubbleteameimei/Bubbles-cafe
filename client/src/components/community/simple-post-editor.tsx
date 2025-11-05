@@ -98,9 +98,12 @@ export default function SimplePostEditor({ postId, onClose: _onClose }: SimplePo
       
       if (postId) {
         // Update existing post - use canonical PUT
+        // Do not send slug or authorId on update to satisfy server validation
+        const { title, content, excerpt, metadata, themeCategory } = postData as any;
+        const updatePayload = { title, content, excerpt, metadata, themeCategory };
         return apiRequest(`/api/posts/${postId}`, {
           method: 'PUT',
-          body: JSON.stringify(postData),
+          body: JSON.stringify(updatePayload),
           credentials: 'include', // Include credentials for CSRF
         });
       } else {
@@ -529,7 +532,8 @@ export default function SimplePostEditor({ postId, onClose: _onClose }: SimplePo
                 Cancel
               </Button>
               <Button type="submit" disabled={isPending}>
-                {isPending ? 'Submitting...' : postId ? 'Update Story' : 'Submit Horror Story'}
+                {isPending 
+                  ? 'Submitting...' Story' : 'Submit Horror Story'}
               </Button>
             </div>
           </form>
