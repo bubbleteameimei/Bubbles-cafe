@@ -27,9 +27,9 @@ interface SEOProps {
 const DEFAULT_SITE_CONFIG = {
   siteName: 'Bubble’s Cafe',
   defaultTitle: 'Bubble’s Cafe',
-  defaultDescription: 'Bubble’s Cafe publishes dark, psychological, and experimental short fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.',
-  // Use a stable icon path for default social previews
-  defaultImage: 'https://bubblescafe.space/icons/icon-512x512.png',
+  defaultDescription: "Bubble's Cafe publishes dark, psychological, and experimental fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.",
+  // Use a proper 1200x630 social preview image
+  defaultImage: 'https://bubblescafe.space/og-image-1200x630.png?v=5',
   siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://bubblescafe.space',
   locale: 'en_US',
   twitterSite: '@bubblescafe',
@@ -75,7 +75,21 @@ export default function SEO({
     if (!image) return fallback;
     return image.startsWith('http') ? image : `${siteUrl}${image}`;
   }, [image, siteUrl]);
-  const fullTitle = useMemo(() => (title ? `${title} | ${siteName}` : DEFAULT_SITE_CONFIG.defaultTitle), [title, siteName]);
+
+  // Compose title without duplicating the site name on the homepage or when title equals site name
+  const fullTitle = useMemo(() => {
+    if (!title) return DEFAULT_SITE_CONFIG.defaultTitle;
+    const normalize = (s: string) =>
+      s.replace(/[’]/g, "'").trim().toLowerCase();
+    if (normalize(title) === normalize(siteName) || normalize(title) === normalize(DEFAULT_SITE_CONFIG.defaultTitle)) {
+      return siteName;
+    }
+    // Avoid double-appending if caller already included the site name
+    if (normalize(title).includes(normalize(siteName))) {
+      return title;
+    }
+    return `${title} | ${siteName}`;
+  }, [title, siteName]);
   const keywordsJoined = useMemo(
     () => Array.from(new Set([...(DEFAULT_SITE_CONFIG.defaultKeywords || []), ...(keywords || []), ...(tags || [])])).join(', '),
     [keywords, tags]
@@ -149,8 +163,8 @@ export default function SEO({
     // Provide secure_url and explicit dimensions so platforms don't fall back to favicons
     const secureImageUrl = imageUrl.startsWith('http') ? imageUrl.replace('http://', 'https://') : imageUrl;
     setMetaTag('og:image:secure_url', secureImageUrl, true);
-    setMetaTag('og:image:width', '512', true);
-    setMetaTag('og:image:height', '512', true);
+    setMetaTag('og:image:width', '1200', true);
+    setMetaTag('og:image:height', '630', true);
     setMetaTag('og:image:alt', `${title || DEFAULT_SITE_CONFIG.defaultTitle} - Preview Image`, true);
     setMetaTag('og:site_name', siteName, true);
     setMetaTag('og:locale', locale, true);

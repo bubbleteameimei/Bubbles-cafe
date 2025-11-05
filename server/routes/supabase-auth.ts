@@ -66,6 +66,7 @@ router.post('/supabase/login', async (req: Request, res: Response): Promise<void
     const sub = String(claims.sub || '');
     const provider = (claims as any)?.app_metadata?.provider || (claims as any)?.provider || 'supabase';
     const userMeta = (claims as any)?.user_metadata || {};
+    const rememberMe = typeof req.body?.rememberMe === 'boolean' ? req.body.rememberMe : false;
 
     if (!email || !sub) {
       res.status(401).json({ error: 'Invalid token claims (missing email or sub)' });
@@ -112,6 +113,12 @@ router.post('/supabase/login', async (req: Request, res: Response): Promise<void
         res.status(500).json({ error: 'Session creation failed' });
         return;
       }
+      try {
+        if (rememberMe && req.session && req.session.cookie) {
+          // Persist session cookie for 30 days when Remember Me is enabled
+          req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
+        }
+      } catch (_) { /* no-op */ }
       res.json({ success: true, user: safeUser });
     });
     return;

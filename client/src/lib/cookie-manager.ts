@@ -8,8 +8,8 @@ export const COOKIE_CONSENT_KEY = 'cookieConsent';
 export const COOKIE_DECISION_EXPIRY_KEY = 'cookieConsentExpiry';
 
 // Cookie consent expiration periods in milliseconds
-export const COOKIE_ACCEPT_EXPIRY = 90 * 24 * 60 * 60 * 1000; // 3 months
-export const COOKIE_REJECT_EXPIRY = 7 * 24 * 60 * 60 * 1000;  // 1 week
+export const COOKIE_ACCEPT_EXPIRY = 180 * 24 * 60 * 60 * 1000; // 6 months
+export const COOKIE_REJECT_EXPIRY = 90 * 24 * 60 * 60 * 1000;  // 3 months
 
 // Cookie categories
 export type CookieCategory = 'essential' | 'functional' | 'analytics' | 'performance' | 'marketing';
@@ -120,7 +120,7 @@ export function acceptAllCookies(): void {
     // Set cookie preferences
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(newPreferences));
     
-    // Store the expiry date for the accept decision (3 months)
+    // Store the expiry date for the accept decision (6 months)
     const expiryDate = new Date(Date.now() + COOKIE_ACCEPT_EXPIRY).toISOString();
     localStorage.setItem(COOKIE_DECISION_EXPIRY_KEY, expiryDate);
     
@@ -142,7 +142,7 @@ export function acceptEssentialCookiesOnly(): void {
     // Set cookie preferences
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(defaultPreferences));
     
-    // Store the expiry date for the reject decision (1 week)
+    // Store the expiry date for the reject decision (3 months)
     const expiryDate = new Date(Date.now() + COOKIE_REJECT_EXPIRY).toISOString();
     localStorage.setItem(COOKIE_DECISION_EXPIRY_KEY, expiryDate);
     
@@ -175,8 +175,8 @@ export function updateCookiePreferences(preferences: Partial<Omit<CookiePreferen
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(newPreferences));
     
     // Determine if this is an accept or reject overall decision
-    // If any non-essential cookie is enabled, consider it an accept decision (3 months)
-    // Otherwise, it's a reject decision (1 week)
+    // If any non-essential cookie is enabled, consider it an accept decision (6 months)
+    // Otherwise, it's a reject decision (3 months)
     const hasAcceptedNonEssential = 
       newPreferences.functional || 
       newPreferences.analytics || 

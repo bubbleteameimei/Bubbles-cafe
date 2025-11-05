@@ -1,0 +1,42 @@
+name: uptime-ping
+
+on:
+  schedule:
+    - cron: "*/10 * * * *" # every 10 minutes (UTC)
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping API and Frontend (including latest story)
+        run: |
+          set +e
+          # Ensure jq is available for JSON parsing
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update -y && sudo apt-get install -y jq
+          fi
+
+          # Collect static URLs to warm
+          urls=(
+            # API health
+            "https://api.bubblescafe.space/health"
+            "https://api.bubblescafe.space/api/health"
+            # Frontend warm pages
+            "https://bubblescafe.space/"
+            "https://bubblescafe.space/about"
+            "https://bubblescafe.space/community"
+            "https://bubblescafe.space/curated"
+          )
+
+          # Try to fetch the latest story slug from the API
+          latest_slug="$(curl -fsSL -m 8 -H "Cache-Control: no-cache" "https://api.bubblescafe.space/api/posts?limit=1" | jq -r '.posts[0].slug // empty')"
+          if [ -n "$latest_slug" ]; then
+            urls+=("https://bubblescafe.space/reader/${latest_slug}")
+          fi
+
+          # Ping each URL with a small timeout and no-cache header
+          for url in "${urls[@]}"; do
+            echo "Pinging $url"
+            curl -fsSL -m 8 -H "Cache-Control: no-cache" -A "uptime-ping/gh-actions" "$url" >/dev/null || true
+          done

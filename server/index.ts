@@ -71,27 +71,55 @@ app.use((req, _res, next) => {
 });
 
 // Fast-path health endpoint before session middleware to minimize overhead
+// The DB check is bounded by a very small timeout so platform health checks never block.
 app.get('/api/health', async (_req, res) => {
-  let dbStatus: 'connected' | 'error' = 'connected';
-  try {
-    await db.select().from(posts).limit(1);
-  } catch {
-    // swallow errors to avoid failing platform health checks
-    dbStatus = 'error';
+  const started = Date.now();
+  try { res.setHeader('Cache-Control', 'no-store, max-age=0'); } catch {}
+
+  const timeoutMs = Number(process.env.HEALTH_DB_TIMEOUT_MS || 200);
+
+  // Only attempt a DB check if a URL is configured
+  const hasDbUrl =
+    !!(process.env.DATABASE_URL ||
+      process.env.SUPABASE_POOLER_URL ||
+      process.env.SUPABASE_CONNECTION_POOLER_URL ||
+      process.env.DB_POOLER_URL);
+
+  let dbStatus: 'connected' | 'error' | 'timeout' | 'disabled' = 'disabled';
+
+  if (hasDbUrl) {
+    try {
+      const result = await Promise.race<string>([
+        (async () => {
+          try {
+            await db.select().from(posts).limit(1);
+            return 'connected';
+          } catch {
+            return 'error';
+          }
+        })(),
+        new Promise<string>((resolve) => setTimeout(() => resolve('timeout'), timeoutMs)),
+      ]);
+      dbStatus = (result as any);
+    } catch {
+      dbStatus = 'error';
+    }
   }
-  // Always return 200 with minimal payload, include db status for diagnostics
-  res.json({ status: 'ok', db: dbStatus });
+
+  res.json({
+    status: 'ok',
+    db: dbStatus,
+    uptimeSec: Math.round(process.uptime()),
+    latencyMs: Date.now() - started,
+    now: new Date().toISOString(),
+  });
 });
 
 // Alias for platforms expecting `/health` at root (no /api prefix)
-app.get('/health', async (_req, res) => {
-  let dbStatus: 'connected' | 'error' = 'connected';
-  try {
-    await db.select().from(posts).limit(1);
-  } catch {
-    dbStatus = 'error';
-  }
-  res.json({ status: 'ok', db: dbStatus });
+// Keep this ultra-lightweight for external uptime pingers.
+app.get('/health', (_req, res) => {
+  try { res.setHeader('Cache-Control', 'no-store, max-age=0'); } catch {}
+  res.json({ status: 'ok' });
 });
 
 // Favicon handler for legacy clients/bots that request /favicon.ico
@@ -375,6 +403,35 @@ async function startServer() {
 
       const { serveStatic } = await import('./vite');
 
+      // Redirect non-API traffic reaching the API domain to the canonical frontend
+      // This prevents loading the SPA from api.bubblescafe.space and avoids broken vendor paths (e.g., /_vercel/*)
+      try {
+        const frontendBase = (process.env.FRONTEND_URL || 'https://bubblescafe.space').replace(/\/$/, '');
+        const apiHost = (() => {
+          try {
+            const u = new URL(process.env.BACKEND_BASE_URL || 'https://api.bubblescafe.space');
+            return u.host.toLowerCase();
+          } catch {
+            return 'api.bubblescafe.space';
+          }
+        })();
+
+        app.use((req, res, next) => {
+          try {
+            const host = String(req.headers.host || '').toLowerCase();
+            if (host === apiHost || host.startsWith(apiHost + ':')) {
+              const p = req.path || '';
+              // Allow health and API endpoints to proceed on the API domain
+              if (p === '/health' || p.startsWith('/api')) return next();
+              // Redirect everything else (static/SPA routes) to the public frontend
+              const location = frontendBase + (req.originalUrl || '/');
+              return res.redirect(308, location);
+            }
+          } catch {}
+          next();
+        });
+      } catch {}
+
       // Canonicalize legacy routes
       app.get('/auth-success', (_req, res) => res.redirect(308, '/auth/success'));
       app.get('/admin/posts', (_req, res) => res.redirect(308, '/admin/manage-posts'));
@@ -426,14 +483,25 @@ async function startServer() {
 
             setInterval(async () => {
               try {
-                const res = await fetch(healthUrl, { method: 'GET' });
+                const controller = new AbortController();
+                const timeout = Number(process.env.WARM_PING_TIMEOUT_MS || 4000);
+                const timer = setTimeout(() => controller.abort(), timeout);
+                const res = await fetch(healthUrl, {
+                  method: 'GET',
+                  signal: controller.signal,
+                  cache: 'no-store',
+                  // keepalive hints the runtime to allow the request even when shutting down
+                  keepalive: true as any
+                });
+                clearTimeout(timer);
                 if (!res.ok) {
                   serverLogger.warn('Warm ping returned non-200', { status: res.status });
                 }
               } catch (e) {
-                serverLogger.warn('Warm ping failed', { error: e instanceof Error ? e.message : String(e) });
+                const msg = e instanceof Error ? e.message : String(e);
+                serverLogger.warn('Warm ping failed', { error: msg });
               }
-            }, Math.max(60, intervalSec) * 1000); // do not allow < 60s to avoid spamming
+            }, Math.max(60, intervalSec) * 1000); // do not allo <w 60s to avoid spa_codemmnewi</ng
           }
         } catch (e) {
           serverLogger.warn('Failed to set up warm pings', { error: e instanceof Error ? e.message : String(e) });

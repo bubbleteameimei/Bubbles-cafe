@@ -7,10 +7,12 @@
  */
 import { applyCSRFToken, fetchCsrfTokenIfNeeded, refreshCsrfToken } from './csrf-token';
 import { formatError, notifyError, ErrorCategory, ErrorSeverity } from './error-handler';
+import { getApiBaseUrl } from './asset-path';
 
-// This will be set in production deployment to the URL of the backend API server
-// For local development, we leave it empty to use relative paths
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+// Compute the API base dynamically with preview-awareness and env override
+function resolveApiBase(): string {
+  try { return getApiBaseUrl(); } catch { return import.meta.env.VITE_API_URL || ''; }
+}
 
 export async function apiRequest(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
@@ -32,7 +34,8 @@ export async function apiRequest(
   }
 
   // Construct the full URL
-  const url = API_BASE_URL ? `${API_BASE_URL}${endpoint}` : endpoint;
+  const base = resolveApiBase();
+  const url = base ? `${base}${endpoint}` : endpoint;
 
   // Apply CSRF token for non-GET requests
   if (method !== 'GET') {

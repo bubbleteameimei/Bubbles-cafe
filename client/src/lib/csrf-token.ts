@@ -58,17 +58,29 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
       }
     } catch { /* no-op */ }
 
-    // Attempt to get a token directly
+    // Attempt to get a token directly (prefer same-origin first, then fall back)
     const getToken = async (): Promise<string | null> => {
-      const url = API_BASE ? `${API_BASE}/api/csrf-token` : '/api/csrf-token';
-      const resp = await fetch(url, {
-        method: 'GET',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!resp.ok) return null;
-      const data = await resp.json().catch(() => ({}));
-      return data?.csrfToken || null;
+      const candidates = [
+        '/api/csrf-token',
+        API_BASE ? `${API_BASE}/api/csrf-token` : null
+      ].filter(Boolean) as string[];
+
+      for (const url of candidates) {
+        try {
+          const resp = await fetch(url, {
+            method: 'GET',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          if (!resp.ok) continue;
+          const data = await resp.json().catch(() => ({}));
+          const token = data?.csrfToken || null;
+          if (token) return token;
+        } catch {
+          // try next
+        }
+      }
+      return null;
     };
 
     // First try fetching the token
@@ -79,12 +91,23 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
     }
 
     // If token is missing, ping health to initialize session token, then retry
-    const healthUrl = API_BASE ? `${API_BASE}/api/health` : '/api/health';
-    await fetch(healthUrl, {
-      method: 'GET',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-    }).catch(() => {});
+    const healthCandidates = [
+      '/api/health',
+      API_BASE ? `${API_BASE}/api/health` : null
+    ].filter(Boolean) as string[];
+
+    for (const h of healthCandidates) {
+      try {
+        await fetch(h, {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        break;
+      } catch {
+        // try next
+      }
+    }
 
     token = await getToken();
     if (token) {

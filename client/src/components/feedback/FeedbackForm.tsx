@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { apiJson } from '@/lib/api';
 
 // Feedback schema for validation
 const feedbackSchema = z.object({
@@ -69,18 +70,8 @@ export function FeedbackForm() {
         ...browserInfo,
       };
       
-      // Submit feedback to API
-      const response = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to submit feedback');
-      }
+      // Submit feedback to API with CSRF protection and proper retry
+      await apiJson<any>('POST', '/api/feedback', payload);
 
       // Show success toast
       toast({
@@ -98,7 +89,7 @@ export function FeedbackForm() {
       
       toast({
         title: "Submission Failed",
-        description: "There was a problem submitting your feedback. Please try again.",
+        description: (error as any)?.message || "There was a problem submitting your feedback. Please try again.",
         variant: "destructive",
       });
     } finally {

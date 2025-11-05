@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import PostEditor from "@/components/admin/post-editor";
+import { apiJson } from "@/lib/api";
 
 export interface Post {
   id: string;
@@ -75,18 +76,14 @@ export default function ContentPage() {
     try {
       // For WordPress posts, we'll just hide them from the UI
       if (selectedPost.sourceType === 'wordpress') {
-        await fetch(`/api/posts/${selectedPost.id}/hide`, {
-          method: 'PUT',
-        });
+        await apiJson<any>('PUT', `/api/posts/${selectedPost.id}/hide`);
         toast({
           title: "Hidden from listings",
           description: "The WordPress post has been hidden from listings. You can re-enable it in the WordPress Sync settings.",
         });
       } else {
         // For manual and community posts, we can delete them completely
-        await fetch(`/api/posts/${selectedPost.id}`, {
-          method: 'DELETE',
-        });
+        await apiJson<any>('DELETE', `/api/posts/${selectedPost.id}`);
         toast({
           title: "Post deleted",
           description: "The post has been permanently deleted.",
@@ -114,6 +111,10 @@ export default function ContentPage() {
     if (!posts) return [];
     
     return posts.filter(post => {
+      // Hide posts explicitly marked hidden in metadata (e.g., hidden WP posts)
+      const isHidden = (post as any)?.metadata?.isHidden === true;
+      if (isHidden) return false;
+
       // Filter by status
       if (statusFilter !== "all" && post.status !== statusFilter) {
         return false;
@@ -129,7 +130,7 @@ export default function ContentPage() {
         const query = searchQuery.toLowerCase();
         return (
           post.title.toLowerCase().includes(query) ||
-          post.excerpt?.toLowerCase().includes(query) ||
+          (post.excerpt?.toLowerCase?.().includes(query) ?? false) ||
           post.slug.toLowerCase().includes(query)
         );
       }

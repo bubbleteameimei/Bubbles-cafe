@@ -48,7 +48,7 @@ export default function SimplePostEditor({ postId, onClose: _onClose }: SimplePo
   const [activeTab, setActiveTab] = useState<string>('write');
 
   // Get user information if available
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   
   // Form setup with default values
   const form = useForm<PostFormValues>({
@@ -98,9 +98,12 @@ export default function SimplePostEditor({ postId, onClose: _onClose }: SimplePo
       
       if (postId) {
         // Update existing post - use canonical PUT
+        // Do not send slug or authorId on update to satisfy server validation
+        const { title, content, excerpt, metadata, themeCategory } = postData as any;
+        const updatePayload = { title, content, excerpt, metadata, themeCategory };
         return apiRequest(`/api/posts/${postId}`, {
           method: 'PUT',
-          body: JSON.stringify(postData),
+          body: JSON.stringify(updatePayload),
           credentials: 'include', // Include credentials for CSRF
         });
       } else {
@@ -139,6 +142,14 @@ export default function SimplePostEditor({ postId, onClose: _onClose }: SimplePo
 
   // Handle form submission
   const onSubmit = (data: PostFormValues) => {
+    if (!isAuthenticated) {
+      toast({
+        title: 'Sign in required',
+        description: 'Please sign in to submit your story.',
+      });
+      navigate('/auth');
+      return;
+    }
     submitPost(data);
   };
 
@@ -521,7 +532,9 @@ export default function SimplePostEditor({ postId, onClose: _onClose }: SimplePo
                 Cancel
               </Button>
               <Button type="submit" disabled={isPending}>
-                {isPending ? 'Submitting...' : postId ? 'Update Story' : 'Submit Horror Story'}
+                {isPending
+                  ? 'Submitting...'
+                  : (postId ? 'Update Story' : (isAuthenticated ? 'Submit Horror Story' : 'Sign in to Submit'))}
               </Button>
             </div>
           </form>

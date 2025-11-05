@@ -10,6 +10,7 @@ import {
   DialogClose,
   DialogHeader,
 } from "@/components/ui/dialog";
+import { apiJson } from "@/lib/api";
 
 interface SupportWritingCardProps {
   className?: string;

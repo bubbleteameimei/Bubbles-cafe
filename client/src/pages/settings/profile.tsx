@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { applyCSRFToken, fetchCsrfTokenIfNeeded } from "@/lib/csrf-token";
+import { apiJson } from "@/lib/api";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -169,35 +169,17 @@ export default function ProfileSettingsPage() {
         avatar: avatarPreview || undefined,
       };
 
-      await fetchCsrfTokenIfNeeded();
-
-      // Update profile fields
-      const profileRes = await fetch('/api/auth/update-profile', applyCSRFToken({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      }));
-
-      if (!profileRes.ok) {
-        const errText = await profileRes.text();
-        throw new Error(errText || 'Profile update failed');
-      }
+      // Update profile fields using resilient API helper (handles CSRF refresh/retry)
+      await apiJson<any>('POST', '/api/auth/update-profile', payload);
 
       // If user provided a new password, change it using dedicated endpoint
       const newPwd = data.newPassword?.trim();
       const currentPwd = data.currentPassword?.trim();
       if (newPwd && currentPwd) {
-        const pwdRes = await fetch('/api/auth/change-password', applyCSRFToken({
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ currentPassword: currentPwd, newPassword: newPwd }),
-        }));
-        if (!pwdRes.ok) {
-          const errText = await pwdRes.text();
-          throw new Error(errText || 'Password change failed');
-        }
+        await apiJson<any>('POST', '/api/auth/change-password', {
+          currentPassword: currentPwd,
+          newPassword: newPwd,
+        });
       }
 
       // Refresh auth state to reflect changes

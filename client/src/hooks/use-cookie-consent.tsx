@@ -117,26 +117,26 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
     }
   }, []);
   
-  // Accept all cookies - with 3 month expiry
+  // Accept all cookies - with 6 month expiry
   const acceptAll = () => {
     try {
       acceptAllCookies();
       setCookiePreferences(getCookiePreferences());
       setShowConsentBanner(false);
-      console.log('All cookie categories accepted with 3 month expiry');
+      console.log('All cookie categories accepted with 6 month expiry');
     } catch (error) {
       console.error('Error accepting all cookies:', error);
     }
   };
   
-  // Accept only essential cookies - with 1 week expiry
+  // Accept only essential cookies - with 3 month expiry
   const acceptEssentialOnly = () => {
     try {
       acceptEssentialCookiesOnly();
       clearNonEssentialCookies();
       setCookiePreferences(getCookiePreferences());
       setShowConsentBanner(false);
-      console.log('Only essential cookies accepted with 1 week expiry');
+      console.log('Only essential cookies accepted with 3 month expiry');
     } catch (error) {
       console.error('Error accepting essential cookies only:', error);
     }

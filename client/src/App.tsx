@@ -43,6 +43,7 @@ import { useA11y } from '@/hooks/useA11y';
 
 // New: BackToTopButton (scroll-to-top)
 const BackToTopButton = React.lazy(() => import('./components/BackToTopButton'));
+import GA4 from './components/GA4';
 
 // Import essential pages lazily to keep main bundle small
 const HomePage = React.lazy(() => import('./pages/home'));
@@ -191,7 +192,7 @@ const AppContent = () => {
 
   if (pathForSeo === '/') {
     seoTitle = 'Bubble’s Cafe';
-    seoDescription = 'Bubble’s Cafe publishes dark, psychological, and experimental short fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.';
+    seoDescription = "Bubble's Cafe publishes dark, psychological, and experimental fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.";
   } else if (pathForSeo.startsWith('/stories') || pathForSeo.startsWith('/index')) {
     seoTitle = 'Index';
     seoDescription = 'Browse the index of short fiction from Bubble’s Cafe — psychological and experimental stories of identity, obsession, and the strange grace of decay.';
@@ -750,6 +751,8 @@ function App() {
                         </React.Suspense>
                         {/* Vercel Analytics - production only */}
                         {import.meta.env.PROD && <Analytics />}
+                        {/* GA4 (enabled when VITE_GA_MEASUREMENT_ID or window.GA_MEASUREMENT_ID is set) */}
+                        <GA4 />
                       </RefreshProvider>
                     </ErrorToastProvider>
                   </ScrollEffectsProvider>

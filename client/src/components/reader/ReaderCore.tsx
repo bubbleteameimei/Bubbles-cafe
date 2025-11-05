@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { cachedFetch } from "@/utils/api-cache";
 import logger from "@/utils/secure-client-logger";
 import { Skeleton } from "@/components/ui/skeleton";
+import { apiJson } from "@/lib/api";
 
 interface ReaderCoreProps {
   slug: string;

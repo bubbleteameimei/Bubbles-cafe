@@ -1,0 +1,48 @@
+name: sitemap-ping
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  schedule:
+    - cron: "0 5 * * *" # daily at 05:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: sitemap-ping
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping sitemaps and notify search engines
+        run: |
+          set +e
+          BASE="${{ vars.FRONTEND_URL }}"
+          if [ -z "$BASE" ]; then
+            BASE="https://bubblescafe.space"
+          fi
+          echo "Base URL: $BASE"
+
+          sitemaps=(
+            "$BASE/sitemap.xml"
+            "$BASE/pages-sitemap.xml"
+            "$BASE/stories-sitemap.xml"
+          )
+
+          for sm in "${sitemaps[@]}"; do
+            echo "Fetching $sm"
+            curl -fsSL -m 12 -A "sitemap-ping/gh-actions" -H "Cache-Control: no-cache" "$sm" >/dev/null || true
+
+            # URL-encode the sitemap URL using Python (available by default on the runner)
+            enc="$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$sm")"
+
+            echo "Pinging Bing for $sm"
+            curl -fsSL -m 10 "https://www.bing.com/ping?sitemap=$enc" >/dev/null || true
+
+            # Google's ping endpoint is best-effort; Search Console remains the canonical submission path
+            echo "Pinging Google for $sm (best-effort)"
+            curl -fsSL -m 10 "https://www.google.com/ping?sitemap=$enc" >/dev/null || true
+          done

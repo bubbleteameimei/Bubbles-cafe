@@ -3,8 +3,8 @@ import './SocialLoginButtons.css';
 import { supabase } from '@/lib/supabase';
 
 interface SocialLoginButtonsProps {
-  onSuccess: (userData: any) => void;
-  onError: (error: Error) => void;
+  onSuccess?: (userData: any) => void;
+  onError?: (error: Error) => void;
 }
 
 export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginButtonsProps) {
@@ -18,11 +18,18 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
       if (error) {
         throw new Error(error.message || 'Google login failed');
       }
-      // supabase will redirect; we don't call onSuccess here
+      // Supabase will perform a full redirect to /auth/success; no client onSuccess callback needed
+      void onSuccess; // keep param referenced to avoid unused var lint if present
     } catch (e) {
-      onError(e instanceof Error ? e : new Error('Google login failed'));
+      if (onError) {
+        onError(e instanceof Error ? e : new Error('Google login failed'));
+      } else {
+        // Fallback logging when no handler is provided
+        // eslint-disable-next-line no-console
+        console.error('[SocialLoginButtons] Google login error:', e);
+      }
     }
-  }, [onError]);
+  }, [onError, onSuccess]);
 
   return (
     <div className="social-auth-buttons">

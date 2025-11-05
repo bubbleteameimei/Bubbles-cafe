@@ -30,6 +30,7 @@ import ApiLoader from "@/components/api-loader";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import SimplifiedErrorPage from "@/components/errors/SimplifiedErrorPage";
 import { useToast } from "@/hooks/use-toast";
+import { apiJson } from "@/lib/api";
 
 
 import { SupportWritingCard } from "@/components/SupportWritingCard";
@@ -574,7 +575,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       const tooSoon = now - (lastProgressSentRef.current.ts || 0) < 15000; // 15s throttle
 
       if (diff >= 10 && !tooSoon) {
-        fetch('/api/reading-progress', {
+        apiJson<any>('POST', '/api/s', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',

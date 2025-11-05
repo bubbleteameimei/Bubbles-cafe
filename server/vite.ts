@@ -86,6 +86,14 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${cacheBust()}"`,
       );
+      // Inject Google Search Console verification meta when configured
+      const gsc = process.env.GOOGLE_SITE_VERIFICATION || process.env.GSC_VERIFICATION;
+      if (gsc && !template.includes('name="google-site-verification"')) {
+        template = template.replace(
+          '</head>',
+          `  <meta name="google-site-verification" content="${gsc}"/>\n</head>`
+        );
+      }
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
@@ -123,7 +131,28 @@ function resolveStaticRoot(): string {
 export function serveStatic(app: Express) {
   const staticRoot = resolveStaticRoot();
 
-  app.use(express.static(staticRoot));
+  // Serve static assets with sensible caching
+  app.use(
+    express.static(staticRoot, {
+      setHeaders: (res, filePath) => {
+        try {
+          // Never cache HTML documents
+          if (filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+            return;
+          }
+          // Long cache for versioned assets
+          if (/\.(?:js|css|png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|otf|json|txt|map)$/i.test(filePath)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          }
+        } catch {
+          // ignore
+        }
+      },
+    })
+  );
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (req, res) => {
@@ -132,6 +161,21 @@ export function serveStatic(app: Express) {
       res.status(404).end('Not Found');
       return;
     }
-    res.sendFile(path.resolve(staticRoot, "index.html"));
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    const indexPath = path.resolve(staticRoot, "index.html");
+    const gsc = process.env.GOOGLE_SITE_VERIFICATION || process.env.GSC_VERIFICATION;
+    if (gsc) {
+      try {
+        let html = fs.readFileSync(indexPath, 'utf-8');
+        if (!html.includes('name="google-site-verification"')) {
+          html = html.replace('</head>', `  <meta name="google-site-verification" content="${gsc}"/>\n</head>`);
+        }
+        res.type('html').send(html);
+        return;
+      } catch {
+        // fall through to sendFile on error
+      }
+    }
+    res.sendFile(indexPath);
   });
 }

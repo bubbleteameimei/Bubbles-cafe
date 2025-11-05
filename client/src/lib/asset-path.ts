@@ -12,12 +12,7 @@ export function getApiBaseUrl(): string {
   // In development, prefer relative paths to use Vite proxy
   if (import.meta.env.DEV) return '';
 
-  // In production with split deployment, prefer explicit env
-  const explicit = (import.meta.env.VITE_API_URL as string | undefined) || undefined;
-  if (explicit) return explicit.replace(/\/+$/, '');
-
-  // Derive from current hostname.
-  // Special-case preview platforms where an api.<host> subdomain is not provisioned.
+  // Derive from current hostname and special-case preview platforms first
   try {
     const { protocol, hostname } = window.location;
 
@@ -35,10 +30,20 @@ export function getApiBaseUrl(): string {
       /\.replit\.app$/.test(hostname);
 
     if (isPreviewHost) {
-      return ''; // rely on same-origin relative paths (rewrites/proxy handle /api/*)
+      // Always prefer relative endpoints on preview so cookies/sessions remain same-origin via rewrites
+      return '';
     }
+  } catch {
+    // fall through to explicit/env or sensible default
+  }
 
-    // Handle common www. subdomain otherwise
+  // In production with split deployment, prefer explicit env
+  const explicit = (import.meta.env.VITE_API_URL as string | undefined) || undefined;
+  if (explicit) return explicit.replace(/\/*$/, '');
+
+  // Derive from current hostname as a final fallback
+  try {
+    const { protocol, hostname } = window.location;
     const host = hostname.startsWith('www.') ? hostname.slice(4) : hostname;
     return `${protocol}//api.${host}`;
   } catch {
