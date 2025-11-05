@@ -1837,6 +1837,15 @@ export class DatabaseStorage implements IStorage {
   async getComments(postId: number): Promise<Comment[]> {
     return await this.safeDbOperation(
       async () => {
+        // Map external WordPress IDs to local post IDs when possible (do not create placeholders on read)
+        let targetPostId = postId;
+        try {
+          const mapped = await this.findLocalPostIdFor(postId);
+          if (mapped !== null) targetPostId = mapped;
+        } catch {
+          // best-effort mapping only
+        }
+
         // Use a raw SQL query to avoid column name issues and ensure proper field mapping
         const result = await db.execute(sql`
           SELECT
@@ -1844,7 +1853,7 @@ export class DatabaseStorage implements IStorage {
             is_approved as "approved", edited, edited_at as "editedAt",
             metadata, created_at as "createdAt", parent_id as "parentId"
           FROM comments
-          WHERE post_id = ${postId}
+          WHERE post_id = ${targetPostId}
           ORDER BY created_at DESC
         `);
 
@@ -2005,6 +2014,29 @@ export class DatabaseStorage implements IStorage {
 
     const newPost = await this.createPost(insertPost);
     return Number(newPost.id);
+  }
+
+  // Find an existing local post id corresponding to either a local id or a WordPress id.
+  // Unlike resolveLocalPostIdForCommentTarget, this NEVER creates placeholders. It only maps if present.
+  private async findLocalPostIdFor(postId: number): Promise<number | null> {
+    // Direct local id match
+    const direct = await this.getPostById(postId);
+    if (direct) return Number(direct.id);
+
+    // Try metadata.wordpressId mapping
+    try {
+      const [mapped] = await db
+        .select({ id: postsTable.id })
+        .from(postsTable)
+        .where(sql`(metadata->>'wordpressId')::int = ${postId}`)
+        .limit(1);
+      if (mapped && typeof mapped.id === 'number') {
+        return Number(mapped.id);
+      }
+    } catch {
+      // ignore
+    }
+    return null;
   }
 
   async createComment(comment: InsertComment): Promise<Comment> {

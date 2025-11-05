@@ -53,11 +53,39 @@ export function setupCors(app: Express) {
 
     console.log(`[CORS] Request from origin: ${origin || 'none'}, NODE_ENV: ${process.env.NODE_ENV}`);
 
+    // Helper to compute naive registrable domain (eTLD+1) for same-site allowances.
+    const getRoot = (host?: string): string | null => {
+      if (!host) return null;
+      try {
+        const h = host.toLowerCase().split(':')[0].trim();
+        const parts = h.split('.');
+        if (parts.length < 2) return h; // localhost or simple host
+        return parts.slice(-2).join('.');
+      } catch {
+        return null;
+      }
+    };
+
+    const originNormalized = origin ? normalize(origin) : undefined;
+    const originHost = (() => {
+      try { return origin ? new URL(origin).host : undefined; } catch { return undefined; }
+    })();
+    const originRoot = getRoot(originHost);
+    const apiHostHeader = String(req.headers.host || '');
+    const apiHost = apiHostHeader.split(',')[0].trim();
+    const apiRoot = getRoot(apiHost);
+
     // Allow specific origins and include credentials
-    if (origin && normalizedAllowed.has(normalize(origin))) {
+    if (origin && normalizedAllowed.has(originNormalized!)) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
       console.log(`[CORS] Allowed configured origin: ${origin}`);
+    }
+    // Same-site family: allow origins that share the same registrable domain as the API host (e.g., bubblescafe.space <-> api.bubblescafe.space)
+    else if (origin && originRoot && apiRoot && originRoot === apiRoot) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      console.log(`[CORS] Allowed same-site origin: ${origin} (root: ${originRoot})`);
     }
     // Check for Replit domains (works for both dev and prod)
     else if (isReplitOrigin(origin)) {
