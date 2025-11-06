@@ -140,6 +140,13 @@ import { trackPageView } from '@/lib/metrics';
 import { usePrefersReducedMotion } from './hooks/use-prefers-reduced-motion';
 // Vercel Web Analytics (React)
 import { Analytics } from '@vercel/analytics/react';
+import { useCookieConsent } from './hooks/use-cookie-consent';
+
+// Renders Vercel Analytics only when analytics consent is granted
+function ConsentAwareVercelAnalytics() {
+  const { cookiePreferences } = useCookieConsent();
+  return (import.meta as any).env.PROD && cookiePreferences.analytics ? <Analytics /> : null;
+}
 
 // Defer WordPress posts preloading until after initial page render
 // This improves initial load time significantly
@@ -749,9 +756,10 @@ function App() {
                         <React.Suspense fallback={null}>
                           <Sonner position="bottom-left" className="fixed-sonner" />
                         </React.Suspense>
-                        {/* Vercel Analytics - production only */}
-                        {import.meta.env.PROD && <Analytics />}
+                        {/* Vercel Analytics - production only and only with analytics consent */}
+                       <{ConsentAwareVercelAnalytics />
                         {/* GA4 (enabled when VITE_GA_MEASUREMENT_ID or window.GA_MEASUREMENT_ID is set) */}
+                       _ID is set) */}
                         <GA4 />
                       </RefreshProvider>
                     </ErrorToastProvider>

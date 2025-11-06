@@ -162,9 +162,20 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
   // Update multiple preferences at once
   const updatePreferences = (preferences: Partial<Omit<CookiePreferences, 'lastUpdated'>>) => {
     try {
+      const prev = cookiePreferences;
       updateCookiePreferences(preferences);
-      setCookiePreferences(getCookiePreferences());
+      const next = getCookiePreferences();
+      setCookiePreferences(next);
       setShowConsentBanner(false);
+      // If any non-essential category flipped from true to false, clear related cookies
+      const turnedOff =
+        (prev.functional && !next.functional) ||
+        (prev.analytics && !next.analytics) ||
+        (prev.performance && !next.performance) ||
+        (prev.marketing && !next.marketing);
+      if (turnedOff) {
+        clearNonEssentialCookies();
+      }
       console.log('Cookie preferences updated:', preferences);
     } catch (error) {
       console.error('Error updating cookie preferences:', error);

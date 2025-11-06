@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'wouter';
+import { useCookieConsent } from '@/hooks/use-cookie-consent';
 
 declare global {
   interface Window {
@@ -10,15 +11,20 @@ declare global {
 }
 
 /**
- * GA4 lightweight integration.
- * - Reads the measurement ID from Vite env VITE_GA_MEASUREMENT_ID or window.GA_MEASUREMENT_ID
- * - Injects gtag script once
- * - Sends SPA page_view events on route changes (send_page_view disabled on config)
+ * GA4 integration that respects cookie consent (analytics category).
+ * - Injects GA only when analytics consent is granted.
+ * - Cleans up on unmount or when consent is revoked.
  */
 export default function GA4() {
   const [location] = useLocation();
+  const { cookiePreferences } = useCookieConsent();
+  const analyticsAllowed = !!cookiePreferences.analytics;
 
   useEffect(() => {
+    if (!analyticsAllowed) {
+      return;
+    }
+
     const id =
       (import.meta as any)?.env?.VITE_GA_MEASUREMENT_ID ||
       (typeof window !== 'undefined' ? window.GA_MEASUREMENT_ID : undefined);
@@ -68,7 +74,28 @@ export default function GA4() {
     } else {
       setTimeout(sendPageView, 300);
     }
-  }, [location]);
+
+    // Cleanup when consent is revoked or component unmounts
+    return () => {
+      try {
+        // Best-effort: neutralize gtag and datalayer
+        if (typeof window !== 'undefined') {
+          window.gtag = undefined;
+          if (Array.isArray(window.dataLayer)) {
+            window.dataLayer.length = 0;
+          }
+        }
+        // Remove GA loader script to avoid future network calls
+        const loader = document.querySelector('script[data-ga4="loader"]');
+        if (loader?.parentNode) {
+          loader.parentNode.removeChild(loader);
+        }
+      } catch {}
+    };
+  }, [analyticsAllowed, location]);
+
+  // Do not render or inject anything if analytics is not allowed
+  if (!analyticsAllowed) return null;
 
   return null;
 }
