@@ -110,7 +110,7 @@ async function main() {
     sourceBuffer = await fs.promises.readFile(sourcePath);
   } else {
     console.warn('[icons] favicon.png not found in standard paths — generating high-contrast monogram icons.');
-    sourceBuffer = buildMonogramSvg(1024, { bg: 'gradient', fg: '#ffffff', '#ffffff', glyph: 'B' });
+    sourceBuffer = buildMonogramSvg(1024, { bg: 'gradient', fg: '#ffffff', glyph: 'B' });
   }
 
   // Generate icons and OG image
