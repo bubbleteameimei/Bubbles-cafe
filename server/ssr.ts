@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 
 const ICON_VERSION = 'v=3';
-const OG_VERSIONED = 'https://bubblescafe.space/og-image-1200x630.png?v=5';
 
 function getOrigin(req: Request): string {
   try {
@@ -26,6 +25,7 @@ export function ssrStreamHandler(req: Request, res: Response) {
   const canonical = `${origin}/`;
   const gsc = process.env.GOOGLE_SITE_VERIFICATION || process.env.GSC_VERIFICATION;
   const verificationMeta = gsc ? `<meta name="google-site-verification" content="${gsc}"/>` : '';
+  const ogImage = `${origin}/og-image-1200x630.png`;
 
   // JSON-LD (Website + Organization) for generic SSR shell
   const jsonLd = JSON.stringify([
@@ -75,13 +75,13 @@ export function ssrStreamHandler(req: Request, res: Response) {
     <meta property="og:description" content="Bubble's Cafe publishes dark, psychological, and experimental fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind."/>
     <meta property="og:type" content="website"/>
     <meta property="og:url" content="${origin}"/>
-    <meta property="og:image" content="${OG_VERSIONED}"/>
+    <meta property="og:image" content="${ogImage}"/>
     <meta property="og:image:width" content="1200"/>
     <meta property="og:image:height" content="630"/>
     <meta name="twitter:card" content="summary_large_image"/>
     <meta name="twitter:title" content="Bubble’s Cafe"/>
     <meta name="twitter:description" content="Bubble's Cafe publishes dark, psychological, and experimental fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind."/>
-    <meta name="twitter:image" content="${OG_VERSIONED}"/>
+    <meta name="twitter:image" content="${ogImage}"/>
     <script type="application/ld+json">${jsonLd}</script>
   </head><body>`);
 
@@ -105,6 +105,7 @@ export function readerPreviewHandler(req: Request, res: Response) {
   const canonical = `${origin}/reader/${encodeURIComponent(slug)}`;
   const gsc = process.env.GOOGLE_SITE_VERIFICATION || process.env.GSC_VERIFICATION;
   const verificationMeta = gsc ? `<meta name="google-site-verification" content="${gsc}"/>` : '';
+  const ogImage = `${origin}/og-image-1200x630.png`;
 
   const jsonLd = JSON.stringify([
     {
@@ -152,7 +153,7 @@ export function readerPreviewHandler(req: Request, res: Response) {
       description: "Read this story on Bubble’s Cafe.",
       mainEntityOfPage: canonical,
       url: canonical,
-      image: { '@type': 'ImageObject', url: '${OG_VERSIONED}', width: 1200, height: 630 },
+      image: { '@type': 'ImageObject', url: ogImage, width: 1200, height: 630 },
       publisher: { '@type': 'Organization', name: "Bubble's Cafe", url: origin }
     }
   ]);
@@ -174,8 +175,8 @@ export function readerPreviewHandler(req: Request, res: Response) {
     <meta property="og:description" content="Read this story on Bubble’s Cafe."/>
     <meta property="og:type" content="article"/>
     <meta property="og:url" content="${canonical}"/>
-    <meta property="og:image" content="${OG_VERSIONED}"/>
-    <meta property="og:image:secure_url" content="${OG_VERSIONED}"/>
+    <meta property="og:image" content="${ogImage}"/>
+    <meta property="og:image:secure_url" content="${ogImage}"/>
     <meta property="og:image:width" content="1200"/>
     <meta property="og:image:height" content="630"/>
 
@@ -183,7 +184,7 @@ export function readerPreviewHandler(req: Request, res: Response) {
     <meta name="twitter:card" content="summary_large_image"/>
     <meta name="twitter:title" content="${safeTitle}"/>
     <meta name="twitter:description" content="Read this story on Bubble’s Cafe."/>
-    <meta name="twitter:image" content="${OG_VERSIONED}"/>
+    <meta name="twitter:image" content="${ogImage}"/>
     <script type="application/ld+json">${jsonLd}</script>
   </head>
   <body>
@@ -205,6 +206,7 @@ export function storyPreviewHandler(req: Request, res: Response) {
   const canonical = `${origin}/reader/${encodeURIComponent(slug)}`;
   const gsc = process.env.GOOGLE_SITE_VERIFICATION || process.env.GSC_VERIFICATION;
   const verificationMeta = gsc ? `<meta name="google-site-verification" content="${gsc}"/>` : '';
+  const ogImage = `${origin}/og-image-1200x630.png`;
 
   const jsonLd = JSON.stringify([
     {
@@ -236,7 +238,7 @@ export function storyPreviewHandler(req: Request, res: Response) {
       description: "Read this story on Bubble’s Cafe.",
       mainEntityOfPage: canonical,
       url: canonical,
-      image: { '@type': 'ImageObject', url: '${OG_VERSIONED}', width: 1200, height: 630 },
+      image: { '@type': 'ImageObject', url: ogImage, width: 1200, height: 630 },
       publisher: { '@type': 'Organization', name: "Bubble's Cafe", url: origin }
     }
   ]);
@@ -258,8 +260,8 @@ export function storyPreviewHandler(req: Request, res: Response) {
     <meta property="og:description" content="Read this story on Bubble’s Cafe."/>
     <meta property="og:type" content="article"/>
     <meta property="og:url" content="${canonical}"/>
-    <meta property="og:image" content="${OG_VERSIONED}"/>
-    <meta property="og:image:secure_url" content="${OG_VERSIONED}"/>
+    <meta property="og:image" content="${ogImage}"/>
+    <meta property="og:image:secure_url" content="${ogImage}"/>
     <meta property="og:image:width" content="1200"/>
     <meta property="og:image:height" content="630"/>
 
@@ -267,7 +269,7 @@ export function storyPreviewHandler(req: Request, res: Response) {
     <meta name="twitter:card" content="summary_large_image"/>
     <meta name="twitter:title" content="${safeTitle}"/>
     <meta name="twitter:description" content="Read this story on Bubble’s Cafe."/>
-    <meta name="twitter:image" content="${OG_VERSIONED}"/>
+    <meta name="twitter:image" content="${ogImage}"/>
     <script type="application/ld+json">${jsonLd}</script>
   </head>
   <body>
@@ -286,6 +288,7 @@ export function aboutPreviewHandler(req: Request, res: Response) {
   const canonical = `${origin}/about`;
   const gsc = process.env.GOOGLE_SITE_VERIFICATION || process.env.GSC_VERIFICATION;
   const verificationMeta = gsc ? `<meta name="google-site-verification" content="${gsc}"/>` : '';
+  const ogImage = `${origin}/og-image-1200x630.png`;
 
   const jsonLd = JSON.stringify([
     {
@@ -328,8 +331,8 @@ export function aboutPreviewHandler(req: Request, res: Response) {
     <meta property="og:description" content="${desc}"/>
     <meta property="og:type" content="profile"/>
     <meta property="og:url" content="${canonical}"/>
-    <meta property="og:image" content="${OG_VERSIONED}"/>
-    <meta property="og:image:secure_url" content="${OG_VERSIONED}"/>
+    <meta property="og:image" content="${ogImage}"/>
+    <meta property="og:image:secure_url" content="${ogImage}"/>
     <meta property="og:image:width" content="1200"/>
     <meta property="og:image:height" content="630"/>
 
@@ -337,7 +340,7 @@ export function aboutPreviewHandler(req: Request, res: Response) {
     <meta name="twitter:card" content="summary_large_image"/>
     <meta name="twitter:title" content="${title}"/>
     <meta name="twitter:description" content="${desc}"/>
-    <meta name="twitter:image" content="${OG_VERSIONED}"/>
+    <meta name="twitter:image" content="${ogImage}"/>
     <script type="application/ld+json">${jsonLd}</script>
   </head>
   <body>
