@@ -28,8 +28,8 @@ const DEFAULT_SITE_CONFIG = {
   siteName: 'Bubble’s Cafe',
   defaultTitle: 'Bubble’s Cafe',
   defaultDescription: "Bubble's Cafe publishes dark, psychological, and experimental fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.",
-  // Use a proper 1200x630 social preview image
-  defaultImage: 'https://bubblescafe.space/og-image-1200x630.png?v=5',
+  // Use local 1200x630 social preview image generated at build time
+  defaultImage: '/og-image-1200x630.png',
   siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://bubblescafe.space',
   locale: 'en_US',
   twitterSite: '@bubblescafe',
@@ -201,9 +201,9 @@ export default function SEO({
     setLinkTag('preconnect', 'https://pixel.wp.com');
     setLinkTag('dns-prefetch', 'https://pixel.wp.com');
     
-    // Favicon and app icons (remote absolute URLs to avoid 404s)
-    setLinkTag('icon', 'https://bubblescafe.space/icons/favicon-32x32.png?v=3', { type: 'image/png', sizes: '32x32' });
-    setLinkTag('apple-touch-icon', 'https://bubblescafe.space/icons/apple-touch-icon.png?v=3', { sizes: '180x180' });
+    // Favicon and app icons (local, generated at build time)
+    setLinkTag('icon', '/icons/favicon-32x32.png', { type: 'image/png', sizes: '32x32' });
+    setLinkTag('apple-touch-icon', '/icons/apple-touch-icon.png', { sizes: '180x180' });
     
     // Generate and set JSON-LD structured data
     const generateStructuredData = () => {
@@ -227,7 +227,7 @@ export default function SEO({
           url: siteUrl,
           logo: {
             '@type': 'ImageObject',
-            url: `https://bubblescafe.space/icons/icon-512x512.png`,
+            url: `${siteUrl}/icons/icon-512x512.png`,
             alt: `${siteName} Logo`
           },
           sameAs: [
@@ -446,9 +446,10 @@ export default function SEO({
             url: siteUrl,
             logo: {
               '@type': 'ImageObject',
-              url: `https://bubblescafe.space/icons/icon-512x512.png`,
+              url: `${siteUrl}/icons/icon-512x512.png`,
               alt: `${siteName} Logo`
             }
+       _code }
           },
           author: author ? { '@type': 'Person', name: author } : undefined,
           datePublished: published,
