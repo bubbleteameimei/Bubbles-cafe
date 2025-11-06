@@ -25,7 +25,6 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
         onError(e instanceof Error ? e : new Error('Google login failed'));
       } else {
         // Fallback logging when no handler is provided
-        // eslint-disable-next-line no-console
         console.error('[SocialLoginButtons] Google login error:', e);
       }
     }

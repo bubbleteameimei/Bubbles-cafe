@@ -191,13 +191,13 @@ export function CookieConsent() {
 
           {/* Less prominent but visible preferences link below buttons */}
           <div className="flex justify-center">
-            <a
-              href="#"
-              onClick={handleOpenPreferences}
-              className="text-xs underline text-primary/90 hover:text-primary mt-2"
-            >
-              Manage preferences
-            </a>
+            <button
+            type="button"
+            onClick={handleOpenPreferences}
+            className="text-xs underline text-primary/90 hover:text-primary mt-2 bg-transparent p-0 border-0"
+          >
+            Manage preferences
+          </button>
           </div>
         </div>
       )}
