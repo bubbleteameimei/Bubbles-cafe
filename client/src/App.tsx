@@ -757,9 +757,8 @@ function App() {
                           <Sonner position="bottom-left" className="fixed-sonner" />
                         </React.Suspense>
                         {/* Vercel Analytics - production only and only with analytics consent */}
-                       <{ConsentAwareVercelAnalytics />
+                        <ConsentAwareVercelAnalytics />
                         {/* GA4 (enabled when VITE_GA_MEASUREMENT_ID or window.GA_MEASUREMENT_ID is set) */}
-                       _ID is set) */}
                         <GA4 />
                       </RefreshProvider>
                     </ErrorToastProvider>
