@@ -110,11 +110,19 @@ export function CookieConsent() {
   // When the Preference Center is open, replace the initial consent overlay entirely
   if (isPreferencesModalOpen) {
     return (
-     < CookiePreferencesModal
+      <CookiePreferencesModal
         open={isPreferencesModalOpen}
         onOpenChange={(open) => (open ? openPreferencesModal() : closePreferencesModal())}
         consentGiven={consentGiven}
-ay = (
+        initialPrefs={cookiePreferences}
+        onSave={(prefs) => {
+          updatePreferences(prefs);
+          closePreferencesModal();
+        }}
+      />
+    );
+  }
+const overlay = (
     <motion.div
       ref={overlayRef}
       initial={{ opacity: 0, scale: 0.98 }}
