@@ -164,6 +164,7 @@ export function CookieConsent() {
             </div>
           </div>
 
+          <div className="flex flex-col items-center gap-1">
           <div className="flex justify-center gap-4">
             {/* Accept matches footer Email button color (bg-primary) */}
             <button
@@ -190,15 +191,14 @@ export function CookieConsent() {
           </div>
 
           {/* Less prominent but visible preferences link below buttons */}
-          <div className="flex justify-center">
-            <button
+          <button
             type="button"
             onClick={handleOpenPreferences}
-            className="text-xs underline text-primary/90 hover:text-primary mt-2 bg-transparent p-0 border-0"
+            className="text-xs underline text-primary/90 hover:text-primary bg-transparent p-0 border-0"
           >
             Manage preferences
           </button>
-          </div>
+        </div>
         </div>
       )}
 
