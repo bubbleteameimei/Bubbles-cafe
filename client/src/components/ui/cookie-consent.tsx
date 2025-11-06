@@ -107,7 +107,14 @@ export function CookieConsent() {
 
   if (!showConsentBanner) return null;
 
-  const overlay = (
+  // When the Preference Center is open, replace the initial consent overlay entirely
+  if (isPreferencesModalOpen) {
+    return (
+     < CookiePreferencesModal
+        open={isPreferencesModalOpen}
+        onOpenChange={(open) => (open ? openPreferencesModal() : closePreferencesModal())}
+        consentGiven={consentGiven}
+ay = (
     <motion.div
       ref={overlayRef}
       initial={{ opacity: 0, scale: 0.98 }}
@@ -164,7 +171,7 @@ export function CookieConsent() {
             </div>
           </div>
 
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex flex-col items-center gap-0.5">
           <div className="flex justify-center gap-4">
             {/* Accept matches footer Email button color (bg-primary) */}
             <button
@@ -194,7 +201,7 @@ export function CookieConsent() {
           <button
             type="button"
             onClick={handleOpenPreferences}
-            className="text-xs underline text-primary/90 hover:text-primary bg-transparent p-0 border-0"
+            className="text-xs leading-none underline text-primary/90 hover:text-primary bg-transparent p-0 border-0"
           >
             Manage preferences
           </button>
