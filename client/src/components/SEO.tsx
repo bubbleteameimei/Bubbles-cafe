@@ -449,7 +449,6 @@ export default function SEO({
               url: `${siteUrl}/icons/icon-512x512.png`,
               alt: `${siteName} Logo`
             }
-       _code }
           },
           author: author ? { '@type': 'Person', name: author } : undefined,
           datePublished: published,

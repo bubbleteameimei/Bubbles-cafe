@@ -14,14 +14,21 @@ function circleMaskSvg(size) {
   );
 }
 
-function resolveStrictFaviconPath() {
-  // Prefer client/public/favicon.png if present
-  const p = path.resolve(process.cwd(), 'client', 'public', 'favicon.png');
-  try {
-    if (fs.existsSync(p)) {
-      return p;
-    }
-  } catch {}
+function resolveFaviconPath() {
+  // Look for favicon.png in common locations
+  const candidates = [
+    path.resolve(process.cwd(), 'client', 'public', 'favicon.png'),
+    path.resolve(process.cwd(), 'public', 'favicon.png'),
+    path.resolve(process.cwd(), 'client', 'src', 'assets', 'favicon.png'),
+    path.resolve(process.cwd(), 'client', 'src', 'assets', 'images', 'favicon.png'),
+    path.resolve(process.cwd(), 'client', 'src', 'assets', 'img', 'favicon.png'),
+    path.resolve(process.cwd(), 'assets', 'favicon.png'),
+  ];
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) return p;
+    } catch {}
+  }
   return null;
 }
 
@@ -96,19 +103,28 @@ async function main() {
     await ensureDir(path.join(dir, 'icons'));
   }
 
-  const sourcePath = resolveStrictFaviconPath();
+  const sourcePath = resolveFaviconPath();
   let sourceBuffer;
   if (sourcePath) {
     console.log(`[icons] Using source image: ${sourcePath}`);
     sourceBuffer = await fs.promises.readFile(sourcePath);
   } else {
-    console.warn('[icons] favicon.png not found at client/public/favicon.png — generating high-contrast monogram icons.');
-    sourceBuffer = buildMonogramSvg(1024, { bg: 'gradient', fg: '#ffffff', glyph: 'B' });
+    console.warn('[icons] favicon.png not found in standard paths — generating high-contrast monogram icons.');
+    sourceBuffer = buildMonogramSvg(1024, { bg: 'gradient', fg: '#ffffff', '#ffffff', glyph: 'B' });
   }
 
   // Generate icons and OG image
   for (const dir of outputDirs) {
     const iconsDir = path.join(dir, 'icons');
+
+    // Ensure a root-level favicon.png is present for legacy/SSR routes
+    try {
+      const rootFavicon = path.join(dir, 'favicon.png');
+      if (sourcePath) {
+        await fs.promises.writeFile(rootFavicon, sourceBuffer);
+        console.log('Wrote', rootFavicon);
+      }
+    } catch {}
 
     // PWA icons (rounded)
     for (const size of [192, 512]) {
