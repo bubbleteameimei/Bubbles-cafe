@@ -29,6 +29,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarSeparator,
   useSidebar
 } from "@/components/ui/sidebar"
 
@@ -678,7 +679,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           </SidebarGroup>
         </motion.div>
 
-      {/* Games & Interactive Experiences - Placeholder */}
+       <* Games & Interactive Experiences - Placeholder */}
       <SidebarGroup className="-mt-10 p-0 pt-0">
         <SidebarGroupLabel className="h-5 px-1.5 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-2 uppercase tracking-wider">
           GAMES & INTERACTIVE

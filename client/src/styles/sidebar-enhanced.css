@@ -497,3 +497,26 @@
     margin-bottom: 0 !important;
   }
 }
+
+/* Ensure scrollbars are visible for the sidebar menu container */
+[data-sidebar="sidebar"] .sidebar-menu-container {
+  overflow-y: auto !important;
+  scrollbar-width: thin !important;           /* Firefox */
+  -ms-overflow-style: auto !important;        /* IE/Edge */
+  -webkit-overflow-scrolling: touch !important;
+}
+
+[data-sidebar="sidebar"] .sidebar-menu-container::-webkit-scrollbar {
+  display: block !important;
+  width: 8px !important;
+  height: 8px !important;
+}
+
+[data-sidebar="sidebar"] .sidebar-menu-container::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+[data-sidebar="sidebar"] .sidebar-menu-container::-webkit-scrollbar-thumb {
+  background-color: rgba(125, 125, 125, 0.35) !important;
+  border-radius: 8px !important;
+}
