@@ -504,7 +504,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       {/* Removed gradient overlay that was interfering with bottom buttons */}
 
       {/* Scrollable content area */}
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-2 pb-6 scroll-smooth sidebar-menu-container focus:outline-none focus-visible:outline-none bg-transparent"
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-2 pb-24 md:pb-8 scroll-smooth sidebar-menu-container focus:outline-none focus-visible:outline-none bg-transparent"
            style={{
              scrollBehavior: 'smooth',
              scrollbarWidth: 'thin',
