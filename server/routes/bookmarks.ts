@@ -11,8 +11,65 @@ import { db } from '../db';
 import { and, eq, inArray } from 'drizzle-orm';
 import { bookmarks, posts as postsTable } from '../../shared/schema';
 import { storage } from '../storage';
+import { sql } from 'drizzle-orm';
 
 const router = Router();
+
+/**
+ * Resolve a target local post ID from a provided identifier.
+ * Accepts either a local post ID or a WordPress external ID.
+ * - If the ID matches a local post, returns it.
+ * - Otherwise attempts to find a local post where metadata.wordpressId equals the provided ID.
+ * - If still not found, a placeholder is created to ensure the bookmark can reference a valid post.
+ */
+async function resolveLocalPostId(rawId: number): Promise<number> {
+  // Try direct local ID
+  try {
+    const direct = await storage.getPostById(rawId);
+    if (direct && typeof direct.id === 'number') {
+      return Number(direct.id);
+    }
+  } catch (_) {
+    // ignore and continue
+  }
+
+  // Try mapping via metadata.wordpressId
+  try {
+    const result = await db.execute(sql`
+      SELECT id 
+      FROM posts 
+      WHERE (metadata->>'wordpressId')::int = ${rawId}
+      LIMIT 1
+    `);
+    const row = (result as any)?.rows?.[0];
+    if (row && typeof row.id === 'number') {
+      return Number(row.id);
+    }
+  } catch (_) {
+    // ignore and continue
+  }
+
+  // Create a placeholder post if not found so bookmark has a valid target
+  try {
+    const placeholderSlug = `wordpress-post-${rawId}`;
+    const inserted = await storage.createPost({
+      title: `WordPress Post ${rawId}`,
+      content: 'Placeholder for WordPress post bookmark',
+      slug: placeholderSlug,
+      authorId: 1,
+      isAdminPost: true,
+      metadata: { wordpressId: rawId, isPlaceholder: true, source: 'wordpress_api' } as any
+    } as any);
+    return Number(inserted.id);
+  } catch (e) {
+    // As a last resort, fall back to the raw ID to avoid complete failure
+    logger.warn('[Bookmarks] Failed to resolve local post id; using raw id', {
+      rawId,
+      error: e instanceof Error ? e.message : String(e)
+    });
+    return rawId;
+  }
+}
 
 /**
  * GET /api/bookmarks
@@ -53,7 +110,6 @@ router.get('/', isAuthenticated, async (req, res) => {
     const posts = postIds.length
       ? await db.select().from(postsTable).where(inArray(postsTable.id, postIds))
       : [];
-
     const postsMap = new Map<number, any>();
     posts.forEach((p: any) => postsMap.set(p.id, p));
 
@@ -82,14 +138,14 @@ router.get('/', isAuthenticated, async (req, res) => {
 });
 
 /**
- * GET /api/reader/bookmarks/:postId
+ * GET /api/bookmarks/:postId
  * 
  * Check if a post is bookmarked by the current user
  */
 router.get('/:postId', isAuthenticated, async (req, res) => {
   try {
     const userId = req.user?.id;
-    const postId = parseInt(req.params.postId);
+    const rawPostId = parseInt(req.params.postId);
     
     if (!userId) {
       res.status(401).json({
@@ -99,13 +155,16 @@ router.get('/:postId', isAuthenticated, async (req, res) => {
       return;
     }
     
-    if (isNaN(postId)) {
+    if (isNaN(rawPostId)) {
       res.status(400).json({
         success: false,
         message: 'Invalid post ID'
       });
       return;
     }
+
+    // Resolve local post ID for WordPress IDs
+    const postId = await resolveLocalPostId(rawPostId);
     
     const bookmark = await db
       .select()
@@ -141,14 +200,15 @@ router.get('/:postId', isAuthenticated, async (req, res) => {
 });
 
 /**
- * POST /api/reader/bookmarks/:postId
+ * POST /api/bookmarks/:postId
  * 
- * Bookmark a post
+ * Bookmark a post (supports notes/tags)
  */
 router.post('/:postId', isAuthenticated, async (req, res) => {
   try {
     const userId = req.user?.id;
-    const postId = parseInt(req.params.postId);
+    const rawPostId = parseInt(req.params.postId);
+    const { notes, tags } = (req.body || {}) as { notes?: string; tags?: string[] };
     
     if (!userId) {
       res.status(401).json({
@@ -158,13 +218,16 @@ router.post('/:postId', isAuthenticated, async (req, res) => {
       return;
     }
     
-    if (isNaN(postId)) {
+    if (isNaN(rawPostId)) {
       res.status(400).json({
         success: false,
         message: 'Invalid post ID'
       });
       return;
     }
+
+    // Resolve local post ID for WordPress IDs
+    const postId = await resolveLocalPostId(rawPostId);
     
     // Check if already bookmarked
     const existingBookmark = await db
@@ -179,6 +242,24 @@ router.post('/:postId', isAuthenticated, async (req, res) => {
       .limit(1);
     
     if (existingBookmark.length > 0) {
+      // If already exists, update notes/tags if provided
+      if (notes !== undefined || tags !== undefined) {
+        const [updated] = await db
+          .update(bookmarks)
+          .set({
+            ...(notes !== undefined ? { notes } : {}),
+            ...(Array.isArray(tags) ? { tags } : {}),
+          })
+          .where(and(eq(bookmarks.userId, userId), eq(bookmarks.postId, postId)))
+          .returning();
+        res.json({
+          success: true,
+          message: 'Post already bookmarked; details updated',
+          bookmark: updated || existingBookmark[0]
+        });
+        return;
+      }
+
       res.json({
         success: true,
         message: 'Post already bookmarked',
@@ -194,6 +275,9 @@ router.post('/:postId', isAuthenticated, async (req, res) => {
       .values({
         userId,
         postId,
+        notes: notes ?? null,
+        tags: Array.isArray(tags) ? tags : null,
+        lastPosition: '0',
         createdAt: now
       })
       .returning();
@@ -221,14 +305,64 @@ router.post('/:postId', isAuthenticated, async (req, res) => {
 });
 
 /**
- * DELETE /api/reader/bookmarks/:postId
+ * PATCH /api/bookmarks/:postId
+ * 
+ * Update bookmark details (notes, tags, lastPosition)
+ */
+router.patch('/:postId', isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const rawPostId = parseInt(req.params.postId);
+    const { notes, tags, lastPosition } = (req.body || {}) as { notes?: string; tags?: string[]; lastPosition?: string };
+    
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'User not authenticated' });
+      return;
+    }
+    if (isNaN(rawPostId)) {
+      res.status(400).json({ success: false, message: 'Invalid post ID' });
+      return;
+    }
+
+    const postId = await resolveLocalPostId(rawPostId);
+
+    const [updated] = await db
+      .update(bookmarks)
+      .set({
+        ...(notes !== undefined ? { notes } : {}),
+        ...(Array.isArray(tags) ? { tags } : {}),
+        ...(typeof lastPosition === 'string' ? { lastPosition } : {}),
+      })
+      .where(and(eq(bookmarks.userId, userId), eq(bookmarks.postId, postId)))
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ success: false, message: 'Bookmark not found' });
+      return;
+    }
+
+    res.json({ success: true, bookmark: updated });
+    return;
+  } catch (error: any) {
+    logger.error('[Bookmarks] Error updating bookmark', {
+      error: error.message,
+      stack: error.stack,
+      postId: req.params.postId
+    });
+    res.status(500).json({ success: false, message: 'Failed to update bookmark', error: error.message });
+    return;
+  }
+});
+
+/**
+ * DELETE /api/bookmarks/:postId
  * 
  * Remove a bookmark
  */
 router.delete('/:postId', isAuthenticated, async (req, res) => {
   try {
     const userId = req.user?.id;
-    const postId = parseInt(req.params.postId);
+    const rawPostId = parseInt(req.params.postId);
     
     if (!userId) {
       res.status(401).json({
@@ -238,13 +372,15 @@ router.delete('/:postId', isAuthenticated, async (req, res) => {
       return;
     }
     
-    if (isNaN(postId)) {
+    if (isNaN(rawPostId)) {
       res.status(400).json({
         success: false,
         message: 'Invalid post ID'
       });
       return;
     }
+
+    const postId = await resolveLocalPostId(rawPostId);
     
     const deletedBookmarks = await db
       .delete(bookmarks)
