@@ -4,11 +4,13 @@ import { validateBody, validateQuery, validateParams, commonSchemas } from '../m
 import { asyncHandler, createError } from '../utils/error-handler';
 import { storage } from "../storage";
 import { z } from "zod";
-import { insertPostSchema, updatePostSchema , posts as postsTable } from "@shared/schema";
+import { insertPostSchema, updatePostSchema, insertCommentSchema, posts as postsTable } from "@shared/schema";
 import { apiRateLimiter } from '../middlewares/rate-limiter';
 // DB helpers imported where needed
 import { db } from '../db';
 import { eq, sql } from "drizzle-orm";
+import { moderateComment } from "../utils/comment-moderation";
+import { clearCacheItem } from "../middlewares/api-cache";
 
 const postsLogger = createSecureLogger('PostsRoutes');
 const router = Router();
@@ -699,6 +701,117 @@ router.delete('/:id',
 			throw createError.internal('Failed to delete post');
 		}
 	})
+);
+
+/**
+ * Comments endpoints mounted under posts router to avoid 404s in some environments
+ * These mirror the handlers in commentsRouter and delegate to storage.
+ */
+
+// Utility to derive session/user ownership key
+function getUserKey(req: Request): string {
+  const userId = (req as any).user?.id;
+  if (userId !== undefined && userId !== null) return String(userId);
+  return (req as any).sessionID ? `anon:${(req as any).sessionID}` : "anon";
+}
+
+// Body schema for creating comments
+const createCommentBodySchema = z.object({
+  content: z.string().min(1).max(2000).trim(),
+  author: z.string().min(1).max(50).optional(),
+  parentId: z.coerce.number().int().positive().optional(),
+  needsModeration: z.boolean().optional(),
+  moderationStatus: z.enum(["flagged", "under_review", "none"]).optional(),
+  // Optional selection anchors
+  selectionStart: z.coerce.number().int().min(0).optional(),
+  selectionEnd: z.coerce.number().int().min(0).optional(),
+  anchorParagraphIndex: z.coerce.number().int().min(0).optional(),
+  selectionText: z.string().min(1).max(1000).optional()
+});
+
+// GET /api/posts/:id/comments - list comments for a post (supports WordPress ID mapping)
+router.get(
+  "/:id/comments",
+  apiRateLimiter,
+  validateParams(postIdSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const id = Number((req.params as any).id);
+    const comments = await storage.getComments(id);
+
+    // Mark owner for UX visibility (same logic as commentsRouter)
+    const userKey = getUserKey(req);
+    const enhanced = comments.map((c: any) => {
+      const baseApproved =
+        (c as any).approved === undefined ? Boolean(c.is_approved) : Boolean((c as any).approved);
+      const isOwner =
+        (c as any).metadata && (c as any).metadata.ownerKey
+          ? String((c as any).metadata.ownerKey) === userKey
+          : false;
+      const uxApproved = baseApproved || isOwner;
+      return { ...c, approved: uxApproved, isOwner };
+    });
+
+    res.json(enhanced);
+  })
+);
+
+// POST /api/posts/:id/comments - create a new comment or reply
+router.post(
+  "/:id/comments",
+  apiRateLimiter,
+  validateParams(postIdSchema),
+  validateBody(createCommentBodySchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const postId = Number((req.params as any).id);
+    const body = req.body as z.infer<typeof createCommentBodySchema>;
+    const userKey = getUserKey(req);
+
+    // Moderate defensively on server
+    const { isBlocked, moderatedText } = moderateComment(body.content);
+    const contentToSave = moderatedText;
+    const shouldHoldForReview =
+      Boolean(body.needsModeration) || body.moderationStatus === "flagged" || isBlocked;
+
+    // Determine author name
+    const inferredAuthor =
+      body.author && body.author.trim().length > 0
+        ? body.author.trim()
+        : ((req as any).user?.username || ((req as any).user?.id ? "User" : "Guest"));
+
+    // Optional selection anchor metadata
+    const selectionAnchor =
+      body.selectionStart !== undefined && body.selectionEnd !== undefined
+        ? {
+            startOffset: Number(body.selectionStart),
+            endOffset: Number(body.selectionEnd),
+            paragraphIndex:
+              body.anchorParagraphIndex !== undefined ? Number(body.anchorParagraphIndex) : undefined,
+            text: body.selectionText || undefined
+          }
+        : undefined;
+
+    const baseMeta: any = {};
+    if (selectionAnchor) (baseMeta as any).selectionAnchor = selectionAnchor;
+
+    const insert = {
+      content: contentToSave,
+      postId,
+      parentId: body.parentId ?? undefined,
+      userId: (req as any).user?.id ?? undefined,
+      is_approved: shouldHoldForReview ? false : true,
+      metadata: {
+        author: inferredAuthor,
+        ownerKey: userKey,
+        ...baseMeta
+      }
+    } as z.infer<typeof insertCommentSchema>;
+
+    const created = await storage.createComment(insert as any);
+    try {
+      clearCacheItem(`/api/posts/${postId}/comments`);
+    } catch {}
+    (res as any).status(201).json({ ...created, approved: created.is_approved === true, isOwner: true });
+  })
 );
 
 export { router as postsRouter };

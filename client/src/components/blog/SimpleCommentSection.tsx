@@ -421,11 +421,8 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
     queryKey: [`/api/posts/${postId}/comments`],
     queryFn: async () => {
-      const response = await fetch(`/api/posts/${postId}/comments`, { credentials: "include" });
-      if (!response.ok) {
-        throw new Error('Failed to fetch comments');
-      }
-      return response.json();
+      // Use centralized API helper to ensure correct base URL and CSRF/session handling
+      return await apiJson<Comment[]>('GET', `/api/posts/${postId}/comments`);
     }
   });
 
