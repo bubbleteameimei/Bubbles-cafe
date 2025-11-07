@@ -524,9 +524,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           }}
         >
           <SidebarGroup className="space-y-0 -mt-8">
-            <SidebarGroupLabel className="sidebar-group-label-enhanced px-1 text-[11px] font-bold text-sidebar-foreground/60 uppercase tracking-wider -mb-2 font-sans">
+            <SidebarGroupLabel className="sidebar-group-label-enhanced px-1.5 text-[11px] font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-3 font-sans">
               Navigation
-            </SidebarGroupLabel>
+          <//SSidebarGroupLa_codebenewl</>
+
             <SidebarGroupContent>
               <SidebarMenu className="space-y-0">
                 <SidebarMenuItem>
