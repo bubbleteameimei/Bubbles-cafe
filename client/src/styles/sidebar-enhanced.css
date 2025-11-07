@@ -482,10 +482,13 @@
 @media (max-width: 768px) {
   /* Strong, scoped override to ensure reduced height on touch devices */
   [data-sidebar="sidebar"] [data-sidebar="menu-button"] {
-    height: 28px !important;
-    min-height: 28px !important;
+    height: 32px !important;
+    min-height: 32px !important;
     padding-top: 2px !important;
     padding-bottom: 2px !important;
+    /* Ensure font size differs from Sign In / Report (which use text-sm ~14px) */
+    font-size: 13px !important;
+    line-height: 1.25 !important;
   }
 
   /* Ensure no extra margins are introduced between list items */
