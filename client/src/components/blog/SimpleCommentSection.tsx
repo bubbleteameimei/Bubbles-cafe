@@ -331,6 +331,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     null
   );
   const [editContent, setEditContent] = useState<string>("");
+  const [submitError, setSubmitError] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const mainSectionRef = useRef<HTMLDivElement>(null);
@@ -420,11 +421,8 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
     queryKey: [`/api/posts/${postId}/comments`],
     queryFn: async () => {
-      const response = await fetch(`/api/posts/${postId}/comments`, { credentials: "include" });
-      if (!response.ok) {
-        throw new Error('Failed to fetch comments');
-      }
-      return response.json();
+      // Use centralized API helper to ensure correct base URL and CSRF/session handling
+      return await apiJson<Comment[]>('GET', `/api/posts/${postId}/comments`);
     }
   });
 
@@ -470,6 +468,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
       // Clear localStorage draft
       localStorage.removeItem(`comment_draft_${postId}`);
       setContent("");
+      setSubmitError("");
       
       // Show appropriate toast based on moderation status
       if (result.moderationStatus === 'flagged' || result.moderationStatus === 'under_review') {
@@ -490,6 +489,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     onError: (error: any) => {
       // Show more informative error message when available
       const message = (error && typeof error.message === 'string') ? error.message : "Failed to post comment. Please try again.";
+      setSubmitError(message);
       toast({
         title: "Error",
         description: message,
@@ -857,6 +857,17 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                       Your comment contains content that might need moderator approval before being displayed to all users.
                     </p>
                   </motion.div>
+                )}
+
+                {/* Inline error message for failed submissions (visible on mobile where toasts may be missed) */}
+                {submitError && (
+                  <div className="mt-1 px-1.5 py-1 bg-destructive/10 rounded-sm text-[9px] border border-destructive/20 text-destructive">
+                    <div className="flex items-center gap-1">
+                      <AlertCircle className="h-2.5 w-2.5" />
+                      <span className="font-medium">Could not post</span>
+                    </div>
+                    <p className="mt-0.5 text-[9px] ml-3.5">{submitError}</p>
+                  </div>
                 )}
               </motion.div>
             </div>

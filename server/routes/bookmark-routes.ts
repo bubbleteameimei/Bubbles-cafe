@@ -9,6 +9,7 @@ import bookmarkRoutes from './bookmarks';
 import { db } from '../db';
 import { inArray } from 'drizzle-orm';
 import { posts as postsTable } from '../../shared/schema';
+import { sql } from 'drizzle-orm';
 
 // Create a router for anonymous bookmark routes
 const anonymousBookmarkRouter = Router();
@@ -57,6 +58,8 @@ anonymousBookmarkRouter.get('/:postId', async (req: Request, res: Response) => {
 
 /**
  * Get all anonymous bookmarks (with post details)
+ * 
+ * NOTE: Session stores WordPress IDs; we must map them to local post records (by metadata.wordpressId) to enrich.
  */
 anonymousBookmarkRouter.get('/', async (req: Request, res: Response) => {
   try {
@@ -77,18 +80,37 @@ anonymousBookmarkRouter.get('/', async (req: Request, res: Response) => {
     // Filter by tag if provided in query params
     const tagFilter = req.query.tag as string | undefined;
     
-    // Collect post IDs to fetch post details
-    const postIds = entries
+    // Collect post IDs to fetch post details (these are WordPress IDs for anonymous bookmarks)
+    const wpIds = entries
       .filter(([_, b]: any) => !tagFilter || (b.tags && b.tags.includes(tagFilter)))
       .map(([postId]) => parseInt(postId, 10))
       .filter((id) => !Number.isNaN(id));
 
-    // Fetch posts in a single query
-    const posts = postIds.length
-      ? await db.select().from(postsTable).where(inArray(postsTable.id, postIds))
-      : [];
-    const postMap = new Map<number, any>();
-    posts.forEach((p: any) => postMap.set(p.id, p));
+    // Fetch posts in a single query:
+    // - match local IDs directly (in case any session entry accidentally stored local id)
+    // - OR match by metadata.wordpressId
+    const posts = wpIds.length
+      ? await db.execute(sql`
+          SELECT 
+            id, title, slug, excerpt, created_at as "createdAt",
+            (metadata->>'wordpressId')::int as "wpId"
+          FROM posts
+          WHERE id = ANY(${wpIds})
+             OR (metadata->>'wordpressId')::int = ANY(${wpIds})
+        `)
+      : { rows: [] } as any;
+
+    // Build a map keyed by WordPress ID first, with fallback to local id
+    const postByWpId = new Map<number, any>();
+    const postByLocalId = new Map<number, any>();
+    for (const p of ((posts as any).rows || [])) {
+      if (typeof p.wpId === 'number' && Number.isFinite(p.wpId)) {
+        postByWpId.set(p.wpId, p);
+      }
+      if (typeof p.id === 'number' && Number.isFinite(p.id)) {
+        postByLocalId.set(p.id, p);
+      }
+    }
 
     // Map to enriched bookmark objects with post details
     const enriched = entries
@@ -97,7 +119,9 @@ anonymousBookmarkRouter.get('/', async (req: Request, res: Response) => {
           return null;
         }
         const pid = parseInt(postId, 10);
-        const post = postMap.get(pid);
+
+        // Try to find the post by WordPress ID mapping, then by local ID as a fallback
+        const post = postByWpId.get(pid) || postByLocalId.get(pid);
         if (!post) return null;
 
         return {
@@ -148,7 +172,7 @@ anonymousBookmarkRouter.post('/', async (req: Request, res: Response) => {
       req.session.anonymousBookmarks = {};
     }
     
-    // Store bookmark in session
+    // Store bookmark in session (use WordPress ID as given)
     req.session.anonymousBookmarks[postId] = {
       notes: notes || null,
       tags: tags || null,
