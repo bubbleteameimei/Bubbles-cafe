@@ -703,11 +703,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Accessibility */}
-     <<SidebarGroup className="-mt-8 p-1 pt-0">
-        <SidebarGroupLabel className="h-6 px-1.5 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+      <SidebarGroup className="-mt-10 p-0 pt-0">
+        <SidebarGroupLabel className="h-5 px-1.5 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-2 uppercase tracking-wider">
           READING & ACCESSIBILITY
         </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-2">
+        <SidebarGroupContent className="-mt-3">
           <SidebarMenu className="space-y-0">
             <SidebarMenuItem>
               <Collapsible 
