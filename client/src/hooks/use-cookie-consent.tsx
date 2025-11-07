@@ -14,6 +14,7 @@ import {
   COOKIE_CONSENT_KEY,
   COOKIE_DECISION_EXPIRY_KEY
 } from '@/lib/cookie-manager';
+import { useLocation } from 'wouter';
 
 interface CookieConsentContextType {
   // Current consent status
@@ -37,9 +38,11 @@ interface CookieConsentContextType {
   openPreferencesModal: () => void;
   closePreferencesModal: () => void;
   isPreferencesModalOpen: boolean;
+
+  // Banner visibility controls (do not imply consent)
+  hideBannerTemporarily: () => void;
 }
 
-// Create the context with default values to avoid the need for undefined checks
 const defaultContextValue: CookieConsentContextType = {
   consentGiven: false,
   showConsentBanner: false,
@@ -59,28 +62,23 @@ const defaultContextValue: CookieConsentContextType = {
   allCookies: {},
   openPreferencesModal: () => {},
   closePreferencesModal: () => {},
-  isPreferencesModalOpen: false
+  isPreferencesModalOpen: false,
+  hideBannerTemporarily: () => {}
 };
 
-// Create the context with a default value
 const CookieConsentContext = createContext<CookieConsentContextType>(defaultContextValue);
 
 export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // State for cookie preferences
   const [cookiePreferences, setCookiePreferences] = useState<CookiePreferences>(getCookiePreferences());
-  
-  // Show consent banner if user has not yet made a choice
   const [showConsentBanner, setShowConsentBanner] = useState(false);
-  
-  // UI state for preferences modal
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
-  
-  // Set initial states when component mounts
+
+  // Initial mount: decide whether to show the banner
   useEffect(() => {
     try {
       const hasChoice = hasConsentChoice();
       console.log('Cookie consent choice detected:', hasChoice);
-      
+
       const isTestPage = window.location.pathname === '/cookie-test';
       if (isTestPage) {
         localStorage.removeItem(COOKIE_CONSENT_KEY);
@@ -97,9 +95,9 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
           setShowConsentBanner(true);
         }
       }
-      
+
       setCookiePreferences(getCookiePreferences());
-      
+
       const handleStorageChange = (event: StorageEvent) => {
         if (event.key === COOKIE_CONSENT_KEY || event.key === COOKIE_DECISION_EXPIRY_KEY) {
           setCookiePreferences(getCookiePreferences());
@@ -107,7 +105,7 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
           setShowConsentBanner(!hasValidConsent);
         }
       };
-      
+
       window.addEventListener('storage', handleStorageChange);
       return () => window.removeEventListener('storage', handleStorageChange);
     } catch (error) {
@@ -116,8 +114,8 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
       return () => {};
     }
   }, []);
-  
-  // Accept all cookies - with 6 month expiry
+
+  // Accept all cookies - 6 month expiry
   const acceptAll = () => {
     try {
       acceptAllCookies();
@@ -128,8 +126,8 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
       console.error('Error accepting all cookies:', error);
     }
   };
-  
-  // Accept only essential cookies - with 3 month expiry
+
+  // Accept only essential cookies - 3 month expiry
   const acceptEssentialOnly = () => {
     try {
       acceptEssentialCookiesOnly();
@@ -141,21 +139,18 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
       console.error('Error accepting essential cookies only:', error);
     }
   };
-  
+
   // Toggle a specific cookie category
   const toggleCategory = (category: CookieCategory) => {
     try {
-      // Essential cookies can't be toggled - they're always enabled
       if (category === 'essential') return;
-      
       const newValue = !cookiePreferences[category];
       const updatedPreferences = { [category]: newValue } as Partial<CookiePreferences>;
-      
+
       updateCookiePreferences(updatedPreferences);
       setCookiePreferences(getCookiePreferences());
       console.log(`Cookie category '${category}' toggled to ${newValue}`);
-      
-      // If toggling off, clear related cookies
+
       if (!newValue) {
         clearNonEssentialCookies();
       }
@@ -163,32 +158,71 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
       console.error(`Error toggling cookie category '${category}':`, error);
     }
   };
-  
+
   // Update multiple preferences at once
   const updatePreferences = (preferences: Partial<Omit<CookiePreferences, 'lastUpdated'>>) => {
     try {
+      const prev = cookiePreferences;
       updateCookiePreferences(preferences);
-      setCookiePreferences(getCookiePreferences());
+      const next = getCookiePreferences();
+      setCookiePreferences(next);
+      setShowConsentBanner(false);
+      // If any non-essential category flipped from true to false, clear related cookies
+      const turnedOff =
+        (prev.functional && !next.functional) ||
+        (prev.analytics && !next.analytics) ||
+        (prev.performance && !next.performance) ||
+        (prev.marketing && !next.marketing);
+      if (turnedOff) {
+        clearNonEssentialCookies();
+      }
       console.log('Cookie preferences updated:', preferences);
     } catch (error) {
       console.error('Error updating cookie preferences:', error);
     }
   };
-  
-  // UI handlers for the preferences modal
+
+  // Preferences modal UI handlers
   const openPreferencesModal = () => {
     console.log('Opening cookie preferences modal');
     setIsPreferencesModalOpen(true);
   };
-  
+
   const closePreferencesModal = () => {
     console.log('Closing cookie preferences modal');
     setIsPreferencesModalOpen(false);
   };
-  
-  // Get the current cookies from the browser
+
+  // Explicitly hide the banner without implying consent (used when navigating to policy pages)
+  const hideBannerTemporarily = () => {
+    setShowConsentBanner(false);
+  };
+
+  // Re-show the banner on route changes when no valid consent has been given,
+  // but keep it hidden on policy/legal pages to avoid blocking the content.
+  const [location] = useLocation();
+  useEffect(() => {
+    try {
+      const path = location || '';
+      const isLegalDoc =
+        path.startsWith('/privacy') ||
+        path.startsWith('/legal/terms') ||
+        path.startsWith('/legal/cookie-policy');
+
+      const hasValidConsent = hasConsentChoice() && !hasConsentExpired();
+
+      if (hasValidConsent) {
+        setShowConsentBanner(false);
+      } else {
+        setShowConsentBanner(!isLegalDoc);
+      }
+    } catch (error) {
+      // On error, do not force a state change
+    }
+  }, [location]);
+
   const cookies = getAllCookies();
-  
+
   const value: CookieConsentContextType = {
     consentGiven: hasConsentChoice() && !hasConsentExpired(),
     showConsentBanner,
@@ -201,9 +235,10 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
     allCookies: cookies,
     openPreferencesModal,
     closePreferencesModal,
-    isPreferencesModalOpen
+    isPreferencesModalOpen,
+    hideBannerTemporarily
   };
-  
+
   return (
     <CookieConsentContext.Provider value={value}>
       {children}

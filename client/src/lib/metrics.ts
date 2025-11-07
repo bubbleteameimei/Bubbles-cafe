@@ -1,9 +1,11 @@
 // Lightweight client-side metrics instrumentation
 // - Core Web Vitals via dynamic import to avoid adding to main bundle
 // - Page views and interactions via existing analytics API helpers
+// - Respect user cookie consent for analytics and performance categories
 
 import { recordPageView, recordInteraction } from '@/api/analytics';
 import { getApiBaseUrl } from '@/lib/asset-path';
+import { isCategoryAllowed } from '@/lib/cookie-manager';
 
 type ReportHandler = (metric: any) => void;
 
@@ -30,6 +32,9 @@ function sendVitals(metric: any) {
 
 export async function startWebVitals() {
   try {
+    // Only run if performance cookies are allowed
+    if (!isCategoryAllowed('performance')) return;
+
     const { onCLS, onFID, onLCP, onFCP, onTTFB } = await import('web-vitals');
     const report: ReportHandler = sendVitals;
     onCLS(report);
@@ -44,18 +49,24 @@ export async function startWebVitals() {
 
 export function trackPageView(path?: string) {
   try {
+    // Only record page views if analytics cookies are allowed
+    if (!isCategoryAllowed('analytics')) return;
     recordPageView(path || window.location.pathname).catch(() => {});
   } catch {}
 }
 
 export function trackInteraction(interactionType: string, details: Record<string, any> = {}) {
   try {
+    // Consider interactions as analytics
+    if (!isCategoryAllowed('analytics')) return;
     recordInteraction(interactionType, details).catch(() => {});
   } catch {}
 }
 
 export function sendPerformanceSummary() {
   try {
+    if (!isCategoryAllowed('performance')) return;
+
     // Use Navigation Timing if available
     const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
     const summary = nav
@@ -92,6 +103,8 @@ export function sendPerformanceSummary() {
 
 export function schedulePerformanceSummary() {
   try {
+    if (!isCategoryAllowed('performance')) return;
+
     const schedule = (cb: () => void) =>
       (window as any).requestIdleCallback ? (window as any).requestIdleCallback(cb, { timeout: 2000 }) : setTimeout(cb, 1000);
     schedule(() => sendPerformanceSummary());
