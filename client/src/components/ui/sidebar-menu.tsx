@@ -523,9 +523,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             ease: [0.25, 0.46, 0.45, 0.94]
           }}
         >
-          <SidebarGroup className="space-y-0 -mt-4">
-            <SidebarGroupLabel className="sidebar-group-label-enhanced px-1 text-xs font-bold text-sidebar-foreground/60 uppercase tracking-wider -mb-1 flex items-center gap-2 font-sans">
-              <Compass className="h-4 w-4 sidebar-icon-enhanced" />
+          <SidebarGroup className="space-y-0 -mt-8">
+            <SidebarGroupLabel className="sidebar-group-label-enhanced px-1 text-[11px] font-bold text-sidebar-foreground/60 uppercase tracking-wider -mb-2 font-sans">
               Navigation
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -679,11 +678,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </motion.div>
 
       {/* Games & Interactive Experiences - Placeholder */}
-      <SidebarGroup className="-mt-4">
-        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+      <SidebarGroup className="-mt-2">
+        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-0 uppercase tracking-wider">
           GAMES & INTERACTIVE
         </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-1">
+        <SidebarGroupContent className="-mt-0">
           <SidebarMenu className="space-y-0">
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -702,13 +701,321 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroupContent>
       </SidebarGroup>
 
+      {/* Accessibility */}
+      <SidebarGroup className="-mt-2">
+        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-0 uppercase tracking-wider">
+          READING & ACCESSIBILITY
+        </SidebarGroupLabel>
+        <SidebarGroupContent className="-mt-0">
+          <SidebarMenu className="space-y-0">
+            <SidebarMenuItem>
+              <Collapsible 
+                open={displayOpen} 
+                onOpenChange={(open) => {
+                  setDisplayOpen(open);
+                  if (open) {
+                    // Ensure dropdown is visible when opened
+                    setTimeout(() => {
+                      const trigger = document.querySelector('.sidebar-collapsible-trigger[data-state="open"]') as HTMLElement;
+                      if (trigger) {
+                        ensureDropdownVisible(trigger);
+                      }
+                    }, 150);
+                  }
+                }}
+                className="sidebar-dropdown-container"
+              >
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton
+                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-transparent data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-transparent whitespace-nowrap sidebar-collapsible-trigger"
+                    aria-expanded={displayOpen}
+                    aria-controls="accessibility-settings-content"
+                  >
+                    <div className="flex items-center">
+                      <Palette className="h-4 w-4 mr-2" />
+                      <span>Accessibility Settings</span>
+                    </div>
+                    <ChevronDown className={cn(
+                      "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
+                      displayOpen && "rotate-180"
+                    )} />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent id="accessibility-settings-content" className="overflow-hidden sidebar-collapsible-content">
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.08, ease: [0.4, 0, 0.2, 1] }}
+                    className="px-0 py-0.5"
+                  >
+                    <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/settings/fonts'}
+                        onClick={() => handleNavigation('/settings/fonts')}
+                        className={submenuItemClass}
+                        aria-current={location === '/settings/fonts' ? 'page' : undefined}
+                      >
+                        <Type className="h-7 w-7 mr-2" />
+                        <span>Font Settings</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/settings/accessibility'}
+                        onClick={() => handleNavigation('/settings/accessibility')}
+                        className={submenuItemClass}
+                        aria-current={location === '/settings/accessibility' ? 'page' : undefined}
+                      >
+                        <HelpCircle className="h-7 w-7 mr-2" />
+                        <span>Reading Preferences</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+
+
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/settings/quick-settings'}
+                        onClick={() => handleNavigation('/settings/quick-settings')}
+                        className={submenuItemClass}
+                        aria-current={location === '/settings/quick-settings' ? 'page' : undefined}
+                      >
+                        <Settings className="h-7 w-7 mr-2" />
+                        <span>Quick Settings</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+
+                    
+                    </SidebarMenuSub>
+                  </motion.div>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      {/* Account Settings */}
+      <SidebarGroup className="-mt-2">
+        <SidebarGroupLabel data-tooltip-anchor="account-settings" className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-0 uppercase tracking-wider">
+          ACCOUNT SETTINGS
+        </SidebarGroupLabel>
+        <SidebarGroupContent className="-mt-0">
+          <SidebarMenu className="space-y-0">
+            <SidebarMenuItem>
+              <Collapsible open={accountOpen} onOpenChange={setAccountOpen} className="sidebar-dropdown-container">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-transparent data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-transparent whitespace-nowrap"
+                  aria-expanded={accountOpen}
+                  aria-controls="account-settings-content"
+                >
+                    <div className="flex items-center">
+                      <UserCircle className="h-4 w-4 mr-2" />
+                      <span>Account Settings</span>
+                    </div>
+                    <ChevronDown className={cn(
+                      "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
+                      accountOpen && "rotate-180"
+                    )} />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent id="account-settings-content" className="overflow-hidden sidebar-collapsible-content">
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.08, ease: [0.4, 0, 0.2, 1] }}
+                    className="px-0 py-0.5"
+                  >
+                    <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          isActive={location === '/profile'}
+                          onClick={() => handleNavigation('/profile')}
+                          className={submenuItemClass}
+                          aria-current={location === '/profile' ? 'page' : undefined}
+                        >
+                          <UserCircle className="h-7 w-7 mr-2" />
+                          <span>My Profile</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/settings/profile'}
+                        onClick={() => handleNavigation('/settings/profile')}
+                        className={submenuItemClass}
+                        aria-current={location === '/settings/profile' ? 'page' : undefined}
+                      >
+                        <User className="h-7 w-7 mr-2" />
+                        <span>Profile Settings</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/settings/notifications'}
+                        onClick={() => handleNavigation('/settings/notifications')}
+                        className={submenuItemClass}
+                        aria-current={location === '/settings/notifications' ? 'page' : undefined}
+                      >
+                        <Bell className="h-7 w-7 mr-2" />
+                        <span>Notifications</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/settings/privacy'}
+                        onClick={() => handleNavigation('/settings/privacy')}
+                        className={submenuItemClass}
+                        aria-current={location === '/settings/privacy' ? 'page' : undefined}
+                      >
+                        <Lock className="h-7 w-7 mr-2" />
+                        <span>Privacy & Security</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+
+                    {/* Data export menu item removed */}
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/settings/connected-accounts'}
+                        onClick={() => handleNavigation('/settings/connected-accounts')}
+                        className={submenuItemClass}
+                        aria-current={location === '/settings/connected-accounts' ? 'page' : undefined}
+                      >
+                        <Link className="h-7 w-7 mr-2" />
+                        <span>Connected Accounts</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+
+                    </SidebarMenuSub>
+                  </motion.div>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      {/* Support & Legal */}
+      <SidebarGroup className="-mt-2">
+        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-0 uppercase tracking-wider">
+          SUPPORT & LEGAL
+        </SidebarGroupLabel>
+        <SidebarGroupContent className="-mt-0">
+          <SidebarMenu className="space-y-0">
+            <SidebarMenuItem>
+              <Collapsible open={supportOpen} onOpenChange={setSupportOpen} className="sidebar-dropdown-container">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton
+                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 data-[state=open]:bg-background/10 data-[state=open]:text-[hsl(var(--sidebar-foreground))] whitespace-nowrap"
+                    aria-expanded={supportOpen}
+                    aria-controls="support-legal-content"
+                  >
+                    <div className="flex items-center">
+                      <HelpCircle className="h-4 w-4 mr-2" />
+                      <span>Support & Legal</span>
+                    </div>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
+                        supportOpen && "rotate-180"
+                      )}
+                    />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent id="support-legal-content" className="overflow-hidden sidebar-collapsible-content">
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.08, ease: [0.4, 0, 0.2, 1] }}
+                    className="px-0 py-0.5"
+                  >
+                    <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/about'}
+                        onClick={() => handleNavigation('/about')}
+                        className={submenuItemClass}
+                        aria-current={location === '/about' ? 'page' : undefined}
+                      >
+                        <Building className="h-7 w-7 mr-2" />
+                        <span>About Me</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/feedback'}
+                        onClick={() => handleNavigation('/feedback')}
+                        className={submenuItemClass}
+                        aria-current={location === '/feedback' ? 'page' : undefined}
+                      >
+                        <MessageSquare className="h-7 w-7 mr-2" />
+                        <span>Feedback & Suggestions</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/contact'}
+                        onClick={() => handleNavigation('/contact')}
+                        className={submenuItemClass}
+                        aria-current={location === '/contact' ? 'page' : undefined}
+                      >
+                        <Mail className="h-7 w-7 mr-2" />
+                        <span>Contact Me</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/legal/terms'}
+                        onClick={() => handleNavigation('/legal/terms')}
+                        className={submenuItemClass}
+                        aria-current={location === '/legal/terms' ? 'page' : undefined}
+                      >
+                        <FileText className="h-7 w-7 mr-2" />
+                        <span>Terms of Service</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/privacy'}
+                        onClick={() => handleNavigation('/privacy')}
+                        className={submenuItemClass}
+                        aria-current={location === '/privacy' ? 'page' : undefined}
+                      >
+                        <Lock className="h-7 w-7 mr-2" />
+                        <span>Privacy Policy</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/legal/copyright'}
+                        onClick={() => handleNavigation('/legal/copyright')}
+                        className={submenuItemClass}
+                        aria-current={location === '/legal/copyright' ? 'page' : undefined}
+                      >
+                        <Shield className="h-7 w-7 mr-2" />
+                        <span>Copyright Policy</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    </SidebarMenuSub>
+                  </motion.div>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
       {/* Admin Navigation - Only show if user is admin */}
       {user?.isAdmin && (
-        <SidebarGroup className="-mt-4">
-          <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+        <SidebarGroup className="-mt-2">
+          <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-0 uppercase tracking-wider">
             ADMINISTRATION
           </SidebarGroupLabel>
-          <SidebarGroupContent className="-mt-1">
+          <SidebarGroupContent className="-mt-0">
             <SidebarMenu className="space-y-0">
               <SidebarMenuItem>
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen} className="sidebar-dropdown-container">
@@ -823,7 +1130,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           }
                         >
                           <LineChart className="h-7 w-7 mr-2" />
-                          <span>Insights & Reports</span>
+                          <span>Insights &amp; Reports</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
 
@@ -891,323 +1198,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           <span>Admin Settings</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
-                    </SidebarMenuSub>
-                  </motion.div>
-                </CollapsibleContent>
-              </Collapsible>
+                      </SidebarMenuSub>
+                    </motion.div>
+                  </CollapsibleContent>
+                </Collapsible>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       )}
-
-      {/* Accessibility */}
-      <SidebarGroup className="-mt-4">
-        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
-          READING & ACCESSIBILITY
-        </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-1">
-          <SidebarMenu className="space-y-0">
-            <SidebarMenuItem>
-              <Collapsible 
-                open={displayOpen} 
-                onOpenChange={(open) => {
-                  setDisplayOpen(open);
-                  if (open) {
-                    // Ensure dropdown is visible when opened
-                    setTimeout(() => {
-                      const trigger = document.querySelector('.sidebar-collapsible-trigger[data-state="open"]') as HTMLElement;
-                      if (trigger) {
-                        ensureDropdownVisible(trigger);
-                      }
-                    }, 150);
-                  }
-                }}
-                className="sidebar-dropdown-container"
-              >
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton
-                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-transparent data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-transparent whitespace-nowrap sidebar-collapsible-trigger"
-                    aria-expanded={displayOpen}
-                    aria-controls="accessibility-settings-content"
-                  >
-                    <div className="flex items-center">
-                      <Palette className="h-4 w-4 mr-2" />
-                      <span>Accessibility Settings</span>
-                    </div>
-                    <ChevronDown className={cn(
-                      "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
-                      displayOpen && "rotate-180"
-                    )} />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent id="accessibility-settings-content" className="overflow-hidden sidebar-collapsible-content">
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.08, ease: [0.4, 0, 0.2, 1] }}
-                    className="px-0 py-0.5"
-                  >
-                    <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/settings/fonts'}
-                        onClick={() => handleNavigation('/settings/fonts')}
-                        className={submenuItemClass}
-                        aria-current={location === '/settings/fonts' ? 'page' : undefined}
-                      >
-                        <Type className="h-7 w-7 mr-2" />
-                        <span>Font Settings</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/settings/accessibility'}
-                        onClick={() => handleNavigation('/settings/accessibility')}
-                        className={submenuItemClass}
-                        aria-current={location === '/settings/accessibility' ? 'page' : undefined}
-                      >
-                        <HelpCircle className="h-7 w-7 mr-2" />
-                        <span>Reading Preferences</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-
-
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/settings/quick-settings'}
-                        onClick={() => handleNavigation('/settings/quick-settings')}
-                        className={submenuItemClass}
-                        aria-current={location === '/settings/quick-settings' ? 'page' : undefined}
-                      >
-                        <Settings className="h-7 w-7 mr-2" />
-                        <span>Quick Settings</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-
-                    
-                    </SidebarMenuSub>
-                  </motion.div>
-                </CollapsibleContent>
-              </Collapsible>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-
-      {/* Account Settings */}
-      <SidebarGroup className="-mt-4">
-        <SidebarGroupLabel data-tooltip-anchor="account-settings" className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
-          ACCOUNT SETTINGS
-        </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-1">
-          <SidebarMenu className="space-y-0">
-            <SidebarMenuItem>
-              <Collapsible open={accountOpen} onOpenChange={setAccountOpen} className="sidebar-dropdown-container">
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-transparent data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-transparent whitespace-nowrap"
-                  aria-expanded={accountOpen}
-                  aria-controls="account-settings-content"
-                >
-                    <div className="flex items-center">
-                      <UserCircle className="h-4 w-4 mr-2" />
-                      <span>Account Settings</span>
-                    </div>
-                    <ChevronDown className={cn(
-                      "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
-                      accountOpen && "rotate-180"
-                    )} />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent id="account-settings-content" className="overflow-hidden sidebar-collapsible-content">
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.08, ease: [0.4, 0, 0.2, 1] }}
-                    className="px-0 py-0.5"
-                  >
-                    <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/profile'}
-                          onClick={() => handleNavigation('/profile')}
-                          className={submenuItemClass}
-                          aria-current={location === '/profile' ? 'page' : undefined}
-                        >
-                          <UserCircle className="h-7 w-7 mr-2" />
-                          <span>My Profile</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/settings/profile'}
-                        onClick={() => handleNavigation('/settings/profile')}
-                        className={submenuItemClass}
-                        aria-current={location === '/settings/profile' ? 'page' : undefined}
-                      >
-                        <User className="h-7 w-7 mr-2" />
-                        <span>Profile Settings</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/settings/notifications'}
-                        onClick={() => handleNavigation('/settings/notifications')}
-                        className={submenuItemClass}
-                        aria-current={location === '/settings/notifications' ? 'page' : undefined}
-                      >
-                        <Bell className="h-7 w-7 mr-2" />
-                        <span>Notifications</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/settings/privacy'}
-                        onClick={() => handleNavigation('/settings/privacy')}
-                        className={submenuItemClass}
-                        aria-current={location === '/settings/privacy' ? 'page' : undefined}
-                      >
-                        <Lock className="h-7 w-7 mr-2" />
-                        <span>Privacy & Security</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-
-                    {/* Data export menu item removed */}
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/settings/connected-accounts'}
-                        onClick={() => handleNavigation('/settings/connected-accounts')}
-                        className={submenuItemClass}
-                        aria-current={location === '/settings/connected-accounts' ? 'page' : undefined}
-                      >
-                        <Link className="h-7 w-7 mr-2" />
-                        <span>Connected Accounts</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-
-                    </SidebarMenuSub>
-                  </motion.div>
-                </CollapsibleContent>
-              </Collapsible>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-
-      {/* Support & Legal */}
-      <SidebarGroup className="-mt-4">
-        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
-          SUPPORT & LEGAL
-        </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-1">
-          <SidebarMenu className="space-y-0">
-            <SidebarMenuItem>
-              <Collapsible open={supportOpen} onOpenChange={setSupportOpen} className="sidebar-dropdown-container">
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton
-                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 data-[state=open]:bg-background/10 data-[state=open]:text-[hsl(var(--sidebar-foreground))] whitespace-nowrap"
-                    aria-expanded={supportOpen}
-                    aria-controls="support-legal-content"
-                  >
-                    <div className="flex items-center">
-                      <HelpCircle className="h-4 w-4 mr-2" />
-                      <span>Support & Legal</span>
-                    </div>
-                    <ChevronDown
-                      className={cn(
-                        "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
-                        supportOpen && "rotate-180"
-                      )}
-                    />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent id="support-legal-content" className="overflow-hidden sidebar-collapsible-content">
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.08, ease: [0.4, 0, 0.2, 1] }}
-                    className="px-0 py-0.5"
-                  >
-                    <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/about'}
-                        onClick={() => handleNavigation('/about')}
-                        className={submenuItemClass}
-                        aria-current={location === '/about' ? 'page' : undefined}
-                      >
-                        <Building className="h-7 w-7 mr-2" />
-                        <span>About Me</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/feedback'}
-                        onClick={() => handleNavigation('/feedback')}
-                        className={submenuItemClass}
-                        aria-current={location === '/feedback' ? 'page' : undefined}
-                      >
-                        <MessageSquare className="h-7 w-7 mr-2" />
-                        <span>Feedback & Suggestions</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/contact'}
-                        onClick={() => handleNavigation('/contact')}
-                        className={submenuItemClass}
-                        aria-current={location === '/contact' ? 'page' : undefined}
-                      >
-                        <Mail className="h-7 w-7 mr-2" />
-                        <span>Contact Me</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/legal/terms'}
-                        onClick={() => handleNavigation('/legal/terms')}
-                        className={submenuItemClass}
-                        aria-current={location === '/legal/terms' ? 'page' : undefined}
-                      >
-                        <FileText className="h-7 w-7 mr-2" />
-                        <span>Terms of Service</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/privacy'}
-                        onClick={() => handleNavigation('/privacy')}
-                        className={submenuItemClass}
-                        aria-current={location === '/privacy' ? 'page' : undefined}
-                      >
-                        <Lock className="h-7 w-7 mr-2" />
-                        <span>Privacy Policy</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/legal/copyright'}
-                        onClick={() => handleNavigation('/legal/copyright')}
-                        className={submenuItemClass}
-                        aria-current={location === '/legal/copyright' ? 'page' : undefined}
-                      >
-                        <Shield className="h-7 w-7 mr-2" />
-                        <span>Copyright Policy</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    </SidebarMenuSub>
-                  </motion.div>
-                </CollapsibleContent>
-              </Collapsible>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
 
       {/* Footer Buttons */}
       <div className="mt-auto mb-0 border-t border-[hsl(var(--sidebar-border))] pt-3">
