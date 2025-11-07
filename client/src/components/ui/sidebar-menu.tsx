@@ -524,9 +524,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           }}
         >
           <SidebarGroup className="space-y-0 -mt-8">
-            <SidebarGroupLabel className="sidebar-group-label-enhanced px-1.5 text-[11px] font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-3 font-sans">
+            <SidebarGroupLabel className="sidebar-group-label-enhanced px-1.5 text-[11px] font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-4 font-sans">
               Navigation
-          <//SSidebarGroupLa_codebenewl</>
+            </SidebarGroupLabel>
 
             <SidebarGroupContent>
               <SidebarMenu className="space-y-0">
@@ -679,11 +679,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </motion.div>
 
       {/* Games & Interactive Experiences - Placeholder */}
-      <SidebarGroup className="-mt-2">
-        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-0 uppercase tracking-wider">
+      <SidebarGroup className="-mt-6">
+        <SidebarGroupLabel className="px-1.5 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-0 uppercase tracking-wider">
           GAMES & INTERACTIVE
         </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-0">
+        <SidebarGroupContent className="-mt-1">
           <SidebarMenu className="space-y-0">
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -703,11 +703,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Accessibility */}
-      <SidebarGroup className="-mt-2">
-        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-0 uppercase tracking-wider">
+      <SidebarGroup className="-mt-6">
+        <SidebarGroupLabel className="px-1.5 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-0 uppercase tracking-wider">
           READING & ACCESSIBILITY
         </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-0">
+        <SidebarGroupContent className="-mt-1">
           <SidebarMenu className="space-y-0">
             <SidebarMenuItem>
               <Collapsible 
@@ -799,11 +799,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Account Settings */}
-      <SidebarGroup className="-mt-2">
-        <SidebarGroupLabel data-tooltip-anchor="account-settings" className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-0 uppercase tracking-wider">
+      <SidebarGroup className="-mt-6">
+        <SidebarGroupLabel data-tooltip-anchor="account-settings" className="px-1.5 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-0 uppercase tracking-wider">
           ACCOUNT SETTINGS
         </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-0">
+        <SidebarGroupContent className="-mt-1">
           <SidebarMenu className="space-y-0">
             <SidebarMenuItem>
               <Collapsible open={accountOpen} onOpenChange={setAccountOpen} className="sidebar-dropdown-container">
@@ -899,11 +899,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Support & Legal */}
-      <SidebarGroup className="-mt-2">
-        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-0 uppercase tracking-wider">
+      <SidebarGroup className="-mt-6">
+        <SidebarGroupLabel className="px-1.5 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-0 uppercase tracking-wider">
           SUPPORT & LEGAL
         </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-0">
+        <SidebarGroupContent className="-mt-1">
           <SidebarMenu className="space-y-0">
             <SidebarMenuItem>
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen} className="sidebar-dropdown-container">
