@@ -12,7 +12,17 @@ export function getApiBaseUrl(): string {
   // In development, prefer relative paths to use Vite proxy
   if (import.meta.env.DEV) return '';
 
-  // Derive from current hostname and special-case preview platforms first
+  // Prefer explicit env override first (works on preview domains without rewrites)
+  const explicit = (import.meta.env.VITE_API_URL as string | undefined) || undefined;
+  if (explicit && explicit.trim().length > 0) {
+    try {
+      return explicit.replace(/\/*$/, '');
+    } catch {
+      return explicit;
+    }
+  }
+
+  // Derive from current hostname with special-cases
   try {
     const { protocol, hostname } = window.location;
 
@@ -21,7 +31,7 @@ export function getApiBaseUrl(): string {
       return `${protocol}//${hostname}`;
     }
 
-    // Vercel previews (*.vercel.app, *.vercel.dev) and similar ephemeral hosts should use relative URLs
+    // Preview hosts (Vercel/Replit) typically rely on rewrites; use relative endpoints when no explicit base is set
     const isPreviewHost =
       /\.vercel\.app$/.test(hostname) ||
       /\.vercel\.dev$/.test(hostname) ||
@@ -30,20 +40,10 @@ export function getApiBaseUrl(): string {
       /\.replit\.app$/.test(hostname);
 
     if (isPreviewHost) {
-      // Always prefer relative endpoints on preview so cookies/sessions remain same-origin via rewrites
       return '';
     }
-  } catch {
-    // fall through to explicit/env or sensible default
-  }
 
-  // In production with split deployment, prefer explicit env
-  const explicit = (import.meta.env.VITE_API_URL as string | undefined) || undefined;
-  if (explicit) return explicit.replace(/\/*$/, '');
-
-  // Derive from current hostname as a final fallback
-  try {
-    const { protocol, hostname } = window.location;
+    // Default split deployment: api.<root-domain>
     const host = hostname.startsWith('www.') ? hostname.slice(4) : hostname;
     return `${protocol}//api.${host}`;
   } catch {

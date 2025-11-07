@@ -47,14 +47,15 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
   if (csrfToken) return csrfToken;
 
   try {
-    // Determine base URL intelligently; on Vercel preview, prefer relative paths
+    // Determine base URL intelligently; prefer explicit API base when available (works on previews)
     const API_BASE_RAW = getApiBaseUrl();
     let API_BASE = API_BASE_RAW;
     try {
       const host = typeof window !== 'undefined' ? (window.location?.hostname || '') : '';
-      const isVercelPreview = /\.vercel\.app$|\.vercel\.dev$/.test(host);
-      if (isVercelPreview) {
-        API_BASE = ''; // use relative endpoints through Vercel rewrite/proxy
+      const isPreviewHost = /\.vercel\.app$|\.vercel\.dev$/.test(host);
+      // Only force relative endpoints on preview when no explicit base was resolved
+      if (isPreviewHost && !API_BASE) {
+        API_BASE = '';
       }
     } catch { /* no-op */ }
 
@@ -129,13 +130,13 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
  */
 export async function refreshCsrfToken(): Promise<string | null> {
   try {
-    // Prefer relative paths on Vercel preview
+    // Prefer explicit base when available; fall back to relative on previews
     const API_BASE_RAW = getApiBaseUrl();
     let API_BASE = API_BASE_RAW;
     try {
       const host = typeof window !== 'undefined' ? (window.location?.hostname || '') : '';
-      const isVercelPreview = /\.vercel\.app$|\.vercel\.dev$/.test(host);
-      if (isVercelPreview) {
+      const isPreviewHost = /\.vercel\.app$|\.vercel\.dev$/.test(host);
+      if (isPreviewHost && !API_BASE) {
         API_BASE = '';
       }
     } catch { /* no-op */ }
