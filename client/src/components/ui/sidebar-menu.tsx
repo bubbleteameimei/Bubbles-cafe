@@ -475,8 +475,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     "font-sans"
   );
 
-  // Submenu styling - give items a bit more space
-  const submenuItemClass = "px-2.5 py-1.5 pr-8 text-[12px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[30px] flex items-center mb-0.5 rounded-sm transition-colors duration-200 ease-out hover:bg-transparent focus:bg-transparent border-l border-transparent data-[active=true]:border-l-primary/50";
+  // Submenu styling - increased font and spacing, subtle background on hover to match aesthetic
+  const submenuItemClass = "px-3 py-2 pr-8 text-[13px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[34px] flex items-center mb-1.5 rounded-md transition-colors duration-200 ease-out hover:bg-background/6 focus:bg-background/6 border-l border-transparent data-[active=true]:border-l-primary/50";
 
 
 
@@ -678,31 +678,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
         
 
-      {/* Interactive Experiences */}
-      <SidebarGroup className="mt-2 p-2 pt-1">
-        <SidebarGroupContent className="mt-0">
-          <SidebarMenu className="space-y-1">
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                isActive={location === '/eden-hollow'}
-                onClick={() => handleNavigation('/eden-hollow')}
-                tooltip="Eden - Experimental Game"
-                className={menuItemClass}
-                aria-current={location === '/eden-hollow' ? 'page' : undefined}
-              >
-                {renderActiveIndicator('/eden-hollow')}
-                <Gamepad2 className="h-5 w-5" />
-                <span>Eden - Experimental Game</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-
+      
       {/* Accessibility */}
       <SidebarGroup className="mt-2 p-2 pt-1">
         <SidebarGroupContent className="mt-0">
-          <SidebarMenu className="space-y-1">
+          <SidebarMenu className="space-y-3">
             <SidebarMenuItem>
               <Collapsible 
                 open={displayOpen} 
@@ -722,12 +702,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               >
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton
-                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-transparent data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-transparent whitespace-nowrap sidebar-collapsible-trigger"
+                    className="w-full justify-between text-[13px] text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-transparent data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg whitespace-nowrap sidebar-collapsible-trigger"
                     aria-expanded={displayOpen}
                     aria-controls="accessibility-settings-content"
                   >
                     <div className="flex items-center">
-                      <Palette className="h-4 w-4 mr-2" />
+                      <Palette className="h-5 w-5 mr-2" />
                       <span>Accessibility Settings</span>
                     </div>
                     <ChevronDown className={cn(
@@ -744,7 +724,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     transition={{ duration: 0.08, ease: [0.4, 0, 0.2, 1] }}
                     className="px-0 py-0.5"
                   >
-                    <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
+                    <SidebarMenuSub className="space-y-1.5 border-l border-sidebar-border/30 ml-2 pl-3">
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/settings/fonts'}
@@ -752,7 +732,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/settings/fonts' ? 'page' : undefined}
                       >
-                        <Type className="h-7 w-7 mr-2" />
+                        <Type className="h-5 w-5 mr-2" />
                         <span>Font Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -764,7 +744,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/settings/accessibility' ? 'page' : undefined}
                       >
-                        <HelpCircle className="h-7 w-7 mr-2" />
+                        <HelpCircle className="h-5 w-5 mr-2" />
                         <span>Reading Preferences</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -777,7 +757,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/settings/quick-settings' ? 'page' : undefined}
                       >
-                        <Settings className="h-7 w-7 mr-2" />
+                        <Settings className="h-5 w-5 mr-2" />
                         <span>Quick Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -793,18 +773,19 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Account Settings */}
-      <SidebarGroup className="mt-2 p-2 pt-1">
-        <SidebarGroupContent className="mt-0">
+     <<SidebarGroup className="mt-2 p-2 pt-1">
+       <<SidebarGroupContent className="mt-0">
           <SidebarMenu className="space-y-1">
             <SidebarMenuItem>
               <Collapsible open={accountOpen} onOpenChange={setAccountOpen} className="sidebar-dropdown-container">
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-transparent data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-transparent whitespace-nowrap"
+                  <SidebarMenuButton className="w-full justify-between text-[13px] text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-transparent data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-transparent whitespace-now_coderanewp</"
+nowrap"
                   aria-expanded={accountOpen}
                   aria-controls="account-settings-content"
                 >
                     <div className="flex items-center">
-                      <UserCircle className="h-4 w-4 mr-2" />
+                      <UserCircle className="h-5 w-5 mr-2" />
                       <span>Account Settings</span>
                     </div>
                     <ChevronDown className={cn(
@@ -821,7 +802,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     transition={{ duration: 0.08, ease: [0.4, 0, 0.2, 1] }}
                     className="px-0 py-0.5"
                   >
-                    <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
+                    <SidebarMenuSub className="space-y-1.5 border-l border-sidebar-border/30 ml-2 pl-3">
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton
                           isActive={location === '/profile'}
@@ -889,324 +870,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {/* Support & Legal */}
-      <SidebarGroup className="mt-2 p-2 pt-1">
-        <SidebarGroupContent className="mt-0">
-          <SidebarMenu className="space-y-1">
-            <SidebarMenuItem>
-              <Collapsible open={supportOpen} onOpenChange={setSupportOpen} className="sidebar-dropdown-container">
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton
-                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bg-background/8 supports-[backdrop-filter]:hover:bg-background/6 data-[state=open]:bg-background/10 data-[state=open]:text-[hsl(var(--sidebar-foreground))] whitespace-nowrap"
-                    aria-expanded={supportOpen}
-                    aria-controls="support-legal-content"
-                  >
-                    <div className="flex items-center">
-                      <HelpCircle className="h-4 w-4 mr-2" />
-                      <span>Support & Legal</span>
-                    </div>
-                    <ChevronDown
-                      className={cn(
-                        "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
-                        supportOpen && "rotate-180"
-                      )}
-                    />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent id="support-legal-content" className="overflow-hidden sidebar-collapsible-content">
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.08, ease: [0.4, 0, 0.2, 1] }}
-                    className="px-0 py-0.5"
-                  >
-                    <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/about'}
-                        onClick={() => handleNavigation('/about')}
-                        className={submenuItemClass}
-                        aria-current={location === '/about' ? 'page' : undefined}
-                      >
-                        <Building className="h-7 w-7 mr-2" />
-                        <span>About Me</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/feedback'}
-                        onClick={() => handleNavigation('/feedback')}
-                        className={submenuItemClass}
-                        aria-current={location === '/feedback' ? 'page' : undefined}
-                      >
-                        <MessageSquare className="h-7 w-7 mr-2" />
-                        <span>Feedback & Suggestions</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/report-bug'}
-                        onClick={() => handleNavigation('/report-bug')}
-                        className={submenuItemClass}
-                        aria-current={location === '/report-bug' ? 'page' : undefined}
-                      >
-                        <Bug className="h-7 w-7 mr-2" />
-                        <span>Report Bug</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/contact'}
-                        onClick={() => handleNavigation('/contact')}
-                        className={submenuItemClass}
-                        aria-current={location === '/contact' ? 'page' : undefined}
-                      >
-                        <Mail className="h-7 w-7 mr-2" />
-                        <span>Contact Me</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/legal/terms'}
-                        onClick={() => handleNavigation('/legal/terms')}
-                        className={submenuItemClass}
-                        aria-current={location === '/legal/terms' ? 'page' : undefined}
-                      >
-                        <FileText className="h-7 w-7 mr-2" />
-                        <span>Terms of Service</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/privacy'}
-                        onClick={() => handleNavigation('/privacy')}
-                        className={submenuItemClass}
-                        aria-current={location === '/privacy' ? 'page' : undefined}
-                      >
-                        <Lock className="h-7 w-7 mr-2" />
-                        <span>Privacy Policy</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/legal/copyright'}
-                        onClick={() => handleNavigation('/legal/copyright')}
-                        className={submenuItemClass}
-                        aria-current={location === '/legal/copyright' ? 'page' : undefined}
-                      >
-                        <Shield className="h-7 w-7 mr-2" />
-                        <span>Copyright Policy</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    </SidebarMenuSub>
-                  </motion.div>
-                </CollapsibleContent>
-              </Collapsible>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+      
 
-      {/* Admin Navigation - Only show if user is admin */}
-      {user?.isAdmin && (
-        <SidebarGroup className="mt-2">
-          <SidebarGroupLabel className="px-1.5 text-xs font-medium text-[hsl(var(--sidebar-foreground))] mb-2 uppercase tracking-wider">
-            ADMINISTRATION
-          </SidebarGroupLabel>
-          <SidebarGroupContent className="-mt-0">
-            <SidebarMenu className="space-y-1">
-              <SidebarMenuItem>
-                <Collapsible open={adminOpen} onOpenChange={setAdminOpen} className="sidebar-dropdown-container">
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] hover:bg-transparent data-[state=open]:bg-transparent data-[state=open]:text-[hsl(var(--sidebar-foreground))] whitespace-nowrap"
-                      aria-expanded={adminOpen}
-                      aria-controls="admin-controls-content"
-                    >
-                      <div className="flex items-center">
-                        <Shield className="h-7 w-7 mr-2" />
-                        <span>Admin Controls</span>
-                      </div>
-                      <ChevronDown className={cn(
-                        "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
-                        adminOpen && "rotate-180"
-                      )} />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent id="admin-controls-content" className="overflow-hidden sidebar-collapsible-content">
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.08, ease: [0.4, 0, 0.2, 1] }}
-                      className="px-0 py-0.5"
-                    >
-                      <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
-                      {/* Dashboard - Keep as main admin page */}
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/admin/dashboard'}
-                          onClick={() => handleNavigation('/admin/dashboard')}
-                          className={submenuItemClass}
-                          aria-current={location === '/admin/dashboard' ? 'page' : undefined}
-                        >
-                          <Monitor className="h-7 w-7 mr-2" />
-                          <span>Dashboard</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-
-                      {/* Content Management - Merges Stories + Content + WordPress Sync */}
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={
-                            location === '/admin/stories' || 
-                            location === '/admin/content' || 
-                            location === '/admin/wordpress-sync' ||
-                            location === '/admin/content-management'
-                          }
-                          onClick={() => handleNavigation('/admin/content-management')}
-                          className={submenuItemClass}
-                          aria-current={
-                            location === '/admin/content-management' ||
-                            location === '/admin/stories' ||
-                            location === '/admin/content' ||
-                            location === '/admin/wordpress-sync'
-                          }
-                        >
-                          <FileText className="h-7 w-7 mr-2" />
-                          <span>Content Management</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-
-                      {/* Theme Management */}
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/admin/themes'}
-                          onClick={() => handleNavigation('/admin/themes')}
-                          className={submenuItemClass}
-                          aria-current={location === '/admin/themes' ? 'page' : undefined}
-                        >
-                          <Palette className="h-7 w-7 mr-2" />
-                          <span>Theme Management</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-
-                      {/* User Management - Merges Users + Moderation */}
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={
-                            location === '/admin/users' || 
-                            location === '/admin/content-moderation'
-                          }
-                          onClick={() => handleNavigation('/admin/users')}
-                          className={submenuItemClass}
-                          aria-current={
-                            location === '/admin/users' ||
-                            location === '/admin/content-moderation'
-                          }
-                        >
-                          <Users className="h-7 w-7 mr-2" />
-                          <span>User Management</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-
-                      {/* Insights & Reports - Merges Analytics + Statistics + Feedback + Bug Reports */}
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={
-                            location === '/admin/analytics' || 
-                            location === '/admin/site-statistics' || 
-                            location === '/admin/feedback' || 
-                            location === '/admin/bug-reports'
-                          }
-                          onClick={() => handleNavigation('/admin/analytics')}
-                          className={submenuItemClass}
-                          aria-current={
-                            location === '/admin/analytics' ||
-                            location === '/admin/site-statistics' ||
-                            location === '/admin/feedback' ||
-                            location === '/admin/bug-reports'
-                          }
-                        >
-                          <LineChart className="h-7 w-7 mr-2" />
-                          <span>Insights &amp; Reports</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-
-                      {/* WordPress Sync */}
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/admin/wordpress-sync'}
-                          onClick={() => handleNavigation('/admin/wordpress-sync')}
-                          className={submenuItemClass}
-                          aria-current={location === '/admin/wordpress-sync' ? 'page' : undefined}
-                        >
-                          <Globe className="h-7 w-7 mr-2" />
-                          <span>WordPress Sync</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-
-                      {/* Moderation */}
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/admin/moderation'}
-                          onClick={() => handleNavigation('/admin/moderation')}
-                          className={submenuItemClass}
-                          aria-current={location === '/admin/moderation' ? 'page' : undefined}
-                        >
-                          <ShieldAlert className="h-7 w-7 mr-2" />
-                          <span>Moderation</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-
-                      {/* Email Services */}
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/admin/email-test'}
-                          onClick={() => handleNavigation('/admin/email-test')}
-                          className={submenuItemClass}
-                          aria-current={location === '/admin/email-test' ? 'page' : undefined}
-                        >
-                          <Mail className="h-7 w-7 mr-2" />
-                          <span>Email Services</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-
-                      {/* Database */}
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/admin/database'}
-                          onClick={() => handleNavigation('/admin/database')}
-                          className={submenuItemClass}
-                          aria-current={location === '/admin/database' ? 'page' : undefined}
-                        >
-                          <Database className="h-7 w-7 mr-2" />
-                          <span>Database</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-
-                      {/* Admin Settings */}
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/admin/settings'}
-                          onClick={() => handleNavigation('/admin/settings')}
-                          className={submenuItemClass}
-                          aria-current={location === '/admin/settings' ? 'page' : undefined}
-                        >
-                          <Settings className="h-7 w-7 mr-2" />
-                          <span>Admin Settings</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      </SidebarMenuSub>
-                    </motion.div>
-                  </CollapsibleContent>
-                </Collapsible>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      )}
+      
 
       
       
