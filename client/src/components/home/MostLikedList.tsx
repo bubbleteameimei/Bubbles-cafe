@@ -7,6 +7,7 @@ import { fetchReactionsBatch, type ReactionTotals } from '@/api/reactions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { THEME_CATEGORIES } from '@/lib/themes-lite';
 import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } from '@shared/theme-categories';
 import { getStoryThemeOverride } from '@shared/story-theme-overrides';
@@ -103,213 +104,114 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
       {topLiked.length === 0 ? (
         <div className="text-sm text-muted-foreground">No liked stories yet.</div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-5">
-          {/* First three cards always visible across breakpoints */}
-          {topLiked.slice(0, 3).map((featured) => (
-            <Card key={featured.id} className="h-full rounded-lg border border-border/60 bg-card/80 transition hover:bg-card hover:shadow-md hover:ring-1 hover:ring-primary/15 hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] will-change-transform">
-              <CardContent className="p-4">
-                <a
-                  href={`/reader/${encodeURIComponent(String(featured.slug || featured.id))}`}
-                  onClick={(e) => { e.preventDefault(); onNavigate(featured.slug || featured.id); }}
-                  className="block group outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md"
-                  aria-label={`Open ${featured.title}`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <h4
-                        className="text-left text-xl md:text-2xl font-semibold tracking-tight hover:text-primary leading-6 line-clamp-2"
-                        title={featured.title}
-                      >
-                        {featured.title}
-                      </h4>
-                      {(() => {
-                        const md: any = (featured as any)?.metadata || {};
-                        const primaryThemeRaw =
-                          md.themeCategory ||
-                          determineThemeCategory(String(featured.title || ''), String(featured.content || ''));
+        <Carousel opts={{ align: "start", loop: false }} className="w-full">
+          <CarouselContent>
+            {topLiked.map((featured) => (
+              <CarouselItem key={featured.id} className="md:basis-1/2 lg:basis-1/2 xl:basis-1/3">
+                <Card className="h-full rounded-lg border border-border/60 bg-card/80 transition hover:bg-card hover:shadow-md hover:ring-1 hover:ring-primary/15 hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] will-change-transform">
+                  <CardContent className="p-4">
+                    <a
+                      href={`/reader/${encodeURIComponent(String(featured.slug || featured.id))}`}
+                      onClick={(e) => { e.preventDefault(); onNavigate(featured.slug || featured.id); }}
+                      className="block group outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md"
+                      aria-label={`Open ${featured.title}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <h4
+                            className="text-left text-xl md:text-2xl font-semibold tracking-tight hover:text-primary leading-6 line-clamp-2"
+                            title={featured.title}
+                          >
+                            {featured.title}
+                          </h4>
+                          {(() => {
+                            const md: any = (featured as any)?.metadata || {};
+                            const primaryThemeRaw =
+                              md.themeCategory ||
+                              determineThemeCategory(String(featured.title || ''), String(featured.content || ''));
 
-                        const override = getStoryThemeOverride(featured.slug as any, featured.title as any);
+                            const override = getStoryThemeOverride(featured.slug as any, featured.title as any);
 
-                        const derivedKey = (() => {
-                          const raw = String(primaryThemeRaw || '').trim();
-                          if (!raw) return 'HORROR';
-                          for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-                            if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-                          }
-                          return raw.toUpperCase().replace(/\s+/g, '_');
-                        })();
-
-                        const themeKey = override?.key || derivedKey;
-
-                        const defOverride = getThemeDefinitionOverride(themeKey);
-
-                        const baseLabel =
-                          override?.label ||
-                          defOverride?.label ||
-                          (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
-                          primaryThemeRaw ||
-                          'Horror';
-
-                        const prettyLabel = baseLabel;
-
-                        const chosenIconSlug =
-                          override?.icon ||
-                          (md && (md as any).themeIcon) ||
-                          defOverride?.icon ||
-                          (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
-                          'ghost';
-
-                        const isIconify = String(chosenIconSlug).includes(':');
-                        const showBone = String(chosenIconSlug).toLowerCase() === 'bone' || themeKey === 'BODY_HORROR';
-
-                        const badgeTint = getBadgeTint(themeKey);
-
-                        return (
-                          <div className="mt-1">
-                            <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                              {isIconify
-                                ? (<Icon icon={String(chosenIconSlug)} className="h-3 w-3" />)
-                                : (showBone ? <Bone className="h-3 w-3" /> : null)
+                            const derivedKey = (() => {
+                              const raw = String(primaryThemeRaw || '').trim();
+                              if (!raw) return 'HORROR';
+                              for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
+                                if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
                               }
-                              {prettyLabel}
-                            </Badge>
+                              return raw.toUpperCase().replace(/\s+/g, '_');
+                            })();
+
+                            const themeKey = override?.key || derivedKey;
+
+                            const defOverride = getThemeDefinitionOverride(themeKey);
+
+                            const baseLabel =
+                              override?.label ||
+                              defOverride?.label ||
+                              (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
+                              primaryThemeRaw ||
+                              'Horror';
+
+                            const prettyLabel = baseLabel;
+
+                            const chosenIconSlug =
+                              override?.icon ||
+                              (md && (md as any).themeIcon) ||
+                              defOverride?.icon ||
+                              (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
+                              'ghost';
+
+                            const isIconify = String(chosenIconSlug).includes(':');
+                            const showBone = String(chosenIconSlug).toLowerCase() === 'bone' || themeKey === 'BODY_HORROR';
+
+                            const badgeTint = getBadgeTint(themeKey);
+
+                            return (
+                              <div className="mt-1">
+                                <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                  {isIconify
+                                    ? (<Icon icon={String(chosenIconSlug)} className="h-3 w-3" />)
+                                    : (showBone ? <Bone className="h-3 w-3" /> : null)
+                                  }
+                                  {prettyLabel}
+                                </Badge>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                        <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
+                          <div className="flex items-center gap-1 justify-end">
+                            <Calendar className="h-3 w-3" />
+                            <time>{new Date(featured.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
                           </div>
-                        );
-                      })()}
-                    </div>
-                    <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
-                      <div className="flex items-center gap-1 justify-end">
-                        <Calendar className="h-3 w-3" />
-                        <time>{new Date(featured.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
-                      </div>
-                      <div className="flex items-center gap-1 justify-end" title={`~${String(featured.content || '').split(/\s+/).length} words`}>
-                        <Clock className="h-3 w-3" />
-                        <span>{getReadingTime(featured.content)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <p className="mt-6 text-sm text-muted-foreground leading-6 line-clamp-3 font-sans min-h-[4.5rem]" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                    {extractEngagingExcerpt(featured.content, 180)}
-                  </p>
-
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                      <span className="inline-flex items-center gap-1">
-                        <Heart className="h-4 w-4 text-rose-500" />
-                        {Number((totalsFromParent?.[featured.id]?.totals?.likes ?? totalsMap[featured.id]?.totals?.likes) ?? (baselineLikesForPost(featured) + (featured.likesCount || 0)))}
-                      </span>
-                    </div>
-                  </div>
-                </a>
-              </CardContent>
-            </Card>
-          ))}
-          {/* Fourth card only visible on large screens for a clean 4-up layout */}
-          {topLiked[3] ? (
-            <div className="hidden md:block h-full">
-              <Card key={topLiked[3].id} className="h-full rounded-lg border border-border/60 bg-card/80 transition hover:bg-card hover:shadow-md hover:ring-1 hover:ring-primary/15 hover:-translate-y-[2px] active:translate-y-0 active">
-                <CardContent className="p-4">
-                  <a
-                    href={`/reader/${encodeURIComponent(String(topLiked[3].slug || topLiked[3].id))}`}
-                    onClick={(e) => { e.preventDefault(); onNavigate(topLiked[3].slug || topLiked[3].id); }}
-                    className="block group outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md"
-                    aria-label={`Open ${topLiked[3].title}`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <h4
-                          className="text-left text-xl md:text-2xl font-semibold tracking-tight hover:text-primary leading-6 line-clamp-2"
-                          title={topLiked[3].title}
-                        >
-                          {topLiked[3].title}
-                        </h4>
-                        {(() => {
-                          const featured = topLiked[3];
-                          const md: any = (featured as any)?.metadata || {};
-                          const primaryThemeRaw =
-                            md.themeCategory ||
-                            determineThemeCategory(String(featured.title || ''), String(featured.content || ''));
-
-                          const override = getStoryThemeOverride(featured.slug as any, featured.title as any);
-
-                          const derivedKey = (() => {
-                            const raw = String(primaryThemeRaw || '').trim();
-                            if (!raw) return 'HORROR';
-                            for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-                              if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-                            }
-                            return raw.toUpperCase().replace(/\s+/g, '_');
-                          })();
-
-                          const themeKey = override?.key || derivedKey;
-
-                          const defOverride = getThemeDefinitionOverride(themeKey);
-
-                          const baseLabel =
-                            override?.label ||
-                            defOverride?.label ||
-                            (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
-                            primaryThemeRaw ||
-                            'Horror';
-
-                          const prettyLabel = baseLabel;
-
-                          const chosenIconSlug =
-                            override?.icon ||
-                            (md && (md as any).themeIcon) ||
-                            defOverride?.icon ||
-                            (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
-                            'ghost';
-
-                          const isIconify = String(chosenIconSlug).includes(':');
-                          const showBone = String(chosenIconSlug).toLowerCase() === 'bone' || themeKey === 'BODY_HORROR';
-
-                          const badgeTint = getBadgeTint(themeKey);
-
-                          return (
-                            <div className="mt-1">
-                              <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                {isIconify
-                                  ? (<Icon icon={String(chosenIconSlug)} className="h-3 w-3" />)
-                                  : (showBone ? <Bone className="h-3 w-3" /> : null)
-                                }
-                                {prettyLabel}
-                              </Badge>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                      <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
-                        <div className="flex items-center gap-1 justify-end">
-                          <Calendar className="h-3 w-3" />
-                          <time>{new Date(topLiked[3].createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
-                        </div>
-                        <div className="flex items-center gap-1 justify-end" title={`~${String(topLiked[3].content || '').split(/\s+/).length} words`}>
-                          <Clock className="h-3 w-3" />
-                          <span>{getReadingTime(topLiked[3].content)}</span>
+                          <div className="flex items-center gap-1 justify-end" title={`~${String(featured.content || '').split(/\s+/).length} words`}>
+                            <Clock className="h-3 w-3" />
+                            <span>{getReadingTime(featured.content)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <p className="mt-6 text-sm text-muted-foreground leading-6 line-clamp-3 font-sans min-h-[4.5rem]" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                      {extractEngagingExcerpt(topLiked[3].content, 180)}
-                    </p>
+                      <p className="mt-6 text-sm text-muted-foreground leading-6 line-clamp-3 font-sans min-h-[4.5rem]" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                        {extractEngagingExcerpt(featured.content, 180)}
+                      </p>
 
-                    <div className="mt-3 flex items-center justify-between">
-                      <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                        <span className="inline-flex items-center gap-1">
-                          <Heart className="h-4 w-4 text-rose-500" />
-                          {Number((totalsFromParent?.[topLiked[3].id]?.totals?.likes ?? totalsMap[topLiked[3].id]?.totals?.likes) ?? (baselineLikesForPost(topLiked[3]) + (topLiked[3].likesCount || 0)))}
-                        </span>
+                      <div className="mt-3 flex items-center justify-between">
+                        <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                          <span className="inline-flex items-center gap-1">
+                            <Heart className="h-4 w-4 text-rose-500" />
+                            {Number((totalsFromParent?.[featured.id]?.totals?.likes ?? totalsMap[featured.id]?.totals?.likes) ?? (baselineLikesForPost(featured) + (featured.likesCount || 0)))}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </a>
-                </CardContent>
-              </Card>
-            </div>
-          ) : null}
-        </div>
+                    </a>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
       )}
     </div>
   );

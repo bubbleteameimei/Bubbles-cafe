@@ -433,7 +433,7 @@ export default function Navigation() {
                   id="sidebar-toggle"
                   variant="ghost"
                   size="icon"
-                  className="h-12 w-12 rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-colors transition-transform duration-200 ease-out active:scale-95"
+                  className="h-12 w-12 rounded-lg border border-border bg-card hover:bg-muted hover:-translate-y-[1px] will-change-transform text-foreground transition-colors transition-transform duration-200 ease-out active:scale-95"
                   aria-label="Open menu"
                   onClick={() => setIsOpen((v) => !v)}
                 >
@@ -482,14 +482,14 @@ export default function Navigation() {
               id="nav-search-button"
               variant="ghost"
               size="icon"
-              className="h-12 w-12 rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-colors transition-transform duration-200 ease-out active:scale-95"
+              className="h-12 w-12 rounded-lg border border-border bg-card hover:bg-muted hover:-translate-y-[1px] will-change-transform text-foreground transition-colors transition-transform duration-200 ease-out active:scale-95"
               aria-label="Search"
               onClick={() => setSearchOpen((v) => !v)}
             >
               <Search className="h-5 w-5" />
             </Button>
 
-            <NotificationIcon className="h-12 w-12 rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-colors transition-transform duration-200 ease-out active:scale-95" />
+            <NotificationIcon className="h-12 w-12 rounded-lg border border-border bg-card hover:bg-muted hover:-translate-y-[1px] will-change-transform text-foreground transition-colors transition-transform duration-200 ease-out active:scale-95" />
 
             {/* Theme dropdown */}
             <DropdownMenu>
@@ -497,7 +497,7 @@ export default function Navigation() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-12 w-12 rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-colors transition-transform duration-200 ease-out active:scale-95"
+                  className="h-12 w-12 rounded-lg border border-border bg-card hover:bg-muted hover:-translate-y-[1px] will-change-transform text-foreground transition-colors transition-transform duration-200 ease-out active:scale-95"
                   aria-label="Change theme"
                 >
                   {theme === "dark" ? (
@@ -545,7 +545,7 @@ export default function Navigation() {
                   prefetchAuthPages();
                   setLocation("/auth");
                 }}
-                className="h-12 w-12 rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-colors transition-transform duration-200 ease-out active:scale-95"
+                className="h-12 w-12 rounded-lg border border-border bg-card hover:bg-muted hover:-translate-y-[1px] will-change-transform text-foreground transition-colors transition-transform duration-200 ease-out active:scale-95"
                 aria-label="Sign in"
               >
                 <User className="h-5 w-5" />
@@ -554,7 +554,7 @@ export default function Navigation() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-12 w-12 rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-colors transition-transform duration-200 ease-out active:scale-95"
+                className="h-12 w-12 rounded-lg border border-border bg-card hover:bg-muted hover:-translate-y-[1px] will-change-transform text-foreground transition-colors transition-transform duration-200 ease-out active:scale-95"
               >
                 <User className="h-5 w-5" />
               </Button>

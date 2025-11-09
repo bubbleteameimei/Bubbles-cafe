@@ -475,8 +475,8 @@ export default function CookieManagementPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 xs:gap-4">
                 <div className="p-3 xs:p-4 border rounded-md bg-muted/5 hover:bg-muted/10 transition-colors">
                   <div className="flex items-center gap-2 xs:gap-3 mb-2">
-                    <div className="h-7 w-7 xs:h-9 xs:w-9 rounded-full bg-[#4285F4]/10 flex items-center justify-center flex-shrink-0">
-                      <span className="text-[#4285F4] font-bold text-xs xs:text-base">C</span>
+                    <div className="h-7 w-7 xs:h-9 xs:w-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-primary font-bold text-xs xs:text-base">C</span>
                     </div>
                     <h3 className="font-medium text-sm xs:text-base">Google Chrome</h3>
                   </div>
@@ -487,8 +487,8 @@ export default function CookieManagementPage() {
                 
                 <div className="p-3 xs:p-4 border rounded-md bg-muted/5 hover:bg-muted/10 transition-colors">
                   <div className="flex items-center gap-2 xs:gap-3 mb-2">
-                    <div className="h-7 w-7 xs:h-9 xs:w-9 rounded-full bg-[#FF9500]/10 flex items-center justify-center flex-shrink-0">
-                      <span className="text-[#FF9500] font-bold text-xs xs:text-base">F</span>
+                    <div className="h-7 w-7 xs:h-9 xs:w-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-primary font-bold text-xs xs:text-base">F</span>
                     </div>
                     <h3 className="font-medium text-sm xs:text-base">Mozilla Firefox</h3>
                   </div>
@@ -499,8 +499,8 @@ export default function CookieManagementPage() {
                 
                 <div className="p-3 xs:p-4 border rounded-md bg-muted/5 hover:bg-muted/10 transition-colors">
                   <div className="flex items-center gap-2 xs:gap-3 mb-2">
-                    <div className="h-7 w-7 xs:h-9 xs:w-9 rounded-full bg-[#0D6EFD]/10 flex items-center justify-center flex-shrink-0">
-                      <span className="text-[#0D6EFD] font-bold text-xs xs:text-base">S</span>
+                    <div className="h-7 w-7 xs:h-9 xs:w-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-primary font-bold text-xs xs:text-base">S</span>
                     </div>
                     <h3 className="font-medium text-sm xs:text-base">Safari</h3>
                   </div>
@@ -511,8 +511,8 @@ export default function CookieManagementPage() {
                 
                 <div className="p-3 xs:p-4 border rounded-md bg-muted/5 hover:bg-muted/10 transition-colors">
                   <div className="flex items-center gap-2 xs:gap-3 mb-2">
-                    <div className="h-7 w-7 xs:h-9 xs:w-9 rounded-full bg-[#00A4EF]/10 flex items-center justify-center flex-shrink-0">
-                      <span className="text-[#00A4EF] font-bold text-xs xs:text-base">E</span>
+                    <div className="h-7 w-7 xs:h-9 xs:w-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-primary font-bold text-xs xs:text-base">E</span>
                     </div>
                     <h3 className="font-medium text-sm xs:text-base">Microsoft Edge</h3>
                   </div>

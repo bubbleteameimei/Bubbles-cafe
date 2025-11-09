@@ -458,7 +458,8 @@ export function LikeDislike({
           className={`
             inline-flex items-center gap-2 font-sans font-medium text-sm
             px-4 py-2 rounded-lg border transition-all duration-200
-            hover:scale-105 active:scale-95 focus:outline-none focus:ring-0 focus:ring-offset-0
+            hover:scale-105 hover:-translate-y-[1px] active:translate-y-0 active:scale-95 will-change-transform
+            focus:outline-none focus:ring-0 focus:ring-offset-0
             ${variant === 'reader' 
               ? 'min-w-[100px] justify-center' 
               : 'h-8 px-3 py-1 text-xs min-w-[70px]'
@@ -479,7 +480,8 @@ export function LikeDislike({
           className={`
             inline-flex items-center gap-2 font-sans font-medium text-sm
             px-4 py-2 rounded-lg border transition-all duration-200
-            hover:scale-105 active:scale-95 focus:outline-none focus:ring-0 focus:ring-offset-0
+            hover:scale-105 hover:-translate-y-[1px] active:translate-y-0 active:scale-95 will-change-transform
+            focus:outline-none focus:ring-0 focus:ring-offset-0
             ${variant === 'reader' 
               ? 'min-w-[100px] justify-center' 
               : 'h-8 px-3 py-1 text-xs min-w-[70px]'
