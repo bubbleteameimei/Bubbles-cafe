@@ -240,7 +240,7 @@ export const SupportWritingCard = ({ className = "", authorId, hideCard = false 
                     style={{ 
                       animationDelay: `${i * 0.4}s` 
                     }}
-                    className="absolute w-0.5 h-0.5 bg-white/50 rounded-full"
+                    className="absolute w-0.5 h-0.5 bg-primary-foreground/50 rounded-full"
                   />
                 ))}
               </div>
@@ -271,7 +271,7 @@ export const SupportWritingCard = ({ className = "", authorId, hideCard = false 
                       repeat: Infinity,
                       ease: "easeInOut"
                     }}
-                    className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white/20 rounded-full blur-sm"
+                    className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary-foreground/20 rounded-full blur-sm"
                   />
                 </motion.div>
                 Buy me a coffee ☕
@@ -393,7 +393,7 @@ export const SupportWritingCard = ({ className = "", authorId, hideCard = false 
                     repeatDelay: 2.5,
                     ease: "easeInOut"
                   }}
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent"
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-foreground/20 to-transparent"
                   style={{ transform: "skewX(-20deg)" }}
                 />
                 

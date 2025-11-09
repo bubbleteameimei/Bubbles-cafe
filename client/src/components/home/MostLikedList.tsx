@@ -106,7 +106,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-5">
           {/* First three cards always visible across breakpoints */}
           {topLiked.slice(0, 3).map((featured) => (
-            <Card key={featured.id} className="h-full rounded-lg border border-border/60 bg-card/80 transition hover:bg-card hover:shadow-md hover:ring-1 hover:ring-primary/15">
+            <Card key={featured.id} className="h-full rounded-lg border border-border/60 bg-card/80 transition hover:bg-card hover:shadow-md hover:ring-1 hover:ring-primary/15 hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] will-change-transform">
               <CardContent className="p-4">
                 <a
                   href={`/reader/${encodeURIComponent(String(featured.slug || featured.id))}`}
@@ -208,7 +208,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
           {/* Fourth card only visible on large screens for a clean 4-up layout */}
           {topLiked[3] ? (
             <div className="hidden md:block h-full">
-              <Card key={topLiked[3].id} className="h-full rounded-lg border border-border/60 bg-card/80 transition hover:bg-card hover:shadow-md hover:ring-1 hover:ring-primary/15">
+              <Card key={topLiked[3].id} className="h-full rounded-lg border border-border/60 bg-card/80 transition hover:bg-card hover:shadow-md hover:ring-1 hover:ring-primary/15 hover:-translate-y-[2px] active:translate-y-0 active">
                 <CardContent className="p-4">
                   <a
                     href={`/reader/${encodeURIComponent(String(topLiked[3].slug || topLiked[3].id))}`}

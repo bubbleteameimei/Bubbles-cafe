@@ -372,8 +372,8 @@ export default function CookieManagementPage() {
                   onClick={acceptAll}
                   className="flex items-center gap-2 px-3 sm:px-4 py-4 sm:py-6 h-auto sm:flex-1 bg-primary/90 hover:bg-primary transition-colors"
                 >
-                  <div className="rounded-full bg-white/20 p-1.5 sm:p-2 flex-shrink-0">
-                    <Cookie size={16} className="text-white" />
+                  <div className="rounded-full bg-primary-foreground/20 p-1.5 sm:p-2 flex-shrink-0">
+                    <Cookie size={16} className="text-primary-foreground" />
                   </div>
                   <div className="flex flex-col items-start">
                     <span className="font-medium text-sm sm:text-base">

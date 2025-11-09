@@ -325,7 +325,7 @@ export function WordPressSyncStatus() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button className="h-7 w-7 rounded hover:bg-black/5 dark:hover:bg-white/10 inline-flex items-center justify-center">
+                  <button className="h-7 w-7 rounded hover:bg-foreground/10 inline-flex items-center justify-center">
                     {isExpanded ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
                   </button>
                 </TooltipTrigger>

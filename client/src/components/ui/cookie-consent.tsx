@@ -132,7 +132,7 @@ const overlay = (
         duration: 0.25,
         ease: [0.4, 0, 0.2, 1]
       }}
-      className="fixed inset-0 z-[1300] bg-black/60 backdrop-blur-sm pointer-events-auto flex items-center justify-center p-4"
+      className="fixed inset-0 z-[1300] bg-background/80 backdrop-blur-sm pointer-events-auto flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="cookie-consent-title"

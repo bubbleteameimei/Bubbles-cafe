@@ -707,7 +707,7 @@ export default function Navigation() {
                                       className={`w-full text-left text-sm transition-colors ${
                                         flatSuggestions[activeIdx]?.id === s.id &&
                                         flatSuggestions[activeIdx]?.group === "reader"
-                                          ? "bg-white/10 rounded-md"
+                                          ? "bg-foreground/10 rounded-md"
                                           : ""
                                       }`}
                                       onMouseEnter={() => {
@@ -767,7 +767,7 @@ export default function Navigation() {
                                       className={`w-full text-left text-sm transition-colors ${
                                         flatSuggestions[activeIdx]?.id === s.id &&
                                         flatSuggestions[activeIdx]?.group === "community"
-                                          ? "bg-white/10 rounded-md"
+                                          ? "bg-foreground/10 rounded-md"
                                           : ""
                                       }`}
                                       onMouseEnter={() => {
