@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowUp } from 'lucide-react';
+import { useSidebar } from '@/components/ui/sidebar';
 
 type ScrollContainer = 'window' | 'main';
 
@@ -10,6 +11,13 @@ const BackToTopButton: React.FC = () => {
   const lastScrollEl = useRef<HTMLElement | null>(null);
   const ticking = useRef(false);
   const containerListeners = useRef<Set<HTMLElement>>(new Set());
+  const sidebar = useSidebar();
+
+  // Hide the floating button while the mobile sidebar (drawer) is open,
+  // so it doesn't cover the sidebar footer or bottom content
+  if (sidebar?.isMobile && sidebar?.openMobile) {
+    return null;
+  }
 
   const getScrollableCandidates = () => {
     const candidates = new Set<HTMLElement>();

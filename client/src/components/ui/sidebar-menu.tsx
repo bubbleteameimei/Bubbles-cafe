@@ -521,8 +521,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             ease: [0.25, 0.46, 0.45, 0.94]
           }}
         >
-          <SidebarGroup className="space-y-1 mt-0 p-0 pt-0">
-            <SidebarGroupLabel className="sidebar-group-label-enhanced px-1.5 text-[12px] font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-3 font-sans">
+          <SidebarGroup className="space-y-1 -mt-2 p-0 pt-0">
+            <SidebarGroupLabel className="sidebar-group-label-enhanced h-6 px-1.5 text-[12px] font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-2 font-sans">
               Navigation
             </SidebarGroupLabel>
 
