@@ -502,7 +502,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       {/* Removed gradient overlay that was interfering with bottom buttons */}
 
       {/* Scrollable content area */}
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-2 pb-24 md:pb-8 scroll-smooth sidebar-menu-container focus:outline-none focus-visible:outline-none bg-transparent"
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-2 pb-12 md:pb-6 scroll-smooth sidebar-menu-container focus:outline-none focus-visible:outline-none bg-transparent"
            style={{
              scrollBehavior: 'smooth',
              scrollbarWidth: 'thin',
@@ -521,8 +521,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             ease: [0.25, 0.46, 0.45, 0.94]
           }}
         >
-          <SidebarGroup className="space-y-1 mt-0">
-            <SidebarGroupLabel className="sidebar-group-label-enhanced px-1.5 text-[12px] font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-5 font-sans">
+          <SidebarGroup className="space-y-1 mt-0 p-0 pt-0">
+            <SidebarGroupLabel className="sidebar-group-label-enhanced px-1.5 text-[12px] font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-3 font-sans">
               Navigation
             </SidebarGroupLabel>
 
@@ -676,7 +676,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           </SidebarGroup>
         </motion.div>
 
-        <SidebarSeparator className="my-3" />
+        
 
       {/* Games & Interactive Experiences - Placeholder */}
       <SidebarGroup className="mt-2 p-2 pt-1">
@@ -1210,7 +1210,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       )}
 
       {/* Footer Buttons */}
-      <div className="mt-auto mb-0 border-t border-[hsl(var(--sidebar-border))] pt-4">
+      <div className="mb-0 pt-2">
         {!user ? (
           <Button
             variant="default"
