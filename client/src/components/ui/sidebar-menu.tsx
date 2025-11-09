@@ -641,6 +641,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       {renderActiveIndicator('/community')}
                       <Users className="h-4 w-4 group-hover:scale-105 transition-transform duration-150" />
                       <span className="sidebar-menu-text-enhanced">COMMUNITY</span>
+                    </SidebarMenuButton>
                   </motion.div>
                 </SidebarMenuItem>
 
@@ -705,30 +706,27 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       <SidebarGroup className="mt-2 p-2 pt-1">
         <SidebarGroupContent className="mt-0">
           <SidebarMenu className="space-y-4">
-      <SidebarGroup className="mt-2 p-2 pt-1">
-        <SidebarGroupContent className="mt-0">
-          <SidebarMenu className="space-y-4">
             <SidebarMenuItem>
-              <Collapsible open={supportOpen} onOpenChange={setSupportOpen} className="sidebar-dropdown-container">
+              <Collapsible open={accountOpen} onOpenChange={setAccountOpen} className="sidebar-dropdown-container">
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton
-                    className="w-full justify-between px-4 text-[13px] text-[hsl(var(--sidebar-foreground))] hover:bg-transparent data-[state=open]:bg-background/10 data-[state=open]:text-[hsl(var(--sidebar-foreground))] whitespace-nowrap"
-                    aria-expanded={supportOpen}
-                    aria-controls="support-legal-content"
+                    className="w-full justify-between px-4 text-[13px] text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-transparent data-[state=open]:text-[hsl(var(--sidebar-foreground))] hover:bg-transparent whitespace-nowrap"
+                    aria-expanded={accountOpen}
+                    aria-controls="account-settings-content"
                   >
                     <div className="flex items-center">
-                      <HelpCircle className="h-4 w-4 mr-2" />
-                      <span>Support &amp; Legal</span>
+                      <UserCircle className="h-4 w-4 mr-2" />
+                      <span>Account Settings</span>
                     </div>
                     <ChevronDown
                       className={cn(
                         "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
-                        supportOpen && "rotate-180"
+                        accountOpen && "rotate-180"
                       )}
                     />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent id="support-legal-content" className="overflow-hidden sidebar-collapsible-content">
+                <CollapsibleContent id="account-settings-content" className="overflow-hidden sidebar-collapsible-content">
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
@@ -738,81 +736,58 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     <SidebarMenuSub className="space-y-2.5 border-l border-sidebar-border/30 ml-2 pl-3">
                       <SidebarMenuSubItem>
-                        
                         <SidebarMenuSubButton
-                          isActive={location === '/about'}
-                          onClick={() => handleNavigation('/about')}
+                          isActive={location === '/profile'}
+                          onClick={() => handleNavigation('/profile')}
                           className={submenuItemClass}
-                          aria-current={location === '/about' ? 'page' : undefined}
+                          aria-current={location === '/profile' ? 'page' : undefined}
                         >
-                          <Building className="h-4 w-4 mr-2" />
-                          <span>About Me</span>
+                          <UserCircle className="h-4 w-4 mr-2" />
+                          <span>My Profile</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton
-                          isActive={location === '/feedback'}
-                          onClick={() => handleNavigation('/feedback')}
+                          isActive={location === '/settings/profile'}
+                          onClick={() => handleNavigation('/settings/profile')}
                           className={submenuItemClass}
-                          aria-current={location === '/feedback' ? 'page' : undefined}
+                          aria-current={location === '/settings/profile' ? 'page' : undefined}
                         >
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          <span>Feedback &amp; Suggestions</span>
+                          <User className="h-4 w-4 mr-2" />
+                          <span>Profile Settings</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton
-                          isActive={location === '/report-bug'}
-                          onClick={() => handleNavigation('/report-bug')}
+                          isActive={location === '/settings/notifications'}
+                          onClick={() => handleNavigation('/settings/notifications')}
                           className={submenuItemClass}
-                          aria-current={location === '/report-bug' ? 'page' : undefined}
+                          aria-current={location === '/settings/notifications' ? 'page' : undefined}
                         >
-                          <Bug className="h-4 w-4 mr-2" />
-                          <span>Report Bug</span>
+                          <Bell className="h-4 w-4 mr-2" />
+                          <span>Notifications</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton
-                          isActive={location === '/contact'}
-                          onClick={() => handleNavigation('/contact')}
+                          isActive={location === '/settings/privacy'}
+                          onClick={() => handleNavigation('/settings/privacy')}
                           className={submenuItemClass}
-                          aria-current={location === '/contact' ? 'page' : undefined}
-                        >
-                          <Mail className="h-4 w-4 mr-2" />
-                          <span>Contact Me</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/legal/terms'}
-                          onClick={() => handleNavigation('/legal/terms')}
-                          className={submenuItemClass}
-                          aria-current={location === '/legal/terms' ? 'page' : undefined}
-                        >
-                          <FileText className="h-4 w-4 mr-2" />
-                          <span>Terms of Service</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/privacy'}
-                          onClick={() => handleNavigation('/privacy')}
-                          className={submenuItemClass}
-                          aria-current={location === '/privacy' ? 'page' : undefined}
+                          aria-current={location === '/settings/privacy' ? 'page' : undefined}
                         >
                           <Lock className="h-4 w-4 mr-2" />
-                          <span>Privacy Policy</span>
+                          <span>Privacy &amp; Security</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton
-                          isActive={location === '/legal/copyright'}
-                          onClick={() => handleNavigation('/legal/copyright')}
+                          isActive={location === '/settings/connected-accounts'}
+                          onClick={() => handleNavigation('/settings/connected-accounts')}
                           className={submenuItemClass}
-                          aria-current={location === '/legal/copyright' ? 'page' : undefined}
+                          aria-current={location === '/settings/connected-accounts' ? 'page' : undefined}
                         >
-                          <Shield className="h-4 w-4 mr-2" />
-                          <span>Copyright Policy</span>
+                          <Link className="h-4 w-4 mr-2" />
+                          <span>Connected Accounts</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>
@@ -864,8 +839,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           <Bug className="h-4 w-4" aria-hidden="true" />
           <span className="uppercase tracking-wider font-medium">Report Bug</span>
         </motion.button>
-      </div>
-
       </div>
     </motion.div>
   );
