@@ -59,41 +59,41 @@
   --clr-info-a20: #92b2e5;
 
   /* Map to shadcn/tailwind tokens (HSL channels) */
-  --background: 0 0% 7%;                 /* surface a0 (#121212) */
-  --foreground: 0 0% 100%;               /* #ffffff */
+  --background: 0 0% 3%;                 /* deeper dark for stronger contrast */
+  --foreground: 0 0% 98%;
 
-  --card: 0 0% 16%;                      /* surface a10 (#282828) */
-  --card-foreground: 0 0% 100%;
+  --card: 0 0% 7%;
+  --card-foreground: 0 0% 98%;
 
-  --popover: 0 0% 16%;                   /* surface a10 (#282828) */
-  --popover-foreground: 0 0% 100%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 98%;
 
   /* Use Info palette for primary accent */
   --primary: 217 61% 54%;                /* info a10 (#4077d1) */
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 0 0% 25%;                 /* surface a20 (#3f3f3f) */
-  --secondary-foreground: 0 0% 100%;
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 0 0% 98%;
 
-  --muted: 0 0% 16%;                     /* surface a10 (#282828) */
-  --muted-foreground: 0 0% 55%;          /* surface a50 (#8b8b8b) */
+  --muted: 0 0% 9%;
+  --muted-foreground: 0 0% 65%;
 
   /* Subtle accent using lighter info */
-  --accent: 217 62% 74%;                 /* info a20 (#92b2e5) */
-  --accent-foreground: 0 0% 7%;
+  --accent: 217 62% 74%;
+  --accent-foreground: 0 0% 3%;
 
   /* Status mappings */
-  --destructive: 0 65% 57%;              /* danger a10 (#d94a4a) */
+  --destructive: 0 65% 57%;
   --destructive-foreground: 0 0% 100%;
-  --success: 160 63% 36%;                /* success a0 (#22946e) */
+  --success: 160 63% 36%;
   --success-foreground: 0 0% 100%;
-  --warning: 38 60% 61%;                 /* warning a10 (#d7ac61) */
-  --warning-foreground: 0 0% 7%;
-  --info: 217 61% 54%;                   /* info a10 (#4077d1) */
+  --warning: 38 60% 61%;
+  --warning-foreground: 0 0% 3%;
+  --info: 217 61% 54%;
   --info-foreground: 0 0% 100%;
 
-  --border: 0 0% 34%;                    /* surface a30 (#575757) */
-  --input: 0 0% 34%;                     /* surface a30 (#575757) */
+  --border: 0 0% 18%;
+  --input: 0 0% 18%;
   --ring: 217 61% 54%;                   /* match primary */
 
   /* Chart tokens */
@@ -120,40 +120,40 @@
 
 /* LIGHT THEME */
 .light {
-  /* Drawn from theme.json light palette with accessible tweaks */
-  --background: 39 35% 89%;              /* #EDE6D9 */
-  --foreground: 0 23% 7%;                /* #150D0D */
+  /* Neutral light palette with higher contrast and less tint */
+  --background: 0 0% 98%;               /* #FAFAFA */
+  --foreground: 0 0% 10%;               /* #1A1A1A */
 
-  --card: 0 0% 100%;                     /* #FFFFFF */
+  --card: 0 0% 100%;                    /* #FFFFFF */
   --card-foreground: var(--foreground);
 
   --popover: 0 0% 100%;
   --popover-foreground: var(--foreground);
 
-  --primary: 252 100% 69%;               /* #7B61FF (brand violet) */
+  --primary: 252 100% 69%;              /* Brand violet */
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 28 19% 38%;               /* #73604F */
-  --secondary-foreground: 0 0% 100%;
+  --secondary: 0 0% 95%;                /* neutral soft */
+  --secondary-foreground: 0 0% 12%;
 
-  --muted: 38 24% 92%;                   /* subtle tinted surface */
-  --muted-foreground: 28 15% 35%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 40%;
 
-  --accent: 252 100% 90%;                /* light violet tint */
-  --accent-foreground: 0 0% 7%;
+  --accent: 252 100% 94%;
+  --accent-foreground: 0 0% 20%;
 
-  --destructive: 0 84% 19%;              /* #590808 */
+  --destructive: 0 70% 45%;
   --destructive-foreground: 0 0% 100%;
 
-  --success: 160 63% 36%;                /* keep status consistent */
+  --success: 160 63% 36%;
   --success-foreground: 0 0% 100%;
-  --warning: 38 60% 40%;
+  --warning: 38 80% 46%;
   --warning-foreground: 0 0% 100%;
   --info: 217 61% 40%;
   --info-foreground: 0 0% 100%;
 
-  --border: 28 19% 38%;                  /* #73604F */
-  --input: 28 19% 38%;
+  --border: 0 0% 85%;
+  --input: 0 0% 85%;
   --ring: 252 100% 69%;
 
   /* Chart tokens (balanced, readable on light) */
