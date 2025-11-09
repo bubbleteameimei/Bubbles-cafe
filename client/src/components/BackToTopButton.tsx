@@ -13,11 +13,8 @@ const BackToTopButton: React.FC = () => {
   const containerListeners = useRef<Set<HTMLElement>>(new Set());
   const sidebar = useSidebar();
 
-  // Hide the floating button while the mobile sidebar (drawer) is open,
-  // so it doesn't cover the sidebar footer or bottom content
-  if (sidebar?.isMobile && sidebar?.openMobile) {
-    return null;
-  }
+  // Do not short-circuit hooks. Compute a flag and render null later.
+  const hideForSidebarOpen = !!(sidebar?.isMobile && sidebar?.openMobile);
 
   const getScrollableCandidates = () => {
     const candidates = new Set<HTMLElement>();
@@ -179,6 +176,11 @@ const BackToTopButton: React.FC = () => {
       <span className="sr-only">Back to top</span>
     </button>
   );
+
+  // While the mobile sidebar (drawer) is open, do not render the floating button
+  if (hideForSidebarOpen) {
+    return null;
+  }
 
   // Render into body to escape any overflow/transform stacking contexts
   return typeof document !== 'undefined' ? createPortal(button, document.body) : button;
