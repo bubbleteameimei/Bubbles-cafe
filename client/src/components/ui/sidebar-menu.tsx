@@ -36,7 +36,7 @@ import {
 // Code Quality: Break up large components into smaller ones for maintainability.
 export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [location, setLocation] = useLocation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   // Removed loading hook for instant navigation
   const [displayOpen, setDisplayOpen] = React.useState(false);
   const [accountOpen, setAccountOpen] = React.useState(false);
@@ -1221,6 +1221,58 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       )}
 
       
+      {/* Quick Actions - visible without expanding */}
+      <SidebarGroup className="mt-2 p-2 pt-1">
+        <SidebarGroupLabel className="h-6 px-2 text-sm font-medium text-[hsl(var(--sidebar-foreground))] mb-2 uppercase tracking-wider">
+          QUICK ACTIONS
+        </SidebarGroupLabel>
+        <SidebarGroupContent className="mt-0">
+          <SidebarMenu className="space-y-1">
+            {!user ? (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => handleNavigation('/auth')}
+                  tooltip="Sign in"
+                  className={menuItemClass}
+                  aria-label="Sign in"
+                >
+                  <User className="h-5 w-5" />
+                  <span>SIGN IN</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ) : (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => {
+                    try { logout?.(); } catch {}
+                    if (sidebar?.isMobile) sidebar.setOpenMobile(false);
+                  }}
+                  tooltip="Sign out"
+                  className={menuItemClass}
+                  aria-label="Sign out"
+                >
+                  <User className="h-5 w-5" />
+                  <span>SIGN OUT</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={location === '/report-bug'}
+                onClick={() => handleNavigation('/report-bug')}
+                tooltip="Report a bug"
+                className={menuItemClass}
+                aria-current={location === '/report-bug' ? 'page' : undefined}
+              >
+                <Bug className="h-5 w-5" />
+                <span>REPORT BUG</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
       </div>
     </motion.div>
   );
