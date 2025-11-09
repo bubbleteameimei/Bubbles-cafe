@@ -1255,7 +1255,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           <span className="uppercase tracking-wider font-medium">Report Bug</span>
         </motion.button>
       </div>
-      </div>
     </motion.div>
   );
 }
