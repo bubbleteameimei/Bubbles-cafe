@@ -42,7 +42,7 @@ export const FONT_FAMILIES = {
 
 export type FontFamilyKey = keyof typeof FONT_FAMILIES;
 
-export const DEFAULT_FONT_FAMILY: FontFamilyKey = 'cormorant';
+export const DEFAULT_FONT_FAMILY: FontFamilyKey = 'roboto';
 
 export function useFontFamily() {
   const [fontFamily, setFontFamily] = useState<FontFamilyKey>(() => {

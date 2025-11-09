@@ -227,6 +227,7 @@ export default function Home() {
                   >
                     <Button
                       size="lg"
+                      variant="secondary"
                       onClick={() => setLocation('/index')}
                       onMouseEnter={() => { try { void import('@/pages/index'); } catch {} }}
                       onFocus={() => { try { void import('@/pages/index'); } catch {} }}
@@ -258,7 +259,6 @@ export default function Home() {
                   >
                     <Button
                       size="lg"
-                      variant="secondary"
                       onClick={async () => {
                         try {
                           const { getLatestReaderPath } = await import('@/lib/reader-navigation');

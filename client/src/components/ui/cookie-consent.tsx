@@ -193,12 +193,12 @@ const overlay = (
             >
               Accept
             </button>
-            {/* Decline matches Start Reading button color, no hover effects */}
+            {/* Decline uses neutral secondary token styling for readability across themes */}
             <button
               onClick={handleDecline}
               className={cn(
-                "px-6 py-2 rounded-full bg-[#1A1A1A] text-white font-medium",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A1A1A]/30"
+                "px-6 py-2 rounded-full bg-secondary text-secondary-foreground font-medium hover:bg-secondary/90",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
               )}
             >
               Decline

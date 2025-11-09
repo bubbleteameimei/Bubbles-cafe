@@ -464,7 +464,7 @@ export function LikeDislike({
               : 'h-8 px-3 py-1 text-xs min-w-[70px]'
             }
             ${liked 
-              ? 'bg-green-100 border-green-300 text-green-700 shadow-sm dark:bg-green-900/30 dark:border-green-600 dark:text-green-400' 
+              ? 'bg-[hsl(var(--success)/0.15)] border-[hsl(var(--success)/0.3)] text-[hsl(var(--success))] shadow-sm hover:bg-[hsl(var(--success)/0.2)]' 
               : 'bg-card border-border text-foreground/80 hover:bg-muted hover:text-foreground shadow-sm'
             }
           `}
@@ -485,7 +485,7 @@ export function LikeDislike({
               : 'h-8 px-3 py-1 text-xs min-w-[70px]'
             }
             ${disliked 
-              ? 'bg-red-100 border-red-300 text-red-700 shadow-sm dark:bg-red-900/30 dark:border-red-600 dark:text-red-400' 
+              ? 'bg-[hsl(var(--destructive)/0.15)] border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))] shadow-sm hover:bg-[hsl(var(--destructive)/0.2)]' 
               : 'bg-card border-border text-foreground/80 hover:bg-muted hover:text-foreground shadow-sm'
             }
           `}
@@ -505,10 +505,10 @@ export function LikeDislike({
             : 'translate-y-2 opacity-0 scale-95'
           }
           ${inlineToast.type === 'like' 
-            ? 'bg-green-50 text-green-800 border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700' 
+            ? 'bg-[hsl(var(--success)/0.12)] text-[hsl(var(--success))] border border-[hsl(var(--success)/0.3)]' 
             : inlineToast.type === 'dislike'
-            ? 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700'
-            : 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700'
+            ? 'bg-[hsl(var(--destructive)/0.12)] text-[hsl(var(--destructive))] border border-[hsl(var(--destructive)/0.3)]'
+            : 'bg-[hsl(var(--destructive)/0.12)] text-[hsl(var(--destructive))] border border-[hsl(var(--destructive)/0.3)]'
           }
         `}>
           {inlineToast.message}
