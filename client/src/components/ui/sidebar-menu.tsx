@@ -597,11 +597,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Footer Buttons */}
-      <div className="mb-0 pt-2">
-        {!user ? (
-          <Button
-            variant="default"
-            size="sm"
+      <span className="flex items-center">
+                       <tHelpCircle className="h-4 w-4 mr-2" />
+      size="sm"
             className="w-full text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider px-4 py-2"
             onClick={() => handleNavigation("/auth")}
             aria-label="Sign in to your account"
