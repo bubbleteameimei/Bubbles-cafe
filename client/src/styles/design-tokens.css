@@ -4,7 +4,7 @@
   --progress-top-offset: var(--navbar-height);
   --viewport-width: 100vw;
 
-  /* Colors */
+  /* Colors - convenience aliases that depend on theme-scoped HSL tokens below */
   --color-bg: hsl(var(--background));
   --color-fg: hsl(var(--foreground));
   --color-muted: hsl(var(--muted));
@@ -25,6 +25,7 @@
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
+/* DARK THEME */
 .dark {
   /* Dark theme palette using provided surface and status colors */
 
@@ -95,6 +96,13 @@
   --input: 0 0% 34%;                     /* surface a30 (#575757) */
   --ring: 217 61% 54%;                   /* match primary */
 
+  /* Chart tokens */
+  --chart-1: 217 61% 54%;
+  --chart-2: 160 63% 36%;
+  --chart-3: 38 60% 61%;
+  --chart-4: 340 70% 60%;
+  --chart-5: 270 65% 65%;
+
   /* Sidebar tokens */
   --sidebar-background: var(--background);
   --sidebar-foreground: var(--foreground);
@@ -106,6 +114,178 @@
   --sidebar-ring: var(--ring);
 
   /* Convenience aliases for computed colors */
+  --color-bg: hsl(var(--background));
+  --color-fg: hsl(var(--foreground));
+}
+
+/* LIGHT THEME */
+.light {
+  /* Drawn from theme.json light palette with accessible tweaks */
+  --background: 39 35% 89%;              /* #EDE6D9 */
+  --foreground: 0 23% 7%;                /* #150D0D */
+
+  --card: 0 0% 100%;                     /* #FFFFFF */
+  --card-foreground: var(--foreground);
+
+  --popover: 0 0% 100%;
+  --popover-foreground: var(--foreground);
+
+  --primary: 252 100% 69%;               /* #7B61FF (brand violet) */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 28 19% 38%;               /* #73604F */
+  --secondary-foreground: 0 0% 100%;
+
+  --muted: 38 24% 92%;                   /* subtle tinted surface */
+  --muted-foreground: 28 15% 35%;
+
+  --accent: 252 100% 90%;                /* light violet tint */
+  --accent-foreground: 0 0% 7%;
+
+  --destructive: 0 84% 19%;              /* #590808 */
+  --destructive-foreground: 0 0% 100%;
+
+  --success: 160 63% 36%;                /* keep status consistent */
+  --success-foreground: 0 0% 100%;
+  --warning: 38 60% 40%;
+  --warning-foreground: 0 0% 100%;
+  --info: 217 61% 40%;
+  --info-foreground: 0 0% 100%;
+
+  --border: 28 19% 38%;                  /* #73604F */
+  --input: 28 19% 38%;
+  --ring: 252 100% 69%;
+
+  /* Chart tokens (balanced, readable on light) */
+  --chart-1: 252 85% 60%;
+  --chart-2: 200 82% 55%;
+  --chart-3: 160 54% 45%;
+  --chart-4: 40 88% 58%;
+  --chart-5: 340 78% 60%;
+
+  /* Sidebar tokens */
+  --sidebar-background: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: 38 24% 92%;
+  --sidebar-accent-foreground: 28 15% 35%;
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
+  /* Convenience aliases */
+  --color-bg: hsl(var(--background));
+  --color-fg: hsl(var(--foreground));
+}
+
+/* SKY THEME - baby pastel blue */
+.sky {
+  --background: 210 100% 95%;            /* #EAF4FF */
+  --foreground: 222 47% 10%;             /* near-black slate */
+
+  --card: 0 0% 100%;
+  --card-foreground: var(--foreground);
+
+  --popover: 0 0% 100%;
+  --popover-foreground: var(--foreground);
+
+  --primary: 210 90% 60%;                /* soft sky blue */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 210 30% 85%;
+  --secondary-foreground: 222 47% 10%;
+
+  --muted: 210 60% 94%;
+  --muted-foreground: 222 20% 30%;
+
+  --accent: 210 90% 82%;
+  --accent-foreground: 222 47% 10%;
+
+  --destructive: 0 70% 45%;
+  --destructive-foreground: 0 0% 100%;
+
+  --success: 160 60% 38%;
+  --success-foreground: 0 0% 100%;
+  --warning: 40 85% 48%;
+  --warning-foreground: 0 0% 100%;
+  --info: 210 90% 60%;
+  --info-foreground: 0 0% 100%;
+
+  --border: 210 30% 80%;
+  --input: 210 30% 80%;
+  --ring: 210 90% 60%;
+
+  --chart-1: 210 90% 60%;
+  --chart-2: 200 70% 50%;
+  --chart-3: 160 55% 45%;
+  --chart-4: 50 85% 55%;
+  --chart-5: 280 60% 60%;
+
+  --sidebar-background: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: 210 60% 94%;
+  --sidebar-accent-foreground: 222 20% 30%;
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
+  --color-bg: hsl(var(--background));
+  --color-fg: hsl(var(--foreground));
+}
+
+/* ECO THEME - baby pastel green */
+.eco {
+  --background: 150 40% 94%;             /* #ECF7EE */
+  --foreground: 160 20% 12%;             /* deep evergreen */
+
+  --card: 0 0% 100%;
+  --card-foreground: var(--foreground);
+
+  --popover: 0 0% 100%;
+  --popover-foreground: var(--foreground);
+
+  --primary: 150 45% 45%;                /* soft verdant */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 150 25% 80%;
+  --secondary-foreground: 160 20% 12%;
+
+  --muted: 150 30% 92%;
+  --muted-foreground: 160 15% 28%;
+
+  --accent: 150 45% 82%;
+  --accent-foreground: 160 20% 12%;
+
+  --destructive: 0 70% 45%;
+  --destructive-foreground: 0 0% 100%;
+
+  --success: 150 45% 45%;
+  --success-foreground: 0 0% 100%;
+  --warning: 40 85% 48%;
+  --warning-foreground: 0 0% 100%;
+  --info: 200 80% 50%;
+  --info-foreground: 0 0% 100%;
+
+  --border: 150 20% 75%;
+  --input: 150 20% 75%;
+  --ring: 150 45% 45%;
+
+  --chart-1: 150 45% 45%;
+  --chart-2: 160 55% 50%;
+  --chart-3: 200 70% 50%;
+  --chart-4: 40 85% 55%;
+  --chart-5: 280 60% 60%;
+
+  --sidebar-background: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: 150 30% 92%;
+  --sidebar-accent-foreground: 160 15% 28%;
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
   --color-bg: hsl(var(--background));
   --color-fg: hsl(var(--foreground));
 }
