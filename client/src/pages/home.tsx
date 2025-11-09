@@ -190,7 +190,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={inView ? { opacity: 1, y: 0 } : undefined}
                 transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
-                className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-white flex flex-col items-center"
+                className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-foreground flex flex-col items-center"
               >
                 <span>BUBBLE'S</span>
                 <span className="mt-1 md:mt-2 text-red-700 relative">CAFE</span>
@@ -206,7 +206,7 @@ export default function Home() {
               transition={{ duration: 0.4, delay: 0.16, ease: 'easeOut' }}
               className="px-4 max-w-2xl mx-auto"
             >
-              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white/90 leading-[1.7] font-normal" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-foreground leading-[1.7] font-normal" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                 Every story here is a portal to the unexpected,
                 the unexplained, and <span className="italic text-red-700">the unsettling<span className="text-red-700 font-bold">.</span></span>
               </p>
@@ -230,7 +230,7 @@ export default function Home() {
                       onClick={() => setLocation('/index')}
                       onMouseEnter={() => { try { void import('@/pages/index'); } catch {} }}
                       onFocus={() => { try { void import('@/pages/index'); } catch {} }}
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="group relative w-full h-14 shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       data-testid="home-browse-stories"
                     >
                       <span className="text-center mr-1">Browse Stories</span>
@@ -271,7 +271,7 @@ export default function Home() {
                       onMouseEnter={() => { try { void import('@/pages/reader'); } catch {} }}
                       onFocus={() => { try { void import('@/pages/reader'); } catch {} }}
                       aria-label="Start reading now"
-                      className="group relative w-full h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="group relative w-full h-14 shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       <span className="text-center mr-1">Start Reading</span>
                       <motion.div
@@ -302,7 +302,7 @@ export default function Home() {
 
               {posts.length > 0 && (
                 <div className="mt-2 sm:mt-3 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
-                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
+                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-foreground uppercase tracking-wider font-sans">Latest Story</p>
                   <motion.div 
                     onClick={async () => {
                       try {
@@ -314,7 +314,7 @@ export default function Home() {
 
                       }
                     }} 
-                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl bg-white/5 dark:bg-white/10 backdrop-blur-md border border-white/15 transition-all duration-300"
+                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl bg-card/80 backdrop-blur-md border border-border/60 transition-all duration-300"
                     whileHover={{ 
                       y: -8, 
                       scale: 1.02,
@@ -332,10 +332,10 @@ export default function Home() {
                     }}
                   >
                     <h2 
-                      className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 text-white px-2 sm:px-3"
+                      className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 text-foreground px-2 sm:px-3"
                       dangerouslySetInnerHTML={{ __html: sanitizeHtml(posts[0]?.title?.rendered || 'Featured Story') }}
                     />
-                    <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 w-full mb-4 sm:mb-5 md:mb-6 line-clamp-2 px-2 sm:px-3 leading-relaxed md:leading-relaxed font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                    <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground w-full mb-4 sm:mb-5 md:mb-6 line-clamp-2 px-2 sm:px-3 leading-relaxed md:leading-relaxed font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
                       {posts[0]?.content?.rendered && (
                         <motion.span
                           initial={{ opacity: 0, y: 10 }}
@@ -350,7 +350,7 @@ export default function Home() {
                       Read full story 
                       <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 group-hover:translate-x-1 transition-transform" />
                     </div>
-                    <div className="text-sm sm:text-base md:text-lg font-medium text-white/70 mt-3 md:mt-4">
+                    <div className="text-sm sm:text-base md:text-lg font-medium text-muted-foreground mt-3 md:mt-4">
                       {posts[0]?.date ? formatDate(posts[0].date) : ''}
                     </div>
                   </motion.div>
@@ -358,11 +358,10 @@ export default function Home() {
                   {/* App install CTA card */}
                   <motion.div
                     onClick={() => setLocation('/install')}
-                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-7 rounded-xl bg-white/5 dark:bg-white/10 backdrop-blur-md border border-white/15 transition-all duration-300 mt-6"
+                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-7 rounded-xl bg-card/80 backdrop-blur-md border border-border/60 transition-all duration-300 mt-6"
                     whileHover={{ 
                       y: -6, 
-                      scale: 1.01,
-                      borderColor: "rgba(255,255,255,0.4)"
+                      scale: 1.01
                     }}
                     whileTap={{ 
                       scale: 0.98,
@@ -383,17 +382,17 @@ export default function Home() {
                     }}
                   >
                     <div className="flex items-center justify-center gap-3">
-                      <h3 className="text-xl sm:text-2xl font-semibold text-white">
+                      <h3 className="text-xl sm:text-2xl font-semibold text-foreground">
                         Try the Bubble's Cafe App!
                       </h3>
                       <motion.div
                         animate={{ x: [0, 4, 0] }}
                         transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
                       >
-                        <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8 group-hover:translate-x-1 transition-transform duration-300 text-white" />
+                        <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8 group-hover:translate-x-1 transition-transform duration-300" />
                       </motion.div>
                     </div>
-                    <p className="text-white/80 mt-2 text-center text-[12px] sm:text-[13px]">
+                    <p className="text-muted-foreground mt-2 text-center text-[12px] sm:text-[13px]">
                       Install on your phone for a fast, immersive reading experience.
                     </p>
                   </motion.div>

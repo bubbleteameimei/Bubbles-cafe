@@ -447,7 +447,7 @@ export function LikeDislike({
   return (
     <div className={`relative ${className}`} data-toast-container>
       {variant === 'reader' && (
-        <p className="text-center text-sm font-medium mb-4 text-white/80 uppercase tracking-wide font-sans">
+        <p className="text-center text-sm font-medium mb-4 text-muted-foreground uppercase tracking-wide font-sans">
           Loved this story? Let me know with a like—or a dislike if you must
         </p>
       )}
@@ -465,7 +465,7 @@ export function LikeDislike({
             }
             ${liked 
               ? 'bg-green-100 border-green-300 text-green-700 shadow-sm dark:bg-green-900/30 dark:border-green-600 dark:text-green-400' 
-              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
+              : 'bg-card border-border text-foreground/80 hover:bg-muted hover:text-foreground shadow-sm'
             }
           `}
         >
@@ -486,7 +486,7 @@ export function LikeDislike({
             }
             ${disliked 
               ? 'bg-red-100 border-red-300 text-red-700 shadow-sm dark:bg-red-900/30 dark:border-red-600 dark:text-red-400' 
-              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
+              : 'bg-card border-border text-foreground/80 hover:bg-muted hover:text-foreground shadow-sm'
             }
           `}
         >
