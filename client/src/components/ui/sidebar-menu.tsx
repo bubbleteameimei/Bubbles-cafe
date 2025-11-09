@@ -1273,6 +1273,48 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroupContent>
       </SidebarGroup>
 
+      {/* Footer Buttons */}
+      <div className="mb-0 pt-2">
+        {!user ? (
+          <Button
+            variant="default"
+            size="sm"
+            className="w-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider px-4 py-2"
+            onClick={() => handleNavigation("/auth")}
+            aria-label="Sign in to your account"
+          >
+            SIGN IN
+          </Button>
+        ) : (
+          <Button
+            variant="default"
+            size="sm"
+            className="w-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider px-4 py-2"
+            onClick={() => { try { logout?.(); } catch {} }}
+            aria-label="Sign out of your account"
+          >
+            SIGN OUT
+          </Button>
+        )}
+
+        <motion.button
+          onClick={() => handleNavigation('/report-bug')}
+          whileHover={{ scale: 1.02, translateX: 2 }}
+          whileTap={{ scale: 0.98 }}
+          className={cn(
+            "mt-3 mb-0 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-1",
+            location === '/report-bug'
+              ? "text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-accent))]"
+              : "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-primary))] hover:bg-[hsl(var(--sidebar-accent))]"
+          )}
+          aria-label="Report a bug or issue"
+          role="link"
+        >
+          <Bug className="h-4 w-4" aria-hidden="true" />
+          <span className="uppercase tracking-wider font-medium">Report Bug</span>
+        </motion.button>
+      </div>
+
       </div>
     </motion.div>
   );

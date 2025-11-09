@@ -303,15 +303,7 @@
 }
 
 .sidebar-gradient-bottom {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 12px;
-  background: linear-gradient(0deg, hsl(var(--background) / 0.95) 0%, hsl(var(--background) / 0) 100%);
-  pointer-events: none;
-  z-index: 5;
-  opacity: 0.8;
+  display: none !important;
 }
 
 /* Motion animations - Improved stability */
