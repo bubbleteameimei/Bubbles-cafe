@@ -501,13 +501,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     >
       {/* Removed gradient overlay that was interfering with bottom buttons */}
 
-      {/* Support & Legal */}
-      <SidebarGroup className="mt-2 p-2 pt-1">
-        <SidebarGroupContent className="mt-0">
-          <SidebarMenu className="space-y-4">upport & Legal */}
-      <SidebarGroup className="mt-2 p-2 pt-1">
-        <SidebarGroupContent className="mt-0">
-          <SidebarMenu className="space-y-4">crollable content area */}
+      {/* Scrollable content area */}
+     
+          
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-2 pb-2 md:pb-2 scroll-smooth sidebar-menu-container focus:outline-none focus-visible:outline-none bg-transparent"
            style={{
              scrollBehavior: 'smooth',
@@ -643,9 +639,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       aria-current={location === '/community' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/community')}
-                      
+                      <Users className="h-4 w-4 group-hover:scale-105 transition-transform duration-150" />
                       <span className="sidebar-menu-text-enhanced">COMMUNITY</span>
-                    </SidebarMenuButton>
                   </motion.div>
                 </SidebarMenuItem>
 
@@ -709,7 +704,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       {/* Account Settings */}
       <SidebarGroup className="mt-2 p-2 pt-1">
         <SidebarGroupContent className="mt-0">
-          <SidebarMenu className="space-y-4">ccount Settings */}
+          <SidebarMenu className="space-y-4">
       <SidebarGroup className="mt-2 p-2 pt-1">
         <SidebarGroupContent className="mt-0">
           <SidebarMenu className="space-y-4">
@@ -723,7 +718,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     <div className="flex items-center">
                       <HelpCircle className="h-4 w-4 mr-2" />
-                       <pspan>Readingamp; Legal</span>
+                      <span>Support &amp; Legal</span>
                     </div>
                     <ChevronDown
                       className={cn(
@@ -743,9 +738,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     <SidebarMenuSub className="space-y-2.5 border-l border-sidebar-border/30 ml-2 pl-3">
                       <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/profile'}className="space-y-2.5 border-l border-sidebar-border/30 ml-2 pl-3">className="space-y-2.5 border-l border-sidebar-border/30 ml-2 pl-3">
-                      <SidebarMenuSubItem>
+                        
                         <SidebarMenuSubButton
                           isActive={location === '/about'}
                           onClick={() => handleNavigation('/about')}
