@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowUp } from 'lucide-react';
+import { useSidebar } from '@/components/ui/sidebar';
 
 type ScrollContainer = 'window' | 'main';
 
@@ -10,6 +11,28 @@ const BackToTopButton: React.FC = () => {
   const lastScrollEl = useRef<HTMLElement | null>(null);
   const ticking = useRef(false);
   const containerListeners = useRef<Set<HTMLElement>>(new Set());
+  const sidebar = useSidebar();
+
+  // Do not short-circuit hooks. Compute a flag and render null later.
+  // Hide when the dedicated SidebarProvider drawer is open OR when the navigation's drawer (Sheet) is open.
+  // Reactively track whether any mobile sidebar drawer is open
+  const [navOpen, setNavOpen] = useState(false);
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    let alive = true;
+    const check = () => {
+      const exists = !!document.querySelector('[data-sidebar="sidebar"][data-mobile="true"]');
+      if (alive) setNavOpen(exists);
+    };
+    const observer = new MutationObserver(check);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    check();
+    return () => { alive = false; observer.disconnect(); };
+  }, []);
+
+  const hideForSidebarOpen = !!(
+    (sidebar?.isMobile && sidebar?.openMobile) || navOpen
+  );
 
   const getScrollableCandidates = () => {
     const candidates = new Set<HTMLElement>();
@@ -171,6 +194,11 @@ const BackToTopButton: React.FC = () => {
       <span className="sr-only">Back to top</span>
     </button>
   );
+
+  // While the mobile sidebar (drawer) is open, do not render the floating button
+  if (hideForSidebarOpen) {
+    return null;
+  }
 
   // Render into body to escape any overflow/transform stacking contexts
   return typeof document !== 'undefined' ? createPortal(button, document.body) : button;

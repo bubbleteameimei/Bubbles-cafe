@@ -505,3 +505,9 @@ body:not(:has(.home-page)) {
 body.error-page-active footer.site-footer {
   display: none !important;
 }
+
+/* Sidebar: ensure the first group sits flush to the top */
+[data-sidebar="sidebar"] [data-sidebar="group"]:first-child {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}

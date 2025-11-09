@@ -754,7 +754,7 @@ function App() {
                           <Toaster />
                         </React.Suspense>
                         <React.Suspense fallback={null}>
-                          <Sonner position="bottom-left" className="fixed-sonner" />
+                          <Sonner position="bottom-right" className="fixed-sonner" />
                         </React.Suspense>
                         {/* Vercel Analytics - production only and only with analytics consent */}
                         <ConsentAwareVercelAnalytics />
