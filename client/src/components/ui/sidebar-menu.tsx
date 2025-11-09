@@ -463,23 +463,20 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     return;
   }, [prefetchRoute, prefetchDataForRoute]);
 
-  // Compact, minimal top-level menu styling
+  // Comfortable top-level menu styling (more breathing room)
   const menuItemClass = cn(
     "sidebar-menu-button-enhanced",
-    // much tighter spacing
-    "group relative flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[12px] font-medium",
-    "text-sidebar-foreground/85 hover:text-sidebar-foreground",
-    "transition-all duration-150 ease-out",
-    // fully transparent hover
+    "group relative flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] font-medium",
+    "text-sidebar-foreground hover:text-sidebar-foreground",
+    "transition-all duration-200 ease-out",
     "hover:bg-transparent hover:shadow-none",
-    // simple active state: no box/backgrounds
     "data-[active=true]:bg-transparent data-[active=true]:text-sidebar-foreground data-[active=true]:font-semibold",
     "whitespace-nowrap overflow-hidden",
     "font-sans"
   );
 
-  // Submenu styling - transparent, subtle active (no boxes)
-  const submenuItemClass = "px-2 py-1 pr-8 text-[12px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[28px] flex items-center -mb-0.5 rounded-sm transition-colors duration-150 ease-out hover:bg-transparent focus:bg-transparent border-l border-transparent data-[active=true]:border-l-primary/40";
+  // Submenu styling - give items a bit more space
+  const submenuItemClass = "px-2.5 py-1.5 pr-8 text-[12px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[30px] flex items-center mb-0.5 rounded-sm transition-colors duration-200 ease-out hover:bg-transparent focus:bg-transparent border-l border-transparent data-[active=true]:border-l-primary/50";
 
 
 
@@ -524,13 +521,13 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             ease: [0.25, 0.46, 0.45, 0.94]
           }}
         >
-          <SidebarGroup className="space-y-0 -mt-8">
-            <SidebarGroupLabel className="sidebar-group-label-enhanced px-1.5 text-[11px] font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-4 font-sans">
+          <SidebarGroup className="space-y-1 mt-0">
+            <SidebarGroupLabel className="sidebar-group-label-enhanced px-1.5 text-[12px] font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-5 font-sans">
               Navigation
             </SidebarGroupLabel>
 
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-0">
+              <SidebarMenu className="space-y-1.5">
                 <SidebarMenuItem>
                   <motion.div
                     initial={{ opacity: 0, x: -15 }}
@@ -679,15 +676,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           </SidebarGroup>
         </motion.div>
 
-        <SidebarSeparator className="my-2" />
+        <SidebarSeparator className="my-3" />
 
       {/* Games & Interactive Experiences - Placeholder */}
-      <SidebarGroup className="-mt-10 p-0 pt-0">
-        <SidebarGroupLabel className="h-5 px-1.5 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-2 uppercase tracking-wider">
+      <SidebarGroup className="mt-2 p-2 pt-1">
+        <SidebarGroupLabel className="h-6 px-2 text-sm font-medium text-[hsl(var(--sidebar-foreground))] mb-2 uppercase tracking-wider">
           GAMES & INTERACTIVE
         </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-3">
-          <SidebarMenu className="space-y-0">
+        <SidebarGroupContent className="mt-0">
+          <SidebarMenu className="space-y-1">
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={location === '/eden-hollow'}
@@ -706,12 +703,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Accessibility */}
-      <SidebarGroup className="-mt-10 p-0 pt-0">
-        <SidebarGroupLabel className="h-5 px-1.5 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-2 uppercase tracking-wider">
+      <SidebarGroup className="mt-2 p-2 pt-1">
+        <SidebarGroupLabel className="h-6 px-2 text-sm font-medium text-[hsl(var(--sidebar-foreground))] mb-2 uppercase tracking-wider">
           READING & ACCESSIBILITY
         </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-3">
-          <SidebarMenu className="space-y-0">
+        <SidebarGroupContent className="mt-0">
+          <SidebarMenu className="space-y-1">
             <SidebarMenuItem>
               <Collapsible 
                 open={displayOpen} 
@@ -802,12 +799,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Account Settings */}
-      <SidebarGroup className="-mt-10 p-0 pt-0">
-        <SidebarGroupLabel data-tooltip-anchor="account-settings" className="h-5 px-1.5 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-2 uppercase tracking-wider">
+      <SidebarGroup className="mt-2 p-2 pt-1">
+        <SidebarGroupLabel data-tooltip-anchor="account-settings" className="h-6 px-2 text-sm font-medium text-[hsl(var(--sidebar-foreground))] mb-2 uppercase tracking-wider">
           ACCOUNT SETTINGS
         </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-3">
-          <SidebarMenu className="space-y-0">
+        <SidebarGroupContent className="mt-0">
+          <SidebarMenu className="space-y-1">
             <SidebarMenuItem>
               <Collapsible open={accountOpen} onOpenChange={setAccountOpen} className="sidebar-dropdown-container">
                 <CollapsibleTrigger asChild>
@@ -902,12 +899,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Support & Legal */}
-      <SidebarGroup className="-mt-10 p-0 pt-0">
-        <SidebarGroupLabel className="h-5 px-1.5 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-2 uppercase tracking-wider">
+      <SidebarGroup className="mt-2 p-2 pt-1">
+        <SidebarGroupLabel className="h-6 px-2 text-sm font-medium text-[hsl(var(--sidebar-foreground))] mb-2 uppercase tracking-wider">
           SUPPORT & LEGAL
         </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-3">
-          <SidebarMenu className="space-y-0">
+        <SidebarGroupContent className="mt-0">
+          <SidebarMenu className="space-y-1">
             <SidebarMenuItem>
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen} className="sidebar-dropdown-container">
                 <CollapsibleTrigger asChild>
@@ -1015,12 +1012,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Admin Navigation - Only show if user is admin */}
       {user?.isAdmin && (
-        <SidebarGroup className="-mt-2">
-          <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-0 uppercase tracking-wider">
+        <SidebarGroup className="mt-2">
+          <SidebarGroupLabel className="px-1.5 text-xs font-medium text-[hsl(var(--sidebar-foreground))] mb-2 uppercase tracking-wider">
             ADMINISTRATION
           </SidebarGroupLabel>
           <SidebarGroupContent className="-mt-0">
-            <SidebarMenu className="space-y-0">
+            <SidebarMenu className="space-y-1">
               <SidebarMenuItem>
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen} className="sidebar-dropdown-container">
                   <CollapsibleTrigger asChild>
@@ -1213,7 +1210,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       )}
 
       {/* Footer Buttons */}
-      <div className="mt-auto mb-0 border-t border-[hsl(var(--sidebar-border))] pt-3">
+      <div className="mt-auto mb-0 border-t border-[hsl(var(--sidebar-border))] pt-4">
         {!user ? (
           <Button
             variant="default"
@@ -1245,7 +1242,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           whileHover={{ scale: 1.02, translateX: 2 }}
           whileTap={{ scale: 0.98 }}
           className={cn(
-            "mt-2 mb-0 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-1",
+            "mt-3 mb-0 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-1",
             location === '/report-bug'
               ? "text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-accent))]"
               : "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-primary))] hover:bg-[hsl(var(--sidebar-accent))]"
