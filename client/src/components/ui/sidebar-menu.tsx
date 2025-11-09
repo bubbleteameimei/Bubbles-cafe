@@ -36,7 +36,7 @@ import {
 // Code Quality: Break up large components into smaller ones for maintainability.
 export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [location, setLocation] = useLocation();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   // Removed loading hook for instant navigation
   const [displayOpen, setDisplayOpen] = React.useState(false);
   const [accountOpen, setAccountOpen] = React.useState(false);
@@ -502,7 +502,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       {/* Removed gradient overlay that was interfering with bottom buttons */}
 
       {/* Scrollable content area */}
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-2 pb-12 md:pb-6 scroll-smooth sidebar-menu-container focus:outline-none focus-visible:outline-none bg-transparent"
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-2 pb-2 md:pb-2 scroll-smooth sidebar-menu-container focus:outline-none focus-visible:outline-none bg-transparent"
            style={{
              scrollBehavior: 'smooth',
              scrollbarWidth: 'thin',
@@ -958,6 +958,17 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
+                        isActive={location === '/report-bug'}
+                        onClick={() => handleNavigation('/report-bug')}
+                        className={submenuItemClass}
+                        aria-current={location === '/report-bug' ? 'page' : undefined}
+                      >
+                        <Bug className="h-7 w-7 mr-2" />
+                        <span>Report Bug</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
                         isActive={location === '/contact'}
                         onClick={() => handleNavigation('/contact')}
                         className={submenuItemClass}
@@ -1209,51 +1220,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroup>
       )}
 
-      {/* Footer Buttons */}
-      <div className="mb-0 pt-2">
-        {!user ? (
-          <Button
-            variant="default"
-            size="sm"
-            className="w-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider px-4 py-2"
-            onClick={() => handleNavigation("/auth")}
-            aria-label="Sign in to your account"
-          >
-            SIGN IN
-          </Button>
-        ) : (
-          <Button
-            variant="default"
-            size="sm"
-            className="w-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider px-4 py-2"
-            onClick={() => {
-              if (logout) {
-                logout();
-              }
-            }}
-            aria-label="Sign out of your account"
-          >
-            SIGN OUT
-          </Button>
-        )}
-
-        <motion.button
-          onClick={() => handleNavigation('/report-bug')}
-          whileHover={{ scale: 1.02, translateX: 2 }}
-          whileTap={{ scale: 0.98 }}
-          className={cn(
-            "mt-3 mb-0 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-1",
-            location === '/report-bug'
-              ? "text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-accent))]"
-              : "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-primary))] hover:bg-[hsl(var(--sidebar-accent))]"
-          )}
-          aria-label="Report a bug or issue"
-          role="link"
-        >
-          <Bug className="h-4 w-4" aria-hidden="true" />
-          <span className="uppercase tracking-wider font-medium">Report Bug</span>
-        </motion.button>
-      </div>
+      
       </div>
     </motion.div>
   );
