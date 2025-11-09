@@ -15,12 +15,23 @@ const BackToTopButton: React.FC = () => {
 
   // Do not short-circuit hooks. Compute a flag and render null later.
   // Hide when the dedicated SidebarProvider drawer is open OR when the navigation's drawer (Sheet) is open.
-  const navDrawerOpen =
-    typeof document !== 'undefined' &&
-    !!document.querySelector('[data-sidebar="sidebar"][data-mobile="true"]');
+  // Reactively track whether any mobile sidebar drawer is open
+  const [navOpen, setNavOpen] = useState(false);
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    let alive = true;
+    const check = () => {
+      const exists = !!document.querySelector('[data-sidebar="sidebar"][data-mobile="true"]');
+      if (alive) setNavOpen(exists);
+    };
+    const observer = new MutationObserver(check);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    check();
+    return () => { alive = false; observer.disconnect(); };
+  }, []);
+
   const hideForSidebarOpen = !!(
-    (sidebar?.isMobile && sidebar?.openMobile) ||
-    navDrawerOpen
+    (sidebar?.isMobile && sidebar?.openMobile) || navOpen
   );
 
   const getScrollableCandidates = () => {
