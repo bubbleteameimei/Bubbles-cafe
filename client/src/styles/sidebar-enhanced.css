@@ -496,6 +496,13 @@
   scrollbar-width: thin !important;           /* Firefox */
   -ms-overflow-style: auto !important;        /* IE/Edge */
   -webkit-overflow-scrolling: touch !important;
+  height: 100% !important;                    /* Fill available height to avoid bottom overlay strips */
+  max-height: 100% !important;                /* Override calc(100vh - Npx) caps from legacy CSS */
+}
+
+/* Prevent any pseudo-element overlays inside the mobile drawer */
+[data-sidebar="sidebar"][data-mobile="true"]::after {
+  display: none !important;
 }
 
 [data-sidebar="sidebar"] .sidebar-menu-container::-webkit-scrollbar {

@@ -14,7 +14,14 @@ const BackToTopButton: React.FC = () => {
   const sidebar = useSidebar();
 
   // Do not short-circuit hooks. Compute a flag and render null later.
-  const hideForSidebarOpen = !!(sidebar?.isMobile && sidebar?.openMobile);
+  // Hide when the dedicated SidebarProvider drawer is open OR when the navigation's drawer (Sheet) is open.
+  const navDrawerOpen =
+    typeof document !== 'undefined' &&
+    !!document.querySelector('[data-sidebar="sidebar"][data-mobile="true"]');
+  const hideForSidebarOpen = !!(
+    (sidebar?.isMobile && sidebar?.openMobile) ||
+    navDrawerOpen
+  );
 
   const getScrollableCandidates = () => {
     const candidates = new Set<HTMLElement>();

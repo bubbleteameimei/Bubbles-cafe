@@ -4,7 +4,7 @@ import {
   Bug, Scroll, Shield, Monitor, Bell, Lock, Building,
   Mail, MessageSquare, Palette, Type,
   User, Link2 as Link, CircleUserRound as UserCircle, Bookmark as BookmarkIcon,
-  LineChart, Eye, Star, Compass, Database, Globe, ShieldAlert
+  LineChart, Eye, Star, Compass, Database, Globe, ShieldAlert, Gamepad2
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -704,9 +704,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Accessibility */}
       <SidebarGroup className="mt-2 p-2 pt-1">
-        <SidebarGroupLabel className="h-6 px-2 text-sm font-medium text-[hsl(var(--sidebar-foreground))] mb-2 uppercase tracking-wider">
-          READING & ACCESSIBILITY
-        </SidebarGroupLabel>
         <SidebarGroupContent className="mt-0">
           <SidebarMenu className="space-y-1">
             <SidebarMenuItem>
@@ -800,9 +797,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Account Settings */}
       <SidebarGroup className="mt-2 p-2 pt-1">
-        <SidebarGroupLabel data-tooltip-anchor="account-settings" className="h-6 px-2 text-sm font-medium text-[hsl(var(--sidebar-foreground))] mb-2 uppercase tracking-wider">
-          ACCOUNT SETTINGS
-        </SidebarGroupLabel>
         <SidebarGroupContent className="mt-0">
           <SidebarMenu className="space-y-1">
             <SidebarMenuItem>
@@ -899,7 +893,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Support & Legal */}
-      <SidebarGroup className="mt-2 p-2 pt-1">
+     <<SidebarGroup className="mt-2 p-2 pt-1">
         <SidebarGroupLabel className="h-6 px-2 text-sm font-medium text-[hsl(var(--sidebar-foreground))] mb-2 uppercase tracking-wider">
           SUPPORT & LEGAL
         </SidebarGroupLabel>
