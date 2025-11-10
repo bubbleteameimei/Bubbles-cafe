@@ -501,14 +501,20 @@ export default function StoriesIndexContent() {
   useEffect(() => {
     if (!readyReactions) return;
     let mounted = true;
-    (async () => {
+    const fetched = fetchedReactionIdsRef.current;
+    let io: IntersectionObserver | null = null;
+    let pending: number[] = [];
+    let flushTimer: any = null;
+
+    // Preload a small initial batch near the top of the list to avoid empty counts above the fold
+    const preloadInitial = async () => {
       try {
         const initialBatchSize = Math.max(24, Math.min(sortedPosts.length, (visibleCount || 0) + (gridCols || 1) * 6));
         const candidateIds = sortedPosts
           .slice(0, initialBatchSize)
           .map((p: Post) => Number(p.id))
           .filter((n: number) => Number.isFinite(n))
-          .filter((id: number) => !fetchedReactionIdsRef.current.has(id));
+          .filter((id: number) => !fetched.has(id));
         if (candidateIds.length === 0) return;
         const { fetchReactionsBatch } = await import("@/api/reactions");
         const totals = await fetchReactionsBatch(candidateIds);
@@ -516,29 +522,13 @@ export default function StoriesIndexContent() {
         const map: Record<number, import("@/api/reactions").ReactionTotals> = {};
         for (const t of totals) {
           map[t.postId] = t;
-          fetchedReactionIdsRef.current.add(t.postId);
+          fetched.add(t.postId);
         }
         setReactionTotals((prev) => ({ ...prev, ...map }));
       } catch {
-        // Ignore failures; UI continues with local fallback logic
+        // ignore
       }
-    })();
-  
-    // Listen for reaction updates from LikeDislike
-    const onUpdate = (e: Event) => {
-      const detail = (e as CustomEvent).detail as import("@/api/reactions").ReactionTotals;
-      if (!detail || typeof detail.postId !== 'number') return;
-      setReactionTotals((prev: Record<number, import("@/api/reactions").ReactionTotals>) => ({ ...prev, [detail.postId]: detail }));
-      try { fetchedReactionIdsRef.current.add(detail.postId); } catch {}
     };
-    window.addEventListener('reaction:updated', onUpdate as EventListener);
-    return () => { mounted = false; window.removeEventListener('reaction:updated', onUpdate as EventListener); };
-  }, [sortedPosts, visibleCount, gridCols, readyReactions]);eadyReactions) return;
-    let mounted = true;
-    const fetched = fetchedReactionIdsRef.current;
-    let io: IntersectionObserver | null = null;
-    let pending: number[] = [];
-    let flushTimer: any = null;
 
     const flush = async () => {
       try {
@@ -601,6 +591,9 @@ export default function StoriesIndexContent() {
     };
     const interval = setInterval(reobserve, 1000);
 
+    // Start with a small initial preload
+    void preloadInitial();
+
     // Listen for reaction updates from LikeDislike
     const onUpdate = (e: Event) => {
       const detail = (e as CustomEvent).detail as import("@/api/reactions").ReactionTotals;
@@ -617,14 +610,19 @@ export default function StoriesIndexContent() {
       try { io?.disconnect(); } catch {}
       if (flushTimer) clearTimeout(flushTimer);
     };
-  }, [readyReactions]);
+  }, [sortedPosts, visibleCount, gridCols, readyReactions]);
 
   // Compute trending scores off the main thread when possible
   useEffect(() => {
     let cancelled = false;
     const schedule = () => {
+      const compactPosts = sortedPosts.map(p => ({
+        id: Number(p.id),
+        createdAt: p.createdAt as any,
+        views: Number((p as any)?.metadata?.pageViews ?? 0),
+      }));
       computeTrendingScores(
-        sortedPosts.map(p => ({ id: Number(p.id), createdAt: p.createdAt as any, metadata: (p as any).metadata, likesCount: (p as any).likesCount })),
+        compactPosts as any,
         reactionTotals as any,
         14
       ).then((scores) => {
@@ -1472,6 +1470,7 @@ export default function StoriesIndexContent() {
                       <article
                         key={post.id}
                         data-idx={idx}
+                        data-post-id={post.id}
                         className="group story-card-container relative"
                       >
                         <Card
@@ -1502,93 +1501,6 @@ export default function StoriesIndexContent() {
 
                                   const defOverride = getThemeDefinitionOverride(themeKeyForTint);
 
-                                  let chosenIconSlug =
-                                    override?.icon ||
-                                    (md && (md as any).themeIcon) ||
-                                    defOverride?.icon ||
-                                    (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
-                                    'ghost';
-                                  if (themeKeyForTint === 'BODY_HORROR') {
-                                    chosenIconSlug = 'bone';
-                                  }
-
-                                  const ThemeIconCmp = (() => {
-                                    const slug = String(chosenIconSlug).toLowerCase();
-                                    switch (slug) {
-                                      case 'skull': return Skull;
-                                      case 'brain': return Brain;
-                                      case 'pill': return Pill;
-                                      case 'cpu': return Cpu;
-                                      case 'dna': return Dna;
-                                      case 'ghost': return Ghost;
-                                      case 'umbrella': return Umbrella;
-                                      case 'footprints': return Footprints;
-                                      case 'cloud-rain':
-                                      case 'cloudrain': return CloudRain;
-                                      case 'castle': return Castle;
-                                      case 'bug': return Bug;
-                                      case 'radiation': return Radiation;
-                                      case 'user-minus2':
-                                      case 'userminus2': return UserMinus2;
-                                      case 'user-plus':
-                                      case 'userplus': return UserPlus;
-                                      case 'anchor': return Anchor;
-                                      case 'alert-triangle':
-                                      case 'alerttriangle': return AlertTriangle;
-                                      case 'building': return Building;
-                                      case 'worm': return Worm;
-                                      case 'cloud': return Cloud;
-                                      case 'cloud-fog':
-                                      case 'cloudfog': return CloudFog;
-                                      case 'flame': return Flame;
-                                      case 'eye': return Eye;
-                                      case 'hourglass': return Hourglass;
-                                      case 'knife': return ForkKnife;
-                                      case 'utensils':
-                                      case 'fork-knife':
-                                      case 'forkknife': return ForkKnife;
-                                      case 'cat': return Cat;
-                                      case 'moon': return Moon;
-                                      case 'dog': return Dog;
-                                      case 'radio': return Radio;
-                                      case 'moon-star':
-                                      case 'moonstar': return MoonStar;
-                                      case 'box': return Box;
-                                      case 'car': return Car;
-                                      case 'alien': return Moon;
-                                      case 'flask': return FlaskConical;
-                                      case 'trees':
-                                      case 'tree': return Trees;
-                                    }
-                                    // Fallback by theme key for diversity when slug is unknown
-                                    switch (themeKeyForTint) {
-                                      case 'TECHNOLOGICAL': return Cpu;
-                                      case 'PSYCHOLOGICAL': return Brain;
-                                      case 'SUPERNATURAL': return Ghost;
-                                      case 'UNCANNY': return Eye;
-                                      case 'EXISTENTIAL': return Hourglass;
-                                      case 'DOPPELGANGER': return UserPlus;
-                                      case 'CANNIBALISM': return ForkKnife;
-                                      case 'SLASHER': return Skull;
-                                      case 'MONSTER': return Cat;
-                                      case 'ZOMBIE': return Footprints;
-                                      case 'VAMPIRE': return Moon;
-                                      case 'WEREWOLF': return Dog;
-                                      case 'PARANORMAL': return Radio;
-                                      case 'DREAM_HORROR': return MoonStar;
-                                      case 'CURSED_OBJECT': return Box;
-                                      case 'TIME_HORROR': return Clock;
-                                      case 'APOCALYPTIC': return Radiation;
-                                      case 'SCIENCE_HORROR': return FlaskConical;
-                                      case 'BODY_HORROR': return Bone;
-                                      case 'FOLK_HORROR': return Trees;
-                                      case 'GOTHIC': return Castle;
-                                      case 'COSMIC': return Moon;
-                                      case 'VEHICULAR': return Car;
-                                      default: return Ghost;
-                                    }
-                                  })();
-
                                   const baseLabel =
                                     override?.label ||
                                     defOverride?.label ||
@@ -1608,36 +1520,10 @@ export default function StoriesIndexContent() {
                                     return baseLabel;
                                   })();
 
-                                  const badgeTint = (() => {
-                                    switch (themeKeyForTint) {
-                                      case 'DEATH': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
-                                      case 'BODY_HORROR': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700';
-                                      case 'SUPERNATURAL': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700';
-                                      case 'PSYCHOLOGICAL': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700';
-                                      case 'EXISTENTIAL': return 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700';
-                                      case 'HORROR': return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-700';
-                                      case 'STALKING': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700';
-                                      case 'CANNIBALISM': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
-                                      case 'PSYCHOPATH': return 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200 dark:bg-fuchsia-900/30 dark:text-fuchsia-300 dark:border-fuchsia-700';
-                                      case 'DOPPELGANGER': return 'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-700';
-                                      case 'VEHICULAR': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700';
-                                      case 'PARASITE': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700';
-                                      case 'TECHNOLOGICAL': return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700';
-                                      case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700';
-                                      case 'UNCANNY': return 'bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-700';
-                                      case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark:text-stone-300 dark:border-stone-700';
-                                      case 'CURSED_OBJECT': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700';
-                                      case 'OCCULT': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700';
-                                      case 'URBAN_HORROR': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700';
-                                      case 'SUICIDE': return 'bg-zinc-100 text-zinc-800 border-zinc-200 dark:bg-zinc-900/30 dark:text-zinc-300 dark:border-zinc-700';
-                                      case 'CONTAGION': return 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700';
-                                      default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark:text-foreground dark:border-primary/20';
-                                    }
-                                  })();
+                                  const badgeTint = getBadgeTint(themeKeyForTint);
                                   return (
                                     <div className="mt-1">
-                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                        <ThemeIconCmp className="h-3 w-3" />
+                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 border ${badgeTint}`}>
                                         {prettyLabel}
                                       </Badge>
                                     </div>
