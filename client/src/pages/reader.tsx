@@ -1209,25 +1209,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
           {/* Contents Dialog with controlled open state - non-fullscreen with close button */}
           <Dialog open={contentsDialogOpen} onOpenChange={setContentsDialogOpen}>
-            <TooltipProvider>
-              <Tooltip>
-                <DialogTrigger asChild>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="h-8 px-3 bg-primary hover:bg-primary/90 text-white flex items-center gap-1.5 rounded-md w-fit"
-                      noOutline
-                      aria-label="Table of Contents"
-                    >
-                      <BookText className="h-4 w-4 flex-shrink-0" />
-                      <span className="hidden sm:inline text-xs font-semibold tracking-wide">TOC</span>
-                    </Button>
-                  </TooltipTrigger>
-                </DialogTrigger>
-                <TooltipContent side="bottom" align="center" className="sm:hidden">Table of Contents</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <DialogTrigger asChild>
+              <Button
+                variant="default"
+                size="sm"
+                className="h-8 px-3 bg-primary hover:bg-primary/90 text-white flex items-center gap-1.5 rounded-md w-fit"
+                noOutline
+                aria-label="Table of Contents"
+                title="Table of Contents"
+              >
+                <BookText className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline text-xs font-semibold tracking-wide">TOC</span>
+              </Button>
+            </DialogTrigger>
             {/* Wrap the TableOfContents component to ensure DialogContent has proper aria attributes */}
             <DialogContent 
               className="max-w-md" 
@@ -1755,6 +1749,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                           onClick={goToRandomStory}
                           disabled={posts.length <= 1}
                           aria-label="Random story"
+                          title="Random"
                           className="h-10 w-10 rounded-full bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
                         >
                           <Shuffle className="h-4 w-4" />
@@ -1962,7 +1957,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </div>
             
             {/* Social sharing and support section  */}
-              <div className={`social-support-section mt-8 pt-6 border-t border-border ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+              <div
+                aria-hidden="true"
+                className="border-b border-border"
+                style={{
+                  width: '100vw',
+                  marginLeft: 'calc(50% - 50vw)',
+                  marginRight: 'calc(50% - 50vw)',
+                  position: 'relative',
+                  left: 0,
+                  transform: 'none'
+                }}
+              />
+              <div className={`social-support-section mt-8 pt-6 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                 
                 {/* Support writing card with auto-wired authorId */}
                 <SupportWritingCard authorId={resolveAuthorId(currentPost)} />

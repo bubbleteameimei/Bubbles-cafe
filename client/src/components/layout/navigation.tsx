@@ -421,7 +421,7 @@ export default function Navigation() {
           padding: 0,
           width: "100%",
           paddingTop: "env(safe-area-inset-top, 0px)",
-          paddingBottom: "6px",
+          paddingBottom: "3px",
         }}
       >
         <div className="main-header flex items-center justify-between h-14 px-4">

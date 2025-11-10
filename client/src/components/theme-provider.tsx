@@ -50,20 +50,14 @@ export function ThemeProvider({
   useEffect(() => {
     const root = window.document.documentElement;
 
-    // Apply smooth color-only transitions during user-initiated theme changes (skip first mount)
-    if (mountedRef.current) {
-      try {
-        root.classList.add("theme-smooth");
-        if (smoothTimeoutRef.current != null) window.clearTimeout(smoothTimeoutRef.current);
-        smoothTimeoutRef.current = window.setTimeout(() => {
-          try {
-            root.classList.remove("theme-smooth");
-          } catch {}
-          smoothTimeoutRef.current = null;
-        }, 180); // shortened to match CSS 160ms for snappier transitions
-      } catch {}
-    } else {
+    // Skip smooth class to make theme changes instantaneous
+    if (!mountedRef.current) {
       mountedRef.current = true;
+    } else {
+      if (smoothTimeoutRef.current != null) {
+        window.clearTimeout(smoothTimeoutRef.current);
+        smoothTimeoutRef.current = null;
+      }
     }
 
     // Apply theme classes
@@ -78,22 +72,15 @@ export function ThemeProvider({
       root.classList.add(systemTheme);
       root.style.colorScheme = systemTheme === "dark" ? "dark" : "light";
 
-      // Listen for changes in system preference
+      // Listen for changes in system preference (no smooth class)
       const handleSystemThemeChange = (e: MediaQueryListEvent) => {
         root.classList.remove("light", "dark", "sky", "eco");
         const newTheme = e.matches ? "dark" : "light";
 
-        // Smooth transition for system-triggered changes as well
-        try {
-          root.classList.add("theme-smooth");
-          if (smoothTimeoutRef.current != null) window.clearTimeout(smoothTimeoutRef.current);
-          smoothTimeoutRef.current = window.setTimeout(() => {
-            try {
-              root.classList.remove("theme-smooth");
-            } catch {}
-            smoothTimeoutRef.current = null;
-          }, 180);
-        } catch {}
+        if (smoothTimeoutRef.current != null) {
+          window.clearTimeout(smoothTimeoutRef.current);
+          smoothTimeoutRef.current = null;
+        }
 
         root.classList.add(newTheme);
         root.style.colorScheme = newTheme === "dark" ? "dark" : "light";
@@ -111,9 +98,6 @@ export function ThemeProvider({
       if (smoothTimeoutRef.current != null) {
         window.clearTimeout(smoothTimeoutRef.current);
         smoothTimeoutRef.current = null;
-        try {
-          root.classList.remove("theme-smooth");
-        } catch {}
       }
       if (removeListener) removeListener();
     };
