@@ -29,6 +29,7 @@ import { getThemeDefinitionOverride, syncThemeDefinitionOverridesFromServer } fr
 import { getBadgeTint } from "@/lib/theme-badges";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { VirtualScrollArea } from "@/components/ui/VirtualScrollArea";
+import { computeTrendingScores } from "@/lib/trending";
 
 
 
@@ -56,6 +57,7 @@ export default function StoriesIndexContent() {
   // Defer heavy search-driven computations to improve INP
   const deferredSearch = React.useDeferredValue(search);
   const [categoryPills, setCategoryPills] = useState<Array<{ key: string; count: number; pretty: string }>>([]);
+  const [trendingScores, setTrendingScores] = useState<Record<number, number>>({});
   
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [pageSize, setPageSize] = useState<number>(6);
@@ -500,6 +502,29 @@ export default function StoriesIndexContent() {
     return () => { mounted = false; window.removeEventListener('reaction:updated', onUpdate as EventListener); };
   }, [allPosts, readyReactions]);
 
+  // Compute trending scores off the main thread when possible
+  useEffect(() => {
+    let cancelled = false;
+    const schedule = () => {
+      computeTrendingScores(
+        sortedPosts.map(p => ({ id: Number(p.id), createdAt: p.createdAt as any, metadata: (p as any).metadata, likesCount: (p as any).likesCount })),
+        reactionTotals as any,
+        14
+      ).then((scores) => {
+        if (!cancelled) setTrendingScores(scores || {});
+      }).catch(() => {
+        if (!cancelled) setTrendingScores({});
+      });
+    };
+    const ric = (window as any)?.requestIdleCallback as any;
+    if (typeof ric === 'function') {
+      ric(() => schedule(), { timeout: 1500 });
+    } else {
+      setTimeout(schedule, 0);
+    }
+    return () => { cancelled = true; };
+  }, [sortedPosts, reactionTotals]);
+
   // Filter and sort posts for display
   const filteredPosts = useMemo(() => {
     let list = [...sortedPosts];
@@ -522,15 +547,19 @@ export default function StoriesIndexContent() {
         break;
       case 'popular':
         list.sort((a, b) => {
+          const map = trendingScores;
+          if (map && Object.keys(map).length > 0) {
+            const aScore = map[a.id] ?? 0;
+            const bScore = map[b.id] ?? 0;
+            return bScore - aScore;
+          }
+          // Fallback to inline calculation when scores not ready
           const aTotals = reactionTotals[a.id];
           const bTotals = reactionTotals[b.id];
-
           const aLikes = Number(aTotals?.totals?.likes ?? (a.likesCount || 0));
           const bLikes = Number(bTotals?.totals?.likes ?? (b.likesCount || 0));
           const aViews = (a.metadata && (a.metadata as any).pageViews) ? Number((a.metadata as any).pageViews) : 0;
           const bViews = (b.metadata && (b.metadata as any).pageViews) ? Number((b.metadata as any).pageViews) : 0;
-
-          // Trending decay (14-day window)
           const now = Date.now();
           const dayMs = 24 * 60 * 60 * 1000;
           const windowDays = 14;
@@ -538,10 +567,8 @@ export default function StoriesIndexContent() {
           const bAgeDays = Math.max(0, (now - new Date(b.createdAt).getTime()) / dayMs);
           const aDecay = Math.max(0.2, 1 - (aAgeDays / windowDays));
           const bDecay = Math.max(0.2, 1 - (bAgeDays / windowDays));
-
           const aScore = (aLikes * 2.5 + aViews * 0.8) * aDecay;
           const bScore = (bLikes * 2.5 + bViews * 0.8) * bDecay;
-
           return bScore - aScore;
         });
         break;
@@ -613,26 +640,29 @@ export default function StoriesIndexContent() {
     return list;
   }, [sortedPosts, categoryFilter]);
 
-  // Precompute popular posts (top 6) for carousel without nested IIFE
+  // Precompute popular posts (top 6) with trending score map when available
   const popularPosts = useMemo(() => {
-    const now = Date.now();
-    const dayMs = 24 * 60 * 60 * 1000;
-    const windowDays = 14;
-
-    return [...sortedPosts]
-      .map(p => {
-        const totals = reactionTotals[p.id];
-        const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
-        const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
-        const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
-        const decay = Math.max(0.2, 1 - (ageDays / windowDays));
-        const score = (likes * 2.5 + views * 0.8) * decay;
-        return { p, score };
-      })
+    const useScores = Object.keys(trendingScores).length > 0;
+    const arr = [...sortedPosts]
+      .map(p => ({
+        p,
+        score: useScores ? (trendingScores[p.id] ?? 0) : (() => {
+          const totals = reactionTotals[p.id];
+          const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
+          const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
+          const now = Date.now();
+          const dayMs = 24 * 60 * 60 * 1000;
+          const windowDays = 14;
+          const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
+          const decay = Math.max(0.2, 1 - (ageDays / windowDays));
+          return (likes * 2.5 + views * 0.8) * decay;
+        })()
+      }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 6)
       .map(x => x.p);
-  }, [sortedPosts, reactionTotals]);
+    return arr;
+  }, [sortedPosts, reactionTotals, trendingScores]);
 
   // Log zero-results interactions
   useEffect(() => {
@@ -673,18 +703,24 @@ export default function StoriesIndexContent() {
       const dayMs = 24 * 60 * 60 * 1000;
       const windowDays = 14;
 
-      const topByPopular = [...all]
-        .map(p => {
-          const totals = reactionTotals[p.id];
-          const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
-          const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
-          const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
-          const decay = Math.max(0.2, 1 - (ageDays / windowDays));
-          const score = (likes * 2.5 + views * 0.8) * decay;
-          return { p, score };
-        })
-        .sort((a, b) => b.score - a.score)
-        .map(x => x.p);
+      const useScores = Object.keys(trendingScores).length > 0;
+      const topByPopular = useScores
+        ? [...all]
+            .map(p => ({ p, score: trendingScores[p.id] ?? 0 }))
+            .sort((a, b) => b.score - a.score)
+            .map(x => x.p)
+        : [...all]
+            .map(p => {
+              const totals = reactionTotals[p.id];
+              const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
+              const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
+              const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
+              const decay = Math.max(0.2, 1 - (ageDays / windowDays));
+              const score = (likes * 2.5 + views * 0.8) * decay;
+              return { p, score };
+            })
+            .sort((a, b) => b.score - a.score)
+            .map(x => x.p);
 
       const lastTheme = (() => {
         try { return localStorage.getItem('lastFeaturedTheme') || ''; } catch { return ''; }
@@ -1090,24 +1126,29 @@ export default function StoriesIndexContent() {
                         size="sm"
                         onClick={() => {
                           try {
-                            // Build a top-5 list by trending (likes + views with 14-day decay)
-                            const now = Date.now();
-                            const dayMs = 24 * 60 * 60 * 1000;
-                            const windowDays = 14;
-
-                            const topPopular = [...sortedPosts]
-                              .map(p => {
-                                const totals = reactionTotals[p.id];
-                                const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
-                                const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
-                                const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
-                                const decay = Math.max(0.2, 1 - (ageDays / windowDays));
-                                const score = (likes * 2.5 + views * 0.8) * decay;
-                                return { p, score };
-                              })
-                              .sort((a, b) => b.score - a.score)
-                              .slice(0, 5)
-                              .map(x => x.p);
+                            const useScores = Object.keys(trendingScores).length > 0;
+                            const topPopular = useScores
+                              ? [...sortedPosts]
+                                  .map(p => ({ p, score: trendingScores[p.id] ?? 0 }))
+                                  .sort((a, b) => b.score - a.score)
+                                  .slice(0, 5)
+                                  .map(x => x.p)
+                              : [...sortedPosts]
+                                  .map(p => {
+                                    const totals = reactionTotals[p.id];
+                                    const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
+                                    const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
+                                    const now = Date.now();
+                                    const dayMs = 24 * 60 * 60 * 1000;
+                                    const windowDays = 14;
+                                    const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
+                                    const decay = Math.max(0.2, 1 - (ageDays / windowDays));
+                                    const score = (likes * 2.5 + views * 0.8) * decay;
+                                    return { p, score };
+                                  })
+                                  .sort((a, b) => b.score - a.score)
+                                  .slice(0, 5)
+                                  .map(x => x.p);
 
                             if (topPopular.length > 0) {
                               const pick = topPopular[Math.floor(Math.random() * topPopular.length)];
