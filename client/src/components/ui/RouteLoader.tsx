@@ -9,41 +9,35 @@ export default function RouteLoader({
 }) {
   return (
     <>
-      {/* From Uiverse.io by Leoodaviid */}
+      {/* Simple, robust spinner that remains visible even with reduced motion */}
       <style>{`
-        /* From Uiverse.io by Leoodaviid */
         .loader-container {
           display: flex;
           justify-content: center;
           align-items: center;
           min-height: ${minHeight};
+          width: 100%;
         }
-        
         .loader {
-          width: 50px;
-          height: 50px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
-          animation: spin 1s linear infinite;
+          /* Visible even when animations are disabled */
+          border: 3px solid rgba(127, 127, 127, 0.3);
+          border-top-color: currentColor;
+          color: currentColor;
+          animation: route_spin 0.9s linear infinite;
         }
-        
-        @keyframes spin {
-          0% {
-            transform: rotate(0deg);
-            box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.4);
-          }
-        
-          50% {
-            transform: rotate(180deg);
-            box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.4);
-          }
-        
-          100% {
-            transform: rotate(360deg);
-            box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.4);
+        @keyframes route_spin {
+          to { transform: rotate(360deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .loader {
+            animation: none;
           }
         }
       `}</style>
-      <div className="loader-container" role="status" aria-label={label}>
+      <div className="loader-container" role="status" aria-live="polite" aria-busy="true" aria-label={label}>
         <div className="loader" />
       </div>
     </>

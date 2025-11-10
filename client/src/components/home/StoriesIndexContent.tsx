@@ -53,7 +53,9 @@ export default function StoriesIndexContent() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<'newest' | 'oldest' | 'popular' | 'shortest'>("newest");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  
+  // Defer heavy search-driven computations to improve INP
+  const deferredSearch = React.useDeferredValue(search);
+  const [categoryPills, setCategoryPills] = useState<Array<{ key: string; count: number; pretty: string }>>([]);
   
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [pageSize, setPageSize] = useState<number>(6);
@@ -93,7 +95,7 @@ export default function StoriesIndexContent() {
 
   // Analytics: log search queries (debounced) and zero-result events
   useEffect(() => {
-    const q = search.trim();
+    const q = deferredSearch.trim();
     if (!q) return;
     const t = setTimeout(() => {
       try {
@@ -105,7 +107,7 @@ export default function StoriesIndexContent() {
       } catch {}
     }, 800);
     return () => clearTimeout(t);
-  }, [search]);
+  }, [deferredSearch]);
 
   // Prefetch effect moved below query hook to avoid referencing variables before declaration.
 
@@ -119,12 +121,12 @@ export default function StoriesIndexContent() {
     return t;
   };
   const queryTokens = useMemo(() => {
-    const q = normalizeText(search.trim().toLowerCase());
+    const q = normalizeText(deferredSearch.trim().toLowerCase());
     return q.split(/[^a-z0-9]+/).filter(Boolean).map(stem);
-  }, [search]);
+  }, [deferredSearch]);
 
   const renderHighlighted = (text: string) => {
-    if (!search.trim()) return text;
+    if (!deferredSearch.trim()) return text;
     const normalized = normalizeText(text.toLowerCase());
     let lastIndex = 0;
     const parts: React.ReactNode[] = [];
@@ -286,9 +288,45 @@ export default function StoriesIndexContent() {
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
+  // Compute category pills lazily to avoid blocking the main thread during input
+  useEffect(() => {
+    let cancelled = false;
+    const compute = () => {
+      try {
+        const counts = new Map<string, number>();
+        for (const p of allPosts) {
+          const md = (p.metadata || {}) as Record<string, any>;
+          let key = String(md.themeCategory || '').trim();
+          if (!key) {
+            try {
+              const derived = sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
+              key = String(derived || '').trim();
+            } catch {}
+          }
+          if (!key) continue;
+          counts.set(key, (counts.get(key) || 0) + 1);
+        }
+        const pills = Array.from(counts.entries())
+          .map(([key, count]) => {
+            const pretty = key.replace(/_/g, ' ').toLowerCase().replace(/^./, c => c.toUpperCase());
+            return { key, count, pretty };
+          })
+          .sort((a, b) => b.count - a.count);
+        if (!cancelled) setCategoryPills(pills);
+      } catch {}
+    };
+    const ric = (window as any)?.requestIdleCallback as any;
+    if (typeof ric === 'function') {
+      ric(() => compute(), { timeout: 1200 });
+    } else {
+      setTimeout(compute, 0);
+    }
+    return () => { cancelled = true; };
+  }, [allPosts]);
+
   // Compute the closest title match (token-aware, substring + <=2 typos) for featured card search
   const closestTitleMatch = React.useMemo(() => {
-    const raw = search.trim();
+    const raw = deferredSearch.trim();
     if (!raw) return null;
 
     const tokenize = (s: string) => normalizePlain(s).split(/[^a-z0-9]+/).filter(Boolean);
@@ -357,7 +395,7 @@ export default function StoriesIndexContent() {
     }
 
     return best?.post || null;
-  }, [search, sortedPosts]);
+  }, [deferredSearch, sortedPosts]);
 
   // Available theme categories present in posts (include derived when metadata missing)
   const availableCategories = useMemo(() => {
@@ -473,7 +511,7 @@ export default function StoriesIndexContent() {
     }
 
     // Title-only search (exact substring match), no fuzzy or content-based matching.
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     if (q) {
       list = list.filter(p => String(p.title || '').toLowerCase().includes(q));
     }
@@ -516,18 +554,18 @@ export default function StoriesIndexContent() {
         break;
     }
     return list;
-  }, [sortedPosts, categoryFilter, search, sort, reactionTotals]);
+  }, [sortedPosts, categoryFilter, deferredSearch, sort, reactionTotals]);
 
   const currentPosts = filteredPosts;
   const titleMatches = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     if (!q) return [] as Post[];
     return sortedPosts.filter(p => String(p.title || '').toLowerCase().includes(q));
-  }, [search, sortedPosts]);
+  }, [deferredSearch, sortedPosts]);
 
   // Suggestions for zero-results (closest title matches by simple heuristics)
   const searchSuggestions = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     if (!q) return [] as Post[];
     const tokenize = (s: string) => normalizeText(s.toLowerCase()).split(/[^a-z0-9]+/).filter(Boolean);
     const jaccard = (a: string[], b: string[]) => {
@@ -560,7 +598,7 @@ export default function StoriesIndexContent() {
       .sort((a, b) => b.s - a.s)
       .slice(0, 3)
       .map(x => x.p);
-  }, [search, sortedPosts]);
+  }, [deferredSearch, sortedPosts]);
 
   // Latest Stories list - always sorted newest->oldest; search does NOT change this list
   const latestPosts = useMemo(() => {
@@ -598,23 +636,23 @@ export default function StoriesIndexContent() {
 
   // Log zero-results interactions
   useEffect(() => {
-    if (search.trim() && titleMatches.length === 0 && !closestTitleMatch) {
+    if (deferredSearch.trim() && titleMatches.length === 0 && !closestTitleMatch) {
       try {
         fetch('/api/analytics/interaction', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ interactionType: 'index_zero_results', details: { q: search.trim() }, path: '/stories' })
+          body: JSON.stringify({ interactionType: 'index_zero_results', details: { q: deferredSearch.trim() }, path: '/stories' })
         }).catch(() => {});
       } catch {}
     }
-  }, [titleMatches.length, search, closestTitleMatch]);
+  }, [titleMatches.length, deferredSearch, closestTitleMatch]);
 
   const featuredStory = useMemo(() => {
     const all = [...sortedPosts];
     if (!all || all.length === 0) return null;
 
     // If searching, pick the closest title match (exact substring or ≤2 typos)
-    if (search.trim() && closestTitleMatch) {
+    if (deferredSearch.trim() && closestTitleMatch) {
       return closestTitleMatch;
     }
 
@@ -723,7 +761,7 @@ export default function StoriesIndexContent() {
     });
 
     return sortedByEngagement[0];
-  }, [sortedPosts, sort, reactionTotals, search, closestTitleMatch]);
+  }, [sortedPosts, sort, reactionTotals, deferredSearch, closestTitleMatch]);
 
   // Persist last featured theme for diversity in subsequent sessions
   useEffect(() => {
@@ -789,8 +827,8 @@ export default function StoriesIndexContent() {
           </div>
 
           {/* Featured row */}
-          {(featuredStory && sortedPosts.length > 0 && (!search.trim() || titleMatches.length > 0 || !!closestTitleMatch)) && (
-            <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {(featuredStory && sortedPosts.length > 0 && (!deferredSearch.trim() || titleMatches.length > 0 || !!closestTitleMatch)) && (
+            <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6 content-visibility-auto">
               <div className="lg:col-span-1">
                 <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
                   <CardContent className="group p-4">
@@ -938,7 +976,7 @@ export default function StoriesIndexContent() {
           
 
           {/* Stories List */}
-          {search.trim() && titleMatches.length === 0 && !closestTitleMatch ? (
+          {deferredSearch.trim() && titleMatches.length === 0 && !closestTitleMatch ? (
             <div className="mx-auto max-w-full sm:max-w-2xl md:max-w-3xl text-center py-8 sm:py-10 md:py-12 rounded-xl border border-border/60 bg-card/80 px-3 sm:px-6 shadow-sm overflow-hidden">
               <div className="w-full">
                 <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4 mt-2">
@@ -946,10 +984,10 @@ export default function StoriesIndexContent() {
                   <h2 className="text-lg sm:text-xl font-semibold">No matches found</h2>
                 </div>
 
-                {search.trim() ? (
+                {deferredSearch.trim() ? (
                   <>
                     <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4 leading-relaxed">
-                      We couldn’t find any stories matching “{search.trim()}”. Try the closest matches below or explore popular stories.
+                      We couldn’t find any stories matching “{deferredSearch.trim()}”. Try the closest matches below or explore popular stories.
                     </p>
 
                     <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
@@ -1146,32 +1184,8 @@ export default function StoriesIndexContent() {
                   </div>
                 {/* Category tags under carousel controls */}
                 <div className="mt-8 px-2">
-                    {(() => {
-                      // Build counts including derived categories for posts lacking metadata
-                      const counts = new Map<string, number>();
-                      for (const p of allPosts) {
-                        const md = (p.metadata || {}) as Record<string, any>;
-                        let key = String(md.themeCategory || '').trim();
-                        if (!key) {
-                          try {
-                            const derived = sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
-                            key = String(derived || '').trim();
-                          } catch {}
-                        }
-                        if (!key) continue;
-                        counts.set(key, (counts.get(key) || 0) + 1);
-                      }
-
-                      const pills = Array.from(counts.entries())
-                        .map(([key, count]) => {
-                          const pretty = key.replace(/_/g,' ').toLowerCase().replace(/^./, c => c.toUpperCase());
-                          return { key, count, pretty };
-                        })
-                        .sort((a, b) => b.count - a.count);
-
-                      if (pills.length === 0) return null;
-
-                      return (
+                    <>
+                      {categoryPills.length > 0 && (
                         <>
                           <div className="text-center text-base md:text-lg font-medium text-muted-foreground mb-3 md:mb-4">All categories</div>
                           <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
@@ -1183,7 +1197,7 @@ export default function StoriesIndexContent() {
                             >
                               All
                             </button>
-                            {pills.map(p => (
+                            {categoryPills.map(p => (
                               <button
                                 type="button"
                                 key={p.key}
@@ -1197,11 +1211,9 @@ export default function StoriesIndexContent() {
                             ))}
                           </div>
                         </>
-                      );
-                    })()}
+                      )}
+                    </>
                   </div>
-                </div>
-              </div>
           ) : (
             <>
               {latestPosts.length > 60 ? (
@@ -1218,7 +1230,7 @@ export default function StoriesIndexContent() {
                   itemHeight={360}
                   containerHeight={Math.max(400, containerHeight - 200)}
                   overscan={3}
-                  className="rounded-md border border-transparent"
+                  className="rounded-md border border-transparent content-visibility-auto"
                   renderItem={(row, rowIdx) => {
                     const cols = gridCols || 1;
                     return (
@@ -1392,7 +1404,7 @@ export default function StoriesIndexContent() {
                 />
               ) : (
                 <div
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 content-visibility-auto"
                   ref={cardsGridRef as any}
                 >
                   {latestPosts.slice(0, visibleCount).map((post, idx) => {

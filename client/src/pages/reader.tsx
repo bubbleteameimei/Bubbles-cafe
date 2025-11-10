@@ -27,6 +27,7 @@ import { BookmarkButton } from "@/components/ui/BookmarkButton";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
 import ApiLoader from "@/components/api-loader";
+import RouteLoader from "@/components/ui/RouteLoader";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import SimplifiedErrorPage from "@/components/errors/SimplifiedErrorPage";
 import { useToast } from "@/hooks/use-toast";
@@ -776,8 +777,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Keep previous story content visible while fetching; only return null if no cached data yet
   const hasCachedPosts = Array.isArray((postsData as any)?.posts) && ((postsData as any)?.posts?.length > 0);
   if (isLoading && !hasCachedPosts) {
-    // Avoid showing an inline loader; let the header remain and page content appear when ready
-    return null;
+    // Show a lightweight route-level loader on first open
+    return <RouteLoader label="Loading story" minHeight="60vh" />;
   }
 
   if (error) {
@@ -1282,7 +1283,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
         <article
             key={currentPost.id}
-            className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
+            className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none content-visibility-auto"
           >
             {/* Navigation buttons above story content removed; now placed under time-to-read */}
 

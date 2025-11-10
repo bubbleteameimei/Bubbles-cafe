@@ -1,0 +1,13 @@
+/* Content Visibility helpers: dramatically reduce layout/render cost for off-screen sections */
+.content-visibility-auto {
+  content-visibility: auto;
+  /* Provide a reasonable intrinsic size so the page can estimate layout before render */
+  contain-intrinsic-size: 1000px 800px;
+}
+
+/* Safe fallback for browsers without content-visibility support */
+@supports not (content-visibility: auto) {
+  .content-visibility-auto {
+    will-change: contents;
+  }
+}
