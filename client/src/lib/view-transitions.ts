@@ -1,22 +1,23 @@
 // Progressive enhancement for SPA View Transitions (Chrome, Edge).
-// Safe, idempotent, and gated by prefers-reduced-motion.
+// Safe, idempotent, and gated by user/system reduced motion preference.
 // We patch history.pushState/replaceState so programmatic navigations
 // (e.g., wouter's setLocation) are wrapped in document.startViewTransition
 // when available, falling back to default behavior otherwise.
 
+import { getEffectiveReducedMotion } from "./motion";
+
 // Internal flag to avoid double patching
 let VT_PATCHED = false;
 
-// Returns true if we should enable view transitions (supported + not reduced motion)
+// Returns true if the environment supports view transitions (feature-only)
+import { getEffectiveReducedMotion } from "./motion";
+
 function canEnableViewTransitions(): boolean {
   try {
     if (typeof document === "undefined" || typeof window === "undefined") return false;
 
-    // Respect reduced motion
-    const reduce =
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return false;
+    // Respect system + user reduced motion (user can toggle in Accessibility)
+    if (getEffectiveReducedMotion()) return false;
 
     // Browser support (loose check and safe)
     const startVT = (document as any)?.startViewTransition;
@@ -40,8 +41,12 @@ function patchHistoryMethod<K extends "pushState" | "replaceState">(method: K) {
     const wrapped = function (this: History, ...args: Parameters<History[K]>) {
       try {
         const run = () => original.apply(history, args as any);
+
+        // Respect user/system reduced motion at runtime on each navigation
+        const reducedMotion = getEffectiveReducedMotion();
         const startVT = (document as any)?.startViewTransition as undefined | ((cb: () => void) => any);
-        if (typeof startVT === "function") {
+
+        if (!reducedMotion && typeof startVT === "function") {
           try {
             startVT(run);
             return;
@@ -84,6 +89,9 @@ export function enableViewTransitions(): void {
 
     VT_PATCHED = true;
   } catch {
+    // no-op
+  }
+} catch {
     // no-op
   }
 }

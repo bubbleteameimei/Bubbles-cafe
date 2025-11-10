@@ -525,3 +525,14 @@ body.error-page-active footer.site-footer {
 .hero-bubbles {
   color: hsl(var(--primary)) !important;
 }
+
+/* User-controlled reduced motion override (Accessibility setting)
+   Applies when html has the 'reduce-motion' class (set via settings pages).
+   This complements @media (prefers-reduced-motion: reduce). */
+@layer base {
+  html.reduce-motion,
+  html.reduce-motion * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

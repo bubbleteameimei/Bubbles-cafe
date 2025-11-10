@@ -42,6 +42,19 @@ try {
   enableViewTransitions();
 } catch {}
 
+// Also sync html.reduce-motion class with user/system preferences (non-blocking)
+(() => {
+  try {
+    import("@/lib/motion")
+      .then(({ initReducedMotionClassSync }) => {
+        try {
+          initReducedMotionClassSync();
+        } catch {}
+      })
+      .catch(() => {});
+  } catch {}
+})();
+
 // Optimize images and enable lazy hints via dynamic import
 (async () => {
   try {
