@@ -30,9 +30,20 @@ export function ThemeProvider({
   storageKey = "vite-ui-theme",
   ...props
 }: ThemeProviderProps): JSX.Element {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  );
+  const [theme, setTheme] = useState<Theme>(() => {
+    try {
+      const stored = localStorage.getItem(storageKey) as Theme | null;
+      if (stored) return stored;
+      const root = typeof document !== "undefined" ? document.documentElement : null;
+      if (root) {
+        if (root.classList.contains("dark")) return "dark";
+        if (root.classList.contains("light")) return "light";
+        if (root.classList.contains("sky")) return "sky";
+        if (root.classList.contains("eco")) return "eco";
+      }
+    } catch {}
+    return defaultTheme;
+  });
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -62,6 +73,7 @@ export function ThemeProvider({
         : "light";
 
       root.classList.add(systemTheme);
+      root.style.colorScheme = systemTheme === "dark" ? "dark" : "light";
       
       // Listen for changes in system preference
       const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
@@ -70,6 +82,7 @@ export function ThemeProvider({
         root.classList.remove("light", "dark", "sky", "eco");
         const newTheme = e.matches ? "dark" : "light";
         root.classList.add(newTheme);
+        root.style.colorScheme = newTheme === "dark" ? "dark" : "light";
       };
       
       mediaQuery.addEventListener("change", handleSystemThemeChange);
@@ -77,6 +90,7 @@ export function ThemeProvider({
     } else {
       // Apply explicit theme
       root.classList.add(theme);
+      root.style.colorScheme = theme === "dark" ? "dark" : "light";
     }
     
     // Restore transitions after theme change is complete

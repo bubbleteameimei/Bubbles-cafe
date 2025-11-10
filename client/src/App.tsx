@@ -725,7 +725,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <CookieConsentProvider>
-            <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+            <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
               <SidebarProvider>
                 <NotificationProvider>
                   <ScrollEffectsProvider>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta 
@@ -7,6 +7,30 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover" 
     />
     <title>Bubble's Cafe</title>
+    <!-- Pre-paint theme initialization -->
+    <script>
+    (function () {
+      try {
+        var storageKey = 'vite-ui-theme';
+        var stored = localStorage.getItem(storageKey);
+        var altStored = localStorage.getItem('theme-appearance');
+        var candidate = stored || altStored;
+        var theme;
+        if (candidate && candidate !== 'system') {
+          theme = candidate;
+        } else {
+          theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        var allowed = { dark: 1, light: 1, sky: 1, eco: 1 };
+        if (!allowed[theme]) theme = 'light';
+        var root = document.documentElement;
+        root.classList.remove('light', 'dark', 'sky', 'eco');
+        root.classList.add(theme);
+        // Ensure native UI (scrollbars, form controls) match theme before CSS loads
+        root.style.colorScheme = (theme === 'dark') ? 'dark' : 'light';
+      } catch (e) {}
+    })();
+    </script>
     <!-- Local high-contrast icons generated at build time -->
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
@@ -72,7 +96,7 @@
     
     <!-- Removed missing Phaser scripts to prevent 404/SRI failures -->
   </head>
-  <body class="min-h-screen w-full m-0 p-0 bg-black">
+  <body class="min-h-screen w-full m-0 p-0 bg-background">
     <!-- GIS initialized from React component using environment variables -->
     <div id="root" class="min-h-screen w-full min-w-full max-w-full overflow-x-hidden mx-0 p-0"></div>
     <script type="module" src="/src/main.tsx" crossorigin="anonymous"></script>

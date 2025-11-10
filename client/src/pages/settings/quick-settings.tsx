@@ -19,9 +19,12 @@ export default function QuickSettingsPage() {
   const [activeTab, setActiveTab] = useState('appearance');
   
   // Theme settings
-  const [appearance, setAppearance] = useState<'light' | 'dark' | 'system'>(
-    localStorage.getItem('theme-appearance') as 'light' | 'dark' | 'system' || 'system'
+  const [appearance, setAppearance] = useState<'light' | 'dark' | 'system' | 'sky' | 'eco'>(
+    (theme.appearance as 'light' | 'dark' | 'system' | 'sky' | 'eco') || 'system'
   );
+  useEffect(() => {
+    setAppearance(theme.appearance as 'light' | 'dark' | 'system' | 'sky' | 'eco');
+  }, [theme.appearance]);
   
   // Font settings
   const [fontSize, setFontSize] = useState<number>(
@@ -52,7 +55,7 @@ export default function QuickSettingsPage() {
   
   // Update localStorage when settings change
   useEffect(() => {
-    localStorage.setItem('theme-appearance', appearance);
+    localStorage.setItem('vite-ui-theme', appearance);
     localStorage.setItem('font-size', fontSize.toString());
     localStorage.setItem('font-family', fontFamily);
     localStorage.setItem('line-height', lineHeight.toString());
@@ -158,7 +161,7 @@ export default function QuickSettingsPage() {
                       <Button
                         type="button"
                         size="sm"
-                        variant={appearance === 'light' ? 'default' : 'outline'}
+                        variant={(appearance === 'light' || appearance === 'sky' || appearance === 'eco') ? 'default' : 'outline'}
                         className={`flex flex-col items-center justify-center h-20 px-2 py-1 gap-1 ${appearance === 'light' ? 'border-primary' : ''}`}
                         onClick={() => setAppearance('light')}
                       >
