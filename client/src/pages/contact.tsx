@@ -77,19 +77,7 @@ export default function Contact() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Automated (No Reply)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button disabled className="w-full" variant="outline" aria-disabled="true">
-                  noreply@bubblescafe.space
-                </Button>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Used for automated emails only. Replies are not monitored.
-                </p>
-              </CardContent>
-            </Card>
+            
           </div>
         </div>
         

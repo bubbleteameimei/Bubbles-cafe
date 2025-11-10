@@ -231,7 +231,7 @@ export default function Home() {
                       onClick={() => setLocation('/index')}
                       onMouseEnter={() => { try { void import('@/pages/index'); } catch {} }}
                       onFocus={() => { try { void import('@/pages/index'); } catch {} }}
-                      className="group relative w-full h-14 shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="group relative w-full h-14 shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background bg-card border border-border text-foreground hover:bg-muted hover:-translate-y-[1px] will-change-transform"
                       data-testid="home-browse-stories"
                     >
                       <span className="text-center mr-1">Browse Stories</span>
@@ -271,7 +271,7 @@ export default function Home() {
                       onMouseEnter={() => { try { void import('@/pages/reader'); } catch {} }}
                       onFocus={() => { try { void import('@/pages/reader'); } catch {} }}
                       aria-label="Start reading now"
-                      className="group relative w-full h-14 shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="group relative w-full h-14 shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background bg-card border border-border text-foreground hover:bg-muted hover:-translate-y-[1px] will-change-transform"
                     >
                       <span className="text-center mr-1">Start Reading</span>
                       <motion.div
@@ -314,12 +314,11 @@ export default function Home() {
 
                       }
                     }} 
-                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl bg-card/80 backdrop-blur-md border border-border/60 transition-all duration-300"
+                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl bg-card border border-border shadow-md transition-all duration-300"
                     whileHover={{ 
                       y: -8, 
                       scale: 1.02,
-                      boxShadow: "0 20px 40px -12px rgba(0,0,0,0.7)",
-                      borderColor: "rgba(255,255,255,0.4)"
+                      boxShadow: "0 20px 40px -12px rgba(0,0,0,0.7)"
                     }}
                     whileTap={{ 
                       scale: 0.98,
@@ -358,7 +357,7 @@ export default function Home() {
                   {/* App install CTA card */}
                   <motion.div
                     onClick={() => setLocation('/install')}
-                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-7 rounded-xl bg-card/80 backdrop-blur-md border border-border/60 transition-all duration-300 mt-6"
+                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-7 rounded-xl bg-card border border-border shadow-md transition-all duration-300 mt-6"
                     whileHover={{ 
                       y: -6, 
                       scale: 1.01

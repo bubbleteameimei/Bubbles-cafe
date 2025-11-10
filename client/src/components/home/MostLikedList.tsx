@@ -7,7 +7,6 @@ import { fetchReactionsBatch, type ReactionTotals } from '@/api/reactions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { THEME_CATEGORIES } from '@/lib/themes-lite';
 import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } from '@shared/theme-categories';
 import { getStoryThemeOverride } from '@shared/story-theme-overrides';
@@ -104,12 +103,15 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
       {topLiked.length === 0 ? (
         <div className="text-sm text-muted-foreground">No liked stories yet.</div>
       ) : (
-        <Carousel opts={{ align: "start", loop: false }} className="w-full">
-          <CarouselContent>
+        <div className="relative">
+          <div
+            className="flex gap-3 sm:gap-4 overflow-x-auto snap-x snap-mandatory scroll-px-3 sm:scroll-px-4 [-webkit-overflow-scrolling:touch]"
+            aria-label="Most liked stories"
+          >
             {topLiked.map((featured) => (
-              <CarouselItem key={featured.id} className="md:basis-1/2 lg:basis-1/2 xl:basis-1/3">
-                <Card className="h-full rounded-lg border border-border/60 bg-card/80 transition hover:bg-card hover:shadow-md hover:ring-1 hover:ring-primary/15 hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] will-change-transform">
-                  <CardContent className="p-4">
+              <div key={featured.id} className="snap-start min-w-[260px] sm:min-w-[300px] md:min-w-[320px]">
+                <Card className="rounded-lg border border-border/50 bg-card/70 hover:bg-card transition">
+                  <CardContent className="p-3">
                     <a
                       href={`/reader/${encodeURIComponent(String(featured.slug || featured.id))}`}
                       onClick={(e) => { e.preventDefault(); onNavigate(featured.slug || featured.id); }}
@@ -119,7 +121,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <h4
-                            className="text-left text-xl md:text-2xl font-semibold tracking-tight hover:text-primary leading-6 line-clamp-2"
+                            className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
                             title={featured.title}
                           >
                             {featured.title}
@@ -191,27 +193,23 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                         </div>
                       </div>
 
-                      <p className="mt-6 text-sm text-muted-foreground leading-6 line-clamp-3 font-sans min-h-[4.5rem]" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                        {extractEngagingExcerpt(featured.content, 180)}
+                      <p className="text-[13px] text-muted-foreground leading-5 mt-1 line-clamp-1">
+                        {extractEngagingExcerpt(featured.content, 100)}
                       </p>
 
-                      <div className="mt-3 flex items-center justify-between">
-                        <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                          <span className="inline-flex items-center gap-1">
-                            <Heart className="h-4 w-4 text-rose-500" />
-                            {Number((totalsFromParent?.[featured.id]?.totals?.likes ?? totalsMap[featured.id]?.totals?.likes) ?? (baselineLikesForPost(featured) + (featured.likesCount || 0)))}
-                          </span>
-                        </div>
+                      <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                        <span className="inline-flex items-center gap-1">
+                          <Heart className="h-4 w-4 text-rose-500" />
+                          {Number((totalsFromParent?.[featured.id]?.totals?.likes ?? totalsMap[featured.id]?.totals?.likes) ?? (baselineLikesForPost(featured) + (featured.likesCount || 0)))}
+                        </span>
                       </div>
                     </a>
                   </CardContent>
                 </Card>
-              </CarouselItem>
+              </div>
             ))}
-          </CarouselContent>
-          <CarouselPrevious />
-          <CarouselNext />
-        </Carousel>
+          </div>
+        </div>
       )}
     </div>
   );

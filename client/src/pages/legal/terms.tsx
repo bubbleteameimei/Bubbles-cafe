@@ -8,7 +8,7 @@ export default function Terms() {
         <h1 className="text-3xl font-bold">Terms of Service</h1>
       </div>
       
-      <div className="space-y-8 prose prose-invert max-w-none">
+      <div className="space-y-8 prose max-w-none dark:prose-invert">
         <section className="space-y-3">
           <h2 className="text-2xl font-semibold">Content Protection Notice</h2>
           <p className="text-muted-foreground whitespace-pre-line">
@@ -51,7 +51,7 @@ export default function Terms() {
         <section className="space-y-3">
           <h2 className="text-2xl font-semibold">Data Security</h2>
           <p className="text-muted-foreground">
-            We implement appropriate security measures to protect your data. However, no online platform is completely secure. 
+            We implement appropriate security measures to protect your data. 
             We encourage you to use strong passwords and exercise caution when sharing personal information.
           </p>
         </section>

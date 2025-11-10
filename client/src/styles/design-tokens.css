@@ -92,8 +92,8 @@
   --info: 217 61% 54%;
   --info-foreground: 0 0% 100%;
 
-  --border: 0 0% 18%;
-  --input: 0 0% 18%;
+  --border: 0 0% 22%;
+  --input: 0 0% 22%;
   --ring: 217 61% 54%;                   /* match primary */
 
   /* Chart tokens */
@@ -152,8 +152,8 @@
   --info: 217 61% 40%;
   --info-foreground: 0 0% 100%;
 
-  --border: 0 0% 85%;
-  --input: 0 0% 85%;
+  --border: 0 0% 80%;
+  --input: 0 0% 80%;
   --ring: 252 100% 69%;
 
   /* Chart tokens (balanced, readable on light) */
