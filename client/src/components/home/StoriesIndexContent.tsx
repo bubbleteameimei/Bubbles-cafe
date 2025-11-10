@@ -1255,6 +1255,8 @@ export default function StoriesIndexContent() {
                       )}
                     </>
                   </div>
+                </div>
+              </div>
           ) : (
             <>
               {latestPosts.length > 60 ? (
