@@ -192,7 +192,7 @@ export default function Home() {
                 transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
                 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-foreground flex flex-col items-center"
               >
-                <span className="hero-bubbles">BUBBLE</'S
+                <span className="hero-bubbles">BUBBLE'S</span>
                 <span className="mt-1 md:mt-2 text-red-700 relative">CAFE</span>
               </motion.h1>
             </div>
@@ -353,7 +353,7 @@ export default function Home() {
                   {/* App install CTA card */}
                   <motion.div
                     onClick={() => setLocation('/install')}
-                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-7 rounded-xl bg-card border border-border shadow-md transition-all duration-300 mt-6"
+                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-7 rounded-xl bg-card/80 backdrop-blur-md border border-border/60 transition-all duration-300 mt-6"
                     whileHover={{ 
                       y: -6, 
                       scale: 1.01
