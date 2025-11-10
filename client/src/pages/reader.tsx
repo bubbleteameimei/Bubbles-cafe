@@ -13,7 +13,7 @@ import {
   Share2, Minus, Plus, Shuffle, ChevronLeft, ChevronRight,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
   Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog, BookText, Trash, X, Pencil, Clock,
-  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Bone
+  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Bone, Type
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from 'date-fns';
@@ -68,6 +68,7 @@ import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } f
 import { getStoryThemeOverride } from "@shared/story-theme-overrides";
 import { getThemeDefinitionOverride, syncThemeDefinitionOverridesFromServer } from "@/shared/theme-definitions";
 import { Icon } from "@iconify/react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getBadgeTint } from "@/lib/theme-badges";
 
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
@@ -1148,11 +1149,30 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             
             {/* Font Dialog with controlled open state */}
             <Dialog open={fontDialogOpen} onOpenChange={setFontDialogOpen}>
+              {/* Mobile: icon-only with tooltip */}
+              <TooltipProvider>
+                <Tooltip>
+                  <DialogTrigger asChild>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="inline-flex sm:hidden h-8 w-8 rounded-md bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
+                        aria-label="Font settings"
+                      >
+                        <Type className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                  </DialogTrigger>
+                  <TooltipContent side="bottom" align="center">Font</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              {/* Desktop/tablet: labeled button */}
               <DialogTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 ml-2"
+                  className="hidden sm:inline-flex h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 ml-2"
                 >
                   <span className="text-xs uppercase">FONT</span>
                 </Button>
@@ -1208,24 +1228,43 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
           {/* Contents Dialog with controlled open state - non-fullscreen with close button */}
           <Dialog open={contentsDialogOpen} onOpenChange={setContentsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                variant="default"
-                size="sm"
-                className="h-8 px-3 bg-primary hover:bg-primary/90 text-white flex items-center gap-1.5 rounded-md w-fit"
-                noOutline
+              {/* Mobile: icon-only with tooltip */}
+              <TooltipProvider>
+                <Tooltip>
+                  <DialogTrigger asChild>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="default"
+                        size="icon"
+                        className="inline-flex sm:hidden h-8 w-8 rounded-md bg-primary hover:bg-primary/90 text-white"
+                        aria-label="Table of Contents"
+                        noOutline
+                      >
+                        <BookText className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                  </DialogTrigger>
+                  <TooltipContent side="bottom" align="center">Table of Contents</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              {/* Desktop/tablet: labeled button */}
+              <DialogTrigger asChild>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="hidden sm:inline-flex h-8 px-3 bg-primary hover:bg-primary/90 text-white flex items-center gap-1.5 rounded-md w-fit"
+                  noOutline
+                >
+                  <BookText className="h-4 w-4 flex-shrink-0" />
+                  <span className="text-xs font-semibold tracking-wide">TOC</span>
+                </Button>
+              </DialogTrigger>
+              {/* Wrap the TableOfContents component to ensure DialogContent has proper aria attributes */}
+              <DialogContent 
+                className="max-w-md duration-300 ease-out data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-2 data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-top-2" 
+                aria-labelledby="toc-dialog-title" 
+                aria-describedby="toc-dialog-description"
               >
-                <BookText className="h-4 w-4 flex-shrink-0" />
-                <span className="text-xs font-semibold tracking-wide">TOC</span>
-              </Button>
-            </DialogTrigger>
-            {/* Wrap the TableOfContents component to ensure DialogContent has proper aria attributes */}
-            <DialogContent 
-              className="max-w-md" 
-              aria-labelledby="toc-dialog-title" 
-              aria-describedby="toc-dialog-description"
-            >
-              <div className="flex items-center">
                 <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
               </div>
               <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
@@ -1715,7 +1754,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     size="sm"
                     onClick={goToPreviousStory}
                     disabled={posts.length <= 1 || isFirstStory}
-                    className="h-10 w-28 rounded-full bg-background/90 border border-border/50 text-foreground hover:bg-accent/60 hover:text-accent-foreground active:translate-y-[1px] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
+                    className="h-10 w-28 rounded-none bg-background/90 border border-border/50 text-foreground hover:bg-accent/60 hover:text-accent-foreground active:translate-y-[1px] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <ChevronLeft className="h-4 w-4 mr-2" />
                     <span className="font-medium">Previous</span>
@@ -1740,7 +1779,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     size="sm"
                     onClick={goToNextStory}
                     disabled={posts.length <= 1 || isLastStory}
-                    className="h-10 w-28 rounded-full bg-background/90 border border-border/50 text-foreground hover:bg-accent/60 hover:text-accent-foreground active:translate-y-[1px] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
+                    className="h-10 w-28 rounded-none bg-background/90 border border-border/50 text-foreground hover:bg-accent/60 hover:text-accent-foreground active:translate-y-[1px] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <span className="font-medium">Next</span>
                     <ChevronRight className="h-4 w-4 ml-2" />
