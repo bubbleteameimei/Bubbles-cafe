@@ -5,14 +5,11 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFontSize } from "@/hooks/use-font-size";
 import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
-import { useTheme } from "@/components/theme-provider"; // setTheme provided via useThemeContext alias
 import { 
   Type, 
   BookOpen,
   Minus,
-  Plus,
-  Moon,
-  Sun
+  Plus
 } from "lucide-react";
 
 interface ReaderControlsProps {
@@ -25,15 +22,12 @@ export function ReaderControls({ onShare, onBookmark, isBookmarked }: ReaderCont
   const [fontDialogOpen, setFontDialogOpen] = useState(false);
   const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
   const { fontFamily, updateFontFamily } = useFontFamily();
-  const { theme, setTheme } = useTheme();
 
   const handleFontFamilyChange = useCallback((value: string) => {
     updateFontFamily(value as FontFamilyKey);
   }, [updateFontFamily]);
 
-  const handleThemeToggle = useCallback(() => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  }, [theme, setTheme]);
+  
 
   const fontOptions = [
     { value: 'system', label: 'System Font' },
@@ -63,7 +57,7 @@ export function ReaderControls({ onShare, onBookmark, isBookmarked }: ReaderCont
             <DialogHeader>
               <DialogTitle>Reading Preferences</DialogTitle>
               <DialogDescription>
-                Adjust font size, font family, and theme for a better reading experience.
+                Adjust font size and font family for a better reading experience.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
@@ -127,28 +121,7 @@ export function ReaderControls({ onShare, onBookmark, isBookmarked }: ReaderCont
                 </Select>
               </div>
 
-              {/* Theme Toggle */}
-              <div className="space-y-3">
-                <label htmlFor="theme-toggle-button" className="text-sm font-medium">Theme</label>
-                <Button
-                  id="theme-toggle-button"
-                  variant="outline"
-                  onClick={handleThemeToggle}
-                  className="w-full justify-start"
-                >
-                  {theme === 'dark' ? (
-                    <>
-                      <Moon className="h-4 w-4 mr-2" />
-                      Dark Mode
-                    </>
-                  ) : (
-                    <>
-                      <Sun className="h-4 w-4 mr-2" />
-                      Light Mode
-                    </>
-                  )}
-                </Button>
-              </div>
+              
 
               {/* Reset Button */}
               <Button
@@ -167,20 +140,7 @@ export function ReaderControls({ onShare, onBookmark, isBookmarked }: ReaderCont
           </DialogContent>
         </Dialog>
 
-        {/* Theme Toggle Button */}
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handleThemeToggle}
-          className="rounded-full shadow-lg bg-background/80 backdrop-blur-sm"
-          aria-label="Toggle theme"
-        >
-          {theme === 'dark' ? (
-            <Sun className="h-4 w-4" />
-          ) : (
-            <Moon className="h-4 w-4" />
-          )}
-        </Button>
+        
 
         {/* Bookmark Button */}
         {onBookmark && (

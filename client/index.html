@@ -13,8 +13,7 @@
       try {
         var storageKey = 'vite-ui-theme';
         var stored = localStorage.getItem(storageKey);
-        var altStored = localStorage.getItem('theme-appearance');
-        var candidate = stored || altStored;
+        var candidate = stored;
         var theme;
         if (candidate && candidate !== 'system') {
           theme = candidate;
