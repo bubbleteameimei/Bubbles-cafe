@@ -7,10 +7,8 @@ import SEO from "@/components/SEO";
 
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  ArrowRight, ArrowLeft, Clock, Calendar, Book,
-  Award, Search, Ghost, Skull, Brain, Pill, Cpu, Dna, Footprints, CloudRain, Castle, Bug, Radiation, Umbrella, UserMinus2, Anchor, AlertTriangle, Building, Worm, Cloud, CloudFog, Flame,
-  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Heart, Bone
+import {
+  ArrowRight, Clock, Calendar, Award, Search, Eye, Heart
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 import MostLikedList from "@/components/home/MostLikedList";
@@ -63,6 +61,7 @@ export default function StoriesIndexContent() {
   const [pageSize, setPageSize] = useState<number>(6);
   const cardsGridRef = React.useRef<HTMLDivElement | null>(null);
   const breakpointRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null);
+  const fetchedReactionIdsRef = React.useRef<Set<number>>(new Set());
 
   // Defer only reaction widgets; render the rest immediately to avoid layout shifts
   const [readyReactions, setReadyReactions] = useState(false);
@@ -235,6 +234,19 @@ export default function StoriesIndexContent() {
     }
   };
 
+  // Read cached first page from localStorage (shell-first rendering without skeletons)
+  const cachedPage1 = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('cache:index:page1');
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (data && Array.isArray(data.posts)) {
+        return { posts: (data.posts as Post[]), hasMore: !!data.hasMore, page: 1 };
+      }
+    } catch {}
+    return null;
+  }, []);
+
   // Paginated query
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery<{ posts: Post[]; hasMore: boolean; page: number }>({
     queryKey: ["wordpress", "posts"],
@@ -257,7 +269,19 @@ export default function StoriesIndexContent() {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     initialPageParam: 1,
+    initialData: cachedPage1 ? { pages: [cachedPage1], pageParams: [1] } as any : undefined,
   });
+
+  // Cache first page posts locally after fetch to improve cold-start rendering
+  useEffect(() => {
+    try {
+      const first = (data as any)?.pages?.[0];
+      if (first && Array.isArray(first.posts) && first.posts.length > 0) {
+        const payload = { posts: first.posts.slice(0, 30), hasMore: first.hasMore };
+        localStorage.setItem('cache:index:page1', JSON.stringify(payload));
+      }
+    } catch {}
+  }, [data]);
 
   // Prefetch next page when scrolled near bottom (75%)
   useEffect(() => {
@@ -471,7 +495,7 @@ export default function StoriesIndexContent() {
     return { key: themeKey, label: prettyLabel };
   };
 
-  // Reaction totals map for posts (batch fetched)
+  // Reaction totals map for posts (lazy-fetched for visible cards only)
   const [reactionTotals, setReactionTotals] = useState<Record<number, import("@/api/reactions").ReactionTotals>>({});
   
   useEffect(() => {
@@ -479,14 +503,22 @@ export default function StoriesIndexContent() {
     let mounted = true;
     (async () => {
       try {
-        const ids = allPosts.map((p: Post) => Number(p.id)).filter((n: number) => Number.isFinite(n));
-        if (ids.length === 0) return;
+        const initialBatchSize = Math.max(24, Math.min(sortedPosts.length, (visibleCount || 0) + (gridCols || 1) * 6));
+        const candidateIds = sortedPosts
+          .slice(0, initialBatchSize)
+          .map((p: Post) => Number(p.id))
+          .filter((n: number) => Number.isFinite(n))
+          .filter((id: number) => !fetchedReactionIdsRef.current.has(id));
+        if (candidateIds.length === 0) return;
         const { fetchReactionsBatch } = await import("@/api/reactions");
-        const totals = await fetchReactionsBatch(ids.slice(0, 120));
+        const totals = await fetchReactionsBatch(candidateIds);
         if (!mounted) return;
         const map: Record<number, import("@/api/reactions").ReactionTotals> = {};
-        for (const t of totals) map[t.postId] = t;
-        setReactionTotals(map);
+        for (const t of totals) {
+          map[t.postId] = t;
+          fetchedReactionIdsRef.current.add(t.postId);
+        }
+        setReactionTotals((prev) => ({ ...prev, ...map }));
       } catch {
         // Ignore failures; UI continues with local fallback logic
       }
@@ -497,10 +529,95 @@ export default function StoriesIndexContent() {
       const detail = (e as CustomEvent).detail as import("@/api/reactions").ReactionTotals;
       if (!detail || typeof detail.postId !== 'number') return;
       setReactionTotals((prev: Record<number, import("@/api/reactions").ReactionTotals>) => ({ ...prev, [detail.postId]: detail }));
+      try { fetchedReactionIdsRef.current.add(detail.postId); } catch {}
     };
     window.addEventListener('reaction:updated', onUpdate as EventListener);
     return () => { mounted = false; window.removeEventListener('reaction:updated', onUpdate as EventListener); };
-  }, [allPosts, readyReactions]);
+  }, [sortedPosts, visibleCount, gridCols, readyReactions]);eadyReactions) return;
+    let mounted = true;
+    const fetched = fetchedReactionIdsRef.current;
+    let io: IntersectionObserver | null = null;
+    let pending: number[] = [];
+    let flushTimer: any = null;
+
+    const flush = async () => {
+      try {
+        if (!mounted) return;
+        const unique = Array.from(new Set(pending));
+        pending = [];
+        const toFetch = unique.filter((id) => Number.isFinite(id) && !fetched.has(id));
+        if (toFetch.length === 0) return;
+        const { fetchReactionsBatch } = await import("@/api/reactions");
+        const totals = await fetchReactionsBatch(toFetch.slice(0, 60));
+        if (!mounted) return;
+        const update: Record<number, import("@/api/reactions").ReactionTotals> = {};
+        for (const t of totals) {
+          update[t.postId] = t;
+          fetched.add(t.postId);
+        }
+        setReactionTotals((prev) => ({ ...prev, ...update }));
+      } catch {
+        // ignore
+      }
+    };
+
+    const schedule = (id: number) => {
+      pending.push(id);
+      if (flushTimer) return;
+      flushTimer = setTimeout(() => {
+        flushTimer = null;
+        void flush();
+      }, 250);
+    };
+
+    try {
+      io = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              const el = entry.target as HTMLElement;
+              const idAttr = el.getAttribute("data-post-id");
+              const id = idAttr ? Number(idAttr) : NaN;
+              if (Number.isFinite(id) && !fetched.has(id)) {
+                schedule(id);
+              }
+              try { io?.unobserve(el); } catch {}
+            }
+          }
+        },
+        { root: null, rootMargin: "200px", threshold: 0.01 }
+      );
+      // Observe current cards
+      document.querySelectorAll<HTMLElement>(".story-card-container[data-post-id]").forEach((n) => io?.observe(n));
+    } catch {
+      // no-op
+    }
+
+    // Periodically re-observe in case of virtualization or dynamic mounts
+    const reobserve = () => {
+      try {
+        document.querySelectorAll<HTMLElement>(".story-card-container[data-post-id]").forEach((n) => io?.observe(n));
+      } catch {}
+    };
+    const interval = setInterval(reobserve, 1000);
+
+    // Listen for reaction updates from LikeDislike
+    const onUpdate = (e: Event) => {
+      const detail = (e as CustomEvent).detail as import("@/api/reactions").ReactionTotals;
+      if (!detail || typeof detail.postId !== "number") return;
+      setReactionTotals((prev) => ({ ...prev, [detail.postId]: detail }));
+      fetched.add(detail.postId);
+    };
+    window.addEventListener("reaction:updated", onUpdate as EventListener);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener("reaction:updated", onUpdate as EventListener);
+      clearInterval(interval);
+      try { io?.disconnect(); } catch {}
+      if (flushTimer) clearTimeout(flushTimer);
+    };
+  }, [readyReactions]);
 
   // Compute trending scores off the main thread when possible
   useEffect(() => {
@@ -900,47 +1017,9 @@ export default function StoriesIndexContent() {
                         {(() => {
                           const { key, label } = computeThemeMeta(featuredStory);
                           const badgeTint = getBadgeTint(key);
-
-                          // Derive icon slug with overrides to match Reader/List cards behavior
-                          const md: any = (featuredStory as any)?.metadata || {};
-                          const override = getStoryThemeOverride((featuredStory as any)?.slug as any, (featuredStory as any)?.title as any);
-                          const defOverride = getThemeDefinitionOverride(key);
-                          let iconSlug =
-                            override?.icon ||
-                            (md && (md as any).themeIcon) ||
-                            defOverride?.icon ||
-                            (SHARED_THEME_CATEGORIES as any)[key]?.icon ||
-                            'ghost';
-                          if (key === 'BODY_HORROR') iconSlug = 'bone';
-
-                          const ThemeIconCmp = (() => {
-                            const slug = String(iconSlug).toLowerCase();
-                            switch (slug) {
-                              case 'skull': return Skull; case 'brain': return Brain; case 'pill': return Pill; case 'cpu': return Cpu; case 'ghost': return Ghost;
-                              case 'eye': return Eye; case 'hourglass': return Hourglass; case 'car': return Car;
-                              case 'fork-knife': case 'forkknife': case 'utensils': return ForkKnife; case 'trees': case 'tree': return Trees; case 'castle': return Castle; case 'bug': return Bug;
-                              case 'moon': return Moon; case 'moon-star': case 'moonstar': return MoonStar; case 'radio': return Radio; case 'box': return Box; case 'flask': return FlaskConical;
-                              case 'radiation': return Radiation; case 'building': return Building; case 'cat': return Cat; case 'flame': return Flame; case 'dog': return Dog; case 'cloud': return Cloud;
-                              case 'alert-triangle': case 'alerttriangle': return AlertTriangle; case 'footprints': return Footprints; case 'bone': return Bone;
-                              default:
-                                switch (key) {
-                                  case 'TECHNOLOGICAL': return Cpu;
-                                  case 'PSYCHOLOGICAL': return Brain;
-                                  case 'SUPERNATURAL': return Ghost;
-                                  case 'EXISTENTIAL': return Hourglass;
-                                  case 'VEHICULAR': return Car;
-                                  case 'FOLK_HORROR': return Trees;
-                                  case 'GOTHIC': return Castle;
-                                  case 'COSMIC': return Moon;
-                                  default: return Ghost;
-                                }
-                            }
-                          })();
-
                           return (
                             <div className="-mt-1">
-                              <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                              <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 border ${badgeTint}`}>
                                 {label}
                               </Badge>
                             </div>
@@ -1294,6 +1373,7 @@ export default function StoriesIndexContent() {
                             <article
                               key={post.id}
                               data-idx={rowIdx * cols + idx}
+                              data-post-id={post.id}
                               className="group story-card-container relative"
                             >
                               <Card
@@ -1306,93 +1386,13 @@ export default function StoriesIndexContent() {
                                       <CardTitle className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary">
                                         {renderHighlighted(String(post.title || ''))}
                                       </CardTitle>
-                                      {themeCategory && (() => {
-                                        const override = getStoryThemeOverride(post.slug as any, post.title as any);
-                                        const derivedKey = (() => {
-                                          const raw = themeCategory;
-                                          if (!raw) return '';
-                                          for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-                                            if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-                                          }
-                                          return raw.toUpperCase().replace(/\s+/g, '_');
-                                        })();
-                                        const themeKeyForTint = override?.key || derivedKey;
-                                        const defOverride = getThemeDefinitionOverride(themeKeyForTint);
-                                        let chosenIconSlug =
-                                          override?.icon ||
-                                          (md && (md as any).themeIcon) ||
-                                          defOverride?.icon ||
-                                          (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
-                                          'ghost';
-                                        if (themeKeyForTint === 'BODY_HORROR') {
-                                          chosenIconSlug = 'bone';
-                                        }
-                                        const ThemeIconCmp = (() => {
-                                          const slug = String(chosenIconSlug).toLowerCase();
-                                          switch (slug) {
-                                            case 'skull': return Skull; case 'brain': return Brain; case 'pill': return Pill; case 'cpu': return Cpu; case 'ghost': return Ghost;
-                                            case 'eye': return Eye; case 'hourglass': return Hourglass; case 'car': return Car;
-                                            case 'fork-knife': case 'forkknife': case 'utensils': return ForkKnife; case 'trees': case 'tree': return Trees; case 'castle': return Castle; case 'bug': return Bug;
-                                            case 'moon': return Moon; case 'moon-star': case 'moonstar': return MoonStar; case 'radio': return Radio; case 'box': return Box; case 'flask': return FlaskConical;
-                                            case 'radiation': return Radiation; case 'building': return Building; case 'cat': return Cat; case 'flame': return Flame; case 'dog': return Dog; case 'cloud': return Cloud;
-                                            case 'alert-triangle': case 'alerttriangle': return AlertTriangle; case 'footprints': return Footprints; case 'bone': return Bone;
-                                            default:
-                                              switch (themeKeyForTint) {
-                                                case 'TECHNOLOGICAL': return Cpu;
-                                                case 'PSYCHOLOGICAL': return Brain;
-                                                case 'SUPERNATURAL': return Ghost;
-                                                case 'EXISTENTIAL': return Hourglass;
-                                                case 'VEHICULAR': return Car;
-                                                case 'FOLK_HORROR': return Trees;
-                                                case 'GOTHIC': return Castle;
-                                                case 'COSMIC': return Moon;
-                                                default: return Ghost;
-                                              }
-                                          }
-                                        })();
-                                        const baseLabel =
-                                          override?.label ||
-                                          defOverride?.label ||
-                                          (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
-                                          themeCategory;
-                                        const prettyLabel = (() => {
-                                          if (override?.label) return override.label;
-                                          const l = String(baseLabel).toLowerCase();
-                                          if (l.includes('cosmic')) return 'Cosmic Horror';
-                                          if (l.includes('existential')) return 'Existential Horror';
-                                          if (l.includes('vehicular')) return 'Vehicular Horror';
-                                          if (l.includes('psychological')) return 'Psychological Horror';
-                                          if (l.includes('supernatural')) return 'Supernatural Horror';
-                                          if (l.includes('technological')) return 'Technological Horror';
-                                          if (l.includes('uncanny')) return 'Uncanny Horror';
-                                          return baseLabel;
-                                        })();
-                                        const badgeTint = (() => {
-                                          switch (themeKeyForTint) {
-                                            case 'DEATH': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark	text-red-300 dark	border-red-700';
-                                            case 'BODY_HORROR': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark	text-rose-300 dark	border-rose-700';
-                                            case 'SUPERNATURAL': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark	text-violet-300 dark	border-violet-700';
-                                            case 'PSYCHOLOGICAL': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark	text-amber-300 dark	border-amber-700';
-                                            case 'EXISTENTIAL': return 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark	text-indigo-300 dark	border-indigo-700';
-                                            case 'HORROR': return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/30 dark	text-slate-300 dark	border-slate-700';
-                                            case 'VEHICULAR': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark	text-emerald-300 dark	border-emerald-700';
-                                            case 'TECHNOLOGICAL': return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark	text-sky-300 dark	border-sky-700';
-                                            case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark	text-purple-300 dark	border-purple-700';
-                                            case 'FOLK_HORROR': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark	text-lime-300 dark	border-lime-700';
-                                            case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark	text-stone-300 dark	border-stone-700';
-                                            case 'CURSED_OBJECT': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark	text-yellow-300 dark	border-yellow-700';
-                                            case 'OCCULT': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark	text-green-300 dark	border-green-700';
-                                            case 'URBAN_HORROR': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark	text-blue-300 dark	border-blue-700';
-                                            case 'SUICIDE': return 'bg-zinc-100 text-zinc-800 border-zinc-200 dark:bg-zinc-900/30 dark	text-zinc-300 dark	border-zinc-700';
-                                            case 'CONTAGION': return 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark	text-teal-300 dark	border-teal-700';
-                                            default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark	text-foreground dark	border-primary/20';
-                                          }
-                                        })();
+                                      {(() => {
+                                        const { key, label } = computeThemeMeta(post);
+                                        const badgeTint = getBadgeTint(key);
                                         return (
                                           <div className="mt-1">
-                                            <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                              {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
-                                              {prettyLabel}
+                                            <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 border ${badgeTint}`}>
+                                              {label}
                                             </Badge>
                                           </div>
                                         );

@@ -23,7 +23,7 @@ ctx.onmessage = (e: any) => {
       const totals = reactionTotals[id];
       const likesRaw = (totals?.totals?.likes ?? p?.likesCount) ?? 0;
       const likes = Number(likesRaw) || 0;
-      const views = p?.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
+      const views = Number((p as any)?.views ?? (p?.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0));
 
       let createdAtTs = 0;
       try {

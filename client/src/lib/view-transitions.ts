@@ -39,11 +39,36 @@ function patchHistoryMethod<K extends "pushState" | "replaceState">(method: K) {
       try {
         const run = () => original.apply(history, args as any);
 
+        // Determine path of navigation target (best-effort)
+        let path = "";
+        try {
+          const uri: any = (args as any)[2];
+          if (uri) {
+            if (typeof uri === "string") {
+              path = new URL(uri, location.href).pathname;
+            } else if (typeof URL !== "undefined" && uri instanceof URL) {
+              path = uri.pathname;
+            }
+          }
+        } catch {
+          // ignore
+        }
+        if (!path) {
+          try { path = location.pathname; } catch { path = ""; }
+        }
+
+        // Skip native view transitions for heavy routes to avoid extra compositing cost
+        const heavyRoute =
+          path.startsWith("/reader") ||
+          path.startsWith("/story") ||
+          path.startsWith("/index") ||
+          path.startsWith("/stories");
+
         // Respect user/system reduced motion at runtime on each navigation
         const reducedMotion = getEffectiveReducedMotion();
         const startVT = (document as any)?.startViewTransition as undefined | ((cb: () => void) => any);
 
-        if (!reducedMotion && typeof startVT === "function") {
+        if (!heavyRoute && !reducedMotion && typeof startVT === "function") {
           try {
             startVT(run);
             return;

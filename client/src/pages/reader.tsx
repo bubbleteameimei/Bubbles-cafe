@@ -74,6 +74,37 @@ import { getBadgeTint } from "@/lib/theme-badges";
 
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
+// Lazy-mount comment section when near viewport to reduce initial load cost
+function LazyCommentSection({ postId }: { postId: number }) {
+  const [visible, setVisible] = useState(false);
+  const anchorRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let observer: IntersectionObserver | null = null;
+    try {
+      observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              setVisible(true);
+              // Disconnect once visible to avoid re-observing
+              try { observer?.disconnect(); } catch {}
+              break;
+            }
+          }
+        },
+        { root: null, rootMargin: '800px', threshold: 0.01 }
+      );
+      if (anchorRef.current) observer.observe(anchorRef.current);
+    } catch {}
+    return () => {
+      try { observer?.disconnect(); } catch {}
+    };
+  }, []);
+
+  return <div ref={anchorRef}>{visible ? <SimpleCommentSection postId={postId} /> : null}</div>;
+}
+
 // Native HTML sanitization function (now powered by DOMPurify with extra hardening)
   const sanitizeHtmlContent = (html: string): string => {
     try {
@@ -1969,9 +2000,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
               </div>
 
-            {/* Comment section */}
+            {/* Comment section (lazy-mounted near viewport) */}
             <div className={`mt-8 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <SimpleCommentSection postId={currentPost.id} />
+              <LazyCommentSection postId={currentPost.id} />
             </div>
         </article>
       </div>
