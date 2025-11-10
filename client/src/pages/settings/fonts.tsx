@@ -115,7 +115,7 @@ export default function FontSettingsPage() {
         
         {/* Fonts Tab */}
         <TabsContent value="fonts">
-          <Card>
+          <Card className="rounded-xl border border-border/60 bg-card/80 transition-all hover:bg-card hover:shadow-md hover:-translate-y-[1px] will-change-transform">
             <CardHeader>
               <CardTitle className="uppercase tracking-wider text-sm font-semibold">Font Settings</CardTitle>
               <CardDescription>
@@ -248,9 +248,7 @@ export default function FontSettingsPage() {
         
         {/* Layout Tab */}
         <TabsContent value="layout">
-          <Card>
-            <CardHeader>
-              <CardTitle className="uppercase tracking-wider text-sm font-semibold">Text Layout</CardTitle>
+         <<Card className="rounded-xl border border-border/60 bg-card/80 transitioncase tracking-wider text-sm font-semibold">Text Layout</CardTitle>
               <CardDescription>
                 Adjust spacing and alignment for optimal reading comfort
               </CardDescription>
@@ -407,7 +405,7 @@ export default function FontSettingsPage() {
         
         {/* Preview Tab */}
         <TabsContent value="preview">
-          <Card>
+          <Card className="rounded-xl border border-border/60 bg-card/80 transition-all hover:bg-card hover:shadow-md hover:-translate-y-[1px] will-change-transform">
             <CardHeader>
               <CardTitle className="uppercase tracking-wider text-sm font-semibold">Reading Preview</CardTitle>
               <CardDescription>

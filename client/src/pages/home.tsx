@@ -151,7 +151,7 @@ export default function Home() {
             >
               <Button 
                 onClick={() => window.location.reload()}
-                className="group w-full px-6 py-3 bg-[#444444] hover:bg-[#505050] text-white shadow-lg transition-all duration-300 hover:shadow-xl font-medium text-lg text-center"
+                className="group w-full px-6 py-3 bg-card border border-border text-foreground hover:bg-muted shadow-lg transition-all duration-300 hover:shadow-xl font-medium text-lg text-center"
               >
                 Try Again
                 <motion.div
@@ -192,7 +192,7 @@ export default function Home() {
                 transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
                 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-foreground flex flex-col items-center"
               >
-                <span>BUBBLE'S</span>
+                <span className="hero-bubbles">BUBBLE</'S
                 <span className="mt-1 md:mt-2 text-red-700 relative">CAFE</span>
               </motion.h1>
             </div>
@@ -231,7 +231,7 @@ export default function Home() {
                       onClick={() => setLocation('/index')}
                       onMouseEnter={() => { try { void import('@/pages/index'); } catch {} }}
                       onFocus={() => { try { void import('@/pages/index'); } catch {} }}
-                      className="group relative w-full h-14 shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background bg-card border border-border text-foreground hover:bg-muted hover:-translate-y-[1px] will-change-transform"
+                      className="group relative w-full h-14 shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background hover:-translate-y-[1px] will-change-transform"
                       data-testid="home-browse-stories"
                     >
                       <span className="text-center mr-1">Browse Stories</span>
@@ -271,7 +271,7 @@ export default function Home() {
                       onMouseEnter={() => { try { void import('@/pages/reader'); } catch {} }}
                       onFocus={() => { try { void import('@/pages/reader'); } catch {} }}
                       aria-label="Start reading now"
-                      className="group relative w-full h-14 shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background bg-card border border-border text-foreground hover:bg-muted hover:-translate-y-[1px] will-change-transform"
+                      className="group relative w-full h-14 shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background hover:-translate-y-[1px] will-change-transform"
                     >
                       <span className="text-center mr-1">Start Reading</span>
                       <motion.div
@@ -319,10 +319,6 @@ export default function Home() {
                       y: -8, 
                       scale: 1.02,
                       boxShadow: "0 20px 40px -12px rgba(0,0,0,0.7)"
-                    }}
-                    whileTap={{ 
-                      scale: 0.98,
-                      y: -4
                     }}
                     transition={{ 
                       type: "spring", 

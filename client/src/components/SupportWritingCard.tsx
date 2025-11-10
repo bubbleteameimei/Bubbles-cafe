@@ -288,7 +288,7 @@ export const SupportWritingCard = ({ className = "", authorId, hideCard = false 
       {/* Donation Modal */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent 
-          className="sm:max-w-md text-center bg-background/95 backdrop-blur-md border border-border/50 overflow-hidden"
+          className="sm:max-w-md text-center bg-card/90 backdrop-blur-md border border-border/60 shadow-lg overflow-hidden"
           aria-labelledby="support-writing-title"
           aria-describedby="support-writing-description"
         >

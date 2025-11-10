@@ -511,3 +511,13 @@ body.error-page-active footer.site-footer {
   padding-top: 0 !important;
   margin-top: 0 !important;
 }
+
+/* Hero typography color overrides by theme */
+.dark .hero-bubbles,
+.sky .hero-bubbles,
+.eco .hero-bubbles {
+  color: hsl(0 0% 100%) !important;
+}
+.light .hero-bubbles {
+  color: hsl(var(--foreground)) !important;
+}
