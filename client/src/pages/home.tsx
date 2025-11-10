@@ -124,7 +124,7 @@ export default function Home() {
             >
               <Button 
                 onClick={() => setLocation('/index')}
-                className="group w-full px-6 py-3 bg-gradient-to-r from-slate-600 via-slate-700 to-gray-700 hover:from-slate-500 hover:via-slate-600 hover:to-gray-600 text-white shadow-lg transition-all duration-300 hover:shadow-xl font-medium text-lg text-center"
+                className="group w-full px-6 py-3 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg transition-all duration-300 hover:shadow-xl font-medium text-lg text-center"
               >
                 Browse Stories
                 <motion.div

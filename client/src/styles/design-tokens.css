@@ -68,8 +68,8 @@
   --popover: 0 0% 7%;
   --popover-foreground: 0 0% 98%;
 
-  /* Use Info palette for primary accent */
-  --primary: 217 61% 54%;                /* info a10 (#4077d1) */
+  /* Primary accent aligns with light theme brand violet */
+  --primary: 252 100% 69%;
   --primary-foreground: 0 0% 100%;
 
   --secondary: 0 0% 12%;
@@ -78,9 +78,9 @@
   --muted: 0 0% 9%;
   --muted-foreground: 0 0% 65%;
 
-  /* Subtle accent using lighter info */
-  --accent: 217 62% 74%;
-  --accent-foreground: 0 0% 3%;
+  /* Accent: lighter violet */
+  --accent: 252 100% 85%;
+  --accent-foreground: 0 0% 8%;
 
   /* Status mappings */
   --destructive: 0 65% 57%;
@@ -89,19 +89,19 @@
   --success-foreground: 0 0% 100%;
   --warning: 38 60% 61%;
   --warning-foreground: 0 0% 3%;
-  --info: 217 61% 54%;
+  --info: 252 100% 69%;
   --info-foreground: 0 0% 100%;
 
   --border: 0 0% 22%;
   --input: 0 0% 22%;
-  --ring: 217 61% 54%;                   /* match primary */
+  --ring: 252 100% 69%;
 
-  /* Chart tokens */
-  --chart-1: 217 61% 54%;
-  --chart-2: 160 63% 36%;
-  --chart-3: 38 60% 61%;
-  --chart-4: 340 70% 60%;
-  --chart-5: 270 65% 65%;
+  /* Chart tokens (violet-forward palette) */
+  --chart-1: 252 100% 69%;
+  --chart-2: 280 65% 65%;
+  --chart-3: 320 70% 60%;
+  --chart-4: 200 70% 55%;
+  --chart-5: 160 55% 45%;
 
   /* Sidebar tokens */
   --sidebar-background: var(--background);

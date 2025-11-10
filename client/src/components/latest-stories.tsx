@@ -103,7 +103,7 @@ export default function LatestStories() {
           ))}
         </div>
 
-        <Card className="mt-6">
+        <Card className="mt-6 bg-card/80 backdrop-blur-md border border-border/60">
           <CardHeader>
             <CardTitle>Try the Bubble’s Cafe App!</CardTitle>
           </CardHeader>

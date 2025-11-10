@@ -82,9 +82,9 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
 
   // Ensure we always have up to 4 items; if not enough liked data, backfill with recent posts
   const topLiked = useMemo(() => {
-    const primary = sortedByLikes.slice(0, 4);
-    if (primary.length >= 4) return primary;
-    const need = 4 - primary.length;
+    const primary = sortedByLikes.slice(0, 3);
+    if (primary.length >= 3) return primary;
+    const need = 3 - primary.length;
     const haveIds = new Set(primary.map(p => p.id));
     const recent = [...posts]
       .filter(p => !haveIds.has(p.id))

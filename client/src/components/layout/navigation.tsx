@@ -574,17 +574,9 @@ export default function Navigation() {
             >
               <div ref={panelRef} className="relative mx-auto" style={{ width: "min(calc(100vw - 48px), 600px)" }}>
                 {/* Search bar */}
-                <div
-                  className="rounded-[10px]"
-                  style={{
-                    background: "#404040",
-                    color: "#E0E0E0",
-                    border: "1px solid #7B61FF",
-                    overflow: "hidden",
-                  }}
-                >
+                <div className="rounded-[10px] bg-card border border-border text-foreground overflow-hidden">
                   <div className="relative h-9 w-full">
-                    <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "#AFAFAF" }} />
+                    <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       ref={searchInputRef}
                       placeholder="Search for stories..."
@@ -631,8 +623,7 @@ export default function Navigation() {
                           setSearchOpen(false);
                         }
                       }}
-                      className="w-full pl-12 pr-32 h-9 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none text-[#E0E0E0] placeholder-[#AFAFAF] caret-[#7B61FF]"
-                      style={{ background: "transparent", border: "none" }}
+                      className="w-full pl-12 pr-32 h-9 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none text-foreground placeholder:text-muted-foreground caret-[hsl(var(--primary))]"
                       role="combobox"
                       aria-expanded={true}
                       aria-controls="nav-suggestions-list"
@@ -647,19 +638,10 @@ export default function Navigation() {
                 </div>
 
                 {/* Advanced Search bar */}
-                <div
-                  className="mt-1 rounded-[10px]"
-                  style={{
-                    background: "#1a1a1a",
-                    color: "#E0E0E0",
-                    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)",
-                    overflow: "hidden",
-                  }}
-                >
+                <div className="mt-1 rounded-[10px] bg-card text-foreground border border-border overflow-hidden">
                   <div className="h-9 w-full flex items-center justify-center">
                     <button
-                      className="flex items-center justify-center w-full h-full text-base leading-none transition-colors"
-                      style={{ color: "#6A54E6" }}
+                      className="flex items-center justify-center w-full h-full text-base leading-none transition-colors text-primary hover:text-primary/90"
                       onClick={() => {
                         const href = "/search";
                         const done = prefetchRouteAsync(href).catch(() => {});
@@ -680,18 +662,14 @@ export default function Navigation() {
                 {/* Suggestions */}
                 {searchValue.trim().length > 0 && (
                   <div
-                    className="mt-1 rounded-[10px] overflow-hidden"
-                    style={{
-                      background: "#242424",
-                      boxShadow: "0 0 0 1px rgba(255,255,255,0.06)",
-                    }}
+                    className="mt-1 rounded-[10px] overflow-hidden bg-card border border-border"
                   >
                     <div className="p-3" id="nav-suggestions-list" role="listbox" aria-label="Search suggestions">
                       {suggestions.community.length + suggestions.reader.length > 0 ? (
                         <div className="space-y-3">
                           {suggestions.reader.length > 0 && (
                             <div>
-                              <div className="text-xs" style={{ color: "#AFAFAF" }}>
+                              <div className="text-xs text-muted-foreground">
                                 Reader
                               </div>
                               <ul className="space-y-1">
@@ -751,7 +729,7 @@ export default function Navigation() {
                           )}
                           {suggestions.community.length > 0 && (
                             <div>
-                              <div className="text-xs" style={{ color: "#AFAFAF" }}>
+                              <div className="text-xs text-muted-foreground">
                                 Community
                               </div>
                               <ul className="space-y-1">
@@ -813,13 +791,12 @@ export default function Navigation() {
                       ) : (
                         (noMatches || showNoMatchesPrelim) && (
                           <div className="space-y-1" aria-live="polite">
-                            <div className="text-sm" style={{ color: "#AFAFAF" }}>
+                            <div className="text-sm text-muted-foreground">
                               No stories found
                             </div>
                             {didYouMean && (
                               <button
-                                className="text-sm underline"
-                                style={{ color: "#7B61FF" }}
+                                className="text-sm underline text-primary hover:text-primary/90"
                                 onClick={() => {
                                   const href = String(didYouMean?.url || "");
                                   const done = prefetchRouteAsync(href.startsWith("/reader") ? "/reader" : href).catch(
@@ -836,7 +813,7 @@ export default function Navigation() {
                                 Did you mean “{String(didYouMean?.title || "")}”?
                               </button>
                             )}
-                            <div className="text-xs" style={{ color: "#AFAFAF" }}>
+                            <div className="text-xs text-muted-foreground">
                               Try Advanced Search for more results.
                             </div>
                           </div>
@@ -888,7 +865,7 @@ export default function Navigation() {
                 transformOrigin: "left center",
                 transform: `scaleX(${Math.max(0, Math.min(1, scrollProgress / 100))}) translateZ(0)`,
                 willChange: "transform",
-                background: "linear-gradient(90deg, #3b82f6, #8b5cf6)",
+                background: "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.5))",
               }}
             />
           </div>
