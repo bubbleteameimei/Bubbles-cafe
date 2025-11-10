@@ -17,7 +17,8 @@ function inlineComputeTrendingScores(
     const id = Number(p?.id);
     if (!Number.isFinite(id)) continue;
     const totals = reactionTotals[id];
-    const likes = Number(totals?.totals?.likes ?? (p as any)?.likesCount || 0) || 0;
+    const likesRaw = (totals?.totals?.likes ?? (p as any)?.likesCount) ?? 0;
+    const likes = Number(likesRaw) || 0;
     const views = (p as any)?.metadata && (p as any).metadata.pageViews ? Number((p as any).metadata.pageViews) : 0;
 
     let createdAtTs = 0;
