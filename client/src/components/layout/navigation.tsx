@@ -623,7 +623,7 @@ export default function Navigation() {
                           setSearchOpen(false);
                         }
                       }}
-                      className="w-full pl-12 pr-32 h-9 text-base bg-transparent border-none focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none text-foreground placeholder:text-muted-foreground caret-[hsl(var(--primary))]"
+                      className="w-full pl-12 pr-32 h-9 text-base bg-transparent border-none text-foreground placeholder:text-muted-foreground caret-[hsl(var(--primary))] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       role="combobox"
                       aria-expanded={true}
                       aria-controls="nav-suggestions-list"

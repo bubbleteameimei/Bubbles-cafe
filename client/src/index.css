@@ -438,7 +438,7 @@ div.sidebar-menu-container {
 
 /* Global: remove button/link shadows and underline glow */
 @layer base {
-  a, button, [role="button"] {
+  a:not(:focus-visible), button:not(:focus-visible), [role="button"]:not(:focus-visible) {
     text-decoration: none !important;
     box-shadow: none !important;
     text-shadow: none !important;
