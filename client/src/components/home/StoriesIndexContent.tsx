@@ -1134,7 +1134,6 @@ export default function StoriesIndexContent() {
                       </div>
                     </div>
                   </div>
-                )}
                 {/* Category tags under carousel controls */}
                 <div className="mt-8 px-2">
                     {(() => {
