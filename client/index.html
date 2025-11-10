@@ -28,6 +28,8 @@
         root.classList.add(theme);
         // Ensure native UI (scrollbars, form controls) match theme before CSS loads
         root.style.colorScheme = (theme === 'dark') ? 'dark' : 'light';
+        // Pre-paint background to avoid white/black flash on very slow CSS arrival
+        root.style.backgroundColor = (theme === 'dark') ? '#0a0a0a' : '#FAFAFA';
       } catch (e) {}
     })();
     </script>
