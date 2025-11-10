@@ -217,7 +217,7 @@ export const SidebarTrigger = React.forwardRef<
       variant="ghost"
       size="icon"
       className={cn(
-        "h-14 w-14 mt-4 touch-manipulation relative transition-all duration-150 ease-out active:opacity-90 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
+        "h-14 w-14 mt-4 touch-manipulation relative transition-all duration-150 ease-out active:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         className
       )}
       style={{ WebkitTapHighlightColor: 'transparent' }}
@@ -292,7 +292,7 @@ export const SidebarInput = React.forwardRef<
       ref={ref}
       data-sidebar="input"
       className={cn(
-        "h-8 w-full bg-background shadow-none focus-visible:outline-none",
+        "h-8 w-full bg-background shadow-none",
         className
       )}
       {...props}
@@ -393,7 +393,7 @@ export const SidebarGroupAction = React.forwardRef<
       ref={ref}
       data-sidebar="group-action"
       className={cn(
-        "absolute right-3 top-3.5 flex aspect-square w-6 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none transition-all duration-150 ease-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:outline-none [&>svg]:size-4 [&>svg]:shrink-0 active:opacity-90 touch-manipulation",
+        "absolute right-3 top-3.5 flex aspect-square w-6 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none transition-all duration-150 ease-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&>svg]:size-4 [&>svg]:shrink-0 active:opacity-90 touch-manipulation",
         // Increases the hit area of the button on mobile.
         "after:absolute after:-inset-3 after:md:hidden",
         "group-data-[collapsible=icon]:hidden",
@@ -506,7 +506,7 @@ export const SidebarMenuButton = React.forwardRef<
         tabIndex={0}
         className={cn(
           sidebarMenuButtonVariants({ variant, size }),
-          "touch-manipulation relative active:opacity-90 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
+          "touch-manipulation relative active:opacity-90 transition-all duration-150 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           className
         )}
         style={{ WebkitTapHighlightColor: 'transparent' }}
@@ -559,7 +559,7 @@ export const SidebarMenuAction = React.forwardRef<
       aria-label={ariaLabel || "Menu action"}
       tabIndex={0}
       className={cn(
-        "absolute right-1 top-1.5 flex aspect-square w-6 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none transition-all duration-150 ease-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0",
+        "absolute right-1 top-1.5 flex aspect-square w-6 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none transition-all duration-150 ease-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0",
         // Increases the hit area of the button on mobile.
         "after:absolute after:-inset-3 after:md:hidden",
         "peer-data-[size=sm]/menu-button:top-1",
@@ -689,7 +689,7 @@ export const SidebarMenuSubButton = React.forwardRef<
       aria-label={ariaLabel}
       tabIndex={0}
       className={cn(
-        "relative flex h-5 sm:h-6 min-w-0 -translate-x-px items-center gap-1 sm:gap-2 overflow-hidden rounded-md px-1 sm:px-2 text-sidebar-foreground outline-none hover:bg-transparent hover:text-sidebar-foreground focus:outline-none active:bg-transparent active:text-sidebar-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>svg]:size-3 [&>svg]:sm:size-4 [&>svg]:shrink-0 touch-manipulation transition-all duration-150 ease-out",
+        "relative flex h-5 sm:h-6 min-w-0 -translate-x-px items-center gap-1 sm:gap-2 overflow-hidden rounded-md px-1 sm:px-2 text-sidebar-foreground outline-none hover:bg-transparent hover:text-sidebar-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:bg-transparent active:text-sidebar-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>svg]:size-3 [&>svg]:sm:size-4 [&>svg]:shrink-0 touch-manipulation transition-all duration-150 ease-out",
         "data-[active=true]:bg-transparent data-[active=true]:text-sidebar-foreground",
         size === "sm" && "text-[10px] sm:text-xs",
         size === "md" && "text-xs sm:text-sm",

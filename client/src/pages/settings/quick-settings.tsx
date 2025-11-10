@@ -7,21 +7,15 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useTheme } from '@/hooks/use-theme';
+
 import { SettingsFormRow } from '@/components/settings/SettingsFormRow';
 import { SettingsSection } from '@/components/settings/SettingsSection';
 import { useToast } from '@/hooks/use-toast';
-import { Moon, Sun, Palette, Type, MousePointer } from 'lucide-react';
+import { Palette, Type, MousePointer } from 'lucide-react';
 
 export default function QuickSettingsPage() {
   const { toast } = useToast();
-  const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('appearance');
-  
-  // Theme settings
-  const [appearance, setAppearance] = useState<'light' | 'dark' | 'system'>(
-    localStorage.getItem('theme-appearance') as 'light' | 'dark' | 'system' || 'system'
-  );
   
   // Font settings
   const [fontSize, setFontSize] = useState<number>(
@@ -52,7 +46,7 @@ export default function QuickSettingsPage() {
   
   // Update localStorage when settings change
   useEffect(() => {
-    localStorage.setItem('theme-appearance', appearance);
+    
     localStorage.setItem('font-size', fontSize.toString());
     localStorage.setItem('font-family', fontFamily);
     localStorage.setItem('line-height', lineHeight.toString());
@@ -61,13 +55,7 @@ export default function QuickSettingsPage() {
     localStorage.setItem('reduce-motion', reduceMotion.toString());
     localStorage.setItem('tooltips-enabled', tooltipsEnabled.toString());
     
-    // Update theme if appearance changes
-    if (appearance !== 'system') {
-      setTheme({ mode: appearance, appearance });
-    } else {
-      const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      setTheme({ mode: systemPreference, appearance });
-    }
+    
     
     // Add class to body for font family
     document.body.classList.remove('font-sans', 'font-serif', 'font-mono');
@@ -93,11 +81,11 @@ export default function QuickSettingsPage() {
     style.id = 'quick-settings-style';
     document.head.appendChild(style);
     
-  }, [appearance, fontSize, fontFamily, lineHeight, paragraphSpacing, highContrast, reduceMotion, tooltipsEnabled, theme, setTheme]);
+  }, [fontSize, fontFamily, lineHeight, paragraphSpacing, highContrast, reduceMotion, tooltipsEnabled]);
   
   const handleReset = () => {
     // Reset to defaults
-    setAppearance('system');
+    
     setFontSize(16);
     setFontFamily('sans');
     setLineHeight(160);
@@ -143,57 +131,11 @@ export default function QuickSettingsPage() {
         {/* Appearance Tab */}
         <TabsContent value="appearance" className="space-y-6">
           <SettingsSection
-            title="Theme Settings"
-            description="Customize the appearance of the application."
+            title="Appearance Settings"
+            description="Customize display preferences without changing the site theme."
           >
             <Card className="rounded-xl border border-border/60 bg-card/80 transition-all hover:bg-card hover:shadow-md hover:-translate-y-[1px] will-change-transform">
               <CardContent className="pt-6 space-y-6">
-                <SettingsFormRow
-                  label="Theme Mode"
-                  description="Choose between light, dark, or system theme"
-                  htmlFor="theme-mode"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="grid grid-cols-3 gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={appearance === 'light' ? 'default' : 'outline'}
-                        className={`flex flex-col items-center justify-center h-20 px-2 py-1 gap-1 ${appearance === 'light' ? 'border-primary' : ''}`}
-                        onClick={() => setAppearance('light')}
-                      >
-                        <Sun className="h-5 w-5" />
-                        <span className="text-xs">Light</span>
-                      </Button>
-                      
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={appearance === 'dark' ? 'default' : 'outline'}
-                        className={`flex flex-col items-center justify-center h-20 px-2 py-1 gap-1 ${appearance === 'dark' ? 'border-primary' : ''}`}
-                        onClick={() => setAppearance('dark')}
-                      >
-                        <Moon className="h-5 w-5" />
-                        <span className="text-xs">Dark</span>
-                      </Button>
-                      
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={appearance === 'system' ? 'default' : 'outline'}
-                        className={`flex flex-col items-center justify-center h-20 px-2 py-1 gap-1 ${appearance === 'system' ? 'border-primary' : ''}`}
-                        onClick={() => setAppearance('system')}
-                      >
-                        <div className="flex">
-                          <Sun className="h-4 w-4" />
-                          <Moon className="h-4 w-4 ml-1" />
-                        </div>
-                        <span className="text-xs">System</span>
-                      </Button>
-                    </div>
-                  </div>
-                </SettingsFormRow>
-                
                 <SettingsFormRow
                   label="Font Family"
                   description="Choose a font family for text throughout the application"

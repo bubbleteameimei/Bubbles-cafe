@@ -382,7 +382,7 @@ div[data-reader-page="true"] .container,
 
 /* Reader page specific styling */
 .reader-page {
-  margin-top: -8px !important; /* Pull content up closer to header */
+  margin-top: 0 !important; /* Keep content below header without overlap */
 }
 
 /* Full-bleed overrides for reader page: allow viewport-wide separators */
@@ -413,9 +413,18 @@ body:has(main:has([data-reader-page])) .page-transition-container {
 }
 
 /* Smoothen theme toggle transitions */
-html.theme-smooth,
-html.theme-smooth * {
-  transition: background-color 250ms ease, color 250ms ease, border-color 250ms ease, fill 250ms ease, stroke 250ms ease !important;
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-smooth,
+  html.theme-smooth * {
+    transition: background-color 160ms ease-out, color 160ms ease-out, border-color 160ms ease-out, fill 160ms ease-out, stroke 160ms ease-out !important;
+  }
+}
+/* Respect reduced motion: disable theme-change transitions */
+@media (prefers-reduced-motion: reduce) {
+  html.theme-smooth,
+  html.theme-smooth * {
+    transition: none !important;
+  }
 }
 
 /* Loading screen styles are now handled in loading-screen.css */
@@ -429,7 +438,7 @@ div.sidebar-menu-container {
 
 /* Global: remove button/link shadows and underline glow */
 @layer base {
-  a, button, [role="button"] {
+  a:not(:focus-visible), button:not(:focus-visible), [role="button"]:not(:focus-visible) {
     text-decoration: none !important;
     box-shadow: none !important;
     text-shadow: none !important;

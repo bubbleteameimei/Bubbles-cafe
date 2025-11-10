@@ -87,14 +87,16 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Internal separator using same visual logic as header line */}
+      {/* Internal separator: full-bleed line */}
       <div
         aria-hidden="true"
         style={{
           width: "100vw",
+          marginLeft: "calc(50% - 50vw)",
+          marginRight: "calc(50% - 50vw)",
           position: "relative",
-          left: "50%",
-          transform: "translateX(-50%)",
+          left: 0,
+          transform: "none",
           borderTop: "1px solid hsl(var(--border) / 0.70)"
         }}
       />

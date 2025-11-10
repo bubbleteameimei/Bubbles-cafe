@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useRef } from "react";
 
 type Theme = "dark" | "light" | "sky" | "eco" | "system";
 
@@ -30,65 +30,88 @@ export function ThemeProvider({
   storageKey = "vite-ui-theme",
   ...props
 }: ThemeProviderProps): JSX.Element {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  );
+  const [theme, setTheme] = useState<Theme>(() => {
+    try {
+      const stored = localStorage.getItem(storageKey) as Theme | null;
+      if (stored) return stored;
+      const root = typeof document !== "undefined" ? document.documentElement : null;
+      if (root) {
+        if (root.classList.contains("dark")) return "dark";
+        if (root.classList.contains("light")) return "light";
+        if (root.classList.contains("sky")) return "sky";
+        if (root.classList.contains("eco")) return "eco";
+      }
+    } catch {}
+    return defaultTheme;
+  });
+  const mountedRef = useRef(false);
+  const smoothTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const root = window.document.documentElement;
 
-    // Prevent transition flicker when switching themes
-    const transitionStyle = document.createElement('style');
-    transitionStyle.appendChild(document.createTextNode(`
-      * {
-        -webkit-transition: none !important;
-        -moz-transition: none !important;
-        -o-transition: none !important;
-        -ms-transition: none !important;
-        transition: none !important;
-      }
-    `));
-    document.head.appendChild(transitionStyle);
-    
-    // Apply theme changes
+    const addSmooth = () => {
+      try {
+        root.classList.add("theme-smooth");
+        if (smoothTimeoutRef.current != null) window.clearTimeout(smoothTimeoutRef.current);
+        smoothTimeoutRef.current = window.setTimeout(() => {
+          try {
+            root.classList.remove("theme-smooth");
+          } catch {}
+          smoothTimeoutRef.current = null;
+        }, 160); // short, non-jarring color-only transition
+      } catch {}
+    };
+
+    // Smooth color-only transition on subsequent changes (skip first mount)
+    if (mountedRef.current) {
+      addSmooth();
+    } else {
+      mountedRef.current = true;
+    }
+
+    // Apply theme classes
     root.classList.remove("light", "dark", "sky", "eco");
 
     let removeListener: (() => void) | null = null;
 
     if (theme === "system") {
-      const systemTheme: "dark" | "light" = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light";
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      const systemTheme: "dark" | "light" = mediaQuery.matches ? "dark" : "light";
 
       root.classList.add(systemTheme);
-      
-      // Listen for changes in system preference
-      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-      
+      root.style.colorScheme = systemTheme === "dark" ? "dark" : "light";
+
+      // Listen for changes in system preference with the same short smooth window
       const handleSystemThemeChange = (e: MediaQueryListEvent) => {
         root.classList.remove("light", "dark", "sky", "eco");
+
+        addSmooth();
+
         const newTheme = e.matches ? "dark" : "light";
         root.classList.add(newTheme);
+        root.style.colorScheme = newTheme === "dark" ? "dark" : "light";
       };
-      
+
       mediaQuery.addEventListener("change", handleSystemThemeChange);
       removeListener = () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
     } else {
       // Apply explicit theme
       root.classList.add(theme);
+      root.style.colorScheme = theme === "dark" ? "dark" : "light";
     }
-    
-    // Restore transitions after theme change is complete
-    const timeout = window.setTimeout(() => {
-      document.head.removeChild(transitionStyle);
-    }, 50);
 
     return () => {
-      window.clearTimeout(timeout);
+      if (smoothTimeoutRef.current != null) {
+        window.clearTimeout(smoothTimeoutRef.current);
+        smoothTimeoutRef.current = null;
+        try {
+          root.classList.remove("theme-smooth");
+        } catch {}
+      }
       if (removeListener) removeListener();
     };
-  }, [theme, storageKey]);
+  }, [theme]);
 
   // Toggle between themes in a predictable cycle (dark → light → sky → eco → dark)
   const toggleTheme = () => {

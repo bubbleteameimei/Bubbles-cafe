@@ -3,8 +3,7 @@ import { useLocation, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
-import { Moon, Sun } from "lucide-react";
-import { useTheme } from "@/components/theme-provider";
+
 import { useToast } from "@/hooks/use-toast";
 
 export default function SettingsPage() {
@@ -12,7 +11,7 @@ export default function SettingsPage() {
   const [isDataExportPage, setIsDataExportPage] = useState(false);
   const [fontSize, setFontSize] = useState(16);
   const [readingMode, setReadingMode] = useState<'scroll' | 'page'>('scroll');
-  const { theme, setTheme } = useTheme();
+  
   const { toast } = useToast();
   
   // Check if user is trying to access the removed data export page
@@ -50,27 +49,7 @@ export default function SettingsPage() {
       <h1 className="text-3xl font-bold mb-6">Settings & Accessibility</h1>
 
       <Card className="p-6 space-y-6">
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Theme</h2>
-          <div className="flex items-center justify-between gap-4">
-            <Button
-              variant={theme === 'light' ? 'default' : 'outline'}
-              className="w-full"
-              onClick={() => setTheme('light')}
-            >
-              <Sun className="h-4 w-4 mr-2" />
-              Light Mode
-            </Button>
-            <Button
-              variant={theme === 'dark' ? 'default' : 'outline'}
-              className="w-full"
-              onClick={() => setTheme('dark')}
-            >
-              <Moon className="h-4 w-4 mr-2" />
-              Dark Mode
-            </Button>
-          </div>
-        </div>
+        
 
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Font Size</h2>

@@ -13,7 +13,7 @@ import {
   Share2, Minus, Plus, Shuffle, ChevronLeft, ChevronRight,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
   Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog, BookText, Trash, X, Pencil, Clock,
-  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Bone
+  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Bone, Type
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from 'date-fns';
@@ -68,6 +68,7 @@ import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } f
 import { getStoryThemeOverride } from "@shared/story-theme-overrides";
 import { getThemeDefinitionOverride, syncThemeDefinitionOverridesFromServer } from "@/shared/theme-definitions";
 import { Icon } from "@iconify/react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getBadgeTint } from "@/lib/theme-badges";
 
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
@@ -147,6 +148,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [fontDialogOpen, setFontDialogOpen] = useState(false);
   const [contentsDialogOpen, setContentsDialogOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [randomTipOpen, setRandomTipOpen] = useState(false);
 
   // Inline admin theme editor state
   const [themeEditorOpen, setThemeEditorOpen] = useState(false);
@@ -1119,7 +1121,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         
 
         {/* Font controls/TOC spacing below header and progress bar */}
-        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-1 py-1 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-0.5 py-0.5 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -1138,7 +1140,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               variant="outline"
               size="sm"
               onClick={increaseFontSize}
-              disabled={fontSize >= 20}
+              disabled={fontSize >= 40}
               className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 transition-all duration-300 hover:scale-105"
               aria-label="Increase font size"
             >
@@ -1214,9 +1216,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 size="sm"
                 className="h-8 px-3 bg-primary hover:bg-primary/90 text-white flex items-center gap-1.5 rounded-md w-fit"
                 noOutline
+                aria-label="Table of Contents"
+                title="Table of Contents"
               >
                 <BookText className="h-4 w-4 flex-shrink-0" />
-                <span className="text-xs font-semibold tracking-wide">TOC</span>
+                <span className="hidden sm:inline text-xs font-semibold tracking-wide">TOC</span>
               </Button>
             </DialogTrigger>
             {/* Wrap the TableOfContents component to ensure DialogContent has proper aria attributes */}
@@ -1225,47 +1229,55 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               aria-labelledby="toc-dialog-title" 
               aria-describedby="toc-dialog-description"
             >
-              <div className="flex items-center">
-                <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
-              </div>
-              <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
-              <TableOfContents 
-                currentPostId={currentPost.id}
-                posts={posts.map((p: any) => ({
-                  id: p.id,
-                  title: getRenderedText(p.title) || 'Untitled',
-                  slug: (p.slug || `post-${p.id}`) as string,
-                  date: (p.date || p.createdAt || new Date().toISOString()) as string
-                }))}
-                onSelect={(selected) => {
-                  try {
-                    // Prefer match by slug when available
-                    const foundIndex = posts.findIndex((p: any) =>
-                      (selected.slug && p.slug === selected.slug) || p.id === selected.id
-                    );
-                    if (foundIndex >= 0) {
-                      setCurrentIndex(foundIndex);
-                      // Keep URL in sync with selected story to fix TOC routing
-                      setLocation(`/reader/${encodeURIComponent(String(posts[foundIndex].slug || posts[foundIndex].id))}`);
-                      // Scroll to top for a clean transition
-                      window.scrollTo({ top: 0, behavior: 'auto' });
+                <div className="flex items-center">
+                  <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
+                </div>
+                <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
+                <TableOfContents 
+                  currentPostId={currentPost.id}
+                  posts={posts.map((p: any) => ({
+                    id: p.id,
+                    title: getRenderedText(p.title) || 'Untitled',
+                    slug: (p.slug || `post-${p.id}`) as string,
+                    date: (p.date || p.createdAt || new Date().toISOString()) as string
+                  }))}
+                  onSelect={(selected) => {
+                    try {
+                      // Prefer match by slug when available
+                      const foundIndex = posts.findIndex((p: any) =>
+                        (selected.slug && p.slug === selected.slug) || p.id === selected.id
+                      );
+                      if (foundIndex >= 0) {
+                        setCurrentIndex(foundIndex);
+                        // Keep URL in sync with selected story to fix TOC routing
+                        setLocation(`/reader/${encodeURIComponent(String(posts[foundIndex].slug || posts[foundIndex].id))}`);
+                        // Scroll to top for a clean transition
+                        window.scrollTo({ top: 0, behavior: 'auto' });
+                      }
+                    } catch (err) {
+                      console.error('[Reader] TOC onSelect error:', err);
+                    } finally {
+                      setContentsDialogOpen(false);
                     }
-                  } catch (err) {
-                    console.error('[Reader] TOC onSelect error:', err);
-                  } finally {
-                    setContentsDialogOpen(false);
-                  }
-                }}
-                onClose={() => setContentsDialogOpen(false)} 
-              />
-            </DialogContent>
+                  }}
+                  onClose={() => setContentsDialogOpen(false)} 
+                />
+              </DialogContent>
           </Dialog>
         </div>
         {/* Full-bleed separator under controls row (thin, end-to-end) */}
         <div
           aria-hidden="true"
           className="border-b border-border/20"
-          style={{ width: '100%', position: 'relative', left: 0, transform: 'none' }}
+          style={{ 
+            width: '100vw', 
+            marginLeft: 'calc(50% - 50vw)', 
+            marginRight: 'calc(50% - 50vw)', 
+            position: 'relative', 
+            left: 0, 
+            transform: 'none',
+            marginTop: '4px'
+          }}
         />
       
         <article
@@ -1278,7 +1290,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             <div
               aria-hidden="true"
               className="border-b border-border/20"
-              style={{ width: '100%', position: 'relative', left: 0, transform: 'none' }}
+              style={{ 
+                width: '100vw', 
+                marginLeft: 'calc(50% - 50vw)', 
+                marginRight: 'calc(50% - 50vw)', 
+                position: 'relative', 
+                left: 0, 
+                transform: 'none' 
+              }}
             />
 
             <div className="flex flex-col items-center mb-2 mt-0">
@@ -1306,9 +1325,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   </div>
                 )}
                 <h1
-                  className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(getRenderedText(currentPost.title) || 'Story') }}
-                />
+              className="text-6xl md:text-7xl font-bold text-center mb-1 tracking-tight leading-tight"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(getRenderedText(currentPost.title) || 'Story') }}
+            />
               </div>
               
               {/* Story Delete Dialog */}
@@ -1351,7 +1370,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </Dialog>
 
               <div className="flex flex-col items-center gap-1">
-                <div className={`flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-primary/10 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                <div className={`flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/30 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-border/60 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                   {/* Story theme category with icon (index as source of truth) */}
                   {(() => {
                     const md: any = (currentPost as any)?.metadata || {};
@@ -1505,7 +1524,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   <span className="text-muted-foreground">•</span>
                   
                   {/* Date indicator */}
-                  <span className="text-xs px-2 py-1 bg-muted/50 rounded-md">
+                  <span className="text-xs px-2 py-1 bg-muted/80 border border-border/50 rounded-md">
                     {currentPost.date ? format(new Date(currentPost.date), 'MMM d, yyyy') : 'No date'}
                   </span>
                   
@@ -1715,24 +1734,35 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     size="sm"
                     onClick={goToPreviousStory}
                     disabled={posts.length <= 1 || isFirstStory}
-                    className="h-10 w-28 rounded-full bg-background/90 border border-border/50 text-foreground hover:bg-accent/60 hover:text-accent-foreground active:translate-y-[1px] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
+                    className="h-10 w-28 rounded-md bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <ChevronLeft className="h-4 w-4 mr-2" />
                     <span className="font-medium">Previous</span>
                   </Button>
 
                   {/* Random - icon only, circular */}
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={goToRandomStory}
-                    disabled={posts.length <= 1}
-                    aria-label="Random story"
-                    className="h-10 w-10 rounded-full bg-background/90 border border-border/50 text-foreground hover:bg-accent/60 hover:text-accent-foreground active:translate-y-[1px] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    <Shuffle className="h-4 w-4" />
-                    <span className="sr-only">Random</span>
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip open={randomTipOpen} onOpenChange={setRandomTipOpen}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            setRandomTipOpen(true);
+                            window.setTimeout(() => setRandomTipOpen(false), 800);
+                            goToRandomStory();
+                          }}
+                          disabled={posts.length <= 1}
+                          aria-label="Random story"
+                          title="Random"
+                          className="h-10 w-10 rounded-full bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          <Shuffle className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" align="center">Random</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
 
                   {/* Next - keep as baseline and match sizing */}
                   <Button
@@ -1740,7 +1770,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     size="sm"
                     onClick={goToNextStory}
                     disabled={posts.length <= 1 || isLastStory}
-                    className="h-10 w-28 rounded-full bg-background/90 border border-border/50 text-foreground hover:bg-accent/60 hover:text-accent-foreground active:translate-y-[1px] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
+                    className="h-10 w-28 rounded-md bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <span className="font-medium">Next</span>
                     <ChevronRight className="h-4 w-4 ml-2" />
@@ -1837,12 +1867,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </div>
             </div>
 
-            {/* Full-bleed separator above reactions/share section (thin, end-to-end) */}
-            <div
-              aria-hidden="true"
-              className="border-b border-border/20"
-              style={{ width: '100%', position: 'relative', left: 0, transform: 'none' }}
-            />
+            
            
             <div className="mt-2 pt-3">
               <div className="flex flex-col items-center justify-center gap-6">
@@ -1925,7 +1950,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </div>
             
             {/* Social sharing and support section  */}
-              <div className={`social-support-section mt-8 pt-6 border-t border-border ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+              <div
+                aria-hidden="true"
+                className="border-b border-border"
+                style={{
+                  width: '100vw',
+                  marginLeft: 'calc(50% - 50vw)',
+                  marginRight: 'calc(50% - 50vw)',
+                  position: 'relative',
+                  left: 0,
+                  transform: 'none'
+                }}
+              />
+              <div className={`social-support-section mt-8 pt-6 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                 
                 {/* Support writing card with auto-wired authorId */}
                 <SupportWritingCard authorId={resolveAuthorId(currentPost)} />

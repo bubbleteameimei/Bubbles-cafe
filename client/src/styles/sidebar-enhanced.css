@@ -138,9 +138,9 @@
 /* Focus state for keyboard navigation */
 .sidebar-menu-button-enhanced:focus-visible {
   outline: none !important;
-  outline-offset: 0 !important;
+  outline-offset: 2px !important;
   border-color: transparent !important;
-  box-shadow: none !important;
+  /* Allow component-level focus rings (Tailwind ring) to be visible */
 }
 
 /* Simplified current page state - no box/gradient */
