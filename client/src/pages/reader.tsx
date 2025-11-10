@@ -148,6 +148,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [fontDialogOpen, setFontDialogOpen] = useState(false);
   const [contentsDialogOpen, setContentsDialogOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [randomTipOpen, setRandomTipOpen] = useState(false);
 
   // Inline admin theme editor state
   const [themeEditorOpen, setThemeEditorOpen] = useState(false);
@@ -1120,7 +1121,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         
 
         {/* Font controls/TOC spacing below header and progress bar */}
-        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-1 py-0.5 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-0.5 py-0.5 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -1523,7 +1524,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   <span className="text-muted-foreground">•</span>
                   
                   {/* Date indicator */}
-                  <span className="text-xs px-2 py-1 bg-muted/70 rounded-md">
+                  <span className="text-xs px-2 py-1 bg-muted/80 border border-border/50 rounded-md">
                     {currentPost.date ? format(new Date(currentPost.date), 'MMM d, yyyy') : 'No date'}
                   </span>
                   
@@ -1741,12 +1742,16 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
                   {/* Random - icon only, circular */}
                   <TooltipProvider>
-                    <Tooltip>
+                    <Tooltip open={randomTipOpen} onOpenChange={setRandomTipOpen}>
                       <TooltipTrigger asChild>
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={goToRandomStory}
+                          onClick={() => {
+                            setRandomTipOpen(true);
+                            window.setTimeout(() => setRandomTipOpen(false), 800);
+                            goToRandomStory();
+                          }}
                           disabled={posts.length <= 1}
                           aria-label="Random story"
                           title="Random"
@@ -1862,19 +1867,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </div>
             </div>
 
-            {/* Full-bleed separator above reactions/share section (thin, end-to-end) */}
-            <div
-              aria-hidden="true"
-              className="border-b border-border/20"
-              style={{ 
-                width: '100vw', 
-                marginLeft: 'calc(50% - 50vw)', 
-                marginRight: 'calc(50% - 50vw)', 
-                position: 'relative', 
-                left: 0, 
-                transform: 'none' 
-              }}
-            />
+            
            
             <div className="mt-2 pt-3">
               <div className="flex flex-col items-center justify-center gap-6">

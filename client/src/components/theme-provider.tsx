@@ -50,14 +50,24 @@ export function ThemeProvider({
   useEffect(() => {
     const root = window.document.documentElement;
 
-    // Skip smooth class to make theme changes instantaneous
-    if (!mountedRef.current) {
-      mountedRef.current = true;
+    const addSmooth = () => {
+      try {
+        root.classList.add("theme-smooth");
+        if (smoothTimeoutRef.current != null) window.clearTimeout(smoothTimeoutRef.current);
+        smoothTimeoutRef.current = window.setTimeout(() => {
+          try {
+            root.classList.remove("theme-smooth");
+          } catch {}
+          smoothTimeoutRef.current = null;
+        }, 160); // short, non-jarring color-only transition
+      } catch {}
+    };
+
+    // Smooth color-only transition on subsequent changes (skip first mount)
+    if (mountedRef.current) {
+      addSmooth();
     } else {
-      if (smoothTimeoutRef.current != null) {
-        window.clearTimeout(smoothTimeoutRef.current);
-        smoothTimeoutRef.current = null;
-      }
+      mountedRef.current = true;
     }
 
     // Apply theme classes
@@ -72,16 +82,13 @@ export function ThemeProvider({
       root.classList.add(systemTheme);
       root.style.colorScheme = systemTheme === "dark" ? "dark" : "light";
 
-      // Listen for changes in system preference (no smooth class)
+      // Listen for changes in system preference with the same short smooth window
       const handleSystemThemeChange = (e: MediaQueryListEvent) => {
         root.classList.remove("light", "dark", "sky", "eco");
+
+        addSmooth();
+
         const newTheme = e.matches ? "dark" : "light";
-
-        if (smoothTimeoutRef.current != null) {
-          window.clearTimeout(smoothTimeoutRef.current);
-          smoothTimeoutRef.current = null;
-        }
-
         root.classList.add(newTheme);
         root.style.colorScheme = newTheme === "dark" ? "dark" : "light";
       };
@@ -98,6 +105,9 @@ export function ThemeProvider({
       if (smoothTimeoutRef.current != null) {
         window.clearTimeout(smoothTimeoutRef.current);
         smoothTimeoutRef.current = null;
+        try {
+          root.classList.remove("theme-smooth");
+        } catch {}
       }
       if (removeListener) removeListener();
     };
