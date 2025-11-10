@@ -314,7 +314,7 @@ export default function Home() {
 
                       }
                     }} 
-                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl bg-card border border-border shadow-md transition-all duration-300"
+                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl bg-card/80 backdrop-blur-md border border-border/60 transition-all duration-300"
                     whileHover={{ 
                       y: -8, 
                       scale: 1.02,
