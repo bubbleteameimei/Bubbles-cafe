@@ -395,7 +395,8 @@ export const SidebarGroupAction = React.forwardRef<
       className={cn(
         "absolute right-3 top-3.5 flex aspect-square w-6 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none transition-all duration-150 ease-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&>svg]:size-4 [&>svg]:shrink-0 active:opacity-90 touch-manipulation",
         // Increases the hit area of the button on mobile.
-ata-[collapsible=icon]:hidden",
+        "after:absolute after:-inset-3 after:md:hidden",
+        "group-data-[collapsible=icon]:hidden",
         className
       )}
       style={{ WebkitTapHighlightColor: 'transparent' }}
