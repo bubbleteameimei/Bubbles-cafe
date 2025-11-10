@@ -60,8 +60,7 @@ function patchHistoryMethod<K extends "pushState" | "replaceState">(method: K) {
       }
     } as History[K];
 
-    // @ts-ignore - assign our wrapper
-    history[method] = wrapped;
+    (history as any)[method] = wrapped;
   } catch {
     // no-op
   }
