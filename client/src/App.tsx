@@ -173,9 +173,14 @@ const AppContent = () => {
   const [isPageTransition, setIsPageTransition] = useState(false);
   const [previousLocation, setPreviousLocation] = useState('');
 
-  // Show a lightweight loader only on the Index page during lazy load
-  const routeFallback = locationStr.startsWith('/index') ? (
-    <RouteLoader label="Loading" minHeight="50vh" />
+  // Show a lightweight loader on key routes during lazy/data load
+  const needRouteLoader =
+    locationStr.startsWith('/index') ||
+    locationStr.startsWith('/stories') ||
+    locationStr.startsWith('/reader') ||
+    locationStr.startsWith('/story');
+  const routeFallback = needRouteLoader ? (
+    <RouteLoader label="Loading" minHeight="60vh" />
   ) : null;
   
 

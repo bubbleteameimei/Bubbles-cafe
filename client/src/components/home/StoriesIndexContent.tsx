@@ -13,6 +13,7 @@ import {
   Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Heart, Bone
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
+import MostLikedList from "@/components/home/MostLikedList";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -789,130 +790,139 @@ export default function StoriesIndexContent() {
 
           {/* Featured row */}
           {(featuredStory && sortedPosts.length > 0 && (!search.trim() || titleMatches.length > 0 || !!closestTitleMatch)) && (
-            <div className="mb-6">
-              <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
-                <CardContent className="group p-4">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      <Award className="h-4 w-4 text-primary" />
-                      <h2 className="text-lg font-decorative">Featured Story</h2>
-                    </div>
-                    <div className="flex items-center">
-                      <Select
-                        value={sort}
-                        onValueChange={(value) =>
-                          setSort(value as 'newest' | 'oldest' | 'popular' | 'shortest')
-                        }
-                      >
-                        <SelectTrigger className="w-28 h-7 text-[11px]" aria-label="Sort stories">
-                          <SelectValue placeholder="Sort" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="newest">Newest</SelectItem>
-                          <SelectItem value="oldest">Oldest</SelectItem>
-                          <SelectItem value="popular">Popular</SelectItem>
-                          <SelectItem value="shortest">Shortest</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <button className="text-left text-xl md:text-2xl font-semibold tracking-tight leading-tight hover:text-primary group-hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
-                        {renderHighlighted(String(featuredStory.title || ''))}
-                      </button>
-                      {(() => {
-                        const { key, label } = computeThemeMeta(featuredStory);
-                        const badgeTint = getBadgeTint(key);
-
-                        // Derive icon slug with overrides to match Reader/List cards behavior
-                        const md: any = (featuredStory as any)?.metadata || {};
-                        const override = getStoryThemeOverride((featuredStory as any)?.slug as any, (featuredStory as any)?.title as any);
-                        const defOverride = getThemeDefinitionOverride(key);
-                        let iconSlug =
-                          override?.icon ||
-                          (md && (md as any).themeIcon) ||
-                          defOverride?.icon ||
-                          (SHARED_THEME_CATEGORIES as any)[key]?.icon ||
-                          'ghost';
-                        if (key === 'BODY_HORROR') iconSlug = 'bone';
-
-                        const ThemeIconCmp = (() => {
-                          const slug = String(iconSlug).toLowerCase();
-                          switch (slug) {
-                            case 'skull': return Skull; case 'brain': return Brain; case 'pill': return Pill; case 'cpu': return Cpu; case 'ghost': return Ghost;
-                            case 'eye': return Eye; case 'hourglass': return Hourglass; case 'car': return Car;
-                            case 'fork-knife': case 'forkknife': case 'utensils': return ForkKnife; case 'trees': case 'tree': return Trees; case 'castle': return Castle; case 'bug': return Bug;
-                            case 'moon': return Moon; case 'moon-star': case 'moonstar': return MoonStar; case 'radio': return Radio; case 'box': return Box; case 'flask': return FlaskConical;
-                            case 'radiation': return Radiation; case 'building': return Building; case 'cat': return Cat; case 'flame': return Flame; case 'dog': return Dog; case 'cloud': return Cloud;
-                            case 'alert-triangle': case 'alerttriangle': return AlertTriangle; case 'footprints': return Footprints; case 'bone': return Bone;
-                            default:
-                              switch (key) {
-                                case 'TECHNOLOGICAL': return Cpu;
-                                case 'PSYCHOLOGICAL': return Brain;
-                                case 'SUPERNATURAL': return Ghost;
-                                case 'EXISTENTIAL': return Hourglass;
-                                case 'VEHICULAR': return Car;
-                                case 'FOLK_HORROR': return Trees;
-                                case 'GOTHIC': return Castle;
-                                case 'COSMIC': return Moon;
-                                default: return Ghost;
-                              }
+            <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-1">
+                <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
+                  <CardContent className="group p-4">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Award className="h-4 w-4 text-primary" />
+                        <h2 className="text-lg font-decorative">Featured Story</h2>
+                      </div>
+                      <div className="flex items-center">
+                        <Select
+                          value={sort}
+                          onValueChange={(value) =>
+                            setSort(value as 'newest' | 'oldest' | 'popular' | 'shortest')
                           }
-                        })();
+                        >
+                          <SelectTrigger className="w-28 h-7 text-[11px]" aria-label="Sort stories">
+                            <SelectValue placeholder="Sort" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="newest">Newest</SelectItem>
+                            <SelectItem value="oldest">Oldest</SelectItem>
+                            <SelectItem value="popular">Popular</SelectItem>
+                            <SelectItem value="shortest">Shortest</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <button className="text-left text-xl md:text-2xl font-semibold tracking-tight leading-tight hover:text-primary group-hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
+                          {renderHighlighted(String(featuredStory.title || ''))}
+                        </button>
+                        {(() => {
+                          const { key, label } = computeThemeMeta(featuredStory);
+                          const badgeTint = getBadgeTint(key);
 
-                        return (
-                          <div className="-mt-1">
-                            <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                              {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
-                              {label}
-                            </Badge>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                    <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
-                      <div className="flex items-center gap-1 justify-end">
-                        <Calendar className="h-3 w-3" />
-                        <time>{new Date(featuredStory.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
+                          // Derive icon slug with overrides to match Reader/List cards behavior
+                          const md: any = (featuredStory as any)?.metadata || {};
+                          const override = getStoryThemeOverride((featuredStory as any)?.slug as any, (featuredStory as any)?.title as any);
+                          const defOverride = getThemeDefinitionOverride(key);
+                          let iconSlug =
+                            override?.icon ||
+                            (md && (md as any).themeIcon) ||
+                            defOverride?.icon ||
+                            (SHARED_THEME_CATEGORIES as any)[key]?.icon ||
+                            'ghost';
+                          if (key === 'BODY_HORROR') iconSlug = 'bone';
+
+                          const ThemeIconCmp = (() => {
+                            const slug = String(iconSlug).toLowerCase();
+                            switch (slug) {
+                              case 'skull': return Skull; case 'brain': return Brain; case 'pill': return Pill; case 'cpu': return Cpu; case 'ghost': return Ghost;
+                              case 'eye': return Eye; case 'hourglass': return Hourglass; case 'car': return Car;
+                              case 'fork-knife': case 'forkknife': case 'utensils': return ForkKnife; case 'trees': case 'tree': return Trees; case 'castle': return Castle; case 'bug': return Bug;
+                              case 'moon': return Moon; case 'moon-star': case 'moonstar': return MoonStar; case 'radio': return Radio; case 'box': return Box; case 'flask': return FlaskConical;
+                              case 'radiation': return Radiation; case 'building': return Building; case 'cat': return Cat; case 'flame': return Flame; case 'dog': return Dog; case 'cloud': return Cloud;
+                              case 'alert-triangle': case 'alerttriangle': return AlertTriangle; case 'footprints': return Footprints; case 'bone': return Bone;
+                              default:
+                                switch (key) {
+                                  case 'TECHNOLOGICAL': return Cpu;
+                                  case 'PSYCHOLOGICAL': return Brain;
+                                  case 'SUPERNATURAL': return Ghost;
+                                  case 'EXISTENTIAL': return Hourglass;
+                                  case 'VEHICULAR': return Car;
+                                  case 'FOLK_HORROR': return Trees;
+                                  case 'GOTHIC': return Castle;
+                                  case 'COSMIC': return Moon;
+                                  default: return Ghost;
+                                }
+                            }
+                          })();
+
+                          return (
+                            <div className="-mt-1">
+                              <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                {label}
+                              </Badge>
+                            </div>
+                          );
+                        })()}
                       </div>
-                      <div className="flex items-center gap-1 justify-end" title={`~${String(featuredStory.content || '').split(/\\s+/).length} words`}>
-                        <Clock className="h-3 w-3" />
-                        <span>{getReadingTime(featuredStory.content)}</span>
+                      <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
+                        <div className="flex items-center gap-1 justify-end">
+                          <Calendar className="h-3 w-3" />
+                          <time>{new Date(featuredStory.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
+                        </div>
+                        <div className="flex items-center gap-1 justify-end" title={`~${String(featuredStory.content || '').split(/\\s+/).length} words`}>
+                          <Clock className="h-3 w-3" />
+                          <span>{getReadingTime(featuredStory.content)}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <p className="text-[15px] sm:text-[16px] text-muted-foreground leading-6 mt-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                    {extractEngagingExcerpt(featuredStory.content, 220)}
-                  </p>
-                  
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      {(() => {
-                        const md: any = (featuredStory as any)?.metadata || {};
-                        const totals = reactionTotals[featuredStory.id] || null;
-                        const likes = Number(totals?.totals?.likes ?? (featuredStory.likesCount || 0));
-                        const views = md && (md as any).pageViews ? Number((md as any).pageViews) : 0;
-                        const readingTimeStr = getReadingTime(featuredStory.content);
-                        return (
-                          <>
-                            <span className="flex items-center gap-1">
-                              <Heart className="h-3 w-3" /> {likes}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Eye className="h-3 w-3" /> {views}
-                            </span>
-                          </>
-                        );
-                      })()}
+                    <p className="text-[15px] sm:text-[16px] text-muted-foreground leading-6 mt-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                      {extractEngagingExcerpt(featuredStory.content, 220)}
+                    </p>
+                    
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        {(() => {
+                          const md: any = (featuredStory as any)?.metadata || {};
+                          const totals = reactionTotals[featuredStory.id] || null;
+                          const likes = Number(totals?.totals?.likes ?? (featuredStory.likesCount || 0));
+                          const views = md && (md as any).pageViews ? Number((md as any).pageViews) : 0;
+                          const readingTimeStr = getReadingTime(featuredStory.content);
+                          return (
+                            <>
+                              <span className="flex items-center gap-1">
+                                <Heart className="h-3 w-3" /> {likes}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Eye className="h-3 w-3" /> {views}
+                              </span>
+                            </>
+                          );
+                        })()}
+                      </div>
+                      <Button size="sm" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)} className="h-9 px-4 transition-transform active:scale-95">
+                        Read story
+                        <ArrowRight className="h-4 w-4 ml-1" />
+                      </Button>
                     </div>
-                    <Button size="sm" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)} className="h-9 px-4 transition-transform active:scale-95">
-                      Read story
-                      <ArrowRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
+              <div className="lg:col-span-2">
+                <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
+                  <CardContent className="p-4">
+                    <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} />
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           )}
 
