@@ -1150,22 +1150,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             {/* Font Dialog with controlled open state */}
             <Dialog open={fontDialogOpen} onOpenChange={setFontDialogOpen}>
               <DialogTrigger asChild>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-3 ml-2 bg-primary/10 hover:bg-primary/20 shadow-md border-primary/30 text-primary inline-flex items-center"
-                        aria-label="Font settings"
-                      >
-                        <Type className="h-4 w-4 mr-0 sm:mr-2" />
-                        <span className="hidden sm:inline text-xs uppercase">FONT</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" align="center" className="sm:hidden">Font</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 ml-2"
+                >
+                  <span className="text-xs uppercase">FONT</span>
+                </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-full">
                 <DialogHeader>
@@ -1239,7 +1230,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </DialogTrigger>
             {/* Wrap the TableOfContents component to ensure DialogContent has proper aria attributes */}
             <DialogContent 
-              className="max-w-md duration-300 ease-out data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-2 data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-top-2" 
+              className="max-w-md" 
               aria-labelledby="toc-dialog-title" 
               aria-describedby="toc-dialog-description"
             >
@@ -1324,7 +1315,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   </div>
                 )}
                 <h1
-              className="text-5xl md:text-6xl font-bold text-center mb-1 tracking-tight leading-tight"
+              className="text-6xl md:text-7xl font-bold text-center mb-1 tracking-tight leading-tight"
               dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(getRenderedText(currentPost.title) || 'Story') }}
             />
               </div>
@@ -1740,17 +1731,23 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   </Button>
 
                   {/* Random - icon only, circular */}
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={goToRandomStory}
-                    disabled={posts.length <= 1}
-                    aria-label="Random story"
-                    className="h-10 w-10 rounded-full bg-background/90 border border-border/50 text-foreground hover:bg-accent/60 hover:text-accent-foreground active:translate-y-[1px] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    <Shuffle className="h-4 w-4" />
-                    <span className="sr-only">Random</span>
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={goToRandomStory}
+                          disabled={posts.length <= 1}
+                          aria-label="Random story"
+                          className="h-10 w-10 rounded-full bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          <Shuffle className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" align="center">Random</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
 
                   {/* Next - keep as baseline and match sizing */}
                   <Button
