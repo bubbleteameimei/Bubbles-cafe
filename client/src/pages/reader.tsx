@@ -1265,39 +1265,40 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 aria-labelledby="toc-dialog-title" 
                 aria-describedby="toc-dialog-description"
               >
-                <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
-              </div>
-              <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
-              <TableOfContents 
-                currentPostId={currentPost.id}
-                posts={posts.map((p: any) => ({
-                  id: p.id,
-                  title: getRenderedText(p.title) || 'Untitled',
-                  slug: (p.slug || `post-${p.id}`) as string,
-                  date: (p.date || p.createdAt || new Date().toISOString()) as string
-                }))}
-                onSelect={(selected) => {
-                  try {
-                    // Prefer match by slug when available
-                    const foundIndex = posts.findIndex((p: any) =>
-                      (selected.slug && p.slug === selected.slug) || p.id === selected.id
-                    );
-                    if (foundIndex >= 0) {
-                      setCurrentIndex(foundIndex);
-                      // Keep URL in sync with selected story to fix TOC routing
-                      setLocation(`/reader/${encodeURIComponent(String(posts[foundIndex].slug || posts[foundIndex].id))}`);
-                      // Scroll to top for a clean transition
-                      window.scrollTo({ top: 0, behavior: 'auto' });
+                <div className="flex items-center">
+                  <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
+                </div>
+                <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
+                <TableOfContents 
+                  currentPostId={currentPost.id}
+                  posts={posts.map((p: any) => ({
+                    id: p.id,
+                    title: getRenderedText(p.title) || 'Untitled',
+                    slug: (p.slug || `post-${p.id}`) as string,
+                    date: (p.date || p.createdAt || new Date().toISOString()) as string
+                  }))}
+                  onSelect={(selected) => {
+                    try {
+                      // Prefer match by slug when available
+                      const foundIndex = posts.findIndex((p: any) =>
+                        (selected.slug && p.slug === selected.slug) || p.id === selected.id
+                      );
+                      if (foundIndex >= 0) {
+                        setCurrentIndex(foundIndex);
+                        // Keep URL in sync with selected story to fix TOC routing
+                        setLocation(`/reader/${encodeURIComponent(String(posts[foundIndex].slug || posts[foundIndex].id))}`);
+                        // Scroll to top for a clean transition
+                        window.scrollTo({ top: 0, behavior: 'auto' });
+                      }
+                    } catch (err) {
+                      console.error('[Reader] TOC onSelect error:', err);
+                    } finally {
+                      setContentsDialogOpen(false);
                     }
-                  } catch (err) {
-                    console.error('[Reader] TOC onSelect error:', err);
-                  } finally {
-                    setContentsDialogOpen(false);
-                  }
-                }}
-                onClose={() => setContentsDialogOpen(false)} 
-              />
-            </DialogContent>
+                  }}
+                  onClose={() => setContentsDialogOpen(false)} 
+                />
+              </DialogContent>
           </Dialog>
         </div>
         {/* Full-bleed separator under controls row (thin, end-to-end) */}
