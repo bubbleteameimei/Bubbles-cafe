@@ -346,7 +346,7 @@ const AppContent = () => {
           void import('./pages/about');
         } else if (path.startsWith('/contact')) {
           void import('./pages/contact');
-    _code  new}</   } else if (path.startsWith('/privacy')) {
+        } else if (path.startsWith('/privacy')) {
           void import('./pages/privacy');
         } else if (path.startsWith('/report-bug')) {
           void import('./pages/report-bug');
