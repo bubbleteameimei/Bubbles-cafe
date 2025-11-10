@@ -1120,7 +1120,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         
 
         {/* Font controls/TOC spacing below header and progress bar */}
-        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-1 py-1 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-1 py-0.5 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -1209,9 +1209,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
           {/* Contents Dialog with controlled open state - non-fullscreen with close button */}
           <Dialog open={contentsDialogOpen} onOpenChange={setContentsDialogOpen}>
-            <DialogTrigger asChild>
-              <TooltipProvider>
-                <Tooltip>
+            <TooltipProvider>
+              <Tooltip>
+                <DialogTrigger asChild>
                   <TooltipTrigger asChild>
                     <Button
                       variant="default"
@@ -1224,10 +1224,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       <span className="hidden sm:inline text-xs font-semibold tracking-wide">TOC</span>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" align="center" className="sm:hidden">Table of Contents</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </DialogTrigger>
+                </DialogTrigger>
+                <TooltipContent side="bottom" align="center" className="sm:hidden">Table of Contents</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             {/* Wrap the TableOfContents component to ensure DialogContent has proper aria attributes */}
             <DialogContent 
               className="max-w-md" 
@@ -1274,7 +1274,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         <div
           aria-hidden="true"
           className="border-b border-border/20"
-          style={{ width: '100%', position: 'relative', left: 0, transform: 'none' }}
+          style={{ 
+            width: '100vw', 
+            marginLeft: 'calc(50% - 50vw)', 
+            marginRight: 'calc(50% - 50vw)', 
+            position: 'relative', 
+            left: 0, 
+            transform: 'none',
+            marginTop: '4px'
+          }}
         />
       
         <article
@@ -1287,7 +1295,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             <div
               aria-hidden="true"
               className="border-b border-border/20"
-              style={{ width: '100%', position: 'relative', left: 0, transform: 'none' }}
+              style={{ 
+                width: '100vw', 
+                marginLeft: 'calc(50% - 50vw)', 
+                marginRight: 'calc(50% - 50vw)', 
+                position: 'relative', 
+                left: 0, 
+                transform: 'none' 
+              }}
             />
 
             <div className="flex flex-col items-center mb-2 mt-0">
@@ -1360,7 +1375,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </Dialog>
 
               <div className="flex flex-col items-center gap-1">
-                <div className={`flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-primary/10 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                <div className={`flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/30 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-border/60 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                   {/* Story theme category with icon (index as source of truth) */}
                   {(() => {
                     const md: any = (currentPost as any)?.metadata || {};
@@ -1514,7 +1529,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   <span className="text-muted-foreground">•</span>
                   
                   {/* Date indicator */}
-                  <span className="text-xs px-2 py-1 bg-muted/50 rounded-md">
+                  <span className="text-xs px-2 py-1 bg-muted/70 rounded-md">
                     {currentPost.date ? format(new Date(currentPost.date), 'MMM d, yyyy') : 'No date'}
                   </span>
                   
@@ -1856,7 +1871,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             <div
               aria-hidden="true"
               className="border-b border-border/20"
-              style={{ width: '100%', position: 'relative', left: 0, transform: 'none' }}
+              style={{ 
+                width: '100vw', 
+                marginLeft: 'calc(50% - 50vw)', 
+                marginRight: 'calc(50% - 50vw)', 
+                position: 'relative', 
+                left: 0, 
+                transform: 'none' 
+              }}
             />
            
             <div className="mt-2 pt-3">

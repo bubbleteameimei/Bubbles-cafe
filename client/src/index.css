@@ -416,7 +416,7 @@ body:has(main:has([data-reader-page])) .page-transition-container {
 @media (prefers-reduced-motion: no-preference) {
   html.theme-smooth,
   html.theme-smooth * {
-    transition: background-color 200ms ease-out, color 200ms ease-out, border-color 200ms ease-out, fill 200ms ease-out, stroke 200ms ease-out !important;
+    transition: background-color 160ms ease-out, color 160ms ease-out, border-color 160ms ease-out, fill 160ms ease-out, stroke 160ms ease-out !important;
   }
 }
 /* Respect reduced motion: disable theme-change transitions */
