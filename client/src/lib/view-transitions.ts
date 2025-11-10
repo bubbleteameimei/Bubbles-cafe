@@ -9,9 +9,6 @@ import { getEffectiveReducedMotion } from "./motion";
 // Internal flag to avoid double patching
 let VT_PATCHED = false;
 
-// Returns true if the environment supports view transitions (feature-only)
-import { getEffectiveReducedMotion } from "./motion";
-
 function canEnableViewTransitions(): boolean {
   try {
     if (typeof document === "undefined" || typeof window === "undefined") return false;
@@ -89,9 +86,6 @@ export function enableViewTransitions(): void {
 
     VT_PATCHED = true;
   } catch {
-    // no-op
-  }
-} catch {
     // no-op
   }
 }
