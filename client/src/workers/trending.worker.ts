@@ -2,9 +2,10 @@
 // Receives: { posts: Array<{ id: number, createdAt: string | number | Date, metadata?: any, likesCount?: number }>, reactionTotals: Record<number, { totals?: { likes?: number } }>, windowDays?: number }
 // Returns: { scores: Record<number, number> }
 
-const ctx: DedicatedWorkerGlobalScope = self as any;
+// Avoid requiring Web Worker lib typings; use any for broad compatibility
+const ctx: any = self as any;
 
-ctx.onmessage = (e: MessageEvent) => {
+ctx.onmessage = (e: any) => {
   try {
     const data = e.data || {};
     const posts: any[] = Array.isArray(data.posts) ? data.posts : [];
