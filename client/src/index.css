@@ -427,7 +427,7 @@ body:has(main:has([data-reader-page])) .page-transition-container {
   }
 }
 
-/* Loading screen styles are now handled in loading-screen.css */
+/* Page-level loaders are handled via RouteLoader (components/ui/RouteLoader.tsx) */
 
 
 

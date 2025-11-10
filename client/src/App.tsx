@@ -171,6 +171,11 @@ const AppContent = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isPageTransition, setIsPageTransition] = useState(false);
   const [previousLocation, setPreviousLocation] = useState('');
+
+  // Show a lightweight loader only on the Index page during lazy load
+  const routeFallback = locationStr.startsWith('/index') ? (
+    <RouteLoader label="Loading" minHeight="50vh" />
+  ) : null;
   
 
   // Basic SEO: set canonical and defaults site-wide
@@ -446,7 +451,7 @@ const AppContent = () => {
         {/* Main navigation bar */}
         <AppNavbar />
         {/* Main content */}
-        <React.Suspense fallback={null}>
+        <React.Suspense fallback={routeFallback}>
           {/* Main content landmark for accessibility */}
           <main id="main-content" tabIndex={-1} className="flex-1">
             {isReaderLike ? (
