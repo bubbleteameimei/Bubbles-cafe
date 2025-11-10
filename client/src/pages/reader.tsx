@@ -1139,7 +1139,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               variant="outline"
               size="sm"
               onClick={increaseFontSize}
-              disabled={fontSize >= 20}
+              disabled={fontSize >= 40}
               className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 transition-all duration-300 hover:scale-105"
               aria-label="Increase font size"
             >
@@ -1149,33 +1149,23 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             
             {/* Font Dialog with controlled open state */}
             <Dialog open={fontDialogOpen} onOpenChange={setFontDialogOpen}>
-              {/* Mobile: icon-only with tooltip */}
-              <TooltipProvider>
-                <Tooltip>
-                  <DialogTrigger asChild>
+              <DialogTrigger asChild>
+                <TooltipProvider>
+                  <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant="outline"
-                        size="icon"
-                        className="inline-flex sm:hidden h-8 w-8 rounded-md bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
+                        size="sm"
+                        className="h-8 px-3 ml-2 bg-primary/10 hover:bg-primary/20 shadow-md border-primary/30 text-primary inline-flex items-center"
                         aria-label="Font settings"
                       >
-                        <Type className="h-4 w-4" />
+                        <Type className="h-4 w-4 mr-0 sm:mr-2" />
+                        <span className="hidden sm:inline text-xs uppercase">FONT</span>
                       </Button>
                     </TooltipTrigger>
-                  </DialogTrigger>
-                  <TooltipContent side="bottom" align="center">Font</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              {/* Desktop/tablet: labeled button */}
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="hidden sm:inline-flex h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 ml-2"
-                >
-                  <span className="text-xs uppercase">FONT</span>
-                </Button>
+                    <TooltipContent side="bottom" align="center" className="sm:hidden">Font</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </DialogTrigger>
               <DialogContent className="sm:max-w-full">
                 <DialogHeader>
@@ -1228,43 +1218,31 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
           {/* Contents Dialog with controlled open state - non-fullscreen with close button */}
           <Dialog open={contentsDialogOpen} onOpenChange={setContentsDialogOpen}>
-              {/* Mobile: icon-only with tooltip */}
+            <DialogTrigger asChild>
               <TooltipProvider>
                 <Tooltip>
-                  <DialogTrigger asChild>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="default"
-                        size="icon"
-                        className="inline-flex sm:hidden h-8 w-8 rounded-md bg-primary hover:bg-primary/90 text-white"
-                        aria-label="Table of Contents"
-                        noOutline
-                      >
-                        <BookText className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                  </DialogTrigger>
-                  <TooltipContent side="bottom" align="center">Table of Contents</TooltipContent>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="h-8 px-3 bg-primary hover:bg-primary/90 text-white flex items-center gap-1.5 rounded-md w-fit"
+                      noOutline
+                      aria-label="Table of Contents"
+                    >
+                      <BookText className="h-4 w-4 flex-shrink-0" />
+                      <span className="hidden sm:inline text-xs font-semibold tracking-wide">TOC</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" align="center" className="sm:hidden">Table of Contents</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              {/* Desktop/tablet: labeled button */}
-              <DialogTrigger asChild>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="hidden sm:inline-flex h-8 px-3 bg-primary hover:bg-primary/90 text-white flex items-center gap-1.5 rounded-md w-fit"
-                  noOutline
-                >
-                  <BookText className="h-4 w-4 flex-shrink-0" />
-                  <span className="text-xs font-semibold tracking-wide">TOC</span>
-                </Button>
-              </DialogTrigger>
-              {/* Wrap the TableOfContents component to ensure DialogContent has proper aria attributes */}
-              <DialogContent 
-                className="max-w-md duration-300 ease-out data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-2 data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-top-2" 
-                aria-labelledby="toc-dialog-title" 
-                aria-describedby="toc-dialog-description"
-              >
+            </DialogTrigger>
+            {/* Wrap the TableOfContents component to ensure DialogContent has proper aria attributes */}
+            <DialogContent 
+              className="max-w-md duration-300 ease-out data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-2 data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-top-2" 
+              aria-labelledby="toc-dialog-title" 
+              aria-describedby="toc-dialog-description"
+            >
                 <div className="flex items-center">
                   <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
                 </div>
@@ -1346,9 +1324,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   </div>
                 )}
                 <h1
-                  className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(getRenderedText(currentPost.title) || 'Story') }}
-                />
+              className="text-5xl md:text-6xl font-bold text-center mb-1 tracking-tight leading-tight"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(getRenderedText(currentPost.title) || 'Story') }}
+            />
               </div>
               
               {/* Story Delete Dialog */}
@@ -1755,7 +1733,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     size="sm"
                     onClick={goToPreviousStory}
                     disabled={posts.length <= 1 || isFirstStory}
-                    className="h-10 w-28 rounded-none bg-background/90 border border-border/50 text-foreground hover:bg-accent/60 hover:text-accent-foreground active:translate-y-[1px] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
+                    className="h-10 w-28 rounded-md bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <ChevronLeft className="h-4 w-4 mr-2" />
                     <span className="font-medium">Previous</span>
@@ -1780,7 +1758,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     size="sm"
                     onClick={goToNextStory}
                     disabled={posts.length <= 1 || isLastStory}
-                    className="h-10 w-28 rounded-none bg-background/90 border border-border/50 text-foreground hover:bg-accent/60 hover:text-accent-foreground active:translate-y-[1px] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
+                    className="h-10 w-28 rounded-md bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <span className="font-medium">Next</span>
                     <ChevronRight className="h-4 w-4 ml-2" />

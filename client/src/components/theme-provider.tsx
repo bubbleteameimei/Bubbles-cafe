@@ -60,7 +60,7 @@ export function ThemeProvider({
             root.classList.remove("theme-smooth");
           } catch {}
           smoothTimeoutRef.current = null;
-        }, 300); // matches CSS ~250ms with a small buffer
+        }, 380); // matches CSS ~300ms with a small buffer
       } catch {}
     } else {
       mountedRef.current = true;
@@ -92,7 +92,7 @@ export function ThemeProvider({
               root.classList.remove("theme-smooth");
             } catch {}
             smoothTimeoutRef.current = null;
-          }, 300);
+          }, 380);
         } catch {}
 
         root.classList.add(newTheme);
