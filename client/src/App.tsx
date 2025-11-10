@@ -47,7 +47,8 @@ import GA4 from './components/GA4';
 
 // Import essential pages lazily to keep main bundle small
 const HomePage = React.lazy(() => import('./pages/home'));
-const StoriesPage = React.lazy(() => import('./pages/index'));
+// Index (stories) page is imported eagerly to avoid Suspense blank placeholders on first open
+import StoriesPage from './pages/index';
 const BestStoriesPage = React.lazy(() => import('./pages/best-stories'));
 const CuratedPage = React.lazy(() => import('./pages/curated'));
 const EditorsPicksPage = React.lazy(() => import('./pages/editors-picks'));
