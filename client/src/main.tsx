@@ -15,6 +15,7 @@ import "@/lib/fetch-csrf";
 
 // Minimal runtime bootstrap without debug logs
 import { getApiBaseUrl } from "@/lib/asset-path";
+import { enableViewTransitions } from "@/lib/view-transitions";
 
 // Global unhandled promise rejection handler
 window.addEventListener("unhandledrejection", (event) => {
@@ -35,6 +36,11 @@ const root = document.getElementById("root");
 if (!root) {
   throw new Error("Root element not found");
 }
+
+// Enable progressive SPA View Transitions (no-op when unsupported or reduced motion)
+try {
+  enableViewTransitions();
+} catch {}
 
 // Optimize images and enable lazy hints via dynamic import
 (async () => {
