@@ -889,10 +889,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             whileHover={{ scale: 1.02, translateX: 2 }}
             whileTap={{ scale: 0.98 }}
             className={cn(
-              "mt-3 mb-0 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-1",
+              "mt-3 mb-0 text-sm flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg border border-border bg-card text-foreground transition-colors transition-transform duration-200 ease-out hover:bg-muted hover:-translate-y-[1px] will-change-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               location === '/report-bug'
-                ? "text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-accent))]"
-                : "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-primary))] hover:bg-[hsl(var(--sidebar-accent))]"
+                ? "font-semibold"
+                : ""
             )}
             aria-label="Report a bug or issue"
             role="link"

@@ -197,7 +197,7 @@ export default function PrivacySettingsPage() {
                         <span>Profile Privacy</span>
                       </h3>
                       
-                      <div className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="flex items-center justify-between rounded-lg border p-3 transition-all hover:bg-muted/50 hover:shadow-sm hover:-translate-y-[1px] will-change-transform">
                         <div className="space-y-0.5">
                           <Label htmlFor="profile-visible" className="text-sm">Public Profile Visibility</Label>
                           <p className="text-xs text-muted-foreground">
@@ -212,7 +212,7 @@ export default function PrivacySettingsPage() {
                         />
                       </div>
                       
-                      <div className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="flex items-center justify-between rounded-lg border p-3 transition-all hover:bg-muted/50 hover:shadow-sm hover:-translate-y-[1px] will-change-transform">
                         <div className="space-y-0.5">
                           <Label htmlFor="reading-history" className="text-sm">Share Reading History</Label>
                           <p className="text-xs text-muted-foreground">
@@ -227,7 +227,7 @@ export default function PrivacySettingsPage() {
                         />
                       </div>
                       
-                      <div className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="flex items-center justify-between rounded-lg border p-3 transition-all hover:bg-muted/50 hover:shadow-sm hover:-translate-y-[1px] will-change-transform">
                         <div className="space-y-0.5">
                           <Label htmlFor="anonymous-comments" className="text-sm">Anonymous Commenting</Label>
                           <p className="text-xs text-muted-foreground">
@@ -249,7 +249,7 @@ export default function PrivacySettingsPage() {
                         <span>Security Settings</span>
                       </h3>
                       
-                      <div className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="flex items-center justify-between rounded-lg border p-3 transition-all hover:bg-muted/50 hover:shadow-sm hover:-translate-y-[1px] will-change-transform">
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-2">
                             <Label htmlFor="two-factor-auth" className="text-sm">Two-Factor Authentication</Label>
@@ -267,7 +267,7 @@ export default function PrivacySettingsPage() {
                         />
                       </div>
                       
-                      <div className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="flex items-center justify-between rounded-lg border p-3 transition-all hover:bg-muted/50 hover:shadow-sm hover:-translate-y-[1px] will-change-transform">
                         <div className="space-y-0.5">
                           <Label htmlFor="login-notifications" className="text-sm">Login Notifications</Label>
                           <p className="text-xs text-muted-foreground">
@@ -291,7 +291,7 @@ export default function PrivacySettingsPage() {
                         <span>Data Collection</span>
                       </h3>
                       
-                      <div className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="flex items-center justify-between rounded-lg border p-3 transition-all hover:bg-muted/50 hover:shadow-sm hover:-translate-y-[1px] will-change-transform">
                         <div className="space-y-0.5">
                           <Label htmlFor="email-notifications" className="text-sm">Email Notifications</Label>
                           <p className="text-xs text-muted-foreground">
@@ -306,7 +306,7 @@ export default function PrivacySettingsPage() {
                         />
                       </div>
                       
-                      <div className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="flex items-center justify-between rounded-lg border p-3 transition-all hover:bg-muted/50 hover:shadow-sm hover:-translate-y-[1px] will-change-transform">
                         <div className="space-y-0.5">
                           <Label htmlFor="activity-tracking" className="text-sm">Activity Tracking</Label>
                           <p className="text-xs text-muted-foreground">
@@ -321,7 +321,7 @@ export default function PrivacySettingsPage() {
                         />
                       </div>
                       
-                      <div className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="flex items-center justify-between rounded-lg border p-3 transition-all hover:bg-muted/50 hover:shadow-sm hover:-translate-y-[1px] will-change-transform">
                         <div className="space-y-0.5">
                           <Label htmlFor="data-retention" className="text-sm">Data Retention Period</Label>
                           <p className="text-xs text-muted-foreground">

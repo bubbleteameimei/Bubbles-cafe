@@ -7,7 +7,7 @@ export default function CookiePolicy() {
         <h1 className="text-3xl font-bold">Cookie Policy</h1>
       </div>
 
-      <div className="space-y-8 prose prose-invert max-w-none">
+      <div className="space-y-8 prose max-w-none dark:prose-invert">
         <section className="space-y-3">
           <h2 className="text-2xl font-semibold">What Are Cookies</h2>
           <p className="text-muted-foreground">Cookies are small text files that are stored on your computer or mobile device when you visit a website. They allow the website to recognize your device and remember if you've been to the website before.</p>

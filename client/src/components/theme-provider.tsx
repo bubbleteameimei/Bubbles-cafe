@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "dark" | "light" | "system";
+type Theme = "dark" | "light" | "sky" | "eco" | "system";
 
 type ThemeProviderProps = {
   children: React.ReactNode;
@@ -51,12 +51,12 @@ export function ThemeProvider({
     document.head.appendChild(transitionStyle);
     
     // Apply theme changes
-    root.classList.remove("light", "dark");
+    root.classList.remove("light", "dark", "sky", "eco");
 
     let removeListener: (() => void) | null = null;
 
     if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+      const systemTheme: "dark" | "light" = window.matchMedia("(prefers-color-scheme: dark)")
         .matches
         ? "dark"
         : "light";
@@ -67,7 +67,7 @@ export function ThemeProvider({
       const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
       
       const handleSystemThemeChange = (e: MediaQueryListEvent) => {
-        root.classList.remove("light", "dark");
+        root.classList.remove("light", "dark", "sky", "eco");
         const newTheme = e.matches ? "dark" : "light";
         root.classList.add(newTheme);
       };
@@ -90,20 +90,18 @@ export function ThemeProvider({
     };
   }, [theme, storageKey]);
 
-  // Toggle between light and dark themes
+  // Toggle between themes in a predictable cycle (dark → light → sky → eco → dark)
   const toggleTheme = () => {
     setTheme(prevTheme => {
-      // If system, use detected system theme to determine toggle direction
-      if (prevTheme === "system") {
-        const systemIsDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        const newTheme = systemIsDark ? "light" : "dark";
-        localStorage.setItem(storageKey, newTheme);
-        return newTheme;
-      }
-      // Otherwise toggle between light and dark
-      const newTheme = prevTheme === "dark" ? "light" : "dark";
-      localStorage.setItem(storageKey, newTheme);
-      return newTheme;
+      const order: Theme[] = ["dark", "light", "sky", "eco"];
+      // Resolve system to an explicit starting point
+      const current = prevTheme === "system"
+        ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+        : prevTheme;
+      const idx = order.indexOf(current);
+      const next = order[(idx + 1) % order.length];
+      localStorage.setItem(storageKey, next);
+      return next;
     });
   };
 

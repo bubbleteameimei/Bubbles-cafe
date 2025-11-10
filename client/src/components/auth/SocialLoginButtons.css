@@ -14,43 +14,32 @@
   font-size: 14px;
   font-weight: 500;
   transition: all 0.3s ease;
-  border: 1px solid rgba(0,0,0,0.12);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px; /* regular button, not pill */
+  background-color: hsl(var(--card));
+  color: hsl(var(--foreground));
 }
 
+.social-button:hover:not(:disabled) {
+  background-color: hsl(var(--muted));
+}
+
+/* Brand-specific tweaks */
 .google-button {
-  border-color: rgba(0, 0, 0, 0.1);
-  background-color: #ffffff;
-  color: #444;
-}
-
-.google-button:hover:not(:disabled) {
-  background-color: #f8f8f8;
-  border-color: rgba(0, 0, 0, 0.2);
+  /* Slightly stronger border for contrast on light backgrounds */
+  border-color: hsl(var(--border));
 }
 
 .apple-button {
-  background-color: #000;
-  color: #fff;
-  border-color: #000;
+  /* Keep high contrast while remaining tokenized */
+  background-color: hsl(var(--foreground));
+  color: hsl(var(--background));
+  border-color: hsl(var(--foreground));
 }
 
 .apple-button:hover:not(:disabled) {
-  background-color: #333;
-  border-color: #333;
-}
-
-@media (prefers-color-scheme: dark) {
-  .google-button {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  .google-button:hover:not(:disabled) {
-    background-color: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.2);
-  }
+  background-color: hsl(var(--foreground) / 0.85);
+  border-color: hsl(var(--foreground));
 }
 
 /* For horizontal layout on larger screens */

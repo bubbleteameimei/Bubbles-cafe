@@ -447,7 +447,7 @@ export function LikeDislike({
   return (
     <div className={`relative ${className}`} data-toast-container>
       {variant === 'reader' && (
-        <p className="text-center text-sm font-medium mb-4 text-white/80 uppercase tracking-wide font-sans">
+        <p className="text-center text-sm font-medium mb-4 text-muted-foreground uppercase tracking-wide font-sans">
           Loved this story? Let me know with a like—or a dislike if you must
         </p>
       )}
@@ -458,14 +458,15 @@ export function LikeDislike({
           className={`
             inline-flex items-center gap-2 font-sans font-medium text-sm
             px-4 py-2 rounded-lg border transition-all duration-200
-            hover:scale-105 active:scale-95 focus:outline-none focus:ring-0 focus:ring-offset-0
+            hover:scale-105 hover:-translate-y-[1px] active:translate-y-0 active:scale-95 will-change-transform
+            focus:outline-none focus:ring-0 focus:ring-offset-0
             ${variant === 'reader' 
               ? 'min-w-[100px] justify-center' 
               : 'h-8 px-3 py-1 text-xs min-w-[70px]'
             }
             ${liked 
-              ? 'bg-green-100 border-green-300 text-green-700 shadow-sm dark:bg-green-900/30 dark:border-green-600 dark:text-green-400' 
-              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
+              ? 'bg-[hsl(var(--success)/0.15)] border-[hsl(var(--success)/0.3)] text-[hsl(var(--success))] shadow-sm hover:bg-[hsl(var(--success)/0.2)]' 
+              : 'bg-card border-border text-foreground/80 hover:bg-muted hover:text-foreground shadow-sm'
             }
           `}
         >
@@ -479,14 +480,15 @@ export function LikeDislike({
           className={`
             inline-flex items-center gap-2 font-sans font-medium text-sm
             px-4 py-2 rounded-lg border transition-all duration-200
-            hover:scale-105 active:scale-95 focus:outline-none focus:ring-0 focus:ring-offset-0
+            hover:scale-105 hover:-translate-y-[1px] active:translate-y-0 active:scale-95 will-change-transform
+            focus:outline-none focus:ring-0 focus:ring-offset-0
             ${variant === 'reader' 
               ? 'min-w-[100px] justify-center' 
               : 'h-8 px-3 py-1 text-xs min-w-[70px]'
             }
             ${disliked 
-              ? 'bg-red-100 border-red-300 text-red-700 shadow-sm dark:bg-red-900/30 dark:border-red-600 dark:text-red-400' 
-              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
+              ? 'bg-[hsl(var(--destructive)/0.15)] border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))] shadow-sm hover:bg-[hsl(var(--destructive)/0.2)]' 
+              : 'bg-card border-border text-foreground/80 hover:bg-muted hover:text-foreground shadow-sm'
             }
           `}
         >
@@ -505,10 +507,10 @@ export function LikeDislike({
             : 'translate-y-2 opacity-0 scale-95'
           }
           ${inlineToast.type === 'like' 
-            ? 'bg-green-50 text-green-800 border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700' 
+            ? 'bg-[hsl(var(--success)/0.12)] text-[hsl(var(--success))] border border-[hsl(var(--success)/0.3)]' 
             : inlineToast.type === 'dislike'
-            ? 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700'
-            : 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700'
+            ? 'bg-[hsl(var(--destructive)/0.12)] text-[hsl(var(--destructive))] border border-[hsl(var(--destructive)/0.3)]'
+            : 'bg-[hsl(var(--destructive)/0.12)] text-[hsl(var(--destructive))] border border-[hsl(var(--destructive)/0.3)]'
           }
         `}>
           {inlineToast.message}

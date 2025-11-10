@@ -203,7 +203,7 @@ body {
   }
 
   ::-webkit-scrollbar-thumb {
-    background-color: rgba(125, 125, 125, 0.3); /* Semi-transparent thumb color */
+    background-color: hsl(var(--foreground) / 0.30); /* Semi-transparent thumb color */
     border-radius: 20px; /* Rounded corners for the thumb */
     border: 2px solid transparent; /* Transparent border to allow track color to show through */
     background-clip: content-box; /* Clip the background to the content box */
@@ -510,4 +510,9 @@ body.error-page-active footer.site-footer {
 [data-sidebar="sidebar"] [data-sidebar="group"]:first-child {
   padding-top: 0 !important;
   margin-top: 0 !important;
+}
+
+/* Hero typography color: match theme primary across modes */
+.hero-bubbles {
+  color: hsl(var(--primary)) !important;
 }

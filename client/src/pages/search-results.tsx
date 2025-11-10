@@ -800,7 +800,7 @@ export default function SearchResultsPage() {
                         {readerResults.map((result) => (
                           <motion.div
                             key={`reader-${result.id}`}
-                            className="border rounded-lg p-4 shadow-sm"
+                            className="border rounded-lg p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] will-change-transform"
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.18 }}
@@ -846,7 +846,7 @@ export default function SearchResultsPage() {
                         {communityResults.map((result) => (
                           <motion.div
                             key={`community-${result.id}`}
-                            className="border rounded-lg p-4 shadow-sm"
+                            className="border rounded-lg p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] will-change-transform"
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.18 }}
@@ -894,7 +894,7 @@ export default function SearchResultsPage() {
             {popular.length > 0 ? (
               <div className="space-y-6">
                 {popular.map((result) => (
-                  <div key={`popular-${result.id}`} className="border rounded-lg p-4 shadow-sm">
+                  <div key={`popular-${result.id}`} className="border rounded-lg p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] will-change-transform">
                     <h3 className="text-xl font-semibold mb-2">
                       <Link href={result.url}>{highlightText(result.title, searchQuery)}</Link>
                     </h3>

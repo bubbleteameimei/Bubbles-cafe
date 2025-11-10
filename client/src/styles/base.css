@@ -109,6 +109,13 @@
     color-scheme: dark;
   }
 
+  /* Light-like modes explicitly opt into light color-scheme for form controls, scrollbars, etc. */
+  .light,
+  .sky,
+  .eco {
+    color-scheme: light;
+  }
+
   /* Responsive adjustments */
   @media (max-width: 640px) {
     html {

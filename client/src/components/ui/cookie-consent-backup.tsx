@@ -140,21 +140,21 @@ export function CookieConsent() {
                   animate={{ opacity: [0, 0.8, 0], y: [-5, -20, -40] }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 2, times: [0, 0.4, 1] }}
-                  className="absolute -top-2 left-1/4 w-2 h-8 bg-white/40 rounded-full blur-sm"
+                  className="absolute -top-2 left-1/4 w-2 h-8 bg-foreground/40 rounded-full blur-sm"
                 />
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: [0, 0.6, 0], y: [-5, -25, -45] }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 2.3, delay: 0.3, times: [0, 0.4, 1] }}
-                  className="absolute -top-2 left-1/2 w-3 h-10 bg-white/30 rounded-full blur-sm"
+                  className="absolute -top-2 left-1/2 w-3 h-10 bg-foreground/30 rounded-full blur-sm"
                 />
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: [0, 0.7, 0], y: [-5, -15, -35] }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 1.8, delay: 0.5, times: [0, 0.4, 1] }}
-                  className="absolute -top-2 left-3/4 w-2 h-6 bg-white/40 rounded-full blur-sm"
+                  className="absolute -top-2 left-3/4 w-2 h-6 bg-foreground/40 rounded-full blur-sm"
                 />
               </>
             )}
@@ -255,7 +255,7 @@ export function CookieConsent() {
       </motion.div>
       
       {isPreferencesModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="bg-gradient-to-b from-[#F5F5DC] to-[#E8D9B5] rounded-xl shadow-xl border-2 border-[#C4A484] p-6 max-w-lg w-full mx-4 animate-in fade-in slide-in-from-bottom-4">
             <div className="absolute top-2 right-3 opacity-60">
               <svg className="w-[40px] h-[40px]" viewBox="0 0 122.88 122.25">

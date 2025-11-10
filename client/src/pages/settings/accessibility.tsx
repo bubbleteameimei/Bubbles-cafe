@@ -131,7 +131,7 @@ export default function ReadingPreferencesPage() {
             title="Text Display"
             description="Customize how text appears on the screen for easier reading."
           >
-            <Card>
+            <Card className="rounded-xl border border-border/60 bg-card/80 transition-all hover:bg-card hover:shadow-md hover:-translate-y-[1px] will-change-transform">
               <CardContent className="pt-6 space-y-6">
                 <SettingsFormRow 
                   label="Text Size" 
@@ -265,7 +265,7 @@ export default function ReadingPreferencesPage() {
             title="Motion & Interaction"
             description="Control how the interface responds to your interactions."
           >
-            <Card>
+            <Card className="rounded-xl border border-border/60 bg-card/80 transition-all hover:bg-card hover:shadow-md hover:-translate-y-[1px] will-change-transform">
               <CardContent className="pt-6 space-y-6">
                 <SettingsFormRow
                   label="Reduce Motion"
@@ -332,7 +332,7 @@ export default function ReadingPreferencesPage() {
             description="Control how images, videos, and audio are displayed and played."
             includeSeparator={false}
           >
-            <Card>
+            <Card className="rounded-xl border border-border/60 bg-card/80 transition-all hover:bg-card hover:shadow-md hover:-translate-y-[1px] will-change-transform">
               <CardContent className="pt-6 space-y-6">
                 <SettingsFormRow
                   label="Image Descriptions"

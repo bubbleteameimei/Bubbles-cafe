@@ -1252,7 +1252,7 @@ export default function StoriesIndexContent() {
                             >
                               <Card
                                 onClick={() => navigateToReader(post.slug || post.id)}
-                                className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 cursor-pointer"
+                                className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] will-change-transform cursor-pointer"
                               >
                                 <CardContent className="p-4 pb-4">
                                   <div className="flex items-start justify-between gap-3">
@@ -1430,7 +1430,7 @@ export default function StoriesIndexContent() {
                       >
                         <Card
                           onClick={() => navigateToReader(post.slug || post.id)}
-                          className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 cursor-pointer"
+                          className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] will-change-transform cursor-pointer"
                         >
                           <CardContent className="p-4 pb-4">
                             <div className="flex items-start justify-between gap-3">

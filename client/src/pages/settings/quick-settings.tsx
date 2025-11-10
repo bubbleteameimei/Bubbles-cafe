@@ -146,7 +146,7 @@ export default function QuickSettingsPage() {
             title="Theme Settings"
             description="Customize the appearance of the application."
           >
-            <Card>
+            <Card className="rounded-xl border border-border/60 bg-card/80 transition-all hover:bg-card hover:shadow-md hover:-translate-y-[1px] will-change-transform">
               <CardContent className="pt-6 space-y-6">
                 <SettingsFormRow
                   label="Theme Mode"
@@ -224,7 +224,7 @@ export default function QuickSettingsPage() {
             title="Text Settings"
             description="Adjust text appearance for easier reading."
           >
-            <Card>
+            <Card className="rounded-xl border border-border/60 bg-card/80 transition-all hover:bg-card hover:shadow-md hover:-translate-y-[1px] will-change-transform">
               <CardContent className="pt-6 space-y-6">
                 <SettingsFormRow
                   label="Font Size"

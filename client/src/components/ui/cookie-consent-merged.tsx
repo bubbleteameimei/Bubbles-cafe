@@ -185,14 +185,14 @@ export function CookieConsent() {
                   animate={{ opacity: [0, 0.8, 0], y: [-5, -20, -40] }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 2, times: [0, 0.4, 1] }}
-                  className="absolute -top-2 right-1/4 w-2 h-8 bg-white/40 rounded-full blur-sm"
+                  className="absolute -top-2 right-1/4 w-2 h-8 bg-foreground/40 rounded-full blur-sm"
                 />
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: [0, 0.6, 0], y: [-5, -25, -45] }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 2.3, delay: 0.3, times: [0, 0.4, 1] }}
-                  className="absolute -top-2 right-1/3 w-3 h-10 bg-white/30 rounded-full blur-sm"
+                  className="absolute -top-2 right-1/3 w-3 h-10 bg-foreground/30 rounded-full blur-sm"
                 />
               </>
             )}

@@ -11,10 +11,10 @@ export default function NotFound() {
         <span className="eyeball-loader" aria-hidden="true"></span>
       </div>
       
-      <div className="text-center">
+      <div className="text-center text-foreground">
         <div className="flex justify-center mb-4 gap-2">
-          <AlertCircle className="h-8 w-8 text-red-500" />
-          <h1 className="text-2xl font-bold">404 Page Not Found</h1>
+          <AlertCircle className="h-8 w-8 text-destructive" />
+          <h1 className="text-2xl font-bold text-foreground">404 Page Not Found</h1>
         </div>
         <p className="mb-8 text-muted-foreground max-w-md">
           The page you're looking for seems to have vanished into the darkness. 

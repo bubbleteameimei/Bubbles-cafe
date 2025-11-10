@@ -27,9 +27,9 @@ const SecurityTabContent = lazy(() => import('../../components/settings/notifica
 const TabLoadingFallback = memo(() => (
   <div className="w-full py-8 flex justify-center">
     <div className="animate-pulse flex flex-col space-y-4 w-full max-w-md">
-      <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
-      <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+      <div className="h-6 bg-muted rounded w-3/4"></div>
+      <div className="h-4 bg-muted rounded w-full"></div>
+      <div className="h-24 bg-muted rounded w-full"></div>
     </div>
   </div>
 ));

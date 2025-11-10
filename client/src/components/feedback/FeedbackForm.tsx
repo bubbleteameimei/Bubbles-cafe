@@ -148,7 +148,7 @@ export function FeedbackForm() {
                     defaultValue={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger className="bg-white/50 border border-gray-200 hover:border-primary/50 transition-all duration-300">
+                      <SelectTrigger className="bg-card/70 border border-border hover:border-primary/50 transition-all duration-300">
                         <SelectValue placeholder="Select a feedback type" />
                       </SelectTrigger>
                     </FormControl>
@@ -175,7 +175,7 @@ export function FeedbackForm() {
                     defaultValue={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger className="bg-white/50 border border-gray-200 hover:border-primary/50 transition-all duration-300">
+                      <SelectTrigger className="bg-card/70 border border-border hover:border-primary/50 transition-all duration-300">
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                     </FormControl>
@@ -202,7 +202,7 @@ export function FeedbackForm() {
                 <FormControl>
                   <Textarea
                     placeholder="Tell us what you think..."
-                    className="resize-none h-32 bg-white/50 border border-gray-200 hover:border-primary/50 transition-all duration-300"
+                    className="resize-none h-32 bg-card/70 border border-border hover:border-primary/50 transition-all duration-300"
                     {...field}
                   />
                 </FormControl>
