@@ -57,6 +57,33 @@ export async function runMigrations() {
 async function createMissingTables(existingTables: string[], client: any) {
   // Track which tables were attempted and successfully created
   const creationAttempts: Record<string, boolean> = {};
+
+  // Proactively create session table used by connect-pg-simple to avoid runtime DDL on startup
+  try {
+    if (!existingTables.includes('session')) {
+      log("[Migrations] Creating session table used by session store");
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "session" (
+          "sid" VARCHAR NOT NULL PRIMARY KEY,
+          "sess" JSON NOT NULL,
+          "expire" TIMESTAMP NOT NULL
+        )
+      `);
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire")
+      `);
+      log("[Migrations] session table created or already present");
+      creationAttempts['session'] = true;
+    } else {
+      // Ensure expire index exists even if table is present
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire")
+      `);
+    }
+  } catch (error) {
+    log("[Migrations] Error creating session table/index:", error);
+    creationAttempts['session'] = false;
+  }
   
   // Create newsletter_subscriptions table if it doesn't exist
   if (!existingTables.includes('newsletter_subscriptions')) {
