@@ -11,6 +11,7 @@ import { db } from '../db';
 import { eq, sql, inArray } from "drizzle-orm";
 import { moderateComment } from "../utils/comment-moderation";
 import { clearCacheItem } from "../middlewares/api-cache";
+import { broadcastPostReactions } from "../utils/reactions-sse";
 
 const postsLogger = createSecureLogger('PostsRoutes');
 const router = Router();
@@ -351,7 +352,7 @@ router.post('/:id/like',
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
-      await (storage as any).updatePostReaction(Number(id), { isLike: true, sessionId: req.sessionID });
+      const (storage as any).updatePostReaction(Number(id), { isLike: true, sessionId: req.sessionID });
       const counts = await (storage as any).getPostLikeCounts(Number(id));
       res.json({ success: true, ...counts });
     } catch (error) {
@@ -398,7 +399,7 @@ router.get('/:id/reactions',
       let baselineLikes = Number((post as any).baselineLikes ?? 0);
       let baselineDislikes = Number((post as any).baselineDislikes ?? 0);
 
-      // Fallback seeding: if baselines are zero, compute deterministic values and persist
+      // One-time seeding: if baselines are zero, compute deterministic values and persist
       if (baselineLikes === 0 || baselineDislikes === 0) {
         const slug = String((post as any).slug || '');
         const seedNumber = slug
@@ -406,8 +407,9 @@ router.get('/:id/reactions',
           : effectiveId;
         const seed = seedNumber * 12345;
         const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
-        const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80; // 80–200
-        const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2; // 2–13
+        // Baseline ranges: likes 100–200, dislikes 3–7
+        const likesBase = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100;
+        const dislikesBase = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3;
 
         try {
           await db.update(postsTable)
@@ -508,8 +510,9 @@ router.get('/reactions-batch',
             const slug = String((row as any).slug || `wordpress-post-${rawId}`);
             const seedNumber = slug ? hashSlug(slug) : rawId;
             const seed = seedNumber * 12345;
-            const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
-            const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
+            // Baseline ranges: likes 100–200, dislikes 3–7
+            const likesBase = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100;
+            const dislikesBase = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3;
             bl = bl || likesBase;
             bd = bd || dislikesBase;
             baselineUpdates.push({ id: Number((row as any).id), likesBase: bl, dislikesBase: bd });
@@ -668,7 +671,7 @@ router.post('/:id/reaction',
         }
       }
 
-      return res.json({
+      const payload = {
         success: true,
         postId: effectiveId,
         baselineLikes,
@@ -679,7 +682,10 @@ router.post('/:id/reaction',
           likes: baselineLikes + Number(counts.likesCount ?? 0),
           dislikes: baselineDislikes + Number(counts.dislikesCount ?? 0)
         }
-      });
+      };
+      // Broadcast updated totals to SSE clients
+      broadcastPostReactions(effectiveId).catch(() => {});
+      return res.json(payload);
     } catch (error) {
       postsLogger.error('Error updating reaction', { postId: id, error: error instanceof Error ? error.message : String(error) });
       throw createError.internal('Failed to update reaction');

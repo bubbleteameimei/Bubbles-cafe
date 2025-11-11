@@ -1664,8 +1664,9 @@ export class DatabaseStorage implements IStorage {
       };
       const seedNumber = basePost.slug ? hashSlug(basePost.slug) : Math.floor(Math.random() * 1e6);
       const seed = seedNumber * 12345;
-      const baselineLikes = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80; // 80–200
-      const baselineDislikes = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2; // 2–13
+      // Baseline ranges: likes 100–200, dislikes 3–7 (persisted once)
+      const baselineLikes = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100; // 100–200
+      const baselineDislikes = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3; // 3–7
 
       // Use raw SQL to avoid schema mismatches, only including fields that actually exist
       const result = await db.execute(sql`

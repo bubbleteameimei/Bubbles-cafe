@@ -30,6 +30,7 @@ import themesDefinitionsRouter from './themes-definitions';
 import { registerNotificationPreferencesRoutes } from './notification-preferences';
 import tipsRouter from './tips';
 import configRoutes from './config';
+import { handleSseSubscription } from '../utils/reactions-sse';
 
 const routesLogger = createSecureLogger('RoutesIndex');
 
