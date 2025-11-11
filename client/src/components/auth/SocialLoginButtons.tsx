@@ -1,7 +1,8 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import './SocialLoginButtons.css';
 import { supabase } from '@/lib/supabase';
 import { getApiBaseUrl } from '@/lib/asset-path';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface SocialLoginButtonsProps {
   onSuccess?: (userData: any) => void;
@@ -9,6 +10,7 @@ interface SocialLoginButtonsProps {
 }
 
 export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginButtonsProps) {
+  const [status, setStatus] = useState<string | null>(null);
   const supabaseConfigured = useMemo(() => {
     try {
       const url = (import.meta as any)?.env?.VITE_SUPABASE_URL;
@@ -21,6 +23,7 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
 
   const handleGoogleLogin = useCallback(async () => {
     try {
+      setStatus('Starting Google sign-in…');
       if (supabaseConfigured) {
         const redirectTo = `${window.location.origin}/auth/success`;
         const { error } = await supabase.auth.signInWithOAuth({
@@ -28,10 +31,13 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
           options: { redirectTo }
         });
         if (error) {
-          throw new Error(error.message || 'Google login failed');
+          const msg = `Supabase OAuth error: ${error.message}`;
+          setStatus(msg);
+          throw new Error(msg);
         }
-        // Supabase will perform a full redirect to /auth/success; no client onSuccess callback needed
-        void onSuccess; // keep param referenced to avoid unused var lint if present
+        // Supabase will perform a full redirect to /auth/success
+        setStatus('Redirecting to Google…');
+        void onSuccess;
         return;
       }
 
@@ -43,7 +49,9 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
         (apiBase ? `${apiBase}/api/auth/callback` : '/api/auth/callback');
 
       if (!clientId) {
-        throw new Error('Google login is not configured');
+        const msg = 'Google login not configured: missing VITE_GOOGLE_CLIENT_ID (or Supabase envs).';
+        setStatus(msg);
+        throw new Error(msg);
       }
 
       const params = new URLSearchParams({
@@ -55,23 +63,18 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
       });
 
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+      setStatus('Redirecting to Google…');
       window.location.href = authUrl;
     } catch (e) {
       const err = e instanceof Error ? e : new Error('Google login failed');
+      setStatus(err.message);
       if (onError) {
         onError(err);
       } else {
         console.error('[SocialLoginButtons] Google login error:', err);
-        alert(err.message);
       }
     }
   }, [supabaseConfigured, onError, onSuccess]);
-
-  const disabled = useMemo(() => {
-    // Disable button only if neither Supabase nor Google OAuth is configured
-    const clientId = (import.meta as any)?.env?.VITE_GOOGLE_CLIENT_ID;
-    return !supabaseConfigured && !clientId;
-  }, [supabaseConfigured]);
 
   return (
     <div className="social-auth-buttons">
@@ -79,8 +82,6 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
         className="social-button google-button"
         type="button"
         onClick={handleGoogleLogin}
-        disabled={disabled}
-        title={disabled ? 'Google login is not configured' : undefined}
       >
         <img
           src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png"
@@ -91,6 +92,14 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
         />
         Sign in with Google
       </button>
+      {status && (
+        <div className="mt-2">
+          <Alert variant={status.toLowerCase().includes('error') ? 'destructive' : 'default'}>
+            <AlertTitle>Google Sign-in</AlertTitle>
+            <AlertDescription>{status}</AlertDescription>
+          </Alert>
+        </div>
+      )}
     </div>
   );
 }

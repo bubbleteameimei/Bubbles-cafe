@@ -109,7 +109,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) {
-      throw new Error((data as any)?.error || 'Failed to create server session');
+      const message = (data as any)?.error || (data as any)?.message || 'Failed to create server session';
+      const detailed = `Server session creation failed (status ${resp.status}): ${message}`;
+      setError(detailed);
+      throw new Error(detailed);
     }
     setUser((data as any)?.user ?? null);
     return (data as any)?.user;
@@ -130,11 +133,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           password,
         });
         if (sError) {
-          throw new Error(sError.message || 'Login failed');
+          const detailed = `Supabase login error: ${sError.message}`;
+          setError(detailed);
+          throw new Error(detailed);
         }
         const access_token = data.session?.access_token;
         if (!access_token) {
-          throw new Error('Login succeeded but no session token was returned');
+          const detailed = 'Supabase login succeeded but no session token was returned';
+          setError(detailed);
+          throw new Error(detailed);
         }
         const serverUser = await finalizeServerSession(access_token, rememberMe);
         return serverUser;
@@ -148,7 +155,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) {
         const message = (data as any)?.error || (data as any)?.message || 'Login failed';
-        throw new Error(message);
+        const detailed = `Login failed (status ${resp.status}): ${message}`;
+        setError(detailed);
+        throw new Error(detailed);
       }
       const user = (data as any)?.user || null;
       setUser(user);
@@ -174,24 +183,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('[Auth] Supabase signUp:', { email: payload.email, username: payload.username });
         }
         const { data, error: sError } = await supabase.auth.signUp({
-          email: payload.email,
-          password: payload.password,
-          options: {
-            data: { username: payload.username },
-            emailRedirectTo: `${window.location.origin}/auth/success`,
-          },
-        });
-        if (sError) {
-          throw new Error(sError.message || 'Registration failed');
-        }
-        // Depending on Supabase settings, signUp may require email confirmation (no session)
-        const access_token = data.session?.access_token;
-        if (access_token) {
-          const serverUser = await finalizeServerSession(access_token);
-          return serverUser;
-        } else {
-          // No immediate session; prompt the user to verify email
-          return { message: 'Check your email to confirm your account.' };
+        email: payload.email,
+        password: payload.password,
+        options: {
+          data: { username: payload.username },
+          emailRedirectTo: `${window.location.origin}/auth/success`,
+        },
+      });
+      if (sError) {
+        const detailed = `Supabase registration error: ${sError.message}`;
+        setError(detailed);
+        throw new Error(detailed);
+      }
+      // Depending on Supabase settings, signUp may require email confirmation (no session)
+      const access_token = data.session?.access_token;
+      if (access_token) {
+        const serverUser = await finalizeServerSession(access_token);
+        return serverUser;
+      } else {
+        // No immediate session; prompt the user to verify email
+        return { message: 'Check your email to confirm your account.' };
+      };
         }
       }
 
@@ -203,7 +215,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) {
         const message = (data as any)?.error || (data as any)?.message || 'Registration failed';
-        throw new Error(message);
+        const detailed = `Registration failed (status ${resp.status}): ${message}`;
+        setError(detailed);
+        throw new Error(detailed);
       }
       const user = (data as any)?.user || null;
       setUser(user);
