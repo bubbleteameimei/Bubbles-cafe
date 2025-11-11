@@ -314,7 +314,8 @@ export default function Home() {
 
                       }
                     }} 
-                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl bg-card/80 backdrop-blur-md border border-border/60 transition-all duration-300"
+                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl relative bg-card/60 backdrop-blur-xl border border-border/50 shadow-xl transition-all duration-300"
+                    style={{ backgroundImage: 'linear-gradient(135deg, hsl(var(--foreground) / 0.05), transparent)' }}
                     whileHover={{ 
                       y: -8, 
                       scale: 1.02,
@@ -353,7 +354,8 @@ export default function Home() {
                   {/* App install CTA card */}
                   <motion.div
                     onClick={() => setLocation('/install')}
-                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-7 rounded-xl bg-card/80 backdrop-blur-md border border-border/60 transition-all duration-300 mt-6"
+                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-7 rounded-xl relative bg-card/60 backdrop-blur-xl border border-border/50 shadow-xl transition-all duration-300 mt-6"
+                    style={{ backgroundImage: 'linear-gradient(135deg, hsl(var(--foreground) / 0.05), transparent)' }}
                     whileHover={{ 
                       y: -6, 
                       scale: 1.01

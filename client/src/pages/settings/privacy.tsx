@@ -42,12 +42,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function PrivacySettingsPage() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { 
     cookiePreferences, 
     toggleCategory, 
@@ -152,7 +154,9 @@ export default function PrivacySettingsPage() {
                   className="h-8 gap-1"
                   disabled={isLoading || isUpdating}
                   onClick={() => {
-                    window.location.reload();
+                    try { 
+                      queryClient.invalidateQueries({ queryKey: ['/api/user/privacy-settings'] }); 
+                    } catch {}
                   }}
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
@@ -521,7 +525,7 @@ export default function PrivacySettingsPage() {
                     <span>Cookie Settings</span>
                   </Button>
                 </Link>
-                <Link href="/privacy-policy">
+                <Link href="/privacy">
                   <Button variant="ghost" size="sm" className="flex items-center gap-1">
                     <Lock className="h-4 w-4" />
                     <span>Privacy Policy</span>

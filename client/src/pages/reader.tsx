@@ -852,6 +852,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const wordCount = plainText ? plainText.split(/\s+/).filter(Boolean).length : 0;
   const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
   const keywords = detectThemes(rawContent);
+  const ogImageFromContent = useMemo(() => {
+    try {
+      const html = getRenderedText(currentPost.content) || '';
+      const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+      if (match) {
+        const url = match[1];
+        if (/^https?:\/\//i.test(url) || url.startsWith('/')) return url;
+      }
+      return undefined;
+    } catch {
+      return undefined;
+    }
+  }, [currentPost]);
 
   // Story theme icon override (check metadata for themeIcon)
   const postThemeIcon = (currentPost as any)?.metadata?.themeIcon;
@@ -1013,6 +1026,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         title={titleText}
         description={descriptionText}
         canonical={canonicalPath}
+        image={ogImageFromContent}
         type="article"
         published={published}
         modified={published}
