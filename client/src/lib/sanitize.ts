@@ -8,6 +8,7 @@ import DOMPurify from 'dompurify';
  * - Removes inline styles to avoid url() vectors
  * - Ensures external links opened in a new tab include rel="noopener noreferrer nofollow"
  * - Restricts href/src protocols to http(s), mailto, tel, relative paths and hash links
+ * - Stabilizes images to reduce CLS by inferring missing width/height from common WordPress patterns
  */
 export function sanitizeHtml(input: string): string {
   try {
@@ -69,6 +70,80 @@ export function sanitizeHtml(input: string): string {
       const src = el.getAttribute('src') || '';
       if (!srcAllowed(src)) {
         el.removeAttribute('src');
+      }
+    });
+
+    // Reduce CLS by stabilizing images: infer width/height when missing.
+    const parseDimsFromUrl = (url: string): { w: number; h: number } | null => {
+      try {
+        if (!url) return null;
+        // Look for common WordPress filename pattern: -{width}x{height}.ext
+        const m = url.match(/-(\d{2,})x(\d{2,})(?=\.[a-z]{3,4})(?:\?|$)/i);
+        if (m) {
+          const w = parseInt(m[1], 10);
+          const h = parseInt(m[2], 10);
+          if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) return { w, h };
+        }
+        // Look for query params w,h or width,height
+        const qidx = url.indexOf('?');
+        if (qidx >= 0) {
+          const search = url.slice(qidx + 1);
+          const params = new URLSearchParams(search);
+          const wq = params.get('w') || params.get('width');
+          const hq = params.get('h') || params.get('height');
+          const w = wq ? parseInt(wq, 10) : NaN;
+          const h = hq ? parseInt(hq, 10) : NaN;
+          if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) return { w, h };
+        }
+      } catch {
+        // ignore
+      }
+      return null;
+    };
+
+    const trySetImageDims = (img: HTMLImageElement) => {
+      const hasWidth = Number.isFinite(parseInt(img.getAttribute('width') || '', 10));
+      const hasHeight = Number.isFinite(parseInt(img.getAttribute('height') || '', 10));
+      if (hasWidth && hasHeight) return;
+
+      // Try src then srcset candidates
+      const candidates: string[] = [];
+      const src = img.getAttribute('src') || '';
+      if (src) candidates.push(src);
+      const srcset = img.getAttribute('srcset') || '';
+      if (srcset) {
+        for (const part of srcset.split(',')) {
+          const url = part.trim().split(/\s+/)[0]; // first token before descriptor
+          if (url) candidates.push(url);
+        }
+      }
+
+      for (const u of candidates) {
+        const dims = parseDimsFromUrl(u);
+        if (dims) {
+          // Set both width and height to establish aspect ratio
+          img.setAttribute('width', String(dims.w));
+          img.setAttribute('height', String(dims.h));
+          return;
+        }
+      }
+      // No guess available; leave as-is. image-lazy.ts will set after load to reduce subsequent shifts.
+    };
+
+    // Apply stabilization and sensible defaults to images
+    doc.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
+      trySetImageDims(img);
+
+      if (!img.getAttribute('loading')) {
+        img.setAttribute('loading', 'lazy');
+      }
+      if (!img.getAttribute('decoding')) {
+        img.setAttribute('decoding', 'async');
+      }
+      // Strip unsafe protocols on src just in case (already handled above)
+      const src = img.getAttribute('src') || '';
+      if (src && !srcAllowed(src)) {
+        img.removeAttribute('src');
       }
     });
 
