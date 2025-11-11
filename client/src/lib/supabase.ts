@@ -17,6 +17,9 @@ const createAuthStub = () => ({
   async signInWithOAuth() {
     return { data: null, error: new Error('Supabase not configured') } as any;
   },
+  async getSession() {
+    return { data: { session: null }, error: null } as any;
+  },
 });
 
 let client: ReturnType<typeof createClient> | null = null;

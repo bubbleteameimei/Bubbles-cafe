@@ -24,6 +24,30 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
   const handleGoogleLogin = useCallback(async () => {
     try {
       setStatus('Starting Google sign-in…');
+
+      // Prefer direct Google OAuth when client ID is present
+      const clientId = (import.meta as any)?.env?.VITE_GOOGLE_CLIENT_ID;
+      if (clientId) {
+        const apiBase = getApiBaseUrl();
+        const redirectUri =
+          (import.meta as any)?.env?.VITE_GOOGLE_REDIRECT_URI ||
+          (apiBase ? `${apiBase}/api/auth/callback` : '/api/auth/callback');
+
+        const params = new URLSearchParams({
+          client_id: String(clientId),
+          redirect_uri: String(redirectUri),
+          response_type: 'code',
+          scope: 'openid email profile',
+          prompt: 'consent'
+        });
+
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+        setStatus('Redirecting to Google…');
+        window.location.href = authUrl;
+        return;
+      }
+
+      // Fallback to Supabase OAuth if configured
       if (supabaseConfigured) {
         const redirectTo = `${window.location.origin}/auth/success`;
         const { error } = await supabase.auth.signInWithOAuth({
@@ -35,36 +59,14 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
           setStatus(msg);
           throw new Error(msg);
         }
-        // Supabase will perform a full redirect to /auth/success
         setStatus('Redirecting to Google…');
         void onSuccess;
         return;
       }
 
-      // Fallback: initiate direct Google OAuth code flow when Supabase is not configured
-      const clientId = (import.meta as any)?.env?.VITE_GOOGLE_CLIENT_ID;
-      const apiBase = getApiBaseUrl();
-      const redirectUri =
-        (import.meta as any)?.env?.VITE_GOOGLE_REDIRECT_URI ||
-        (apiBase ? `${apiBase}/api/auth/callback` : '/api/auth/callback');
-
-      if (!clientId) {
-        const msg = 'Google login not configured: missing VITE_GOOGLE_CLIENT_ID (or Supabase envs).';
-        setStatus(msg);
-        throw new Error(msg);
-      }
-
-      const params = new URLSearchParams({
-        client_id: String(clientId),
-        redirect_uri: String(redirectUri),
-        response_type: 'code',
-        scope: 'openid email profile',
-        prompt: 'consent'
-      });
-
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-      setStatus('Redirecting to Google…');
-      window.location.href = authUrl;
+      const msg = 'Google login not configured: missing VITE_GOOGLE_CLIENT_ID (and Supabase envs).';
+      setStatus(msg);
+      throw new Error(msg);
     } catch (e) {
       const err = e instanceof Error ? e : new Error('Google login failed');
       setStatus(err.message);

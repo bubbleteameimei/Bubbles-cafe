@@ -56,6 +56,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(data.user);
         } else {
           // Attempt to re-establish a server session from Supabase if available
+          const supabaseConfigured = Boolean((import.meta as any)?.env?.VITE_SUPABASE_URL && (import.meta as any)?.env?.VITE_SUPABASE_ANON_KEY);
+          if (supabaseConfigured) {
+            try {
+              const { data: s } = await supabase.auth.getSession();
+              const token = s?.session?.access_token;
+              if (token) {
+                await finalizeServerSession(token);
+              } else {
+                setUser(null);
+              }
+            } catch {
+              setUser(null);
+            }
+          } else {
+            setUser(null);
+          }
+        }
+      } else {
+        // Non-200 response: try to finalize from Supabase token as a fallback
+        const supabaseConfigured = Boolean((import.meta as any)?.env?.VITE_SUPABASE_URL && (import.meta as any)?.env?.VITE_SUPABASE_ANON_KEY);
+        if (supabaseConfigured) {
           try {
             const { data: s } = await supabase.auth.getSession();
             const token = s?.session?.access_token;
@@ -67,18 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           } catch {
             setUser(null);
           }
-        }
-      } else {
-        // Non-200 response: try to finalize from Supabase token as a fallback
-        try {
-          const { data: s } = await supabase.auth.getSession();
-          const token = s?.session?.access_token;
-          if (token) {
-            await finalizeServerSession(token);
-          } else {
-            setUser(null);
-          }
-        } catch {
+        } else {
           setUser(null);
         }
       }
@@ -124,44 +134,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const supabaseConfigured = Boolean((import.meta as any)?.env?.VITE_SUPABASE_URL && (import.meta as any)?.env?.VITE_SUPABASE_ANON_KEY);
 
-      if (supabaseConfigured) {
-        if (import.meta.env?.DEV) {
-          console.log('[Auth] Supabase signInWithPassword:', { email });
-        }
-        const { data, error: sError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (sError) {
-          const detailed = `Supabase login error: ${sError.message}`;
-          setError(detailed);
-          throw new Error(detailed);
-        }
-        const access_token = data.session?.access_token;
-        if (!access_token) {
-          const detailed = 'Supabase login succeeded but no session token was returned';
-          setError(detailed);
-          throw new Error(detailed);
-        }
-        const serverUser = await finalizeServerSession(access_token, rememberMe);
-        return serverUser;
-      }
-
-      // Fallback: use local server auth when Supabase is not configured
-      const API_BASE = getApiBaseUrl();
-      const url = API_BASE ? `${API_BASE}/api/auth/login` : '/api/auth/login';
-      await fetchCsrfTokenIfNeeded();
-      const resp = await fetch(url, createCSRFRequest('POST', { email, password, rememberMe }));
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) {
-        const message = (data as any)?.error || (data as any)?.message || 'Login failed';
-        const detailed = `Login failed (status ${resp.status}): ${message}`;
+      if (!supabaseConfigured) {
+        const detailed = 'Supabase not configured: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to use email/password sign-in.';
         setError(detailed);
         throw new Error(detailed);
       }
-      const user = (data as any)?.user || null;
-      setUser(user);
-      return user;
+
+      if (import.meta.env?.DEV) {
+        console.log('[Auth] Supabase signInWithPassword:', { email });
+      }
+      const { data, error: sError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (sError) {
+        const detailed = `Supabase login error: ${sError.message}`;
+        setError(detailed);
+        throw new Error(detailed);
+      }
+      const access_token = data.session?.access_token;
+      if (!access_token) {
+        const detailed = 'Supabase login succeeded but no session token was returned';
+        setError(detailed);
+        throw new Error(detailed);
+      }
+      const serverUser = await finalizeServerSession(access_token, rememberMe);
+      return serverUser;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'An unknown error occurred';
       console.error('[Auth] Login error:', msg);
@@ -178,49 +176,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const supabaseConfigured = Boolean((import.meta as any)?.env?.VITE_SUPABASE_URL && (import.meta as any)?.env?.VITE_SUPABASE_ANON_KEY);
 
-      if (supabaseConfigured) {
-        if (import.meta.env?.DEV) {
-          console.log('[Auth] Supabase signUp:', { email: payload.email, username: payload.username });
-        }
-        const { data, error: sError } = await supabase.auth.signUp({
-          email: payload.email,
-          password: payload.password,
-          options: {
-            data: { username: payload.username },
-            emailRedirectTo: `${window.location.origin}/auth/success`,
-          },
-        });
-        if (sError) {
-          const detailed = `Supabase registration error: ${sError.message}`;
-          setError(detailed);
-          throw new Error(detailed);
-        }
-        // Depending on Supabase settings, signUp may require email confirmation (no session)
-        const access_token = data.session?.access_token;
-        if (access_token) {
-          const serverUser = await finalizeServerSession(access_token);
-          return serverUser;
-        } else {
-          // No immediate session; prompt the user to verify email
-          return { message: 'Check your email to confirm your account.' };
-        }
-      }
-
-      // Fallback: local server registration when Supabase is not configured
-      const API_BASE = getApiBaseUrl();
-      const url = API_BASE ? `${API_BASE}/api/auth/register` : '/api/auth/register';
-      await fetchCsrfTokenIfNeeded();
-      const resp = await fetch(url, createCSRFRequest('POST', payload));
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) {
-        const message = (data as any)?.error || (data as any)?.message || 'Registration failed';
-        const detailed = `Registration failed (status ${resp.status}): ${message}`;
+      if (!supabaseConfigured) {
+        const detailed = 'Supabase not configured: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to use email/password sign-up.';
         setError(detailed);
         throw new Error(detailed);
       }
-      const user = (data as any)?.user || null;
-      setUser(user);
-      return user;
+
+      if (import.meta.env?.DEV) {
+        console.log('[Auth] Supabase signUp:', { email: payload.email, username: payload.username });
+      }
+      const { data, error: sError } = await supabase.auth.signUp({
+        email: payload.email,
+        password: payload.password,
+        options: {
+          data: { username: payload.username },
+          emailRedirectTo: `${window.location.origin}/auth/success`,
+        },
+      });
+      if (sError) {
+        const detailed = `Supabase registration error: ${sError.message}`;
+        setError(detailed);
+        throw new Error(detailed);
+      }
+      // Depending on Supabase settings, signUp may require email confirmation (no session)
+      const access_token = data.session?.access_token;
+      if (access_token) {
+        const serverUser = await finalizeServerSession(access_token);
+        return serverUser;
+      } else {
+        // No immediate session; prompt the user to verify email
+        return { message: 'Check your email to confirm your account.' };
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'An unknown error occurred';
       console.error('[Auth] Registration error:', msg);
