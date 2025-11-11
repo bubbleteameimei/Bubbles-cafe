@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, memo } from 'react';
 import { Heart, MessageSquare, Send, Bookmark, ChevronLeft, ChevronRight } from 'lucide-react';
 import './instagram-carousel.css';
+import OptimizedImage from '@/components/ui/OptimizedImage';
 
 interface Image {
   src: string;
@@ -89,10 +90,13 @@ export const InstagramCarousel: React.FC<InstagramCarouselProps> = memo(({
     <div className="insta-carousel">
       {/* Header */}
       <div className="insta-header">
-        <img
+        <OptimizedImage
           src={profileImage}
           alt={profileName}
+          width={32}
+          height={32}
           className="insta-avatar"
+          loadingStrategy="lazy"
         />
         <span className="insta-username">{profileName}</span>
       </div>
@@ -102,10 +106,14 @@ export const InstagramCarousel: React.FC<InstagramCarouselProps> = memo(({
         <div className="insta-slides-container" ref={carouselRef}>
           {images.map((image, i) => (
             <div className="insta-slide" key={i}>
-              <img 
-                src={image.src} 
-                alt={image.alt} 
-                loading={i === 0 ? "eager" : "lazy"} 
+              <OptimizedImage
+                src={image.src}
+                alt={image.alt}
+                width={450}
+                height={450}
+                className="w-full h-full object-cover"
+                priority={i === 0}
+                loadingStrategy={i === 0 ? 'eager' : 'lazy'}
               />
             </div>
           ))}
