@@ -9,7 +9,7 @@ export default function RouteLoader({
 }) {
   return (
     <>
-      {/* Simple, robust spinner that remains visible even with reduced motion */}
+      {/* Simple loader from Uiverse.io by Leoodaviid, adapted for React and accessibility */}
       <style>{`
         .loader-container {
           display: flex;
@@ -18,19 +18,30 @@ export default function RouteLoader({
           min-height: ${minHeight};
           width: 100%;
         }
+
         .loader {
-          width: 44px;
-          height: 44px;
+          width: 50px;
+          height: 50px;
           border-radius: 50%;
-          /* Visible even when animations are disabled */
-          border: 3px solid rgba(127, 127, 127, 0.3);
-          border-top-color: currentColor;
-          color: currentColor;
-          animation: route_spin 0.9s linear infinite;
+          animation: spin 1s linear infinite;
         }
-        @keyframes route_spin {
-          to { transform: rotate(360deg); }
+
+        @keyframes spin {
+          0% {
+            transform: rotate(0deg);
+            box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.4);
+          }
+          50% {
+            transform: rotate(180deg);
+            box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.4);
+          }
+          100% {
+            transform: rotate(360deg);
+            box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.4);
+          }
         }
+
+        /* Respect reduced motion preferences */
         @media (prefers-reduced-motion: reduce) {
           .loader {
             animation: none;
