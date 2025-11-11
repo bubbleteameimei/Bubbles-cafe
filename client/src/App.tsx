@@ -47,6 +47,7 @@ import GA4 from './components/GA4';
 
 // Import essential pages lazily to keep main bundle small
 const HomePage = React.lazy(() => import('./pages/home'));
+// Index (stories) page lazy-loaded to reduce initial bundle size; fallback shows a small loader
 const StoriesPage = React.lazy(() => import('./pages/index'));
 const BestStoriesPage = React.lazy(() => import('./pages/best-stories'));
 const CuratedPage = React.lazy(() => import('./pages/curated'));
@@ -58,8 +59,17 @@ import RouteLoader from './components/ui/RouteLoader';
 const ReaderPage = React.lazy(() => import('./pages/reader'));
 const StoryViewPage = React.lazy(() => import('./pages/story-view'));
 
-// Reader route component: outer Suspense handles route-level loading fallback
+// Reader route component: ensure loader appears immediately on direct visits and slow mounts
 function ReaderRoute(props: React.ComponentProps<typeof ReaderPage>) {
+  const [ready, setReady] = React.useState(false);
+  React.useEffect(() => {
+    // Allow a frame for fallback/loader to render before heavy content mounts
+    const id = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  if (!ready) {
+    return <RouteLoader label="Loading story" minHeight="60vh" />;
+  }
   return <ReaderPage {...props} />;
 }
 
@@ -171,6 +181,16 @@ const AppContent = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isPageTransition, setIsPageTransition] = useState(false);
   const [previousLocation, setPreviousLocation] = useState('');
+
+  // Show a lightweight loader on key routes during lazy/data load
+  const needRouteLoader =
+    locationStr.startsWith('/index') ||
+    locationStr.startsWith('/stories') ||
+    locationStr.startsWith('/reader') ||
+    locationStr.startsWith('/story');
+  const routeFallback = needRouteLoader ? (
+    <RouteLoader label="Loading" minHeight="60vh" />
+  ) : null;
   
 
   // Basic SEO: set canonical and defaults site-wide
@@ -318,6 +338,8 @@ const AppContent = () => {
           void import('./pages/edens-hollow');
         } else if (path.startsWith('/community-story/')) {
           void import('./pages/story-view');
+        } else if (path.startsWith('/reader')) {
+          void import('./pages/reader');
         } else if (path.startsWith('/story/')) {
           void import('./pages/reader');
         } else if (path.startsWith('/about')) {
@@ -446,111 +468,113 @@ const AppContent = () => {
         {/* Main navigation bar */}
         <AppNavbar />
         {/* Main content */}
-        <React.Suspense fallback={null}>
+        <React.Suspense fallback={routeFallback}>
           {/* Main content landmark for accessibility */}
           <main id="main-content" tabIndex={-1} className="flex-1">
             {isReaderLike ? (
               <div key={locationStr} className="page-content">
-                <Switch>
-                  {/* Main Pages */}
-                  <Route path="/" component={HomePage} />
-                  <Route path="/stories" component={StoriesPage} />
-                  <Route path="/index" component={StoriesPage} />
-                  <Route path="/best-stories" component={BestStoriesPage} />
-                  <Route path="/curated" component={CuratedPage} />
-                  <Route path="/editors-picks" component={EditorsPicksPage} />
-                  <Route path="/edens-hollow" component={EdensHollowPage} />
-                  <Route path="/about" component={AboutPage} />
-                  <Route path="/contact" component={ContactPage} />
-                  <Route path="/privacy" component={PrivacyPage} />
-                  <Route path="/report-bug" component={ReportBugPage} />
-                  <Route path="/install" component={InstallAppPage} />
+                <React.Suspense fallback={routeFallback}>
+                  <Switch>
+                    {/* Main Pages */}
+                    <Route path="/" component={HomePage} />
+                    <Route path="/stories" component={StoriesPage} />
+                    <Route path="/index" component={StoriesPage} />
+                    <Route path="/best-stories" component={BestStoriesPage} />
+                    <Route path="/curated" component={CuratedPage} />
+                    <Route path="/editors-picks" component={EditorsPicksPage} />
+                    <Route path="/edens-hollow" component={EdensHollowPage} />
+                    <Route path="/about" component={AboutPage} />
+                    <Route path="/contact" component={ContactPage} />
+                    <Route path="/privacy" component={PrivacyPage} />
+                    <Route path="/report-bug" component={ReportBugPage} />
+                    <Route path="/install" component={InstallAppPage} />
 
-                  {/* Authentication */}
-                  <Route path="/auth" component={AuthPage} />
-                  <Route path="/auth-success" component={AuthSuccessPage} />
-                  <Route path="/auth/success" component={AuthSuccessPage} />
-                  <Route path="/auth/callback" component={AuthCallbackPage} />
-                  <Route path="/reset-password" component={ResetPasswordPage} />
+                    {/* Authentication */}
+                    <Route path="/auth" component={AuthPage} />
+                    <Route path="/auth-success" component={AuthSuccessPage} />
+                    <Route path="/auth/success" component={AuthSuccessPage} />
+                    <Route path="/auth/callback" component={AuthCallbackPage} />
+                    <Route path="/reset-password" component={ResetPasswordPage} />
 
-                  {/* User Pages */}
-                  <Route path="/profile" component={ProfilePage} />
-                  <Route path="/bookmarks" component={BookmarksPage} />
-                  <Route path="/notifications" component={NotificationsPage} />
-                  <Route path="/recommendations" component={RecommendationsPage} />
+                    {/* User Pages */}
+                    <Route path="/profile" component={ProfilePage} />
+                    <Route path="/bookmarks" component={BookmarksPage} />
+                    <Route path="/notifications" component={NotificationsPage} />
+                    <Route path="/recommendations" component={RecommendationsPage} />
 
-                  {/* Settings Pages */}
-                  <Route path="/settings/profile" component={ProfileSettingsPage} />
-                  <Route path="/settings/connected-accounts" component={ConnectedAccountsPage} />
-                  <Route path="/settings/fonts" component={FontSettingsPage} />
-                  <Route path="/settings/accessibility" component={AccessibilitySettingsPage} />
-                  <Route path="/settings/notifications" component={NotificationSettingsPage} />
-                  <Route path="/settings/privacy" component={PrivacySettingsPage} />
-                  <Route path="/settings/cookie-management" component={CookieManagementPage} />
-                  <Route path="/settings/quick-settings" component={QuickSettingsPage} />
+                    {/* Settings Pages */}
+                    <Route path="/settings/profile" component={ProfileSettingsPage} />
+                    <Route path="/settings/connected-accounts" component={ConnectedAccountsPage} />
+                    <Route path="/settings/fonts" component={FontSettingsPage} />
+                    <Route path="/settings/accessibility" component={AccessibilitySettingsPage} />
+                    <Route path="/settings/notifications" component={NotificationSettingsPage} />
+                    <Route path="/settings/privacy" component={PrivacySettingsPage} />
+                    <Route path="/settings/cookie-management" component={CookieManagementPage} />
+                    <Route path="/settings/quick-settings" component={QuickSettingsPage} />
 
-                  {/* Community Pages */}
-                  <Route path="/community" component={CommunityPage} />
-                  <Route path="/submit-story" component={SubmitStoryPage} />
-                  <Route path="/edit-story" component={EditStoryPage} />
-                  <Route path="/feedback" component={FeedbackPage} />
-                  <Route path="/user/feedback-dashboard" component={UserFeedbackDashboardPage} />
-                  <Route path="/support/guidelines" component={GuidelinesPage} />
+                    {/* Community Pages */}
+                    <Route path="/community" component={CommunityPage} />
+                    <Route path="/submit-story" component={SubmitStoryPage} />
+                    <Route path="/edit-story" component={EditStoryPage} />
+                    <Route path="/feedback" component={FeedbackPage} />
+                    <Route path="/user/feedback-dashboard" component={UserFeedbackDashboardPage} />
+                    <Route path="/support/guidelines" component={GuidelinesPage} />
 
-                  {/* Legal Pages */}
-                  <Route path="/legal/copyright" component={CopyrightPage} />
-                  <Route path="/legal/terms" component={TermsPage} />
-                  <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
+                    {/* Legal Pages */}
+                    <Route path="/legal/copyright" component={CopyrightPage} />
+                    <Route path="/legal/terms" component={TermsPage} />
+                    <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
 
-                  {/* Admin Pages */}
-                  <Route path="/admin" component={AdminPage} />
-                  <Route path="/admin/dashboard" component={AdminDashboardPage} />
-                  <Route path="/admin/analytics" component={AdminAnalyticsPage} />
-                  <Route path="/admin/analytics-dashboard" component={AdminAnalyticsDashboardPage} />
-                  <Route path="/admin/users" component={AdminUsersPage} />
-                  <Route path="/admin/settings" component={AdminSettingsPage} />
-                  <Route path="/admin/posts" component={AdminManagePostsPage} />
-                  <Route path="/admin/manage-posts" component={AdminManagePostsPage} />
-                  <Route path="/admin/content" component={AdminContentPage} />
-                  <Route path="/admin/content-management" component={AdminContentManagementPage} />
-                  <Route path="/admin/content-moderation" component={AdminContentModerationPage} />
-                  <Route path="/admin/feedback" component={AdminFeedbackPage} />
-                  <Route path="/admin/feedback-management" component={AdminFeedbackManagementPage} />
-                  <Route path="/admin/feedback-review" component={AdminFeedbackReviewPage} />
-                  <Route path="/admin/bug-reports" component={AdminBugReportsPage} />
-                  <Route path="/admin/site-statistics" component={AdminSiteStatisticsPage} />
-                  <Route path="/admin/wordpress-sync" component={AdminWordPressSyncPage} />
-                  <Route path="/admin/themes" component={AdminThemesPage} />
+                    {/* Admin Pages */}
+                    <Route path="/admin" component={AdminPage} />
+                    <Route path="/admin/dashboard" component={AdminDashboardPage} />
+                    <Route path="/admin/analytics" component={AdminAnalyticsPage} />
+                    <Route path="/admin/analytics-dashboard" component={AdminAnalyticsDashboardPage} />
+                    <Route path="/admin/users" component={AdminUsersPage} />
+                    <Route path="/admin/settings" component={AdminSettingsPage} />
+                    <Route path="/admin/posts" component={AdminManagePostsPage} />
+                    <Route path="/admin/manage-posts" component={AdminManagePostsPage} />
+                    <Route path="/admin/content" component={AdminContentPage} />
+                    <Route path="/admin/content-management" component={AdminContentManagementPage} />
+                    <Route path="/admin/content-moderation" component={AdminContentModerationPage} />
+                    <Route path="/admin/feedback" component={AdminFeedbackPage} />
+                    <Route path="/admin/feedback-management" component={AdminFeedbackManagementPage} />
+                    <Route path="/admin/feedback-review" component={AdminFeedbackReviewPage} />
+                    <Route path="/admin/bug-reports" component={AdminBugReportsPage} />
+                    <Route path="/admin/site-statistics" component={AdminSiteStatisticsPage} />
+                    <Route path="/admin/wordpress-sync" component={AdminWordPressSyncPage} />
+                    <Route path="/admin/themes" component={AdminThemesPage} />
 
-                  {/* Dynamic Routes */}
-                  <Route path="/search" component={SearchResultsPage} />
-                  <Route path="/community-story/:slug">
-                    {(params) => <CommunityStoryRoute params={params} />}
-                  </Route>
-                  {/* Ensure /reader without slug also resolves to the reader component */}
-                  <Route path="/reader" component={ReaderRoute} />
-                  <Route path="/reader/:slug">
-                    {(params) => <ReaderRoute params={params} isCommunityContent={false} />}
-                  </Route>
-                  <Route path="/story/:slug">
-                    {(params) => <ReaderRoute params={params} isCommunityContent={false} />}
-                  </Route>
+                    {/* Dynamic Routes */}
+                    <Route path="/search" component={SearchResultsPage} />
+                    <Route path="/community-story/:slug">
+                      {(params) => <CommunityStoryRoute params={params} />}
+                    </Route>
+                    {/* Ensure /reader without slug also resolves to the reader component */}
+                    <Route path="/reader" component={ReaderRoute} />
+                    <Route path="/reader/:slug">
+                      {(params) => <ReaderRoute params={params} isCommunityContent={false} />}
+                    </Route>
+                    <Route path="/story/:slug">
+                      {(params) => <ReaderRoute params={params} isCommunityContent={false} />}
+                    </Route>
 
-                  {/* Error Pages */}
-                  <Route path="/errors/403" component={Error403Page} />
-                  <Route path="/errors/404" component={Error404Page} />
-                  <Route path="/errors/429" component={Error429Page} />
-                  <Route path="/errors/500" component={Error500Page} />
-                  <Route path="/errors/503" component={Error503Page} />
-                  <Route path="/errors/504" component={Error504Page} />
+                    {/* Error Pages */}
+                    <Route path="/errors/403" component={Error403Page} />
+                    <Route path="/errors/404" component={Error404Page} />
+                    <Route path="/errors/429" component={Error429Page} />
+                    <Route path="/errors/500" component={Error500Page} />
+                    <Route path="/errors/503" component={Error503Page} />
+                    <Route path="/errors/504" component={Error504Page} />
 
-                  {/* Catch All */}
-                  <Route path="*" component={Error404Page} />
-                </Switch>
+                    {/* Catch All */}
+                    <Route path="*" component={Error404Page} />
+                  </Switch>
+                </React.Suspense>
               </div>
             ) : (
               <PageTransition>
-                  <div className="page-content">
+                  <div key={locationStr} className="page-content">
                     <Switch>
                       {/* Main Pages */}
                       <Route path="/" component={HomePage} />

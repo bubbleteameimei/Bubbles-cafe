@@ -27,6 +27,7 @@ import { BookmarkButton } from "@/components/ui/BookmarkButton";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
 import ApiLoader from "@/components/api-loader";
+import RouteLoader from "@/components/ui/RouteLoader";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import SimplifiedErrorPage from "@/components/errors/SimplifiedErrorPage";
 import { useToast } from "@/hooks/use-toast";
@@ -72,6 +73,37 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { getBadgeTint } from "@/lib/theme-badges";
 
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
+
+// Lazy-mount comment section when near viewport to reduce initial load cost
+function LazyCommentSection({ postId }: { postId: number }) {
+  const [visible, setVisible] = useState(false);
+  const anchorRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let observer: IntersectionObserver | null = null;
+    try {
+      observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              setVisible(true);
+              // Disconnect once visible to avoid re-observing
+              try { observer?.disconnect(); } catch {}
+              break;
+            }
+          }
+        },
+        { root: null, rootMargin: '800px', threshold: 0.01 }
+      );
+      if (anchorRef.current) observer.observe(anchorRef.current);
+    } catch {}
+    return () => {
+      try { observer?.disconnect(); } catch {}
+    };
+  }, []);
+
+  return <div ref={anchorRef}>{visible ? <SimpleCommentSection postId={postId} /> : null}</div>;
+}
 
 // Native HTML sanitization function (now powered by DOMPurify with extra hardening)
   const sanitizeHtmlContent = (html: string): string => {
@@ -776,8 +808,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Keep previous story content visible while fetching; only return null if no cached data yet
   const hasCachedPosts = Array.isArray((postsData as any)?.posts) && ((postsData as any)?.posts?.length > 0);
   if (isLoading && !hasCachedPosts) {
-    // Avoid showing an inline loader; let the header remain and page content appear when ready
-    return null;
+    // Show a lightweight route-level loader on first open
+    return <RouteLoader label="Loading story" minHeight="60vh" />;
   }
 
   if (error) {
@@ -820,6 +852,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const wordCount = plainText ? plainText.split(/\s+/).filter(Boolean).length : 0;
   const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
   const keywords = detectThemes(rawContent);
+  const ogImageFromContent = (() => {
+    try {
+      const html = getRenderedText(currentPost.content) || '';
+      const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+      if (match) {
+        const url = match[1];
+        if (/^https?:\/\//i.test(url) || url.startsWith('/')) return url;
+      }
+      return undefined;
+    } catch {
+      return undefined;
+    }
+  })();
 
   // Story theme icon override (check metadata for themeIcon)
   const postThemeIcon = (currentPost as any)?.metadata?.themeIcon;
@@ -981,6 +1026,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         title={titleText}
         description={descriptionText}
         canonical={canonicalPath}
+        image={ogImageFromContent}
         type="article"
         published={published}
         modified={published}
@@ -1282,7 +1328,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
         <article
             key={currentPost.id}
-            className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
+            className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none content-visibility-auto"
           >
             {/* Navigation buttons above story content removed; now placed under time-to-read */}
 
@@ -1968,9 +2014,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
               </div>
 
-            {/* Comment section */}
+            {/* Comment section (lazy-mounted near viewport) */}
             <div className={`mt-8 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-              <SimpleCommentSection postId={currentPost.id} />
+              <LazyCommentSection postId={currentPost.id} />
             </div>
         </article>
       </div>

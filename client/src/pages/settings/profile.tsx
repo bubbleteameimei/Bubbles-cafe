@@ -23,6 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { UserCircle, Upload, Loader2, ShieldAlert, CheckCircle, UserRoundX } from "lucide-react";
 import { SettingsLayout } from "@/components/layouts/SettingsLayout";
+import { Link } from "wouter";
 import {
   Form,
   FormControl,
@@ -81,7 +82,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 type VisibilityValues = z.infer<typeof visibilitySchema>;
 
 export default function ProfileSettingsPage() {
-  const { user, checkAuth } = useAuth();
+  const { user, checkAuth, isAuthenticated, isAuthReady } = useAuth();
   const { toast: showToast } = useToast();
   const [activeTab, setActiveTab] = useState("personal");
   const [isDeactivating, setIsDeactivating] = useState(false);
@@ -235,6 +236,22 @@ export default function ProfileSettingsPage() {
     setIsDeactivating(false);
   };
 
+  if (isAuthReady && !isAuthenticated) {
+    return (
+      <SettingsLayout title="Profile Settings" description="Manage your personal information and account preferences">
+        <div className="p-6 text-center border rounded-md bg-muted/50">
+          <ShieldAlert className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+          <h3 className="text-lg font-medium mb-2">Authentication Required</h3>
+          <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+            You must be logged in to manage your profile settings. Please sign in to continue.
+          </p>
+          <Link href="/auth">
+            <Button className="mt-2">Log in to access profile settings</Button>
+          </Link>
+        </div>
+      </SettingsLayout>
+    );
+  }
   return (
     <SettingsLayout title="Profile Settings">
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">

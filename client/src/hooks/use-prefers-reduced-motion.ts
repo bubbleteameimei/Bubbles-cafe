@@ -1,11 +1,20 @@
 import { useEffect, useState } from 'react';
-import { getPrefersReducedMotion, subscribePrefersReducedMotion } from '../lib/motion';
+import { getEffectiveReducedMotion, subscribeReducedMotion, applyReducedMotionClass } from '../lib/motion';
 
 export function usePrefersReducedMotion(): boolean {
-  const [value, setValue] = useState<boolean>(() => getPrefersReducedMotion());
+  // Motion ON by default (false), but respect system/user preferences
+  const [value, setValue] = useState<boolean>(() => getEffectiveReducedMotion());
 
   useEffect(() => {
-    return subscribePrefersReducedMotion(setValue);
+    // Keep internal state and html.reduce-motion class in sync
+    applyReducedMotionClass(value);
+  }, [value]);
+
+  useEffect(() => {
+    return subscribeReducedMotion((v) => {
+      setValue(v);
+      // Class is applied via the effect above
+    });
   }, []);
 
   return value;

@@ -1,6 +1,7 @@
 // Import critical CSS early
 import "./styles/scroll-effects.css";
 import "./styles/reader-fixes.css";
+import "./styles/content-visibility.css";
 import "./index.css";
 
 import { createRoot } from "react-dom/client";
@@ -15,6 +16,7 @@ import "@/lib/fetch-csrf";
 
 // Minimal runtime bootstrap without debug logs
 import { getApiBaseUrl } from "@/lib/asset-path";
+import { enableViewTransitions } from "@/lib/view-transitions";
 
 // Global unhandled promise rejection handler
 window.addEventListener("unhandledrejection", (event) => {
@@ -35,6 +37,24 @@ const root = document.getElementById("root");
 if (!root) {
   throw new Error("Root element not found");
 }
+
+// Enable progressive SPA View Transitions (no-op when unsupported or reduced motion)
+try {
+  enableViewTransitions();
+} catch {}
+
+// Also sync html.reduce-motion class with user/system preferences (non-blocking)
+(() => {
+  try {
+    import("@/lib/motion")
+      .then(({ initReducedMotionClassSync }) => {
+        try {
+          initReducedMotionClassSync();
+        } catch {}
+      })
+      .catch(() => {});
+  } catch {}
+})();
 
 // Optimize images and enable lazy hints via dynamic import
 (async () => {

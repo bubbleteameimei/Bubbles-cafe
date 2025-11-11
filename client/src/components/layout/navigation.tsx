@@ -464,7 +464,7 @@ export default function Navigation() {
               <Link
                 key={href}
                 href={href}
-                className={`relative px-4 py-2 text-sm font-medium transition-colors
+                className={`relative px-4 py-2 text-sm font-medium transition-colors transition-transform duration-200 will-change-transform hover:-translate-y-[1px] active:scale-95
                 ${location === href ? "text-primary font-semibold after:absolute after:left-3 after:right-3 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary" : "text-foreground hover:text-foreground/80"}`}
                 aria-current={location === href ? "page" : undefined}
                 onMouseEnter={() => prefetchRoute(href)}

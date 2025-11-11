@@ -427,7 +427,7 @@ body:has(main:has([data-reader-page])) .page-transition-container {
   }
 }
 
-/* Loading screen styles are now handled in loading-screen.css */
+/* Page-level loaders are handled via RouteLoader (components/ui/RouteLoader.tsx) */
 
 
 
@@ -524,4 +524,15 @@ body.error-page-active footer.site-footer {
 /* Hero typography color: match theme primary across modes */
 .hero-bubbles {
   color: hsl(var(--primary)) !important;
+}
+
+/* User-controlled reduced motion override (Accessibility setting)
+   Applies when html has the 'reduce-motion' class (set via settings pages).
+   This complements @media (prefers-reduced-motion: reduce). */
+@layer base {
+  html.reduce-motion,
+  html.reduce-motion * {
+    animation: none !important;
+    transition: none !important;
+  }
 }

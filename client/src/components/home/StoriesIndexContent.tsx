@@ -7,10 +7,11 @@ import SEO from "@/components/SEO";
 
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  ArrowRight, ArrowLeft, Clock, Calendar, Book,
-  Award, Search, Ghost, Skull, Brain, Pill, Cpu, Dna, Footprints, CloudRain, Castle, Bug, Radiation, Umbrella, UserMinus2, Anchor, AlertTriangle, Building, Worm, Cloud, CloudFog, Flame,
-  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Heart, Bone
+import {
+  ArrowRight, Clock, Calendar, Award, Search, Eye, Heart,
+  Ghost, Skull, Brain, Pill, Cpu, Dna, Umbrella, Footprints, CloudRain, Castle, Bug, Radiation,
+  UserMinus2, UserPlus, Anchor, AlertTriangle, Building, Worm, Cloud, CloudFog, Flame,
+  ForkKnife, Cat, Moon, Dog, Radio, MoonStar, Box, Car, FlaskConical, Trees, Bone, Hourglass
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 import MostLikedList from "@/components/home/MostLikedList";
@@ -29,6 +30,7 @@ import { getThemeDefinitionOverride, syncThemeDefinitionOverridesFromServer } fr
 import { getBadgeTint } from "@/lib/theme-badges";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { VirtualScrollArea } from "@/components/ui/VirtualScrollArea";
+import { computeTrendingScores } from "@/lib/trending";
 
 
 
@@ -53,22 +55,22 @@ export default function StoriesIndexContent() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<'newest' | 'oldest' | 'popular' | 'shortest'>("newest");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  
+  // Defer heavy search-driven computations to improve INP
+  const deferredSearch = React.useDeferredValue(search);
+  const [categoryPills, setCategoryPills] = useState<Array<{ key: string; count: number; pretty: string }>>([]);
+  const [trendingScores, setTrendingScores] = useState<Record<number, number>>({});
   
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [pageSize, setPageSize] = useState<number>(6);
   const cardsGridRef = React.useRef<HTMLDivElement | null>(null);
   const breakpointRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null);
+  const fetchedReactionIdsRef = React.useRef<Set<number>>(new Set());
 
-  // Defer heavy sub-sections until after first paint to improve TTI
-  const [readyPopular, setReadyPopular] = useState(false);
+  // Defer only reaction widgets; render the rest immediately to avoid layout shifts
   const [readyReactions, setReadyReactions] = useState(false);
-  const [readyMostLiked, setReadyMostLiked] = useState(false);
   useEffect(() => {
     const start = () => {
-      setReadyPopular(true);
       setReadyReactions(true);
-      setReadyMostLiked(true);
     };
     const ric = (window as any).requestIdleCallback as
       | ((cb: () => void, opts?: { timeout?: number }) => void)
@@ -97,7 +99,7 @@ export default function StoriesIndexContent() {
 
   // Analytics: log search queries (debounced) and zero-result events
   useEffect(() => {
-    const q = search.trim();
+    const q = deferredSearch.trim();
     if (!q) return;
     const t = setTimeout(() => {
       try {
@@ -109,7 +111,7 @@ export default function StoriesIndexContent() {
       } catch {}
     }, 800);
     return () => clearTimeout(t);
-  }, [search]);
+  }, [deferredSearch]);
 
   // Prefetch effect moved below query hook to avoid referencing variables before declaration.
 
@@ -123,12 +125,12 @@ export default function StoriesIndexContent() {
     return t;
   };
   const queryTokens = useMemo(() => {
-    const q = normalizeText(search.trim().toLowerCase());
+    const q = normalizeText(deferredSearch.trim().toLowerCase());
     return q.split(/[^a-z0-9]+/).filter(Boolean).map(stem);
-  }, [search]);
+  }, [deferredSearch]);
 
   const renderHighlighted = (text: string) => {
-    if (!search.trim()) return text;
+    if (!deferredSearch.trim()) return text;
     const normalized = normalizeText(text.toLowerCase());
     let lastIndex = 0;
     const parts: React.ReactNode[] = [];
@@ -235,6 +237,19 @@ export default function StoriesIndexContent() {
     }
   };
 
+  // Read cached first page from localStorage (shell-first rendering without skeletons)
+  const cachedPage1 = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('cache:index:page1');
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (data && Array.isArray(data.posts)) {
+        return { posts: (data.posts as Post[]), hasMore: !!data.hasMore, page: 1 };
+      }
+    } catch {}
+    return null;
+  }, []);
+
   // Paginated query
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery<{ posts: Post[]; hasMore: boolean; page: number }>({
     queryKey: ["wordpress", "posts"],
@@ -257,7 +272,19 @@ export default function StoriesIndexContent() {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     initialPageParam: 1,
+    initialData: cachedPage1 ? { pages: [cachedPage1], pageParams: [1] } as any : undefined,
   });
+
+  // Cache first page posts locally after fetch to improve cold-start rendering
+  useEffect(() => {
+    try {
+      const first = (data as any)?.pages?.[0];
+      if (first && Array.isArray(first.posts) && first.posts.length > 0) {
+        const payload = { posts: first.posts.slice(0, 30), hasMore: first.hasMore };
+        localStorage.setItem('cache:index:page1', JSON.stringify(payload));
+      }
+    } catch {}
+  }, [data]);
 
   // Prefetch next page when scrolled near bottom (75%)
   useEffect(() => {
@@ -290,9 +317,45 @@ export default function StoriesIndexContent() {
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
+  // Compute category pills lazily to avoid blocking the main thread during input
+  useEffect(() => {
+    let cancelled = false;
+    const compute = () => {
+      try {
+        const counts = new Map<string, number>();
+        for (const p of allPosts) {
+          const md = (p.metadata || {}) as Record<string, any>;
+          let key = String(md.themeCategory || '').trim();
+          if (!key) {
+            try {
+              const derived = sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
+              key = String(derived || '').trim();
+            } catch {}
+          }
+          if (!key) continue;
+          counts.set(key, (counts.get(key) || 0) + 1);
+        }
+        const pills = Array.from(counts.entries())
+          .map(([key, count]) => {
+            const pretty = key.replace(/_/g, ' ').toLowerCase().replace(/^./, c => c.toUpperCase());
+            return { key, count, pretty };
+          })
+          .sort((a, b) => b.count - a.count);
+        if (!cancelled) setCategoryPills(pills);
+      } catch {}
+    };
+    const ric = (window as any)?.requestIdleCallback as any;
+    if (typeof ric === 'function') {
+      ric(() => compute(), { timeout: 1200 });
+    } else {
+      setTimeout(compute, 0);
+    }
+    return () => { cancelled = true; };
+  }, [allPosts]);
+
   // Compute the closest title match (token-aware, substring + <=2 typos) for featured card search
   const closestTitleMatch = React.useMemo(() => {
-    const raw = search.trim();
+    const raw = deferredSearch.trim();
     if (!raw) return null;
 
     const tokenize = (s: string) => normalizePlain(s).split(/[^a-z0-9]+/).filter(Boolean);
@@ -361,7 +424,7 @@ export default function StoriesIndexContent() {
     }
 
     return best?.post || null;
-  }, [search, sortedPosts]);
+  }, [deferredSearch, sortedPosts]);
 
   // Available theme categories present in posts (include derived when metadata missing)
   const availableCategories = useMemo(() => {
@@ -381,7 +444,7 @@ export default function StoriesIndexContent() {
   }, [allPosts]);
 
   // Helper: compute theme key and pretty label (with overrides) for a story
-  const computeThemeMeta = (p: Post): { key: string; label: string } => {
+  const computeThemeMeta = (p: Post): { key: string; label: string; iconSlug: string } => {
     const md: any = (p as any)?.metadata || {};
     const title = String(p.title || '');
     const content = String(p.content || '');
@@ -432,39 +495,243 @@ export default function StoriesIndexContent() {
       return baseLabel;
     })();
 
-    return { key: themeKey, label: prettyLabel };
+    let iconSlug =
+      override?.icon ||
+      md?.themeIcon ||
+      defOverride?.icon ||
+      (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
+      'ghost';
+
+    if (themeKey === 'BODY_HORROR') {
+      iconSlug = 'bone';
+    }
+
+    return { key: themeKey, label: prettyLabel, iconSlug };
   };
 
-  // Reaction totals map for posts (batch fetched)
+  // Map an icon slug or theme key to a Lucide icon component
+  const getThemeIconFor = (themeKey: string, iconSlug: string) => {
+    const slug = String(iconSlug || '').toLowerCase();
+    switch (slug) {
+      case 'skull': return Skull;
+      case 'brain': return Brain;
+      case 'pill': return Pill;
+      case 'cpu': return Cpu;
+      case 'dna': return Dna;
+      case 'ghost': return Ghost;
+      case 'umbrella': return Umbrella;
+      case 'footprints': return Footprints;
+      case 'cloud-rain':
+      case 'cloudrain': return CloudRain;
+      case 'castle': return Castle;
+      case 'bug': return Bug;
+      case 'radiation': return Radiation;
+      case 'user-minus2':
+      case 'userminus2': return UserMinus2;
+      case 'user-plus':
+      case 'userplus': return UserPlus;
+      case 'anchor': return Anchor;
+      case 'alert-triangle':
+      case 'alerttriangle': return AlertTriangle;
+      case 'building': return Building;
+      case 'worm': return Worm;
+      case 'cloud': return Cloud;
+      case 'cloud-fog':
+      case 'cloudfog': return CloudFog;
+      case 'flame': return Flame;
+      case 'eye': return Eye;
+      case 'hourglass': return Hourglass;
+      case 'knife':
+      case 'utensils':
+      case 'fork-knife':
+      case 'forkknife': return ForkKnife;
+      case 'cat': return Cat;
+      case 'moon': return Moon;
+      case 'dog': return Dog;
+      case 'radio': return Radio;
+      case 'moon-star':
+      case 'moonstar': return MoonStar;
+      case 'box': return Box;
+      case 'car': return Car;
+      case 'alien': return Moon;
+      case 'flask': return FlaskConical;
+      case 'trees':
+      case 'tree': return Trees;
+      case 'bone': return Bone;
+    }
+    // Fallback by theme key
+    switch (String(themeKey || '').toUpperCase()) {
+      case 'TECHNOLOGICAL': return Cpu;
+      case 'PSYCHOLOGICAL': return Brain;
+      case 'SUPERNATURAL': return Ghost;
+      case 'UNCANNY': return Eye;
+      case 'EXISTENTIAL': return Hourglass;
+      case 'DOPPELGANGER': return UserPlus;
+      case 'CANNIBALISM': return ForkKnife;
+      case 'SLASHER': return Skull;
+      case 'MONSTER': return Cat;
+      case 'ZOMBIE': return Footprints;
+      case 'VAMPIRE': return Moon;
+      case 'WEREWOLF': return Dog;
+      case 'PARANORMAL': return Radio;
+      case 'DREAM_HORROR': return MoonStar;
+      case 'CURSED_OBJECT': return Box;
+      case 'TIME_HORROR': return Clock;
+      case 'APOCALYPTIC': return Radiation;
+      case 'SCIENCE_HORROR': return FlaskConical;
+      case 'BODY_HORROR': return Bone;
+      case 'FOLK_HORROR': return Trees;
+      case 'GOTHIC': return Castle;
+      case 'COSMIC': return Moon;
+      case 'VEHICULAR': return Car;
+      default: return Ghost;
+    }
+  };
+
+  // Reaction totals map for posts (lazy-fetched for visible cards only)
   const [reactionTotals, setReactionTotals] = useState<Record<number, import("@/api/reactions").ReactionTotals>>({});
   
   useEffect(() => {
     if (!readyReactions) return;
     let mounted = true;
-    (async () => {
+    const fetched = fetchedReactionIdsRef.current;
+    let io: IntersectionObserver | null = null;
+    let pending: number[] = [];
+    let flushTimer: any = null;
+
+    // Preload a small initial batch near the top of the list to avoid empty counts above the fold
+    const preloadInitial = async () => {
       try {
-        const ids = allPosts.map((p: Post) => Number(p.id)).filter((n: number) => Number.isFinite(n));
-        if (ids.length === 0) return;
+        const initialBatchSize = Math.max(24, Math.min(sortedPosts.length, (visibleCount || 0) + (gridCols || 1) * 6));
+        const candidateIds = sortedPosts
+          .slice(0, initialBatchSize)
+          .map((p: Post) => Number(p.id))
+          .filter((n: number) => Number.isFinite(n))
+          .filter((id: number) => !fetched.has(id));
+        if (candidateIds.length === 0) return;
         const { fetchReactionsBatch } = await import("@/api/reactions");
-        const totals = await fetchReactionsBatch(ids.slice(0, 120));
+        const totals = await fetchReactionsBatch(candidateIds);
         if (!mounted) return;
         const map: Record<number, import("@/api/reactions").ReactionTotals> = {};
-        for (const t of totals) map[t.postId] = t;
-        setReactionTotals(map);
+        for (const t of totals) {
+          map[t.postId] = t;
+          fetched.add(t.postId);
+        }
+        setReactionTotals((prev) => ({ ...prev, ...map }));
       } catch {
-        // Ignore failures; UI continues with local fallback logic
+        // ignore
       }
-    })();
-  
+    };
+
+    const flush = async () => {
+      try {
+        if (!mounted) return;
+        const unique = Array.from(new Set(pending));
+        pending = [];
+        const toFetch = unique.filter((id) => Number.isFinite(id) && !fetched.has(id));
+        if (toFetch.length === 0) return;
+        const { fetchReactionsBatch } = await import("@/api/reactions");
+        const totals = await fetchReactionsBatch(toFetch.slice(0, 60));
+        if (!mounted) return;
+        const update: Record<number, import("@/api/reactions").ReactionTotals> = {};
+        for (const t of totals) {
+          update[t.postId] = t;
+          fetched.add(t.postId);
+        }
+        setReactionTotals((prev) => ({ ...prev, ...update }));
+      } catch {
+        // ignore
+      }
+    };
+
+    const schedule = (id: number) => {
+      pending.push(id);
+      if (flushTimer) return;
+      flushTimer = setTimeout(() => {
+        flushTimer = null;
+        void flush();
+      }, 250);
+    };
+
+    try {
+      io = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              const el = entry.target as HTMLElement;
+              const idAttr = el.getAttribute("data-post-id");
+              const id = idAttr ? Number(idAttr) : NaN;
+              if (Number.isFinite(id) && !fetched.has(id)) {
+                schedule(id);
+              }
+              try { io?.unobserve(el); } catch {}
+            }
+          }
+        },
+        { root: null, rootMargin: "200px", threshold: 0.01 }
+      );
+      // Observe current cards
+      document.querySelectorAll<HTMLElement>(".story-card-container[data-post-id]").forEach((n) => io?.observe(n));
+    } catch {
+      // no-op
+    }
+
+    // Periodically re-observe in case of virtualization or dynamic mounts
+    const reobserve = () => {
+      try {
+        document.querySelectorAll<HTMLElement>(".story-card-container[data-post-id]").forEach((n) => io?.observe(n));
+      } catch {}
+    };
+    const interval = setInterval(reobserve, 1000);
+
+    // Start with a small initial preload
+    void preloadInitial();
+
     // Listen for reaction updates from LikeDislike
     const onUpdate = (e: Event) => {
       const detail = (e as CustomEvent).detail as import("@/api/reactions").ReactionTotals;
-      if (!detail || typeof detail.postId !== 'number') return;
-      setReactionTotals((prev: Record<number, import("@/api/reactions").ReactionTotals>) => ({ ...prev, [detail.postId]: detail }));
+      if (!detail || typeof detail.postId !== "number") return;
+      setReactionTotals((prev) => ({ ...prev, [detail.postId]: detail }));
+      fetched.add(detail.postId);
     };
-    window.addEventListener('reaction:updated', onUpdate as EventListener);
-    return () => { mounted = false; window.removeEventListener('reaction:updated', onUpdate as EventListener); };
-  }, [allPosts, readyReactions]);
+    window.addEventListener("reaction:updated", onUpdate as EventListener);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener("reaction:updated", onUpdate as EventListener);
+      clearInterval(interval);
+      try { io?.disconnect(); } catch {}
+      if (flushTimer) clearTimeout(flushTimer);
+    };
+  }, [sortedPosts, visibleCount, gridCols, readyReactions]);
+
+  // Compute trending scores off the main thread when possible
+  useEffect(() => {
+    let cancelled = false;
+    const schedule = () => {
+      const compactPosts = sortedPosts.map(p => ({
+        id: Number(p.id),
+        createdAt: p.createdAt as any,
+        views: Number((p as any)?.metadata?.pageViews ?? 0),
+      }));
+      computeTrendingScores(
+        compactPosts as any,
+        reactionTotals as any,
+        14
+      ).then((scores) => {
+        if (!cancelled) setTrendingScores(scores || {});
+      }).catch(() => {
+        if (!cancelled) setTrendingScores({});
+      });
+    };
+    const ric = (window as any)?.requestIdleCallback as any;
+    if (typeof ric === 'function') {
+      ric(() => schedule(), { timeout: 1500 });
+    } else {
+      setTimeout(schedule, 0);
+    }
+    return () => { cancelled = true; };
+  }, [sortedPosts, reactionTotals]);
 
   // Filter and sort posts for display
   const filteredPosts = useMemo(() => {
@@ -477,7 +744,7 @@ export default function StoriesIndexContent() {
     }
 
     // Title-only search (exact substring match), no fuzzy or content-based matching.
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     if (q) {
       list = list.filter(p => String(p.title || '').toLowerCase().includes(q));
     }
@@ -488,15 +755,19 @@ export default function StoriesIndexContent() {
         break;
       case 'popular':
         list.sort((a, b) => {
+          const map = trendingScores;
+          if (map && Object.keys(map).length > 0) {
+            const aScore = map[a.id] ?? 0;
+            const bScore = map[b.id] ?? 0;
+            return bScore - aScore;
+          }
+          // Fallback to inline calculation when scores not ready
           const aTotals = reactionTotals[a.id];
           const bTotals = reactionTotals[b.id];
-
           const aLikes = Number(aTotals?.totals?.likes ?? (a.likesCount || 0));
           const bLikes = Number(bTotals?.totals?.likes ?? (b.likesCount || 0));
           const aViews = (a.metadata && (a.metadata as any).pageViews) ? Number((a.metadata as any).pageViews) : 0;
           const bViews = (b.metadata && (b.metadata as any).pageViews) ? Number((b.metadata as any).pageViews) : 0;
-
-          // Trending decay (14-day window)
           const now = Date.now();
           const dayMs = 24 * 60 * 60 * 1000;
           const windowDays = 14;
@@ -504,10 +775,8 @@ export default function StoriesIndexContent() {
           const bAgeDays = Math.max(0, (now - new Date(b.createdAt).getTime()) / dayMs);
           const aDecay = Math.max(0.2, 1 - (aAgeDays / windowDays));
           const bDecay = Math.max(0.2, 1 - (bAgeDays / windowDays));
-
           const aScore = (aLikes * 2.5 + aViews * 0.8) * aDecay;
           const bScore = (bLikes * 2.5 + bViews * 0.8) * bDecay;
-
           return bScore - aScore;
         });
         break;
@@ -520,18 +789,18 @@ export default function StoriesIndexContent() {
         break;
     }
     return list;
-  }, [sortedPosts, categoryFilter, search, sort, reactionTotals]);
+  }, [sortedPosts, categoryFilter, deferredSearch, sort, reactionTotals]);
 
   const currentPosts = filteredPosts;
   const titleMatches = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     if (!q) return [] as Post[];
     return sortedPosts.filter(p => String(p.title || '').toLowerCase().includes(q));
-  }, [search, sortedPosts]);
+  }, [deferredSearch, sortedPosts]);
 
   // Suggestions for zero-results (closest title matches by simple heuristics)
   const searchSuggestions = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     if (!q) return [] as Post[];
     const tokenize = (s: string) => normalizeText(s.toLowerCase()).split(/[^a-z0-9]+/).filter(Boolean);
     const jaccard = (a: string[], b: string[]) => {
@@ -564,7 +833,7 @@ export default function StoriesIndexContent() {
       .sort((a, b) => b.s - a.s)
       .slice(0, 3)
       .map(x => x.p);
-  }, [search, sortedPosts]);
+  }, [deferredSearch, sortedPosts]);
 
   // Latest Stories list - always sorted newest->oldest; search does NOT change this list
   const latestPosts = useMemo(() => {
@@ -579,46 +848,49 @@ export default function StoriesIndexContent() {
     return list;
   }, [sortedPosts, categoryFilter]);
 
-  // Precompute popular posts (top 6) for carousel without nested IIFE
+  // Precompute popular posts (top 6) with trending score map when available
   const popularPosts = useMemo(() => {
-    const now = Date.now();
-    const dayMs = 24 * 60 * 60 * 1000;
-    const windowDays = 14;
-
-    return [...sortedPosts]
-      .map(p => {
-        const totals = reactionTotals[p.id];
-        const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
-        const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
-        const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
-        const decay = Math.max(0.2, 1 - (ageDays / windowDays));
-        const score = (likes * 2.5 + views * 0.8) * decay;
-        return { p, score };
-      })
+    const useScores = Object.keys(trendingScores).length > 0;
+    const arr = [...sortedPosts]
+      .map(p => ({
+        p,
+        score: useScores ? (trendingScores[p.id] ?? 0) : (() => {
+          const totals = reactionTotals[p.id];
+          const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
+          const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
+          const now = Date.now();
+          const dayMs = 24 * 60 * 60 * 1000;
+          const windowDays = 14;
+          const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
+          const decay = Math.max(0.2, 1 - (ageDays / windowDays));
+          return (likes * 2.5 + views * 0.8) * decay;
+        })()
+      }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 6)
       .map(x => x.p);
-  }, [sortedPosts, reactionTotals]);
+    return arr;
+  }, [sortedPosts, reactionTotals, trendingScores]);
 
   // Log zero-results interactions
   useEffect(() => {
-    if (search.trim() && titleMatches.length === 0 && !closestTitleMatch) {
+    if (deferredSearch.trim() && titleMatches.length === 0 && !closestTitleMatch) {
       try {
         fetch('/api/analytics/interaction', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ interactionType: 'index_zero_results', details: { q: search.trim() }, path: '/stories' })
+          body: JSON.stringify({ interactionType: 'index_zero_results', details: { q: deferredSearch.trim() }, path: '/stories' })
         }).catch(() => {});
       } catch {}
     }
-  }, [titleMatches.length, search, closestTitleMatch]);
+  }, [titleMatches.length, deferredSearch, closestTitleMatch]);
 
   const featuredStory = useMemo(() => {
     const all = [...sortedPosts];
     if (!all || all.length === 0) return null;
 
     // If searching, pick the closest title match (exact substring or ≤2 typos)
-    if (search.trim() && closestTitleMatch) {
+    if (deferredSearch.trim() && closestTitleMatch) {
       return closestTitleMatch;
     }
 
@@ -639,18 +911,24 @@ export default function StoriesIndexContent() {
       const dayMs = 24 * 60 * 60 * 1000;
       const windowDays = 14;
 
-      const topByPopular = [...all]
-        .map(p => {
-          const totals = reactionTotals[p.id];
-          const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
-          const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
-          const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
-          const decay = Math.max(0.2, 1 - (ageDays / windowDays));
-          const score = (likes * 2.5 + views * 0.8) * decay;
-          return { p, score };
-        })
-        .sort((a, b) => b.score - a.score)
-        .map(x => x.p);
+      const useScores = Object.keys(trendingScores).length > 0;
+      const topByPopular = useScores
+        ? [...all]
+            .map(p => ({ p, score: trendingScores[p.id] ?? 0 }))
+            .sort((a, b) => b.score - a.score)
+            .map(x => x.p)
+        : [...all]
+            .map(p => {
+              const totals = reactionTotals[p.id];
+              const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
+              const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
+              const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
+              const decay = Math.max(0.2, 1 - (ageDays / windowDays));
+              const score = (likes * 2.5 + views * 0.8) * decay;
+              return { p, score };
+            })
+            .sort((a, b) => b.score - a.score)
+            .map(x => x.p);
 
       const lastTheme = (() => {
         try { return localStorage.getItem('lastFeaturedTheme') || ''; } catch { return ''; }
@@ -727,7 +1005,7 @@ export default function StoriesIndexContent() {
     });
 
     return sortedByEngagement[0];
-  }, [sortedPosts, sort, reactionTotals, search, closestTitleMatch]);
+  }, [sortedPosts, sort, reactionTotals, deferredSearch, closestTitleMatch]);
 
   // Persist last featured theme for diversity in subsequent sessions
   useEffect(() => {
@@ -793,8 +1071,8 @@ export default function StoriesIndexContent() {
           </div>
 
           {/* Featured row */}
-          {(featuredStory && sortedPosts.length > 0 && (!search.trim() || titleMatches.length > 0 || !!closestTitleMatch)) && (
-            <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {(featuredStory && sortedPosts.length > 0 && (!deferredSearch.trim() || titleMatches.length > 0 || !!closestTitleMatch)) && (
+            <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6 content-visibility-auto">
               <div className="lg:col-span-1">
                 <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
                   <CardContent className="group p-4">
@@ -828,45 +1106,9 @@ export default function StoriesIndexContent() {
                           {renderHighlighted(String(featuredStory.title || ''))}
                         </button>
                         {(() => {
-                          const { key, label } = computeThemeMeta(featuredStory);
+                          const { key, label, iconSlug } = computeThemeMeta(featuredStory);
                           const badgeTint = getBadgeTint(key);
-
-                          // Derive icon slug with overrides to match Reader/Most Liked/List cards behavior
-                          const md: any = (featuredStory as any)?.metadata || {};
-                          const override = getStoryThemeOverride((featuredStory as any)?.slug as any, (featuredStory as any)?.title as any);
-                          const defOverride = getThemeDefinitionOverride(key);
-                          let iconSlug =
-                            override?.icon ||
-                            (md && (md as any).themeIcon) ||
-                            defOverride?.icon ||
-                            (SHARED_THEME_CATEGORIES as any)[key]?.icon ||
-                            'ghost';
-                          if (key === 'BODY_HORROR') iconSlug = 'bone';
-
-                          const ThemeIconCmp = (() => {
-                            const slug = String(iconSlug).toLowerCase();
-                            switch (slug) {
-                              case 'skull': return Skull; case 'brain': return Brain; case 'pill': return Pill; case 'cpu': return Cpu; case 'ghost': return Ghost;
-                              case 'eye': return Eye; case 'hourglass': return Hourglass; case 'car': return Car;
-                              case 'fork-knife': case 'forkknife': case 'utensils': return ForkKnife; case 'trees': case 'tree': return Trees; case 'castle': return Castle; case 'bug': return Bug;
-                              case 'moon': return Moon; case 'moon-star': case 'moonstar': return MoonStar; case 'radio': return Radio; case 'box': return Box; case 'flask': return FlaskConical;
-                              case 'radiation': return Radiation; case 'building': return Building; case 'cat': return Cat; case 'flame': return Flame; case 'dog': return Dog; case 'cloud': return Cloud;
-                              case 'alert-triangle': case 'alerttriangle': return AlertTriangle; case 'footprints': return Footprints; case 'bone': return Bone;
-                              default:
-                                switch (key) {
-                                  case 'TECHNOLOGICAL': return Cpu;
-                                  case 'PSYCHOLOGICAL': return Brain;
-                                  case 'SUPERNATURAL': return Ghost;
-                                  case 'EXISTENTIAL': return Hourglass;
-                                  case 'VEHICULAR': return Car;
-                                  case 'FOLK_HORROR': return Trees;
-                                  case 'GOTHIC': return Castle;
-                                  case 'COSMIC': return Moon;
-                                  default: return Ghost;
-                                }
-                            }
-                          })();
-
+                          const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                           return (
                             <div className="-mt-1">
                               <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
@@ -882,7 +1124,7 @@ export default function StoriesIndexContent() {
                           <Calendar className="h-3 w-3" />
                           <time>{new Date(featuredStory.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
                         </div>
-                        <div className="flex items-center gap-1 justify-end" title={`~${String(featuredStory.content || '').split(/\s+/).length} words`}>
+                        <div className="flex items-center gap-1 justify-end" title={`~${String(featuredStory.content || '').split(/\\s+/).length} words`}>
                           <Clock className="h-3 w-3" />
                           <span>{getReadingTime(featuredStory.content)}</span>
                         </div>
@@ -908,7 +1150,7 @@ export default function StoriesIndexContent() {
                               <span className="flex items-center gap-1">
                                 <Eye className="h-3 w-3" /> {views}
                               </span>
-                                                          </>
+                            </>
                           );
                         })()}
                       </div>
@@ -920,20 +1162,17 @@ export default function StoriesIndexContent() {
                   </CardContent>
                 </Card>
               </div>
-              {readyMostLiked && (
-                <div className="lg:col-span-2">
-                  <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
-                    <CardContent className="p-4">
-                      <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} />
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
+              <div className="lg:col-span-2">
+                <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
+                  <CardContent className="p-4">
+                    <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} />
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           )}
 
           
-
           <div className="mt-2 mb-3">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl md:text-3xl font-decorative uppercase">LATEST STORIES</h1>
@@ -945,7 +1184,7 @@ export default function StoriesIndexContent() {
           
 
           {/* Stories List */}
-          {search.trim() && titleMatches.length === 0 && !closestTitleMatch ? (
+          {deferredSearch.trim() && titleMatches.length === 0 && !closestTitleMatch ? (
             <div className="mx-auto max-w-full sm:max-w-2xl md:max-w-3xl text-center py-8 sm:py-10 md:py-12 rounded-xl border border-border/60 bg-card/80 px-3 sm:px-6 shadow-sm overflow-hidden">
               <div className="w-full">
                 <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4 mt-2">
@@ -953,10 +1192,10 @@ export default function StoriesIndexContent() {
                   <h2 className="text-lg sm:text-xl font-semibold">No matches found</h2>
                 </div>
 
-                {search.trim() ? (
+                {deferredSearch.trim() ? (
                   <>
                     <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4 leading-relaxed">
-                      We couldn’t find any stories matching “{search.trim()}”. Try the closest matches below or explore popular stories.
+                      We couldn’t find any stories matching “{deferredSearch.trim()}”. Try the closest matches below or explore popular stories.
                     </p>
 
                     <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
@@ -971,56 +1210,14 @@ export default function StoriesIndexContent() {
                                 {s.title}
                               </button>
                               {(() => {
-                                const md: any = (s as any)?.metadata || {};
-                                const primaryThemeRaw =
-                                  md.themeCategory ||
-                                  sharedDetermineThemeCategory(String(s.title || ''), String(s.content || ''));
-
-                                const override = getStoryThemeOverride(s.slug as any, s.title as any);
-
-                                const derivedKey = (() => {
-                                  const raw = String(primaryThemeRaw || '').trim();
-                                  if (!raw) return 'HORROR';
-                                  for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-                                    if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-                                  }
-                                  return raw.toUpperCase().replace(/\s+/g, '_');
-                                })();
-
-                                const themeKey = override?.key || derivedKey;
-
-                                const defOverride = getThemeDefinitionOverride(themeKey);
-
-                                const baseLabel =
-                                  override?.label ||
-                                  defOverride?.label ||
-                                  (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
-                                  primaryThemeRaw ||
-                                  'Horror';
-
-                                const prettyLabel = (() => {
-                                  if (override?.label) return override.label;
-                                  const l = String(baseLabel).toLowerCase();
-                                  if (l.includes('cosmic')) return 'Cosmic Horror';
-                                  if (l.includes('existential')) return 'Existential Horror';
-                                  if (l.includes('vehicular')) return 'Vehicular Horror';
-                                  if (l.includes('psychological')) return 'Psychological Horror';
-                                  if (l.includes('supernatural')) return 'Supernatural Horror';
-                                  if (l.includes('technological')) return 'Technological Horror';
-                                  if (l.includes('uncanny')) return 'Uncanny Horror';
-                                  if (l.includes('gothic')) return 'Gothic Horror';
-                                  if (l.includes('folk')) return 'Folk Horror';
-                                  if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
-                                  if (l.includes('cannibal')) return 'Cannibalism Horror';
-                                  return baseLabel;
-                                })();
-
-                                const badgeTint = getBadgeTint(themeKey);
-
+                                const { key, label, iconSlug } = computeThemeMeta(s as Post);
+                                const badgeTint = getBadgeTint(key);
+                                const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                 return (
                                   <div className="mt-1">
                                     <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                      {prettyLabel}
+                                      {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                      {label}
                                     </Badge>
                                   </div>
                                 );
@@ -1059,24 +1256,29 @@ export default function StoriesIndexContent() {
                         size="sm"
                         onClick={() => {
                           try {
-                            // Build a top-5 list by trending (likes + views with 14-day decay)
-                            const now = Date.now();
-                            const dayMs = 24 * 60 * 60 * 1000;
-                            const windowDays = 14;
-
-                            const topPopular = [...sortedPosts]
-                              .map(p => {
-                                const totals = reactionTotals[p.id];
-                                const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
-                                const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
-                                const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
-                                const decay = Math.max(0.2, 1 - (ageDays / windowDays));
-                                const score = (likes * 2.5 + views * 0.8) * decay;
-                                return { p, score };
-                              })
-                              .sort((a, b) => b.score - a.score)
-                              .slice(0, 5)
-                              .map(x => x.p);
+                            const useScores = Object.keys(trendingScores).length > 0;
+                            const topPopular = useScores
+                              ? [...sortedPosts]
+                                  .map(p => ({ p, score: trendingScores[p.id] ?? 0 }))
+                                  .sort((a, b) => b.score - a.score)
+                                  .slice(0, 5)
+                                  .map(x => x.p)
+                              : [...sortedPosts]
+                                  .map(p => {
+                                    const totals = reactionTotals[p.id];
+                                    const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
+                                    const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
+                                    const now = Date.now();
+                                    const dayMs = 24 * 60 * 60 * 1000;
+                                    const windowDays = 14;
+                                    const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
+                                    const decay = Math.max(0.2, 1 - (ageDays / windowDays));
+                                    const score = (likes * 2.5 + views * 0.8) * decay;
+                                    return { p, score };
+                                  })
+                                  .sort((a, b) => b.score - a.score)
+                                  .slice(0, 5)
+                                  .map(x => x.p);
 
                             if (topPopular.length > 0) {
                               const pick = topPopular[Math.floor(Math.random() * topPopular.length)];
@@ -1101,8 +1303,7 @@ export default function StoriesIndexContent() {
                 )}
 
                 {/* Popular right now mini carousel */}
-                {readyPopular && (
-                  <div className="mt-2">
+                <div className="mt-2">
                     <div className="text-left sm:text-center mb-2 text-xs font-medium text-muted-foreground">
                       Popular right now
                     </div>
@@ -1122,11 +1323,13 @@ export default function StoriesIndexContent() {
                                   {pop.title}
                                 </button>
                                 {(() => {
-                                  const { key, label } = computeThemeMeta(pop);
+                                  const { key, label, iconSlug } = computeThemeMeta(pop);
                                   const badgeTint = getBadgeTint(key);
+                                  const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                   return (
                                     <div className="mt-1">
                                       <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                        {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                         {label}
                                       </Badge>
                                     </div>
@@ -1152,35 +1355,10 @@ export default function StoriesIndexContent() {
                       </div>
                     </div>
                   </div>
-                )}
                 {/* Category tags under carousel controls */}
                 <div className="mt-8 px-2">
-                    {(() => {
-                      // Build counts including derived categories for posts lacking metadata
-                      const counts = new Map<string, number>();
-                      for (const p of allPosts) {
-                        const md = (p.metadata || {}) as Record<string, any>;
-                        let key = String(md.themeCategory || '').trim();
-                        if (!key) {
-                          try {
-                            const derived = sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
-                            key = String(derived || '').trim();
-                          } catch {}
-                        }
-                        if (!key) continue;
-                        counts.set(key, (counts.get(key) || 0) + 1);
-                      }
-
-                      const pills = Array.from(counts.entries())
-                        .map(([key, count]) => {
-                          const pretty = key.replace(/_/g,' ').toLowerCase().replace(/^./, c => c.toUpperCase());
-                          return { key, count, pretty };
-                        })
-                        .sort((a, b) => b.count - a.count);
-
-                      if (pills.length === 0) return null;
-
-                      return (
+                    <>
+                      {categoryPills.length > 0 && (
                         <>
                           <div className="text-center text-base md:text-lg font-medium text-muted-foreground mb-3 md:mb-4">All categories</div>
                           <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
@@ -1192,7 +1370,7 @@ export default function StoriesIndexContent() {
                             >
                               All
                             </button>
-                            {pills.map(p => (
+                            {categoryPills.map(p => (
                               <button
                                 type="button"
                                 key={p.key}
@@ -1206,8 +1384,8 @@ export default function StoriesIndexContent() {
                             ))}
                           </div>
                         </>
-                      );
-                    })()}
+                      )}
+                    </>
                   </div>
                 </div>
               </div>
@@ -1227,7 +1405,7 @@ export default function StoriesIndexContent() {
                   itemHeight={360}
                   containerHeight={Math.max(400, containerHeight - 200)}
                   overscan={3}
-                  className="rounded-md border border-transparent"
+                  className="rounded-md border border-transparent content-visibility-auto"
                   renderItem={(row, rowIdx) => {
                     const cols = gridCols || 1;
                     return (
@@ -1248,6 +1426,7 @@ export default function StoriesIndexContent() {
                             <article
                               key={post.id}
                               data-idx={rowIdx * cols + idx}
+                              data-post-id={post.id}
                               className="group story-card-container relative"
                             >
                               <Card
@@ -1260,93 +1439,15 @@ export default function StoriesIndexContent() {
                                       <CardTitle className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary">
                                         {renderHighlighted(String(post.title || ''))}
                                       </CardTitle>
-                                      {themeCategory && (() => {
-                                        const override = getStoryThemeOverride(post.slug as any, post.title as any);
-                                        const derivedKey = (() => {
-                                          const raw = themeCategory;
-                                          if (!raw) return '';
-                                          for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-                                            if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-                                          }
-                                          return raw.toUpperCase().replace(/\s+/g, '_');
-                                        })();
-                                        const themeKeyForTint = override?.key || derivedKey;
-                                        const defOverride = getThemeDefinitionOverride(themeKeyForTint);
-                                        let chosenIconSlug =
-                                          override?.icon ||
-                                          (md && (md as any).themeIcon) ||
-                                          defOverride?.icon ||
-                                          (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
-                                          'ghost';
-                                        if (themeKeyForTint === 'BODY_HORROR') {
-                                          chosenIconSlug = 'bone';
-                                        }
-                                        const ThemeIconCmp = (() => {
-                                          const slug = String(chosenIconSlug).toLowerCase();
-                                          switch (slug) {
-                                            case 'skull': return Skull; case 'brain': return Brain; case 'pill': return Pill; case 'cpu': return Cpu; case 'ghost': return Ghost;
-                                            case 'eye': return Eye; case 'hourglass': return Hourglass; case 'car': return Car;
-                                            case 'fork-knife': case 'forkknife': case 'utensils': return ForkKnife; case 'trees': case 'tree': return Trees; case 'castle': return Castle; case 'bug': return Bug;
-                                            case 'moon': return Moon; case 'moon-star': case 'moonstar': return MoonStar; case 'radio': return Radio; case 'box': return Box; case 'flask': return FlaskConical;
-                                            case 'radiation': return Radiation; case 'building': return Building; case 'cat': return Cat; case 'flame': return Flame; case 'dog': return Dog; case 'cloud': return Cloud;
-                                            case 'alert-triangle': case 'alerttriangle': return AlertTriangle; case 'footprints': return Footprints; case 'bone': return Bone;
-                                            default:
-                                              switch (themeKeyForTint) {
-                                                case 'TECHNOLOGICAL': return Cpu;
-                                                case 'PSYCHOLOGICAL': return Brain;
-                                                case 'SUPERNATURAL': return Ghost;
-                                                case 'EXISTENTIAL': return Hourglass;
-                                                case 'VEHICULAR': return Car;
-                                                case 'FOLK_HORROR': return Trees;
-                                                case 'GOTHIC': return Castle;
-                                                case 'COSMIC': return Moon;
-                                                default: return Ghost;
-                                              }
-                                          }
-                                        })();
-                                        const baseLabel =
-                                          override?.label ||
-                                          defOverride?.label ||
-                                          (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
-                                          themeCategory;
-                                        const prettyLabel = (() => {
-                                          if (override?.label) return override.label;
-                                          const l = String(baseLabel).toLowerCase();
-                                          if (l.includes('cosmic')) return 'Cosmic Horror';
-                                          if (l.includes('existential')) return 'Existential Horror';
-                                          if (l.includes('vehicular')) return 'Vehicular Horror';
-                                          if (l.includes('psychological')) return 'Psychological Horror';
-                                          if (l.includes('supernatural')) return 'Supernatural Horror';
-                                          if (l.includes('technological')) return 'Technological Horror';
-                                          if (l.includes('uncanny')) return 'Uncanny Horror';
-                                          return baseLabel;
-                                        })();
-                                        const badgeTint = (() => {
-                                          switch (themeKeyForTint) {
-                                            case 'DEATH': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark	text-red-300 dark	border-red-700';
-                                            case 'BODY_HORROR': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark	text-rose-300 dark	border-rose-700';
-                                            case 'SUPERNATURAL': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark	text-violet-300 dark	border-violet-700';
-                                            case 'PSYCHOLOGICAL': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark	text-amber-300 dark	border-amber-700';
-                                            case 'EXISTENTIAL': return 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark	text-indigo-300 dark	border-indigo-700';
-                                            case 'HORROR': return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/30 dark	text-slate-300 dark	border-slate-700';
-                                            case 'VEHICULAR': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark	text-emerald-300 dark	border-emerald-700';
-                                            case 'TECHNOLOGICAL': return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark	text-sky-300 dark	border-sky-700';
-                                            case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark	text-purple-300 dark	border-purple-700';
-                                            case 'FOLK_HORROR': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark	text-lime-300 dark	border-lime-700';
-                                            case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark	text-stone-300 dark	border-stone-700';
-                                            case 'CURSED_OBJECT': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark	text-yellow-300 dark	border-yellow-700';
-                                            case 'OCCULT': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark	text-green-300 dark	border-green-700';
-                                            case 'URBAN_HORROR': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark	text-blue-300 dark	border-blue-700';
-                                            case 'SUICIDE': return 'bg-zinc-100 text-zinc-800 border-zinc-200 dark:bg-zinc-900/30 dark	text-zinc-300 dark	border-zinc-700';
-                                            case 'CONTAGION': return 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark	text-teal-300 dark	border-teal-700';
-                                            default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark	text-foreground dark	border-primary/20';
-                                          }
-                                        })();
+                                      {(() => {
+                                        const { key, label, iconSlug } = computeThemeMeta(post);
+                                        const badgeTint = getBadgeTint(key);
+                                        const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                         return (
                                           <div className="mt-1">
                                             <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
                                               {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
-                                              {prettyLabel}
+                                              {label}
                                             </Badge>
                                           </div>
                                         );
@@ -1401,7 +1502,7 @@ export default function StoriesIndexContent() {
                 />
               ) : (
                 <div
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 content-visibility-auto"
                   ref={cardsGridRef as any}
                 >
                   {latestPosts.slice(0, visibleCount).map((post, idx) => {
@@ -1426,6 +1527,7 @@ export default function StoriesIndexContent() {
                       <article
                         key={post.id}
                         data-idx={idx}
+                        data-post-id={post.id}
                         className="group story-card-container relative"
                       >
                         <Card
@@ -1440,159 +1542,15 @@ export default function StoriesIndexContent() {
                                 >
                                   {renderHighlighted(String(post.title || ''))}
                                 </CardTitle>
-                                {themeCategory && (() => {
-                                  const override = getStoryThemeOverride(post.slug as any, post.title as any);
-
-                                  const derivedKey = (() => {
-                                    const raw = themeCategory;
-                                    if (!raw) return '';
-                                    for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-                                      if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-                                    }
-                                    return raw.toUpperCase().replace(/\s+/g, '_');
-                                  })();
-
-                                  const themeKeyForTint = override?.key || derivedKey;
-
-                                  const defOverride = getThemeDefinitionOverride(themeKeyForTint);
-
-                                  let chosenIconSlug =
-                                    override?.icon ||
-                                    (md && (md as any).themeIcon) ||
-                                    defOverride?.icon ||
-                                    (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
-                                    'ghost';
-                                  if (themeKeyForTint === 'BODY_HORROR') {
-                                    chosenIconSlug = 'bone';
-                                  }
-
-                                  const ThemeIconCmp = (() => {
-                                    const slug = String(chosenIconSlug).toLowerCase();
-                                    switch (slug) {
-                                      case 'skull': return Skull;
-                                      case 'brain': return Brain;
-                                      case 'pill': return Pill;
-                                      case 'cpu': return Cpu;
-                                      case 'dna': return Dna;
-                                      case 'ghost': return Ghost;
-                                      case 'umbrella': return Umbrella;
-                                      case 'footprints': return Footprints;
-                                      case 'cloud-rain':
-                                      case 'cloudrain': return CloudRain;
-                                      case 'castle': return Castle;
-                                      case 'bug': return Bug;
-                                      case 'radiation': return Radiation;
-                                      case 'user-minus2':
-                                      case 'userminus2': return UserMinus2;
-                                      case 'user-plus':
-                                      case 'userplus': return UserPlus;
-                                      case 'anchor': return Anchor;
-                                      case 'alert-triangle':
-                                      case 'alerttriangle': return AlertTriangle;
-                                      case 'building': return Building;
-                                      case 'worm': return Worm;
-                                      case 'cloud': return Cloud;
-                                      case 'cloud-fog':
-                                      case 'cloudfog': return CloudFog;
-                                      case 'flame': return Flame;
-                                      case 'eye': return Eye;
-                                      case 'hourglass': return Hourglass;
-                                      case 'knife': return ForkKnife;
-                                      case 'utensils':
-                                      case 'fork-knife':
-                                      case 'forkknife': return ForkKnife;
-                                      case 'cat': return Cat;
-                                      case 'moon': return Moon;
-                                      case 'dog': return Dog;
-                                      case 'radio': return Radio;
-                                      case 'moon-star':
-                                      case 'moonstar': return MoonStar;
-                                      case 'box': return Box;
-                                      case 'car': return Car;
-                                      case 'alien': return Moon;
-                                      case 'flask': return FlaskConical;
-                                      case 'trees':
-                                      case 'tree': return Trees;
-                                    }
-                                    // Fallback by theme key for diversity when slug is unknown
-                                    switch (themeKeyForTint) {
-                                      case 'TECHNOLOGICAL': return Cpu;
-                                      case 'PSYCHOLOGICAL': return Brain;
-                                      case 'SUPERNATURAL': return Ghost;
-                                      case 'UNCANNY': return Eye;
-                                      case 'EXISTENTIAL': return Hourglass;
-                                      case 'DOPPELGANGER': return UserPlus;
-                                      case 'CANNIBALISM': return ForkKnife;
-                                      case 'SLASHER': return Skull;
-                                      case 'MONSTER': return Cat;
-                                      case 'ZOMBIE': return Footprints;
-                                      case 'VAMPIRE': return Moon;
-                                      case 'WEREWOLF': return Dog;
-                                      case 'PARANORMAL': return Radio;
-                                      case 'DREAM_HORROR': return MoonStar;
-                                      case 'CURSED_OBJECT': return Box;
-                                      case 'TIME_HORROR': return Clock;
-                                      case 'APOCALYPTIC': return Radiation;
-                                      case 'SCIENCE_HORROR': return FlaskConical;
-                                      case 'BODY_HORROR': return Bone;
-                                      case 'FOLK_HORROR': return Trees;
-                                      case 'GOTHIC': return Castle;
-                                      case 'COSMIC': return Moon;
-                                      case 'VEHICULAR': return Car;
-                                      default: return Ghost;
-                                    }
-                                  })();
-
-                                  const baseLabel =
-                                    override?.label ||
-                                    defOverride?.label ||
-                                    (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
-                                    themeCategory;
-
-                                  const prettyLabel = (() => {
-                                    if (override?.label) return override.label;
-                                    const l = String(baseLabel).toLowerCase();
-                                    if (l.includes('cosmic')) return 'Cosmic Horror';
-                                    if (l.includes('existential')) return 'Existential Horror';
-                                    if (l.includes('vehicular')) return 'Vehicular Horror';
-                                    if (l.includes('psychological')) return 'Psychological Horror';
-                                    if (l.includes('supernatural')) return 'Supernatural Horror';
-                                    if (l.includes('technological')) return 'Technological Horror';
-                                    if (l.includes('uncanny')) return 'Uncanny Horror';
-                                    return baseLabel;
-                                  })();
-
-                                  const badgeTint = (() => {
-                                    switch (themeKeyForTint) {
-                                      case 'DEATH': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
-                                      case 'BODY_HORROR': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700';
-                                      case 'SUPERNATURAL': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700';
-                                      case 'PSYCHOLOGICAL': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700';
-                                      case 'EXISTENTIAL': return 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700';
-                                      case 'HORROR': return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-700';
-                                      case 'STALKING': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700';
-                                      case 'CANNIBALISM': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
-                                      case 'PSYCHOPATH': return 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200 dark:bg-fuchsia-900/30 dark:text-fuchsia-300 dark:border-fuchsia-700';
-                                      case 'DOPPELGANGER': return 'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-700';
-                                      case 'VEHICULAR': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700';
-                                      case 'PARASITE': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700';
-                                      case 'TECHNOLOGICAL': return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700';
-                                      case 'COSMIC': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700';
-                                      case 'UNCANNY': return 'bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-700';
-                                      case 'GOTHIC': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark:text-stone-300 dark:border-stone-700';
-                                      case 'CURSED_OBJECT': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700';
-                                      case 'OCCULT': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700';
-                                      case 'URBAN_HORROR': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700';
-                                      case 'SUICIDE': return 'bg-zinc-100 text-zinc-800 border-zinc-200 dark:bg-zinc-900/30 dark:text-zinc-300 dark:border-zinc-700';
-                                      case 'CONTAGION': return 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700';
-                                      default: return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark:text-foreground dark:border-primary/20';
-                                    }
-                                  })();
+                                {(() => {
+                                  const { key, label, iconSlug } = computeThemeMeta(post);
+                                  const badgeTint = getBadgeTint(key);
+                                  const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                   return (
                                     <div className="mt-1">
                                       <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                        <ThemeIconCmp className="h-3 w-3" />
-                                        {prettyLabel}
+                                        {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                        {label}
                                       </Badge>
                                     </div>
                                   );
