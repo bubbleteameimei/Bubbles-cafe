@@ -8,7 +8,10 @@ import SEO from "@/components/SEO";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowRight, Clock, Calendar, Award, Search, Eye, Heart
+  ArrowRight, Clock, Calendar, Award, Search, Eye, Heart,
+  Ghost, Skull, Brain, Pill, Cpu, Dna, Umbrella, Footprints, CloudRain, Castle, Bug, Radiation,
+  UserMinus2, UserPlus, Anchor, AlertTriangle, Building, Worm, Cloud, CloudFog, Flame,
+  ForkKnife, Cat, Moon, Dog, Radio, MoonStar, Box, Car, FlaskConical, Trees, Bone, Hourglass
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 import MostLikedList from "@/components/home/MostLikedList";
@@ -441,7 +444,7 @@ export default function StoriesIndexContent() {
   }, [allPosts]);
 
   // Helper: compute theme key and pretty label (with overrides) for a story
-  const computeThemeMeta = (p: Post): { key: string; label: string } => {
+  const computeThemeMeta = (p: Post): { key: string; label: string; iconSlug: string } => {
     const md: any = (p as any)?.metadata || {};
     const title = String(p.title || '');
     const content = String(p.content || '');
@@ -492,7 +495,97 @@ export default function StoriesIndexContent() {
       return baseLabel;
     })();
 
-    return { key: themeKey, label: prettyLabel };
+    let iconSlug =
+      override?.icon ||
+      md?.themeIcon ||
+      defOverride?.icon ||
+      (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
+      'ghost';
+
+    if (themeKey === 'BODY_HORROR') {
+      iconSlug = 'bone';
+    }
+
+    return { key: themeKey, label: prettyLabel, iconSlug };
+  };
+
+  // Map an icon slug or theme key to a Lucide icon component
+  const getThemeIconFor = (themeKey: string, iconSlug: string) => {
+    const slug = String(iconSlug || '').toLowerCase();
+    switch (slug) {
+      case 'skull': return Skull;
+      case 'brain': return Brain;
+      case 'pill': return Pill;
+      case 'cpu': return Cpu;
+      case 'dna': return Dna;
+      case 'ghost': return Ghost;
+      case 'umbrella': return Umbrella;
+      case 'footprints': return Footprints;
+      case 'cloud-rain':
+      case 'cloudrain': return CloudRain;
+      case 'castle': return Castle;
+      case 'bug': return Bug;
+      case 'radiation': return Radiation;
+      case 'user-minus2':
+      case 'userminus2': return UserMinus2;
+      case 'user-plus':
+      case 'userplus': return UserPlus;
+      case 'anchor': return Anchor;
+      case 'alert-triangle':
+      case 'alerttriangle': return AlertTriangle;
+      case 'building': return Building;
+      case 'worm': return Worm;
+      case 'cloud': return Cloud;
+      case 'cloud-fog':
+      case 'cloudfog': return CloudFog;
+      case 'flame': return Flame;
+      case 'eye': return Eye;
+      case 'hourglass': return Hourglass;
+      case 'knife':
+      case 'utensils':
+      case 'fork-knife':
+      case 'forkknife': return ForkKnife;
+      case 'cat': return Cat;
+      case 'moon': return Moon;
+      case 'dog': return Dog;
+      case 'radio': return Radio;
+      case 'moon-star':
+      case 'moonstar': return MoonStar;
+      case 'box': return Box;
+      case 'car': return Car;
+      case 'alien': return Moon;
+      case 'flask': return FlaskConical;
+      case 'trees':
+      case 'tree': return Trees;
+      case 'bone': return Bone;
+    }
+    // Fallback by theme key
+    switch (String(themeKey || '').toUpperCase()) {
+      case 'TECHNOLOGICAL': return Cpu;
+      case 'PSYCHOLOGICAL': return Brain;
+      case 'SUPERNATURAL': return Ghost;
+      case 'UNCANNY': return Eye;
+      case 'EXISTENTIAL': return Hourglass;
+      case 'DOPPELGANGER': return UserPlus;
+      case 'CANNIBALISM': return ForkKnife;
+      case 'SLASHER': return Skull;
+      case 'MONSTER': return Cat;
+      case 'ZOMBIE': return Footprints;
+      case 'VAMPIRE': return Moon;
+      case 'WEREWOLF': return Dog;
+      case 'PARANORMAL': return Radio;
+      case 'DREAM_HORROR': return MoonStar;
+      case 'CURSED_OBJECT': return Box;
+      case 'TIME_HORROR': return Clock;
+      case 'APOCALYPTIC': return Radiation;
+      case 'SCIENCE_HORROR': return FlaskConical;
+      case 'BODY_HORROR': return Bone;
+      case 'FOLK_HORROR': return Trees;
+      case 'GOTHIC': return Castle;
+      case 'COSMIC': return Moon;
+      case 'VEHICULAR': return Car;
+      default: return Ghost;
+    }
   };
 
   // Reaction totals map for posts (lazy-fetched for visible cards only)
@@ -1013,11 +1106,13 @@ export default function StoriesIndexContent() {
                           {renderHighlighted(String(featuredStory.title || ''))}
                         </button>
                         {(() => {
-                          const { key, label } = computeThemeMeta(featuredStory);
+                          const { key, label, iconSlug } = computeThemeMeta(featuredStory);
                           const badgeTint = getBadgeTint(key);
+                          const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                           return (
                             <div className="-mt-1">
-                              <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 border ${badgeTint}`}>
+                              <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                 {label}
                               </Badge>
                             </div>
@@ -1115,56 +1210,14 @@ export default function StoriesIndexContent() {
                                 {s.title}
                               </button>
                               {(() => {
-                                const md: any = (s as any)?.metadata || {};
-                                const primaryThemeRaw =
-                                  md.themeCategory ||
-                                  sharedDetermineThemeCategory(String(s.title || ''), String(s.content || ''));
-
-                                const override = getStoryThemeOverride(s.slug as any, s.title as any);
-
-                                const derivedKey = (() => {
-                                  const raw = String(primaryThemeRaw || '').trim();
-                                  if (!raw) return 'HORROR';
-                                  for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-                                    if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-                                  }
-                                  return raw.toUpperCase().replace(/\s+/g, '_');
-                                })();
-
-                                const themeKey = override?.key || derivedKey;
-
-                                const defOverride = getThemeDefinitionOverride(themeKey);
-
-                                const baseLabel =
-                                  override?.label ||
-                                  defOverride?.label ||
-                                  (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
-                                  primaryThemeRaw ||
-                                  'Horror';
-
-                                const prettyLabel = (() => {
-                                  if (override?.label) return override.label;
-                                  const l = String(baseLabel).toLowerCase();
-                                  if (l.includes('cosmic')) return 'Cosmic Horror';
-                                  if (l.includes('existential')) return 'Existential Horror';
-                                  if (l.includes('vehicular')) return 'Vehicular Horror';
-                                  if (l.includes('psychological')) return 'Psychological Horror';
-                                  if (l.includes('supernatural')) return 'Supernatural Horror';
-                                  if (l.includes('technological')) return 'Technological Horror';
-                                  if (l.includes('uncanny')) return 'Uncanny Horror';
-                                  if (l.includes('gothic')) return 'Gothic Horror';
-                                  if (l.includes('folk')) return 'Folk Horror';
-                                  if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
-                                  if (l.includes('cannibal')) return 'Cannibalism Horror';
-                                  return baseLabel;
-                                })();
-
-                                const badgeTint = getBadgeTint(themeKey);
-
+                                const { key, label, iconSlug } = computeThemeMeta(s as Post);
+                                const badgeTint = getBadgeTint(key);
+                                const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                 return (
                                   <div className="mt-1">
                                     <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                      {prettyLabel}
+                                      {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                      {label}
                                     </Badge>
                                   </div>
                                 );
@@ -1270,11 +1323,13 @@ export default function StoriesIndexContent() {
                                   {pop.title}
                                 </button>
                                 {(() => {
-                                  const { key, label } = computeThemeMeta(pop);
+                                  const { key, label, iconSlug } = computeThemeMeta(pop);
                                   const badgeTint = getBadgeTint(key);
+                                  const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                   return (
                                     <div className="mt-1">
                                       <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                        {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                         {label}
                                       </Badge>
                                     </div>
@@ -1385,11 +1440,13 @@ export default function StoriesIndexContent() {
                                         {renderHighlighted(String(post.title || ''))}
                                       </CardTitle>
                                       {(() => {
-                                        const { key, label } = computeThemeMeta(post);
+                                        const { key, label, iconSlug } = computeThemeMeta(post);
                                         const badgeTint = getBadgeTint(key);
+                                        const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                         return (
                                           <div className="mt-1">
-                                            <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 border ${badgeTint}`}>
+                                            <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                              {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                               {label}
                                             </Badge>
                                           </div>
@@ -1485,46 +1542,15 @@ export default function StoriesIndexContent() {
                                 >
                                   {renderHighlighted(String(post.title || ''))}
                                 </CardTitle>
-                                {themeCategory && (() => {
-                                  const override = getStoryThemeOverride(post.slug as any, post.title as any);
-
-                                  const derivedKey = (() => {
-                                    const raw = themeCategory;
-                                    if (!raw) return '';
-                                    for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-                                      if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-                                    }
-                                    return raw.toUpperCase().replace(/\s+/g, '_');
-                                  })();
-
-                                  const themeKeyForTint = override?.key || derivedKey;
-
-                                  const defOverride = getThemeDefinitionOverride(themeKeyForTint);
-
-                                  const baseLabel =
-                                    override?.label ||
-                                    defOverride?.label ||
-                                    (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
-                                    themeCategory;
-
-                                  const prettyLabel = (() => {
-                                    if (override?.label) return override.label;
-                                    const l = String(baseLabel).toLowerCase();
-                                    if (l.includes('cosmic')) return 'Cosmic Horror';
-                                    if (l.includes('existential')) return 'Existential Horror';
-                                    if (l.includes('vehicular')) return 'Vehicular Horror';
-                                    if (l.includes('psychological')) return 'Psychological Horror';
-                                    if (l.includes('supernatural')) return 'Supernatural Horror';
-                                    if (l.includes('technological')) return 'Technological Horror';
-                                    if (l.includes('uncanny')) return 'Uncanny Horror';
-                                    return baseLabel;
-                                  })();
-
-                                  const badgeTint = getBadgeTint(themeKeyForTint);
+                                {(() => {
+                                  const { key, label, iconSlug } = computeThemeMeta(post);
+                                  const badgeTint = getBadgeTint(key);
+                                  const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                   return (
                                     <div className="mt-1">
-                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 border ${badgeTint}`}>
-                                        {prettyLabel}
+                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                        {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                        {label}
                                       </Badge>
                                     </div>
                                   );
