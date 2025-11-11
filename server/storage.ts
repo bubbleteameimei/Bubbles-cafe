@@ -1245,6 +1245,22 @@ export class DatabaseStorage implements IStorage {
             whereConditions.push(eq(postsTable.authorId, filters.authorId));
           }
 
+          // Category filter: match either column theme_category or metadata->>'themeCategory'
+          if (filters.category) {
+            const cat = String(filters.category);
+            whereConditions.push(
+              sql`(theme_category = ${cat} OR (metadata->>'themeCategory')::text = ${cat})`
+            );
+          }
+
+          // Text search filter: push to SQL using case-insensitive LIKE (benefits from pg_trgm indexes)
+          if (filters.search && typeof filters.search === 'string' && filters.search.trim().length > 0) {
+            const term = '%' + filters.search.trim().toLowerCase() + '%';
+            whereConditions.push(
+              sql`(LOWER(title) LIKE ${term} OR LOWER(excerpt) LIKE ${term} OR LOWER(content) LIKE ${term})`
+            );
+          }
+
           // Query to get posts with proper filtering
           console.log("[Storage] Executing optimized Drizzle query with filters:", filters);
 
@@ -1310,25 +1326,10 @@ export class DatabaseStorage implements IStorage {
             } as Post;
           });
 
-          // Apply text search filter if specified (post-transform filtering)
-          let filteredPosts = transformedPosts;
-          if (filters.search) {
-            const searchTerm = filters.search.toLowerCase();
-            filteredPosts = filteredPosts.filter((post: Post) =>
-              post.title.toLowerCase().includes(searchTerm) ||
-              post.content.toLowerCase().includes(searchTerm) ||
-              (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm))
-            );
-          }
+          // No post-transform filtering needed; all filters are applied in SQL
+          const filteredPosts = transformedPosts;
 
-          // Apply category filter if specified
-          if (filters.category) {
-            filteredPosts = filteredPosts.filter((post: Post) =>
-              post.themeCategory === filters.category
-            );
-          }
-
-          console.log(`[Storage] Transformed ${filteredPosts.length} posts, hasMore: ${hasMore}`);
+          console.log("[Storage] Transformed", filteredPosts.length, "posts, hasMore:", hasMore);
 
           return { posts: filteredPosts, hasMore };
         } catch (error) {

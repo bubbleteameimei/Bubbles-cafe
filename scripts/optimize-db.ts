@@ -14,6 +14,14 @@ async function optimizeDatabase() {
     await db.execute(sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_posts_theme_created ON posts (theme_category, created_at DESC) WHERE theme_category IS NOT NULL`);
     await db.execute(sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_comments_post_created ON comments (post_id, created_at DESC)`);
     await db.execute(sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_email_unique ON users (email)`);
+
+    // Text search optimization using pg_trgm for LIKE/ILIKE on title/excerpt/content
+    await db.execute(sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_posts_title_trgm ON posts USING gin (title gin_trgm_ops)`);
+    await db.execute(sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_posts_excerpt_trgm ON posts USING gin (excerpt gin_trgm_ops)`);
+    await db.execute(sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_posts_content_trgm ON posts USING gin (content gin_trgm_ops)`);
+
+    // Functional index for metadata themeCategory lookups
+    await db.execute(sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_posts_metadata_theme ON posts ((metadata->>'themeCategory'))`);
     
     console.log('🧹 Analyzing tables for query optimization...');
     
