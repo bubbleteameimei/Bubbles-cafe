@@ -352,8 +352,11 @@ router.post('/:id/like',
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
-      const (storage as any).updatePostReaction(Number(id), { isLike: true, sessionId: req.sessionID });
-      const counts = await (storage as any).getPostLikeCounts(Number(id));
+      const effectiveId = Number(id);
+      await (storage as any).updatePostReaction(effectiveId, { isLike: true, sessionId: req.sessionID });
+      const counts = await (storage as any).getPostLikeCounts(effectiveId);
+      // Broadcast updated totals to SSE clients
+      broadcastPostReactions(effectiveId).catch(() => {});
       res.json({ success: true, ...counts });
     } catch (error) {
       postsLogger.error('Error liking post', { postId: id, error: error instanceof Error ? error.message : String(error) });
@@ -569,8 +572,8 @@ router.get('/reactions-batch',
           const slug = `wordpress-post-${rawId}`;
           const seedNumber = hashSlug(slug);
           const seed = seedNumber * 12345;
-          const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
-          const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
+          const likesBase = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100;
+          const dislikesBase = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3;
 
           results.push({
             postId: Number(rawId),
@@ -656,8 +659,8 @@ router.post('/:id/reaction',
           : effectiveId;
         const seed = seedNumber * 12345;
         const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
-        const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80; // 80–200
-        const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2; // 2–13
+        const likesBase = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100; // 100–200
+        const dislikesBase = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3; // 3–7
 
         try {
           await db.update(postsTable)
