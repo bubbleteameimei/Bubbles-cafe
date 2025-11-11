@@ -789,7 +789,7 @@ export default function StoriesIndexContent() {
         break;
     }
     return list;
-  }, [sortedPosts, categoryFilter, deferredSearch, sort, reactionTotals]);
+  }, [sortedPosts, categoryFilter, deferredSearch, sort, reactionTotals, trendingScores]);
 
   const currentPosts = filteredPosts;
   const titleMatches = useMemo(() => {
@@ -1005,7 +1005,7 @@ export default function StoriesIndexContent() {
     });
 
     return sortedByEngagement[0];
-  }, [sortedPosts, sort, reactionTotals, deferredSearch, closestTitleMatch]);
+  }, [sortedPosts, sort, reactionTotals, deferredSearch, closestTitleMatch, trendingScores]);
 
   // Persist last featured theme for diversity in subsequent sessions
   useEffect(() => {

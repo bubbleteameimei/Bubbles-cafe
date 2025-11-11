@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase, initSupabase } from '@/lib/supabase';
 import { getApiBaseUrl } from '@/lib/asset-path';
 import { fetchCsrfTokenIfNeeded, createCSRFRequest } from '@/lib/csrf-token';
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       setIsLoading(true);
       const API_BASE = getApiBaseUrl();
@@ -99,13 +99,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAuthReady(true);
       setIsLoading(false);
     }
-  };
+  }, [finalizeServerSession]);
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
-  const finalizeServerSession = async (access_token: string, rememberMe?: boolean) => {
+  const finalizeServerSession = useCallback(async (access_token: string, rememberMe?: boolean) => {
     const API_BASE = getApiBaseUrl();
     const url = API_BASE ? `${API_BASE}/api/auth/supabase/login` : '/api/auth/supabase/login';
     const resp = await fetch(url, {
@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setUser((data as any)?.user ?? null);
     return (data as any)?.user;
-  };
+  }, []);
 
   const login = async (email: string, password: string, rememberMe = false) => {
     setIsLoading(true);

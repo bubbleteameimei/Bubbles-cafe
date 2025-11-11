@@ -70,12 +70,12 @@ export async function initSupabase(): Promise<boolean> {
 export const supabase: any = new Proxy({ auth: createAuthStub() } as any, {
   get(target, prop, receiver) {
     if (client) {
-      // @ts-ignore
+      // @ts-expect-error dynamic proxy forwarding
       const value = (client as any)[prop];
       return typeof value === 'function' ? value.bind(client) : value;
     }
     // Fallback to stub
-    // @ts-ignore
+    // @ts-expect-error dynamic proxy forwarding
     const value = (target as any)[prop];
     return typeof value === 'function' ? value.bind(target) : value;
   }

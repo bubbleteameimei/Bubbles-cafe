@@ -7,7 +7,7 @@ const Sonner = React.lazy(() => import('./components/ui/sonner').then(m => ({ de
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from './hooks/use-auth';
 const CookieConsent = React.lazy(() => import('./components/ui/cookie-consent').then(m => ({ default: m.CookieConsent })));
-import { CookieConsentProvider } from './hooks/use-cookie-consent';
+import { CookieConsentProvider, useCookieConsent } from './hooks/use-cookie-consent';
 import {
   GlobalErrorBoundary,
   setupGlobalErrorHandlers,
@@ -150,7 +150,7 @@ import { trackPageView } from '@/lib/metrics';
 import { usePrefersReducedMotion } from './hooks/use-prefers-reduced-motion';
 // Vercel Web Analytics (React)
 import { Analytics } from '@vercel/analytics/react';
-import { useCookieConsent } from './hooks/use-cookie-consent';
+
 
 // Renders Vercel Analytics only when analytics consent is granted
 function ConsentAwareVercelAnalytics() {

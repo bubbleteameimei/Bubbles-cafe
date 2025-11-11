@@ -48,7 +48,7 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
         console.error('[SocialLoginButtons] Google login error:', err);
       }
     }
-  }, [onError, onSuccess]);
+  }, [onError]);
 
   const disabled = useMemo(() => {
     const clientId = (import.meta as any)?.env?.VITE_GOOGLE_CLIENT_ID;
