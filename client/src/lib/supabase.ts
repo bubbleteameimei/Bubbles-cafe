@@ -68,14 +68,11 @@ export async function initSupabase(): Promise<boolean> {
 
 // Export a facade that defers to client when available, otherwise stub
 export const supabase: any = new Proxy({ auth: createAuthStub() } as any, {
-  get(target, prop, receiver) {
+  get(target, prop) {
     if (client) {
-      // @ts-expect-error dynamic proxy forwarding
       const value = (client as any)[prop];
       return typeof value === 'function' ? value.bind(client) : value;
     }
-    // Fallback to stub
-    // @ts-expect-error dynamic proxy forwarding
     const value = (target as any)[prop];
     return typeof value === 'function' ? value.bind(target) : value;
   }

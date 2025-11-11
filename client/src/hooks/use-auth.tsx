@@ -43,6 +43,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const finalizeServerSession = useCallback(async (access_token: string, rememberMe?: boolean) => {
+    const API_BASE = getApiBaseUrl();
+    const url = API_BASE ? `${API_BASE}/api/auth/supabase/login` : '/api/auth/supabase/login';
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${access_token}`,
+      },
+      credentials: 'include',
+      body: JSON.stringify({ access_token, rememberMe: !!rememberMe }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      const message = (data as any)?.error || (data as any)?.message || 'Failed to create server session';
+      const detailed = `Server session creation failed (status ${resp.status}): ${message}`;
+      setError(detailed);
+      throw new Error(detailed);
+    }
+    setUser((data as any)?.user ?? null);
+    return (data as any)?.user;
+  }, []);
+
   const checkAuth = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -104,29 +127,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
-
-  const finalizeServerSession = useCallback(async (access_token: string, rememberMe?: boolean) => {
-    const API_BASE = getApiBaseUrl();
-    const url = API_BASE ? `${API_BASE}/api/auth/supabase/login` : '/api/auth/supabase/login';
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${access_token}`,
-      },
-      credentials: 'include',
-      body: JSON.stringify({ access_token, rememberMe: !!rememberMe }),
-    });
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) {
-      const message = (data as any)?.error || (data as any)?.message || 'Failed to create server session';
-      const detailed = `Server session creation failed (status ${resp.status}): ${message}`;
-      setError(detailed);
-      throw new Error(detailed);
-    }
-    setUser((data as any)?.user ?? null);
-    return (data as any)?.user;
-  }, []);
 
   const login = async (email: string, password: string, rememberMe = false) => {
     setIsLoading(true);
