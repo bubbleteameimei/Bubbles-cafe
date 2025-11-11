@@ -128,6 +128,12 @@ export function setupCors(app: Express) {
       "GET, POST, PUT, PATCH, DELETE, OPTIONS"
     );
 
+    // Cache preflight responses to reduce repeated OPTIONS requests
+    res.setHeader("Access-Control-Max-Age", "600");
+
+    // Ensure caches treat different origins and preflight headers distinctly
+    res.setHeader("Vary", "Origin, Access-Control-Request-Method, Access-Control-Request-Headers");
+
     // Handle preflight requests
     if (req.method === "OPTIONS") {
       res.status(200).end();
