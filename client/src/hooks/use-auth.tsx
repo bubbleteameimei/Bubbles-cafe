@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, initSupabase } from '@/lib/supabase';
 import { getApiBaseUrl } from '@/lib/asset-path';
 import { fetchCsrfTokenIfNeeded, createCSRFRequest } from '@/lib/csrf-token';
 
@@ -56,8 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(data.user);
         } else {
           // Attempt to re-establish a server session from Supabase if available
-          const supabaseConfigured = Boolean((import.meta as any)?.env?.VITE_SUPABASE_URL && (import.meta as any)?.env?.VITE_SUPABASE_ANON_KEY);
-          if (supabaseConfigured) {
+          const ready = await initSupabase();
+          if (ready) {
             try {
               const { data: s } = await supabase.auth.getSession();
               const token = s?.session?.access_token;
@@ -75,8 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } else {
         // Non-200 response: try to finalize from Supabase token as a fallback
-        const supabaseConfigured = Boolean((import.meta as any)?.env?.VITE_SUPABASE_URL && (import.meta as any)?.env?.VITE_SUPABASE_ANON_KEY);
-        if (supabaseConfigured) {
+        const ready = await initSupabase();
+        if (ready) {
           try {
             const { data: s } = await supabase.auth.getSession();
             const token = s?.session?.access_token;
@@ -132,10 +132,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
-      const supabaseConfigured = Boolean((import.meta as any)?.env?.VITE_SUPABASE_URL && (import.meta as any)?.env?.VITE_SUPABASE_ANON_KEY);
-
-      if (!supabaseConfigured) {
-        const detailed = 'Supabase not configured: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to use email/password sign-in.';
+      const ready = await initSupabase();
+      if (!ready) {
+        const detailed = 'Supabase not configured: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or server SUPABASE_URL/SUPABASE_ANON_KEY) to use email/password sign-in.';
         setError(detailed);
         throw new Error(detailed);
       }
@@ -174,10 +173,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsRegistering(true);
     setError(null);
     try {
-      const supabaseConfigured = Boolean((import.meta as any)?.env?.VITE_SUPABASE_URL && (import.meta as any)?.env?.VITE_SUPABASE_ANON_KEY);
-
-      if (!supabaseConfigured) {
-        const detailed = 'Supabase not configured: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to use email/password sign-up.';
+      const ready = await initSupabase();
+      if (!ready) {
+        const detailed = 'Supabase not configured: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or server SUPABASE_URL/SUPABASE_ANON_KEY) to use email/password sign-up.';
         setError(detailed);
         throw new Error(detailed);
       }

@@ -29,6 +29,7 @@ import { requireAuth, requireAdmin } from '../middlewares/auth';
 import themesDefinitionsRouter from './themes-definitions';
 import { registerNotificationPreferencesRoutes } from './notification-preferences';
 import tipsRouter from './tips';
+import configRoutes from './config';
 
 const routesLogger = createSecureLogger('RoutesIndex');
 
@@ -45,6 +46,10 @@ export function registerModularRoutes(app: Express) {
     // SECURITY FIX: Secure CSRF token endpoint
     app.get('/api/csrf-token', getCsrfToken);
     routesLogger.info('Secure CSRF token endpoint registered');
+
+    // Public configuration routes (non-sensitive client config)
+    app.use('/api/config', configRoutes);
+    routesLogger.info('Config routes registered');
 
     // Authentication routes
     app.use('/api/auth', authRouter);
