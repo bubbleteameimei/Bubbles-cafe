@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
 		themePlugin(),
 		VitePWA({
 			registerType: "autoUpdate",
-			injectRegister: "none",
+			injectRegister: false,
 			includeAssets: ["icons/*", "favicon.ico"],
 			manifest: {
 				name: "Bubbles Cafe",
