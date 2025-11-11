@@ -101,7 +101,8 @@ router.post('/register',
   authRateLimiter,
   validateBody(userRegistrationSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    if ((process.env.DISABLE_LOCAL_AUTH ?? 'false') === 'true') {
+    const supabaseConfigured = !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
+    if ((process.env.DISABLE_LOCAL_AUTH ?? 'false') === 'true' && supabaseConfigured) {
       res.status(403).json({ error: 'Local registration disabled. Use Supabase auth.' });
       return;
     }
@@ -140,46 +141,43 @@ router.post('/register',
 router.post('/login',
   authRateLimiter,
   validateBody(userLoginSchema),
-  asyncHandler(async (req: Request, res: Response, next: (err?: any) => void) => {
-    if ((process.env.DISABLE_LOCAL_AUTH ?? 'false') === 'true') {
+  asyncHandler(async (req: Request, res: Response) => {
+    const supabaseConfigured = !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
+    if ((process.env.DISABLE_LOCAL_AUTH ?? 'false') === 'true' && supabaseConfigured) {
       res.status(403).json({ error: 'Local login disabled. Use Supabase auth.' });
       return;
     }
 
-    passport.authenticate('local', (err: any, user: any, info: any) => {
-      if (err) {
-        authLogger.error('Login authentication error', { error: err instanceof Error ? err.message : String(err) });
-        next(createError.internal('Authentication failed'));
-        return;
+    const { email, password, rememberMe } = req.body;
+
+    try {
+      const user = await storage.getUserByEmail(email);
+      if (!user || !user.password_hash) {
+        throw createError.unauthorized('Invalid email or password');
       }
-      
-      if (!user) {
-        authLogger.warn('Login failed - invalid credentials');
-        next(createError.unauthorized('Invalid email or password'));
-        return;
+      const isValid = await bcrypt.compare(password, user.password_hash);
+      if (!isValid) {
+        throw createError.unauthorized('Invalid email or password');
       }
-      
-      req.logIn(user, (err) => {
+      const { password_hash, ...safeUser } = user;
+      req.login(safeUser as any, (err) => {
         if (err) {
-          authLogger.error('Login session error', { error: err instanceof Error ? err.message : String(err) });
-          next(createError.internal('Login failed'));
-          return;
+          authLogger.error('Session creation failed', { error: err });
+          throw createError.internal('Session creation failed');
         }
-        
-        // Set session expiration based on rememberMe
-        if (req.body.rememberMe) {
-          req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-          authLogger.debug('Extended session set for remember me');
-        }
-        
-        res.json({
-          success: true,
-          user,
-          message: 'Login successful'
-        });
+        try {
+          if (rememberMe && req.session && req.session.cookie) {
+            req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
+          }
+        } catch {}
+        res.json({ success: true, user: safeUser });
       });
-    })(req, res, next);
-    return;
+    } catch (error) {
+      const anyError = error as any;
+      if (anyError?.statusCode) throw anyError;
+      authLogger.error('Login error', { email, error: error instanceof Error ? error.message : String(error) });
+      throw createError.internal('Login failed');
+    }
   })
 );
 
@@ -546,6 +544,87 @@ router.post('/callback',
       const msg = e instanceof Error ? e.message : String(e);
       authLogger.error('Auth callback error', { error: msg });
       // Respond with 401 for invalid token/code
+      res.status(401).json({ message: msg });
+      return;
+    }
+  })
+);
+
+// GET /api/auth/callback - Handle OAuth redirect with ?code=...
+router.get('/callback',
+  asyncHandler(async (req: Request, res: Response) => {
+    try {
+      const code = typeof req.query.code === 'string' ? req.query.code : undefined;
+      const expectedClientId = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.VITE_GOOGLE_CLIENT_SECRET;
+      const redirect = process.env.GOOGLE_REDIRECT_URI || `${process.env.API_URL || ''}/api/auth/callback`;
+
+      if (!code) {
+        throw createError.badRequest('Missing authorization code');
+      }
+      if (!expectedClientId || !clientSecret) {
+        throw createError.internal('Google OAuth client credentials not configured');
+      }
+
+      const tokenResp = await exchangeGoogleCode(code, redirect, expectedClientId, clientSecret);
+      const idToken = tokenResp.id_token as string | undefined;
+      if (!idToken) {
+        throw createError.unauthorized('No ID token received from Google');
+      }
+
+      const payload = await verifyGoogleIdToken(idToken, expectedClientId);
+      const email = (payload.email || '').toLowerCase();
+      const socialId = payload.sub;
+      const username = payload.name || (email ? email.split('@')[0] : undefined);
+      const photoURL = payload.picture || undefined;
+
+      if (!email || !socialId) {
+        throw createError.badRequest('Missing required user info from Google token');
+      }
+
+      let user = await storage.getUserByEmail(email);
+      if (!user) {
+        const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+        const password_hash = await bcrypt.hash(randomPassword, 12);
+        user = await storage.createUser({
+          username: username || email.split('@')[0],
+          email,
+          password_hash,
+          isAdmin: false,
+          metadata: {
+            email,
+            socialId,
+            provider: 'google',
+            lastLogin: new Date().toISOString(),
+            displayName: username || null,
+            photoURL: photoURL || null
+          }
+        });
+      } else {
+        const existing = user.metadata || {};
+        await storage.updateUser(user.id, {
+          metadata: { ...existing, socialId, provider: 'google', lastLogin: new Date().toISOString(), displayName: username || (existing as any).displayName || null, photoURL: photoURL || (existing as any).photoURL || null }
+        });
+      }
+
+      const { password_hash, ...safeUser } = user;
+      req.login(safeUser as any, (err) => {
+        if (err) {
+          authLogger.error('Session error during callback login (GET)', { error: err });
+          return res.status(500).json({ message: 'Session error' });
+        }
+        const baseFrontend = process.env.FRONTEND_URL || 'https://bubblescafe.space';
+        const fallbackSuccess = `${String(baseFrontend).replace(/\/$/, '')}/auth/success`;
+        const frontendUrl = process.env.FRONTEND_SUCCESS_URL || fallbackSuccess;
+        try {
+          return res.redirect(frontendUrl);
+        } catch {
+          return res.json({ success: true, user: safeUser, message: 'Login successful' });
+        }
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      authLogger.error('Auth callback error (GET)', { error: msg });
       res.status(401).json({ message: msg });
       return;
     }

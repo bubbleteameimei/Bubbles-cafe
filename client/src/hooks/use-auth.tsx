@@ -221,15 +221,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     setIsLoading(true);
     try {
-      // Clear Supabase session
-      await supabase.auth.signOut();
-      // Clear server session
+      // Clear Supabase session (no-op if not configured)
+      try { await supabase.auth.signOut(); } catch {}
+
+      // Clear server session with CSRF protection
       const API_BASE = getApiBaseUrl();
       const url = API_BASE ? `${API_BASE}/api/auth/logout` : '/api/auth/logout';
-      const response = await fetch(url, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await fetchCsrfTokenIfNeeded();
+      const response = await fetch(url, createCSRFRequest('POST'));
       if (!response.ok) {
         let message = 'Logout failed';
         try {
@@ -238,6 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch {}
         throw new Error(message);
       }
+
       setUser(null);
       try { localStorage.removeItem('auth_token'); } catch {}
     } catch (err) {
