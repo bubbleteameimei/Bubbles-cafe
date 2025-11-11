@@ -76,12 +76,19 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
     }
   }, [supabaseConfigured, onError, onSuccess]);
 
+  const disabled = useMemo(() => {
+    const clientId = (import.meta as any)?.env?.VITE_GOOGLE_CLIENT_ID;
+    return !supabaseConfigured && !clientId;
+  }, [supabaseConfigured]);
+
   return (
     <div className="social-auth-buttons">
       <button
         className="social-button google-button"
         type="button"
         onClick={handleGoogleLogin}
+        disabled={disabled}
+        title={disabled ? 'Google login is not configured' : undefined}
       >
         <img
           src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png"
