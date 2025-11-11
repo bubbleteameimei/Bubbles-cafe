@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import OptimizedImage from "@/components/ui/OptimizedImage";
 
 interface TimelineItemProps {
   title: React.ReactNode;
@@ -115,10 +116,13 @@ export function Timeline({
                         <div className="mt-1 flex items-center">
                           <div className="flex-shrink-0 mr-2">
                             {item.user.avatar ? (
-                              <img 
+                              <OptimizedImage 
                                 src={item.user.avatar} 
                                 alt={item.user.name} 
+                                width={20}
+                                height={20}
                                 className="h-5 w-5 rounded-full"
+                                loadingStrategy="lazy"
                               />
                             ) : (
                               <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center text-xs text-primary-foreground font-medium">

@@ -109,8 +109,9 @@ export const InstagramCarousel: React.FC<InstagramCarouselProps> = memo(({
               <OptimizedImage
                 src={image.src}
                 alt={image.alt}
-                width={450}
-                height={450}
+                width="100%"
+                height="100%"
+                aspectRatio="1 / 1"
                 className="w-full h-full object-cover"
                 priority={i === 0}
                 loadingStrategy={i === 0 ? 'eager' : 'lazy'}
