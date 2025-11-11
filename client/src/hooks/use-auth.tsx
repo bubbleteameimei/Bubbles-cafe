@@ -183,27 +183,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('[Auth] Supabase signUp:', { email: payload.email, username: payload.username });
         }
         const { data, error: sError } = await supabase.auth.signUp({
-        email: payload.email,
-        password: payload.password,
-        options: {
-          data: { username: payload.username },
-          emailRedirectTo: `${window.location.origin}/auth/success`,
-        },
-      });
-      if (sError) {
-        const detailed = `Supabase registration error: ${sError.message}`;
-        setError(detailed);
-        throw new Error(detailed);
-      }
-      // Depending on Supabase settings, signUp may require email confirmation (no session)
-      const access_token = data.session?.access_token;
-      if (access_token) {
-        const serverUser = await finalizeServerSession(access_token);
-        return serverUser;
-      } else {
-        // No immediate session; prompt the user to verify email
-        return { message: 'Check your email to confirm your account.' };
-      };
+          email: payload.email,
+          password: payload.password,
+          options: {
+            data: { username: payload.username },
+            emailRedirectTo: `${window.location.origin}/auth/success`,
+          },
+        });
+        if (sError) {
+          const detailed = `Supabase registration error: ${sError.message}`;
+          setError(detailed);
+          throw new Error(detailed);
+        }
+        // Depending on Supabase settings, signUp may require email confirmation (no session)
+        const access_token = data.session?.access_token;
+        if (access_token) {
+          const serverUser = await finalizeServerSession(access_token);
+          return serverUser;
+        } else {
+          // No immediate session; prompt the user to verify email
+          return { message: 'Check your email to confirm your account.' };
         }
       }
 
