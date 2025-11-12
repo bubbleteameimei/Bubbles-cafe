@@ -5,9 +5,9 @@ import { format } from 'date-fns';
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronRight, Book } from "lucide-react";
-import { fetchWordPressPosts } from "@/lib/wordpress-api";
+import { fetchWordPressPosts, checkLocalSyncedPosts, fetchWordPressPostBySlug, type WordPressPost } from "@/lib/wordpress-api";
 import { getExcerpt } from "@/lib/content-analysis";
-import { extractEngagingExcerpt } from "@/lib/excerpt-lite";
+import { extractEngagingExcerpt, extractExcerpt } from "@/lib/excerpt-lite";
 import { sanitizeHtml } from "@/lib/sanitize";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
@@ -66,10 +66,20 @@ export default function Home() {
   const { data: postsResponse, isLoading, error } = useQuery({
     queryKey: ["pages", "home", "latest-post"],
     queryFn: async () => {
-      return fetchWordPressPosts({ page: 1, perPage: 1 });
+      return fetchWordPressPosts({ page: 1, perPage: 1, includeContent: false });
     },
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+    // Use locally synced posts (if available) to avoid initial blank state
+    initialData: (() => {
+      try {
+        const local = checkLocalSyncedPosts();
+        if (local?.posts?.length) {
+          return { posts: [local.posts[0]], totalPages: 1, total: local.total };
+        }
+      } catch {}
+      return undefined;
+    })()
   });
 
   // Lightweight engagement fetch for social proof
@@ -109,7 +119,27 @@ export default function Home() {
 
   // Use our ApiLoader component to handle global loading state
   const posts = postsResponse?.posts || [];
-  
+
+  // Background enrich: fetch full content for engaging excerpt when missing
+  const [fullPost, setFullPost] = useState<WordPressPost | null>(null);
+  useEffect(() => {
+    const latest = postsResponse?.posts?.[0];
+    if (!latest) return;
+    const missing = !latest?.content?.rendered || latest?.content?.rendered === 'Content unavailable';
+    if (missing) {
+      let canceled = false;
+      (async () => {
+        try {
+          const p = await fetchWordPressPostBySlug(latest.slug);
+          if (!canceled) setFullPost(p as WordPressPost);
+        } catch {}
+      })();
+      return () => { canceled = true; };
+    } else {
+      setFullPost(null);
+    }
+  }, [postsResponse]);
+
   return (
     <div>
       {error ? (
@@ -243,6 +273,7 @@ export default function Home() {
                         transition={{ 
                           duration: 1.2,
                           repeat: Infinity,
+                          repeatDelay: 1.6,
                           ease: "easeInOut"
                         }}
                       >
@@ -332,15 +363,21 @@ export default function Home() {
                       dangerouslySetInnerHTML={{ __html: sanitizeHtml(posts[0]?.title?.rendered || 'Featured Story') }}
                     />
                     <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground w-full mb-4 sm:mb-5 md:mb-6 line-clamp-2 px-2 sm:px-3 leading-relaxed md:leading-relaxed font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                      {posts[0]?.content?.rendered && (
-                        <motion.span
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3, delay: 0.1 }}
-                        >
-                          {extractEngagingExcerpt(posts[0].content.rendered, 240)}
-                        </motion.span>
-                      )}
+                      <motion.span
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.1 }}
+                      >
+                        {(() => {
+                          const latest = (fullPost || posts[0]) as any;
+                          const content = latest?.content?.rendered || '';
+                          const excerpt = latest?.excerpt?.rendered || '';
+                          if (content && content.trim().length > 0 && content !== 'Content unavailable') {
+                            return extractEngagingExcerpt(content, 240);
+                          }
+                          return extractExcerpt(excerpt || content, 240);
+                        })()}
+                      </motion.span>
                     </div>
                     <div className="flex items-center justify-center text-sm sm:text-base md:text-lg lg:text-xl text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium mt-1 md:mt-2">
                       Read full story 
@@ -351,52 +388,54 @@ export default function Home() {
                     </div>
                   </motion.div>
 
-                  {/* App install CTA card */}
-                  <motion.div
-                    onClick={() => setLocation('/install')}
-                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-7 rounded-xl relative bg-card/60 backdrop-blur-xl border border-border/50 shadow-xl transition-all duration-300 mt-6"
-                    style={{ backgroundImage: 'linear-gradient(135deg, hsl(var(--foreground) / 0.05), transparent)' }}
-                    whileHover={{ 
-                      y: -6, 
-                      scale: 1.01
-                    }}
-                    whileTap={{ 
-                      scale: 0.98,
-                      y: -3
-                    }}
-                    transition={{ 
-                      type: "spring", 
-                      stiffness: 280, 
-                      damping: 22 
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setLocation('/install');
-                      }
-                    }}
-                  >
-                    <div className="flex items-center justify-center gap-3">
-                      <h3 className="text-xl sm:text-2xl font-semibold text-foreground">
-                        Try the Bubble's Cafe App!
-                      </h3>
-                      <motion.div
-                        animate={{ x: [0, 4, 0] }}
-                        transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
-                      >
-                        <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8 group-hover:translate-x-1 transition-transform duration-300" />
-                      </motion.div>
-                    </div>
-                    <p className="text-muted-foreground mt-2 text-center text-[12px] sm:text-[13px]">
-                      Install on your phone for a fast, immersive reading experience.
-                    </p>
-                  </motion.div>
+                  
                 </div>
               )}
             </div>
           </div>
+
+          {/* App install CTA card (always visible, independent of posts) */}
+          <motion.div
+            onClick={() => setLocation('/install')}
+            className="group cursor-pointer w-full p-5 sm:p-6 md:p-7 rounded-xl relative bg-card/60 backdrop-blur-xl border border-border/50 shadow-xl transition-all duration-300 mt-6 max-w-4xl mx-auto"
+            style={{ backgroundImage: 'linear-gradient(135deg, hsl(var(--foreground) / 0.05), transparent)' }}
+            whileHover={{ 
+              y: -6, 
+              scale: 1.01
+            }}
+            whileTap={{ 
+              scale: 0.98,
+              y: -3
+            }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 280, 
+              damping: 22 
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setLocation('/install');
+              }
+            }}
+          >
+            <div className="flex items-center justify-center gap-3">
+              <h3 className="text-xl sm:text-2xl font-semibold text-foreground">
+                Try the Bubble's Cafe App!
+              </h3>
+              <motion.div
+                animate={{ x: [0, 3, 0] }}
+                transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 1.4, ease: "easeInOut" }}
+              >
+                <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8 group-hover:translate-x-1 transition-transform duration-300" />
+              </motion.div>
+            </div>
+            <p className="text-muted-foreground mt-2 text-center text-[12px] sm:text-[13px]">
+              Install on your phone for a fast, immersive reading experience.
+            </p>
+          </motion.div>
 
           {/* Continue Reading floating banner */}
           <ContinueReadingBanner />
