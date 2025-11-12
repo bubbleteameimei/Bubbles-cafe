@@ -156,6 +156,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Font size and family adjustments
   const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
   const { fontFamily, availableFonts, updateFontFamily } = useFontFamily();
+  const { categoriesMap, categoriesList } = useThemeCategories();
   
   // Night mode functionality has been completely removed
   
@@ -1454,6 +1455,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       overrideThemeIcon ||
                       md.themeIcon ||
                       defOverride?.icon ||
+                      categoriesMap[derivedKey]?.icon ||
                       (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
                       'ghost';
 
@@ -1654,7 +1656,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                             </SelectTrigger>
                             <SelectContent>
                               {(categoriesList.length
-                                ? categoriesList.map(({ key, label }) => {
+                                ? categoriesList.map((item) => {
+                                    const key = String(item.key);
+                                    const label = String(item.label);
                                     const base = label;
                                     const l = String(base).toLowerCase();
                                     const refined = (() => {
