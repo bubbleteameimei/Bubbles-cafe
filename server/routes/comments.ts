@@ -208,7 +208,7 @@ router.post(
 		}
 
 		const counts = await storage.getCommentVoteCounts(commentId);
-		returnon({ success: true, ...counts });
+		return res.json({ success: true, ...counts });
 	})
 );
 
