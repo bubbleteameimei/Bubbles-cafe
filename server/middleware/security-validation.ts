@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
-import { createLogger } from '../utils/debug-logger';
+import { createSecureLogger } from '../utils/secure-logger';
 
-const securityLogger = createLogger('Security');
+const securityLogger = createSecureLogger('Security');
 
 // Comprehensive input validation schemas
 export const securitySchemas = {
@@ -92,8 +92,9 @@ export async function validateSession(req: Request, res: Response, next: NextFun
       return res.status(500).json({ error: 'Session configuration error' });
     }
     
-    // Set fingerprint for new sessions on public routes
-    if (!(req.session as any).fingerprint) {
+  >
+// Set fingerprint for new sessions on public routes
+if (!(req.session asn as any).fingerprint) {
       const fp = await generateFingerprint(req);
       (req.session as any).fingerprint = fp.strict;
       (req.session as any).fingerprintBase = fp.base;
@@ -114,7 +115,12 @@ export async function validateSession(req: Request, res: Response, next: NextFun
 
   // Check for session hijacking attempts with tolerant matching
   const fp = await generateFingerprint(req);
-  const sess: any = req.session;
+  try {
+    securityLogger.debug('Session fingerprint comparison', {
+      sessionId: req.sessionID,
+      path: req.path,
+      storedStrict: (req.session as any).fingerprint,
+      storedBase: (req.session as any).finger
   if (sess.fingerprint && sess.fingerprint !== fp.strict) {
     const baseMatch = !!sess.fingerprintBase && sess.fingerprintBase === fp.base;
     if (baseMatch) {
@@ -147,11 +153,14 @@ export async function validateSession(req: Request, res: Response, next: NextFun
     }
   }
 
-  // Set fingerprint for new sessions
-  if (!sess.fingerprint) {
-    sess.fingerprint = fp.strict;
-    sess.fingerprintBase = fp.base;
-    sess.createdAt = sess.createdAt || Date.now();
+>
+// Set fingerprint for new sessions
+if (!sess.fingerprint) {
+  sess.fingerprint = fp.strict;
+  sess.fingerprintBase = fp.base;
+  sess.createdAt = sess.createdAt || Date.now();
+  try {
+now();
   }
 
   // Check session age
@@ -200,6 +209,15 @@ async function generateFingerprint(req: Request): Promise<{ strict: string; base
 
   const base = crypto.createHash('sha256').update(baseData).digest('hex');
   const strict = crypto.createHash('sha256').update(strictData).digest('hex');
+
+  try {
+    securityLogger.debug('Fingerprint generated', {
+      path: req.path,
+      components: { ua, lang: langPrimary, deviceType, ipSegment },
+      fingerprintStrict: strict,
+      fingerprintBase: base
+    });
+  } catch {}
 
   return { strict, base, components: { ua, lang: langPrimary, ipSegment } };
 }

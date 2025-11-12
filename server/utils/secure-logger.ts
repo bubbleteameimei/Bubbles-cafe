@@ -17,7 +17,15 @@ const PRODUCTION_FILTERED_FIELDS = [
   'email',
   'username',
   'ip',
-  'userAgent'
+  'userAgent',
+  // Additional fields related to fingerprinting and network segments
+  'ipSegment',
+  'fingerprint',
+  'fingerprintBase',
+  'fingerprintStrict',
+  'strict',
+  'base',
+  'components'
 ];
 
 export function createSecureLogger(moduleName: string) {

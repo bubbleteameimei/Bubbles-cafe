@@ -13,7 +13,7 @@ import { Express, Request, Response, NextFunction } from "express";
  */
 export function setupCors(app: Express) {
   // List of allowed origins
-  const allowedOrigins = [
+  let allowedOrigins = [
     // Production frontend URL
     process.env.FRONTEND_URL,
     // Public backend base URL (permit for non-browser clients and occasional same-origin fetches)
@@ -25,6 +25,14 @@ export function setupCors(app: Express) {
     "http://localhost:5173",
     "http://localhost:5174"
   ].filter((v): v is string => typeof v === 'string' && v.length > 0); // ensure string[]
+
+  // Allow additional preview/test origins via env (comma-separated)
+  try {
+    const extra = (process.env.ADDITIONAL_CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(s => s.length > 0);
+    if (extra.length > 0) {
+      allowedOrigins = [...allowedOrigins, ...extra];
+    }
+  } catch {}
 
   // Normalize helper to compare by origin string
   const normalize = (s: string) => {

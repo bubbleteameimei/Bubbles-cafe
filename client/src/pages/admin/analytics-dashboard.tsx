@@ -1,8 +1,8 @@
 "use client"
 
 import React, { useState } from 'react'
-import { DeviceAnalytics } from '@/components/analytics/device-analytics'
-import { ReadingAnalytics } from '@/components/analytics/reading-analytics'
+const DeviceAnalytics = React.lazy(() => import('@/components/analytics/device-analytics').then(m => ({ default: m.DeviceAnalytics })));
+const ReadingAnalytics = React.lazy(() => import('@/components/analytics/reading-analytics').then(m => ({ default: m.ReadingAnalytics })));
 import { useQuery } from '@tanstack/react-query'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getReadingTimeAnalytics, getEngagementMetrics } from '@/api/analytics'
@@ -237,16 +237,12 @@ export default function AnalyticsDashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DeviceAnalytics />
-            <ReadingAnalytics />
-          </div>
-        </TabsContent>
+           <<React.Suspense fallbac={< Skeleton className="h-[350px] w-full" />}>
+             < DeviceAnalytics />
+          </  React.Suspense        </TabsContent>
 
         <TabsContent value="devices" className="space-y-4">
-          <DeviceAnalytics />
-        </TabsContent>
-
-        <TabsContent value="reading" className="space-y-4">
+         <<React.Suspense fallbac={< Skeleton className="h-[350TabsContent value="reading" className="space-y-4">
           <ReadingAnalytics />
         </TabsContent>
       </Tabs>

@@ -1,7 +1,18 @@
 
-// React import removed as it's not needed in modern React
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import React from 'react';
+// Lazy-load markdown renderer and plugin to reduce initial bundle
+const MarkdownRenderer = React.lazy(async () => {
+  const [modRM, modGFM] = await Promise.all([
+    import('react-markdown'),
+    import('remark-gfm')
+  ]);
+  const Comp: React.FC<{ children: string }> = ({ children }) => (
+    <modRM.default remarkPlugins={[modGFM.default]}>
+      {children}
+    </modRM.default>
+  );
+  return { default: Comp };
+});
 import { Card, CardContent, CardFooter } from './ui/card';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
@@ -45,8 +56,7 @@ export function CommentWithMarkdown({
               </span>
             </div>
             <div className="comment-content mt-2 text-sm prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown 
-                remarkPlugins={[remarkGfm]}
+             <<React.Suspense fallback        remarkPlugins={[remarkGfm]}
               >
                 {content}
               </ReactMarkdown>
