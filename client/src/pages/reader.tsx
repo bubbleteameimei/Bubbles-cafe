@@ -474,7 +474,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
       try {
         // Always fetch a list of posts to preserve global navigation context
-        const result = await fetchWordPressPosts({ perPage: 100, includeContent: true });
+        const result = await fetchWordPressPosts({ perPage: 50, includeContent: true });
         const posts = Array.isArray(result.posts) ? result.posts : [];
         return { posts, totalPages: result.totalPages ?? 1, total: result.total ?? posts.length };
       } catch (error) {
