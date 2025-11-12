@@ -29,6 +29,8 @@ import { requireAuth, requireAdmin } from '../middlewares/auth';
 import themesDefinitionsRouter from './themes-definitions';
 import { registerNotificationPreferencesRoutes } from './notification-preferences';
 import tipsRouter from './tips';
+import configRoutes from './config';
+import { handleSseSubscription } from '../utils/reactions-sse';
 
 const routesLogger = createSecureLogger('RoutesIndex');
 
@@ -45,6 +47,10 @@ export function registerModularRoutes(app: Express) {
     // SECURITY FIX: Secure CSRF token endpoint
     app.get('/api/csrf-token', getCsrfToken);
     routesLogger.info('Secure CSRF token endpoint registered');
+
+    // Public configuration routes (non-sensitive client config)
+    app.use('/api/config', configRoutes);
+    routesLogger.info('Config routes registered');
 
     // Authentication routes
     app.use('/api/auth', authRouter);
@@ -122,6 +128,10 @@ export function registerModularRoutes(app: Express) {
     // Tips/donations routes
     app.use('/api/tips', tipsRouter);
     routesLogger.info('Tips routes registered');
+
+    // SSE: real-time reactions stream per post
+    app.get('/api/posts/:id/reactions/stream', async (req, res) => handleSseSubscription(req, res));
+    routesLogger.info('Reactions SSE route registered');
 
     // Feedback submission endpoint used by client
     const feedbackSchema = z.object({

@@ -155,26 +155,7 @@ export function AuthButton({
       }
     } catch (err: any) {
       console.error("[Auth-Button] Authentication error:", err);
-      
-      // Enhanced error reporting and handling
-      let errorMessage = err?.message || "Authentication failed";
-      
-      // More user-friendly error messages for common issues
-      if (errorMessage.includes("Invalid email or password")) {
-        errorMessage = "The email or password you entered is incorrect";
-      } else if (errorMessage.includes("timeout")) {
-        errorMessage = "Request timed out. Please check your connection and try again.";
-      } else if (errorMessage.includes("Email already registered")) {
-        errorMessage = "This email is already registered. Try logging in or use a different email.";
-      }
-      
-      console.error("[Auth-Button] Error details:", {
-        message: errorMessage,
-        stack: err?.stack,
-        isNetworkError: err?.name === 'NetworkError',
-        isAPIError: err?.isAPIError
-      });
-      
+      const errorMessage = err?.message || "Authentication failed";
       toast({
         title: "Authentication Error",
         description: errorMessage,

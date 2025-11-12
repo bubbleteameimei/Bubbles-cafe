@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import OptimizedImage from '@/components/ui/OptimizedImage';
 
 export default function ProfileImage() {
   const [_loadError, setLoadError] = useState(false);
@@ -207,25 +208,15 @@ export default function ProfileImage() {
                 
                 
                 {/* Main high quality image */}
-                <img 
+                <OptimizedImage
                   src={currentSrc}
                   srcSet={currentSrcSet}
                   alt={image.alt}
-                  fetchPriority="high"
-                  loading="eager"
-                  decoding="async"
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    objectPosition: "center", // perfectly centered
-                    transform: "scale(1.14)", // 0.04 further zoom-out to reveal more while still hiding edges
-                    transformOrigin: "center",
-                    transition: "opacity 0.3s ease-in-out",
-                  }}
-                  className="transition-all duration-700 will-change-transform"
+                  width={200}
+                  height={200}
+                  priority={true}
+                  loadingStrategy="eager"
+                  className="w-full h-full object-cover transition-all duration-700 will-change-transform scale-[1.14]"
                   onError={handleImageError}
                   onLoad={() => {
                     console.log("[Profile] Image loaded successfully");

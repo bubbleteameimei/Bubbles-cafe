@@ -8,10 +8,9 @@ import { Router } from 'express';
 import logger from '../utils/logger';
 import { isAuthenticated } from '../middlewares/auth';
 import { db } from '../db';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { bookmarks, posts as postsTable } from '../../shared/schema';
 import { storage } from '../storage';
-import { sql } from 'drizzle-orm';
 
 const router = Router();
 

@@ -25,6 +25,7 @@ import { setupCors } from "./cors-setup";
 import { config } from './config';
 import { wordpressScheduler } from './wordpress-scheduler';
 import { applyPerformanceMiddleware } from './middleware';
+import { applySecurityMiddleware } from './middleware/security-validation';
 import { globalRateLimiter } from "./middlewares/rate-limiter";
 import { apiCache } from './middlewares/api-cache';
 import { browserCache, etagCache } from './middlewares/browser-cache';
@@ -47,6 +48,22 @@ app.disable('x-powered-by');
 const isDev = config.isDev;
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 const HOST = '0.0.0.0';
+
+// Enforce HTTPS in production based on trust proxy and X-Forwarded-Proto
+if (!isDev) {
+  app.use((req, res, next) => {
+    try {
+      const xfp = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase();
+      const secure = req.secure || xfp === 'https';
+      if (!secure) {
+        const host = String(req.headers.host || '');
+        const location = `https://${host}${req.originalUrl || '/'}`;
+        return res.redirect(308, location);
+      }
+    } catch {}
+    next();
+  });
+}
 
 let server: ReturnType<typeof createServer>;
 
@@ -266,6 +283,9 @@ app.use(validateCsrfToken({
   ]
 }));
 
+// Apply additional security validations and headers after session & CSRF
+app.use(applySecurityMiddleware());
+
 // Setup authentication
 app.use((req, _res, next) => next());
 setupAuth(app);
@@ -277,23 +297,45 @@ if (config.cache.api) {
 }
 
 app.use(helmet({
+  // Harden CSP while keeping required functionality for inline pre-paint script and font loader
   contentSecurityPolicy: isDev ? false : {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
-      fontSrc: ["'self'", "fonts.gstatic.com"],
+      // Allow inline styles applied by the pre-paint script; external styles from Google Fonts
+      styleSrc: ["'self'", "'unsafe-inline'", "https:", "fonts.googleapis.com"],
+      fontSrc: ["'self'", "https:", "fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'", "https://accounts.google.com", "https://apis.google.com"],
-      connectSrc: ["'self'", "https:"],
+      // Permit the inline theme bootstrap and Google Identity scripts
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "https://accounts.google.com",
+        "https://apis.google.com"
+      ],
+      // Allow HTTPS connections (API, Supabase, WordPress, third-party fonts)
+      connectSrc: [
+        "'self'",
+        "https:"
+      ],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       frameSrc: ["'self'", "https://accounts.google.com"],
       frameAncestors: ["'self'"],
-      formAction: ["'self'"],
-      upgradeInsecureRequests: []
+      formAction: ["'self'"]
     }
-  }
+  },
+  crossOriginEmbedderPolicy: false,
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" }
 }));
+
+// Enforce HSTS in production (one year, include subdomains)
+if (!isDev) {
+  app.use(helmet.hsts({
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: false
+  }));
+}
 
 app.use((req, res, next) => {
   try {

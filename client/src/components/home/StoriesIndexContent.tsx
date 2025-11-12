@@ -764,8 +764,8 @@ export default function StoriesIndexContent() {
           // Fallback to inline calculation when scores not ready
           const aTotals = reactionTotals[a.id];
           const bTotals = reactionTotals[b.id];
-          const aLikes = Number(aTotals?.totals?.likes ?? (a.likesCount || 0));
-          const bLikes = Number(bTotals?.totals?.likes ?? (b.likesCount || 0));
+          const aLikes = Number(aTotals?.likesCount ?? (a.likesCount || 0));
+          const bLikes = Number(bTotals?.likesCount ?? (b.likesCount || 0));
           const aViews = (a.metadata && (a.metadata as any).pageViews) ? Number((a.metadata as any).pageViews) : 0;
           const bViews = (b.metadata && (b.metadata as any).pageViews) ? Number((b.metadata as any).pageViews) : 0;
           const now = Date.now();
@@ -789,7 +789,7 @@ export default function StoriesIndexContent() {
         break;
     }
     return list;
-  }, [sortedPosts, categoryFilter, deferredSearch, sort, reactionTotals]);
+  }, [sortedPosts, categoryFilter, deferredSearch, sort, reactionTotals, trendingScores]);
 
   const currentPosts = filteredPosts;
   const titleMatches = useMemo(() => {
@@ -1005,7 +1005,7 @@ export default function StoriesIndexContent() {
     });
 
     return sortedByEngagement[0];
-  }, [sortedPosts, sort, reactionTotals, deferredSearch, closestTitleMatch]);
+  }, [sortedPosts, sort, reactionTotals, deferredSearch, closestTitleMatch, trendingScores]);
 
   // Persist last featured theme for diversity in subsequent sessions
   useEffect(() => {
@@ -1139,7 +1139,7 @@ export default function StoriesIndexContent() {
                         {(() => {
                           const md: any = (featuredStory as any)?.metadata || {};
                           const totals = reactionTotals[featuredStory.id] || null;
-                          const likes = Number(totals?.totals?.likes ?? (featuredStory.likesCount || 0));
+                          const likes = Number(totals?.likesCount ?? (featuredStory.likesCount || 0));
                           const views = md && (md as any).pageViews ? Number((md as any).pageViews) : 0;
                           const readingTimeStr = getReadingTime(featuredStory.content);
                           return (

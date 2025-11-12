@@ -18,6 +18,7 @@ import { AuthButton } from "@/components/auth/auth-button";
 import { ForgotPasswordDialog } from "@/components/auth/forgot-password";
 import "./auth.css";
 import SocialLoginButtons from "@/components/auth/SocialLoginButtons";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 export default function AuthPage() {
   const [isSignIn, setIsSignIn] = useState(true);
@@ -30,7 +31,7 @@ export default function AuthPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [, setLocation] = useLocation();
-  const { login, registerMutation } = useAuth();
+  const { login, registerMutation, error } = useAuth();
   const { toast } = useToast();
   
   // Password validation states
@@ -284,12 +285,23 @@ export default function AuthPage() {
             <form onSubmit={handleSubmit} noValidate>
               <div className="mb-4 space-y-2">
                 <h2 className="text-center text-2xl font-semibold mb-2">{isSignIn ? 'Sign In' : 'Sign Up'}</h2>
+
+                {/* Inline error/status from auth hook */}
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertTitle>Authentication Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
                 <SocialLoginButtons 
-                  onError={(err: Error) => toast({
-                    title: 'Social Authentication Error',
-                    description: err.message,
-                    variant: 'destructive'
-                  })}
+                  onError={(err: Error) => {
+                    toast({
+                      title: 'Social Authentication Error',
+                      description: err.message,
+                      variant: 'destructive'
+                    });
+                  }}
                 />
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                   <span className="h-px flex-1 bg-muted" />

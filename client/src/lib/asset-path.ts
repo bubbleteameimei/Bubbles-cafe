@@ -6,20 +6,31 @@
  */
 
 /**
- * Get the proper base URL for asset loading depending on the environment
+ * Normalize a URL string by trimming trailing slashes
+ */
+function normalizeUrl(url: string): string {
+  try { return url.replace(/\/*$/, ''); } catch { return url; }
+}
+
+/**
+ * Get the proper base URL for API calls depending on the environment.
+ * Prioritizes explicit environment configuration to avoid relying on rewrites.
  */
 export function getApiBaseUrl(): string {
   // In development, prefer relative paths to use Vite proxy
   if (import.meta.env.DEV) return '';
 
-  // Prefer explicit env override first (works on preview domains without rewrites)
-  const explicit = (import.meta.env.VITE_API_URL as string | undefined) || undefined;
-  if (explicit && explicit.trim().length > 0) {
-    try {
-      return explicit.replace(/\/*$/, '');
-    } catch {
-      return explicit;
-    }
+  // Prefer explicit env overrides first (works on preview domains without rewrites)
+  const explicitCandidates = [
+    import.meta.env.VITE_API_URL as string | undefined,
+    import.meta.env.VITE_BACKEND_BASE_URL as string | undefined,
+    import.meta.env.VITE_BACKEND_URL as string | undefined,
+    import.meta.env.VITE_API_BASE_URL as string | undefined,
+    import.meta.env.VITE_DEFAULT_API_URL as string | undefined,
+  ].filter(Boolean) as string[];
+
+  if (explicitCandidates.length > 0) {
+    return normalizeUrl(explicitCandidates[0]);
   }
 
   // Derive from current hostname with special-cases
@@ -31,7 +42,7 @@ export function getApiBaseUrl(): string {
       return `${protocol}//${hostname}`;
     }
 
-    // Preview hosts (Vercel/Replit) typically rely on rewrites; use relative endpoints when no explicit base is set
+    // Preview hosts (Vercel/Replit) typically rely on rewrites; prefer a safe default backend domain
     const isPreviewHost =
       /\.vercel\.app$/.test(hostname) ||
       /\.vercel\.dev$/.test(hostname) ||
@@ -40,14 +51,17 @@ export function getApiBaseUrl(): string {
       /\.replit\.app$/.test(hostname);
 
     if (isPreviewHost) {
-      return '';
+      // Fallback to canonical backend domain when no explicit base is set.
+      // This project uses api.bubblescafe.space as the default backend.
+      return 'https://api.bubblescafe.space';
     }
 
     // Default split deployment: api.<root-domain>
     const host = hostname.startsWith('www.') ? hostname.slice(4) : hostname;
     return `${protocol}//api.${host}`;
   } catch {
-    return '';
+    // Final fallback to canonical backend
+    return 'https://api.bubblescafe.space';
   }
 }
 

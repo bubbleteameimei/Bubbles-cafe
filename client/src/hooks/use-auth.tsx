@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { supabase, initSupabase } from '@/lib/supabase';
 import { getApiBaseUrl } from '@/lib/asset-path';
+import { fetchCsrfTokenIfNeeded, createCSRFRequest } from '@/lib/csrf-token';
 
 interface User {
   id: number;
@@ -42,59 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const checkAuth = async () => {
-    try {
-      setIsLoading(true);
-      const API_BASE = getApiBaseUrl();
-      const url = API_BASE ? `${API_BASE}/api/auth/status` : '/api/auth/status';
-      const response = await fetch(url, { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        const isAuth = (data?.authenticated ?? data?.isAuthenticated) === true;
-        if (isAuth) {
-          setUser(data.user);
-        } else {
-          // Attempt to re-establish a server session from Supabase if available
-          try {
-            const { data: s } = await supabase.auth.getSession();
-            const token = s?.session?.access_token;
-            if (token) {
-              await finalizeServerSession(token);
-            } else {
-              setUser(null);
-            }
-          } catch {
-            setUser(null);
-          }
-        }
-      } else {
-        // Non-200 response: try to finalize from Supabase token as a fallback
-        try {
-          const { data: s } = await supabase.auth.getSession();
-          const token = s?.session?.access_token;
-          if (token) {
-            await finalizeServerSession(token);
-          } else {
-            setUser(null);
-          }
-        } catch {
-          setUser(null);
-        }
-      }
-    } catch (error) {
-      console.error('[Auth] Auth check error:', error);
-      setUser(null);
-    } finally {
-      setIsAuthReady(true);
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const finalizeServerSession = async (access_token: string, rememberMe?: boolean) => {
+  const finalizeServerSession = useCallback(async (access_token: string, rememberMe?: boolean) => {
     const API_BASE = getApiBaseUrl();
     const url = API_BASE ? `${API_BASE}/api/auth/supabase/login` : '/api/auth/supabase/login';
     const resp = await fetch(url, {
@@ -108,16 +57,88 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) {
-      throw new Error((data as any)?.error || 'Failed to create server session');
+      const message = (data as any)?.error || (data as any)?.message || 'Failed to create server session';
+      const detailed = `Server session creation failed (status ${resp.status}): ${message}`;
+      setError(detailed);
+      throw new Error(detailed);
     }
     setUser((data as any)?.user ?? null);
     return (data as any)?.user;
-  };
+  }, []);
+
+  const checkAuth = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const API_BASE = getApiBaseUrl();
+      const url = API_BASE ? `${API_BASE}/api/auth/status` : '/api/auth/status';
+      const response = await fetch(url, { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        const isAuth = (data?.authenticated ?? data?.isAuthenticated) === true;
+        if (isAuth) {
+          setUser(data.user);
+        } else {
+          // Attempt to re-establish a server session from Supabase if available
+          const ready = await initSupabase();
+          if (ready) {
+            try {
+              const { data: s } = await supabase.auth.getSession();
+              const token = s?.session?.access_token;
+              if (token) {
+                await finalizeServerSession(token);
+              } else {
+                setUser(null);
+              }
+            } catch {
+              setUser(null);
+            }
+          } else {
+            setUser(null);
+          }
+        }
+      } else {
+        // Non-200 response: try to finalize from Supabase token as a fallback
+        const ready = await initSupabase();
+        if (ready) {
+          try {
+            const { data: s } = await supabase.auth.getSession();
+            const token = s?.session?.access_token;
+            if (token) {
+              await finalizeServerSession(token);
+            } else {
+              setUser(null);
+            }
+          } catch {
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
+      }
+    } catch (error) {
+      console.error('[Auth] Auth check error:', error);
+      setUser(null);
+    } finally {
+      setIsAuthReady(true);
+      setIsLoading(false);
+    }
+  }, [finalizeServerSession]);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   const login = async (email: string, password: string, rememberMe = false) => {
     setIsLoading(true);
     setError(null);
     try {
+      const ready = await initSupabase();
+      if (!ready) {
+        const detailed = 'Supabase not configured: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or server SUPABASE_URL/SUPABASE_ANON_KEY) to use email/password sign-in.';
+        setError(detailed);
+        throw new Error(detailed);
+      }
+
       if (import.meta.env?.DEV) {
         console.log('[Auth] Supabase signInWithPassword:', { email });
       }
@@ -126,11 +147,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
       });
       if (sError) {
-        throw new Error(sError.message || 'Login failed');
+        const detailed = `Supabase login error: ${sError.message}`;
+        setError(detailed);
+        throw new Error(detailed);
       }
       const access_token = data.session?.access_token;
       if (!access_token) {
-        throw new Error('Login succeeded but no session token was returned');
+        const detailed = 'Supabase login succeeded but no session token was returned';
+        setError(detailed);
+        throw new Error(detailed);
       }
       const serverUser = await finalizeServerSession(access_token, rememberMe);
       return serverUser;
@@ -148,6 +173,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsRegistering(true);
     setError(null);
     try {
+      const ready = await initSupabase();
+      if (!ready) {
+        const detailed = 'Supabase not configured: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or server SUPABASE_URL/SUPABASE_ANON_KEY) to use email/password sign-up.';
+        setError(detailed);
+        throw new Error(detailed);
+      }
+
       if (import.meta.env?.DEV) {
         console.log('[Auth] Supabase signUp:', { email: payload.email, username: payload.username });
       }
@@ -160,7 +192,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
       if (sError) {
-        throw new Error(sError.message || 'Registration failed');
+        const detailed = `Supabase registration error: ${sError.message}`;
+        setError(detailed);
+        throw new Error(detailed);
       }
       // Depending on Supabase settings, signUp may require email confirmation (no session)
       const access_token = data.session?.access_token;
@@ -184,15 +218,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     setIsLoading(true);
     try {
-      // Clear Supabase session
-      await supabase.auth.signOut();
-      // Clear server session
+      // Clear Supabase session (no-op if not configured)
+      try { await supabase.auth.signOut(); } catch {}
+
+      // Clear server session with CSRF protection
       const API_BASE = getApiBaseUrl();
       const url = API_BASE ? `${API_BASE}/api/auth/logout` : '/api/auth/logout';
-      const response = await fetch(url, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await fetchCsrfTokenIfNeeded();
+      const response = await fetch(url, createCSRFRequest('POST'));
       if (!response.ok) {
         let message = 'Logout failed';
         try {
@@ -201,6 +234,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch {}
         throw new Error(message);
       }
+
       setUser(null);
       try { localStorage.removeItem('auth_token'); } catch {}
     } catch (err) {

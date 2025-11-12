@@ -7,9 +7,7 @@
 import { Application, NextFunction , Router , Request, Response } from 'express';
 import bookmarkRoutes from './bookmarks';
 import { db } from '../db';
-import { inArray } from 'drizzle-orm';
-import { posts as postsTable } from '../../shared/schema';
-import { sql } from 'drizzle-orm';
+import { inArray, sql } from 'drizzle-orm';
 
 // Create a router for anonymous bookmark routes
 const anonymousBookmarkRouter = Router();

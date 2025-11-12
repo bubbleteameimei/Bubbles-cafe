@@ -56,26 +56,15 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
     return () => { window.removeEventListener('reaction:updated', onUpdate as EventListener); };
   }, []);
 
-  const baselineLikesForPost = (p: Post): number => {
-    const seedFrom = String((p as any).slug || p.id);
-    let h = 0;
-    for (let i = 0; i < seedFrom.length; i++) {
-      h = (h << 5) - h + seedFrom.charCodeAt(i);
-      h |= 0;
-    }
-    const seededRandom = (n: number) => {
-      const x = Math.sin(n) * 10000;
-      return x - Math.floor(x);
-    };
-    const seed = Math.abs(h) * 12345;
-    return Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
+  const baselineLikesForPost = (_p: Post): number => {
+    return 0;
   };
 
   const sortedByLikes = useMemo(() => {
     if (!Array.isArray(posts) || posts.length === 0) return [] as Post[];
     return [...posts].sort((a, b) => {
-      const ta = (totalsFromParent?.[a.id]?.totals?.likes ?? totalsMap[a.id]?.totals?.likes) ?? (baselineLikesForPost(a) + (a.likesCount || 0));
-      const tb = (totalsFromParent?.[b.id]?.totals?.likes ?? totalsMap[b.id]?.totals?.likes) ?? (baselineLikesForPost(b) + (b.likesCount || 0));
+      const ta = (totalsFromParent?.[a.id]?.totals?.likes ?? totalsMap[a.id]?.totals?.likes) ?? (a.likesCount || 0);
+      const tb = (totalsFromParent?.[b.id]?.totals?.likes ?? totalsMap[b.id]?.totals?.likes) ?? (b.likesCount || 0);
       return Number(tb) - Number(ta);
     });
   }, [posts, totalsMap, totalsFromParent]);
@@ -199,9 +188,9 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
 
                       <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                         <span className="inline-flex items-center gap-1">
-                          <Heart className="h-4 w-4 text-rose-500" />
-                          {Number((totalsFromParent?.[featured.id]?.totals?.likes ?? totalsMap[featured.id]?.totals?.likes) ?? (baselineLikesForPost(featured) + (featured.likesCount || 0)))}
-                        </span>
+                            <Heart className="h-4 w-4 text-rose-500" />
+                            {Number((totalsFromParent?.[featured.id]?.totals?.likes ?? totalsMap[featured.id]?.totals?.likes) ?? (featured.likesCount || 0))}
+                          </span>
                       </div>
                     </a>
                   </CardContent>

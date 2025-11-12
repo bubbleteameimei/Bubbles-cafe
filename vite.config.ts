@@ -1,16 +1,80 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import themePlugin from "@replit/vite-plugin-shadcn-theme-json";
+import { VitePWA } from "vite-plugin-pwa";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { createRequire } from "module";
-// PWA removed
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export default defineConfig(({ mode }) => {
-	const plugins = [react(), themePlugin()];
+	const plugins = [
+		react(),
+		themePlugin(),
+		VitePWA({
+			registerType: "autoUpdate",
+			injectRegister: false,
+			includeAssets: ["icons/*", "favicon.ico"],
+			manifest: {
+				name: "Bubbles Cafe",
+				short_name: "BubblesCafe",
+				start_url: "/",
+				display: "standalone",
+				background_color: "#0a0a0a",
+				theme_color: "#ff3f6a",
+				icons: [
+					{ src: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+					{ src: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+					{ src: "/icons/maskable-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" }
+				]
+			},
+			workbox: {
+				navigateFallback: "/index.html",
+				cleanupOutdatedCaches: true,
+				globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,json,woff2,woff,ttf,otf}"],
+				runtimeCaching: [
+					{
+						// Cache images (same-origin and cross-origin)
+						urlPattern: /\.(?:png|jpg|jpeg|gif|webp|svg|ico)$/i,
+						handler: "CacheFirst",
+						options: {
+							cacheName: "images",
+							expiration: { maxEntries: 300, maxAgeSeconds: 30 * 24 * 60 * 60 },
+							cacheableResponse: { statuses: [0, 200] }
+						}
+					},
+					{
+						// Cache WordPress-hosted images and assets
+						urlPattern: /^https?:\/\/(?:.*\.)?wordpress\.com\/.*$/i,
+						handler: "CacheFirst",
+						options: {
+							cacheName: "wp-images",
+							expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 },
+							cacheableResponse: { statuses: [0, 200] }
+						}
+					},
+					{
+						// App assets: JS/CSS/Fonts with SWR
+						urlPattern: /\.(?:js|css|woff|woff2|ttf|otf|map)$/i,
+						handler: "StaleWhileRevalidate",
+						options: { cacheName: "assets" }
+					},
+					{
+						// API requests: network-first to avoid stale data
+						urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
+						handler: "NetworkFirst",
+						options: {
+							cacheName: "api",
+							networkTimeoutSeconds: 4,
+							cacheableResponse: { statuses: [0, 200] }
+						}
+					}
+				]
+			}
+		})
+	];
 
 	if (mode === "development") {
 		const require = createRequire(import.meta.url);
