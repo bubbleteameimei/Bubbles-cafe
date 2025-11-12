@@ -263,10 +263,8 @@ export function LikeDislike({
       try { es?.close(); } catch {}
       es = null;
     };
-  );););bscribe to server-sent events for live reaction totals
-  useEffect(() => {
-    const base = getApiBaseUrl();
-    const url = `${base ? base.replace(/\/+$/,]);
+  }, [postId]);
+  
 
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
     setInlineToast({ message, type });
