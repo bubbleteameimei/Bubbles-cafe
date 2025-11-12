@@ -227,4 +227,43 @@ router.get('/:slug', async (req, res) => {
   }
 });
 
+// GET /api/reading-progress/history - full reading history for current user
+router.get('/history', async (req, res) => {
+  try {
+    // Supabase path first
+    const supabase = getSupabaseClientFromRequest(req);
+    if (supabase) {
+      const numericUserId = await resolveNumericUserId(req, supabase);
+      if (Number.isFinite(numericUserId)) {
+        const { data: rows, error: selErr } = await supabase
+          .from('reading_progress')
+          .select('post_id, progress, last_read_at')
+          .eq('user_id', numericUserId)
+          .order('last_read_at', { ascending: false })
+          .limit(500);
+        if (!selErr) {
+          return res.json({ history: rows || [] });
+        }
+        logger.warn('Supabase reading history failed, falling back', { error: selErr?.message });
+      }
+    }
+
+    // Server DB fallback (session-based)
+    const userId = (req as any).user?.id ?? (req.session as any)?.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const rowsDb = await db.select().from(readingProgress)
+      .where(eq(readingProgress.userId, Number(userId)))
+      .orderBy(desc(readingProgress.lastReadAt))
+      .limit(500);
+
+    return res.json({ history: rowsDb });
+  } catch (error: any) {
+    logger.error('Failed to fetch reading history', { error: error?.message });
+    return res.status(500).json({ error: 'Failed to fetch reading history' });
+  }
+});
+
 export default router;

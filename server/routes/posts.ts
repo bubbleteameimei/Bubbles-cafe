@@ -4,11 +4,11 @@ import { validateBody, validateQuery, validateParams, commonSchemas } from '../m
 import { asyncHandler, createError } from '../utils/error-handler';
 import { storage } from "../storage";
 import { z } from "zod";
-import { insertPostSchema, updatePostSchema, insertCommentSchema, posts as postsTable } from "@shared/schema";
+import { insertPostSchema, updatePostSchema, insertCommentSchema, posts as postsTable, analytics as analyticsTable } from "@shared/schema";
 import { apiRateLimiter } from '../middlewares/rate-limiter';
 // DB helpers imported where needed
 import { db } from '../db';
-import { eq, sql, inArray } from "drizzle-orm";
+import { eq, sql, inArray, desc } from "drizzle-orm";
 import { moderateComment } from "../utils/comment-moderation";
 import { clearCacheItem } from "../middlewares/api-cache";
 import { broadcastPostReactions } from "../utils/reactions-sse";
@@ -842,6 +842,222 @@ router.post(
       clearCacheItem(`/api/posts/${postId}/comments`);
     } catch {}
     (res as any).status(201).json({ ...created, approved: created.is_approved === true, isOwner: true });
+  })
+);
+
+/**
+ * GET /api/posts/:id/summary
+ * Combined post summary: basic fields + reactions + analytics.
+ */
+router.get('/:id/summary',
+  apiRateLimiter,
+  validateParams(postIdSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    try {
+      let effectiveId = Number(id);
+      // Try metadata.wordpressId mapping to locate the local post id when not found
+      let postRow = await db.select({
+        id: postsTable.id,
+        title: postsTable.title,
+        slug: postsTable.slug,
+        excerpt: postsTable.excerpt,
+        createdAt: postsTable.createdAt,
+        baselineLikes: (postsTable as any).baselineLikes,
+        baselineDislikes: (postsTable as any).baselineDislikes,
+        likesCount: postsTable.likesCount,
+        dislikesCount: postsTable.dislikesCount
+      }).from(postsTable).where(eq(postsTable.id, effectiveId)).limit(1);
+
+      if (!postRow[0]) {
+        try {
+          const mapped = await db
+            .select({ id: postsTable.id })
+            .from(postsTable)
+            .where(sql`(metadata->>'wordpressId')::int = ${effectiveId}`)
+            .limit(1);
+          if (mapped[0]?.id) {
+            effectiveId = Number(mapped[0].id);
+            postRow = await db.select({
+              id: postsTable.id,
+              title: postsTable.title,
+              slug: postsTable.slug,
+              excerpt: postsTable.excerpt,
+              createdAt: postsTable.createdAt,
+              baselineLikes: (postsTable as any).baselineLikes,
+              baselineDislikes: (postsTable as any).baselineDislikes,
+              likesCount: postsTable.likesCount,
+              dislikesCount: postsTable.dislikesCount
+            }).from(postsTable).where(eq(postsTable.id, effectiveId)).limit(1);
+          }
+        } catch (_) { /* no-op */ }
+      }
+
+      const post = postRow[0];
+      if (!post) throw createError.notFound('Post not found');
+
+      // Analytics for this post
+      const [a] = await db.select({
+        postId: analyticsTable.postId,
+        pageViews: analyticsTable.pageViews,
+        uniqueVisitors: analyticsTable.uniqueVisitors,
+        averageReadTime: analyticsTable.averageReadTime,
+        bounceRate: analyticsTable.bounceRate,
+        updatedAt: analyticsTable.updatedAt
+      }).from(analyticsTable).where(eq(analyticsTable.postId, effectiveId)).limit(1);
+
+      const baselineLikes = Number((post as any).baselineLikes ?? 0);
+      const baselineDislikes = Number((post as any).baselineDislikes ?? 0);
+      const likesCount = Number((post as any).likesCount ?? 0);
+      const dislikesCount = Number((post as any).dislikesCount ?? 0);
+
+      return res.json({
+        id: Number(post.id),
+        title: post.title,
+        slug: post.slug,
+        excerpt: post.excerpt,
+        createdAt: post.createdAt,
+        reactions: {
+          baselineLikes,
+          baselineDislikes,
+          likesCount,
+          dislikesCount,
+          totals: {
+            likes: baselineLikes + likesCount,
+            dislikes: baselineDislikes + dislikesCount
+          }
+        },
+        analytics: a ? {
+          pageViews: Number(a.pageViews || 0),
+          uniqueVisitors: Number(a.uniqueVisitors || 0),
+          averageReadTime: Number(a.averageReadTime || 0),
+          bounceRate: Number(a.bounceRate || 0),
+          updatedAt: a.updatedAt
+        } : null
+      });
+    } catch (error) {
+      postsLogger.error('Error building post summary', { postId: id, error: error instanceof Error ? error.message : String(error) });
+      throw createError.internal('Failed to fetch post summary');
+    }
+  })
+);
+
+/**
+ * GET /api/posts/summary?ids=1,2,3
+ * Batch post summary combining post fields + reactions + analytics.
+ */
+router.get('/summary',
+  apiRateLimiter,
+  asyncHandler(async (req: Request, res: Response) => {
+    try {
+      const raw = (req.query.ids || req.query.id || '') as string | string[];
+      const list = Array.isArray(raw)
+        ? raw.join(',').split(',').map(s => Number(s.trim())).filter(n => Number.isFinite(n))
+        : String(raw || '').split(',').map(s => Number(s.trim())).filter(n => Number.isFinite(n));
+
+      const ids = Array.from(new Set(list)).slice(0, 200);
+      if (!ids.length) {
+        return res.json({ results: [] });
+      }
+
+      // Fetch rows for direct local post IDs
+      const directRows = await db.select({
+        id: postsTable.id,
+        title: postsTable.title,
+        slug: postsTable.slug,
+        excerpt: postsTable.excerpt,
+        createdAt: postsTable.createdAt,
+        baselineLikes: (postsTable as any).baselineLikes,
+        baselineDislikes: (postsTable as any).baselineDislikes,
+        likesCount: postsTable.likesCount,
+        dislikesCount: postsTable.dislikesCount,
+      }).from(postsTable).where(inArray(postsTable.id, ids));
+
+      // Fetch rows mapped by WordPress external IDs in one query
+      const mappedRowsRes = await db.execute(sql`
+        SELECT id, title, slug, excerpt, created_at AS "createdAt",
+               baseline_likes AS "baselineLikes",
+               baseline_dislikes AS "baselineDislikes",
+               likes_count AS "likesCount",
+               dislikes_count AS "dislikesCount",
+               (metadata->>'wordpressId')::int AS "wordpressId"
+        FROM posts
+        WHERE (metadata->>'wordpressId')::int IN (${ids.join(',')})
+      `);
+      const mappedRows = (mappedRowsRes as any).rows || [];
+
+      const directMap = new Map<number, any>();
+      for (const r of directRows) directMap.set(Number(r.id), r);
+
+      const wpIdToLocal = new Map<number, any>();
+      for (const r of mappedRows) {
+        const wpId = Number((r as any).wordpressId);
+        if (Number.isFinite(wpId)) wpIdToLocal.set(wpId, r);
+      }
+
+      // Build list of local post ids for analytics join
+      const localPostIds: number[] = [
+        ...directRows.map((r: any) => Number(r.id)),
+        ...mappedRows.map((r: any) => Number(r.id)),
+      ].filter((n, i, arr) => Number.isFinite(n) && arr.indexOf(n) === i);
+
+      let analyticsRows: any[] = [];
+      if (localPostIds.length) {
+        const aRes = await db.select({
+          postId: analyticsTable.postId,
+          pageViews: analyticsTable.pageViews,
+          uniqueVisitors: analyticsTable.uniqueVisitors,
+          averageReadTime: analyticsTable.averageReadTime,
+          bounceRate: analyticsTable.bounceRate,
+          updatedAt: analyticsTable.updatedAt
+        }).from(analyticsTable).where(inArray(analyticsTable.postId, localPostIds));
+        analyticsRows = aRes as any[];
+      }
+      const analyticsMap = new Map<number, any>();
+      for (const a of analyticsRows) analyticsMap.set(Number(a.postId), a);
+
+      const results: any[] = [];
+      for (const rawId of ids) {
+        const row = directMap.get(rawId) || wpIdToLocal.get(rawId);
+        if (!row) continue;
+        const a = analyticsMap.get(Number(row.id));
+
+        const baselineLikes = Number((row as any).baselineLikes ?? 0);
+        const baselineDislikes = Number((row as any).baselineDislikes ?? 0);
+        const likesCount = Number((row as any).likesCount ?? 0);
+        const dislikesCount = Number((row as any).dislikesCount ?? 0);
+
+        results.push({
+          id: Number(row.id),
+          title: row.title,
+          slug: row.slug,
+          excerpt: row.excerpt,
+          createdAt: row.createdAt,
+          reactions: {
+            baselineLikes,
+            baselineDislikes,
+            likesCount,
+            dislikesCount,
+            totals: {
+              likes: baselineLikes + likesCount,
+              dislikes: baselineDislikes + dislikesCount
+            }
+          },
+          analytics: a ? {
+            pageViews: Number(a.pageViews || 0),
+            uniqueVisitors: Number(a.uniqueVisitors || 0),
+            averageReadTime: Number(a.averageReadTime || 0),
+            bounceRate: Number(a.bounceRate || 0),
+            updatedAt: a.updatedAt
+          } : null
+        });
+      }
+
+      return res.json({ results });
+    } catch (error) {
+      postsLogger.error('Error building post summary batch', { error: error instanceof Error ? error.message : String(error) });
+      throw createError.internal('Failed to fetch post summaries');
+    }
   })
 );
 

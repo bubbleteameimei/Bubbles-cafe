@@ -50,7 +50,7 @@ function getUserKey(req: Request): string {
 	return (req as any).sessionID ? `anon:${(req as any).sessionID}` : 'anon';
 }
 
-function getSupabaseClientFromRequest(req: any) {
+function getSupabaseClientFromRequest(req: any): any | null {
   const header = req.get?.('Authorization') || '';
   const bearer = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : undefined;
   if (!bearer) return null;
@@ -208,7 +208,7 @@ router.post(
 		}
 
 		const counts = await storage.getCommentVoteCounts(commentId);
-		res.json({ success: true, ...counts });
+		returnon({ success: true, ...counts });
 	})
 );
 

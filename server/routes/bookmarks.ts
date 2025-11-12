@@ -229,6 +229,89 @@ router.get('/', isAuthenticated, async (req, res) => {
 });
 
 /**
+ * GET /api/bookmarks/tag/:tag
+ * 
+ * Get bookmarks filtered by tag for the current authenticated user.
+ * Uses Supabase JWT + RLS when available, with server DB fallback.
+ */
+router.get('/tag/:tag', isAuthenticated, async (req, res) => {
+  try {
+    const tag = String(req.params.tag || '').trim();
+    if (!tag) {
+      res.status(400).json({ success: false, message: 'Tag is required' });
+      return;
+    }
+
+    // Supabase path first
+    const supabase = getSupabaseClientFromRequest(req);
+    if (supabase) {
+      const userIdNum = await resolveNumericUserId(req, supabase);
+      if (Number.isFinite(userIdNum)) {
+        const { data: rows, error: selErr } = await supabase
+          .from('bookmarks')
+          .select('id, user_id, post_id, created_at, notes, tags, last_position')
+          .eq('user_id', userIdNum)
+          .contains('tags', [tag])
+          .order('created_at', { ascending: false });
+        if (!selErr && Array.isArray(rows)) {
+          const postIds = rows.map((b: any) => Number(b.post_id)).filter((n: number) => Number.isFinite(n));
+          let postsMap = new Map<number, any>();
+          if (postIds.length) {
+            const { data: postsData } = await supabase
+              .from('posts')
+              .select('id, title, slug, excerpt, created_at')
+              .in('id', postIds);
+            (postsData || []).forEach((p: any) => postsMap.set(Number(p.id), {
+              id: Number(p.id),
+              title: p.title,
+              slug: p.slug,
+              excerpt: p.excerpt,
+              createdAt: p.created_at
+            }));
+          }
+          const enriched = rows.map((b: any) => ({
+            id: b.id,
+            userId: userIdNum,
+            postId: Number(b.post_id),
+            createdAt: b.created_at,
+            notes: b.notes ?? null,
+            tags: Array.isArray(b.tags) ? b.tags : null,
+            lastPosition: b.last_position ?? '0',
+            post: postsMap.get(Number(b.post_id))
+          })).filter((b: any) => !!b.post);
+          return res.json(enriched);
+        }
+        logger.warn('[Bookmarks] Supabase tag fetch failed, falling back to server DB', { error: selErr?.message });
+      }
+    }
+
+    // Server DB fallback
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+      return;
+    }
+
+    try {
+      const result = await storage.getBookmarksByTag(userId, tag);
+      res.json(result);
+      return;
+    } catch (e) {
+      logger.error('[Bookmarks] Error fetching bookmarks by tag', { error: e instanceof Error ? e.message : String(e) });
+      res.status(500).json({ success: false, message: 'Failed to fetch bookmarks by tag' });
+      return;
+    }
+  } catch (error: any) {
+    logger.error('[Bookmarks] Error in tag route', { error: error.message });
+    res.status(500).json({ success: false, message: 'Internal server error' });
+    return;
+  }
+});
+
+/**
  * GET /api/bookmarks/:postId
  * 
  * Check if a post is bookmarked by the current user
