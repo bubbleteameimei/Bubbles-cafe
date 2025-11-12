@@ -75,31 +75,12 @@ export function LikeDislike({
   const [liked, setLiked] = useState(userLikeStatus ? userLikeStatus === 'like' : initialLocalState === 'like');
   const [disliked, setDisliked] = useState(userLikeStatus ? userLikeStatus === 'dislike' : initialLocalState === 'dislike');
 
-  // Deterministic baseline for immediate non-zero display before server fetch
-  const initialBaseline = (() => {
-    try {
-      const seedFrom = (slug && slug.trim().length > 0) ? slug.trim() : String(postId);
-      let h = 0;
-      for (let i = 0; i < seedFrom.length; i++) {
-        h = (h << 5) - h + seedFrom.charCodeAt(i);
-        h |= 0;
-      }
-      const seededRandom = (n: number) => {
-        const x = Math.sin(n) * 10000;
-        return x - Math.floor(x);
-      };
-      const seed = Math.abs(h) * 12345;
-      const baseLikes = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100; // 100–200
-      const baseDislikes = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3; // 3–7
-      return { baseLikes, baseDislikes };
-    } catch {
-      return { baseLikes: 150, baseDislikes: 5 };
-    }
-  })();
+  // No baseline seeding: start from zero and rely on server counts
+  const initialBaseline = { baseLikes: 0, baseDislikes: 0 };
 
   const [stats, setStats] = useState<Stats>({
-    likes: initialBaseline.baseLikes,
-    dislikes: initialBaseline.baseDislikes,
+    likes: 0,
+    dislikes: 0,
     baseStats: { likes: 0, dislikes: 0 },
     userInteracted: false
   });
@@ -122,32 +103,12 @@ export function LikeDislike({
           if (!mounted) return;
         }
 
-        let likes = Number(data?.totals?.likes ?? 0);
-        let dislikes = Number(data?.totals?.dislikes ?? 0);
-        let baseLikes = Number(data?.baselineLikes ?? 0);
-        let baseDislikes = Number(data?.baselineDislikes ?? 0);
+        let likes = Number((data as any)?.likesCount ?? (data as any)?.totals?.likes ?? 0);
+        let dislikes = Number((data as any)?.dislikesCount ?? (data as any)?.totals?.dislikes ?? 0);
+        let baseLikes = 0;
+        let baseDislikes = 0;
 
-        // Fallback if API returned zeros (preview/db unavailable): compute deterministic baseline
-        if ((likes === 0 && dislikes === 0) && (baseLikes === 0 || baseDislikes === 0)) {
-          const seedFrom = (slug && slug.trim().length > 0) ? slug.trim() : String(postId);
-          const hash = (s: string) => {
-            let h = 0;
-            for (let i = 0; i < s.length; i++) {
-              h = (h << 5) - h + s.charCodeAt(i);
-              h |= 0;
-            }
-            return Math.abs(h);
-          };
-          const seededRandom = (n: number) => {
-            const x = Math.sin(n) * 10000;
-            return x - Math.floor(x);
-          };
-          const seed = hash(seedFrom) * 12345;
-          baseLikes = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100;
-          baseDislikes = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3;
-          likes = baseLikes;
-          dislikes = baseDislikes;
-        }
+        
 
         const computedStats: Stats = {
           likes,
@@ -179,29 +140,12 @@ export function LikeDislike({
           window.dispatchEvent(new CustomEvent('reaction:updated', { detail }));
         } catch {}
       } catch (error) {
-        console.warn('[LikeDislike] Failed to load reactions, applying deterministic baseline fallback:', error);
-        // Compute deterministic baseline locally (preview-safe)
-        const seedFrom = (slug && slug.trim().length > 0) ? slug.trim() : String(postId);
-        const hash = (s: string) => {
-          let h = 0;
-          for (let i = 0; i < s.length; i++) {
-            h = (h << 5) - h + s.charCodeAt(i);
-            h |= 0;
-          }
-          return Math.abs(h);
-        };
-        const seededRandom = (n: number) => {
-          const x = Math.sin(n) * 10000;
-          return x - Math.floor(x);
-        };
-        const seed = hash(seedFrom) * 12345;
-        const baseLikes = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100;
-        const baseDislikes = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3;
+        console.warn('[LikeDislike] Failed to load reactions, showing zero counts fallback:', error);
 
         const fallbackStats: Stats = {
-          likes: baseLikes,
-          dislikes: baseDislikes,
-          baseStats: { likes: baseLikes, dislikes: baseDislikes },
+          likes: 0,
+          dislikes: 0,
+          baseStats: { likes: 0, dislikes: 0 },
           userInteracted: false
         };
         setStats(fallbackStats);
@@ -282,32 +226,10 @@ export function LikeDislike({
   };
 
   const applyServerTotals = (data: any) => {
-    let likes = Number(data?.totals?.likes ?? 0);
-    let dislikes = Number(data?.totals?.dislikes ?? 0);
-    let baseLikes = Number(data?.baselineLikes ?? 0);
-    let baseDislikes = Number(data?.baselineDislikes ?? 0);
-
-    // Preview fallback: if server returns zeros, compute deterministic baseline locally
-    if ((likes === 0 && dislikes === 0) && (baseLikes === 0 || baseDislikes === 0)) {
-      const seedFrom = (slug && slug.trim().length > 0) ? slug.trim() : String(postId);
-      const hash = (s: string) => {
-        let h = 0;
-        for (let i = 0; i < s.length; i++) {
-          h = (h << 5) - h + s.charCodeAt(i);
-          h |= 0;
-        }
-        return Math.abs(h);
-      };
-      const seededRandom = (n: number) => {
-        const x = Math.sin(n) * 10000;
-        return x - Math.floor(x);
-      };
-      const seed = hash(seedFrom) * 12345;
-      baseLikes = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100;
-      baseDislikes = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3;
-      likes = baseLikes;
-      dislikes = baseDislikes;
-    }
+    let likes = Number((data as any)?.likesCount ?? (data as any)?.totals?.likes ?? 0);
+    let dislikes = Number((data as any)?.dislikesCount ?? (data as any)?.totals?.dislikes ?? 0);
+    let baseLikes = 0;
+    let baseDislikes = 0;
 
     const newStats: Stats = {
       likes,
@@ -329,32 +251,16 @@ export function LikeDislike({
   };
 
   const deterministicBaseline = (): { baseLikes: number; baseDislikes: number } => {
-    const seedFrom = (slug && slug.trim().length > 0) ? slug.trim() : String(postId);
-    const hash = (s: string) => {
-      let h = 0;
-      for (let i = 0; i < s.length; i++) {
-        h = (h << 5) - h + s.charCodeAt(i);
-        h |= 0;
-      }
-      return Math.abs(h);
-    };
-    const seededRandom = (n: number) => {
-      const x = Math.sin(n) * 10000;
-      return x - Math.floor(x);
-    };
-    const seed = hash(seedFrom) * 12345;
-    const baseLikes = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100;
-    const baseDislikes = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3;
-    return { baseLikes, baseDislikes };
+    return { baseLikes: 0, baseDislikes: 0 };
   };
 
   const composeTotals = (s: Stats): import("@/api/reactions").ReactionTotals => {
     return {
       postId,
-      baselineLikes: Number(s.baseStats.likes || 0),
-      baselineDislikes: Number(s.baseStats.dislikes || 0),
-      likesCount: Math.max(0, Number(s.likes) - Number(s.baseStats.likes || 0)),
-      dislikesCount: Math.max(0, Number(s.dislikes) - Number(s.baseStats.dislikes || 0)),
+      baselineLikes: 0,
+      baselineDislikes: 0,
+      likesCount: Math.max(0, Number(s.likes)),
+      dislikesCount: Math.max(0, Number(s.dislikes)),
       totals: {
         likes: Number(s.likes),
         dislikes: Number(s.dislikes),
