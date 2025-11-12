@@ -263,7 +263,7 @@ export function LikeDislike({
       try { es?.close(); } catch {}
       es = null;
     };
-  }, [postId]););bscribe to server-sent events for live reaction totals
+  }, [postId]);););bscribe to server-sent events for live reaction totals
   useEffect(() => {
     const base = getApiBaseUrl();
     const url = `${base ? base.replace(/\/+$/,]);
