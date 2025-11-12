@@ -400,10 +400,16 @@ router.get('/:id/reactions',
       let baselineLikes = Number((post as any).baselineLikes ?? 0);
       let baselineDislikes = Number((post as any).baselineDislikes ?? 0);
 
-      // One-time seeding: if baselines are zero, generate random values and persist
+      // One-time seeding: if baselines are zero, generate deterministic values and persist
       if (baselineLikes === 0 || baselineDislikes === 0) {
-        const likesBase = Math.floor(Math.random() * (200 - 100 + 1)) + 100; // 100–200
-        const dislikesBase = Math.floor(Math.random() * (7 - 3 + 1)) + 3; // 3–7
+        // Seed using slug when available, otherwise fall back to effectiveId
+        const seedSource = String(((post as any)?.slug ?? effectiveId));
+        // Simple hash
+        let h = 0;
+        for (let i = 0; i < seedSource.length; i++) { h = (h << 5) - h + seedSource.charCodeAt(i); h |= 0; }
+        const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
+        const likesBase = Math.floor(seededRandom(Math.abs(h) * 12345) * (200 - 100 + 1)) + 100; // 100–200
+        const dislikesBase = Math.floor(seededRandom(Math.abs(h) * 12345 + 999) * (7 - 3 + 1)) + 3; // 3–7
         try {
           await db.update(postsTable)
             .set({ baselineLikes: likesBase, baselineDislikes: dislikesBase })
@@ -554,9 +560,13 @@ router.get('/reactions-batch',
             }
           } catch (_) { /* non-fatal */ }
 
-          // Fallback result when still missing
-          const likesBase = Math.floor(Math.random() * (200 - 100 + 1)) + 100;
-          const dislikesBase = Math.floor(Math.random() * (7 - 3 + 1)) + 3;
+          // Deterministic fallback result when still missing (no DB row)
+          const seedSource = String(rawId);
+          let h = 0;
+          for (let i = 0; i < seedSource.length; i++) { h = (h << 5) - h + seedSource.charCodeAt(i); h |= 0; }
+          const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
+          const likesBase = Math.floor(seededRandom(Math.abs(h) * 12345) * (200 - 100 + 1)) + 100;
+          const dislikesBase = Math.floor(seededRandom(Math.abs(h) * 12345 + 999) * (7 - 3 + 1)) + 3;
 
           results.push({
             postId: Number(rawId),
