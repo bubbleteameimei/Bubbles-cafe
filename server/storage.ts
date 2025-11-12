@@ -1649,24 +1649,9 @@ export class DatabaseStorage implements IStorage {
         matureContent: false // Default value for mature_content
       };
 
-      // Compute deterministic baseline using slug (fixed once per post)
-      const hashSlug = (s: string): number => {
-        let hash = 0;
-        for (let i = 0; i < s.length; i++) {
-          hash = (hash << 5) - hash + s.charCodeAt(i);
-          hash |= 0;
-        }
-        return Math.abs(hash);
-      };
-      const seededRandom = (n: number) => {
-        const x = Math.sin(n) * 10000;
-        return x - Math.floor(x);
-      };
-      const seedNumber = basePost.slug ? hashSlug(basePost.slug) : Math.floor(Math.random() * 1e6);
-      const seed = seedNumber * 12345;
-      // Baseline ranges: likes 100–200, dislikes 3–7 (persisted once)
-      const baselineLikes = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100; // 100–200
-      const baselineDislikes = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3; // 3–7
+      // Compute baseline once per post using random ranges (persisted)
+      const baselineLikes = Math.floor(Math.random() * (200 - 100 + 1)) + 100; // 100–200
+      const baselineDislikes = Math.floor(Math.random() * (7 - 3 + 1)) + 3; // 3–7
 
       // Use raw SQL to avoid schema mismatches, only including fields that actually exist
       const result = await db.execute(sql`

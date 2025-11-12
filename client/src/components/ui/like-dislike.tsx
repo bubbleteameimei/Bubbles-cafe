@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { fetchReactions, submitReaction } from "@/api/reactions";
-import { getApiBaseUrl } from "@/lib/asset-path";
+
 
 import type { ReactionTotals } from "@/api/reactions";
 
@@ -103,10 +103,10 @@ export function LikeDislike({
           if (!mounted) return;
         }
 
-        let likes = Number((data as any)?.likesCount ?? (data as any)?.totals?.likes ?? 0);
-        let dislikes = Number((data as any)?.dislikesCount ?? (data as any)?.totals?.dislikes ?? 0);
-        let baseLikes = 0;
-        let baseDislikes = 0;
+        let likes = Number(data?.totals?.likes ?? 0);
+        let dislikes = Number(data?.totals?.dislikes ?? 0);
+        let baseLikes = Number(data?.baselineLikes ?? 0);
+        let baseDislikes = Number(data?.baselineDislikes ?? 0);
 
         
 
@@ -184,30 +184,7 @@ export function LikeDislike({
     };
   }, [postId, slug, source, onUpdate, initialTotals, storageKey]);
 
-  // Subscribe to server-sent events for live reaction totals
-  useEffect(() => {
-    const base = getApiBaseUrl();
-    const url = `${base ? base.replace(/\/+$/, '') : ''}/api/posts/${postId}/reactions/stream`;
-    let es: EventSource | null = null;
-
-    try {
-      es = new EventSource(url, { withCredentials: true } as any);
-      const onInitial = (e: MessageEvent) => {
-        try { applyServerTotals(JSON.parse(e.data)); } catch {}
-      };
-      const onUpdateEvt = (e: MessageEvent) => {
-        try { applyServerTotals(JSON.parse(e.data)); } catch {}
-      };
-      es.addEventListener('initial', onInitial as unknown as EventListener);
-      es.addEventListener('update', onUpdateEvt as unknown as EventListener);
-      es.addEventListener('ping', (() => {}) as unknown as EventListener);
-    } catch {}
-
-    return () => {
-      try { es?.close(); } catch {}
-      es = null;
-    };
-  }, [postId]);
+  
   
 
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
@@ -226,10 +203,10 @@ export function LikeDislike({
   };
 
   const applyServerTotals = (data: any) => {
-    let likes = Number((data as any)?.likesCount ?? (data as any)?.totals?.likes ?? 0);
-    let dislikes = Number((data as any)?.dislikesCount ?? (data as any)?.totals?.dislikes ?? 0);
-    let baseLikes = 0;
-    let baseDislikes = 0;
+    const likes = Number(data?.totals?.likes ?? 0);
+    const dislikes = Number(data?.totals?.dislikes ?? 0);
+    const baseLikes = Number(data?.baselineLikes ?? 0);
+    const baseDislikes = Number(data?.baselineDislikes ?? 0);
 
     const newStats: Stats = {
       likes,
@@ -246,7 +223,14 @@ export function LikeDislike({
 
     // Broadcast update so lists can sync without waiting for refetch
     try {
-      window.dispatchEvent(new CustomEvent('reaction:updated', { detail: data }));
+      window.dispatchEvent(new CustomEvent('reaction:updated', { detail: {
+        postId,
+        baselineLikes: baseLikes,
+        baselineDislikes: baseDislikes,
+        likesCount: Math.max(0, Number(likes) - Number(baseLikes)),
+        dislikesCount: Math.max(0, Number(dislikes) - Number(baseDislikes)),
+        totals: { likes: Number(likes), dislikes: Number(dislikes) }
+      }}));
     } catch {}
   };
 
@@ -255,15 +239,19 @@ export function LikeDislike({
   };
 
   const composeTotals = (s: Stats): import("@/api/reactions").ReactionTotals => {
+    const baseLikes = Number(s.baseStats.likes || 0);
+    const baseDislikes = Number(s.baseStats.dislikes || 0);
+    const totalsLikes = Number(s.likes);
+    const totalsDislikes = Number(s.dislikes);
     return {
       postId,
-      baselineLikes: 0,
-      baselineDislikes: 0,
-      likesCount: Math.max(0, Number(s.likes)),
-      dislikesCount: Math.max(0, Number(s.dislikes)),
+      baselineLikes: baseLikes,
+      baselineDislikes: baseDislikes,
+      likesCount: Math.max(0, totalsLikes - baseLikes),
+      dislikesCount: Math.max(0, totalsDislikes - baseDislikes),
       totals: {
-        likes: Number(s.likes),
-        dislikes: Number(s.dislikes),
+        likes: totalsLikes,
+        dislikes: totalsDislikes,
       }
     };
   };
@@ -273,9 +261,10 @@ export function LikeDislike({
     const nextDisliked = nextLiked ? false : disliked;
 
     // Optimistic UI update
-    const { baseLikes, baseDislikes } = deterministicBaseline();
-    let likes = stats.likes || baseLikes;
-    let dislikes = stats.dislikes || baseDislikes;
+    const baseLikes = Number(stats.baseStats.likes || 0);
+    const baseDislikes = Number(stats.baseStats.dislikes || 0);
+    let likes = Number(stats.likes || baseLikes);
+    let dislikes = Number(stats.dislikes || baseDislikes);
 
     if (!liked && !disliked && nextLiked) {
       likes += 1;
@@ -326,9 +315,10 @@ export function LikeDislike({
     const nextLiked = nextDisliked ? false : liked;
 
     // Optimistic UI update
-    const { baseLikes, baseDislikes } = deterministicBaseline();
-    let likes = stats.likes || baseLikes;
-    let dislikes = stats.dislikes || baseDislikes;
+    const baseLikes = Number(stats.baseStats.likes || 0);
+    const baseDislikes = Number(stats.baseStats.dislikes || 0);
+    let likes = Number(stats.likes || baseLikes);
+    let dislikes = Number(stats.dislikes || baseDislikes);
 
     if (!disliked && !liked && nextDisliked) {
       dislikes += 1;
