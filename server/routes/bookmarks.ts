@@ -11,6 +11,7 @@ import { db } from '../db';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { bookmarks, posts as postsTable } from '../../shared/schema';
 import { storage } from '../storage';
+import { createSupabaseClientWithToken } from '../utils/supabase';
 
 const router = Router();
 
@@ -70,6 +71,53 @@ async function resolveLocalPostId(rawId: number): Promise<number> {
   }
 }
 
+// Supabase helpers
+function getSupabaseClientFromRequest(req: any) {
+  const header = req.get?.('Authorization') || '';
+  const bearer = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : undefined;
+  if (!bearer) return null;
+  try {
+    return createSupabaseClientWithToken(bearer);
+  } catch {
+    return null;
+  }
+}
+
+async function resolveNumericUserId(req: any, supabase: any): Promise<number | null> {
+  try {
+    const { data: userResult, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !userResult?.user) return null;
+    const uid = userResult.user.id;
+    const email = (userResult.user.email || '').toLowerCase();
+
+    const { data: byUid, error: uidErr } = await supabase
+      .from('users')
+      .select('id, metadata')
+      .eq('metadata->>supabaseUserId', uid)
+      .limit(1)
+      .maybeSingle();
+
+    if (!uidErr && byUid?.id) {
+      return Number(byUid.id);
+    }
+
+    if (email) {
+      const { data: byEmail, error: emailErr } = await supabase
+        .from('users')
+        .select('id')
+        .ilike('email', email)
+        .limit(1)
+        .maybeSingle();
+      if (!emailErr && byEmail?.id) {
+        return Number(byEmail.id);
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * GET /api/bookmarks
  * 
@@ -77,8 +125,52 @@ async function resolveLocalPostId(rawId: number): Promise<number> {
  */
 router.get('/', isAuthenticated, async (req, res) => {
   try {
+    // Try Supabase path first
+    const supabase = getSupabaseClientFromRequest(req);
+    if (supabase) {
+      const userIdNum = await resolveNumericUserId(req, supabase);
+      if (Number.isFinite(userIdNum)) {
+        const { data: userBookmarks, error: bkErr } = await supabase
+          .from('bookmarks')
+          .select('id, user_id, post_id, created_at, notes, tags, last_position')
+          .eq('user_id', userIdNum)
+          .order('created_at', { ascending: false });
+        if (!bkErr && Array.isArray(userBookmarks)) {
+          const postIds = userBookmarks.map((b: any) => Number(b.post_id)).filter((n: number) => Number.isFinite(n));
+          let postsMap = new Map<number, any>();
+          if (postIds.length) {
+            const { data: postsData } = await supabase
+              .from('posts')
+              .select('id, title, slug, excerpt, created_at')
+              .in('id', postIds);
+            (postsData || []).forEach((p: any) => postsMap.set(Number(p.id), {
+              id: Number(p.id),
+              title: p.title,
+              slug: p.slug,
+              excerpt: p.excerpt,
+              createdAt: p.created_at
+            }));
+          }
+          const enriched = userBookmarks
+            .map((b: any) => ({
+              id: b.id,
+              userId: userIdNum,
+              postId: Number(b.post_id),
+              createdAt: b.created_at,
+              notes: b.notes ?? null,
+              tags: Array.isArray(b.tags) ? b.tags : null,
+              lastPosition: b.last_position ?? '0',
+              post: postsMap.get(Number(b.post_id))
+            }))
+            .filter((b: any) => !!b.post);
+          return res.json(enriched);
+        }
+        logger.warn('[Bookmarks] Supabase fetch failed, falling back to server DB', { error: bkErr?.message });
+      }
+    }
+
+    // Server DB fallback path
     const userId = req.user?.id;
-    
     if (!userId) {
       res.status(401).json({
         success: false,
@@ -143,17 +235,7 @@ router.get('/', isAuthenticated, async (req, res) => {
  */
 router.get('/:postId', isAuthenticated, async (req, res) => {
   try {
-    const userId = req.user?.id;
     const rawPostId = parseInt(req.params.postId);
-    
-    if (!userId) {
-      res.status(401).json({
-        success: false,
-        message: 'User not authenticated'
-      });
-      return;
-    }
-    
     if (isNaN(rawPostId)) {
       res.status(400).json({
         success: false,
@@ -164,6 +246,40 @@ router.get('/:postId', isAuthenticated, async (req, res) => {
 
     // Resolve local post ID for WordPress IDs
     const postId = await resolveLocalPostId(rawPostId);
+
+    // Supabase path first
+    const supabase = getSupabaseClientFromRequest(req);
+    if (supabase) {
+      const userIdNum = await resolveNumericUserId(req, supabase);
+      if (Number.isFinite(userIdNum)) {
+        const { data: rows, error: selErr } = await supabase
+          .from('bookmarks')
+          .select('id, user_id, post_id, created_at, notes, tags, last_position')
+          .eq('user_id', userIdNum)
+          .eq('post_id', postId)
+          .limit(1);
+        if (!selErr) {
+          const bookmarked = Array.isArray(rows) && rows.length > 0;
+          const bookmark = bookmarked ? rows[0] : null;
+          return res.json({
+            success: true,
+            bookmarked,
+            bookmark
+          });
+        }
+        logger.warn('[Bookmarks] Supabase check failed, falling back to server DB', { error: selErr?.message });
+      }
+    }
+
+    // Server DB fallback
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+      return;
+    }
     
     const bookmark = await db
       .select()
@@ -205,18 +321,8 @@ router.get('/:postId', isAuthenticated, async (req, res) => {
  */
 router.post('/:postId', isAuthenticated, async (req, res) => {
   try {
-    const userId = req.user?.id;
     const rawPostId = parseInt(req.params.postId);
     const { notes, tags } = (req.body || {}) as { notes?: string; tags?: string[] };
-    
-    if (!userId) {
-      res.status(401).json({
-        success: false,
-        message: 'User not authenticated'
-      });
-      return;
-    }
-    
     if (isNaN(rawPostId)) {
       res.status(400).json({
         success: false,
@@ -227,6 +333,78 @@ router.post('/:postId', isAuthenticated, async (req, res) => {
 
     // Resolve local post ID for WordPress IDs
     const postId = await resolveLocalPostId(rawPostId);
+
+    // Supabase path first
+    const supabase = getSupabaseClientFromRequest(req);
+    if (supabase) {
+      const userIdNum = await resolveNumericUserId(req, supabase);
+      if (Number.isFinite(userIdNum)) {
+        // Check existing
+        const { data: existingRows, error: selErr } = await supabase
+          .from('bookmarks')
+          .select('id, user_id, post_id, notes, tags, last_position')
+          .eq('user_id', userIdNum)
+          .eq('post_id', postId)
+          .limit(1);
+        if (!selErr && existingRows && existingRows.length > 0) {
+          // Update details if provided
+          if (notes !== undefined || tags !== undefined) {
+            const { data: upd, error: updErr } = await supabase
+              .from('bookmarks')
+              .update({
+                ...(notes !== undefined ? { notes } : {}),
+                ...(Array.isArray(tags) ? { tags } : {}),
+              })
+              .eq('user_id', userIdNum)
+              .eq('post_id', postId)
+              .select()
+              .limit(1);
+            if (!updErr) {
+              return res.json({
+                success: true,
+                message: 'Post already bookmarked; details updated',
+                bookmark: upd && upd[0]
+              });
+            }
+          }
+          return res.json({
+            success: true,
+            message: 'Post already bookmarked',
+            bookmark: existingRows[0]
+          });
+        }
+        // Insert new bookmark
+        const { data: inserted, error: insErr } = await supabase
+          .from('bookmarks')
+          .insert({
+            user_id: userIdNum,
+            post_id: postId,
+            notes: notes ?? null,
+            tags: Array.isArray(tags) ? tags : null,
+            last_position: '0'
+          })
+          .select()
+          .limit(1);
+        if (!insErr) {
+          return res.status(201).json({
+            success: true,
+            message: 'Post bookmarked successfully',
+            bookmark: inserted && inserted[0]
+          });
+        }
+        logger.warn('[Bookmarks] Supabase insert failed, falling back to server DB', { error: insErr?.message });
+      }
+    }
+
+    // Server DB fallback
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+      return;
+    }
     
     // Check if already bookmarked
     const existingBookmark = await db
@@ -310,14 +488,8 @@ router.post('/:postId', isAuthenticated, async (req, res) => {
  */
 router.patch('/:postId', isAuthenticated, async (req, res) => {
   try {
-    const userId = req.user?.id;
     const rawPostId = parseInt(req.params.postId);
     const { notes, tags, lastPosition } = (req.body || {}) as { notes?: string; tags?: string[]; lastPosition?: string };
-    
-    if (!userId) {
-      res.status(401).json({ success: false, message: 'User not authenticated' });
-      return;
-    }
     if (isNaN(rawPostId)) {
       res.status(400).json({ success: false, message: 'Invalid post ID' });
       return;
@@ -325,7 +497,37 @@ router.patch('/:postId', isAuthenticated, async (req, res) => {
 
     const postId = await resolveLocalPostId(rawPostId);
 
-    const [updated] = await db
+    // Supabase path
+    const supabase = getSupabaseClientFromRequest(req);
+    if (supabase) {
+      const userIdNum = await resolveNumericUserId(req, supabase);
+      if (Number.isFinite(userIdNum)) {
+        const { data: updated, error: updErr } = await supabase
+          .from('bookmarks')
+          .update({
+            ...(notes !== undefined ? { notes } : {}),
+            ...(Array.isArray(tags) ? { tags } : {}),
+            ...(typeof lastPosition === 'string' ? { last_position: lastPosition } : {}),
+          })
+          .eq('user_id', userIdNum)
+          .eq('post_id', postId)
+          .select()
+          .limit(1);
+        if (!updErr && updated && updated.length > 0) {
+          return res.json({ success: true, bookmark: updated[0] });
+        }
+        logger.warn('[Bookmarks] Supabase update failed, falling back to server DB', { error: updErr?.message });
+      }
+    }
+
+    // Server DB fallback
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'User not authenticated' });
+      return;
+    }
+
+    const [updatedDb] = await db
       .update(bookmarks)
       .set({
         ...(notes !== undefined ? { notes } : {}),
@@ -335,12 +537,12 @@ router.patch('/:postId', isAuthenticated, async (req, res) => {
       .where(and(eq(bookmarks.userId, userId), eq(bookmarks.postId, postId)))
       .returning();
 
-    if (!updated) {
+    if (!updatedDb) {
       res.status(404).json({ success: false, message: 'Bookmark not found' });
       return;
     }
 
-    res.json({ success: true, bookmark: updated });
+    res.json({ success: true, bookmark: updatedDb });
     return;
   } catch (error: any) {
     logger.error('[Bookmarks] Error updating bookmark', {
@@ -360,17 +562,7 @@ router.patch('/:postId', isAuthenticated, async (req, res) => {
  */
 router.delete('/:postId', isAuthenticated, async (req, res) => {
   try {
-    const userId = req.user?.id;
     const rawPostId = parseInt(req.params.postId);
-    
-    if (!userId) {
-      res.status(401).json({
-        success: false,
-        message: 'User not authenticated'
-      });
-      return;
-    }
-    
     if (isNaN(rawPostId)) {
       res.status(400).json({
         success: false,
@@ -380,6 +572,42 @@ router.delete('/:postId', isAuthenticated, async (req, res) => {
     }
 
     const postId = await resolveLocalPostId(rawPostId);
+
+    // Supabase path
+    const supabase = getSupabaseClientFromRequest(req);
+    if (supabase) {
+      const userIdNum = await resolveNumericUserId(req, supabase);
+      if (Number.isFinite(userIdNum)) {
+        const { data: deleted, error: delErr } = await supabase
+          .from('bookmarks')
+          .delete()
+          .eq('user_id', userIdNum)
+          .eq('post_id', postId)
+          .select()
+          .limit(1);
+        if (!delErr) {
+          if (!deleted || deleted.length === 0) {
+            return res.status(404).json({ success: false, message: 'Bookmark not found' });
+          }
+          return res.json({
+            success: true,
+            message: 'Bookmark removed successfully',
+            bookmark: deleted[0]
+          });
+        }
+        logger.warn('[Bookmarks] Supabase delete failed, falling back to server DB', { error: delErr?.message });
+      }
+    }
+
+    // Server DB fallback
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+      return;
+    }
     
     const deletedBookmarks = await db
       .delete(bookmarks)

@@ -7,6 +7,7 @@ import { insertCommentSchema, updateCommentSchema } from "@shared/schema";
 import { apiRateLimiter } from '../middlewares/rate-limiter';
 import { moderateComment } from "../utils/comment-moderation";
 import { clearCacheItem } from '../middlewares/api-cache';
+import { createSupabaseClientWithToken } from '../utils/supabase';
 
 const router = Router();
 
@@ -47,6 +48,17 @@ function getUserKey(req: Request): string {
 	const userId = (req as any).user?.id;
 	if (userId !== undefined && userId !== null) return String(userId);
 	return (req as any).sessionID ? `anon:${(req as any).sessionID}` : 'anon';
+}
+
+function getSupabaseClientFromRequest(req: any) {
+  const header = req.get?.('Authorization') || '';
+  const bearer = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : undefined;
+  if (!bearer) return null;
+  try {
+    return createSupabaseClientWithToken(bearer);
+  } catch {
+    return null;
+  }
 }
 
 // GET /api/posts/:postId/comments - list comments for a post
@@ -144,6 +156,47 @@ router.post(
 		const { isUpvote } = req.body as z.infer<typeof voteBodySchema>;
 		const userKey = getUserKey(req);
 
+    // Try Supabase path first (authenticated users with JWT)
+    const supabase = getSupabaseClientFromRequest(req);
+    if (supabase) {
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes?.user?.id;
+      if (uid) {
+        // Check existing vote
+        const { data: existingRows, error: selErr } = await supabase
+          .from('comment_votes')
+          .select('id, is_upvote')
+          .eq('comment_id', commentId)
+          .eq('user_id', uid)
+          .limit(1);
+        if (!selErr) {
+          const existing = existingRows && existingRows[0];
+          if (!existing) {
+            await supabase
+              .from('comment_votes')
+              .insert({ comment_id: commentId, user_id: uid, is_upvote: isUpvote });
+          } else if (existing.is_upvote !== isUpvote) {
+            await supabase
+              .from('comment_votes')
+              .update({ is_upvote: isUpvote })
+              .eq('comment_id', commentId)
+              .eq('user_id', uid);
+          } else {
+            // Toggle off (delete)
+            await supabase
+              .from('comment_votes')
+              .delete()
+              .eq('comment_id', commentId)
+              .eq('user_id', uid);
+          }
+          // Counts are computed via privileged server storage to avoid RLS limitations
+          const counts = await storage.getCommentVoteCounts(commentId);
+          return res.json({ success: true, ...counts });
+        }
+      }
+    }
+
+		// Fallback: session-based anonymous votes via server storage
 		const existing = await storage.getCommentVote(commentId, userKey);
 		if (!existing) {
 			await storage.createCommentVote(commentId, userKey, isUpvote);
