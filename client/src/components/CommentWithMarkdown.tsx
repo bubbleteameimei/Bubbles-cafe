@@ -56,10 +56,11 @@ export function CommentWithMarkdown({
               </span>
             </div>
             <div className="comment-content mt-2 text-sm prose prose-sm dark:prose-invert max-w-none">
-             <<React.Suspense fallback        remarkPlugins={[remarkGfm]}
-              >
-                {content}
-              </ReactMarkdown>
+              <React.Suspense fallback={<div className="text-xs text-muted-foreground">Loading content...</div>}>
+                <MarkdownRenderer>
+                  {content}
+                </MarkdownRenderer>
+              </React.Suspense>
             </div>
           </div>
         </div>

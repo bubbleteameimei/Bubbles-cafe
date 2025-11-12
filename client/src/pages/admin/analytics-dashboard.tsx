@@ -194,56 +194,26 @@ export default function AnalyticsDashboard() {
             </Card>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Reading Time</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {Math.floor((engagementData?.totalReadingTime || 0) / 60)}m {(engagementData?.totalReadingTime || 0) % 60}s
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Total time spent reading
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Avg. Session</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {Math.floor((engagementData?.averageSessionDuration || 0) / 60)}m {Math.floor((engagementData?.averageSessionDuration || 0) % 60)}s
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Average user session length
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Returning Users</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {engagementData?.returning.toLocaleString() || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Users with multiple visits
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-           <<React.Suspense fallbac={< Skeleton className="h-[350px] w-full" />}>
-             < DeviceAnalytics />
-          </  React.Suspense        </TabsContent>
+            <React.Suspense fallback={<Skeleton className="h-[350px] w-full" />}>
+              <DeviceAnalytics />
+            </React.Suspense>
+            <React.Suspense fallback={<Skeleton className="h-[350px] w-full" />}>
+              <ReadingAnalytics />
+            </React.Suspense>
+          </div>
+        </TabsContent>
 
         <TabsContent value="devices" className="space-y-4">
-         <<React.Suspense fallbac={< Skeleton className="h-[350TabsContent value="reading" className="space-y-4">
-          <ReadingAnalytics />
+          <React.Suspense fallback={<Skeleton className="h-[350px] w-full" />}>
+            <DeviceAnalytics />
+          </React.Suspense>
+        </TabsContent>
+
+        <TabsContent value="reading" className="space-y-4">
+          <React.Suspense fallback={<Skeleton className="h-[350px] w-full" />}>
+            <ReadingAnalytics />
+          </React.Suspense>
         </TabsContent>
       </Tabs>
 
