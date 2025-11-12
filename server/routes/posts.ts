@@ -400,8 +400,12 @@ router.get('/:id/reactions',
       let baselineLikes = Number((post as any).baselineLikes ?? 0);
       let baselineDislikes = Number((post as any).baselineDislikes ?? 0);
 
-      // One-time seeding: if baselines are zero, generate deterministic values and persist
-      if (baselineLikes === 0 || baselineDislikes === 0) {
+      // Determine if baseline values are missing or out of the desired range
+      const outOfRange =
+        baselineLikes < 100 || baselineLikes > 200 || baselineDislikes < 3 || baselineDislikes > 7;
+
+      // One-time seeding or correction: if baselines are zero OR out of desired range, generate deterministic values and persist
+      if (baselineLikes === 0 || baselineDislikes === 0 || outOfRange) {
         // Seed using slug when available, otherwise fall back to effectiveId
         const seedSource = String(((post as any)?.slug ?? effectiveId));
         // Simple hash
@@ -417,8 +421,8 @@ router.get('/:id/reactions',
           baselineLikes = likesBase;
           baselineDislikes = dislikesBase;
         } catch (_) {
-          baselineLikes = baselineLikes || likesBase;
-          baselineDislikes = baselineDislikes || dislikesBase;
+          baselineLikes = likesBase;
+          baselineDislikes = dislikesBase;
         }
       }
 
@@ -505,11 +509,17 @@ router.get('/reactions-batch',
           let bl = Number((row as any).baselineLikes ?? 0);
           let bd = Number((row as any).baselineDislikes ?? 0);
 
-          if (bl === 0 || bd === 0) {
-            const likesBase = Math.floor(Math.random() * (200 - 100 + 1)) + 100;
-            const dislikesBase = Math.floor(Math.random() * (7 - 3 + 1)) + 3;
-            bl = bl || likesBase;
-            bd = bd || dislikesBase;
+          // Correct missing or out-of-range baselines deterministically
+          const outOfRange = bl < 100 || bl > 200 || bd < 3 || bd > 7;
+          if (bl === 0 || bd === 0 || outOfRange) {
+            const seedSource = String(((row as any)?.slug ?? (row as any)?.id ?? rawId));
+            let h = 0;
+            for (let i = 0; i < seedSource.length; i++) { h = (h << 5) - h + seedSource.charCodeAt(i); h |= 0; }
+            const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
+            const likesBase = Math.floor(seededRandom(Math.abs(h) * 12345) * (200 - 100 + 1)) + 100;
+            const dislikesBase = Math.floor(seededRandom(Math.abs(h) * 12345 + 999) * (7 - 3 + 1)) + 3;
+            bl = likesBase;
+            bd = dislikesBase;
             baselineUpdates.push({ id: Number((row as any).id), likesBase: bl, dislikesBase: bd });
           }
 

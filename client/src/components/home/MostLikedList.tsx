@@ -63,8 +63,8 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
   const sortedByLikes = useMemo(() => {
     if (!Array.isArray(posts) || posts.length === 0) return [] as Post[];
     return [...posts].sort((a, b) => {
-      const ta = (totalsFromParent?.[a.id]?.totals?.likes ?? totalsMap[a.id]?.totals?.likes) ?? (a.likesCount || 0);
-      const tb = (totalsFromParent?.[b.id]?.totals?.likes ?? totalsMap[b.id]?.totals?.likes) ?? (b.likesCount || 0);
+      const ta = (totalsFromParent?.[a.id]?.totals?.likes ?? totalsMap[a.id]?.totals?.likes) ?? 0;
+      const tb = (totalsFromParent?.[b.id]?.totals?.likes ?? totalsMap[b.id]?.totals?.likes) ?? 0;
       return Number(tb) - Number(ta);
     });
   }, [posts, totalsMap, totalsFromParent]);

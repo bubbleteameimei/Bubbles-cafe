@@ -47,6 +47,7 @@ router.get('/', async (_req, res) => {
             slug: postsTable.slug,
             readingTimeMinutes: postsTable.readingTimeMinutes,
             themeCategory: postsTable.themeCategory,
+            baselineLikes: (postsTable as any).baselineLikes,
             likesCount: postsTable.likesCount
           })
           .from(postsTable)
@@ -67,7 +68,9 @@ router.get('/', async (_req, res) => {
         Math.max(1, Math.ceil(contentText.split(/\s+/).length / 200));
 
       const views = Number(item.views ?? 0);
-      const likes = Number(item.likes ?? basePost?.likesCount ?? 0);
+      const baseLikes = Number(basePost?.baselineLikes ?? 0);
+      const liveLikes = Number(basePost?.likesCount ?? 0);
+      const likes = Number(item.likes ?? (baseLikes + liveLikes));
 
       // Engagement rate heuristic: likes per view, bounded 0..1
       const engagementRate =

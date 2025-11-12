@@ -66,6 +66,8 @@ export default function StoriesIndexContent() {
   const cardsGridRef = React.useRef<HTMLDivElement | null>(null);
   const breakpointRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null);
   const fetchedReactionIdsRef = React.useRef<Set<number>>(new Set());
+  // SSE sources per post to stream live updates
+  const sseSourcesRef = React.useRef<Map<number, EventSource>>(new Map());
 
   // Defer only reaction widgets; render the rest immediately to avoid layout shifts
   const [readyReactions, setReadyReactions] = useState(false);
@@ -600,6 +602,41 @@ export default function StoriesIndexContent() {
     let pending: number[] = [];
     let flushTimer: any = null;
 
+    // SSE sources per post to stream live updates
+    // sseSourcesRef is defined at component scope
+
+    const ensureSse = (postId: number) => {
+      try {
+        if (!Number.isFinite(postId)) return;
+        if (sseSourcesRef.current.has(postId)) return;
+        const url = `/api/posts/${postId}/reactions/stream`;
+        const es = new EventSource(url, { withCredentials: true } as any);
+        const onMessage = (e: MessageEvent) => {
+          try {
+            const payload = JSON.parse(e.data || '{}');
+            if (payload && typeof payload.postId === 'number') {
+              setReactionTotals(prev => ({ ...prev, [payload.postId]: {
+                postId: payload.postId,
+                baselineLikes: Number(payload.baselineLikes || 0),
+                baselineDislikes: Number(payload.baselineDislikes || 0),
+                likesCount: Number(payload.likesCount || 0),
+                dislikesCount: Number(payload.dislikesCount || 0),
+                totals: {
+                  likes: Number(payload.totals?.likes || (Number(payload.baselineLikes || 0) + Number(payload.likesCount || 0))),
+                  dislikes: Number(payload.totals?.dislikes || (Number(payload.baselineDislikes || 0) + Number(payload.dislikesCount || 0))),
+                }
+              }}));
+              fetched.add(payload.postId);
+            }
+          } catch {}
+        };
+        es.addEventListener('initial', onMessage);
+        es.addEventListener('update', onMessage);
+        es.onerror = () => { /* keep alive; browser will reconnect */ };
+        sseSourcesRef.current.set(postId, es);
+      } catch {}
+    };
+
     // Preload a small initial batch near the top of the list to avoid empty counts above the fold
     const preloadInitial = async () => {
       try {
@@ -607,18 +644,23 @@ export default function StoriesIndexContent() {
         const candidateIds = sortedPosts
           .slice(0, initialBatchSize)
           .map((p: Post) => Number(p.id))
-          .filter((n: number) => Number.isFinite(n))
-          .filter((id: number) => !fetched.has(id));
-        if (candidateIds.length === 0) return;
-        const { fetchReactionsBatch } = await import("@/api/reactions");
-        const totals = await fetchReactionsBatch(candidateIds);
-        if (!mounted) return;
-        const map: Record<number, import("@/api/reactions").ReactionTotals> = {};
-        for (const t of totals) {
-          map[t.postId] = t;
-          fetched.add(t.postId);
+          .filter((n: number) => Number.isFinite(n));
+        const idsToFetch = candidateIds.filter((id: number) => !fetched.has(id));
+        if (idsToFetch.length > 0) {
+          const { fetchReactionsBatch } = await import("@/api/reactions");
+          const totals = await fetchReactionsBatch(idsToFetch);
+          if (!mounted) return;
+          const map: Record<number, import("@/api/reactions").ReactionTotals> = {};
+          for (const t of totals) {
+            map[t.postId] = t;
+            fetched.add(t.postId);
+          }
+          setReactionTotals((prev) => ({ ...prev, ...map }));
         }
-        setReactionTotals((prev) => ({ ...prev, ...map }));
+        // Open SSE streams for visible/initial posts
+        for (const id of candidateIds) {
+          ensureSse(id);
+        }
       } catch {
         // ignore
       }
@@ -630,16 +672,21 @@ export default function StoriesIndexContent() {
         const unique = Array.from(new Set(pending));
         pending = [];
         const toFetch = unique.filter((id) => Number.isFinite(id) && !fetched.has(id));
-        if (toFetch.length === 0) return;
-        const { fetchReactionsBatch } = await import("@/api/reactions");
-        const totals = await fetchReactionsBatch(toFetch.slice(0, 60));
-        if (!mounted) return;
-        const update: Record<number, import("@/api/reactions").ReactionTotals> = {};
-        for (const t of totals) {
-          update[t.postId] = t;
-          fetched.add(t.postId);
+        if (toFetch.length > 0) {
+          const { fetchReactionsBatch } = await import("@/api/reactions");
+          const totals = await fetchReactionsBatch(toFetch.slice(0, 60));
+          if (!mounted) return;
+          const update: Record<number, import("@/api/reactions").ReactionTotals> = {};
+          for (const t of totals) {
+            update[t.postId] = t;
+            fetched.add(t.postId);
+          }
+          setReactionTotals((prev) => ({ ...prev, ...update }));
         }
-        setReactionTotals((prev) => ({ ...prev, ...update }));
+        // Ensure SSE for all newly observed ids
+        for (const id of unique) {
+          ensureSse(id);
+        }
       } catch {
         // ignore
       }
@@ -651,20 +698,18 @@ export default function StoriesIndexContent() {
       flushTimer = setTimeout(() => {
         flushTimer = null;
         void flush();
-      }, 250);
+      }, 200);
     };
 
     try {
       io = new IntersectionObserver(
         (entries) => {
           for (const entry of entries) {
-            if (entry.isIntersecting) {
-              const el = entry.target as HTMLElement;
-              const idAttr = el.getAttribute("data-post-id");
-              const id = idAttr ? Number(idAttr) : NaN;
-              if (Number.isFinite(id) && !fetched.has(id)) {
-                schedule(id);
-              }
+            const el = entry.target as HTMLElement;
+            const idAttr = el.getAttribute("data-post-id");
+            const id = idAttr ? Number(idAttr) : NaN;
+            if (entry.isIntersecting && Number.isFinite(id)) {
+              schedule(id);
               try { io?.unobserve(el); } catch {}
             }
           }
@@ -685,7 +730,7 @@ export default function StoriesIndexContent() {
     };
     const interval = setInterval(reobserve, 1000);
 
-    // Start with a small initial preload
+    // Start with a small initial preload + SSE
     void preloadInitial();
 
     // Listen for reaction updates from LikeDislike
@@ -703,6 +748,13 @@ export default function StoriesIndexContent() {
       clearInterval(interval);
       try { io?.disconnect(); } catch {}
       if (flushTimer) clearTimeout(flushTimer);
+      // Close SSE sources
+      try {
+        for (const es of sseSourcesRef.current.values()) {
+          try { es.close(); } catch {}
+        }
+        sseSourcesRef.current.clear();
+      } catch {}
     };
   }, [sortedPosts, visibleCount, gridCols, readyReactions]);
 

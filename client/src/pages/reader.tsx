@@ -44,6 +44,7 @@ import { sanitizeHtml } from "@/lib/sanitize";
 import { trackWordPressRead } from "@/lib/wp-reads";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
 import { trackInteraction } from "@/lib/metrics";
+import { fetchReactionsBatch, type ReactionTotals } from "@/api/reactions";
 
 
 import {
@@ -842,6 +843,64 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const currentPost = posts[validCurrentIndex];
 
   
+
+  // Reaction totals for the current post (prefetch + SSE to minimize pop-in)
+  const [currentTotals, setCurrentTotals] = useState<ReactionTotals | null>(null);
+  const sseRef = useRef<EventSource | null>(null);
+
+  useEffect(() => {
+    try {
+      sseRef.current?.close();
+    } catch {}
+    setCurrentTotals(null);
+
+    const pid = Number(currentPost?.id);
+    if (!Number.isFinite(pid)) return;
+
+    // Prefetch totals
+    (async () => {
+      try {
+        const totals = await fetchReactionsBatch([pid]);
+        const first = totals && totals[0];
+        if (first && Number(first.postId) === pid) {
+          setCurrentTotals(first);
+        }
+      } catch { /* ignore */ }
+    })();
+
+    // Subscribe to SSE for live totals
+    try {
+      const es = new EventSource(`/api/posts/${pid}/reactions/stream`, { withCredentials: true } as any);
+      const onMessage = (e: MessageEvent) => {
+        try {
+          const payload = JSON.parse(e.data || '{}');
+          if (payload && typeof payload.postId === 'number') {
+            setCurrentTotals({
+              postId: Number(payload.postId),
+              baselineLikes: Number(payload.baselineLikes || 0),
+              baselineDislikes: Number(payload.baselineDislikes || 0),
+              likesCount: Number(payload.likesCount || 0),
+              dislikesCount: Number(payload.dislikesCount || 0),
+              totals: {
+                likes: Number(payload.totals?.likes || (Number(payload.baselineLikes || 0) + Number(payload.likesCount || 0))),
+                dislikes: Number(payload.totals?.dislikes || (Number(payload.baselineDislikes || 0) + Number(payload.dislikesCount || 0))),
+              }
+            });
+          }
+        } catch {}
+      };
+      es.addEventListener('initial', onMessage);
+      es.addEventListener('update', onMessage);
+      es.onerror = () => { /* keep alive */ };
+      sseRef.current = es;
+    } catch { /* ignore */ }
+
+    return () => {
+      try { sseRef.current?.close(); } catch {}
+      sseRef.current = null;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPost?.id]);
 
   // SEO values for this story
   const stripHtml = (s: string) => s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '';
@@ -1954,7 +2013,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               <div className="flex flex-col items-center justify-center gap-6">
                 {/* Centered Like/Dislike buttons */}
                 <div className={`flex justify-center w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-                  <LikeDislike postId={currentPost.id} slug={currentPost.slug} source="wp" variant="reader" />
+                  <LikeDislike postId={currentPost.id} slug={currentPost.slug} source="wp" variant="reader" initialTotals={currentTotals} />
                 </div>
 
                 <div className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
