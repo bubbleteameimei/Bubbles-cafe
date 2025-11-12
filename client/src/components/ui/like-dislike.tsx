@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { fetchReactions, submitReaction } from "@/api/reactions";
+import { getApiBaseUrl } from "@/lib/asset-path";
 
 import type { ReactionTotals } from "@/api/reactions";
 
@@ -194,8 +195,8 @@ export function LikeDislike({
           return x - Math.floor(x);
         };
         const seed = hash(seedFrom) * 12345;
-        const baseLikes = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
-        const baseDislikes = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
+        const baseLikes = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100;
+        const baseDislikes = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3;
 
         const fallbackStats: Stats = {
           likes: baseLikes,
@@ -262,7 +263,7 @@ export function LikeDislike({
       try { es?.close(); } catch {}
       es = null;
     };
-  }, [postId]);bscribe to server-sent events for live reaction totals
+  }, [postId]););bscribe to server-sent events for live reaction totals
   useEffect(() => {
     const base = getApiBaseUrl();
     const url = `${base ? base.replace(/\/+$/,]);
