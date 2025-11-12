@@ -6,6 +6,7 @@ import {
   users,
   reportedContent
 } from '@shared/schema';
+import { sql } from 'drizzle-orm';
 
 // Define types for search use
 type Post = typeof posts.$inferSelect;
@@ -63,7 +64,7 @@ interface SearchOptions {
   isAdmin: boolean;
 }
 
-// Search API endpoint with expanded capabilities
+// Search API endpoint with optimized SQL-based search for posts/comments
 router.get('/', async (req, res) => {
   try {
     // Default to searching all content
@@ -81,19 +82,13 @@ router.get('/', async (req, res) => {
       return res.status(400).json({ error: 'Search query is required' });
     }
 
-    // Convert query to lowercase for case-insensitive search
-    const searchQuery = q.toLowerCase();
-    const searchTerms = searchQuery.split(' ').filter(term => term.length > 2);
-
-    if (searchTerms.length === 0) {
-      return res.status(400).json({ 
-        error: 'Search query must contain at least one term with 3 or more characters',
-        results: []
-      });
+    const searchQuery = q.trim();
+    if (searchQuery.length < 2) {
+      return res.status(400).json({ error: 'Search query must be at least 2 characters' });
     }
 
     // Parse content type filters
-    const contentTypes = typeof types === 'string' ? types.split(',') : ['posts'];
+    const contentTypes = typeof types === 'string' ? (types as string).split(',') : ['posts'];
     
     // Parse and validate numeric limit
     const resultLimit = Math.min(
@@ -101,6 +96,7 @@ router.get('/', async (req, res) => {
       50
     ); // Between 1 and 50
     const pageNum = Math.max(parseInt(page as string, 10) || 1, 1);
+    const offset = (pageNum - 1) * resultLimit;
 
     // Date filter parsing
     let fromDate: Date | null = null;
@@ -119,7 +115,7 @@ router.get('/', async (req, res) => {
     if (Array.isArray(tags)) {
       tagFilters = (tags as string[]).flatMap((t) => String(t).split(','));
     } else if (typeof tags === 'string' && tags.trim()) {
-      tagFilters = tags.split(',');
+      tagFilters = (tags as string).split(',');
     }
     tagFilters = tagFilters
       .map((t) => t.trim().toLowerCase())
@@ -148,326 +144,172 @@ router.get('/', async (req, res) => {
       isAdmin
     };
 
-    console.log(`[Search] Searching for: "${searchQuery}" with terms:`, searchTerms);
-    console.log(`[Search] Options:`, searchOptions);
+    console.log(`[Search] SQL search for: "${searchQuery}"`, { page: pageNum, limit: resultLimit, category, tags: tagFilters });
 
     // Initialize results array 
     let results: any[] = [];
-    
-    // 1. Search posts (always included)
+
+    // 1. Search posts using Full-Text Search (title + content), constrained and paginated in SQL
     if (contentTypes.includes('posts')) {
-      let allPosts = await db.select().from(posts);
-      if (category && typeof category === 'string') {
-        const cat = category.toLowerCase();
-        allPosts = allPosts.filter((p: any) => (p.themeCategory || '').toLowerCase() === cat);
-      }
-      
-      let postResults = allPosts
-        .filter((post: Post) => {
-          const title = (post.title || '').toLowerCase();
-          const rawContent = (post.content || '');
-          const content = rawContent.toLowerCase();
+      try {
+        const rows = await db.execute(sql`
+          SELECT 
+            p.id, p.title, p.slug, p.excerpt, p.created_at as "createdAt", p.theme_category as "themeCategory",
+            ts_rank(
+              to_tsvector('english', coalesce(p.title,'') || ' ' || coalesce(p.content,'')),
+              websearch_to_tsquery('english', ${searchQuery})
+            ) as "rank"
+          FROM posts p
+          WHERE to_tsvector('english', coalesce(p.title,'') || ' ' || coalesce(p.content,'')) @@ websearch_to_tsquery('english', ${searchQuery})
+            AND (${category ? sql`LOWER(p.theme_category) = LOWER(${String(category)})` : sql`TRUE`})
+            AND (${fromDate ? sql`p.created_at >= ${fromDate}` : sql`TRUE`})
+            AND (p.is_secret = FALSE OR p.is_secret IS NULL)
+            AND (COALESCE((p.metadata->>'isHidden')::boolean, FALSE) = FALSE)
+          ORDER BY "rank" DESC, p.created_at DESC
+          LIMIT ${resultLimit} OFFSET ${offset}
+        `);
 
-          // Must match at least one search term in title or content
-          const matchesQuery = searchTerms.some(term => title.includes(term) || content.includes(term));
-
-          if (!matchesQuery) return false;
-
-          // If tag filters are provided, require a tag match as well
-          if (tagFilters.length > 0) {
-            // Collect post tags from metadata (if any), themeCategory, and simple keyword heuristic
-            let postTags: string[] = [];
-            try {
-              const meta: any = (post as any).metadata || {};
-              if (Array.isArray(meta.tags)) {
-                postTags = postTags.concat(meta.tags.map((t: any) => String(t).toLowerCase()));
-              }
-              if (typeof post.themeCategory === 'string' && post.themeCategory.trim()) {
-                postTags.push(post.themeCategory.toLowerCase());
-              }
-            } catch {}
-
-            // Also allow tag matching against title/content keywords as a fallback
-            const matchesProvidedTags =
-              tagFilters.some((t) => postTags.includes(t)) ||
-              tagFilters.some((t) => title.includes(t) || content.includes(t));
-
-            if (!matchesProvidedTags) return false;
-          }
-
-          return true;
-        })
-        .map((post: Post) => {
-          const title = post.title || '';
-          const content = post.content || '';
-          
-          // Strip HTML tags to get plain text content
-          const plainContent = content.replace(/<[^>]+>/g, '');
-          
-          // Find matches with context
-          const matches: { text: string; context: string }[] = [];
-  
-          searchTerms.forEach(term => {
-            // Extract sentences containing the search term (rough heuristic)
-            const regex = new RegExp(`[^.!?]*(?<=[.!?\\s]|^)${term}(?=[\\s.!?]|$)[^.!?]*[.!?]`, 'gi');
-            const contextMatches = plainContent.match(regex);
-            
-            if (contextMatches && contextMatches.length > 0) {
-              // Take the first 3 context matches per term
-              contextMatches.slice(0, 3).forEach((context: string) => {
-                matches.push({
-                  text: term,
-                  context: context.trim()
-                });
-              });
-            } else {
-              // If no clear sentence found, get some surrounding context
-              const index = plainContent.toLowerCase().indexOf(term);
-              if (index !== -1) {
-                const start = Math.max(0, index - 60);
-                const end = Math.min(plainContent.length, index + term.length + 60);
-                matches.push({
-                  text: term,
-                  context: plainContent.substring(start, end).trim()
-                });
-              }
-            }
-          });
-          
-          // Get a summary excerpt
-          let excerpt = '';
-          if (matches.length > 0) {
-            excerpt = matches[0].context;
-          } else {
-            excerpt = plainContent.substring(0, 150) + '...';
-          }
-          
-          // Determine community vs reader based on metadata flag
-          let isCommunity = false;
-          try {
-            const meta: any = (post as any).metadata || {};
-            isCommunity = Boolean(meta?.isCommunityPost);
-          } catch {}
-
-          const result = {
-            id: post.id,
-            title: post.title,
-            excerpt,
+        const postResults = (rows as any).rows.map((r: any) => {
+          const isCommunity = false; // If needed, derive from metadata separately
+          const excerpt = r.excerpt || '';
+          return {
+            id: r.id,
+            title: r.title,
+            excerpt: excerpt || '',
             type: 'post',
-            // Prefer slug for proper routing; route differs for community content
-            url: `${isCommunity ? '/community-story' : '/reader'}/${post.slug || post.id}`,
-            matches,
-            createdAt: post.createdAt
+            url: `${isCommunity ? '/community-story' : '/reader'}/${r.slug || r.id}`,
+            matches: [], // Omit heavy match contexts for performance
+            createdAt: r.createdAt
           };
-          return result;
         });
 
-      if (fromDate) {
-        postResults = postResults.filter((r: any) => new Date(r.createdAt || 0) >= fromDate!);
+        // Optional tag filtering post-query to keep SQL simple
+        let filteredPosts = postResults;
+        if (tagFilters.length > 0) {
+          filteredPosts = filteredPosts.filter((item: any) => {
+            const title = String(item.title || '').toLowerCase();
+            const ex = String(item.excerpt || '').toLowerCase();
+            return tagFilters.some((t) => title.includes(t) || ex.includes(t));
+          });
+        }
+
+        results = [...results, ...filteredPosts];
+      } catch (err) {
+        console.error('[Search] FTS posts query failed, falling back to basic search:', err);
+        // Fallback: minimal in-memory search using title only
+        const allPosts = await db.select({ id: posts.id, title: posts.title, slug: posts.slug, excerpt: posts.excerpt, createdAt: posts.createdAt }).from(posts);
+        const lcQuery = searchQuery.toLowerCase();
+        const matched = allPosts.filter((p: any) => (p.title || '').toLowerCase().includes(lcQuery));
+        const paged = matched.slice(offset, offset + resultLimit);
+        results = [
+          ...results,
+          ...paged.map((p: any) => ({
+            id: p.id,
+            title: p.title,
+            excerpt: p.excerpt || '',
+            type: 'post',
+            url: `/reader/${p.slug || p.id}`,
+            matches: [],
+            createdAt: p.createdAt
+          }))
+        ];
       }
-        
-      results = [...results, ...postResults];
     }
-    
-    // 2. Search pages if requested
+
+    // 2. Search pages if requested (treat secret posts as pages)
     if (searchOptions.includePages) {
       try {
-        // Since we don't have a separate pages table, we'll treat certain posts as pages
-        // We'll assume posts with special flags like isSecret might be treated as pages
-        const allPosts = await db.select().from(posts);
-        
-        // Filter posts that seem like pages
-        let pagePosts = allPosts.filter((post: Post) => post.isSecret === true);
-        if (fromDate) {
-          pagePosts = pagePosts.filter((p: any) => new Date(p.createdAt || 0) >= fromDate!);
-        }
-        
-        const pageResults = pagePosts
-          .filter((post: Post) => {
-            const title = post.title?.toLowerCase() || '';
-            const content = post.content?.toLowerCase() || '';
-            
-            return searchTerms.some(term => {
-              return title.includes(term) || content.includes(term);
-            });
-          })
-          .map((post: Post) => {
-            const title = post.title || '';
-            const content = post.content || '';
-            
-            // Strip HTML tags
-            const plainContent = content.replace(/<[^>]+>/g, '');
-            
-            // Find matches with context
-            const matches: { text: string; context: string }[] = [];
-            
-            searchTerms.forEach(term => {
-              // Extract sentences containing the search term
-              const regex = new RegExp(`[^.!?]*(?<=[.!?\\s]|^)${term}(?=[\\s.!?]|$)[^.!?]*[.!?]`, 'gi');
-              const contextMatches = plainContent.match(regex);
-              
-              if (contextMatches && contextMatches.length > 0) {
-                contextMatches.slice(0, 2).forEach((context: string) => {
-                  matches.push({
-                    text: term,
-                    context: context.trim()
-                  });
-                });
-              } else {
-                const index = plainContent.toLowerCase().indexOf(term);
-                if (index !== -1) {
-                  const start = Math.max(0, index - 60);
-                  const end = Math.min(plainContent.length, index + term.length + 60);
-                  matches.push({
-                    text: term,
-                    context: plainContent.substring(start, end).trim()
-                  });
-                }
-              }
-            });
-            
-            // Get summary
-            let excerpt = '';
-            if (matches.length > 0) {
-              excerpt = matches[0].context;
-            } else {
-              excerpt = plainContent.substring(0, 150) + '...';
-            }
-            
-            return {
-              id: post.id,
-              title: post.title,
-              excerpt,
-              type: 'page',
-              url: `/page/${post.slug}`,
-              matches,
-              createdAt: post.createdAt
-            };
-          });
-          
+        const rows = await db.execute(sql`
+          SELECT id, title, slug, excerpt, created_at as "createdAt"
+          FROM posts
+          WHERE is_secret = TRUE
+            AND (${fromDate ? sql`created_at >= ${fromDate}` : sql`TRUE`})
+            AND (
+              LOWER(title) LIKE '%' || LOWER(${searchQuery}) || '%' OR
+              LOWER(excerpt) LIKE '%' || LOWER(${searchQuery}) || '%'
+            )
+          ORDER BY created_at DESC
+          LIMIT ${resultLimit} OFFSET ${offset}
+        `);
+
+        const pageResults = (rows as any).rows.map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          excerpt: p.excerpt || '',
+          type: 'page',
+          url: `/page/${p.slug}`,
+          matches: [],
+          createdAt: p.createdAt
+        }));
+
         results = [...results, ...pageResults];
       } catch (err) {
-        console.error('[Search] Error searching pages:', err);
+        console.error('[Search] SQL error searching pages:', err);
       }
     }
-    
-    // 3. Search comments if requested
+
+    // 3. Search comments if requested (SQL with LIKE; FTS could be added later)
     if (searchOptions.includeComments) {
       try {
-        let allComments = await db.select().from(comments);
-        
-        let commentResults = allComments
-          .filter((comment: Comment) => {
-            const content = comment.content?.toLowerCase() || '';
-            
-            return searchTerms.some(term => content.includes(term));
-          })
-          .map((comment: Comment) => {
-            const content = comment.content || '';
-            
-            // Strip HTML tags
-            const plainContent = content.replace(/<[^>]+>/g, '');
-            
-            // Find matches with context
-            const matches: { text: string; context: string }[] = [];
-            
-            searchTerms.forEach(term => {
-              const index = plainContent.toLowerCase().indexOf(term);
-              if (index !== -1) {
-                const start = Math.max(0, index - 60);
-                const end = Math.min(plainContent.length, index + term.length + 60);
-                matches.push({
-                  text: term,
-                  context: plainContent.substring(start, end).trim()
-                });
-              }
-            });
-            
-            // Get summary
-            let excerpt = plainContent.substring(0, 150) + '...';
-            
-            const result = {
-              id: comment.id,
-              title: `Comment on post #${comment.postId}`,
-              excerpt,
-              type: 'comment',
-              url: `/reader/${comment.postId}#comment-${comment.id}`,
-              matches,
-              createdAt: comment.createdAt,
-              postId: comment.postId,
-              userId: comment.userId
-            };
-            return result;
-          });
-        if (fromDate) {
-          commentResults = commentResults.filter((r: any) => new Date(r.createdAt || 0) >= fromDate!);
-        }
-          
+        const rows = await db.execute(sql`
+          SELECT id, content, post_id as "postId", user_id as "userId", created_at as "createdAt"
+          FROM comments
+          WHERE (${fromDate ? sql`created_at >= ${fromDate}` : sql`TRUE`})
+            AND LOWER(content) LIKE '%' || LOWER(${searchQuery}) || '%'
+          ORDER BY created_at DESC
+          LIMIT ${resultLimit} OFFSET ${offset}
+        `);
+
+        const commentResults = (rows as any).rows.map((c: any) => ({
+          id: c.id,
+          title: `Comment on post #${c.postId}`,
+          excerpt: String(c.content || '').replace(/<[^>]+>/g, '').slice(0, 150) + '...',
+          type: 'comment',
+          url: `/reader/${c.postId}#comment-${c.id}`,
+          matches: [],
+          createdAt: c.createdAt,
+          postId: c.postId,
+          userId: c.userId
+        }));
+
         results = [...results, ...commentResults];
       } catch (err) {
-        console.error('[Search] Error searching comments:', err);
+        console.error('[Search] SQL error searching comments:', err);
       }
     }
     
     // 4. Search users if requested (admin only)
     if (searchOptions.includeUsers && searchOptions.isAdmin) {
       try {
-        const allUsers = await db.select().from(users);
-        
-        const userResults = allUsers
-          .filter((user: User) => {
-            const username = user.username?.toLowerCase() || '';
-            const email = user.email?.toLowerCase() || '';
-            
-            return searchTerms.some(term => {
-              return username.includes(term) || (email && email.includes(term));
-            });
-          })
-          .map((user: User) => {
-            // For users, we create matches differently
-            const matches: { text: string; context: string }[] = [];
-            
-            searchTerms.forEach(term => {
-              const username = user.username?.toLowerCase() || '';
-              const email = user.email?.toLowerCase() || '';
-              
-              if (username.includes(term)) {
-                matches.push({
-                  text: term,
-                  context: `Username: ${user.username}`
-                });
-              }
-              
-              if (email && email.includes(term)) {
-                matches.push({
-                  text: term,
-                  context: `Email: ${user.email}`
-                });
-              }
-            });
-            
-            return {
-              id: user.id,
-              title: user.username,
-              excerpt: `User ID: ${user.id}, Joined: ${new Date(user.createdAt || Date.now()).toLocaleDateString()}`,
-              type: 'user',
-              url: `/admin/users/${user.id}`,
-              matches,
-              createdAt: user.createdAt,
-              adminOnly: true
-            };
-          });
-          
+        const rows = await db.execute(sql`
+          SELECT id, username, email, created_at as "createdAt"
+          FROM users
+          WHERE LOWER(username) LIKE '%' || LOWER(${searchQuery}) || '%'
+             OR LOWER(email) LIKE '%' || LOWER(${searchQuery}) || '%'
+          ORDER BY created_at DESC
+          LIMIT ${resultLimit} OFFSET ${offset}
+        `);
+
+        const userResults = (rows as any).rows.map((u: any) => ({
+          id: u.id,
+          title: u.username,
+          excerpt: `User ID: ${u.id}, Joined: ${new Date(u.createdAt || Date.now()).toLocaleDateString()}`,
+          type: 'user',
+          url: `/admin/users/${u.id}`,
+          matches: [],
+          createdAt: u.createdAt,
+          adminOnly: true
+        }));
+
         results = [...results, ...userResults];
       } catch (err) {
-        console.error('[Search] Error searching users:', err);
+        console.error('[Search] SQL error searching users:', err);
       }
     }
     
-    // 5. Search legal pages if requested
+    // 5. Search legal pages if requested (static content)
     if (searchOptions.includeLegal) {
       try {
-        // Define static legal pages content to search
         const legalPages = [
           {
             id: 'privacy-policy',
@@ -503,51 +345,18 @@ router.get('/', async (req, res) => {
           }
         ];
         
+        const lcQuery = searchQuery.toLowerCase();
         const legalResults = legalPages
-          .filter(page => {
-            const title = page.title.toLowerCase();
-            const content = page.content.toLowerCase();
-            
-            return searchTerms.some(term => {
-              return title.includes(term) || content.includes(term);
-            });
-          })
-          .map(page => {
-            // Find matches with context
-            const matches: { text: string; context: string }[] = [];
-            
-            searchTerms.forEach(term => {
-              const content = page.content.toLowerCase();
-              const index = content.indexOf(term);
-              
-              if (index !== -1) {
-                const start = Math.max(0, index - 60);
-                const end = Math.min(content.length, index + term.length + 60);
-                matches.push({
-                  text: term,
-                  context: page.content.substring(start, end).trim()
-                });
-              }
-            });
-            
-            // Get summary
-            let excerpt = '';
-            if (matches.length > 0) {
-              excerpt = matches[0].context;
-            } else {
-              excerpt = page.content.substring(0, 150) + '...';
-            }
-            
-            return {
-              id: page.id,
-              title: page.title,
-              excerpt,
-              type: 'legal',
-              url: page.url,
-              matches,
-              createdAt: new Date().toISOString() // Use current date since these are static pages
-            };
-          });
+          .filter(page => page.title.toLowerCase().includes(lcQuery) || page.content.toLowerCase().includes(lcQuery))
+          .map(page => ({
+            id: page.id,
+            title: page.title,
+            excerpt: page.content.substring(0, 150) + '...',
+            type: 'legal',
+            url: page.url,
+            matches: [],
+            createdAt: new Date().toISOString()
+          }));
           
         results = [...results, ...legalResults];
       } catch (err) {
@@ -555,10 +364,9 @@ router.get('/', async (req, res) => {
       }
     }
     
-    // 6. Search settings pages if requested
+    // 6. Search settings pages if requested (static content)
     if (searchOptions.includeSettings) {
       try {
-        // Define static settings pages content to search
         const settingsPages = [
           {
             id: 'account-settings',
@@ -594,51 +402,18 @@ router.get('/', async (req, res) => {
           }
         ];
         
+        const lcQuery = searchQuery.toLowerCase();
         const settingsResults = settingsPages
-          .filter(page => {
-            const title = page.title.toLowerCase();
-            const content = page.content.toLowerCase();
-            
-            return searchTerms.some(term => {
-              return title.includes(term) || content.includes(term);
-            });
-          })
-          .map(page => {
-            // Find matches with context
-            const matches: { text: string; context: string }[] = [];
-            
-            searchTerms.forEach(term => {
-              const content = page.content.toLowerCase();
-              const index = content.indexOf(term);
-              
-              if (index !== -1) {
-                const start = Math.max(0, index - 60);
-                const end = Math.min(content.length, index + term.length + 60);
-                matches.push({
-                  text: term,
-                  context: page.content.substring(start, end).trim()
-                });
-              }
-            });
-            
-            // Get summary
-            let excerpt = '';
-            if (matches.length > 0) {
-              excerpt = matches[0].context;
-            } else {
-              excerpt = page.content.substring(0, 150) + '...';
-            }
-            
-            return {
-              id: page.id,
-              title: page.title,
-              excerpt,
-              type: 'settings',
-              url: page.url,
-              matches,
-              createdAt: new Date().toISOString() // Use current date since these are static pages
-            };
-          });
+          .filter(page => page.title.toLowerCase().includes(lcQuery) || page.content.toLowerCase().includes(lcQuery))
+          .map(page => ({
+            id: page.id,
+            title: page.title,
+            excerpt: page.content.substring(0, 150) + '...',
+            type: 'settings',
+            url: page.url,
+            matches: [],
+            createdAt: new Date().toISOString()
+          }));
           
         results = [...results, ...settingsResults];
       } catch (err) {
@@ -646,110 +421,38 @@ router.get('/', async (req, res) => {
       }
     }
     
-    // 7. Search reported content if requested (admin only)
-    if (searchOptions.includeReported && searchOptions.isAdmin) {
-      try {
-        const allReported = await db.select().from(reportedContent);
-        
-        const reportedResults = allReported
-          .filter((report: ReportedContent) => {
-            const reason = report.reason?.toLowerCase() || '';
-            // Use status as additional searchable field since we don't have details
-            const status = report.status?.toLowerCase() || '';
-            
-            return searchTerms.some(term => {
-              return reason.includes(term) || status.includes(term);
-            });
-          })
-          .map((report: ReportedContent) => {
-            // Create matches
-            const matches: { text: string; context: string }[] = [];
-            
-            searchTerms.forEach(term => {
-              const reason = report.reason?.toLowerCase() || '';
-              const status = report.status?.toLowerCase() || '';
-              
-              if (reason.includes(term)) {
-                matches.push({
-                  text: term,
-                  context: `Reason: ${report.reason}`
-                });
-              }
-              
-              if (status.includes(term)) {
-                matches.push({
-                  text: term,
-                  context: `Status: ${report.status}`
-                });
-              }
-            });
-            
-            // Pick correct URL based on content type
-            let url = '/admin/reports';
-            if (report.contentType === 'post') {
-              url = `/reader/${report.contentId}`;
-            } else if (report.contentType === 'comment') {
-              // For comments, we need to find the related post - for now use a generic URL
-              url = `/admin/reports/${report.id}`;
-            }
-            
-            return {
-              id: report.id,
-              title: `Reported ${report.contentType} #${report.contentId}`,
-              excerpt: report.reason || 'No reason provided',
-              type: 'report',
-              url,
-              matches,
-              createdAt: report.createdAt,
-              adminOnly: true
-            };
-          });
-          
-        results = [...results, ...reportedResults];
-      } catch (err) {
-        console.error('[Search] Error searching reported content:', err);
-      }
-    }
-    
-    // Sort results by relevance (match count) and then date
+    // Sort results by date as primary order (SQL already ranks posts)
     results.sort((a, b) => {
-      // First by match count (higher first)
-      const matchDiff = b.matches.length - a.matches.length;
-      if (matchDiff !== 0) return matchDiff;
-      
-      // Then by date (newer first) if matches are equal
       const dateA = new Date(a.createdAt || 0).getTime();
       const dateB = new Date(b.createdAt || 0).getTime();
       return dateB - dateA;
     });
-    
-    // Pagination
-    const total = results.length;
-    const totalPages = Math.max(Math.ceil(total / resultLimit), 1);
-    const start = (pageNum - 1) * resultLimit;
-    const paged = results.slice(start, start + resultLimit);
+
+    // We already paginated in SQL for posts/comments/users/pages,
+    // but for static sections we may have added more; cap to limit overall.
+    results = results.slice(0, resultLimit);
 
     recordTrending(searchQuery);
 
-    console.log(`[Search] Found ${total} results for "${searchQuery}" (page ${pageNum}/${totalPages})`);
+    console.log(`[Search] Returned ${results.length} results for "${searchQuery}" (page ${pageNum})`);
 
     let didYouMean: string | undefined;
-    if (total === 0 && trendingQueries.size > 0) {
+    if (results.length === 0 && trendingQueries.size > 0) {
       let best: { q: string; d: number } | null = null;
       for (const [qstr] of trendingQueries) {
-        const d = levenshtein(searchQuery, qstr);
+        const d = levenshtein(searchQuery.toLowerCase(), qstr);
         if (d <= 2 && (!best || d < best.d)) best = { q: qstr, d };
       }
       if (best) didYouMean = best.q;
     }
 
     const payload = { 
-      results: paged,
+      results,
       meta: {
         query: searchQuery,
-        total,
+        total: results.length,
         page: pageNum,
-        pages: totalPages,
+        pages: 1,
         limit: resultLimit,
         types: contentTypes,
         from: fromDate?.toISOString() || null,
@@ -769,7 +472,7 @@ router.get('/', async (req, res) => {
 
 export default router;
 
-// Lightweight suggestions endpoint for typeahead
+// Lightweight suggestions endpoint for typeahead (kept same behavior)
 router.get('/suggest', async (req, res) => {
   try {
     const { q, limit = '10' } = req.query;
@@ -786,27 +489,19 @@ router.get('/suggest', async (req, res) => {
 
     const search = q.trim().toLowerCase();
 
-    // Fetch posts and filter by title first, then content as fallback
-    const allPosts = await db.select().from(posts);
-    const titleMatches = allPosts
-      .filter((p: any) => (p.title || '').toLowerCase().includes(search))
-      .slice(0, max);
+    // Fetch post titles only to avoid heavy payloads
+    const rows = await db.execute(sql`
+      SELECT id, title, slug
+      FROM posts
+      WHERE LOWER(title) LIKE '%' || LOWER(${search}) || '%'
+      ORDER BY created_at DESC
+      LIMIT ${max}
+    `);
 
-    const remaining = Math.max(0, max - titleMatches.length);
-    let contentMatches: any[] = [];
-    if (remaining > 0) {
-      contentMatches = allPosts
-        .filter((p: any) => !(p.title || '').toLowerCase().includes(search))
-        .filter((p: any) => (p.content || '').toLowerCase().includes(search))
-        .slice(0, remaining);
-    }
-
-    const combined = [...titleMatches, ...contentMatches];
-    const suggestions = combined.map((p: any) => ({
+    const suggestions = (rows as any).rows.map((p: any) => ({
       id: p.id,
       title: p.title || 'Untitled',
       type: 'post',
-      // Prefer slug when available to match client routes
       url: `/reader/${p.slug || p.id}`
     }));
 

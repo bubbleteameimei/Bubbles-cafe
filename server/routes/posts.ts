@@ -437,7 +437,7 @@ router.get('/:id/reactions',
   })
 );
 
-// GET /api/posts/reactions-batch?ids=1,2,3 - Batch baseline + live totals for multiple posts
+// GET /api/posts/reactions-batch?ids=1,2,3 - Batch baseline + live totals for multiple posts (optimized, fewer queries)
 router.get('/reactions-batch',
   apiRateLimiter,
   asyncHandler(async (req: Request, res: Response) => {
@@ -451,92 +451,127 @@ router.get('/reactions-batch',
         return res.json({ results: [] });
       }
 
-      const results: any[] = [];
-      for (const rawId of list.slice(0, 200)) { // cap to 200 ids per call
-        try {
-          let effectiveId = Number(rawId);
-          let post = await (storage as any).getPostById(effectiveId);
+      const cap = list.slice(0, 200); // cap to 200 ids per call
 
-          if (!post) {
-            // Try metadata.wordpressId mapping to locate the local post id
+      // Prefetch direct local posts by id
+      const directRows = await db.execute(sql`
+        SELECT id, slug, baseline_likes as "baselineLikes", baseline_dislikes as "baselineDislikes",
+               likes_count as "likesCount", dislikes_count as "dislikesCount"
+        FROM posts
+        WHERE id = ANY(${sql.raw(`ARRAY[${cap.join(',')}]::int[]`)})
+      `);
+
+      // Prefetch wordpressId mappings to local ids
+      const mappedRows = await db.execute(sql`
+        SELECT id, (metadata->>'wordpressId')::int as "wpId"
+        FROM posts
+        WHERE (metadata->>'wordpressId')::int = ANY(${sql.raw(`ARRAY[${cap.join(',')}]::int[]`)})
+      `);
+
+      const directMap = new Map<number, any>();
+      for (const r of (directRows as any).rows) {
+        directMap.set(Number(r.id), r);
+      }
+
+      const wpMap = new Map<number, number>();
+      for (const r of (mappedRows as any).rows) {
+        if (Number.isFinite(Number(r.wpId))) {
+          wpMap.set(Number(r.wpId), Number(r.id));
+        }
+      }
+
+      const results: any[] = [];
+      for (const rawId of cap) {
+        let effectiveId = rawId;
+        let row = directMap.get(effectiveId);
+
+        if (!row && wpMap.has(effectiveId)) {
+          effectiveId = wpMap.get(effectiveId)!;
+          row = directMap.get(effectiveId);
+          if (!row) {
+            // Not in directMap, fetch this single row (rare)
             try {
-              const mapped = await db
-                .select({ id: postsTable.id })
-                .from(postsTable)
-                .where(sql`(metadata->>'wordpressId')::int = ${effectiveId}`)
-                .limit(1);
-              if (mapped[0]?.id) {
-                effectiveId = Number(mapped[0].id);
-                post = await (storage as any).getPostById(effectiveId);
-              }
+              const single = await db.execute(sql`
+                SELECT id, slug, baseline_likes as "baselineLikes", baseline_dislikes as "baselineDislikes",
+                       likes_count as "likesCount", dislikes_count as "dislikesCount"
+                FROM posts
+                WHERE id = ${effectiveId}
+                LIMIT 1
+              `);
+              row = (single as any).rows[0];
             } catch (_) { /* no-op */ }
           }
+        }
 
-          if (!post && (storage as any).ensurePostExists) {
-            await (storage as any).ensurePostExists(effectiveId);
-            post = await (storage as any).getPostById(effectiveId);
-          }
-
-          if (!post) {
-            results.push({
-              postId: effectiveId,
-              baselineLikes: 0,
-              baselineDislikes: 0,
-              likesCount: 0,
-              dislikesCount: 0,
-              totals: { likes: 0, dislikes: 0 }
-            });
-            continue;
-          }
-
-          const counts = await (storage as any).getPostLikeCounts(effectiveId);
-          let baselineLikes = Number((post as any).baselineLikes ?? 0);
-          let baselineDislikes = Number((post as any).baselineDislikes ?? 0);
-
-          if (baselineLikes === 0 || baselineDislikes === 0) {
-            const slug = String((post as any).slug || '');
-            const seedNumber = slug
-              ? (() => { let h = 0; for (let i = 0; i < slug.length; i++) { h = (h << 5) - h + slug.charCodeAt(i); h |= 0; } return Math.abs(h); })()
-              : effectiveId;
-            const seed = seedNumber * 12345;
-            const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
-            const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
-            const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
-
-            try {
-              await db.update(postsTable)
-                .set({ baselineLikes: likesBase, baselineDislikes: dislikesBase })
-                .where(eq(postsTable.id, effectiveId));
-              baselineLikes = likesBase;
-              baselineDislikes = dislikesBase;
-            } catch (_) {
-              baselineLikes = baselineLikes || likesBase;
-              baselineDislikes = baselineDislikes || dislikesBase;
+        if (!row) {
+          // As a last resort, try to ensure placeholder exists for external ids
+          try {
+            if ((storage as any).ensurePostExists) {
+              await (storage as any).ensurePostExists(effectiveId);
+              const ensured = await db.execute(sql`
+                SELECT id, slug, baseline_likes as "baselineLikes", baseline_dislikes as "baselineDislikes",
+                       likes_count as "likesCount", dislikes_count as "dislikesCount"
+                FROM posts
+                WHERE id = ${effectiveId}
+                LIMIT 1
+              `);
+              row = (ensured as any).rows[0];
             }
-          }
+          } catch (_) { /* no-op */ }
+        }
 
+        if (!row) {
           results.push({
             postId: effectiveId,
-            baselineLikes,
-            baselineDislikes,
-            likesCount: Number(counts.likesCount ?? 0),
-            dislikesCount: Number(counts.dislikesCount ?? 0),
-            totals: {
-              likes: baselineLikes + Number(counts.likesCount ?? 0),
-              dislikes: baselineDislikes + Number(counts.dislikesCount ?? 0)
-            }
-          });
-        } catch (e) {
-          postsLogger.warn('Batch reaction calc failed for post', { postId: rawId, error: e instanceof Error ? e.message : String(e) });
-          results.push({
-            postId: Number(rawId),
             baselineLikes: 0,
             baselineDislikes: 0,
             likesCount: 0,
             dislikesCount: 0,
             totals: { likes: 0, dislikes: 0 }
           });
+          continue;
         }
+
+        let baselineLikes = Number(row.baselineLikes ?? 0);
+        let baselineDislikes = Number(row.baselineDislikes ?? 0);
+
+        // Seed deterministic baselines if empty
+        if (baselineLikes === 0 || baselineDislikes === 0) {
+          const slug = String(row.slug || '');
+          const seedNumber = slug
+            ? (() => { let h = 0; for (let i = 0; i < slug.length; i++) { h = (h << 5) - h + slug.charCodeAt(i); h |= 0; } return Math.abs(h); })()
+            : Number(effectiveId);
+          const seed = seedNumber * 12345;
+          const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
+          const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80; // 80–200
+          const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2; // 2–13
+
+          try {
+            await db.update(postsTable)
+              .set({ baselineLikes: likesBase, baselineDislikes: dislikesBase })
+              .where(eq(postsTable.id, effectiveId));
+            baselineLikes = likesBase;
+            baselineDislikes = dislikesBase;
+          } catch (_) {
+            baselineLikes = baselineLikes || likesBase;
+            baselineDislikes = baselineDislikes || dislikesBase;
+          }
+        }
+
+        const likesCount = Number(row.likesCount ?? 0);
+        const dislikesCount = Number(row.dislikesCount ?? 0);
+
+        results.push({
+          postId: effectiveId,
+          baselineLikes,
+          baselineDislikes,
+          likesCount,
+          dislikesCount,
+          totals: {
+            likes: baselineLikes + likesCount,
+            dislikes: baselineDislikes + dislikesCount
+          }
+        });
       }
 
       return res.json({ results });
