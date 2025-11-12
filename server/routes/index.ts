@@ -129,6 +129,10 @@ export function registerModularRoutes(app: Express) {
     app.use('/api/tips', tipsRouter);
     routesLogger.info('Tips routes registered');
 
+    // SSE: real-time reactions stream per post
+    app.get('/api/posts/:id/reactions/stream', async (req, res) => handleSseSubscription(req, res));
+    routesLogger.info('Reactions SSE route registered');
+
     // Feedback submission endpoint used by client
     const feedbackSchema = z.object({
       type: z.enum(['general', 'bug', 'feature', 'content']).default('general'),

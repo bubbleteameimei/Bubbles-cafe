@@ -62,7 +62,7 @@ export function StoryView({ slug }: StoryViewProps) {
       </div>
 
       {/* Fixed position interaction buttons */}
-      <LikeDislike postId={story.id} className="reaction-buttons" />
+      <LikeDislike postId={story.id} slug={story.slug as any} variant="reader" className="reaction-buttons" />
       <ShareButton 
         title={"Bubble’s Cafe"}
         text={`Read ${story.title} — from Bubble’s Cafe.${(story.excerpt && story.excerpt.trim()) ? ' ' + story.excerpt.trim() : ''}`}

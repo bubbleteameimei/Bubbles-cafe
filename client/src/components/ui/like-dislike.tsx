@@ -88,11 +88,11 @@ export function LikeDislike({
         return x - Math.floor(x);
       };
       const seed = Math.abs(h) * 12345;
-      const baseLikes = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
-      const baseDislikes = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
+      const baseLikes = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100; // 100–200
+      const baseDislikes = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3; // 3–7
       return { baseLikes, baseDislikes };
     } catch {
-      return { baseLikes: 120, baseDislikes: 12 };
+      return { baseLikes: 150, baseDislikes: 5 };
     }
   })();
 
@@ -142,8 +142,8 @@ export function LikeDislike({
             return x - Math.floor(x);
           };
           const seed = hash(seedFrom) * 12345;
-          baseLikes = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
-          baseDislikes = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
+          baseLikes = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100;
+          baseDislikes = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3;
           likes = baseLikes;
           dislikes = baseDislikes;
         }
@@ -239,6 +239,34 @@ export function LikeDislike({
     };
   }, [postId, slug, source, onUpdate, initialTotals, storageKey]);
 
+  // Subscribe to server-sent events for live reaction totals
+  useEffect(() => {
+    const base = getApiBaseUrl();
+    const url = `${base ? base.replace(/\/+$/, '') : ''}/api/posts/${postId}/reactions/stream`;
+    let es: EventSource | null = null;
+
+    try {
+      es = new EventSource(url, { withCredentials: true } as any);
+      const onInitial = (e: MessageEvent) => {
+        try { applyServerTotals(JSON.parse(e.data)); } catch {}
+      };
+      const onUpdateEvt = (e: MessageEvent) => {
+        try { applyServerTotals(JSON.parse(e.data)); } catch {}
+      };
+      es.addEventListener('initial', onInitial as unknown as EventListener);
+      es.addEventListener('update', onUpdateEvt as unknown as EventListener);
+      es.addEventListener('ping', (() => {}) as unknown as EventListener);
+    } catch {}
+
+    return () => {
+      try { es?.close(); } catch {}
+      es = null;
+    };
+  }, [postId]);bscribe to server-sent events for live reaction totals
+  useEffect(() => {
+    const base = getApiBaseUrl();
+    const url = `${base ? base.replace(/\/+$/,]);
+
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
     setInlineToast({ message, type });
     requestAnimationFrame(() => {
@@ -276,8 +304,8 @@ export function LikeDislike({
         return x - Math.floor(x);
       };
       const seed = hash(seedFrom) * 12345;
-      baseLikes = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
-      baseDislikes = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
+      baseLikes = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100;
+      baseDislikes = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3;
       likes = baseLikes;
       dislikes = baseDislikes;
     }
@@ -316,8 +344,8 @@ export function LikeDislike({
       return x - Math.floor(x);
     };
     const seed = hash(seedFrom) * 12345;
-    const baseLikes = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
-    const baseDislikes = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2;
+    const baseLikes = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100;
+    const baseDislikes = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3;
     return { baseLikes, baseDislikes };
   };
 

@@ -71,19 +71,34 @@ export async function broadcastPostReactions(postId: number) {
   }
 }
 
-export function handleSseSubscription(req: Request, res: Response) {
+export async function handleSseSubscription(req: Request, res: Response) {
   const idRaw = (req.params as any).id ?? (req.query as any).postId;
-  const postId = Number(idRaw);
-  if (!Number.isFinite(postId) || postId <= 0) {
+  const inputId = Number(idRaw);
+  if (!Number.isFinite(inputId) || inputId <= 0) {
     res.status(400).json({ error: 'Invalid postId' });
     return;
   }
 
+  // Resolve to local post id when provided a WordPress id
+  let effectiveId = inputId;
+  try {
+    const exists = await db.execute(sql`SELECT id FROM posts WHERE id = ${inputId} LIMIT 1`);
+    if (!(exists as any).rows?.[0]?.id) {
+      const mapRes = await db.execute(sql`
+        SELECT id FROM posts WHERE (metadata->>'wordpressId')::int = ${inputId} LIMIT 1
+      `);
+      const mapped = (mapRes as any).rows?.[0]?.id;
+      if (Number.isFinite(mapped)) effectiveId = Number(mapped);
+    }
+  } catch {
+    // ignore mapping failures; continue with input id
+  }
+
   initSseHeaders(res);
 
-  // Register client
-  const set = clientsByPostId.get(postId) ?? new Set<Client>();
-  clientsByPostId.set(postId, set);
+  // Register client under effective local id
+  const set = clientsByPostId.get(effectiveId) ?? new Set<Client>();
+  clientsByPostId.set(effectiveId, set);
   const client: Client = { res, createdAt: Date.now() };
   set.add(client);
 
@@ -95,13 +110,13 @@ export function handleSseSubscription(req: Request, res: Response) {
            likes_count AS "likesCount",
            dislikes_count AS "dislikesCount"
     FROM posts
-    WHERE id = ${postId}
+    WHERE id = ${effectiveId}
     LIMIT 1
   `).then((result: any) => {
     const row = result.rows?.[0];
     if (row) {
       const payload = {
-        postId,
+        postId: effectiveId,
         baselineLikes: Number(row.baselineLikes ?? 0),
         baselineDislikes: Number(row.baselineDislikes ?? 0),
         likesCount: Number(row.likesCount ?? 0),
@@ -124,12 +139,12 @@ export function handleSseSubscription(req: Request, res: Response) {
   req.on('close', () => {
     clearInterval(interval);
     try { res.end(); } catch {}
-    const set = clientsByPostId.get(postId);
+    const set = clientsByPostId.get(effectiveId);
     if (set) {
       for (const c of set) {
         if (c.res === res) set.delete(c);
       }
-      if (set.size === 0) clientsByPostId.delete(postId);
+      if (set.size === 0) clientsByPostId.delete(effectiveId);
     }
   });
 }

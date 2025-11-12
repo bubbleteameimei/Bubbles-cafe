@@ -568,8 +568,8 @@ async function fixPostsTableColumns(client: any) {
       const slug = String(row.slug || '');
       const seedNumber = slug ? hashSlug(slug) : id;
       const seed = seedNumber * 12345;
-      const likesBase = Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80; // 80–200
-      const dislikesBase = Math.floor(seededRandom(seed + 999) * (13 - 2 + 1)) + 2; // 2–13
+      const likesBase = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100; // 100–200
+      const dislikesBase = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3; // 3–7
 
       await client.query(
         `UPDATE posts SET baseline_likes = CASE WHEN baseline_likes = 0 THEN $1 ELSE baseline_likes END,

@@ -68,7 +68,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
       return x - Math.floor(x);
     };
     const seed = Math.abs(h) * 12345;
-    return Math.floor(seededRandom(seed) * (200 - 80 + 1)) + 80;
+    return Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100; // 100–200
   };
 
   const sortedByLikes = useMemo(() => {
