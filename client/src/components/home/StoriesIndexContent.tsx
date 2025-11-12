@@ -68,6 +68,8 @@ export default function StoriesIndexContent() {
   const fetchedReactionIdsRef = React.useRef<Set<number>>(new Set());
   // SSE sources per post to stream live updates
   const sseSourcesRef = React.useRef<Map<number, EventSource>>(new Map());
+  // Track whether we've prefetched totals for all posts to avoid repeated work
+  const preloadedAllRef = React.useRef<boolean>(false);
 
   // Defer only reaction widgets; render the rest immediately to avoid layout shifts
   const [readyReactions, setReadyReactions] = useState(false);
@@ -735,6 +737,45 @@ export default function StoriesIndexContent() {
 
     // Start with a small initial preload + SSE
     void preloadInitial();
+
+    // Then, in the background, preload totals for remaining posts to avoid zero displays
+    const preloadRemaining = async () => {
+      if (preloadedAllRef.current) return;
+      try {
+        const ids = sortedPosts
+          .map((p: Post) => Number(p.id))
+          .filter((n: number) => Number.isFinite(n))
+          .filter((id: number) => !fetched.has(id));
+        if (ids.length === 0) {
+          preloadedAllRef.current = true;
+          return;
+        }
+        const { fetchReactionsBatch } = await import("@/api/reactions");
+        // Chunk into batches to avoid large payloads
+        for (let i = 0; i < ids.length; i += 60) {
+          if (!mounted) return;
+          const chunk = ids.slice(i, i + 60);
+          const totals = await fetchReactionsBatch(chunk);
+          if (!mounted) return;
+          const update: Record<number, import("@/api/reactions").ReactionTotals> = {};
+          for (const t of totals) {
+            update[t.postId] = t;
+            fetched.add(t.postId);
+          }
+          setReactionTotals((prev) => ({ ...prev, ...update }));
+        }
+        preloadedAllRef.current = true;
+      } catch {
+        // ignore background failures
+      }
+    };
+
+    const idle = (window as any).requestIdleCallback as undefined | ((cb: () => void, opts?: { timeout?: number }) => void);
+    if (typeof idle === 'function') {
+      idle(() => { if (mounted) setTimeout(() => { void preloadRemaining(); }, 400); }, { timeout: 2500 });
+    } else {
+      setTimeout(() => { if (mounted) void preloadRemaining(); }, 1200);
+    }
 
     // Listen for reaction updates from LikeDislike
     const onUpdate = (e: Event) => {
