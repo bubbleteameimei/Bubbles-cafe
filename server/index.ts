@@ -43,7 +43,7 @@ if (process.env.ENABLE_TRACING === 'true') {
     } catch {}
   })();
 }
-app.set('trust proxy', 1);
+app.set('trust proxy', true);
 app.disable('x-powered-by');
 const isDev = config.isDev;
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;

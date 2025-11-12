@@ -94,8 +94,10 @@ export async function validateSession(req: Request, res: Response, next: NextFun
     
     // Set fingerprint for new sessions on public routes
     if (!(req.session as any).fingerprint) {
-      const currentFingerprint = await generateFingerprint(req);
-      (req.session as any).fingerprint = currentFingerprint;
+      const fp = await generateFingerprint(req);
+      (req.session as any).fingerprint = fp.strict;
+      (req.session as any).fingerprintBase = fp.base;
+      (req.session as any).createdAt = (req.session as any).createdAt || Date.now();
     }
     
     return next();
@@ -110,27 +112,46 @@ export async function validateSession(req: Request, res: Response, next: NextFun
     return res.status(500).json({ error: 'Session configuration error' });
   }
 
-  // Check for session hijacking attempts
-  const currentFingerprint = await generateFingerprint(req);
-  if ((req.session as any).fingerprint && (req.session as any).fingerprint !== currentFingerprint) {
-    securityLogger.error('Potential session hijacking detected', {
-      sessionId: req.sessionID,
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      storedFingerprint: (req.session as any).fingerprint,
-      currentFingerprint
-    });
-    
-    req.session.destroy((err) => {
-      if (err) securityLogger.error('Failed to destroy hijacked session', { error: err.message });
-    });
-    
-    return res.status(401).json({ error: 'Session security violation' });
+  // Check for session hijacking attempts with tolerant matching
+  const fp = await generateFingerprint(req);
+  const sess: any = req.session;
+  if (sess.fingerprint && sess.fingerprint !== fp.strict) {
+    const baseMatch = !!sess.fingerprintBase && sess.fingerprintBase === fp.base;
+    if (baseMatch) {
+      // Likely benign change (proxy/IP segment); update strict fingerprint and continue
+      securityLogger.warn('Session fingerprint changed (likely IP/proxy)', {
+        sessionId: req.sessionID,
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        storedStrict: sess.fingerprint,
+        storedBase: sess.fingerprintBase,
+        currentStrict: fp.strict,
+        currentBase: fp.base
+      });
+      sess.fingerprint = fp.strict;
+      sess.fingerprintBase = fp.base;
+    } else {
+      securityLogger.error('Potential session hijacking detected', {
+        sessionId: req.sessionID,
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        storedFingerprint: sess.fingerprint,
+        storedFingerprintBase: sess.fingerprintBase,
+        currentFingerprintStrict: fp.strict,
+        currentFingerprintBase: fp.base
+      });
+      req.session.destroy((err) => {
+        if (err) securityLogger.error('Failed to destroy hijacked session', { error: err.message });
+      });
+      return res.status(401).json({ error: 'Session security violation' });
+    }
   }
 
   // Set fingerprint for new sessions
-  if (!(req.session as any).fingerprint) {
-    (req.session as any).fingerprint = currentFingerprint;
+  if (!sess.fingerprint) {
+    sess.fingerprint = fp.strict;
+    sess.fingerprintBase = fp.base;
+    sess.createdAt = sess.createdAt || Date.now();
   }
 
   // Check session age
@@ -148,19 +169,39 @@ export async function validateSession(req: Request, res: Response, next: NextFun
   next();
 }
 
-// Generate browser fingerprint for session validation
-async function generateFingerprint(req: Request): Promise<string> {
-  const components = [
-    req.get('User-Agent') || '',
-    req.get('Accept-Language') || '',
-    req.get('Accept-Encoding') || '',
-    req.ip
-  ];
-  
+// Generate browser fingerprint for session validation with tolerant matching
+async function generateFingerprint(req: Request): Promise<{ strict: string; base: string; components: Record<string, string> }> {
+  const ua = req.get('User-Agent') || '';
+  // Normalize Accept-Language to primary language code to reduce noise (e.g., "en-US,en;q=0.9" -> "en")
+  const langHeader = req.get('Accept-Language') || '';
+  const langPrimary = langHeader.split(',')[0].trim().slice(0, 2).toLowerCase();
+  const deviceType = /Mobile|Android|iPhone|iPad/i.test(ua) ? 'm' : 'd';
+
+  // Prefer the first X-Forwarded-For IP when available; fall back to req.ip
+  const xff = String(req.headers['x-forwarded-for'] || '').split(',')[0]?.trim() || '';
+  const candidateIp = (xff || req.ip || '').trim();
+
+  // Ignore private/internal IPs; include a coarse network segment for public IPs to reduce false positives
+  const isPrivate = (ip: string) => /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1|fc00:|fd00:)/.test(ip);
+  let ipSegment = '';
+  if (candidateIp && !isPrivate(candidateIp)) {
+    const v4 = candidateIp.match(/^(\d{1,3})\.(\d{1,3})\./);
+    if (v4) {
+      ipSegment = `${v4[1]}.${v4[2]}`;
+    } else {
+      const parts = candidateIp.split(':').filter(Boolean);
+      if (parts.length >= 2) ipSegment = `${parts[0]}:${parts[1]}`;
+    }
+  }
+
   const crypto = await import('crypto');
-  return crypto.createHash('sha256')
-    .update(components.join('|'))
-    .digest('hex');
+  const baseData = `${ua}|${langPrimary}|${deviceType}`;
+  const strictData = `${baseData}|${ipSegment}`;
+
+  const base = crypto.createHash('sha256').update(baseData).digest('hex');
+  const strict = crypto.createHash('sha256').update(strictData).digest('hex');
+
+  return { strict, base, components: { ua, lang: langPrimary, ipSegment } };
 }
 
 // Input sanitization middleware
