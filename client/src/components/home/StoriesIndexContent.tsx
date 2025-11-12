@@ -31,6 +31,7 @@ import { getBadgeTint } from "@/lib/theme-badges";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { VirtualScrollArea } from "@/components/ui/VirtualScrollArea";
 import { computeTrendingScores } from "@/lib/trending";
+import { useThemeCategories } from "@/hooks/use-theme-categories";
 
 
 

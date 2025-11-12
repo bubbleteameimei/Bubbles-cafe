@@ -124,7 +124,7 @@ export function registerModularRoutes(app: Express) {
 
     // Theme categories (active categories for reader/index usage)
     app.use('/api/themes', themesCategoriesRouter);
-    routesLogger');
+    routesLogger.info('Theme categories routes registered');
 
     // User notifications
     app.use('/api/notifications', userNotificationsRouter);

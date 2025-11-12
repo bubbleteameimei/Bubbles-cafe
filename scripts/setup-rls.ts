@@ -32,7 +32,8 @@ async function run() {
     'reading_progress',
     'bookmarks',
     'comment_votes',
-    'comment_reactions'
+    'comment_reactions',
+    'theme_categories'
   ];
 
   for (const tbl of enableRlsTables) {
@@ -231,7 +232,7 @@ END$$;
     await execSQL(
       `Policy comment_reactions_${kind.toLowerCase()}_own`,
       `
-DO $$
+DO $
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
@@ -243,14 +244,14 @@ BEGIN
       FOR ${kind}
       USING (user_id = auth.uid());
   END IF;
-END$$;
+END$;
 `
     );
   }
   await execSQL(
     'Policy comment_reactions_insert_own',
     `
-DO $$
+DO $
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
@@ -262,7 +263,27 @@ BEGIN
       FOR INSERT
       WITH CHECK (user_id = auth.uid());
   END IF;
-END$$;
+END$;
+`
+  );
+
+  // theme_categories: allow public SELECT for safe browser reads via supabase-js
+  await execSQL(
+    'Policy theme_categories_public_select',
+    `
+DO $
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'theme_categories'
+      AND policyname = 'theme_categories_public_select'
+  ) THEN
+    CREATE POLICY theme_categories_public_select ON theme_categories
+      FOR SELECT
+      USING (true);
+  END IF;
+END$;
 `
   );
 
