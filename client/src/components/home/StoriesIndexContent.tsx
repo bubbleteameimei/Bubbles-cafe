@@ -819,7 +819,7 @@ export default function StoriesIndexContent() {
           const bTotals = reactionTotals[b.id];
           const aLikes = Number(aTotals?.totals?.likes ?? 0);
           const bLikes = Number(bTotals?.totals?.likes ?? 0);
-          const alikesCount || 0));
+          
           const aViews = (a.metadata && (a.metadata as any).pageViews) ? Number((a.metadata as any).pageViews) : 0;
           const bViews = (b.metadata && (b.metadata as any).pageViews) ? Number((b.metadata as any).pageViews) : 0;
           const now = Date.now();
@@ -975,7 +975,7 @@ export default function StoriesIndexContent() {
             .map(p => {
               const totals = reactionTotals[p.id];
               const likes = Number(totals?.totals?.likes ?? 0);
-              const views = p.metadata && (p.metadata as any(p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
+              const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
               const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
               const decay = Math.max(0.2, 1 - (ageDays / windowDays));
               const score = (likes * 2.5 + views * 0.8) * decay;
