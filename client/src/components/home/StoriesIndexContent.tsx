@@ -602,13 +602,16 @@ export default function StoriesIndexContent() {
     let pending: number[] = [];
     let flushTimer: any = null;
 
+    // Capture current SSE map reference to use in cleanup (avoid ref changing)
+    const sources = sseSourcesRef.current;
+
     // SSE sources per post to stream live updates
     // sseSourcesRef is defined at component scope
 
     const ensureSse = (postId: number) => {
       try {
         if (!Number.isFinite(postId)) return;
-        if (sseSourcesRef.current.has(postId)) return;
+        if (sources.has(postId)) return;
         const url = `/api/posts/${postId}/reactions/stream`;
         const es = new EventSource(url, { withCredentials: true } as any);
         const onMessage = (e: MessageEvent) => {
@@ -633,7 +636,7 @@ export default function StoriesIndexContent() {
         es.addEventListener('initial', onMessage);
         es.addEventListener('update', onMessage);
         es.onerror = () => { /* keep alive; browser will reconnect */ };
-        sseSourcesRef.current.set(postId, es);
+        sources.set(postId, es);
       } catch {}
     };
 
@@ -748,12 +751,12 @@ export default function StoriesIndexContent() {
       clearInterval(interval);
       try { io?.disconnect(); } catch {}
       if (flushTimer) clearTimeout(flushTimer);
-      // Close SSE sources
+      // Close SSE sources using captured reference
       try {
-        for (const es of sseSourcesRef.current.values()) {
+        for (const es of sources.values()) {
           try { es.close(); } catch {}
         }
-        sseSourcesRef.current.clear();
+        sources.clear();
       } catch {}
     };
   }, [sortedPosts, visibleCount, gridCols, readyReactions]);
@@ -1020,10 +1023,12 @@ export default function StoriesIndexContent() {
       const sevenDaysInMs = 7 * dayInMs;
       const aRecency = Math.max(0, Math.min(1, 1 - ((now - aDate) / sevenDaysInMs)));
       const bRecency = Math.max(0, Math.min(1, 1 - ((now - bDate) / sevenDaysInMs)));
-      const aLikes = typeof a.likesCount === 'number' ? a.likesCount : 0;
-      const bLikes = typeof b.likesCount === 'number' ? b.likesCount : 0;
-      const aDislikes = typeof a.dislikesCount === 'number' ? a.dislikesCount : 0;
-      const bDislikes = typeof b.dislikesCount === 'number' ? b.dislikesCount : 0;
+      const aTotals = reactionTotals[a.id];
+      const bTotals = reactionTotals[b.id];
+      const aLikes = Number(aTotals?.totals?.likes ?? 0);
+      const bLikes = Number(bTotals?.totals?.likes ?? 0);
+      const aDislikes = Number(aTotals?.totals?.dislikes ?? 0);
+      const bDislikes = Number(bTotals?.totals?.dislikes ?? 0);
       const aViews = a.metadata && (a.metadata as any).pageViews
         ? Number((a.metadata as any).pageViews)
         : 0;

@@ -189,7 +189,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                       <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                         <span className="inline-flex items-center gap-1">
                             <Heart className="h-4 w-4 text-rose-500" />
-                            {Number((totalsFromParent?.[featured.id]?.totals?.likes ?? totalsMap[featured.id]?.totals?.likes) ?? (featured.likesCount || 0))}
+                            {Number((totalsFromParent?.[featured.id]?.totals?.likes ?? totalsMap[featured.id]?.totals?.likes) ?? 0)}
                           </span>
                       </div>
                     </a>
