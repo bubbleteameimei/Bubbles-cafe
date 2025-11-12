@@ -630,7 +630,15 @@ async function startServer() {
             const runNormalize = String(process.env.RUN_BASELINE_NORMALIZE ?? 'true').toLowerCase() === 'true';
             const forceNormalize = String(process.env.RUN_BASELINE_NORMALIZE_FORCE ?? 'true').toLowerCase() === 'true';
             if (runNormalize) {
-              serverLogger.info('Running baseline normalization', { force: force 0) {
+              serverLogger.info('Running baseline normalization', { force: forceNormalize });
+              await normalizeBaselines(forceNormalize);
+              serverLogger.info('Baseline normalization completed');
+            }
+          } catch (normErr) {
+            serverLogger.warn('Baseline normalization failed', { error: normErr instanceof Error ? normErr.message : String(normErr) });
+          }
+
+          if (postsCount === 0) {
             serverLogger.info('No posts found - seeding from WordPress API...');
             try {
               await seedFromWordPressAPI();
@@ -668,7 +676,17 @@ async function startServer() {
               serverLogger.info('Database connected after schema creation', { postsCount: postsCountAfter });
               // Run baseline normalization after schema creation (default enabled)
               try {
-               
+                const runNormalize = String(process.env.RUN_BASELINE_NORMALIZE ?? 'true').toLowerCase() === 'true';
+                const forceNormalize = String(process.env.RUN_BASELINE_NORMALIZE_FORCE ?? 'true').toLowerCase() === 'true';
+                if (runNormalize) {
+                  serverLogger.info('Running baseline normalization', { force: forceNormalize });
+                  await normalizeBaselines(forceNormalize);
+                  serverLogger.info('Baseline normalization completed');
+                }
+              } catch (normErr) {
+                serverLogger.warn('Baseline normalization failed', { error: normErr instanceof Error ? normErr.message : String(normErr) });
+              }
+              
               if (postsCountAfter === 0) {
                 serverLogger.info('Seeding from WordPress API after schema creation...');
                 try {
