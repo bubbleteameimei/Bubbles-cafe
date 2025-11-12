@@ -44,6 +44,7 @@ import { sanitizeHtml } from "@/lib/sanitize";
 import { trackWordPressRead } from "@/lib/wp-reads";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
 import { trackInteraction } from "@/lib/metrics";
+import { fetchReactionsBatch, type ReactionTotals } from "@/api/reactions";
 
 
 import {
@@ -71,6 +72,7 @@ import { getThemeDefinitionOverride, syncThemeDefinitionOverridesFromServer } fr
 import { Icon } from "@iconify/react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getBadgeTint } from "@/lib/theme-badges";
+import { useThemeCategories } from "@/hooks/use-theme-categories";
 
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
@@ -155,6 +157,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Font size and family adjustments
   const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
   const { fontFamily, availableFonts, updateFontFamily } = useFontFamily();
+  const { categoriesMap, categoriesList } = useThemeCategories();
   
   // Night mode functionality has been completely removed
   
@@ -474,7 +477,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
       try {
         // Always fetch a list of posts to preserve global navigation context
-        const result = await fetchWordPressPosts({ perPage: 100, includeContent: true });
+        const result = await fetchWordPressPosts({ perPage: 50, includeContent: true });
         const posts = Array.isArray(result.posts) ? result.posts : [];
         return { posts, totalPages: result.totalPages ?? 1, total: result.total ?? posts.length };
       } catch (error) {
@@ -554,6 +557,63 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       return undefined;
     }
   }, [posts, currentIndex]);
+
+  // Reaction totals for the current post (prefetch + SSE to minimize pop-in)
+  const [currentTotals, setCurrentTotals] = useState<ReactionTotals | null>(null);
+  const sseRef = useRef<EventSource | null>(null);
+
+  useEffect(() => {
+    try {
+      sseRef.current?.close();
+    } catch {}
+    setCurrentTotals(null);
+
+    const pid = Number(currentPostId);
+    if (!Number.isFinite(pid)) return;
+
+    // Prefetch totals
+    (async () => {
+      try {
+        const totals = await fetchReactionsBatch([pid]);
+        const first = totals && totals[0];
+        if (first && Number(first.postId) === pid) {
+          setCurrentTotals(first);
+        }
+      } catch { /* ignore */ }
+    })();
+
+    // Subscribe to SSE for live totals
+    try {
+      const es = new EventSource(`/api/posts/${pid}/reactions/stream`, { withCredentials: true } as any);
+      const onMessage = (e: MessageEvent) => {
+        try {
+          const payload = JSON.parse(e.data || '{}');
+          if (payload && typeof payload.postId === 'number') {
+            setCurrentTotals({
+              postId: Number(payload.postId),
+              baselineLikes: Number(payload.baselineLikes || 0),
+              baselineDislikes: Number(payload.baselineDislikes || 0),
+              likesCount: Number(payload.likesCount || 0),
+              dislikesCount: Number(payload.dislikesCount || 0),
+              totals: {
+                likes: Number(payload.totals?.likes || (Number(payload.baselineLikes || 0) + Number(payload.likesCount || 0))),
+                dislikes: Number(payload.totals?.dislikes || (Number(payload.baselineDislikes || 0) + Number(payload.dislikesCount || 0))),
+              }
+            });
+          }
+        } catch {}
+      };
+      es.addEventListener('initial', onMessage);
+      es.addEventListener('update', onMessage);
+      es.onerror = () => { /* keep alive */ };
+      sseRef.current = es;
+    } catch { /* ignore */ }
+
+    return () => {
+      try { sseRef.current?.close(); } catch {}
+      sseRef.current = null;
+    };
+  }, [currentPostId]);
 
   const currentPostLink = useMemo(() => {
     try {
@@ -838,6 +898,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Get current post
   const currentPost = posts[validCurrentIndex];
+
+  
 
   
 
@@ -1453,6 +1515,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       overrideThemeIcon ||
                       md.themeIcon ||
                       defOverride?.icon ||
+                      categoriesMap[derivedKey]?.icon ||
                       (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
                       'ghost';
 
@@ -1536,6 +1599,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     const baseLabel =
                       override?.label ||
                       defOverride?.label ||
+                      categoriesMap[derivedKey]?.label ||
                       (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
                       primaryThemeRaw ||
                       'Horror';
@@ -1651,33 +1715,64 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                               <SelectValue placeholder="Select a theme" />
                             </SelectTrigger>
                             <SelectContent>
-                              {Object.entries(SHARED_THEME_CATEGORIES as Record<string, { label: string; icon: string }>).map(([key, info]) => {
-                                const base = info.label;
-                                const l = String(base).toLowerCase();
-                                const refined = (() => {
-                                  if (l.includes('cosmic')) return 'Cosmic Horror';
-                                  if (l.includes('existential')) return 'Existential Horror';
-                                  if (l.includes('vehicular')) return 'Vehicular Horror';
-                                  if (l.includes('psychological')) return 'Psychological Horror';
-                                  if (l.includes('supernatural')) return 'Supernatural Horror';
-                                  if (l.includes('technological')) return 'Technological Horror';
-                                  if (l.includes('uncanny')) return 'Uncanny Horror';
-                                  if (l.includes('gothic')) return 'Gothic Horror';
-                                  if (l.includes('folk')) return 'Folk Horror';
-                                  if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
-                                  if (l.includes('cannibal')) return 'Cannibalism Horror';
-                                  if (l.includes('science')) return 'Science Horror';
-                                  if (l.includes('apocalyptic')) return 'Apocalyptic Horror';
-                                  if (l.includes('stalking')) return 'Stalker/Pursuit Horror';
-                                  if (l.includes('doppelganger')) return 'Identity Horror';
-                                  return base;
-                                })();
-                                return (
-                                  <SelectItem key={key} value={key}>
-                                    {refined}
-                                  </SelectItem>
-                                );
-                              })}
+                              {(categoriesList.length
+                                ? categoriesList.map((item) => {
+                                    const key = String(item.key);
+                                    const label = String(item.label);
+                                    const base = label;
+                                    const l = String(base).toLowerCase();
+                                    const refined = (() => {
+                                      if (l.includes('cosmic')) return 'Cosmic Horror';
+                                      if (l.includes('existential')) return 'Existential Horror';
+                                      if (l.includes('vehicular')) return 'Vehicular Horror';
+                                      if (l.includes('psychological')) return 'Psychological Horror';
+                                      if (l.includes('supernatural')) return 'Supernatural Horror';
+                                      if (l.includes('technological')) return 'Technological Horror';
+                                      if (l.includes('uncanny')) return 'Uncanny Horror';
+                                      if (l.includes('gothic')) return 'Gothic Horror';
+                                      if (l.includes('folk')) return 'Folk Horror';
+                                      if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
+                                      if (l.includes('cannibal')) return 'Cannibalism Horror';
+                                      if (l.includes('science')) return 'Science Horror';
+                                      if (l.includes('apocalyptic')) return 'Apocalyptic Horror';
+                                      if (l.includes('stalking')) return 'Stalker/Pursuit Horror';
+                                      if (l.includes('doppelganger')) return 'Identity Horror';
+                                      return base;
+                                    })();
+                                    return (
+                                      <SelectItem key={key} value={key}>
+                                        {refined}
+                                      </SelectItem>
+                                    );
+                                  })
+                                : Object.entries(SHARED_THEME_CATEGORIES as Record<string, { label: string; icon: string }>).map(([key, info]) => {
+                                    const base = info.label;
+                                    const l = String(base).toLowerCase();
+                                    const refined = (() => {
+                                      if (l.includes('cosmic')) return 'Cosmic Horror';
+                                      if (l.includes('existential')) return 'Existential Horror';
+                                      if (l.includes('vehicular')) return 'Vehicular Horror';
+                                      if (l.includes('psychological')) return 'Psychological Horror';
+                                      if (l.includes('supernatural')) return 'Supernatural Horror';
+                                      if (l.includes('technological')) return 'Technological Horror';
+                                      if (l.includes('uncanny')) return 'Uncanny Horror';
+                                      if (l.includes('gothic')) return 'Gothic Horror';
+                                      if (l.includes('folk')) return 'Folk Horror';
+                                      if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
+                                      if (l.includes('cannibal')) return 'Cannibalism Horror';
+                                      if (l.includes('science')) return 'Science Horror';
+                                      if (l.includes('apocalyptic')) return 'Apocalyptic Horror';
+                                      if (l.includes('stalking')) return 'Stalker/Pursuit Horror';
+                                      if (l.includes('doppelganger')) return 'Identity Horror';
+                                      return base;
+                                    })();
+                                    return (
+                                      <SelectItem key={key} value={key}>
+                                        {refined}
+                                      </SelectItem>
+                                    );
+                                  })
+                              )}
                             </SelectContent>
                           </Select>
                         </div>
@@ -1919,7 +2014,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               <div className="flex flex-col items-center justify-center gap-6">
                 {/* Centered Like/Dislike buttons */}
                 <div className={`flex justify-center w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-                  <LikeDislike postId={currentPost.id} slug={currentPost.slug} source="wp" variant="reader" />
+                  <LikeDislike postId={currentPost.id} slug={currentPost.slug} source="wp" variant="reader" initialTotals={currentTotals} />
                 </div>
 
                 <div className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>

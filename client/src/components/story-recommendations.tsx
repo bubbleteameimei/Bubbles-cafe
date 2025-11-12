@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { fetchReactionsBatch, type ReactionTotals } from "@/api/reactions"
 
 // Temporarily define the types directly to avoid import issues
 type ThemeCategory = 
@@ -105,6 +106,37 @@ export function StoryRecommendations({
     },
     enabled: !!currentPostId,
   });
+
+  // Reaction totals for recommended posts
+  const [totalsMap, setTotalsMap] = React.useState<Record<number, ReactionTotals>>({});
+
+  // Fetch ReactionTotals for recommendations when available; update on local reaction events
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const ids = Array.isArray(recommendations) ? recommendations.map((p: Post) => Number(p.id)).filter(n => Number.isFinite(n)) : [];
+        if (ids.length === 0) return;
+        const totals = await fetchReactionsBatch(ids.slice(0, 50));
+        if (!mounted) return;
+        const map: Record<number, ReactionTotals> = {};
+        for (const t of totals) map[t.postId] = t;
+        setTotalsMap(map);
+      } catch { /* ignore */ }
+    })();
+
+    const onUpdate = (e: Event) => {
+      const detail = (e as CustomEvent).detail as ReactionTotals;
+      if (!detail || typeof detail.postId !== 'number') return;
+      setTotalsMap(prev => ({ ...prev, [detail.postId]: detail }));
+    };
+    window.addEventListener('reaction:updated', onUpdate as EventListener);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener('reaction:updated', onUpdate as EventListener);
+    };
+  }, [recommendations]);
   
   // Handle bookmark click
   const handleBookmark = (postId: number) => {
@@ -228,12 +260,10 @@ export function StoryRecommendations({
                           </Badge>
                         )}
                         
-                        {typeof post.likesCount === 'number' && (
-                          <Badge variant="outline" className="flex items-center gap-1">
-                            <ThumbsUp className="h-3 w-3" />
-                            {post.likesCount}
-                          </Badge>
-                        )}
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <ThumbsUp className="h-3 w-3" />
+                          {Number(totalsMap[post.id]?.totals?.likes ?? 0)}
+                        </Badge>
                       </>
                     )}
                   </div>

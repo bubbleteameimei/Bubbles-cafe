@@ -31,6 +31,7 @@ import { getBadgeTint } from "@/lib/theme-badges";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { VirtualScrollArea } from "@/components/ui/VirtualScrollArea";
 import { computeTrendingScores } from "@/lib/trending";
+import { useThemeCategories } from "@/hooks/use-theme-categories";
 
 
 
@@ -65,6 +66,10 @@ export default function StoriesIndexContent() {
   const cardsGridRef = React.useRef<HTMLDivElement | null>(null);
   const breakpointRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null);
   const fetchedReactionIdsRef = React.useRef<Set<number>>(new Set());
+  // SSE sources per post to stream live updates
+  const sseSourcesRef = React.useRef<Map<number, EventSource>>(new Map());
+  // Track whether we've prefetched totals for all posts to avoid repeated work
+  const preloadedAllRef = React.useRef<boolean>(false);
 
   // Defer only reaction widgets; render the rest immediately to avoid layout shifts
   const [readyReactions, setReadyReactions] = useState(false);
@@ -599,6 +604,44 @@ export default function StoriesIndexContent() {
     let pending: number[] = [];
     let flushTimer: any = null;
 
+    // Capture current SSE map reference to use in cleanup (avoid ref changing)
+    const sources = sseSourcesRef.current;
+
+    // SSE sources per post to stream live updates
+    // sseSourcesRef is defined at component scope
+
+    const ensureSse = (postId: number) => {
+      try {
+        if (!Number.isFinite(postId)) return;
+        if (sources.has(postId)) return;
+        const url = `/api/posts/${postId}/reactions/stream`;
+        const es = new EventSource(url, { withCredentials: true } as any);
+        const onMessage = (e: MessageEvent) => {
+          try {
+            const payload = JSON.parse(e.data || '{}');
+            if (payload && typeof payload.postId === 'number') {
+              setReactionTotals(prev => ({ ...prev, [payload.postId]: {
+                postId: payload.postId,
+                baselineLikes: Number(payload.baselineLikes || 0),
+                baselineDislikes: Number(payload.baselineDislikes || 0),
+                likesCount: Number(payload.likesCount || 0),
+                dislikesCount: Number(payload.dislikesCount || 0),
+                totals: {
+                  likes: Number(payload.totals?.likes || (Number(payload.baselineLikes || 0) + Number(payload.likesCount || 0))),
+                  dislikes: Number(payload.totals?.dislikes || (Number(payload.baselineDislikes || 0) + Number(payload.dislikesCount || 0))),
+                }
+              }}));
+              fetched.add(payload.postId);
+            }
+          } catch {}
+        };
+        es.addEventListener('initial', onMessage);
+        es.addEventListener('update', onMessage);
+        es.onerror = () => { /* keep alive; browser will reconnect */ };
+        sources.set(postId, es);
+      } catch {}
+    };
+
     // Preload a small initial batch near the top of the list to avoid empty counts above the fold
     const preloadInitial = async () => {
       try {
@@ -606,18 +649,23 @@ export default function StoriesIndexContent() {
         const candidateIds = sortedPosts
           .slice(0, initialBatchSize)
           .map((p: Post) => Number(p.id))
-          .filter((n: number) => Number.isFinite(n))
-          .filter((id: number) => !fetched.has(id));
-        if (candidateIds.length === 0) return;
-        const { fetchReactionsBatch } = await import("@/api/reactions");
-        const totals = await fetchReactionsBatch(candidateIds);
-        if (!mounted) return;
-        const map: Record<number, import("@/api/reactions").ReactionTotals> = {};
-        for (const t of totals) {
-          map[t.postId] = t;
-          fetched.add(t.postId);
+          .filter((n: number) => Number.isFinite(n));
+        const idsToFetch = candidateIds.filter((id: number) => !fetched.has(id));
+        if (idsToFetch.length > 0) {
+          const { fetchReactionsBatch } = await import("@/api/reactions");
+          const totals = await fetchReactionsBatch(idsToFetch);
+          if (!mounted) return;
+          const map: Record<number, import("@/api/reactions").ReactionTotals> = {};
+          for (const t of totals) {
+            map[t.postId] = t;
+            fetched.add(t.postId);
+          }
+          setReactionTotals((prev) => ({ ...prev, ...map }));
         }
-        setReactionTotals((prev) => ({ ...prev, ...map }));
+        // Open SSE streams for visible/initial posts
+        for (const id of candidateIds) {
+          ensureSse(id);
+        }
       } catch {
         // ignore
       }
@@ -629,16 +677,21 @@ export default function StoriesIndexContent() {
         const unique = Array.from(new Set(pending));
         pending = [];
         const toFetch = unique.filter((id) => Number.isFinite(id) && !fetched.has(id));
-        if (toFetch.length === 0) return;
-        const { fetchReactionsBatch } = await import("@/api/reactions");
-        const totals = await fetchReactionsBatch(toFetch.slice(0, 60));
-        if (!mounted) return;
-        const update: Record<number, import("@/api/reactions").ReactionTotals> = {};
-        for (const t of totals) {
-          update[t.postId] = t;
-          fetched.add(t.postId);
+        if (toFetch.length > 0) {
+          const { fetchReactionsBatch } = await import("@/api/reactions");
+          const totals = await fetchReactionsBatch(toFetch.slice(0, 60));
+          if (!mounted) return;
+          const update: Record<number, import("@/api/reactions").ReactionTotals> = {};
+          for (const t of totals) {
+            update[t.postId] = t;
+            fetched.add(t.postId);
+          }
+          setReactionTotals((prev) => ({ ...prev, ...update }));
         }
-        setReactionTotals((prev) => ({ ...prev, ...update }));
+        // Ensure SSE for all newly observed ids
+        for (const id of unique) {
+          ensureSse(id);
+        }
       } catch {
         // ignore
       }
@@ -650,20 +703,18 @@ export default function StoriesIndexContent() {
       flushTimer = setTimeout(() => {
         flushTimer = null;
         void flush();
-      }, 250);
+      }, 200);
     };
 
     try {
       io = new IntersectionObserver(
         (entries) => {
           for (const entry of entries) {
-            if (entry.isIntersecting) {
-              const el = entry.target as HTMLElement;
-              const idAttr = el.getAttribute("data-post-id");
-              const id = idAttr ? Number(idAttr) : NaN;
-              if (Number.isFinite(id) && !fetched.has(id)) {
-                schedule(id);
-              }
+            const el = entry.target as HTMLElement;
+            const idAttr = el.getAttribute("data-post-id");
+            const id = idAttr ? Number(idAttr) : NaN;
+            if (entry.isIntersecting && Number.isFinite(id)) {
+              schedule(id);
               try { io?.unobserve(el); } catch {}
             }
           }
@@ -684,8 +735,47 @@ export default function StoriesIndexContent() {
     };
     const interval = setInterval(reobserve, 1000);
 
-    // Start with a small initial preload
+    // Start with a small initial preload + SSE
     void preloadInitial();
+
+    // Then, in the background, preload totals for remaining posts to avoid zero displays
+    const preloadRemaining = async () => {
+      if (preloadedAllRef.current) return;
+      try {
+        const ids = sortedPosts
+          .map((p: Post) => Number(p.id))
+          .filter((n: number) => Number.isFinite(n))
+          .filter((id: number) => !fetched.has(id));
+        if (ids.length === 0) {
+          preloadedAllRef.current = true;
+          return;
+        }
+        const { fetchReactionsBatch } = await import("@/api/reactions");
+        // Chunk into batches to avoid large payloads
+        for (let i = 0; i < ids.length; i += 60) {
+          if (!mounted) return;
+          const chunk = ids.slice(i, i + 60);
+          const totals = await fetchReactionsBatch(chunk);
+          if (!mounted) return;
+          const update: Record<number, import("@/api/reactions").ReactionTotals> = {};
+          for (const t of totals) {
+            update[t.postId] = t;
+            fetched.add(t.postId);
+          }
+          setReactionTotals((prev) => ({ ...prev, ...update }));
+        }
+        preloadedAllRef.current = true;
+      } catch {
+        // ignore background failures
+      }
+    };
+
+    const idle = (window as any).requestIdleCallback as undefined | ((cb: () => void, opts?: { timeout?: number }) => void);
+    if (typeof idle === 'function') {
+      idle(() => { if (mounted) setTimeout(() => { void preloadRemaining(); }, 400); }, { timeout: 2500 });
+    } else {
+      setTimeout(() => { if (mounted) void preloadRemaining(); }, 1200);
+    }
 
     // Listen for reaction updates from LikeDislike
     const onUpdate = (e: Event) => {
@@ -702,6 +792,13 @@ export default function StoriesIndexContent() {
       clearInterval(interval);
       try { io?.disconnect(); } catch {}
       if (flushTimer) clearTimeout(flushTimer);
+      // Close SSE sources using captured reference
+      try {
+        for (const es of sources.values()) {
+          try { es.close(); } catch {}
+        }
+        sources.clear();
+      } catch {}
     };
   }, [sortedPosts, visibleCount, gridCols, readyReactions]);
 
@@ -764,8 +861,9 @@ export default function StoriesIndexContent() {
           // Fallback to inline calculation when scores not ready
           const aTotals = reactionTotals[a.id];
           const bTotals = reactionTotals[b.id];
-          const aLikes = Number(aTotals?.likesCount ?? (a.likesCount || 0));
-          const bLikes = Number(bTotals?.likesCount ?? (b.likesCount || 0));
+          const aLikes = Number(aTotals?.totals?.likes ?? 0);
+          const bLikes = Number(bTotals?.totals?.likes ?? 0);
+          
           const aViews = (a.metadata && (a.metadata as any).pageViews) ? Number((a.metadata as any).pageViews) : 0;
           const bViews = (b.metadata && (b.metadata as any).pageViews) ? Number((b.metadata as any).pageViews) : 0;
           const now = Date.now();
@@ -856,7 +954,7 @@ export default function StoriesIndexContent() {
         p,
         score: useScores ? (trendingScores[p.id] ?? 0) : (() => {
           const totals = reactionTotals[p.id];
-          const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
+          const likes = Number(totals?.totals?.likes ?? 0);
           const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
           const now = Date.now();
           const dayMs = 24 * 60 * 60 * 1000;
@@ -920,7 +1018,7 @@ export default function StoriesIndexContent() {
         : [...all]
             .map(p => {
               const totals = reactionTotals[p.id];
-              const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
+              const likes = Number(totals?.totals?.likes ?? 0);
               const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
               const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
               const decay = Math.max(0.2, 1 - (ageDays / windowDays));
@@ -966,10 +1064,12 @@ export default function StoriesIndexContent() {
       const sevenDaysInMs = 7 * dayInMs;
       const aRecency = Math.max(0, Math.min(1, 1 - ((now - aDate) / sevenDaysInMs)));
       const bRecency = Math.max(0, Math.min(1, 1 - ((now - bDate) / sevenDaysInMs)));
-      const aLikes = typeof a.likesCount === 'number' ? a.likesCount : 0;
-      const bLikes = typeof b.likesCount === 'number' ? b.likesCount : 0;
-      const aDislikes = typeof a.dislikesCount === 'number' ? a.dislikesCount : 0;
-      const bDislikes = typeof b.dislikesCount === 'number' ? b.dislikesCount : 0;
+      const aTotals = reactionTotals[a.id];
+      const bTotals = reactionTotals[b.id];
+      const aLikes = Number(aTotals?.totals?.likes ?? 0);
+      const bLikes = Number(bTotals?.totals?.likes ?? 0);
+      const aDislikes = Number(aTotals?.totals?.dislikes ?? 0);
+      const bDislikes = Number(bTotals?.totals?.dislikes ?? 0);
       const aViews = a.metadata && (a.metadata as any).pageViews
         ? Number((a.metadata as any).pageViews)
         : 0;
@@ -1139,7 +1239,7 @@ export default function StoriesIndexContent() {
                         {(() => {
                           const md: any = (featuredStory as any)?.metadata || {};
                           const totals = reactionTotals[featuredStory.id] || null;
-                          const likes = Number(totals?.likesCount ?? (featuredStory.likesCount || 0));
+                          const likes = Number(totals?.totals?.likes ?? 0);
                           const views = md && (md as any).pageViews ? Number((md as any).pageViews) : 0;
                           const readingTimeStr = getReadingTime(featuredStory.content);
                           return (
@@ -1266,7 +1366,7 @@ export default function StoriesIndexContent() {
                               : [...sortedPosts]
                                   .map(p => {
                                     const totals = reactionTotals[p.id];
-                                    const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
+                                    const likes = Number(totals?.totals?.likes ?? 0);
                                     const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
                                     const now = Date.now();
                                     const dayMs = 24 * 60 * 60 * 1000;

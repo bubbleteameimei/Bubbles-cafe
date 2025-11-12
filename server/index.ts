@@ -3,7 +3,7 @@ import { createServer } from "http";
 // Vite setup and static serving are imported dynamically by environment branch
 import { db } from "./db";
 import { posts } from "@shared/schema";
-import { count } from "drizzle-orm";
+import { count, sql } from "drizzle-orm";
 
 import helmet from "helmet";
 import compression from "compression";
@@ -388,6 +388,47 @@ if (config.cache.browser) {
 
 const serverLogger = createLogger('Server');
 
+// One-off baseline normalization utility
+function hashSeed(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = (h << 5) - h + s.charCodeAt(i); h |= 0; }
+  return Math.abs(h);
+}
+function seededRandom(n: number) {
+  const x = Math.sin(n) * 10000;
+  return x - Math.floor(x);
+}
+async function normalizeBaselines(force: boolean): Promise<void> {
+  const whereClause = force
+    ? sql`TRUE`
+    : sql`
+        COALESCE(baseline_likes, 0) = 0 OR
+        COALESCE(baseline_dislikes, 0) = 0 OR
+        baseline_likes < 100 OR baseline_likes > 200 OR
+        baseline_dislikes < 3 OR baseline_dislikes > 7
+      `;
+  const result = await db.execute(sql`
+    SELECT id, slug, baseline_likes AS "baselineLikes", baseline_dislikes AS "baselineDislikes"
+    FROM posts
+    WHERE ${whereClause}
+  `);
+  const rows = (result as any).rows || [];
+  for (const row of rows) {
+    const id = Number(row.id);
+    const slug = String(row.slug || `post-${id}`);
+    // Deterministic per-slug baseline in desired ranges
+    const seedNum = slug ? hashSeed(slug) : id;
+    const seed = seedNum * 12345;
+    const likesBase = Math.floor(seededRandom(seed) * (200 - 100 + 1)) + 100;
+    const dislikesBase = Math.floor(seededRandom(seed + 999) * (7 - 3 + 1)) + 3;
+    await db.execute(sql`
+      UPDATE posts
+      SET baseline_likes = ${likesBase}, baseline_dislikes = ${dislikesBase}
+      WHERE id = ${id}
+    `);
+  }
+}
+
 import setupDatabase from '../scripts/setup-db';
 import pushSchema from '../scripts/db-push';
 import seedFromWordPressAPI from '../scripts/api-seed';
@@ -584,6 +625,18 @@ async function startServer() {
 
           const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
           serverLogger.info('Database connected, tables exist', { postsCount });
+          // Run baseline normalization (default enabled; can be disabled via RUN_BASELINE_NORMALIZE=false)
+          try {
+            const runNormalize = String(process.env.RUN_BASELINE_NORMALIZE ?? 'true').toLowerCase() === 'true';
+            const forceNormalize = String(process.env.RUN_BASELINE_NORMALIZE_FORCE ?? 'true').toLowerCase() === 'true';
+            if (runNormalize) {
+              serverLogger.info('Running baseline normalization', { force: forceNormalize });
+              await normalizeBaselines(forceNormalize);
+              serverLogger.info('Baseline normalization completed');
+            }
+          } catch (normErr) {
+            serverLogger.warn('Baseline normalization failed', { error: normErr instanceof Error ? normErr.message : String(normErr) });
+          }
 
           if (postsCount === 0) {
             serverLogger.info('No posts found - seeding from WordPress API...');
@@ -621,7 +674,19 @@ async function startServer() {
             try {
               const [{ value: postsCountAfter }] = await db.select({ value: count() }).from(posts);
               serverLogger.info('Database connected after schema creation', { postsCount: postsCountAfter });
-
+              // Run baseline normalization after schema creation (default enabled)
+              try {
+                const runNormalize = String(process.env.RUN_BASELINE_NORMALIZE ?? 'true').toLowerCase() === 'true';
+                const forceNormalize = String(process.env.RUN_BASELINE_NORMALIZE_FORCE ?? 'true').toLowerCase() === 'true';
+                if (runNormalize) {
+                  serverLogger.info('Running baseline normalization', { force: forceNormalize });
+                  await normalizeBaselines(forceNormalize);
+                  serverLogger.info('Baseline normalization completed');
+                }
+              } catch (normErr) {
+                serverLogger.warn('Baseline normalization failed', { error: normErr instanceof Error ? normErr.message : String(normErr) });
+              }
+              
               if (postsCountAfter === 0) {
                 serverLogger.info('Seeding from WordPress API after schema creation...');
                 try {

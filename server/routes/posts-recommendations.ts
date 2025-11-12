@@ -232,28 +232,53 @@ async function fetchRecentPosts(limit: number, excludeId?: number | null) {
  * Add metadata and analytics to posts for frontend display
  */
 async function enhancePostsWithMetadata(rawPosts: any[]) {
-  const results: any[] = [];
-  for (const post of rawPosts) {
-    let views = 0;
-    try {
-      const [row] = await db
-        .select()
-        .from(analytics)
-        .where(eq(analytics.postId, Number(post.id)))
-        .orderBy(desc(analytics.updatedAt))
-        .limit(1);
-      views = Number(row?.pageViews || 0);
-    } catch {
-      views = 0;
-    }
+  // Avoid N+1 by fetching analytics for all posts in a single query
+  const postIds = rawPosts
+    .map((p: any) => Number(p?.id))
+    .filter((n: number) => Number.isFinite(n));
 
-    results.push({
+  let analyticsRows: Array<{
+    postId: number;
+    pageViews: number;
+    updatedAt: Date;
+  }> = [];
+
+  if (postIds.length > 0) {
+    try {
+      analyticsRows = await db
+        .select({
+          postId: analytics.postId,
+          pageViews: analytics.pageViews,
+          updatedAt: analytics.updatedAt
+        })
+        .from(analytics)
+        .where(inArray(analytics.postId, postIds));
+    } catch {
+      // Non-fatal: fall back to zeros below
+      analyticsRows = [];
+    }
+  }
+
+  // Build a map of latest pageViews per postId based on updatedAt
+  const latestStats = new Map<number, { views: number; ts: number }>();
+  for (const row of analyticsRows) {
+    const pid = Number((row as any).postId);
+    const ts = new Date((row as any).updatedAt).getTime();
+    const prev = latestStats.get(pid);
+    if (!prev || ts > prev.ts) {
+      latestStats.set(pid, { views: Number((row as any).pageViews || 0), ts });
+    }
+  }
+
+  return rawPosts.map((post: any) => {
+    const pid = Number(post?.id);
+    const views = latestStats.get(pid)?.views || 0;
+    return {
       ...post,
       authorName: 'Anonymous',
       views,
       likesCount: Number(post.likesCount ?? 0),
       readingTimeMinutes: (post.readingTimeMinutes as number | null) ?? null
-    });
-  }
-  return results;
+    };
+  });
 }

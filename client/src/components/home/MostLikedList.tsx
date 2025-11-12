@@ -63,8 +63,8 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
   const sortedByLikes = useMemo(() => {
     if (!Array.isArray(posts) || posts.length === 0) return [] as Post[];
     return [...posts].sort((a, b) => {
-      const ta = (totalsFromParent?.[a.id]?.totals?.likes ?? totalsMap[a.id]?.totals?.likes) ?? (a.likesCount || 0);
-      const tb = (totalsFromParent?.[b.id]?.totals?.likes ?? totalsMap[b.id]?.totals?.likes) ?? (b.likesCount || 0);
+      const ta = (totalsFromParent?.[a.id]?.totals?.likes ?? totalsMap[a.id]?.totals?.likes) ?? 0;
+      const tb = (totalsFromParent?.[b.id]?.totals?.likes ?? totalsMap[b.id]?.totals?.likes) ?? 0;
       return Number(tb) - Number(ta);
     });
   }, [posts, totalsMap, totalsFromParent]);
@@ -189,7 +189,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                       <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                         <span className="inline-flex items-center gap-1">
                             <Heart className="h-4 w-4 text-rose-500" />
-                            {Number((totalsFromParent?.[featured.id]?.totals?.likes ?? totalsMap[featured.id]?.totals?.likes) ?? (featured.likesCount || 0))}
+                            {Number((totalsFromParent?.[featured.id]?.totals?.likes ?? totalsMap[featured.id]?.totals?.likes) ?? 0)}
                           </span>
                       </div>
                     </a>
