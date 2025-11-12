@@ -627,8 +627,10 @@ async function startServer() {
           serverLogger.info('Database connected, tables exist', { postsCount });
           // Run baseline normalization (default enabled; can be disabled via RUN_BASELINE_NORMALIZE=false)
           try {
-            const runNormalize = String(process.env.RUN_BASELINE_NORMALIZE ?? 'true
-          if (postsCount === 0) {
+            const runNormalize = String(process.env.RUN_BASELINE_NORMALIZE ?? 'true').toLowerCase() === 'true';
+            const forceNormalize = String(process.env.RUN_BASELINE_NORMALIZE_FORCE ?? 'true').toLowerCase() === 'true';
+            if (runNormalize) {
+              serverLogger.info('Running baseline normalization', { force: force 0) {
             serverLogger.info('No posts found - seeding from WordPress API...');
             try {
               await seedFromWordPressAPI();
