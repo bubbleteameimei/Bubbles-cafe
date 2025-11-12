@@ -941,6 +941,30 @@ export const insertUserNotificationPreferencesSchema = createInsertSchema(userNo
 export type InsertUserNotificationPreferences = z.infer<typeof insertUserNotificationPreferencesSchema>;
 export type UserNotificationPreferences = typeof userNotificationPreferences.$inferSelect;
 
+// Theme Categories table reflecting website themes used on reader and index pages
+export const themeCategories = pgTable("theme_categories", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  label: text("label").notNull(),
+  icon: text("icon"),
+  isActive: boolean("is_active").default(true).notNull(),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+}, (table) => ({
+  keyUnique: unique().on(table.key),
+  activeIdx: index("theme_category_active_idx").on(table.isActive),
+  sortIdx: index("theme_category_sort_idx").on(table.sortOrder)
+}));
+
+export const insertThemeCategorySchema = createInsertSchema(themeCategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+export type InsertThemeCategory = z.infer<typeof insertThemeCategorySchema>;
+export type ThemeCategory = typeof themeCategories.$inferSelect;
+
 // Add missing type exports
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;

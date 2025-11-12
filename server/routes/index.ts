@@ -27,6 +27,7 @@ import { z } from 'zod';
 import seoRoutes from './seo';
 import { requireAuth, requireAdmin } from '../middlewares/auth';
 import themesDefinitionsRouter from './themes-definitions';
+import themesCategoriesRouter from './themes-categories';
 import { registerNotificationPreferencesRoutes } from './notification-preferences';
 import tipsRouter from './tips';
 import configRoutes from './config';
@@ -120,6 +121,10 @@ export function registerModularRoutes(app: Express) {
     // Theme definitions (global overrides)
     app.use('/api/themes', themesDefinitionsRouter);
     routesLogger.info('Theme definitions routes registered');
+
+    // Theme categories (active categories for reader/index usage)
+    app.use('/api/themes', themesCategoriesRouter);
+    routesLogger');
 
     // User notifications
     app.use('/api/notifications', userNotificationsRouter);

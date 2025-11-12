@@ -32,6 +32,9 @@ async function optimizeDatabase() {
     await db.execute(sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_post_likes_post_islike ON post_likes (post_id, is_like)`);
     await db.execute(sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_post_likes_user_post ON post_likes (user_id, post_id)`);
     await db.execute(sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_comment_votes_comment_isupvote ON comment_votes (comment_id, is_upvote)`);
+    // Theme categories indexes for fast reads
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_theme_categories_key ON theme_categories (key)`);
+    await db.execute(sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_theme_categories_active_sort ON theme_categories (is_active, sort_order)`);
 
     console.log('🧹 Analyzing tables for query optimization...');
     
@@ -43,8 +46,8 @@ async function optimizeDatabase() {
     await db.execute(sql`ANALYZE post_likes`);
     await db.execute(sql`ANALYZE bookmarks`);
     await db.execute(sql`ANALYZE comment_votes`);
-    
-    console.log('🗑️ Cleaning up unused data...');
+    await db.execute(sql`ANALYZE theme_categories`);
+);
     
     // Clean up old performance metrics if analytics table exists
     try {

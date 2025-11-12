@@ -234,6 +234,24 @@ async function initializeDatabase() {
         `
       },
       {
+        name: 'theme_categories',
+        sql: `
+          CREATE TABLE IF NOT EXISTS theme_categories (
+            id SERIAL PRIMARY KEY,
+            key TEXT NOT NULL UNIQUE,
+            label TEXT NOT NULL,
+            icon TEXT,
+            is_active BOOLEAN DEFAULT true NOT NULL,
+            sort_order INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+            updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+          );
+          CREATE UNIQUE INDEX IF NOT EXISTS theme_categories_key_unique ON theme_categories(key);
+          CREATE INDEX IF NOT EXISTS theme_category_active_idx ON theme_categories(is_active);
+          CREATE INDEX IF NOT EXISTS theme_category_sort_idx ON theme_categories(sort_order);
+        `
+      },
+      {
         name: 'activity_logs',
         sql: `
           CREATE TABLE IF NOT EXISTS activity_logs (
