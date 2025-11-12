@@ -102,34 +102,62 @@ export async function handleSseSubscription(req: Request, res: Response) {
   const client: Client = { res, createdAt: Date.now() };
   set.add(client);
 
-  // Initial event: quick read and send snapshot
-  db.execute(sql`
-    SELECT id,
-           baseline_likes AS "baselineLikes",
-           baseline_dislikes AS "baselineDislikes",
-           likes_count AS "likesCount",
-           dislikes_count AS "dislikesCount"
-    FROM posts
-    WHERE id = ${effectiveId}
-    LIMIT 1
-  `).then((result: any) => {
-    const row = result.rows?.[0];
-    if (row) {
-      const payload = {
-        postId: effectiveId,
-        baselineLikes: Number(row.baselineLikes ?? 0),
-        baselineDislikes: Number(row.baselineDislikes ?? 0),
-        likesCount: Number(row.likesCount ?? 0),
-        dislikesCount: Number(row.dislikesCount ?? 0),
-        totals: {
-          likes: Number(row.baselineLikes ?? 0) + Number(row.likesCount ?? 0),
-          dislikes: Number(row.baselineDislikes ?? 0) + Number(row.dislikesCount ?? 0),
-        },
-        ts: Date.now(),
-      };
-      sendEvent(res, 'initial', payload);
+  // Initial event: quick read and send snapshot (with baseline correction if needed)
+db.execute(sql`
+  SELECT id,
+         baseline_likes AS "baselineLikes",
+         baseline_dislikes AS "baselineDislikes",
+         likes_count AS "likesCount",
+         dislikes_count AS "dislikesCount"
+  FROM posts
+  WHERE id = ${effectiveId}
+  LIMIT 1
+`).then(async (result: any) => {
+  const row = result.rows?.[0];
+  if (row) {
+    let baselineLikes = Number(row.baselineLikes ?? 0);
+    let baselineDislikes = Number(row.baselineDislikes ?? 0);
+    const likesCount = Number(row.likesCount ?? 0);
+    const dislikesCount = Number(row.dislikesCount ?? 0);
+
+    // Correct missing or out-of-range baselines deterministically (seed from id)
+    const outOfRange = baselineLikes < 100 || baselineLikes > 200 || baselineDislikes < 3 || baselineDislikes > 7;
+    if (baselineLikes === 0 || baselineDislikes === 0 || outOfRange) {
+      const seedSource = String(effectiveId);
+      let h = 0;
+      for (let i = 0; i < seedSource.length; i++) { h = (h << 5) - h + seedSource.charCodeAt(i); h |= 0; }
+      const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
+      const likesBase = Math.floor(seededRandom(Math.abs(h) * 12345) * (200 - 100 + 1)) + 100;
+      const dislikesBase = Math.floor(seededRandom(Math.abs(h) * 12345 + 999) * (7 - 3 + 1)) + 3;
+      try {
+        await db.execute(sql`
+          UPDATE posts
+          SET baseline_likes = ${likesBase}, baseline_dislikes = ${dislikesBase}
+          WHERE id = ${effectiveId}
+        `);
+        baselineLikes = likesBase;
+        baselineDislikes = dislikesBase;
+      } catch {
+        baselineLikes = likesBase;
+        baselineDislikes = dislikesBase;
+      }
     }
-  }).catch(() => { /* ignore */ });
+
+    const payload = {
+      postId: effectiveId,
+      baselineLikes,
+      baselineDislikes,
+      likesCount,
+      dislikesCount,
+      totals: {
+        likes: baselineLikes + likesCount,
+        dislikes: baselineDislikes + dislikesCount,
+      },
+      ts: Date.now(),
+    };
+    sendEvent(res, 'initial', payload);
+  }
+}).catch(() => { /* ignore */ });
 
   // Heartbeat to keep connection alive on proxies
   const interval = setInterval(() => {

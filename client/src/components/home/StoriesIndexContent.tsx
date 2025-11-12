@@ -817,8 +817,9 @@ export default function StoriesIndexContent() {
           // Fallback to inline calculation when scores not ready
           const aTotals = reactionTotals[a.id];
           const bTotals = reactionTotals[b.id];
-          const aLikes = Number(aTotals?.totals?.likes ?? (a.likesCount || 0));
-          const bLikes = Number(bTotals?.totals?.likes ?? (b.likesCount || 0));
+          const aLikes = Number(aTotals?.totals?.likes ?? 0);
+          const bLikes = Number(bTotals?.totals?.likes ?? 0);
+          const alikesCount || 0));
           const aViews = (a.metadata && (a.metadata as any).pageViews) ? Number((a.metadata as any).pageViews) : 0;
           const bViews = (b.metadata && (b.metadata as any).pageViews) ? Number((b.metadata as any).pageViews) : 0;
           const now = Date.now();
@@ -909,7 +910,7 @@ export default function StoriesIndexContent() {
         p,
         score: useScores ? (trendingScores[p.id] ?? 0) : (() => {
           const totals = reactionTotals[p.id];
-          const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
+          const likes = Number(totals?.totals?.likes ?? 0);
           const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
           const now = Date.now();
           const dayMs = 24 * 60 * 60 * 1000;
@@ -973,8 +974,8 @@ export default function StoriesIndexContent() {
         : [...all]
             .map(p => {
               const totals = reactionTotals[p.id];
-              const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
-              const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
+              const likes = Number(totals?.totals?.likes ?? 0);
+              const views = p.metadata && (p.metadata as any(p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
               const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
               const decay = Math.max(0.2, 1 - (ageDays / windowDays));
               const score = (likes * 2.5 + views * 0.8) * decay;
@@ -1192,7 +1193,7 @@ export default function StoriesIndexContent() {
                         {(() => {
                           const md: any = (featuredStory as any)?.metadata || {};
                           const totals = reactionTotals[featuredStory.id] || null;
-                          const likes = Number(totals?.totals?.likes ?? (featuredStory.likesCount || 0));
+                          const likes = Number(totals?.totals?.likes ?? 0);
                           const views = md && (md as any).pageViews ? Number((md as any).pageViews) : 0;
                           const readingTimeStr = getReadingTime(featuredStory.content);
                           return (
@@ -1319,7 +1320,7 @@ export default function StoriesIndexContent() {
                               : [...sortedPosts]
                                   .map(p => {
                                     const totals = reactionTotals[p.id];
-                                    const likes = Number(totals?.totals?.likes ?? (p.likesCount || 0));
+                                    const likes = Number(totals?.totals?.likes ?? 0);
                                     const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
                                     const now = Date.now();
                                     const dayMs = 24 * 60 * 60 * 1000;
