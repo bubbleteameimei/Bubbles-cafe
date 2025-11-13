@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function AuthCallbackPage() {
   const [, navigate] = useLocation();
@@ -37,6 +38,15 @@ export default function AuthCallbackPage() {
           throw new Error(msg);
         }
         await checkAuth().catch(() => {});
+        // Attempt automatic bookmark migration (silent)
+        try {
+          const dryRun = await apiRequest<{ success: boolean; migratable: number }>('/api/bookmarks/migrate');
+          if (dryRun?.success && Number(dryRun.migratable) > 0) {
+            await apiRequest<{ success: boolean }>('/api/bookmarks/migrate', { method: 'POST' });
+          }
+        } catch {
+          // Ignore migration errors silently
+        }
         navigate("/", { replace: true });
       } catch (e) {
         const message =

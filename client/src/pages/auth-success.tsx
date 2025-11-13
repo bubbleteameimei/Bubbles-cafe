@@ -2,9 +2,11 @@ import { useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/use-auth';
+import { apiRequest } from '@/lib/queryClient';
 
 /**
  * After Supabase OAuth redirect, finalize server session and redirect home.
+ * Also auto-migrates any anonymous session bookmarks into the user's account.
  */
 const AuthSuccessPage = () => {
   const [, setLocation] = useLocation();
@@ -31,6 +33,15 @@ const AuthSuccessPage = () => {
         // Ignore errors and redirect anyway
         if (resp.ok) {
           await checkAuth().catch(() => {});
+          // Attempt automatic bookmark migration (silent)
+          try {
+            const dryRun = await apiRequest<{ success: boolean; migratable: number }>('/api/bookmarks/migrate');
+            if (dryRun?.success && Number(dryRun.migratable) > 0) {
+              await apiRequest<{ success: boolean }>('/api/bookmarks/migrate', { method: 'POST' });
+            }
+          } catch {
+            // Ignore migration errors silently
+          }
         }
       } catch {}
       setLocation('/');
