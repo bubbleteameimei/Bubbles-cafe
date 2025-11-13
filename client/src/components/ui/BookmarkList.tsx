@@ -91,13 +91,16 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
     },
   });
 
+  // Safe derived value to avoid undefined during initial load
+  const migratableCount = Number(migrateDryRun?.migratable ?? 0);
+
   // Query to fetch all bookmarks for authenticated users
   const { data: authBookmarks = [], isLoading: isLoadingAuth, error: authError, status: authStatus, fetchStatus: authFetchStatus } = useQuery({
     queryKey: ['/api/bookmarks', { tag: filterTag }],
     queryFn: async () => {
       if (!user) return [];
       const url = filterTag
-        ? `/api/bookmarks?tag=${encodeURIComponent(filterTag)}`
+        ? `/api/bookmarks/tag/${encodeURIComponent(filterTag)}`
         : '/api/bookmarks';
       console.log(`[BookmarkList] Fetching authenticated bookmarks with URL: ${url}`);
       try {
@@ -388,10 +391,10 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   return (
     <div className={className}>
       {/* One-click migration banner for authenticated users */}
-      {user && migrateDryRun?.migratable > 0 && (
+      {user && migratableCount > 0 && (
         <div className="p-3 mb-4 rounded-md border border-border/60 bg-muted/30 flex items-center justify-between">
           <div className="text-sm">
-            You have {migrateDryRun.migratable} bookmark{migrateDryRun.migratable === 1 ? '' : 's'} from previous sessions. Import them into your account?
+            You have {migratableCount} bookmark{migratableCount === 1 ? '' : 's'} from previous sessions. Import them into your account?
           </div>
           <Button
             variant="default"
