@@ -1,3 +1,5 @@
+export {};
+
 // Minimal Web Worker to compute trending scores for posts
 // Receives: { posts: Array<{ id: number, createdAt: string | number | Date, metadata?: any, likesCount?: number }>, reactionTotals: Record<number, { totals?: { likes?: number } }>, windowDays?: number }
 // Returns: { scores: Record<number, number> }

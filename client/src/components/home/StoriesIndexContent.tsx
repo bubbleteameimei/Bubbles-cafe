@@ -76,8 +76,8 @@ export default function StoriesIndexContent() {
   // Fuzzy search offload to worker
   const [closestTitleMatchW, setClosestTitleMatchW] = useState<Post | null>(null);
   const [searchSuggestionsW, setSearchSuggestionsW] = useState<Post[]>([]);
-  const searchWorkerRef = useRef<Worker | null>(null);
-  const sortedPostsRef = useRef<Post[]>([]);
+  const searchWorkerRef = React.useRef<Worker | null>(null);
+  const sortedPostsRef = React.useRef<Post[]>([]);
 
   // Defer only reaction widgets; render the rest immediately to avoid layout shifts
   const [readyReactions, setReadyReactions] = useState(false);
@@ -346,7 +346,7 @@ export default function StoriesIndexContent() {
             const data = e.data || {};
             const bestId = typeof data.bestId === 'number' ? data.bestId : null;
             const suggestionIds: number[] = Array.isArray(data.suggestionIds) ? data.suggestionIds : [];
-            const byId = new Map(sortedPostsRef.current.map(p => [Number((p as any).id), p]));
+            const byId = new Map<number, Post>(sortedPostsRef.current.map((p: Post) => [Number((p as any).id), p]));
             setClosestTitleMatchW(bestId && byId.get(bestId) ? byId.get(bestId)! : null);
             setSearchSuggestionsW(suggestionIds.map(id => byId.get(id)).filter(Boolean) as Post[]);
           } catch {

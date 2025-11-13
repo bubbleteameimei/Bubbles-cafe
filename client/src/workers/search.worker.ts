@@ -1,3 +1,5 @@
+export {};
+
 // Web Worker for fuzzy title search and suggestions
 // Input: { query: string, posts: Array<{ id: number, title: string }> }
 // Output: { bestId: number | null, suggestionIds: number[] }
