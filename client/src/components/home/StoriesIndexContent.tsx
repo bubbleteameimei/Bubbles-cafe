@@ -66,10 +66,18 @@ export default function StoriesIndexContent() {
   const cardsGridRef = React.useRef<HTMLDivElement | null>(null);
   const breakpointRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null);
   const fetchedReactionIdsRef = React.useRef<Set<number>>(new Set());
-  // SSE sources per post to stream live updates
-  const sseSourcesRef = React.useRef<Map<number, EventSource>>(new Map());
+  // SSE sources per post to stream live updates (LRU-limited)
+  const sseSourcesRef = React.useRef<Map<number, { es: EventSource; ts: number }>>(new Map());
+  const MAX_SSE_CONNECTIONS = 4;
   // Track whether we've prefetched totals for all posts to avoid repeated work
   const preloadedAllRef = React.useRef<boolean>(false);
+  // Deduplicate zero-results analytics by query
+  const lastZeroResultsQueryRef = React.useRef<string>('');
+  // Fuzzy search offload to worker
+  const [closestTitleMatchW, setClosestTitleMatchW] = useState<Post | null>(null);
+  const [searchSuggestionsW, setSearchSuggestionsW] = useState<Post[]>([]);
+  const searchWorkerRef = useRef<Worker | null>(null);
+  const sortedPostsRef = useRef<Post[]>([]);
 
   // Defer only reaction widgets; render the rest immediately to avoid layout shifts
   const [readyReactions, setReadyReactions] = useState(false);
@@ -105,7 +113,8 @@ export default function StoriesIndexContent() {
   // Analytics: log search queries (debounced) and zero-result events
   useEffect(() => {
     const q = deferredSearch.trim();
-    if (!q) return;
+    // Avoid logging very short queries to reduce noise and jank
+    if (!q || q.length < 3) return;
     const t = setTimeout(() => {
       try {
         fetch('/api/analytics/interaction', {
@@ -114,7 +123,7 @@ export default function StoriesIndexContent() {
           body: JSON.stringify({ interactionType: 'index_search_query', details: { q }, path: '/stories' })
         }).catch(() => {});
       } catch {}
-    }, 800);
+    }, 1200);
     return () => clearTimeout(t);
   }, [deferredSearch]);
 
@@ -274,8 +283,8 @@ export default function StoriesIndexContent() {
     },
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     staleTime: 5 * 60 * 1000,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     initialPageParam: 1,
     initialData: cachedPage1 ? { pages: [cachedPage1], pageParams: [1] } as any : undefined,
   });
@@ -322,6 +331,17 @@ export default function StoriesIndexContent() {
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
+  // Keep a ref of latest sortedPosts for worker mapping
+  useEffect(() => {
+    sortedPostsRef.current = sortedPosts;
+  }, [sortedPosts]);
+
+  // Initialize search worker once
+  useEffect(() => {
+    try {
+      if (!searchWorkerRef.current && typeof Worker !== 'undefined') {
+        const w = new Worker(new URL('../../workers/search.worker );
+
   // Compute category pills lazily to avoid blocking the main thread during input
   useEffect(() => {
     let cancelled = false;
@@ -362,6 +382,8 @@ export default function StoriesIndexContent() {
   const closestTitleMatch = React.useMemo(() => {
     const raw = deferredSearch.trim();
     if (!raw) return null;
+    // Offload heavy fuzzy matching to worker for longer queries
+    if (raw.length >= 3 && closestTitleMatchW) return closestTitleMatchW;
 
     const tokenize = (s: string) => normalizePlain(s).split(/[^a-z0-9]+/).filter(Boolean);
     const jaccard = (a: string[], b: string[]) => {
@@ -429,7 +451,7 @@ export default function StoriesIndexContent() {
     }
 
     return best?.post || null;
-  }, [deferredSearch, sortedPosts]);
+  }, [deferredSearch, sortedPosts, closestTitleMatchW]);
 
   // Available theme categories present in posts (include derived when metadata missing)
   const availableCategories = useMemo(() => {
@@ -613,7 +635,29 @@ export default function StoriesIndexContent() {
     const ensureSse = (postId: number) => {
       try {
         if (!Number.isFinite(postId)) return;
-        if (sources.has(postId)) return;
+        if (sources.has(postId)) {
+          // Touch timestamp for LRU
+          const obj = sources.get(postId);
+          if (obj) obj.ts = Date.now();
+          return;
+        }
+
+        // LRU cap: close oldest connection if at capacity
+        if (sources.size >= MAX_SSE_CONNECTIONS) {
+          let oldestKey: number | null = null;
+          let oldestTs = Infinity;
+          for (const [key, obj] of sources.entries()) {
+            if (obj.ts < oldestTs) {
+              oldestTs = obj.ts;
+              oldestKey = key;
+            }
+          }
+          if (oldestKey != null) {
+            try { sources.get(oldestKey)?.es.close(); } catch {}
+            sources.delete(oldestKey);
+          }
+        }
+
         const url = `/api/posts/${postId}/reactions/stream`;
         const es = new EventSource(url, { withCredentials: true } as any);
         const onMessage = (e: MessageEvent) => {
@@ -638,7 +682,7 @@ export default function StoriesIndexContent() {
         es.addEventListener('initial', onMessage);
         es.addEventListener('update', onMessage);
         es.onerror = () => { /* keep alive; browser will reconnect */ };
-        sources.set(postId, es);
+        sources.set(postId, { es, ts: Date.now() });
       } catch {}
     };
 
@@ -727,13 +771,23 @@ export default function StoriesIndexContent() {
       // no-op
     }
 
-    // Periodically re-observe in case of virtualization or dynamic mounts
-    const reobserve = () => {
-      try {
-        document.querySelectorAll<HTMLElement>(".story-card-container[data-post-id]").forEach((n) => io?.observe(n));
-      } catch {}
-    };
-    const interval = setInterval(reobserve, 1000);
+    // Observe DOM mutations to re-observe dynamically added cards (virtualization/dynamic mounts)
+    let mo: MutationObserver | null = null;
+    try {
+      mo = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          m.addedNodes.forEach((node) => {
+            if (node instanceof HTMLElement) {
+              if (node.matches?.(".story-card-container[data-post-id]")) {
+                io?.observe(node);
+              }
+              node.querySelectorAll?.(".story-card-container[data-post-id]").forEach((el) => io?.observe(el as HTMLElement));
+            }
+          });
+        }
+      });
+      mo.observe(document.body, { childList: true, subtree: true });
+    } catch {}
 
     // Start with a small initial preload + SSE
     void preloadInitial();
@@ -789,13 +843,13 @@ export default function StoriesIndexContent() {
     return () => {
       mounted = false;
       window.removeEventListener("reaction:updated", onUpdate as EventListener);
-      clearInterval(interval);
+      try { mo?.disconnect(); } catch {}
       try { io?.disconnect(); } catch {}
       if (flushTimer) clearTimeout(flushTimer);
       // Close SSE sources using captured reference
       try {
-        for (const es of sources.values()) {
-          try { es.close(); } catch {}
+        for (const obj of sources.values()) {
+          try { obj.es.close(); } catch {}
         }
         sources.clear();
       } catch {}
@@ -900,6 +954,9 @@ export default function StoriesIndexContent() {
   const searchSuggestions = useMemo(() => {
     const q = deferredSearch.trim().toLowerCase();
     if (!q) return [] as Post[];
+    // Use worker-computed suggestions for longer queries
+    if (q.length >= 3 && searchSuggestionsW.length) return searchSuggestionsW;
+
     const tokenize = (s: string) => normalizeText(s.toLowerCase()).split(/[^a-z0-9]+/).filter(Boolean);
     const jaccard = (a: string[], b: string[]) => {
       if (!a.length || !b.length) return 0;
@@ -931,7 +988,7 @@ export default function StoriesIndexContent() {
       .sort((a, b) => b.s - a.s)
       .slice(0, 3)
       .map(x => x.p);
-  }, [deferredSearch, sortedPosts]);
+  }, [deferredSearch, sortedPosts, searchSuggestionsW]);
 
   // Latest Stories list - always sorted newest->oldest; search does NOT change this list
   const latestPosts = useMemo(() => {
@@ -972,14 +1029,19 @@ export default function StoriesIndexContent() {
 
   // Log zero-results interactions
   useEffect(() => {
-    if (deferredSearch.trim() && titleMatches.length === 0 && !closestTitleMatch) {
-      try {
-        fetch('/api/analytics/interaction', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ interactionType: 'index_zero_results', details: { q: deferredSearch.trim() }, path: '/stories' })
-        }).catch(() => {});
-      } catch {}
+    const q = deferredSearch.trim();
+    if (q && q.length >= 3 && titleMatches.length === 0 && !closestTitleMatch) {
+      // Deduplicate logs for the same query
+      if (lastZeroResultsQueryRef.current !== q) {
+        lastZeroResultsQueryRef.current = q;
+        try {
+          fetch('/api/analytics/interaction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ interactionType: 'index_zero_results', details: { q }, path: '/stories' })
+          }).catch(() => {});
+        } catch {}
+      }
     }
   }, [titleMatches.length, deferredSearch, closestTitleMatch]);
 

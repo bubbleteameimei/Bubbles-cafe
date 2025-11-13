@@ -486,10 +486,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       }
     },
     // Keep previous content visible while background fetching occurs
-    // We intentionally leave staleTime at 0 and refetch options unchanged to avoid changing network behavior.
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true
+    // Reduce jank: avoid auto refetch on mount/focus to prevent flicker and network bursts
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false
   });
 
   
@@ -669,15 +669,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       const tooSoon = now - (lastProgressSentRef.current.ts || 0) < 15000; // 15s throttle
 
       if (diff >= 10 && !tooSoon) {
-        apiJson<any>('POST', '/api/s', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ postSlug: String(slug), percentCompleted: rounded })
-        }).then((res) => {
-          if (res.ok) {
-            lastProgressSentRef.current = { percent: rounded, ts: Date.now() };
-          }
+        apiJson<any>('POST', '/api/reading-progress', {
+          postSlug: String(slug),
+          percentCompleted: rounded
+        }).then((_res) => {
+          // Successful; record timestamp and last percent sent
+          lastProgressSentRef.current = { percent: rounded, ts: Date.now() };
         }).catch(() => { /* non-fatal */ });
       }
     } catch { /* non-fatal */ }
