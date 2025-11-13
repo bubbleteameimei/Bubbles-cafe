@@ -72,13 +72,10 @@ export default function Home() {
     refetchOnWindowFocus: false,
     // Use locally synced posts (if available) to avoid initial blank state
     initialData: (() => {
-      try {
-        const local = checkLocalSyncedPosts();
-        if (local?.posts?.length) {
-          return { posts: [local.posts[0]], totalPages: 1, total: local.total };
-        }
-      } catch {}
-      return undefined;
+      const local = checkLocalSyncedPosts();
+      return local?.posts?.length
+        ? { posts: [local.posts[0]], totalPages: 1, total: local.total }
+        : undefined;
     })()
   });
 
