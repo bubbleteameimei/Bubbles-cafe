@@ -45,7 +45,7 @@ export const registerPaymentRoutes = (app: Express) => {
   app.post('/api/payments/initialize', validateBody(initSchema), async (req: Request, res: Response) => {
     try {
       // Check if user is authenticated
-      if (!req.session?.user) {
+      if (!req.user) {
         return res.status(401).json({ 
           status: false, 
           message: 'User not authenticated'
@@ -53,8 +53,8 @@ export const registerPaymentRoutes = (app: Express) => {
       }
       const { amount, callbackUrl, reference, metadata } = req.body as z.infer<typeof initSchema>;
       
-      // Get user email from session
-      const userEmail = req.session.user.email;
+      // Get user email from Passport user
+      const userEmail = (req.user as any).email;
       
       if (!userEmail) {
         return res.status(400).json({ 
@@ -69,8 +69,8 @@ export const registerPaymentRoutes = (app: Express) => {
       // Enhanced metadata with user info
       const enhancedMetadata = {
         ...metadata,
-        userId: req.session.user.id,
-        username: req.session.user.username
+        userId: (req.user as any).id,
+        username: (req.user as any).username
       };
       
       // Initialize transaction
@@ -84,7 +84,7 @@ export const registerPaymentRoutes = (app: Express) => {
       
       // Log transaction in activity logs
       await storage.logActivity({
-        userId: req.session.user.id,
+        userId: (req.user as any).id,
         action: 'payment_initiated',
         details: {
           amount,
@@ -115,10 +115,10 @@ export const registerPaymentRoutes = (app: Express) => {
       const response: any = await paystackService.verifyTransaction(reference);
       
       // If payment is successful, update user records
-      if (response.data.status === 'success' && req.session?.user) {
+      if (response.data.status === 'success' && req.user) {
         // Log transaction in activity logs
         await storage.logActivity({
-          userId: req.session.user.id,
+          userId: (req.user as any).id,
           action: 'payment_successful',
           details: {
             amount: response.data.amount,
@@ -260,7 +260,7 @@ export const registerPaymentRoutes = (app: Express) => {
   app.get('/api/payments/subscription/status', async (req: Request, res: Response) => {
     try {
       // Check if user is authenticated
-      if (!req.session?.user) {
+      if (!req.user) {
         return res.status(401).json({ 
           status: false, 
           message: 'User not authenticated'
@@ -268,7 +268,7 @@ export const registerPaymentRoutes = (app: Express) => {
       }
       
       // Attempt a lightweight check against recent successful transactions for this user's email
-      const userEmail = req.session.user.email;
+      const userEmail = (req.user as any).email;
       let hasActiveSubscription = false;
       let nextBillingDate: string | null = null;
       let subscription: any = null;

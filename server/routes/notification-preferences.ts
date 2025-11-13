@@ -4,9 +4,9 @@ import { userNotificationPreferences } from '@shared/schema';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 
-// Authentication middleware (session-based)
+// Authentication middleware (Passport-based)
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.session || !req.session.user) {
+  if (!req.user) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
   return next();
@@ -16,7 +16,7 @@ export function registerNotificationPreferencesRoutes(app: Express) {
   // GET /api/user/notification-preferences
   app.get('/api/user/notification-preferences', isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).session?.user?.id;
+      const userId = (req as any).user?.id;
       if (!userId) {
         return res.status(401).json({ error: 'User not authenticated' });
       }
@@ -68,7 +68,7 @@ export function registerNotificationPreferencesRoutes(app: Express) {
 
   app.patch('/api/user/notification-preferences', isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).session?.user?.id;
+      const userId = (req as any).user?.id;
       if (!userId) {
         return res.status(401).json({ error: 'User not authenticated' });
       }

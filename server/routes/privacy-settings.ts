@@ -3,12 +3,12 @@ import { IStorage } from '../storage';
 import { InsertUserPrivacySettings } from '../../shared/schema';
 import { z } from 'zod';
 
-// Authentication middleware
+// Authentication middleware (Passport-based)
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   // Log authentication debugging info
-  console.log('[Privacy Settings] Auth check - Session:', !!req.session, 'User:', !!req.session?.user);
+  console.log('[Privacy Settings] Auth check - Passport user:', !!(req as any).user);
   
-  if (!req.session || !req.session.user) {
+  if (!req.user) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
   return next();
