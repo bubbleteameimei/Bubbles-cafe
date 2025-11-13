@@ -71,12 +71,7 @@ export default function Home() {
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     // Use locally synced posts (if available) to avoid initial blank state
-    initialData: (() => {
-      const local = checkLocalSyncedPosts();
-      return local?.posts?.length
-        ? { posts: [local.posts[0]], totalPages: 1, total: local.total }
-        : undefined;
-    })()
+    initialData: getInitialPostsData()
   });
 
   // Lightweight engagement fetch for social proof
@@ -112,6 +107,17 @@ export default function Home() {
       console.error('Error formatting date:', error);
     }
     return '';
+  };
+
+  // Provide local initial data from synced posts to avoid blank state
+  const getInitialPostsData = (): { posts: WordPressPost[]; totalPages: number; total: number } | undefined => {
+    const local = checkLocalSyncedPosts();
+    if (local?.posts?.length) {
+      // Coerce to WordPressPost shape (the local sync mirrors the WP fields we use)
+      const first = local.posts[0] as WordPressPost;
+      return { posts: [first], totalPages: 1, total: local.total };
+    }
+    return undefined;
   };
 
   // Use our ApiLoader component to handle global loading state
