@@ -275,17 +275,6 @@ anonymousBookmarkRouter.delete('/:postId', async (req: Request, res: Response) =
  * @param app Express application
  */
 export function registerBookmarkRoutes(app: Application): void {
-  // Mount authenticated bookmark routes
+  // Mount authenticated bookmark routes only; anonymous routes removed
   app.use('/api/bookmarks', bookmarkRoutes);
-  
-  // Create a special middleware that disables secondary CSRF checks for these routes
-  const bypassSecondaryCSRF = (req: Request, res: Response, next: NextFunction) => {
-    // Add a marker to the request object to indicate CSRF has been checked
-    // This bypasses any secondary CSRF checks implemented elsewhere
-    (req as any)._csrfBypassApproved = true;
-    next();
-  };
-  
-  // Mount anonymous bookmark routes with CSRF bypass middleware
-  app.use('/api/reader/bookmarks', bypassSecondaryCSRF, anonymousBookmarkRouter);
 }

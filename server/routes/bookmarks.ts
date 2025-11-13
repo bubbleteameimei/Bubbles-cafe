@@ -732,4 +732,117 @@ router.delete('/:postId', isAuthenticated, async (req, res) => {
   }
 });
 
+// Migration: preview migratable count from anonymous session
+router.get('/migrate', isAuthenticated, async (req, res) => {
+  try {
+    const anon = (req as any).session?.anonymousBookmarks || req.session?.anonymousBookmarks || {};
+    const count = Object.keys(anon || {}).length;
+    return res.json({ success: true, migratable: count });
+  } catch (error: any) {
+    logger.error('[Bookmarks] Migration dry-run failed', { error: error.message });
+    return res.status(500).json({ success: false, message: 'Failed to check migratable bookmarks' });
+  }
+});
+
+// Migration: import anonymous session bookmarks into authenticated account
+router.post('/migrate', isAuthenticated, async (req, res) => {
+  try {
+    const anon = (req as any).session?.anonymousBookmarks || req.session?.anonymousBookmarks || {};
+    const entries = Object.entries(anon || {});
+    if (!entries.length) {
+      return res.json({ success: true, migrated: 0, cleared: false });
+    }
+
+    // Try Supabase path first
+    const supabase = getSupabaseClientFromRequest(req as any);
+    let migrated = 0;
+
+    if (supabase) {
+      const userIdNum = await resolveNumericUserId(req as any, supabase);
+      if (Number.isFinite(userIdNum)) {
+        for (const [rawId, b] of entries as any[]) {
+          const wpOrLocalId = Number(rawId);
+          if (!Number.isFinite(wpOrLocalId)) continue;
+          const postId = await resolveLocalPostId(wpOrLocalId);
+
+          // Check existing
+          const { data: rows, error: selErr } = await supabase
+            .from('bookmarks')
+            .select('id')
+            .eq('user_id', userIdNum)
+            .eq('post_id', postId)
+            .limit(1);
+
+          if (!selErr && rows && rows.length > 0) {
+            continue;
+          }
+
+          const { error: insErr } = await supabase
+            .from('bookmarks')
+            .insert({
+              user_id: userIdNum,
+              post_id: postId,
+              notes: b?.notes ?? null,
+              tags: Array.isArray(b?.tags) ? b.tags : null,
+              last_position: typeof b?.lastPosition === 'string' ? b.lastPosition : '0',
+            });
+
+          if (!insErr) migrated += 1;
+        }
+      }
+    }
+
+    // Server DB fallback
+    if (migrated === 0) {
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'User not authenticated' });
+      }
+      for (const [rawId, b] of entries as any[]) {
+        const wpOrLocalId = Number(rawId);
+        if (!Number.isFinite(wpOrLocalId)) continue;
+        const postId = await resolveLocalPostId(wpOrLocalId);
+
+        // Check if already bookmarked
+        const existing = await db
+          .select()
+          .from(bookmarks)
+          .where(and(eq(bookmarks.userId, userId), eq(bookmarks.postId, postId)))
+          .limit(1);
+
+        if (existing && existing.length > 0) continue;
+
+        const now = new Date();
+        const [ins] = await db
+          .insert(bookmarks)
+          .values({
+            userId,
+            postId,
+            notes: b?.notes ?? null,
+            tags: Array.isArray(b?.tags) ? b.tags : null,
+            lastPosition: typeof b?.lastPosition === 'string' ? b.lastPosition : '0',
+            createdAt: now,
+          })
+          .returning();
+
+        if (ins) migrated += 1;
+      }
+    }
+
+    // Clear anonymous session bookmarks after migration
+    try {
+      if ((req as any).session?.anonymousBookmarks) {
+        (req as any).session.anonymousBookmarks = {};
+      } else if (req.session?.anonymousBookmarks) {
+        (req.session as any).anonymousBookmarks = {};
+      }
+    } catch {}
+
+    return res.json({ success: true, migrated, cleared: true });
+  } catch (error: any) {
+    logger.error('[Bookmarks] Migration failed', { error: error.message, stack: error.stack });
+    return res.status(500).json({ success: false, message: 'Failed to migrate bookmarks' });
+  }
+});
+
 export default router;

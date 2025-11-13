@@ -47,6 +47,50 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   const [filterTag, setFilterTag] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // One-click migration: check for migratable anonymous bookmarks after login
+  const { data: migrateDryRun, isLoading: isLoadingMigrateCheck } = useQuery({
+    queryKey: ['/api/bookmarks/migrate', 'dryRun'],
+    queryFn: async () => {
+      if (!user) return { success: true, migratable: 0 };
+      try {
+        return await apiRequest<{ success: boolean; migratable: number }>('/api/bookmarks/migrate');
+      } catch (err) {
+        console.error('[BookmarkList] Migration dry-run failed:', err);
+        return { success: false, migratable: 0 };
+      }
+    },
+    enabled: !!user,
+  });
+
+  const migrateMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest<{ success: boolean; migrated: number; cleared: boolean }>('/api/bookmarks/migrate', {
+        method: 'POST',
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bookmarks'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bookmarks', { tag: filterTag }] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bookmarks/migrate', 'dryRun'] });
+      if (data?.success) {
+        toast({
+          title: 'Bookmarks imported',
+          description: data.migrated > 0
+            ? `Imported ${data.migrated} bookmark${data.migrated === 1 ? '' : 's'} from previous sessions.`
+            : 'No bookmarks found to import.',
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('[BookmarkList] Migration failed:', error);
+      toast({
+        title: 'Import failed',
+        description: error instanceof Error ? error.message : 'Could not import bookmarks.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Query to fetch all bookmarks for authenticated users
   const { data: authBookmarks = [], isLoading: isLoadingAuth, error: authError, status: authStatus, fetchStatus: authFetchStatus } = useQuery({
     queryKey: ['/api/bookmarks', { tag: filterTag }],
@@ -157,38 +201,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
     },
   });
   
-  // Delete anonymous bookmark mutation
-  const deleteAnonymousMutation = useMutation({
-    mutationFn: async (postId: number) => {
-      // Validate input
-      if (!postId || typeof postId !== 'number' || postId <= 0) {
-        throw new Error('Invalid post ID for anonymous bookmark deletion');
-      }
-      
-      return apiRequest(`/api/reader/bookmarks/${postId}`, {
-        method: 'DELETE',
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/reader/bookmarks'] });
-      toast({
-        title: 'Bookmark removed',
-        description: 'The bookmark has been removed successfully.',
-      });
-    },
-    onError: (error) => {
-      console.error('Error removing anonymous bookmark:', error);
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'Failed to remove bookmark. Please try again.';
-      
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-    },
-  });
+  
   
   // Use the appropriate mutation based on user authentication status
   const deleteMutation = deleteAuthMutation;
@@ -374,6 +387,23 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
 
   return (
     <div className={className}>
+      {/* One-click migration banner for authenticated users */}
+      {user && migrateDryRun?.migratable > 0 && (
+        <div className="p-3 mb-4 rounded-md border border-border/60 bg-muted/30 flex items-center justify-between">
+          <div className="text-sm">
+            You have {migrateDryRun.migratable} bookmark{migrateDryRun.migratable === 1 ? '' : 's'} from previous sessions. Import them into your account?
+          </div>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => migrateMutation.mutate()}
+            disabled={migrateMutation.isPending}
+          >
+            {migrateMutation.isPending ? 'Importing…' : 'Import bookmarks'}
+          </Button>
+        </div>
+      )}
+
       {showFilter && (
         <div className="mb-6 space-y-4">
           <Input
