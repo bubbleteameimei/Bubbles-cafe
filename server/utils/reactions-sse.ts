@@ -120,29 +120,7 @@ db.execute(sql`
     const likesCount = Number(row.likesCount ?? 0);
     const dislikesCount = Number(row.dislikesCount ?? 0);
 
-    // Correct missing or out-of-range baselines deterministically (seed from id)
-    const outOfRange = baselineLikes < 100 || baselineLikes > 200 || baselineDislikes < 3 || baselineDislikes > 7;
-    if (baselineLikes === 0 || baselineDislikes === 0 || outOfRange) {
-      const seedSource = String(effectiveId);
-      let h = 0;
-      for (let i = 0; i < seedSource.length; i++) { h = (h << 5) - h + seedSource.charCodeAt(i); h |= 0; }
-      const seededRandom = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
-      const likesBase = Math.floor(seededRandom(Math.abs(h) * 12345) * (200 - 100 + 1)) + 100;
-      const dislikesBase = Math.floor(seededRandom(Math.abs(h) * 12345 + 999) * (7 - 3 + 1)) + 3;
-      try {
-        await db.execute(sql`
-          UPDATE posts
-          SET baseline_likes = ${likesBase}, baseline_dislikes = ${dislikesBase}
-          WHERE id = ${effectiveId}
-        `);
-        baselineLikes = likesBase;
-        baselineDislikes = dislikesBase;
-      } catch {
-        baselineLikes = likesBase;
-        baselineDislikes = dislikesBase;
-      }
-    }
-
+    // Do not auto-correct or write baselines. Use current DB values directly.
     const payload = {
       postId: effectiveId,
       baselineLikes,
@@ -157,7 +135,10 @@ db.execute(sql`
     };
     sendEvent(res, 'initial', payload);
   }
-}).catch(() => { /* ignore */ });
+}).catch((err: any) => {
+  // Surface error to client as a status event; avoid silent failure
+  try { sendEvent(res, 'error', { message: 'Failed to read initial reactions', postId: effectiveId }); } catch {}
+});
 
   // Heartbeat to keep connection alive on proxies
   const interval = setInterval(() => {

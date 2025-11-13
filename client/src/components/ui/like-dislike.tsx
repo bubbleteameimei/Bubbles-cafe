@@ -84,6 +84,8 @@ export function LikeDislike({
     baseStats: { likes: 0, dislikes: 0 },
     userInteracted: false
   });
+  const [reactionError, setReactionError] = useState(false);
+  const [isLoadingTotals, setIsLoadingTotals] = useState(true);
   const [inlineToast, setInlineToast] = useState<{ message: string; type: 'like' | 'dislike' | 'error' | null } | null>(null);
   const [isToastVisible, setIsToastVisible] = useState(false);
   const storageKey = getStorageKey(postId, slug, source);
@@ -120,6 +122,8 @@ export function LikeDislike({
           userInteracted: false
         };
         setStats(computedStats);
+        setReactionError(false);
+        setIsLoadingTotals(false);
 
         // Restore local reaction UI state
         const localState = readLocalReaction(storageKey);
@@ -140,34 +144,16 @@ export function LikeDislike({
           window.dispatchEvent(new CustomEvent('reaction:updated', { detail }));
         } catch {}
       } catch (error) {
-        console.warn('[LikeDislike] Failed to load reactions, showing zero counts fallback:', error);
+        console.error('[LikeDislike] Failed to load reactions:', error);
+        setReactionError(true);
+        setIsLoadingTotals(false);
 
-        const fallbackStats: Stats = {
-          likes: 0,
-          dislikes: 0,
-          baseStats: { likes: 0, dislikes: 0 },
-          userInteracted: false
-        };
-        setStats(fallbackStats);
-
-        // Restore local reaction UI state
+        // Restore local reaction UI state without changing totals
         const localState = readLocalReaction(storageKey);
         setLiked(localState === 'like');
         setDisliked(localState === 'dislike');
 
-        onUpdate?.(fallbackStats.likes, fallbackStats.dislikes);
-        // Broadcast fallback totals as well
-        try {
-          const detail = {
-            postId,
-            baselineLikes: Number(fallbackStats.baseStats.likes || 0),
-            baselineDislikes: Number(fallbackStats.baseStats.dislikes || 0),
-            likesCount: Math.max(0, Number(fallbackStats.likes) - Number(fallbackStats.baseStats.likes || 0)),
-            dislikesCount: Math.max(0, Number(fallbackStats.dislikes) - Number(fallbackStats.baseStats.dislikes || 0)),
-            totals: { likes: Number(fallbackStats.likes), dislikes: Number(fallbackStats.dislikes) }
-          };
-          window.dispatchEvent(new CustomEvent('reaction:updated', { detail }));
-        } catch {}
+        // Do not broadcast zero totals; keep UI showing placeholders
       }
     })();
 
@@ -218,6 +204,8 @@ export function LikeDislike({
       userInteracted: true
     };
     setStats(newStats);
+    setReactionError(false);
+    setIsLoadingTotals(false);
     onUpdate?.(newStats.likes, newStats.dislikes);
     writeLocalReaction(storageKey, liked ? 'like' : (disliked ? 'dislike' : 'none'), newStats);
 
@@ -306,7 +294,16 @@ export function LikeDislike({
       // onLike callback already handled
     } catch (error) {
       console.error(`[LikeDislike] Error handling like for post ${postId}:`, error);
-      // Keep optimistic counts; user already saw feedback
+      // Roll back optimistic update on failure
+      showInlineToast('Failed to update like. Please try again.', 'error');
+      const prevState = readLocalReaction(storageKey);
+      // Recompute from previous local state
+      const prevLiked = prevState === 'like';
+      const prevDisliked = prevState === 'dislike';
+      setLiked(prevLiked);
+      setDisliked(prevDisliked);
+      // Force refetch of totals next time by marking error
+      setReactionError(true);
     }
   };
 
@@ -363,7 +360,14 @@ export function LikeDislike({
       // onDislike callback already handled
     } catch (error) {
       console.error(`[LikeDislike] Error handling dislike for post ${postId}:`, error);
-      // Keep optimistic counts; user already saw feedback
+      // Roll back optimistic update on failure
+      showInlineToast('Failed to update dislike. Please try again.', 'error');
+      const prevState = readLocalReaction(storageKey);
+      const prevLiked = prevState === 'like';
+      const prevDisliked = prevState === 'dislike';
+      setLiked(prevLiked);
+      setDisliked(prevDisliked);
+      setReactionError(true);
     }
   };
 
@@ -394,7 +398,7 @@ export function LikeDislike({
           `}
         >
           <ThumbsUp className={`${variant === 'reader' ? 'h-4 w-4' : 'h-3 w-3'}`} />
-          <span className="font-sans tabular-nums">{stats.likes}</span>
+          <span className="font-sans tabular-nums">{(isLoadingTotals || reactionError) ? '—' : stats.likes}</span>
         </button>
 
         <button
@@ -416,7 +420,7 @@ export function LikeDislike({
           `}
         >
           <ThumbsDown className={`${variant === 'reader' ? 'h-4 w-4' : 'h-3 w-3'}`} />
-          <span className="font-sans tabular-nums">{stats.dislikes}</span>
+          <span className="font-sans tabular-nums">{(isLoadingTotals || reactionError) ? '—' : stats.dislikes}</span>
         </button>
       </div>
       

@@ -60,6 +60,7 @@ export default function StoriesIndexContent() {
   const deferredSearch = React.useDeferredValue(search);
   const [categoryPills, setCategoryPills] = useState<Array<{ key: string; count: number; pretty: string }>>([]);
   const [trendingScores, setTrendingScores] = useState<Record<number, number>>({});
+  const [reactionsUnavailable, setReactionsUnavailable] = useState<boolean>(false);
   
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [pageSize, setPageSize] = useState<number>(6);
@@ -722,9 +723,16 @@ export default function StoriesIndexContent() {
         };
         es.addEventListener('initial', onMessage);
         es.addEventListener('update', onMessage);
-        es.onerror = () => { /* keep alive; browser will reconnect */ };
+        es.onerror = () => { 
+          // mark reactions as temporarily unavailable, UI will show banner
+          setReactionsUnavailable(true);
+          // keep alive; browser will reconnect
+        };
         sources.set(postId, { es, ts: Date.now() });
-      } catch {}
+      } catch (err) {
+        console.error('[Index] Failed to open SSE stream:', err);
+        setReactionsUnavailable(true);
+      }
     };
 
     // Preload a small initial batch near the top of the list to avoid empty counts above the fold
@@ -751,8 +759,9 @@ export default function StoriesIndexContent() {
         for (const id of candidateIds) {
           ensureSse(id);
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error('[Index] Failed to preload initial reactions:', err);
+        setReactionsUnavailable(true);
       }
     };
 
@@ -777,8 +786,9 @@ export default function StoriesIndexContent() {
         for (const id of unique) {
           ensureSse(id);
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error('[Index] Failed to flush reaction batch:', err);
+        setReactionsUnavailable(true);
       }
     };
 
@@ -1272,6 +1282,13 @@ export default function StoriesIndexContent() {
               {/* Removed duplicate sort dropdown above featured story; keeping the one inside the featured box */}
             </div>
           </div>
+
+          {/* Status banner for reactions subsystem */}
+          {reactionsUnavailable && (
+            <div className="mb-4 rounded-md border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
+              Live reactions are temporarily unavailable. Counts will appear once the connection is restored.
+            </div>
+          )}
 
           {/* Featured row */}
           {(featuredStory && sortedPosts.length > 0 && (!deferredSearch.trim() || titleMatches.length > 0 || !!closestTitleMatch)) && (
