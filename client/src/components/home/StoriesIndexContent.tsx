@@ -340,7 +340,48 @@ export default function StoriesIndexContent() {
   useEffect(() => {
     try {
       if (!searchWorkerRef.current && typeof Worker !== 'undefined') {
-        const w = new Worker(new URL('../../workers/search.worker );
+        const w = new Worker(new URL('../../workers/search.worker.ts', import.meta.url), { type: 'module' });
+        w.onmessage = (e: MessageEvent) => {
+          try {
+            const data = e.data || {};
+            const bestId = typeof data.bestId === 'number' ? data.bestId : null;
+            const suggestionIds: number[] = Array.isArray(data.suggestionIds) ? data.suggestionIds : [];
+            const byId = new Map(sortedPostsRef.current.map(p => [Number((p as any).id), p]));
+            setClosestTitleMatchW(bestId && byId.get(bestId) ? byId.get(bestId)! : null);
+            setSearchSuggestionsW(suggestionIds.map(id => byId.get(id)).filter(Boolean) as Post[]);
+          } catch {
+            setClosestTitleMatchW(null);
+            setSearchSuggestionsW([]);
+          }
+        };
+        searchWorkerRef.current = w;
+      }
+    } catch {}
+    return () => {
+      try { searchWorkerRef.current?.terminate(); } catch {}
+      searchWorkerRef.current = null;
+    };
+  }, []);
+
+  // Post queries to worker for fuzzy matching on long queries
+  useEffect(() => {
+    const q = deferredSearch.trim();
+    const w = searchWorkerRef.current;
+    if (!w || q.length < 3) {
+      setClosestTitleMatchW(null);
+      setSearchSuggestionsW([]);
+      return;
+    }
+    try {
+      w.postMessage({
+        query: q,
+        posts: sortedPosts.map(p => ({ id: Number((p as any).id), title: String(p.title || '') }))
+      });
+    } catch {
+      setClosestTitleMatchW(null);
+      setSearchSuggestionsW([]);
+    }
+  }, [deferredSearch, sortedPosts]);
 
   // Compute category pills lazily to avoid blocking the main thread during input
   useEffect(() => {
