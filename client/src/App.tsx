@@ -48,7 +48,7 @@ import GA4 from './components/GA4';
 // Import essential pages lazily to keep main bundle small
 import HomePage from './pages/home';
 // Index (stories) page lazy-loaded to reduce initial bundle size; fallback shows a small loader
-import StoriesPage from './pages/index';
+const StoriesPage = React.lazy(() => import('./pages/index'));
 const BestStoriesPage = React.lazy(() => import('./pages/best-stories'));
 const CuratedPage = React.lazy(() => import('./pages/curated'));
 const EditorsPicksPage = React.lazy(() => import('./pages/editors-picks'));
@@ -56,7 +56,7 @@ const EdensHollowPage = React.lazy(() => import('./pages/edens-hollow'));
 
 import RouteLoader from './components/ui/RouteLoader';
 // Lazily load core pages to enable code-splitting
-import ReaderPage from './pages/reader';
+const ReaderPage = React.lazy(() => import('./pages/reader'));
 const StoryViewPage = React.lazy(() => import('./pages/story-view'));
 
 // Reader route component: mount directly for predictable behavior without an extra loader frame
