@@ -403,10 +403,8 @@ const AppContent = () => {
         } else if (path.startsWith('/legal/cookie-policy')) {
           void import('./pages/legal/cookie-policy');
         } else if (path.startsWith('/admin')) {
-          // Preload common admin screens for snappy nav
-          void import('./pages/admin');
-          void import('./pages/admin/dashboard');
-          void import('./pages/admin/content');
+          // Preload admin index for snappy nav
+          void import('./pages/admin/index');
         } else if (path.startsWith('/search')) {
           void import('./pages/search-results');
         }

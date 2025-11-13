@@ -161,10 +161,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           break;
         }
         case '/bookmarks': {
-          const res = await fetch('/api/bookmarks', { credentials: 'include' }).catch(() => null);
-          if (!res || !res.ok) {
-            await fetch('/api/reader/bookmarks', { credentials: 'include' }).catch(() => {});
-          }
+          // Require authentication for bookmarks; no anonymous fallback
+          await fetch('/api/bookmarks', { credentials: 'include' }).catch(() => {});
           break;
         }
         case '/profile': {
@@ -302,10 +300,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           break;
         }
         case '/bookmarks': {
-          const res = await fetch('/api/bookmarks', { credentials: 'include' }).catch(() => null);
-          if (!res || !res.ok) {
-            await fetch('/api/reader/bookmarks', { credentials: 'include' }).catch(() => {});
-          }
+          // Require authentication for bookmarks; no anonymous fallback
+          await fetch('/api/bookmarks', { credentials: 'include' }).catch(() => {});
           break;
         }
         case '/profile': {

@@ -69,35 +69,12 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   });
   
   // Query to fetch anonymous bookmarks for non-authenticated users
-  const { 
-    data: anonymousBookmarks = [], 
-    isLoading: isLoadingAnonymous,
-    error: anonymousError,
-    status: anonymousStatus,
-    fetchStatus: anonymousFetchStatus
-  } = useQuery({
-    queryKey: ['/api/reader/bookmarks', { tag: filterTag }],
-    queryFn: async () => {
-      if (user) return []; // Skip for authenticated users
-      const url = filterTag
-        ? `/api/reader/bookmarks?tag=${encodeURIComponent(filterTag)}`
-        : '/api/reader/bookmarks';
-      console.log(`[BookmarkList] Fetching anonymous bookmarks with URL: ${url}`);
-      try {
-        // Force refetch by adding timestamp to avoid client-side caching issues
-        const result = await apiRequest<BookmarkWithPost[]>(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
-        console.log(`[BookmarkList] Successfully fetched ${result.length} anonymous bookmarks`, result);
-        return result;
-      } catch (err) {
-        console.error('[BookmarkList] Error fetching anonymous bookmarks:', err);
-        return []; // Return empty array on error to prevent breaking UI
-      }
-    },
-    enabled: !user, // Only enabled for non-authenticated users
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    staleTime: 10000, // Refresh data every 10 seconds
-  });
+  // Anonymous bookmarks are no longer supported; require login for bookmarks
+  const anonymousBookmarks: BookmarkWithPost[] = [];
+  const isLoadingAnonymous = false;
+  const anonymousError: any = null;
+  const anonymousStatus: 'success' | 'error' | 'pending' = 'success';
+  const anonymousFetchStatus: 'idle' | 'fetching' | 'paused' = 'idle';
   
   // Query to fetch recommended stories for non-authenticated users with no bookmarks
   const { 
@@ -118,8 +95,8 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
         throw err;
       }
     },
-    // Only enable if user is not authenticated and there are no anonymous bookmarks
-    enabled: !user && anonymousStatus === 'success' && anonymousBookmarks.length === 0,
+    // Only enable for non-authenticated users
+    enabled: !user,
   });
   
   // Enhanced debug logging for loading states with more detailed information
@@ -214,7 +191,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   });
   
   // Use the appropriate mutation based on user authentication status
-  const deleteMutation = user ? deleteAuthMutation : deleteAnonymousMutation;
+  const deleteMutation = deleteAuthMutation;
 
   // Handle removing a bookmark
   const handleRemoveBookmark = (postId: number) => {
@@ -269,11 +246,8 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   // Display a limited number of bookmarks if specified
   const displayedBookmarks = limit ? filteredBookmarks.slice(0, limit) : filteredBookmarks;
 
-  // Special handling for non-authenticated users
+  // Special handling for non-authenticated users: require login and show recommendations
   if (!user) {
-    // Show anonymous bookmarks if available, otherwise show recommended stories
-    const hasAnonymousBookmarks = anonymousBookmarks.length > 0;
-    
     return (
       <div className={className}>
         <div className="text-center p-6 bg-muted/20 rounded-lg border border-border/50 mb-8">
@@ -286,13 +260,12 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
             Sign in to get started
           </Button>
         </div>
-        
-        {/* Show loading state for either anonymous bookmarks or recommended stories */}
-        {isLoadingAnonymous || isLoadingRecommended ? (
+
+        {isLoadingRecommended ? (
           <div className="relative min-h-[200px]">
             <ApiLoader 
               isLoading={true} 
-              message={hasAnonymousBookmarks ? "Loading your bookmarks..." : "Loading recommended stories..."}
+              message={"Loading recommended stories..."}
               minimumLoadTime={800}
               debug={true}
               overlayZIndex={100}
@@ -304,84 +277,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
               </div>
             </ApiLoader>
           </div>
-        ) : hasAnonymousBookmarks ? (
-          // Show anonymous bookmarks if available
-          <>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Your Bookmarks</h3>
-              <p className="text-xs text-muted-foreground">
-                Bookmarks are saved locally until you create an account
-              </p>
-            </div>
-            <div className="space-y-4">
-              {bookmarks.map((bookmark: BookmarkWithPost) => (
-                <Card key={bookmark.id} className="overflow-hidden">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">
-                          <Link href={`/reader/${bookmark.post.slug}`} className="hover:underline">
-                            {bookmark.post.title}
-                          </Link>
-                        </CardTitle>
-                        <CardDescription>
-                          <div className="flex items-center text-xs mt-1 text-muted-foreground">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {format(new Date(bookmark.createdAt), 'MMM dd, yyyy')}
-                          </div>
-                        </CardDescription>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveBookmark(bookmark.postId)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                
-                  <CardContent className="pb-3">
-                    <p className="text-sm text-muted-foreground line-clamp-3">
-                      {bookmark.post.excerpt}
-                    </p>
-                    
-                    {bookmark.notes && (
-                      <ScrollArea className="h-[80px] mt-2 rounded-md border p-3 bg-muted/20">
-                        <div className="text-sm text-muted-foreground min-h-[50px] w-full">{bookmark.notes}</div>
-                      </ScrollArea>
-                    )}
-                    
-                    {bookmark.tags && bookmark.tags.length > 0 && (
-                      <div className="flex items-center mt-3 flex-wrap gap-1">
-                        <Tag className="h-3 w-3 mr-1 text-muted-foreground" />
-                        {bookmark.tags.map((tag: string) => (
-                          <Badge key={tag} variant="secondary" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                
-                  <CardFooter>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => setLocation(`/reader/${bookmark.post.slug}`)}
-                    >
-                      Continue Reading
-                      <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          </>
         ) : recommendedStories.length > 0 ? (
-          // Show recommended stories if no anonymous bookmarks
           <>
             <h3 className="text-xl font-semibold mb-4">Recommended Stories</h3>
             <div className="space-y-4">

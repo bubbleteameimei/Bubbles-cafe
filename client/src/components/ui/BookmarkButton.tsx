@@ -52,24 +52,18 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
   const [notes, setNotes] = useState('');
   const [tagsInput, setTagsInput] = useState('');
 
-  // Determine which API endpoint to use based on authentication status and variant
-  const apiBasePath = user ? '/api/bookmarks' : '/api/reader/bookmarks';
+  // Require authentication for bookmarks; remove anonymous fallback
+  const apiBasePath = '/api/bookmarks';
   
   // Query to check if post is already bookmarked
   const { data: bookmarkState, isLoading } = useQuery({
     queryKey: [apiBasePath, postId],
     queryFn: async () => {
-      // If not in reader mode and not logged in, don't fetch
-      if (variant !== 'reader' && !user) return null;
-      
+      // Only fetch when authenticated
+      if (!user) return null;
       try {
-        if (user) {
-          // Authenticated users get status envelope
-          return await apiRequest<AuthBookmarkStatus>(`${apiBasePath}/${postId}`);
-        } else {
-          // Anonymous users get raw bookmark or 404
-          return await apiRequest<BookmarkData>(`${apiBasePath}/${postId}`);
-        }
+        // Authenticated users get status envelope
+        return await apiRequest<AuthBookmarkStatus>(`${apiBasePath}/${postId}`);
       } catch (error) {
         // If 404, it means not bookmarked which is normal
         if ((error as any).status === 404) {
@@ -80,7 +74,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
         return null;
       }
     },
-    enabled: variant === 'reader' || !!user, // Enable for reader variant regardless of login status
+    enabled: !!user,
     // Add retry options to handle temporary connection issues
     retry: 2,
     retryDelay: 1000,
@@ -100,10 +94,8 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
         throw new Error('Invalid post ID');
       }
 
-      // Use the correct endpoint for creation:
-      // - Authenticated users: /api/bookmarks/:postId
-      // - Anonymous reader:    /api/reader/bookmarks
-      const createEndpoint = user ? `${apiBasePath}/${postId}` : apiBasePath;
+      // Use the authenticated endpoint for creation: /api/bookmarks/:postId
+      const createEndpoint = `${apiBasePath}/${postId}`;
 
       return apiRequest(createEndpoint, {
         method: 'POST',
@@ -224,28 +216,24 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
 
   // Reader-style bookmark button
   if (variant === 'reader') {
-    // For anonymous users in reader mode - show bookmark button that works with session-based bookmarks
+    // Require login for bookmarks in reader mode
     if (!user) {
-      // Use anonymous bookmark API - this will be a functional button rather than auth prompt
-      return bookmarked ? (
+      return (
         <button
-          onClick={handleRemoveBookmark}
-          className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 active:scale-95 animate-none ${className}`}
-          aria-label="Remove bookmark"
-          data-testid={`bookmark-remove-reader-${postId}`}
-          disabled={isLoading || deleteMutation.isPending}
-        >
-          <svg className="h-7 w-7 fill-current text-amber-400" viewBox="0 0 24 24">
-            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-          </svg>
-        </button>
-      ) : (
-        <button
-          onClick={() => createMutation.mutate({ notes: '', tags: [] })}
+          onClick={() => {
+            try {
+              toast({
+                title: 'Sign in to bookmark',
+                description: 'Create a free account to save stories for later.',
+              });
+            } catch {}
+            // Navigate to auth page shortly
+            setTimeout(() => setLocation('/auth'), 300);
+          }}
           className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${className}`}
-          aria-label="Bookmark post"
-          data-testid={`bookmark-add-reader-${postId}`}
-          disabled={isLoading || createMutation.isPending}
+          aria-label="Sign in to bookmark"
+          data-testid={`bookmark-auth-reader-${postId}`}
+          disabled={isLoading}
         >
           <svg className="h-7 w-7 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
@@ -502,13 +490,15 @@ export function useBookmarkPosition(postId: number) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  // Determine which API endpoint to use based on authentication status
-  // For anonymous users: /api/reader/bookmarks
-  // For authenticated users: /api/bookmarks
-  const apiBasePath = user ? '/api/bookmarks' : '/api/reader/bookmarks';
+  // Require authentication for bookmark position updates; no anonymous endpoint
+  const apiBasePath = '/api/bookmarks';
 
   const updatePositionMutation = useMutation({
     mutationFn: async (position: string) => {
+      // Require authentication
+      if (!user) {
+        return null;
+      }
       // Validate postId
       if (!postId || typeof postId !== 'number' || postId <= 0) {
         console.warn('Invalid bookmark position update attempt', { postId });
@@ -548,6 +538,7 @@ export function useBookmarkPosition(postId: number) {
   });
 
   const updatePosition = (position: string) => {
+    if (!user) return;
     if (postId > 0 && position) {
       try {
         updatePositionMutation.mutate(position);
