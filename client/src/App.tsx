@@ -62,11 +62,11 @@ const StoryViewPage = React.lazy(() => import('./pages/story-view'));
 // Reader route component: mount directly for predictable behavior without an extra loader frame
 function ReaderRoute(props: React.ComponentProps<typeof ReaderPage>) {
   return <ReaderPage {...props} />;
-}>
+}
 // Community story route component: renders local DB stories by slug using StoryView
 function CommunityStoryRoute({ params }: { params?: { slug?: string } }) {
   const slug = params?.slug || '';
-  retur <<StoryViewPage slug={slug} />;
+  return <StoryViewPage slug={slug} />;
 }
 
 const AboutPage = React.lazy(() => import('./pages/about'));
