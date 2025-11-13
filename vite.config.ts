@@ -113,6 +113,7 @@ export default defineConfig(({ mode }) => {
 			outDir: path.resolve(__dirname, "dist/public"),
 			emptyOutDir: true,
 			sourcemap: true,
+			chunkSizeWarningLimit: 1200,
 			rollupOptions: {
 				output: {
 					manualChunks: {

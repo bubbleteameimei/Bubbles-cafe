@@ -13,7 +13,7 @@ import { Express, Request, Response, NextFunction } from "express";
  */
 export function setupCors(app: Express) {
   // List of allowed origins
-  const allowedOrigins = [
+  let allowedOrigins = [
     // Production frontend URL
     process.env.FRONTEND_URL,
     // Public backend base URL (permit for non-browser clients and occasional same-origin fetches)
@@ -25,6 +25,14 @@ export function setupCors(app: Express) {
     "http://localhost:5173",
     "http://localhost:5174"
   ].filter((v): v is string => typeof v === 'string' && v.length > 0); // ensure string[]
+
+  // Allow additional preview/test origins via env (comma-separated)
+  try {
+    const extra = (process.env.ADDITIONAL_CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(s => s.length > 0);
+    if (extra.length > 0) {
+      allowedOrigins = [...allowedOrigins, ...extra];
+    }
+  } catch {}
 
   // Normalize helper to compare by origin string
   const normalize = (s: string) => {
@@ -45,6 +53,21 @@ export function setupCors(app: Express) {
   // Vercel preview domains (*.vercel.app, *.vercel.dev)
   const isVercelOrigin = (o?: string) => !!o && (
     /\.vercel\.app$/.test(o) || /\.vercel\.dev$/.test(o)
+  );
+
+  // Netlify preview domains (*.netlify.app)
+  const isNetlifyOrigin = (o?: string) => !!o && (
+    /\.netlify\.app$/.test(o)
+  );
+
+  // Cloudflare Pages preview domains (*.pages.dev)
+  const isCloudflareOrigin = (o?: string) => !!o && (
+    /\.pages\.dev$/.test(o)
+  );
+
+  // Render preview domains (*.onrender.com)
+  const isRenderOrigin = (o?: string) => !!o && (
+    /\.onrender\.com$/.test(o)
   );
 
   // CORS middleware
@@ -98,6 +121,24 @@ export function setupCors(app: Express) {
       res.setHeader("Access-Control-Allow-Origin", origin as string);
       res.setHeader("Access-Control-Allow-Credentials", "true");
       console.log(`[CORS] Allowed Vercel preview domain: ${origin}`);
+    }
+    // Allow Netlify preview domains
+    else if (isNetlifyOrigin(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin as string);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      console.log(`[CORS] Allowed Netlify preview domain: ${origin}`);
+    }
+    // Allow Cloudflare Pages preview domains
+    else if (isCloudflareOrigin(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin as string);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      console.log(`[CORS] Allowed Cloudflare Pages domain: ${origin}`);
+    }
+    // Allow Render preview domains
+    else if (isRenderOrigin(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin as string);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      console.log(`[CORS] Allowed Render domain: ${origin}`);
     }
     // If no match but we're not in production, allow the origin anyway for development convenience
     else if (origin && process.env.NODE_ENV !== 'production') {

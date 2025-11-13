@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
-import { createLogger } from '../utils/debug-logger';
+import { createSecureLogger } from '../utils/secure-logger';
 
-const securityLogger = createLogger('Security');
+const securityLogger = createSecureLogger('Security');
 
 // Comprehensive input validation schemas
 export const securitySchemas = {
@@ -16,7 +16,7 @@ export const securitySchemas = {
     content: z.string().min(1).max(50000),
     title: z.string().min(1).max(200),
     url: z.string().url().max(2048).optional(),
-    id: z.union([z.string(), z.number()]).transform(val => 
+    id: z.union([z.string(), z.number()]).transform(val =>
       typeof val === 'string' ? parseInt(val, 10) : val
     ).refine(val => Number.isInteger(val) && val > 0, 'Invalid ID')
   }),
@@ -45,7 +45,7 @@ export async function validateSession(req: Request, res: Response, next: NextFun
   const publicRoutes = [
     '/',
     '/login',
-    '/register', 
+    '/register',
     '/auth/login',
     '/auth/register',
     '/auth/logout',
@@ -55,9 +55,9 @@ export async function validateSession(req: Request, res: Response, next: NextFun
     '/api/errors',
     '/reader'
   ];
-  
+
   // Check if this is a public route
-  const isPublicRoute = publicRoutes.includes(req.path) || 
+  const isPublicRoute = publicRoutes.includes(req.path) ||
                        req.path.startsWith('/api/posts/') ||
                        req.path.startsWith('/reader/') ||
                        req.path.startsWith('/reader') ||
@@ -80,63 +80,113 @@ export async function validateSession(req: Request, res: Response, next: NextFun
                        req.path.endsWith('.jpg') ||
                        req.path.endsWith('.ico') ||
                        req.path.endsWith('.svg');
-  
+
   if (isPublicRoute) {
     // For public routes, just ensure session exists but don't validate age/fingerprint
     if (!req.session) {
-      securityLogger.warn('Request without session on public route', { 
-        ip: req.ip, 
+      securityLogger.warn('Request without session on public route', {
+        ip: req.ip,
         userAgent: req.get('User-Agent'),
-        path: req.path 
+        path: req.path
       });
       return res.status(500).json({ error: 'Session configuration error' });
     }
-    
+
     // Set fingerprint for new sessions on public routes
     if (!(req.session as any).fingerprint) {
-      const currentFingerprint = await generateFingerprint(req);
-      (req.session as any).fingerprint = currentFingerprint;
+      const fp = await generateFingerprint(req);
+      (req.session as any).fingerprint = fp.strict;
+      (req.session as any).fingerprintBase = fp.base;
+      (req.session as any).createdAt = (req.session as any).createdAt || Date.now();
+      try {
+        securityLogger.debug('Initialized session fingerprint (public route)', {
+          sessionId: req.sessionID,
+          path: req.path,
+          components: fp.components,
+          fingerprintStrict: fp.strict,
+          fingerprintBase: fp.base
+        });
+      } catch {}
     }
-    
+
     return next();
   }
 
   if (!req.session) {
-    securityLogger.warn('Request without session', { 
-      ip: req.ip, 
+    securityLogger.warn('Request without session', {
+      ip: req.ip,
       userAgent: req.get('User-Agent'),
-      path: req.path 
+      path: req.path
     });
     return res.status(500).json({ error: 'Session configuration error' });
   }
 
-  // Check for session hijacking attempts
-  const currentFingerprint = await generateFingerprint(req);
-  if ((req.session as any).fingerprint && (req.session as any).fingerprint !== currentFingerprint) {
-    securityLogger.error('Potential session hijacking detected', {
+  // Check for session hijacking attempts with tolerant matching
+  const fp = await generateFingerprint(req);
+  try {
+    securityLogger.debug('Session fingerprint comparison', {
       sessionId: req.sessionID,
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      storedFingerprint: (req.session as any).fingerprint,
-      currentFingerprint
+      path: req.path,
+      storedStrict: (req.session as any).fingerprint,
+      storedBase: (req.session as any).fingerprintBase,
+      currentStrict: fp.strict,
+      currentBase: fp.base
     });
-    
-    req.session.destroy((err) => {
-      if (err) securityLogger.error('Failed to destroy hijacked session', { error: err.message });
-    });
-    
-    return res.status(401).json({ error: 'Session security violation' });
+  } catch {}
+  const sess: any = req.session;
+
+  if (sess.fingerprint && sess.fingerprint !== fp.strict) {
+    const baseMatch = !!sess.fingerprintBase && sess.fingerprintBase === fp.base;
+    if (baseMatch) {
+      // Likely benign change (proxy/IP segment); update strict fingerprint and continue
+      securityLogger.warn('Session fingerprint changed (likely IP/proxy)', {
+        sessionId: req.sessionID,
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        storedStrict: sess.fingerprint,
+        storedBase: sess.fingerprintBase,
+        currentStrict: fp.strict,
+        currentBase: fp.base
+      });
+      sess.fingerprint = fp.strict;
+      sess.fingerprintBase = fp.base;
+    } else {
+      securityLogger.error('Potential session hijacking detected', {
+        sessionId: req.sessionID,
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        storedFingerprint: sess.fingerprint,
+        storedFingerprintBase: sess.fingerprintBase,
+        currentFingerprintStrict: fp.strict,
+        currentFingerprintBase: fp.base
+      });
+      req.session.destroy((err) => {
+        if (err) securityLogger.error('Failed to destroy hijacked session', { error: err.message });
+      });
+      return res.status(401).json({ error: 'Session security violation' });
+    }
   }
 
   // Set fingerprint for new sessions
-  if (!(req.session as any).fingerprint) {
-    (req.session as any).fingerprint = currentFingerprint;
+  if (!sess.fingerprint) {
+    sess.fingerprint = fp.strict;
+    sess.fingerprintBase = fp.base;
+    sess.createdAt = sess.createdAt || Date.now();
+    try {
+      securityLogger.debug('Initialized session fingerprint', {
+        sessionId: req.sessionID,
+        path: req.path,
+        components: fp.components,
+        fingerprintStrict: fp.strict,
+        fingerprintBase: fp.base
+      });
+    } catch {}
   }
 
   // Check session age
   const sessionAge = Date.now() - ((req.session as any).createdAt || Date.now());
   const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-  
+
   if (sessionAge > maxAge) {
     securityLogger.info('Session expired due to age', { sessionId: req.sessionID, age: sessionAge });
     req.session.destroy((err) => {
@@ -148,19 +198,48 @@ export async function validateSession(req: Request, res: Response, next: NextFun
   next();
 }
 
-// Generate browser fingerprint for session validation
-async function generateFingerprint(req: Request): Promise<string> {
-  const components = [
-    req.get('User-Agent') || '',
-    req.get('Accept-Language') || '',
-    req.get('Accept-Encoding') || '',
-    req.ip
-  ];
-  
+// Generate browser fingerprint for session validation with tolerant matching
+async function generateFingerprint(req: Request): Promise<{ strict: string; base: string; components: Record<string, string> }> {
+  const ua = req.get('User-Agent') || '';
+  // Normalize Accept-Language to primary language code to reduce noise (e.g., "en-US,en;q=0.9" -> "en")
+  const langHeader = req.get('Accept-Language') || '';
+  const langPrimary = langHeader.split(',')[0].trim().slice(0, 2).toLowerCase();
+  const deviceType = /Mobile|Android|iPhone|iPad/i.test(ua) ? 'm' : 'd';
+
+  // Prefer the first X-Forwarded-For IP when available; fall back to req.ip
+  const xff = String(req.headers['x-forwarded-for'] || '').split(',')[0]?.trim() || '';
+  const candidateIp = (xff || req.ip || '').trim();
+
+  // Ignore private/internal IPs; include a coarse network segment for public IPs to reduce false positives
+  const isPrivate = (ip: string) => /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1|fc00:|fd00:)/.test(ip);
+  let ipSegment = '';
+  if (candidateIp && !isPrivate(candidateIp)) {
+    const v4 = candidateIp.match(/^(\d{1,3})\.(\d{1,3})\./);
+    if (v4) {
+      ipSegment = `${v4[1]}.${v4[2]}`;
+    } else {
+      const parts = candidateIp.split(':').filter(Boolean);
+      if (parts.length >= 2) ipSegment = `${parts[0]}:${parts[1]}`;
+    }
+  }
+
   const crypto = await import('crypto');
-  return crypto.createHash('sha256')
-    .update(components.join('|'))
-    .digest('hex');
+  const baseData = `${ua}|${langPrimary}|${deviceType}`;
+  const strictData = `${baseData}|${ipSegment}`;
+
+  const base = crypto.createHash('sha256').update(baseData).digest('hex');
+  const strict = crypto.createHash('sha256').update(strictData).digest('hex');
+
+  try {
+    securityLogger.debug('Fingerprint generated', {
+      path: req.path,
+      components: { ua, lang: langPrimary, deviceType, ipSegment },
+      fingerprintStrict: strict,
+      fingerprintBase: base
+    });
+  } catch {}
+
+  return { strict, base, components: { ua, lang: langPrimary, ipSegment } };
 }
 
 // Input sanitization middleware
@@ -191,7 +270,7 @@ export function sanitizeInput(schema: z.ZodSchema) {
         ip: req.ip,
         error: error instanceof Error ? error.message : 'Unknown validation error'
       });
-      
+
       return res.status(400).json({
         error: 'Invalid input data',
         details: error instanceof z.ZodError ? error.errors : undefined
@@ -203,7 +282,7 @@ export function sanitizeInput(schema: z.ZodSchema) {
 // Sanitize query parameters
 function sanitizeQueryParams(query: any): any {
   const sanitized: any = {};
-  
+
   for (const [key, value] of Object.entries(query)) {
     if (typeof value === 'string') {
       // Remove potentially dangerous characters
@@ -213,21 +292,21 @@ function sanitizeQueryParams(query: any): any {
         .replace(/data:/gi, '') // Remove data: protocol
         .slice(0, 1000); // Limit length
     } else if (Array.isArray(value)) {
-      sanitized[key] = value.map(v => 
+      sanitized[key] = value.map(v =>
         typeof v === 'string' ? v.replace(/[<>'"&]/g, '').slice(0, 1000) : v
       );
     } else {
       sanitized[key] = value;
     }
   }
-  
+
   return sanitized;
 }
 
 // Sanitize route parameters
 function sanitizeParams(params: any): any {
   const sanitized: any = {};
-  
+
   for (const [key, value] of Object.entries(params)) {
     if (typeof value === 'string') {
       // For IDs, ensure they're numeric
@@ -247,7 +326,7 @@ function sanitizeParams(params: any): any {
       sanitized[key] = value;
     }
   }
-  
+
   return sanitized;
 }
 
@@ -270,7 +349,7 @@ export function preventSQLInjection(req: Request, res: Response, next: NextFunct
     if (typeof obj === 'string') {
       return sqlPatterns.some(pattern => pattern.test(obj));
     }
-    
+
     if (typeof obj === 'object' && obj !== null) {
       for (const [key, value] of Object.entries(obj)) {
         if (checkForSQL(value, `${path}.${key}`)) {
@@ -278,7 +357,7 @@ export function preventSQLInjection(req: Request, res: Response, next: NextFunct
         }
       }
     }
-    
+
     return false;
   };
 
@@ -299,7 +378,7 @@ export function preventSQLInjection(req: Request, res: Response, next: NextFunct
         userAgent: req.get('User-Agent'),
         data: JSON.stringify(input.data)
       });
-      
+
       res.status(400).json({ error: 'Invalid request format' });
       return;
     }
@@ -335,7 +414,7 @@ export function preventXSS(req: Request, res: Response, next: NextFunction) {
     if (typeof obj === 'string') {
       return sanitizeString(obj);
     }
-    
+
     if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
       const sanitized: any = {};
       for (const [key, value] of Object.entries(obj)) {
@@ -343,11 +422,11 @@ export function preventXSS(req: Request, res: Response, next: NextFunction) {
       }
       return sanitized;
     }
-    
+
     if (Array.isArray(obj)) {
       return obj.map(item => sanitizeObject(item));
     }
-    
+
     return obj;
   };
 
@@ -398,7 +477,7 @@ export const apiRateLimit = rateLimit({
 export function limitRequestSize(maxSize: number = 10 * 1024 * 1024) {
   return (req: Request, res: Response, next: NextFunction) => {
     const contentLength = parseInt(req.get('Content-Length') || '0', 10);
-    
+
     if (contentLength > maxSize) {
       securityLogger.warn('Request size limit exceeded', {
         size: contentLength,
@@ -406,11 +485,11 @@ export function limitRequestSize(maxSize: number = 10 * 1024 * 1024) {
         ip: req.ip,
         path: req.path
       });
-      
+
       res.status(413).json({ error: 'Request too large' });
       return;
     }
-    
+
     next();
   };
 }
@@ -419,19 +498,19 @@ export function limitRequestSize(maxSize: number = 10 * 1024 * 1024) {
 export function setSecurityHeaders(req: Request, res: Response, next: NextFunction) {
   // Remove server information
   res.removeHeader('X-Powered-By');
-  
+
   // Set security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-  
+
   // HSTS for HTTPS
   if (req.secure) {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
-  
+
   next();
 }
 

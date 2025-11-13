@@ -91,9 +91,31 @@ export async function setupVite(app: Express, server: Server) {
       if (gsc && !template.includes('name="google-site-verification"')) {
         template = template.replace(
           '</head>',
-          `  <meta name="google-site-verification" content="${gsc}"/>\n</head>`
+          `  <meta name="google-site-verification" content="${gsc}"/>\\n</head>`
         );
       }
+      // Inject preconnects to speed up initial network handshakes
+      try {
+        const preconnects: string[] = [];
+        const apiBase = (process.env.BACKEND_BASE_URL || '').trim();
+        const wpBase = (process.env.VITE_WORDPRESS_API_URL || '').trim();
+        const addPreconnect = (u: string) => {
+          if (!u) return;
+          try {
+            const url = new URL(u);
+            const origin = `${url.protocol}//${url.host}`;
+            const tag = `<link rel="preconnect" href="${origin}" crossorigin>`;
+            if (!template.includes(tag)) preconnects.push(tag);
+          } catch {
+            // ignore invalid URLs
+          }
+        };
+        addPreconnect(apiBase);
+        addPreconnect(wpBase);
+        if (preconnects.length > 0) {
+          template = template.replace('</head>', `  ${preconnects.join('\\n  ')}\\n</head>`);
+        }
+      } catch {}
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
@@ -164,17 +186,38 @@ export function serveStatic(app: Express) {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     const indexPath = path.resolve(staticRoot, "index.html");
     const gsc = process.env.GOOGLE_SITE_VERIFICATION || process.env.GSC_VERIFICATION;
-    if (gsc) {
-      try {
-        let html = fs.readFileSync(indexPath, 'utf-8');
-        if (!html.includes('name="google-site-verification"')) {
-          html = html.replace('</head>', `  <meta name="google-site-verification" content="${gsc}"/>\n</head>`);
-        }
-        res.type('html').send(html);
-        return;
-      } catch {
-        // fall through to sendFile on error
+    try {
+      let html = fs.readFileSync(indexPath, 'utf-8');
+      // Inject Google site verification if missing
+      if (gsc && !html.includes('name="google-site-verification"')) {
+        html = html.replace('</head>', `  <meta name="google-site-verification" content="${gsc}"/>\\n</head>`);
       }
+      // Inject preconnects to speed up initial handshakes
+      try {
+        const preconnects: string[] = [];
+        const apiBase = (process.env.BACKEND_BASE_URL || '').trim();
+        const wpBase = (process.env.VITE_WORDPRESS_API_URL || '').trim();
+        const addPreconnect = (u: string) => {
+          if (!u) return;
+          try {
+            const url = new URL(u);
+            const origin = `${url.protocol}//${url.host}`;
+            const tag = `<link rel="preconnect" href="${origin}" crossorigin>`;
+            if (!html.includes(tag)) preconnects.push(tag);
+          } catch {
+            // ignore invalid URLs
+          }
+        };
+        addPreconnect(apiBase);
+        addPreconnect(wpBase);
+        if (preconnects.length > 0) {
+          html = html.replace('</head>', `  ${preconnects.join('\\n  ')}\\n</head>`);
+        }
+      } catch {}
+      res.type('html').send(html);
+      return;
+    } catch {
+      // fall through to sendFile on error
     }
     res.sendFile(indexPath);
   });
