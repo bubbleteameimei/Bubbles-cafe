@@ -105,13 +105,13 @@ export default function Home() {
   
 
   // Format date helper
-  const formatDate = (date: string) => {
+  const formatDate = (date: string): string => {
     try {
       return format(new Date(date), 'MMMM d, yyyy');
     } catch (error) {
       console.error('Error formatting date:', error);
-      return '';
     }
+    return '';
   };
 
   // Use our ApiLoader component to handle global loading state
