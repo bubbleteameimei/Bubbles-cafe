@@ -63,6 +63,15 @@ export default function Home() {
     });
   }, [inView]);
   
+  function getInitialPostsData(): { posts: WordPressPost[]; totalPages: number; total: number } | undefined {
+    const local = checkLocalSyncedPosts();
+    if (local?.posts?.length) {
+      const first = local.posts[0] as WordPressPost;
+      return { posts: [first], totalPages: 1, total: local.total };
+    }
+    return undefined;
+  }
+
   const { data: postsResponse, isLoading, error } = useQuery({
     queryKey: ["pages", "home", "latest-post"],
     queryFn: async () => {
@@ -109,16 +118,7 @@ export default function Home() {
     return '';
   };
 
-  // Provide local initial data from synced posts to avoid blank state
-  const getInitialPostsData = (): { posts: WordPressPost[]; totalPages: number; total: number } | undefined => {
-    const local = checkLocalSyncedPosts();
-    if (local?.posts?.length) {
-      // Coerce to WordPressPost shape (the local sync mirrors the WP fields we use)
-      const first = local.posts[0] as WordPressPost;
-      return { posts: [first], totalPages: 1, total: local.total };
-    }
-    return undefined;
-  };
+  
 
   // Use our ApiLoader component to handle global loading state
   const posts = postsResponse?.posts || [];
@@ -126,21 +126,22 @@ export default function Home() {
   // Background enrich: fetch full content for engaging excerpt when missing
   const [fullPost, setFullPost] = useState<WordPressPost | null>(null);
   useEffect(() => {
+    let canceled = false;
     const latest = postsResponse?.posts?.[0];
-    if (!latest) return;
-    const missing = !latest?.content?.rendered || latest?.content?.rendered === 'Content unavailable';
-    if (missing) {
-      let canceled = false;
-      (async () => {
-        try {
-          const p = await fetchWordPressPostBySlug(latest.slug);
-          if (!canceled) setFullPost(p as WordPressPost);
-        } catch {}
-      })();
-      return () => { canceled = true; };
-    } else {
-      setFullPost(null);
+    if (latest) {
+      const missing = !latest?.content?.rendered || latest?.content?.rendered === 'Content unavailable';
+      if (missing) {
+        (async () => {
+          try {
+            const p = await fetchWordPressPostBySlug(latest.slug);
+            if (!canceled) setFullPost(p as WordPressPost);
+          } catch {}
+        })();
+      } else {
+        setFullPost(null);
+      }
     }
+    return () => { canceled = true; };
   }, [postsResponse]);
 
   return (
