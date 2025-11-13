@@ -1375,9 +1375,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           aria-hidden="true"
           className="border-b border-border/20"
           style={{ 
-            width: '100vw', 
-            marginLeft: 'calc(50% - 50vw)', 
-            marginRight: 'calc(50% - 50vw)', 
+            width: '100%', 
+            marginLeft: '0', 
+            marginRight: '0', 
             position: 'relative', 
             left: 0, 
             transform: 'none',
@@ -1396,7 +1396,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               aria-hidden="true"
               className="border-b border-border/20"
               style={{ 
-                width: '100vw', 
+                width: '100%',, 
                 marginLeft: 'calc(50% - 50vw)', 
                 marginRight: 'calc(50% - 50vw)', 
                 position: 'relative', 
@@ -2092,9 +2092,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 aria-hidden="true"
                 className="border-b border-border"
                 style={{
-                  width: '100vw',
-                  marginLeft: 'calc(50% - 50vw)',
-                  marginRight: 'calc(50% - 50vw)',
+                  width: '100%',
+                  marginLeft: '0',
+                  marginRight: '0',
                   position: 'relative',
                   left: 0,
                   transform: 'none'

@@ -46,9 +46,9 @@ const BackToTopButton = React.lazy(() => import('./components/BackToTopButton'))
 import GA4 from './components/GA4';
 
 // Import essential pages lazily to keep main bundle small
-const HomePage = React.lazy(() => import('./pages/home'));
+import HomePage from './pages/home';
 // Index (stories) page lazy-loaded to reduce initial bundle size; fallback shows a small loader
-const StoriesPage = React.lazy(() => import('./pages/index'));
+import StoriesPage from './pages/index';
 const BestStoriesPage = React.lazy(() => import('./pages/best-stories'));
 const CuratedPage = React.lazy(() => import('./pages/curated'));
 const EditorsPicksPage = React.lazy(() => import('./pages/editors-picks'));
@@ -56,27 +56,17 @@ const EdensHollowPage = React.lazy(() => import('./pages/edens-hollow'));
 
 import RouteLoader from './components/ui/RouteLoader';
 // Lazily load core pages to enable code-splitting
-const ReaderPage = React.lazy(() => import('./pages/reader'));
+import ReaderPage from './pages/reader';
 const StoryViewPage = React.lazy(() => import('./pages/story-view'));
 
-// Reader route component: ensure loader appears immediately on direct visits and slow mounts
+// Reader route component: mount directly for predictable behavior without an extra loader frame
 function ReaderRoute(props: React.ComponentProps<typeof ReaderPage>) {
-  const [ready, setReady] = React.useState(false);
-  React.useEffect(() => {
-    // Allow a frame for fallback/loader to render before heavy content mounts
-    const id = requestAnimationFrame(() => setReady(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-  if (!ready) {
-    return <RouteLoader label="Loading story" minHeight="60vh" />;
-  }
   return <ReaderPage {...props} />;
-}
-
+}>
 // Community story route component: renders local DB stories by slug using StoryView
 function CommunityStoryRoute({ params }: { params?: { slug?: string } }) {
   const slug = params?.slug || '';
-  return <StoryViewPage slug={slug} />;
+  retur <<StoryViewPage slug={slug} />;
 }
 
 const AboutPage = React.lazy(() => import('./pages/about'));

@@ -28,7 +28,7 @@ const SERVER_FALLBACK_API = '/api/wordpress/posts';
 
 // Cache configuration
 const CACHE_KEY_PREFIX = 'wp_cache_v2_';
-const CACHE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 const LAST_ERROR_KEY = 'wp_last_error';
 
 // WordPress post schema with relaxed validation - allows more flexibility for parsing
@@ -284,7 +284,7 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
   logger.info(`[WordPress] Attempting fallback to server API`);
 
   try {
-    // First check for locally synced posts from auto-sync if available
+    // Usest check for locally synced posts from auto-sync if available
     // This provides an additional layer of reliability
     if (!options.slug) {  // Local sync fallback only works for post listings, not single post by slug
       const localSyncedPosts = checkLocalSyncedPosts();
@@ -651,31 +651,13 @@ export function preloadWordPressPosts(): Promise<void> {
   logger.info('[WordPress] Starting background preload of posts');
 
   // Return a promise that resolves when the preload is complete
-  return new Promise((resolve, reject) => {
-    // First check for locally synced posts from auto-sync service
-    const localSyncedPosts = checkLocalSyncedPosts();
-
-    if (localSyncedPosts) {
-      logger.info(`[WordPress] Using ${localSyncedPosts.posts.length} locally synced posts for quick initial load`);
-      resolve();
-
-      // Still try to refresh from the API in the background
-      setTimeout(() => {
-        checkWordPressApiStatus()
-          .then(refreshInBackground)
-          .catch(error => logger.warn('[WordPress] Background refresh failed', error));
-      }, 3000); // Wait 3 seconds before attempting a background refresh
-
-      return;
-    }
-
-    // No local synced posts available, proceed with normal API check
+  return new Promise((resolve) => {
     checkWordPressApiStatus()
       .then(refreshInBackground)
       .then(() => resolve())
       .catch(error => {
         logger.warn('[WordPress] Preload failed', error);
-        // Still resolve the promise to prevent blocking
+        // Resolve to avoid blocking app start; content will load on demand
         resolve();
       });
   });
@@ -683,8 +665,8 @@ export function preloadWordPressPosts(): Promise<void> {
   // Helper function to refresh posts based on API availability
   function refreshInBackground(isAvailable: boolean) {
     if (!isAvailable) {
-      logger.info('[WordPress] API unavailable, using fallback directly');
-      // Directly use server API to avoid unnecessary retries
+      logger.info('[WordPress] API unavailable, using server proxy fallback');
+      // Use server API proxy to avoid unnecessary retries
       return fallbackToServerAPI({ perPage: 5 });
     }
 
