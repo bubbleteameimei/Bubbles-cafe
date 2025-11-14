@@ -720,6 +720,9 @@ export default function StoriesIndexContent() {
                 }
               }}));
               fetched.add(payload.postId);
+              // Reset transient error state on any successful message
+              reactionsErrorCountRef.current = 0;
+              if (reactionsUnavailable) setReactionsUnavailable(false);
             }
           } catch {}
         };
@@ -728,7 +731,11 @@ export default function StoriesIndexContent() {
         es.onerror = () => { 
           // Increment error count; only show banner after repeated errors
           reactionsErrorCountRef.current += 1;
-          if (reactionsErrorCountRef.current >= 3) };
+          if (reactionsErrorCountRef.current >= 3) {
+            setReactionsUnavailable(true);
+          }
+          // keep alive; browser will reconnect
+        };
         sources.set(postId, { es, ts: Date.now() });
       } catch (err) {
         console.error('[Index] Failed to open SSE stream:', err);
