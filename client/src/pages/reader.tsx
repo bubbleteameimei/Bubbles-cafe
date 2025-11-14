@@ -2102,14 +2102,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   transform: 'none'
                 }}
               />
-              <div className="social-support-section mt-8 pt_codei-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-                
+              <div className="social-support-section mt-8 pt-6">
                 {/* Support writing card with auto-wired authorId */}
                 <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
               </div>
 
             {/* Comment section (lazy-mounted near viewport) */}
-            <div className="mt-8"</i-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+            <div className="mt-8">
               <LazyCommentSection postId={currentPost.id} />
             </div>
         </article>
