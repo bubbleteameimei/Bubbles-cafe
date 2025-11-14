@@ -1108,13 +1108,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       <ReaderTooltip show={showTooltip} />
       {/* CSS for distraction-free mode transitions */}
       <style dangerouslySetInnerHTML={{__html: `
-        /* Distraction-free dimensioning: only dim UI chrome, never hide content */
-        .ui-chrome {
+        /* Distraction-free fade: dim UI chrome while preserving layout */
+        .ui-fade-element {
           transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           will-change: opacity;
         }
-        .df-dim {
-          opacity: 0.65;
+        .ui-hidden {
+          opacity: 0.25;
+          pointer-events: none;
         }
         .story-content {
           transition: color 0.2s ease, background-color 0.2s ease;
@@ -1122,7 +1123,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         
         /* Distraction-free mode: keep navbar visible but subtle */
         .reader-page[data-distraction-free="true"] header.main-header {
-          opacity: 0.65;
+          opacity: 0.55;
           visibility: visible;
           transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           pointer-events: auto;
@@ -1166,6 +1167,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         /* Set default cursor for everything */
         .reader-page {
           cursor: default;
+          scrollbar-gutter: stable;
         }
         
         /* Set pointer cursor only for interactive elements */
@@ -1224,7 +1226,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         
 
         {/* Font controls/TOC spacing below header and progress bar */}
-        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-0.5 py-0.5 m-0 w-full ui-chrome ${isUIHidden ? 'df-dim' : ''}`}>
+        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-0.5 py-0.5 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} style={{ minHeight: '40px' }}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -1428,7 +1430,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   </div>
                 )}
                 <h1
-              className="text-6xl md:text-7xl font-bold text-center mb-1 tracking-tight leading-tight"
+              className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
               dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(getRenderedText(currentPost.title) || 'Story') }}
             />
               </div>
@@ -1949,7 +1951,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </SwipeNavigation>
             
             {/* Simple pagination at bottom of story content - extremely compact */}
-            <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-chrome ${isUIHidden ? 'df-dim' : ''}`}>
+            <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} style={{ minHeight: '64px' }}>
               <div className="relative overflow-visible flex items-center justify-center gap-1 bg-background/90 backdrop-blur-md border border-transparent rounded-full h-16 px-1.5 shadow-sm">
                 <span
                   aria-hidden="true"
@@ -2102,7 +2104,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   transform: 'none'
                 }}
               />
-              <div className="social-support-section mt-8 pt-6">
+              <div className="social-support-section mt-8 pt-6" style={{ minHeight: '180px', contentVisibility: 'auto', contain: 'layout paint style' }}>
                 {/* Support writing card with auto-wired authorId */}
                 <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
               </div>
