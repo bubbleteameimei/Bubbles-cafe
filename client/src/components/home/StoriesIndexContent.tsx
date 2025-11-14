@@ -1358,7 +1358,7 @@ export default function StoriesIndexContent() {
                           <Calendar className="h-3 w-3" />
                           <time>{new Date(featuredStory.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
                         </div>
-                        <div className="flex items-center gap-1 justify-end" title={`~${String(featuredStory.content || '').trim().split(/\\s+/).length`}>
+                        <div className="flex items-center gap-1 justify-end" title={`~${String(featuredStory.content || '').trim().split(/\s+/).length} words`}>
                           <Clock className="h-3 w-3" />
                           <span>{getReadingTime(featuredStory.content)}</span>
                         </div>
@@ -1692,7 +1692,7 @@ export default function StoriesIndexContent() {
                                         <Calendar className="h-3 w-3" />
                                         <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
                                       </div>
-                                      <div className="flex items-center gap-1 justify-end" title={`~${String(post.content || '').trim().split(/\s+/).length} words`}>s+/).length} words`}>
+                                      <div className="flex items-center gap-1 justify-end" title={`~${String(post.content || '').trim().split(/\s+/).length} words`}>
                                         <Clock className="h-3 w-3" />
                                         <span>{getReadingTime(post.content)}</span>
                                       </div>
