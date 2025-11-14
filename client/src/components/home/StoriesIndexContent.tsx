@@ -60,16 +60,27 @@ export default function StoriesIndexContent() {
   const deferredSearch = React.useDeferredValue(search);
   const [categoryPills, setCategoryPills] = useState<Array<{ key: string; count: number; pretty: string }>>([]);
   const [trendingScores, setTrendingScores] = useState<Record<number, number>>({});
+  const [reactionsUnavailable, setReactionsUnavailable] = useState<boolean>(false);
   
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [pageSize, setPageSize] = useState<number>(6);
   const cardsGridRef = React.useRef<HTMLDivElement | null>(null);
   const breakpointRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null);
   const fetchedReactionIdsRef = React.useRef<Set<number>>(new Set());
-  // SSE sources per post to stream live updates
-  const sseSourcesRef = React.useRef<Map<number, EventSource>>(new Map());
+  // SSE sources per post to stream live updates (LRU-limited)
+  const sseSourcesRef = React.useRef<Map<number, { es: EventSource; ts: number }>>(new Map());
+  const MAX_SSE_CONNECTIONS = 4;
+  // Track SSE/preload errors to avoid flashing the \"unavailable\" banner on transient failures
+  const reactionsErrorCountRef = React.useRef<number>(0);
   // Track whether we've prefetched totals for all posts to avoid repeated work
   const preloadedAllRef = React.useRef<boolean>(false);
+  // Deduplicate zero-results analytics by query
+  const lastZeroResultsQueryRef = React.useRef<string>('');
+  // Fuzzy search offload to worker
+  const [closestTitleMatchW, setClosestTitleMatchW] = useState<Post | null>(null);
+  const [searchSuggestionsW, setSearchSuggestionsW] = useState<Post[]>([]);
+  const searchWorkerRef = React.useRef<Worker | null>(null);
+  const sortedPostsRef = React.useRef<Post[]>([]);
 
   // Defer only reaction widgets; render the rest immediately to avoid layout shifts
   const [readyReactions, setReadyReactions] = useState(false);
@@ -105,7 +116,8 @@ export default function StoriesIndexContent() {
   // Analytics: log search queries (debounced) and zero-result events
   useEffect(() => {
     const q = deferredSearch.trim();
-    if (!q) return;
+    // Avoid logging very short queries to reduce noise and jank
+    if (!q || q.length < 3) return;
     const t = setTimeout(() => {
       try {
         fetch('/api/analytics/interaction', {
@@ -114,7 +126,7 @@ export default function StoriesIndexContent() {
           body: JSON.stringify({ interactionType: 'index_search_query', details: { q }, path: '/stories' })
         }).catch(() => {});
       } catch {}
-    }, 800);
+    }, 1200);
     return () => clearTimeout(t);
   }, [deferredSearch]);
 
@@ -274,8 +286,8 @@ export default function StoriesIndexContent() {
     },
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     staleTime: 5 * 60 * 1000,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     initialPageParam: 1,
     initialData: cachedPage1 ? { pages: [cachedPage1], pageParams: [1] } as any : undefined,
   });
@@ -322,6 +334,58 @@ export default function StoriesIndexContent() {
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
+  // Keep a ref of latest sortedPosts for worker mapping
+  useEffect(() => {
+    sortedPostsRef.current = sortedPosts;
+  }, [sortedPosts]);
+
+  // Initialize search worker once
+  useEffect(() => {
+    try {
+      if (!searchWorkerRef.current && typeof Worker !== 'undefined') {
+        const w = new Worker(new URL('../../workers/search.worker.ts', import.meta.url), { type: 'module' });
+        w.onmessage = (e: MessageEvent) => {
+          try {
+            const data = e.data || {};
+            const bestId = typeof data.bestId === 'number' ? data.bestId : null;
+            const suggestionIds: number[] = Array.isArray(data.suggestionIds) ? data.suggestionIds : [];
+            const byId = new Map<number, Post>(sortedPostsRef.current.map((p: Post) => [Number((p as any).id), p]));
+            setClosestTitleMatchW(bestId && byId.get(bestId) ? byId.get(bestId)! : null);
+            setSearchSuggestionsW(suggestionIds.map(id => byId.get(id)).filter(Boolean) as Post[]);
+          } catch {
+            setClosestTitleMatchW(null);
+            setSearchSuggestionsW([]);
+          }
+        };
+        searchWorkerRef.current = w;
+      }
+    } catch {}
+    return () => {
+      try { searchWorkerRef.current?.terminate(); } catch {}
+      searchWorkerRef.current = null;
+    };
+  }, []);
+
+  // Post queries to worker for fuzzy matching on long queries
+  useEffect(() => {
+    const q = deferredSearch.trim();
+    const w = searchWorkerRef.current;
+    if (!w || q.length < 3) {
+      setClosestTitleMatchW(null);
+      setSearchSuggestionsW([]);
+      return;
+    }
+    try {
+      w.postMessage({
+        query: q,
+        posts: sortedPosts.map(p => ({ id: Number((p as any).id), title: String(p.title || '') }))
+      });
+    } catch {
+      setClosestTitleMatchW(null);
+      setSearchSuggestionsW([]);
+    }
+  }, [deferredSearch, sortedPosts]);
+
   // Compute category pills lazily to avoid blocking the main thread during input
   useEffect(() => {
     let cancelled = false;
@@ -362,6 +426,8 @@ export default function StoriesIndexContent() {
   const closestTitleMatch = React.useMemo(() => {
     const raw = deferredSearch.trim();
     if (!raw) return null;
+    // Offload heavy fuzzy matching to worker for longer queries
+    if (raw.length >= 3 && closestTitleMatchW) return closestTitleMatchW;
 
     const tokenize = (s: string) => normalizePlain(s).split(/[^a-z0-9]+/).filter(Boolean);
     const jaccard = (a: string[], b: string[]) => {
@@ -429,7 +495,7 @@ export default function StoriesIndexContent() {
     }
 
     return best?.post || null;
-  }, [deferredSearch, sortedPosts]);
+  }, [deferredSearch, sortedPosts, closestTitleMatchW]);
 
   // Available theme categories present in posts (include derived when metadata missing)
   const availableCategories = useMemo(() => {
@@ -613,7 +679,29 @@ export default function StoriesIndexContent() {
     const ensureSse = (postId: number) => {
       try {
         if (!Number.isFinite(postId)) return;
-        if (sources.has(postId)) return;
+        if (sources.has(postId)) {
+          // Touch timestamp for LRU
+          const obj = sources.get(postId);
+          if (obj) obj.ts = Date.now();
+          return;
+        }
+
+        // LRU cap: close oldest connection if at capacity
+        if (sources.size >= MAX_SSE_CONNECTIONS) {
+          let oldestKey: number | null = null;
+          let oldestTs = Infinity;
+          for (const [key, obj] of sources.entries()) {
+            if (obj.ts < oldestTs) {
+              oldestTs = obj.ts;
+              oldestKey = key;
+            }
+          }
+          if (oldestKey != null) {
+            try { sources.get(oldestKey)?.es.close(); } catch {}
+            sources.delete(oldestKey);
+          }
+        }
+
         const url = `/api/posts/${postId}/reactions/stream`;
         const es = new EventSource(url, { withCredentials: true } as any);
         const onMessage = (e: MessageEvent) => {
@@ -632,14 +720,27 @@ export default function StoriesIndexContent() {
                 }
               }}));
               fetched.add(payload.postId);
+              // Reset transient error state on any successful message
+              reactionsErrorCountRef.current = 0;
+              if (reactionsUnavailable) setReactionsUnavailable(false);
             }
           } catch {}
         };
         es.addEventListener('initial', onMessage);
         es.addEventListener('update', onMessage);
-        es.onerror = () => { /* keep alive; browser will reconnect */ };
-        sources.set(postId, es);
-      } catch {}
+        es.onerror = () => { 
+          // Increment error count; only show banner after repeated errors
+          reactionsErrorCountRef.current += 1;
+          if (reactionsErrorCountRef.current >= 3) {
+            setReactionsUnavailable(true);
+          }
+          // keep alive; browser will reconnect
+        };
+        sources.set(postId, { es, ts: Date.now() });
+      } catch (err) {
+        console.error('[Index] Failed to open SSE stream:', err);
+        setReactionsUnavailable(true);
+      }
     };
 
     // Preload a small initial batch near the top of the list to avoid empty counts above the fold
@@ -666,8 +767,12 @@ export default function StoriesIndexContent() {
         for (const id of candidateIds) {
           ensureSse(id);
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error('[Index] Failed to preload initial reactions:', err);
+        reactionsErrorCountRef.current += 1;
+        if (reactionsErrorCountRef.current >= 3) {
+          setReactionsUnavailable(true);
+        }
       }
     };
 
@@ -692,8 +797,12 @@ export default function StoriesIndexContent() {
         for (const id of unique) {
           ensureSse(id);
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error('[Index] Failed to flush reaction batch:', err);
+        reactionsErrorCountRef.current += 1;
+        if (reactionsErrorCountRef.current >= 3) {
+          setReactionsUnavailable(true);
+        }
       }
     };
 
@@ -727,13 +836,23 @@ export default function StoriesIndexContent() {
       // no-op
     }
 
-    // Periodically re-observe in case of virtualization or dynamic mounts
-    const reobserve = () => {
-      try {
-        document.querySelectorAll<HTMLElement>(".story-card-container[data-post-id]").forEach((n) => io?.observe(n));
-      } catch {}
-    };
-    const interval = setInterval(reobserve, 1000);
+    // Observe DOM mutations to re-observe dynamically added cards (virtualization/dynamic mounts)
+    let mo: MutationObserver | null = null;
+    try {
+      mo = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          m.addedNodes.forEach((node) => {
+            if (node instanceof HTMLElement) {
+              if (node.matches?.(".story-card-container[data-post-id]")) {
+                io?.observe(node);
+              }
+              node.querySelectorAll?.(".story-card-container[data-post-id]").forEach((el) => io?.observe(el as HTMLElement));
+            }
+          });
+        }
+      });
+      mo.observe(document.body, { childList: true, subtree: true });
+    } catch {}
 
     // Start with a small initial preload + SSE
     void preloadInitial();
@@ -789,13 +908,13 @@ export default function StoriesIndexContent() {
     return () => {
       mounted = false;
       window.removeEventListener("reaction:updated", onUpdate as EventListener);
-      clearInterval(interval);
+      try { mo?.disconnect(); } catch {}
       try { io?.disconnect(); } catch {}
       if (flushTimer) clearTimeout(flushTimer);
       // Close SSE sources using captured reference
       try {
-        for (const es of sources.values()) {
-          try { es.close(); } catch {}
+        for (const obj of sources.values()) {
+          try { obj.es.close(); } catch {}
         }
         sources.clear();
       } catch {}
@@ -900,6 +1019,9 @@ export default function StoriesIndexContent() {
   const searchSuggestions = useMemo(() => {
     const q = deferredSearch.trim().toLowerCase();
     if (!q) return [] as Post[];
+    // Use worker-computed suggestions for longer queries
+    if (q.length >= 3 && searchSuggestionsW.length) return searchSuggestionsW;
+
     const tokenize = (s: string) => normalizeText(s.toLowerCase()).split(/[^a-z0-9]+/).filter(Boolean);
     const jaccard = (a: string[], b: string[]) => {
       if (!a.length || !b.length) return 0;
@@ -931,7 +1053,7 @@ export default function StoriesIndexContent() {
       .sort((a, b) => b.s - a.s)
       .slice(0, 3)
       .map(x => x.p);
-  }, [deferredSearch, sortedPosts]);
+  }, [deferredSearch, sortedPosts, searchSuggestionsW]);
 
   // Latest Stories list - always sorted newest->oldest; search does NOT change this list
   const latestPosts = useMemo(() => {
@@ -972,14 +1094,19 @@ export default function StoriesIndexContent() {
 
   // Log zero-results interactions
   useEffect(() => {
-    if (deferredSearch.trim() && titleMatches.length === 0 && !closestTitleMatch) {
-      try {
-        fetch('/api/analytics/interaction', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ interactionType: 'index_zero_results', details: { q: deferredSearch.trim() }, path: '/stories' })
-        }).catch(() => {});
-      } catch {}
+    const q = deferredSearch.trim();
+    if (q && q.length >= 3 && titleMatches.length === 0 && !closestTitleMatch) {
+      // Deduplicate logs for the same query
+      if (lastZeroResultsQueryRef.current !== q) {
+        lastZeroResultsQueryRef.current = q;
+        try {
+          fetch('/api/analytics/interaction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ interactionType: 'index_zero_results', details: { q }, path: '/stories' })
+          }).catch(() => {});
+        } catch {}
+      }
     }
   }, [titleMatches.length, deferredSearch, closestTitleMatch]);
 
@@ -1170,6 +1297,13 @@ export default function StoriesIndexContent() {
             </div>
           </div>
 
+          {/* Status banner for reactions subsystem */}
+          {reactionsUnavailable && (
+            <div className="mb-4 rounded-md border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
+              Live reactions are temporarily unavailable. Counts will appear once the connection is restored.
+            </div>
+          )}
+
           {/* Featured row */}
           {(featuredStory && sortedPosts.length > 0 && (!deferredSearch.trim() || titleMatches.length > 0 || !!closestTitleMatch)) && (
             <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6 content-visibility-auto">
@@ -1211,7 +1345,7 @@ export default function StoriesIndexContent() {
                           const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                           return (
                             <div className="-mt-1">
-                              <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                              <Badge className={"w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border " + badgeTint}>
                                 {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                 {label}
                               </Badge>
@@ -1224,7 +1358,7 @@ export default function StoriesIndexContent() {
                           <Calendar className="h-3 w-3" />
                           <time>{new Date(featuredStory.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
                         </div>
-                        <div className="flex items-center gap-1 justify-end" title={`~${String(featuredStory.content || '').split(/\\s+/).length} words`}>
+                        <div className="flex items-center gap-1 justify-end" title={`~${String(featuredStory.content || '').trim().split(/\s+/).length} words`}>
                           <Clock className="h-3 w-3" />
                           <span>{getReadingTime(featuredStory.content)}</span>
                         </div>
@@ -1558,7 +1692,7 @@ export default function StoriesIndexContent() {
                                         <Calendar className="h-3 w-3" />
                                         <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
                                       </div>
-                                      <div className="flex items-center gap-1 justify-end" title={`~${String(post.content || '').split(/\\s+/).length} words`}>
+                                      <div className="flex items-center gap-1 justify-end" title={`~${String(post.content || '').trim().split(/\s+/).length} words`}>
                                         <Clock className="h-3 w-3" />
                                         <span>{getReadingTime(post.content)}</span>
                                       </div>

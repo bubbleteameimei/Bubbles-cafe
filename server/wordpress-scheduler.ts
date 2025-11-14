@@ -11,8 +11,8 @@ export class WordPressScheduler {
       return;
     }
 
-    // Run sync every hour
-    this.syncJob = cron.schedule('0 * * * *', async () => {
+    // Run sync every 30 minutes
+    this.syncJob = cron.schedule('*/30 * * * *', async () => {
       if (this.isRunning) {
         console.log('[WordPress Scheduler] Sync already in progress, skipping');
         return;
@@ -34,7 +34,7 @@ export class WordPressScheduler {
       timezone: 'UTC'
     });
 
-    console.log('[WordPress Scheduler] Started - will sync every 6 hours');
+    console.log('[WordPress Scheduler] Started - will sync every 30 minutes');
   }
 
   stop(): void {
@@ -67,7 +67,7 @@ export class WordPressScheduler {
   getStatus(): { running: boolean; nextRun: string | null } {
     return {
       running: this.isRunning,
-      nextRun: this.syncJob ? 'Every 6 hours' : null
+      nextRun: this.syncJob ? 'Every 30 minutes' : null
     };
   }
 }

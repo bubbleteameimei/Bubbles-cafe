@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronRight, Book } from "lucide-react";
-import { fetchWordPressPosts, checkLocalSyncedPosts, fetchWordPressPostBySlug, type WordPressPost } from "@/lib/wordpress-api";
+import { fetchWordPressPosts, fetchWordPressPostBySlug, type WordPressPost } from "@/lib/wordpress-api";
 import { getExcerpt } from "@/lib/content-analysis";
 import { extractEngagingExcerpt, extractExcerpt } from "@/lib/excerpt-lite";
 import { sanitizeHtml } from "@/lib/sanitize";
@@ -62,25 +62,14 @@ export default function Home() {
       }
     });
   }, [inView]);
-  
-  function getInitialPostsData(): { posts: WordPressPost[]; totalPages: number; total: number } | undefined {
-    const local = checkLocalSyncedPosts();
-    if (local?.posts?.length) {
-      const first = local.posts[0] as WordPressPost;
-      return { posts: [first], totalPages: 1, total: local.total };
-    }
-    return undefined;
-  }
 
   const { data: postsResponse, isLoading, error } = useQuery({
     queryKey: ["pages", "home", "latest-post"],
     queryFn: async () => {
       return fetchWordPressPosts({ page: 1, perPage: 1, includeContent: false });
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
-    // Use locally synced posts (if available) to avoid initial blank state
-    initialData: getInitialPostsData()
   });
 
   // Lightweight engagement fetch for social proof
@@ -436,16 +425,16 @@ export default function Home() {
                 <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8 group-hover:translate-x-1 transition-transform duration-300" />
               </motion.div>
             </div>
-            <p className="text-muted-foreground mt-2 text-center text-[12px] sm:text-[13px]">
+            <p className="text-muted-foreground mt-2 text-center text-[12px] sm:text[13px]">
               Install on your phone for a fast, immersive reading experience.
             </p>
           </motion.div>
 
           {/* Continue Reading floating banner */}
           <ContinueReadingBanner />
-          <Footer />
         </div>
       )}
+      <Footer />
     </div>
   );
 }

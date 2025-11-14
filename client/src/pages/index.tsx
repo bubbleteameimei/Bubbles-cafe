@@ -1,6 +1,6 @@
 import React from "react";
-import Footer from "@/components/layout/footer";
 import StoriesIndexContent from "@/components/home/StoriesIndexContent";
+import Footer from "@/components/layout/footer";
 
 export default function IndexView() {
   return (

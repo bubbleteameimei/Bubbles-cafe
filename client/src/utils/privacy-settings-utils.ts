@@ -12,9 +12,9 @@ import type { PrivacySettings } from '@/hooks/use-privacy-settings';
 export const getDefaultPrivacySettings = (): PrivacySettings => {
   return {
     // Backend fields
-    profileVisible: false,            // Profiles private by default
+    profileVisible: true,             // Profiles visible by default (align with server)
     shareReadingHistory: false,       // Reading history not shared by default
-    anonymousCommenting: true,        // Comments anonymous by default
+    anonymousCommenting: false,       // Comments are identifiable by default
     twoFactorAuthEnabled: false,      // 2FA disabled by default
     loginNotifications: true,         // Login notifications enabled by default
     

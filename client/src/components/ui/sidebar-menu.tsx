@@ -161,10 +161,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           break;
         }
         case '/bookmarks': {
-          const res = await fetch('/api/bookmarks', { credentials: 'include' }).catch(() => null);
-          if (!res || !res.ok) {
-            await fetch('/api/reader/bookmarks', { credentials: 'include' }).catch(() => {});
-          }
+          // Require authentication for bookmarks; no anonymous fallback
+          await fetch('/api/bookmarks', { credentials: 'include' }).catch(() => {});
           break;
         }
         case '/profile': {
@@ -208,7 +206,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           return import('../../pages/search-results');
         case '/admin':
         case '/admin/dashboard':
-          return import('../../pages/admin/dashboard');
+          return import('../../pages/admin/index');
         default:
           return Promise.resolve();
       }
@@ -302,10 +300,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           break;
         }
         case '/bookmarks': {
-          const res = await fetch('/api/bookmarks', { credentials: 'include' }).catch(() => null);
-          if (!res || !res.ok) {
-            await fetch('/api/reader/bookmarks', { credentials: 'include' }).catch(() => {});
-          }
+          // Require authentication for bookmarks; no anonymous fallback
+          await fetch('/api/bookmarks', { credentials: 'include' }).catch(() => {});
           break;
         }
         case '/profile': {
@@ -358,7 +354,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           break;
         case '/admin':
         case '/admin/dashboard':
-          void import('../../pages/admin/dashboard');
+          void import('../../pages/admin/index');
           break;
         default:
           break;
@@ -538,13 +534,13 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenu className="space-y-2.5">
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  isActive={location === '/eden-hollow'}
-                  onClick={() => handleNavigation('/eden-hollow')}
+                  isActive={location === '/edens-hollow'}
+                  onClick={() => handleNavigation('/edens-hollow')}
                   tooltip="Eden - Experimental Game"
                   className={menuItemClass}
-                  aria-current={location === '/eden-hollow' ? 'page' : undefined}
+                  aria-current={location === '/edens-hollow' ? 'page' : undefined}
                 >
-                  {renderActiveIndicator('/eden-hollow')}
+                  {renderActiveIndicator('/edens-hollow')}
                   <Gamepad2 className="h-6 w-6 sm:h-7 sm:w-7" />
                   <span className="text-[14px] sm:text-[15px] font-semibold">Eden - Experimental Game</span>
                 </SidebarMenuButton>

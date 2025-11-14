@@ -41,12 +41,13 @@ const PostsPrefetcher = React.lazy(() => import('./components/providers/PostsPre
 import { initSmoothScroll } from './lib/smooth-scroll';
 import { useA11y } from '@/hooks/useA11y';
 
+
 // New: BackToTopButton (scroll-to-top)
 const BackToTopButton = React.lazy(() => import('./components/BackToTopButton'));
 import GA4 from './components/GA4';
 
 // Import essential pages lazily to keep main bundle small
-const HomePage = React.lazy(() => import('./pages/home'));
+import HomePage from './pages/home';
 // Index (stories) page lazy-loaded to reduce initial bundle size; fallback shows a small loader
 const StoriesPage = React.lazy(() => import('./pages/index'));
 const BestStoriesPage = React.lazy(() => import('./pages/best-stories'));
@@ -59,20 +60,10 @@ import RouteLoader from './components/ui/RouteLoader';
 const ReaderPage = React.lazy(() => import('./pages/reader'));
 const StoryViewPage = React.lazy(() => import('./pages/story-view'));
 
-// Reader route component: ensure loader appears immediately on direct visits and slow mounts
+// Reader route component: mount directly for predictable behavior without an extra loader frame
 function ReaderRoute(props: React.ComponentProps<typeof ReaderPage>) {
-  const [ready, setReady] = React.useState(false);
-  React.useEffect(() => {
-    // Allow a frame for fallback/loader to render before heavy content mounts
-    const id = requestAnimationFrame(() => setReady(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-  if (!ready) {
-    return <RouteLoader label="Loading story" minHeight="60vh" />;
-  }
   return <ReaderPage {...props} />;
 }
-
 // Community story route component: renders local DB stories by slug using StoryView
 function CommunityStoryRoute({ params }: { params?: { slug?: string } }) {
   const slug = params?.slug || '';
@@ -403,10 +394,8 @@ const AppContent = () => {
         } else if (path.startsWith('/legal/cookie-policy')) {
           void import('./pages/legal/cookie-policy');
         } else if (path.startsWith('/admin')) {
-          // Preload common admin screens for snappy nav
-          void import('./pages/admin');
-          void import('./pages/admin/dashboard');
-          void import('./pages/admin/content');
+          // Preload admin index for snappy nav
+          void import('./pages/admin/index');
         } else if (path.startsWith('/search')) {
           void import('./pages/search-results');
         }

@@ -162,7 +162,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Night mode functionality has been completely removed
   
   // One-click distraction-free mode - toggle UI visibility with click
-  const { isUIHidden, toggleUI, showTooltip } = useReaderUIToggle();
+  const { isUIHidden, toggleUI, showTooltip, setUIHidden } = useReaderUIToggle();
+  // Reset UI hidden state on theme changes to avoid unpredictable layout shifts
+  useEffect(() => {
+    try { setUIHidden(false); } catch {}
+  }, [theme]);
 
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
@@ -184,6 +188,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [contentsDialogOpen, setContentsDialogOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [randomTipOpen, setRandomTipOpen] = useState(false);
+  // Gate footer rendering until horror overlay initialization completes to prevent flash
+  const [footerReady, setFooterReady] = useState(false);
 
   // Inline admin theme editor state
   const [themeEditorOpen, setThemeEditorOpen] = useState(false);
@@ -311,6 +317,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         sessionStorage.removeItem('reader_horror_expiry_ts');
       }
     } catch {}
+    // Gate footer rendering until overlay init runs to avoid flash-before-modal
+    setFooterReady(true);
   }, []);
 
   
@@ -486,10 +494,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       }
     },
     // Keep previous content visible while background fetching occurs
-    // We intentionally leave staleTime at 0 and refetch options unchanged to avoid changing network behavior.
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true
+    // Reduce jank: avoid auto refetch on mount/focus to prevent flicker and network bursts
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false
   });
 
   
@@ -669,15 +677,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       const tooSoon = now - (lastProgressSentRef.current.ts || 0) < 15000; // 15s throttle
 
       if (diff >= 10 && !tooSoon) {
-        apiJson<any>('POST', '/api/s', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ postSlug: String(slug), percentCompleted: rounded })
-        }).then((res) => {
-          if (res.ok) {
-            lastProgressSentRef.current = { percent: rounded, ts: Date.now() };
-          }
+        apiJson<any>('POST', '/api/reading-progress', {
+          postSlug: String(slug),
+          percentCompleted: rounded
+        }).then((_res) => {
+          // Successful; record timestamp and last percent sent
+          lastProgressSentRef.current = { percent: rounded, ts: Date.now() };
         }).catch(() => { /* non-fatal */ });
       }
     } catch { /* non-fatal */ }
@@ -1103,31 +1108,22 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       <ReaderTooltip show={showTooltip} />
       {/* CSS for distraction-free mode transitions */}
       <style dangerouslySetInnerHTML={{__html: `
-        /* Transitions for UI elements */
-        /* Keep the UI elements accessible but subtle in distraction-free mode */
+        /* Distraction-free fade: dim UI chrome while preserving layout */
         .ui-fade-element {
-          transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          will-change: opacity, visibility;
+          transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          will-change: opacity;
         }
         .ui-hidden {
-          opacity: 0.15; /* Barely visible but still accessible */
-          pointer-events: auto; /* Keep interactive */
-        }
-        /* Show on hover for better UX */
-        .ui-hidden:hover {
-          opacity: 0.9;
-          transition: opacity 0.2s ease;
+          opacity: 0.35;
+          pointer-events: auto;
         }
         .story-content {
-          transition: width 0.8s ease-in-out;
-        }
-        .distraction-free-active .story-content {
-          width: 100%;
+          transition: color 0.2s ease, background-color 0.2s ease;
         }
         
         /* Distraction-free mode: keep navbar visible but subtle */
         .reader-page[data-distraction-free="true"] header.main-header {
-          opacity: 0.65;
+          opacity: 0.55;
           visibility: visible;
           transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           pointer-events: auto;
@@ -1171,6 +1167,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         /* Set default cursor for everything */
         .reader-page {
           cursor: default;
+          scrollbar-gutter: stable;
         }
         
         /* Set pointer cursor only for interactive elements */
@@ -1229,7 +1226,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         
 
         {/* Font controls/TOC spacing below header and progress bar */}
-        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-0.5 py-0.5 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-0.5 py-0.5 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} style={{ minHeight: '40px' }}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -1257,7 +1254,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </Button>
             
             {/* Font Dialog with controlled open state */}
-            <Dialog open={fontDialogOpen} onOpenChange={setFontDialogOpen}>
+            <Dialog open={fontDialogOpen} onOpenChange={(open) => { setFontDialogOpen(open); try { setUIHidden(false); } catch {} }}>
               <DialogTrigger asChild>
                 <Button
                   variant="outline"
@@ -1317,7 +1314,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           {/* Text-to-speech functionality removed */}
 
           {/* Contents Dialog with controlled open state - non-fullscreen with close button */}
-          <Dialog open={contentsDialogOpen} onOpenChange={setContentsDialogOpen}>
+          <Dialog open={contentsDialogOpen} onOpenChange={(open) => { setContentsDialogOpen(open); try { setUIHidden(false); } catch {} }}>
             <DialogTrigger asChild>
               <Button
                 variant="default"
@@ -1378,9 +1375,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           aria-hidden="true"
           className="border-b border-border/20"
           style={{ 
-            width: '100vw', 
-            marginLeft: 'calc(50% - 50vw)', 
-            marginRight: 'calc(50% - 50vw)', 
+            width: '100%', 
+            marginLeft: '0', 
+            marginRight: '0', 
             position: 'relative', 
             left: 0, 
             transform: 'none',
@@ -1399,9 +1396,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               aria-hidden="true"
               className="border-b border-border/20"
               style={{ 
-                width: '100vw', 
-                marginLeft: 'calc(50% - 50vw)', 
-                marginRight: 'calc(50% - 50vw)', 
+                width: '100%', 
+                marginLeft: '0', 
+                marginRight: '0', 
                 position: 'relative', 
                 left: 0, 
                 transform: 'none' 
@@ -1433,7 +1430,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   </div>
                 )}
                 <h1
-              className="text-6xl md:text-7xl font-bold text-center mb-1 tracking-tight leading-tight"
+              className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
               dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(getRenderedText(currentPost.title) || 'Story') }}
             />
               </div>
@@ -1933,9 +1930,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   dangerouslySetInnerHTML={{ 
                     __html: sanitizeHtmlContent(getRenderedText(currentPost.content) || 'No content available.') 
                   }}
-                  onClick={toggleUI}
+                  onClick={() => {
+                    if (!fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
+                      toggleUI();
+                    }
+                  }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
+                    if ((e.key === 'Enter' || e.key === ' ') && !fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
                       e.preventDefault();
                       toggleUI();
                     }
@@ -1950,7 +1951,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </SwipeNavigation>
             
             {/* Simple pagination at bottom of story content - extremely compact */}
-            <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+            <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} style={{ minHeight: '64px' }}>
               <div className="relative overflow-visible flex items-center justify-center gap-1 bg-background/90 backdrop-blur-md border border-transparent rounded-full h-16 px-1.5 shadow-sm">
                 <span
                   aria-hidden="true"
@@ -2013,7 +2014,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             <div className="mt-2 pt-3">
               <div className="flex flex-col items-center justify-center gap-6">
                 {/* Centered Like/Dislike buttons */}
-                <div className={`flex justify-center w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                <div className="flex justify-center w-full">
                   <LikeDislike postId={currentPost.id} slug={currentPost.slug} source="wp" variant="reader" initialTotals={currentTotals} />
                 </div>
 
@@ -2095,27 +2096,26 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 aria-hidden="true"
                 className="border-b border-border"
                 style={{
-                  width: '100vw',
-                  marginLeft: 'calc(50% - 50vw)',
-                  marginRight: 'calc(50% - 50vw)',
+                  width: '100%',
+                  marginLeft: '0',
+                  marginRight: '0',
                   position: 'relative',
                   left: 0,
                   transform: 'none'
                 }}
               />
-              <div className={`social-support-section mt-8 pt-6 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-                
+              <div className="social-support-section mt-8 pt-6" style={{ minHeight: '180px', contentVisibility: 'auto', contain: 'layout paint style' }}>
                 {/* Support writing card with auto-wired authorId */}
                 <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
               </div>
 
             {/* Comment section (lazy-mounted near viewport) */}
-            <div className={`mt-8 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+            <div className="mt-8">
               <LazyCommentSection postId={currentPost.id} />
             </div>
         </article>
+        {footerReady ? <Footer /> : null}
       </div>
-      <Footer />
     </div>
   );
 }

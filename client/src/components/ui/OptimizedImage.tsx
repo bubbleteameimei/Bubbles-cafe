@@ -39,15 +39,9 @@ function getOptimizedImageUrl(src: string, width: number): string {
     if (width > 1200) sizeVariant = '-1200';
     if (width > 1600) sizeVariant = '-1600';
     
-    // Check if optimized image exists, otherwise use original
+    // Build optimized path (asset existence is handled by server/static)
     const optimizedPath = `${directory}/optimized/${filenameWithoutExt}${sizeVariant}.${extension}`;
-    
-    try {
-      return optimizedPath;
-    } catch {
-      console.debug('[OptimizedImage] Falling back to original image:', src);
-      return src;
-    }
+    return optimizedPath;
   }
   
   return src;
@@ -56,6 +50,7 @@ function getOptimizedImageUrl(src: string, width: number): string {
 export interface OptimizedImageProps 
   extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src'> {
   src: string;
+  srcSet?: string;
   fallbackSrc?: string;
   alt: string;
   width?: number | string;
@@ -74,6 +69,7 @@ export interface OptimizedImageProps
 export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageProps>(
   ({ 
     src,
+    srcSet,
     fallbackSrc,
     alt,
     width,
@@ -124,9 +120,10 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
       setHasError(true);
       
       if (fallbackSrc && fallbackSrc !== src) {
-        console.warn(`[OptimizedImage] Failed to load image: ${src}, using fallback`);
+        // Keep console noise minimal in production
+        try { console.warn(`[OptimizedImage] Failed to load image: ${src}, using fallback`); } catch {}
       } else {
-        console.error(`[OptimizedImage] Failed to load image: ${src}`);
+        try { console.error(`[OptimizedImage] Failed to load image: ${src}`); } catch {}
       }
       
       onError?.();
@@ -136,7 +133,7 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
     const imgSrc = hasError && fallbackSrc ? fallbackSrc : optimizedSrc;
     
     // Set loading attribute based on strategy
-    const loadingAttribute = priority ? 'eager' : loadingStrategy;
+    const loadingAttribute = priority ? 'eager' : (loadingStrategy ?? 'lazy');
     
     // Calculate aspect ratio for placeholder
     const aspectRatio = useMemo(() => {
@@ -155,7 +152,7 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
       aspectRatio: aspectRatio ? `${width} / ${height}` : undefined,
       width: width || '100%',
       height: height || 'auto',
-    };
+    } as React.CSSProperties;
     
     return (
       <div
@@ -181,6 +178,7 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
           <img
             ref={ref}
             src={imgSrc}
+            srcSet={srcSet}
             alt={alt}
             width={width}
             height={height}

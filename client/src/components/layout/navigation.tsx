@@ -827,16 +827,16 @@ export default function Navigation() {
           )}
         </AnimatePresence>
 
-        {/* Full-bleed demarcation line (exactly like footer) */}
+        {/* Demarcation line constrained to header width to avoid horizontal overflow */}
         <div
           aria-hidden="true"
           className="pointer-events-none"
           style={{
             position: "absolute",
             bottom: 0,
-            left: "50%",
-            width: "100vw",
-            transform: "translateX(-50%)",
+            left: 0,
+            width: "100%",
+            transform: "none",
             borderTop: "1px solid hsl(var(--border) / 0.70)",
             zIndex: 40,
           }}

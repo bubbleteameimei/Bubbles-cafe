@@ -385,7 +385,7 @@ div[data-reader-page="true"] .container,
   margin-top: 0 !important; /* Keep content below header without overlap */
 }
 
-/* Full-bleed overrides for reader page: allow viewport-wide separators */
+/* Reader page: prevent horizontal overflow to avoid jitter and accidental scroll bars */
 [data-reader-page="true"] main,
 [data-reader-page="true"] .page-content,
 [data-reader-page="true"] article,
@@ -396,14 +396,14 @@ div[data-reader-page="true"] .container,
 .reader-page .page-content,
 .reader-page article,
 .reader-page section {
-  overflow-x: visible !important;
+  overflow-x: hidden !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
 
-/* Ensure outer transition container doesn't clip full-bleed lines on reader routes */
+/* Ensure outer transition container does not allow horizontal overflow on reader routes */
 body:has(main:has([data-reader-page])) .page-transition-container {
-  overflow-x: visible !important;
+  overflow-x: hidden !important;
 }
 
 /* Define variables for background images and overlays */
@@ -513,6 +513,11 @@ body:not(:has(.home-page)) {
 /* Hide the footer on error pages */
 body.error-page-active footer.site-footer {
   display: none !important;
+}
+
+/* Reader: neutralize modal-induced body padding that causes layout shifts */
+body:has([data-reader-page="true"])[style*="padding-right"] {
+  padding-right: 0 !important;
 }
 
 /* Sidebar: ensure the first group sits flush to the top */

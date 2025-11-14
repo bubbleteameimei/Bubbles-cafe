@@ -4,6 +4,7 @@ import { SocialButtons } from "@/components/ui/social-buttons";
 import SEO from "@/components/SEO";
 // Add direct relative import for troubleshooting
 import ProfileImage from "../components/ProfileImage";
+import Footer from "@/components/layout/footer";
 
 export default function AboutPage() {
   // Add debug logging
@@ -101,6 +102,7 @@ export default function AboutPage() {
           </div>
         </div>
       </motion.div>
+      <Footer />
     </>
   );
 }
