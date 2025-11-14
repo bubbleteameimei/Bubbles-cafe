@@ -1,6 +1,5 @@
 
 import React from "react";
-import Footer from "@/components/layout/footer";
 
 export default function Terms() {
   return (
@@ -37,6 +36,7 @@ export default function Terms() {
               <li>No harmful, illegal, or inappropriate content</li>
               <li>Respect intellectual property rights</li>
               <li>Follow community guidelines</li>
+              <li>Report violations</li>
             </ul>
           </section>
           
@@ -74,7 +74,6 @@ export default function Terms() {
           </section>
         </div>
       </div>
-      <Footer />
     </>
   );
 }

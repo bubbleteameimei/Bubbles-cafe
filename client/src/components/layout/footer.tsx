@@ -23,16 +23,16 @@ export default function Footer() {
       role="contentinfo"
       aria-label="Site footer"
     >
-      {/* Full-bleed top divider (same logic as header) */}
+      {/* Top divider constrained to footer width */}
       <div
         aria-hidden="true"
         className="pointer-events-none"
         style={{
           position: "absolute",
           top: 0,
-          left: "50%",
-          width: "100vw",
-          transform: "translateX(-50%)",
+          left: 0,
+          width: "100%",
+          transform: "none",
           borderTop: "1px solid hsl(var(--border) / 0.70)",
           zIndex: 1
         }}

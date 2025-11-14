@@ -70,6 +70,8 @@ export default function StoriesIndexContent() {
   // SSE sources per post to stream live updates (LRU-limited)
   const sseSourcesRef = React.useRef<Map<number, { es: EventSource; ts: number }>>(new Map());
   const MAX_SSE_CONNECTIONS = 4;
+  // Track SSE/preload errors to avoid flashing the \"unavailable\" banner on transient failures
+  const reactionsErrorCountRef = React.useRef<number>(0);
   // Track whether we've prefetched totals for all posts to avoid repeated work
   const preloadedAllRef = React.useRef<boolean>(false);
   // Deduplicate zero-results analytics by query
@@ -724,10 +726,9 @@ export default function StoriesIndexContent() {
         es.addEventListener('initial', onMessage);
         es.addEventListener('update', onMessage);
         es.onerror = () => { 
-          // mark reactions as temporarily unavailable, UI will show banner
-          setReactionsUnavailable(true);
-          // keep alive; browser will reconnect
-        };
+          // Increment error count; only show banner after repeated errors
+          reactionsErrorCountRef.current += 1;
+          if (reactionsErrorCountRef.current >= 3) };
         sources.set(postId, { es, ts: Date.now() });
       } catch (err) {
         console.error('[Index] Failed to open SSE stream:', err);
@@ -761,7 +762,10 @@ export default function StoriesIndexContent() {
         }
       } catch (err) {
         console.error('[Index] Failed to preload initial reactions:', err);
-        setReactionsUnavailable(true);
+        reactionsErrorCountRef.current += 1;
+        if (reactionsErrorCountRef.current >= 3) {
+          setReactionsUnavailable(true);
+        }
       }
     };
 
@@ -788,7 +792,10 @@ export default function StoriesIndexContent() {
         }
       } catch (err) {
         console.error('[Index] Failed to flush reaction batch:', err);
-        setReactionsUnavailable(true);
+        reactionsErrorCountRef.current += 1;
+        if (reactionsErrorCountRef.current >= 3) {
+          setReactionsUnavailable(true);
+        }
       }
     };
 

@@ -28,7 +28,7 @@ const SERVER_FALLBACK_API = '/api/wordpress/posts';
 
 // Cache configuration
 const CACHE_KEY_PREFIX = 'wp_cache_v2_';
-const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION_MS = 2 * 60 * 1000; // 2 minutes
 const LAST_ERROR_KEY = 'wp_last_error';
 
 // WordPress post schema with relaxed validation - allows more flexibility for parsing

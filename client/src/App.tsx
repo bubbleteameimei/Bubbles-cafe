@@ -40,6 +40,7 @@ import { RefreshProvider } from './contexts/refresh-context';
 const PostsPrefetcher = React.lazy(() => import('./components/providers/PostsPrefetcher'));
 import { initSmoothScroll } from './lib/smooth-scroll';
 import { useA11y } from '@/hooks/useA11y';
+import Footer from './components/layout/footer';
 
 // New: BackToTopButton (scroll-to-top)
 const BackToTopButton = React.lazy(() => import('./components/BackToTopButton'));
@@ -676,7 +677,7 @@ const AppContent = () => {
             
           </main>
         </React.Suspense>
-      </div>
+        {/*>
     </ErrorBoundary>
   );
 };

@@ -162,7 +162,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Night mode functionality has been completely removed
   
   // One-click distraction-free mode - toggle UI visibility with click
-  const { isUIHidden, toggleUI, showTooltip } = useReaderUIToggle();
+  const { isUIHidden, toggleUI, showTooltip, setUIHidden } = useReaderUIToggle();
 
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
@@ -1314,7 +1314,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           {/* Text-to-speech functionality removed */}
 
           {/* Contents Dialog with controlled open state - non-fullscreen with close button */}
-          <Dialog open={contentsDialogOpen} onOpenChange={setContentsDialogOpen}>
+          <Dialog open={contentsDialogOpen} onOpenChange={(open) => { setContentsDialogOpen(open); if (!open) { try { setUIHidden(false); } catch {} } }}>
             <DialogTrigger asChild>
               <Button
                 variant="default"
@@ -2112,7 +2112,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </div>
         </article>
       </div>
-      <Footer />
     </div>
   );
 }
