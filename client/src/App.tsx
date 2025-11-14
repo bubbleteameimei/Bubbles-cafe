@@ -677,7 +677,10 @@ const AppContent = () => {
             
           </main>
         </React.Suspense>
-        {/*>
+        {!isReaderLike && (
+          <Footer />
+        )}
+      </div>
     </ErrorBoundary>
   );
 };
