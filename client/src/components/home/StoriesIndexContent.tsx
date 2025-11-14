@@ -1345,7 +1345,7 @@ export default function StoriesIndexContent() {
                           const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                           return (
                             <div className="-mt-1">
-                              <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                              <Badge className={"w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border " + badgeTint}>
                                 {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                 {label}
                               </Badge>
@@ -1692,7 +1692,7 @@ export default function StoriesIndexContent() {
                                         <Calendar className="h-3 w-3" />
                                         <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
                                       </div>
-                                      <div className="flex items-center gap-1 justify-end" title={`~${String(post.content || '').split(/\\s+/).length} words`}>
+                                      <div className="flex items-center gap-1 justify-end" title={`~${String(post.content || '').trim().split(/\s+/).length} words`}>s+/).length} words`}>
                                         <Clock className="h-3 w-3" />
                                         <span>{getReadingTime(post.content)}</span>
                                       </div>
