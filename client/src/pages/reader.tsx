@@ -1114,8 +1114,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           will-change: opacity;
         }
         .ui-hidden {
-          opacity: 0.25;
-          pointer-events: none;
+          opacity: 0.35;
+          pointer-events: auto;
         }
         .story-content {
           transition: color 0.2s ease, background-color 0.2s ease;
@@ -1254,7 +1254,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </Button>
             
             {/* Font Dialog with controlled open state */}
-            <Dialog open={fontDialogOpen} onOpenChange={setFontDialogOpen}>
+            <Dialog open={fontDialogOpen} onOpenChange={(open) => { setFontDialogOpen(open); try { setUIHidden(false); } catch {} }}>
               <DialogTrigger asChild>
                 <Button
                   variant="outline"

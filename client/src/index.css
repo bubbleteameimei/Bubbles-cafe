@@ -515,6 +515,11 @@ body.error-page-active footer.site-footer {
   display: none !important;
 }
 
+/* Reader: neutralize modal-induced body padding that causes layout shifts */
+body:has([data-reader-page="true"])[style*="padding-right"] {
+  padding-right: 0 !important;
+}
+
 /* Sidebar: ensure the first group sits flush to the top */
 [data-sidebar="sidebar"] [data-sidebar="group"]:first-child {
   padding-top: 0 !important;
