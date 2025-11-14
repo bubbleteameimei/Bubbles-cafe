@@ -1108,20 +1108,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       <ReaderTooltip show={showTooltip} />
       {/* CSS for distraction-free mode transitions */}
       <style dangerouslySetInnerHTML={{__html: `
-        /* Transitions for UI elements */
-        /* Keep the UI elements accessible but subtle in distraction-free mode */
-        .ui-fade-element {
-          transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          will-change: opacity, visibility;
+        /* Distraction-free dimensioning: only dim UI chrome, never hide content */
+        .ui-chrome {
+          transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          will-change: opacity;
         }
-        .ui-hidden {
-          opacity: 0.15; /* Barely visible but still accessible */
-          pointer-events: auto; /* Keep interactive */
-        }
-        /* Show on hover for better UX */
-        .ui-hidden:hover {
-          opacity: 0.9;
-          transition: opacity 0.2s ease;
+        .df-dim {
+          opacity: 0.65;
         }
         .story-content {
           transition: color 0.2s ease, background-color 0.2s ease;
@@ -1231,7 +1224,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         
 
         {/* Font controls/TOC spacing below header and progress bar */}
-        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-0.5 py-0.5 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-0.5 py-0.5 m-0 w-full ui-chrome ${isUIHidden ? 'df-dim' : ''}`}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -1935,9 +1928,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   dangerouslySetInnerHTML={{ 
                     __html: sanitizeHtmlContent(getRenderedText(currentPost.content) || 'No content available.') 
                   }}
-                  onClick={toggleUI}
+                  onClick={() => {
+                    if (!fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
+                      toggleUI();
+                    }
+                  }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
+                    if ((e.key === 'Enter' || e.key === ' ') && !fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
                       e.preventDefault();
                       toggleUI();
                     }
@@ -1952,7 +1949,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </SwipeNavigation>
             
             {/* Simple pagination at bottom of story content - extremely compact */}
-            <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+            <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-chrome ${isUIHidden ? 'df-dim' : ''}`}>
               <div className="relative overflow-visible flex items-center justify-center gap-1 bg-background/90 backdrop-blur-md border border-transparent rounded-full h-16 px-1.5 shadow-sm">
                 <span
                   aria-hidden="true"
@@ -2015,7 +2012,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             <div className="mt-2 pt-3">
               <div className="flex flex-col items-center justify-center gap-6">
                 {/* Centered Like/Dislike buttons */}
-                <div className={`flex justify-center w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                <div className="flex justify-center w-full">
                   <LikeDislike postId={currentPost.id} slug={currentPost.slug} source="wp" variant="reader" initialTotals={currentTotals} />
                 </div>
 
@@ -2105,14 +2102,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   transform: 'none'
                 }}
               />
-              <div className={`social-support-section mt-8 pt-6 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+              <div className="social-support-section mt-8 pt_codei-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                 
                 {/* Support writing card with auto-wired authorId */}
                 <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
               </div>
 
             {/* Comment section (lazy-mounted near viewport) */}
-            <div className={`mt-8 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+            <div className="mt-8"</i-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
               <LazyCommentSection postId={currentPost.id} />
             </div>
         </article>
