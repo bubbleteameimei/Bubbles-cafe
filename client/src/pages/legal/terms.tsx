@@ -1,5 +1,6 @@
 
 import React from "react";
+import Footer from "@/components/layout/footer";
 
 export default function Terms() {
   return (
@@ -74,6 +75,7 @@ export default function Terms() {
           </section>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

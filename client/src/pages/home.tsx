@@ -12,6 +12,7 @@ import { sanitizeHtml } from "@/lib/sanitize";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { SupportWritingCard } from "@/components/SupportWritingCard";
+import Footer from "@/components/layout/footer";
 
 
 export default function Home() {
@@ -433,6 +434,7 @@ export default function Home() {
           <ContinueReadingBanner />
         </div>
       )}
+      <Footer />
     </div>
   );
 }

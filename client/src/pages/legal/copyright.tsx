@@ -1,4 +1,6 @@
 
+import Footer from "@/components/layout/footer";
+
 export default function Copyright() {
   return (
     <>
@@ -31,6 +33,7 @@ export default function Copyright() {
           </section>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

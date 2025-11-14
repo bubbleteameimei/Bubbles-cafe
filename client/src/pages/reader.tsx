@@ -163,6 +163,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   // One-click distraction-free mode - toggle UI visibility with click
   const { isUIHidden, toggleUI, showTooltip, setUIHidden } = useReaderUIToggle();
+  // Reset UI hidden state on theme changes to avoid unpredictable layout shifts
+  useEffect(() => {
+    try { setUIHidden(false); } catch {}
+  }, [theme]);
 
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
@@ -184,6 +188,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [contentsDialogOpen, setContentsDialogOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [randomTipOpen, setRandomTipOpen] = useState(false);
+  // Gate footer rendering until horror overlay initialization completes to prevent flash
+  const [footerReady, setFooterReady] = useState(false);
 
   // Inline admin theme editor state
   const [themeEditorOpen, setThemeEditorOpen] = useState(false);
@@ -311,6 +317,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         sessionStorage.removeItem('reader_horror_expiry_ts');
       }
     } catch {}
+    // Gate footer rendering until overlay init runs to avoid flash-before-modal
+    setFooterReady(true);
   }, []);
 
   
@@ -1116,10 +1124,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           transition: opacity 0.2s ease;
         }
         .story-content {
-          transition: width 0.8s ease-in-out;
-        }
-        .distraction-free-active .story-content {
-          width: 100%;
+          transition: color 0.2s ease, background-color 0.2s ease;
         }
         
         /* Distraction-free mode: keep navbar visible but subtle */
@@ -1314,7 +1319,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           {/* Text-to-speech functionality removed */}
 
           {/* Contents Dialog with controlled open state - non-fullscreen with close button */}
-          <Dialog open={contentsDialogOpen} onOpenChange={(open) => { setContentsDialogOpen(open); if (!open) { try { setUIHidden(false); } catch {} } }}>
+          <Dialog open={contentsDialogOpen} onOpenChange={(open) => { setContentsDialogOpen(open); try { setUIHidden(false); } catch {} }}>
             <DialogTrigger asChild>
               <Button
                 variant="default"
@@ -2111,6 +2116,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               <LazyCommentSection postId={currentPost.id} />
             </div>
         </article>
+        {footerReady ? <Footer /> : null}
       </div>
     </div>
   );

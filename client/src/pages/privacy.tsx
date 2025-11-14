@@ -1,4 +1,5 @@
 import React from "react";
+import Footer from "@/components/layout/footer";
 
 export default function Privacy() {
   return (
@@ -7,7 +8,7 @@ export default function Privacy() {
         <h1 className="text-3xl font-bold">Privacy Policy</h1>
       </div>
 
-      <div className="space-y-8 prose prose-invert max-w-none">
+      <div className="space-y-8 prose max-w-none dark:prose-invert">
         <section className="space-y-3">
           <h2 className="text-2xl font-semibold">Content Protection Notice</h2>
           <p className="text-muted-foreground whitespace-pre-line">
@@ -61,6 +62,7 @@ export default function Privacy() {
           </p>
         </section>
       </div>
+      <Footer />
     </div>
   );
 }
