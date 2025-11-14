@@ -1358,7 +1358,7 @@ export default function StoriesIndexContent() {
                           <Calendar className="h-3 w-3" />
                           <time>{new Date(featuredStory.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
                         </div>
-                        <div className="flex items-center gap-1 justify-end" title={`~${String(featuredStory.content || '').split(/\\s+/).length} words`}>
+                        <div className="flex items-center gap-1 justify-end" title={`~${String(featuredStory.content || '').trim().split(/\\s+/).length`}>
                           <Clock className="h-3 w-3" />
                           <span>{getReadingTime(featuredStory.content)}</span>
                         </div>
