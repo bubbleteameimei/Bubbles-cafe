@@ -867,14 +867,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Determine current slug and fetch full post content by slug (prefer full content for the active story)
   const currentSlugToUse = routeSlug || (posts[validCurrentIndex]?.slug as any);
-  const { data: currentPostFull } = useQuery<WordPressPost | null>({
+  const { data: currentPostFull, isFetching: isFetchingPost } = useQuery<WordPressPost | null>({
     queryKey: ['wordpress', 'reader', 'post', currentSlugToUse || ''],
     queryFn: async () => {
       if (!currentSlugToUse) return null as any;
       try {
         return await fetchWordPressPostBySlug(String(currentSlugToUse));
-      } catch (err) {
-        try { logReaderError('reader.post.fetchError', 'Failed to fetch post by slug', { slug: String(currentSlugToUse) }); } catch {}
+      } catch {
+        return null as any;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: Boolean(currentSlugToUse),
+  }); } catch {}
         return null as any;
       }
     },
@@ -924,6 +929,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const stripHtml = (s: string) => s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '';
   const titleText = stripHtml(getRenderedText(currentPost.title) || 'Story');
   const rawContent = getRenderedText(currentPost.content) || '';
+  const contentHtml = sanitizeHtmlContent(rawContent);
+  const isContentReady = contentHtml.trim().length > 0;
   const descriptionText = getExcerpt(rawContent, 160);
   const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
   const published = currentPost.date || new Date().toISOString();
@@ -1939,9 +1946,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 <div 
                   className="story-content cursor-pointer text-justify"
                   ref={contentRef}
-                  dangerouslySetInnerHTML={{ 
-                    __html: sanitizeHtmlContent(getRenderedText(currentPost.content) || 'No content available.') 
-                  }}
                   onClick={() => {
                     if (!fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
                       toggleUI();
@@ -1957,7 +1961,23 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   tabIndex={0}
                   aria-label="Toggle user interface visibility"
                   aria-pressed={isUIHidden}
-                />
+                  {...(isContentReady ? { dangerouslySetInnerHTML: { __html: contentHtml } } : {})}
+                >
+                  {!isContentReady ? (
+                    isFetchingPost ? (
+                      <div aria-busy="true" aria-live="polite" className="space-y-3 py-2">
+                        <div className="h-4 bg-muted rounded" />
+                        <div className="h-4 bg-muted rounded w-11/12" />
+                        <div className="h-4 bg-muted rounded w-10/12" />
+                        <div className="h-4 bg-muted rounded w-9/12" />
+                        <div className="h-4 bg-muted rounded w-4/5" />
+                        <div className="h-4 bg-muted rounded w-2/3" />
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
+                    )
+                  ) : null}
+                </div>
               </div>
             </SwipeNavigation>
             

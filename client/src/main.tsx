@@ -1,6 +1,5 @@
 // Import critical CSS early
 import "./styles/scroll-effects.css";
-import "./styles/reader-fixes.css";
 import "./styles/content-visibility.css";
 import "./index.css";
 
