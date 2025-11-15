@@ -230,6 +230,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Gate footer rendering until horror overlay initialization completes to prevent flash
   const [footerReady, setFooterReady] = useState(false);
 
+  // Derived: any dialog open (used to stabilize layout during overlays/dropdowns)
+  const isAnyDialogOpen = fontDialogOpen || contentsDialogOpen || showDeleteDialog || themeEditorOpen;
+
   // Debug instrumentation toggle: enable when DEV or localStorage('reader_debug') === '1'
   const [debugEnabled, setDebugEnabled] = useState<boolean>(() => {
     try {
@@ -482,8 +485,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           backdropFilter: (cs3 as any).backdropFilter
         });
       }
+      // Log content-visibility state decision
+      // eslint-disable-next-line no-console
+      console.log('[Reader.debug] content-visibility', { isAnyDialogOpen, applied: isAnyDialogOpen ? 'visible (no CV)' : 'auto (CV enabled)' });
     } catch {}
-  }, [debugEnabled, fontDialogOpen, contentsDialogOpen, themeEditorOpen, isUIHidden]);
+  }, [debugEnabled, fontDialogOpen, contentsDialogOpen, themeEditorOpen, isUIHidden, isAnyDialogOpen]);
   
   // Delete Post Mutation for admin actions
   const deleteMutation = useMutation({
@@ -1555,7 +1561,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
         <article
             key={currentPost.id}
-            className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none content-visibility-auto"
+            className={`prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none ${isAnyDialogOpen ? '' : 'content-visibility-auto'}`}
           >
             {/* Navigation buttons above story content removed; now placed under time-to-read */}
 

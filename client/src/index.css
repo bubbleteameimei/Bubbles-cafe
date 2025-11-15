@@ -495,17 +495,12 @@ div.sidebar-menu-container {
   will-change: transform;
 }
 
-/* Non-homepages: remove forced full-height that can create a visible bottom band */
-/* Narrowed scope: restrict adjustments to reader routes only */
-body:has(main:has([data-reader-page])) .min-h-screen {
-  min-height: auto !important;
-}
-body:has(main:has([data-reader-page])) .page-transition-container,
-body:has(main:has([data-reader-page])) main#main-content,
-body:has(main:has([data-reader-page])) .page-content {
-  min-height: auto !important;
-}
-/* Avoid painting viewport background specifically on reader routes (use theme background) */
+/* Reader route: do not override min-height on primary containers.
+   Allow Tailwind's default .min-h-screen (100vh) to stabilize layout when modals lock body scroll.
+   Keeping default prevents content height shrink/expand on dialog open/close, reducing layout shifts. */
+/* (Removed the reader-specific min-height: auto overrides) */
+
+/* Keep reader route background stable */
 body:has(main:has([data-reader-page])) {
   background-color: hsl(var(--background)) !important;
 }
