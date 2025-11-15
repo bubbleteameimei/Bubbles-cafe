@@ -515,10 +515,10 @@ body.error-page-active footer.site-footer {
   display: none !important;
 }
 
-/* Reader: neutralize modal-induced body padding that causes layout shifts */
-body:has([data-reader-page="true"])[style*="padding-right"] {
-  padding-right: 0 !important;
-}
+/* Reader: allow Radix Dialog to manage body padding-right to prevent layout shifts.
+   Previously we forced padding-right: 0 which caused the content to reflow on modal open/close.
+   With scrollbar-gutter: stable both-edges already set on html/body, Radix's compensation is safe.
+   If further issues arise, consider using a custom overlay class to scope adjustments instead of touching body. */
 
 /* Sidebar: ensure the first group sits flush to the top */
 [data-sidebar="sidebar"] [data-sidebar="group"]:first-child {
