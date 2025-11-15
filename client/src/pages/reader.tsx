@@ -1562,7 +1562,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
         <article
             key={currentPost.id}
-            className={`prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none ${isAnyDialogOpen ? '' : 'content-visibility-auto'}`}
+            className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
           >
             {/* Navigation buttons above story content removed; now placed under time-to-read */}
 
@@ -2291,7 +2291,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   transform: 'none'
                 }}
               />
-              <div className="social-support-section mt-8 pt-6" style={{ minHeight: '180px', contentVisibility: 'auto', contain: 'layout paint style' }}>
+              <div className="social-support-section mt-8 pt-6" style={{ minHeight: '180px' }}>
                 {/* Support writing card with auto-wired authorId */}
                 <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
               </div>

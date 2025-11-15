@@ -500,9 +500,11 @@ div.sidebar-menu-container {
    Keeping default prevents content height shrink/expand on dialog open/close, reducing layout shifts. */
 /* (Removed the reader-specific min-height: auto overrides) */
 
-/* Keep reader route background stable */
+/* Keep reader route background stable and force scrollbar presence (Safari lacks scrollbar-gutter) */
 body:has(main:has([data-reader-page])) {
   background-color: hsl(var(--background)) !important;
+  /* Always reserve vertical scrollbar space on reader routes to prevent width shifts on dialog open/close */
+  overflow-y: scroll !important;
 }
 
 /* Hide the footer on error pages */
