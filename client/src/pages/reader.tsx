@@ -1128,7 +1128,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           will-change: opacity;
         }
         .ui-hidden {
-          opacity: 0.35;
+          opacity: 0.85;
           pointer-events: auto;
         }
         .story-content {
@@ -1311,10 +1311,20 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </Dialog>
           </div>
 
+          {/* Distraction-free explicit toggle */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setUIHidden(!isUIHidden)}
+            className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 ml-2"
+            aria-label="Toggle distraction-free mode"
+            aria-pressed={isUIHidden}
+          >
+            <span className="text-xs uppercase">{isUIHidden ? 'Show UI' : 'Hide UI'}</span>
+          </Button>
+
           {/* Narration button */}
           <div className="flex-grow"></div>
-
-          {/* Theme toggle button removed as requested */}
 
           {/* Integrated BookmarkButton in top controls */}
           <BookmarkButton 
@@ -1879,7 +1889,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 )}
 
                 {/* Original navigation controls moved here under time-to-read */}
-                <div className={`flex justify-center items-center gap-4 py-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                <div className="flex justify-center items-center gap-4 py-3">
                   {/* Previous - match Next size and feel */}
                   <Button
                     variant="outline"
@@ -1939,23 +1949,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             >
               <div className="story-container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
                 <div 
-                  className="story-content cursor-pointer text-justify"
+                  className="story-content text-justify"
                   ref={contentRef}
-                  onClick={() => {
-                    if (!fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
-                      toggleUI();
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if ((e.key === 'Enter' || e.key === ' ') && !fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
-                      e.preventDefault();
-                      toggleUI();
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Toggle user interface visibility"
-                  aria-pressed={isUIHidden}
                   {...(isContentReady ? { dangerouslySetInnerHTML: { __html: contentHtml } } : {})}
                 >
                   {!isContentReady ? (
@@ -1977,7 +1972,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </SwipeNavigation>
             
             {/* Simple pagination at bottom of story content - extremely compact */}
-            <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} style={{ minHeight: '64px' }}>
+            <div className="flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center" style={{ minHeight: '64px' }}>
               <div className="relative overflow-visible flex items-center justify-center gap-1 bg-background/90 backdrop-blur-md border border-transparent rounded-full h-16 px-1.5 shadow-sm">
                 <span
                   aria-hidden="true"
@@ -2044,7 +2039,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   <LikeDislike postId={currentPost.id} slug={currentPost.slug} source="wp" variant="reader" initialTotals={currentTotals} />
                 </div>
 
-                <div className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                <div className="flex flex-col items-center gap-3">
                   <p className="text-sm text-muted-foreground font-medium">✨ Loved the story? Share it or follow for more! ✨</p>
                   <div className="flex items-center gap-3">
                     {/* Native Share Button */}
