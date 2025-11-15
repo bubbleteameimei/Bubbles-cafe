@@ -396,7 +396,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Debug: global click tracer (capture phase)
   useEffect(() => {
-    if (!debugEnabled) return;
+    if (!debugEnabled) return undefined;
     const handler = (e: Event) => {
       try {
         const t = e.target as HTMLElement | null;
@@ -422,7 +422,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Debug: log bounds and key computed styles when modals open/close and on DF mode change
   useEffect(() => {
-    if (!debugEnabled) return;
+    if (!debugEnabled) return undefined;
     const logEl = (name: string, el: HTMLElement | null | undefined) => {
       if (!el) return;
       const r = el.getBoundingClientRect();
@@ -490,6 +490,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       // eslint-disable-next-line no-console
       console.log('[Reader.debug] content-visibility', { isAnyDialogOpen, applied: isAnyDialogOpen ? 'visible (no CV)' : 'auto (CV enabled)' });
     } catch {}
+    return undefined;
   }, [debugEnabled, fontDialogOpen, contentsDialogOpen, themeEditorOpen, isUIHidden, isAnyDialogOpen]);
   
   // Delete Post Mutation for admin actions
