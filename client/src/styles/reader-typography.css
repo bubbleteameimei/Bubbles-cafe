@@ -8,6 +8,9 @@
   margin: 0 auto;
   padding: 0 0.5rem;
   color: var(--reader-text-color, hsl(var(--foreground)));
+  letter-spacing: 0.01em;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
@@ -20,6 +23,11 @@
   margin-bottom: 1.7em;
   font-family: inherit;
   font-size: 1em; /* inherit base size for consistent scaling */
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: auto;
+  font-kerning: normal;
+  font-feature-settings: "kern","liga","clig","calt";
 }
 
 @media (max-width: 768px) {
@@ -27,5 +35,7 @@
   .story-content .story-paragraph {
     margin-bottom: 1.5em;
     line-height: 1.75;
+    text-align: left;
+    hyphens: none;
   }
 }

@@ -150,6 +150,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   const logReaderError = (id: string, message: any, extra?: any) => {
     try {
+      const key = `reader_error_logged_${id}`;
+      // Gate each error id to once per session to avoid noisy logs
+      const already = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(key) : null;
+      if (already) return;
+      try { sessionStorage.setItem(key, '1'); } catch {}
       fetch('/api/errors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

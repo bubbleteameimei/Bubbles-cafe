@@ -12,31 +12,9 @@
 }
 
 /* Typography improvements using literary website standards */
-.story-content {
-  font-family: var(--reader-font-family, 'Cormorant Garamond', serif);
-  line-height: 1.6; /* Match About page spacing */
-  letter-spacing: 0.01em; /* Slightly increased for better text flow */
-  color: hsl(var(--foreground));
-  max-width: 100%; /* Allow full width */
-  margin: 0 auto;
-  font-size: var(--base-font-size, 16px); /* Use the base font size variable with fallback */
-  width: 100%; /* Ensure full width */
-  box-sizing: border-box; /* Include padding in width calculation */
-  overflow-wrap: break-word; /* Prevent text overflow by breaking words */
-  word-wrap: break-word; /* Fallback for older browsers */
-}
+/* Consolidated base .story-content typography to reader-typography.css */
 
-.story-content p {
-  font-family: 'Cormorant Garamond', serif;
-  margin-bottom: 0.4em; /* Even more drastically reduced paragraph spacing */
-  text-align: justify;
-  text-justify: inter-word;
-  hyphens: auto;
-  font-kerning: normal; /* Improved kerning for better character spacing */
-  font-feature-settings: "kern", "liga", "clig", "calt"; /* Typography enhancements */
-  font-size: var(--base-font-size, 16px); /* Use the base font size variable with fallback */
-  transition: font-size 0.2s ease; /* Smooth transition when font size changes */
-}
+/* Consolidated paragraph typography to reader-typography.css */
 
 .story-content p + p {
   margin-top: 0.3em; /* Even more drastically reduced spacing between paragraphs */
@@ -260,17 +238,7 @@
   padding: 0 1.5rem;
 }
 
-.story-content {
-  width: 100%;
-  max-width: 65ch;
-  margin-left: auto;
-  margin-right: auto;
-  font-size: 1.125rem;
-  line-height: 1.8;
-  letter-spacing: 0.01em;
-  overflow-x: hidden;
-  transition: font-size 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth font size transition */
-}
+/* Consolidated base story-content sizing and typography to reader-typography.css */
 
 /* Responsive adjustments - optimized for different devices */
 @media (max-width: 768px) {
@@ -278,10 +246,7 @@
     padding: 0 1rem;
   }
 
-  .story-content {
-    font-size: 1rem;
-    padding: 0 0.5rem;
-  }
+  /* Consolidated mobile story-content spacing to reader-typography.css */
 
   .story-content p {
     margin-bottom: 0.4em; /* Even more drastically reduced spacing, consistent with desktop */
