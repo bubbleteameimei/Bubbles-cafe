@@ -91,6 +91,10 @@ export function LikeDislike({
   const storageKey = getStorageKey(postId, slug, source);
   const hideTimerRef = useRef<number | null>(null);
   const removeTimerRef = useRef<number | null>(null);
+  const isPendingRef = useRef(false);
+  const [isPending, setIsPending] = useState(false);
+  const lastActionTsRef = useRef<number>(0);
+  const lastTotalsUpdateTsRef = useRef<number>(0);
 
   // Initial load: fetch baseline + live counts from server OR use provided initialTotals
   useEffect(() => {
@@ -99,6 +103,12 @@ export function LikeDislike({
       try {
         let data: ReactionTotals;
         if (initialTotals && typeof initialTotals === 'object') {
+          const now = Date.now();
+          if (now - (lastTotalsUpdateTsRef.current || 0) < 200) {
+            // Skip overly frequent prop-driven updates to avoid flicker
+            return;
+          }
+          lastTotalsUpdateTsRef.current = now;
           data = initialTotals;
         } else {
           data = await fetchReactions(postId);
@@ -172,7 +182,6 @@ export function LikeDislike({
 
   
   
-
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
     setInlineToast({ message, type });
     requestAnimationFrame(() => {
@@ -245,6 +254,12 @@ export function LikeDislike({
   };
 
   const handleLike = async () => {
+    const now = Date.now();
+    if (isPendingRef.current || (now - lastActionTsRef.current) < 250) return;
+    isPendingRef.current = true;
+    setIsPending(true);
+    lastActionTsRef.current = now;
+
     const nextLiked = !liked;
     const nextDisliked = nextLiked ? false : disliked;
 
@@ -304,10 +319,26 @@ export function LikeDislike({
       setDisliked(prevDisliked);
       // Force refetch of totals next time by marking error
       setReactionError(true);
+      // Schedule a gentle refetch to reconcile totals
+      window.setTimeout(async () => {
+        try {
+          const data = await fetchReactions(postId);
+          applyServerTotals(data);
+        } catch {}
+      }, 800);
+    } finally {
+      isPendingRef.current = false;
+      setIsPending(false);
     }
   };
 
   const handleDislike = async () => {
+    const now = Date.now();
+    if (isPendingRef.current || (now - lastActionTsRef.current) < 250) return;
+    isPendingRef.current = true;
+    setIsPending(true);
+    lastActionTsRef.current = now;
+
     const nextDisliked = !disliked;
     const nextLiked = nextDisliked ? false : liked;
 
@@ -368,6 +399,16 @@ export function LikeDislike({
       setLiked(prevLiked);
       setDisliked(prevDisliked);
       setReactionError(true);
+      // Schedule a gentle refetch to reconcile totals
+      window.setTimeout(async () => {
+        try {
+          const data = await fetchReactions(postId);
+          applyServerTotals(data);
+        } catch {}
+      }, 800);
+    } finally {
+      isPendingRef.current = false;
+      setIsPending(false);
     }
   };
 
@@ -396,6 +437,9 @@ export function LikeDislike({
               : 'bg-card border-border text-foreground/80 hover:bg-muted hover:text-foreground shadow-sm'
             }
           `}
+          aria-pressed={liked}
+          aria-label="Like this story"
+          disabled={isLoadingTotals || isPending}
         >
           <ThumbsUp className={`${variant === 'reader' ? 'h-4 w-4' : 'h-3 w-3'}`} />
           <span className="font-sans tabular-nums">{(isLoadingTotals || reactionError) ? '—' : stats.likes}</span>
@@ -418,6 +462,9 @@ export function LikeDislike({
               : 'bg-card border-border text-foreground/80 hover:bg-muted hover:text-foreground shadow-sm'
             }
           `}
+          aria-pressed={disliked}
+          aria-label="Dislike this story"
+          disabled={isLoadingTotals || isPending}
         >
           <ThumbsDown className={`${variant === 'reader' ? 'h-4 w-4' : 'h-3 w-3'}`} />
           <span className="font-sans tabular-nums">{(isLoadingTotals || reactionError) ? '—' : stats.dislikes}</span>
@@ -439,7 +486,7 @@ export function LikeDislike({
             ? 'bg-[hsl(var(--destructive)/0.12)] text-[hsl(var(--destructive))] border border-[hsl(var(--destructive)/0.3)]'
             : 'bg-[hsl(var(--destructive)/0.12)] text-[hsl(var(--destructive))] border border-[hsl(var(--destructive)/0.3)]'
           }
-        `}>
+        `} role="status" aria-live="polite">
           {inlineToast.message}
         </div>
       )}

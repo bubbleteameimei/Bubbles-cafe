@@ -722,7 +722,8 @@ export default function StoriesIndexContent() {
               fetched.add(payload.postId);
               // Reset transient error state on any successful message
               reactionsErrorCountRef.current = 0;
-              if (reactionsUnavailable) setReactionsUnavailable(false);
+              // On any successful SSE message, clear the unavailable banner without reading stale state
+              setReactionsUnavailable(false);
             }
           } catch {}
         };

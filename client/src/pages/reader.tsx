@@ -166,7 +166,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Reset UI hidden state on theme changes to avoid unpredictable layout shifts
   useEffect(() => {
     try { setUIHidden(false); } catch {}
-  }, [theme]);
+  }, [theme, setUIHidden]);
 
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
@@ -873,6 +873,22 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Avoid auto-redirect from /reader; let the page render predictably without route changes
 
+  // Determine current slug and fetch full post content by slug (prefer full content for the active story)
+  const currentSlugToUse = routeSlug || (posts[validCurrentIndex]?.slug as any);
+  const { data: currentPostFull } = useQuery<WordPressPost | null>({
+    queryKey: ['wordpress', 'reader', 'post', currentSlugToUse || ''],
+    queryFn: async () => {
+      if (!currentSlugToUse) return null as any;
+      try {
+        return await fetchWordPressPostBySlug(String(currentSlugToUse));
+      } catch {
+        return null as any;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: Boolean(currentSlugToUse),
+  });
+
   // Let's make sure we have posts data and current post before rendering
   // Keep previous story content visible while fetching; only return null if no cached data yet
   const hasCachedPosts = Array.isArray((postsData as any)?.posts) && ((postsData as any)?.posts?.length > 0);
@@ -904,22 +920,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       />
     );
   }
-
-  // Determine current slug and fetch full post content by slug (prefer full content for the active story)
-  const currentSlugToUse = routeSlug || (posts[validCurrentIndex]?.slug as any);
-  const { data: currentPostFull } = useQuery<WordPressPost | null>({
-    queryKey: ['wordpress', 'reader', 'post', currentSlugToUse || ''],
-    queryFn: async () => {
-      if (!currentSlugToUse) return null as any;
-      try {
-        return await fetchWordPressPostBySlug(String(currentSlugToUse));
-      } catch {
-        return null as any;
-      }
-    },
-    staleTime: 5 * 60 * 1000,
-    enabled: Boolean(currentSlugToUse),
-  });
   // Get current post: prefer fully-fetched content
   const currentPost = (currentPostFull as any) || posts[validCurrentIndex];
 
