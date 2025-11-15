@@ -9,6 +9,7 @@ import TableOfContents from "@/components/reader/TableOfContents";
 import SwipeNavigation from "@/components/reader/SwipeNavigation";
 import ReaderHorrorOverlayPortal from "@/components/reader/ReaderHorrorOverlayPortal";
 import "@/styles/reader-fixes.css";
+import "@/styles/reader-typography.css";
 import { 
   Share2, Minus, Plus, Shuffle, ChevronLeft, ChevronRight,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
@@ -147,6 +148,21 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  const logReaderError = (id: string, message: any, extra?: any) => {
+    try {
+      fetch('/api/errors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          id,
+          message: typeof message === 'string' ? message : (message && (message.message || String(message))) || 'Unknown',
+          extra
+        })
+      }).catch(() => {});
+    } catch {}
+  };
+  
   // Add authentication hook to check user role for admin actions
   const { user, isAuthenticated } = useAuth();
   const isAdmin = user?.isAdmin === true;
@@ -201,13 +217,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   
   
-  // Helper function to close dialogs safely
-  const safeCloseDialog = () => {
-    const closeButton = document.querySelector('[aria-label="Close"]');
-    if (closeButton instanceof HTMLElement) {
-      closeButton.click();
-    }
-  };
+  // Dialogs are controlled via state; avoid querying DOM for close buttons
   
   // Reading progress tracking with scroll-based calculation and rAF smoothing
   useEffect(() => {
@@ -484,6 +494,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         return { posts, totalPages: result.totalPages ?? 1, total: result.total ?? posts.length };
       } catch (error) {
         console.error('[Reader] Error fetching WordPress posts via proxy:', error);
+        try { logReaderError('reader.list.fetchError', error); } catch {}
         throw error;
       }
     },
@@ -563,6 +574,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Reaction totals for the current post (prefetch + SSE to minimize pop-in)
   const [currentTotals, setCurrentTotals] = useState<ReactionTotals | null>(null);
   const sseRef = useRef<EventSource | null>(null);
+  const sseErrorCountRef = useRef(0);
 
   // Defer reactions prefetch and SSE subscription until user interaction or short delay
   const [sseReady, setSseReady] = useState(false);
@@ -608,6 +620,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     // Subscribe to SSE for live totals
     try {
       const es = new EventSource(`/api/posts/${pid}/reactions/stream`, { withCredentials: true } as any);
+      sseErrorCountRef.current = 0;
       const onMessage = (e: MessageEvent) => {
         try {
           const payload = JSON.parse(e.data || '{}');
@@ -628,7 +641,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       };
       es.addEventListener('initial', onMessage);
       es.addEventListener('update', onMessage);
-      es.onerror = () => { /* keep alive */ };
+      es.onerror = () => {
+        sseErrorCountRef.current += 1;
+        if (sseErrorCountRef.current === 3) {
+          try { logReaderError('reader.sse.error', 'SSE connection error', { postId: pid }); } catch {}
+        }
+        // keep alive; browser will reconnect
+      };
       sseRef.current = es;
     } catch { /* ignore */ }
 
@@ -810,55 +829,23 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   }, [readingProgress, currentPostId, interactionCount, visibilityTick, isCategoryAllowed, currentIndex, posts]);
 
-  // Create a function to generate the styles
-  const generateStoryContentStyles = () => {
-    // Use fixed constants for better text readability
-    const textColor = theme === 'dark' 
-      ? `color: ${DARK_TEXT_COLOR};` 
-      : `color: ${LIGHT_TEXT_COLOR};`;
-    
-    // Return the main styles using CSS variables for font family and size
-    return `
-  .story-content {
-    font-family: var(--reader-font-family);
-    font-size: var(--reader-font-size);
-    width: 100%;
-    margin: 0 auto;
-    padding: 0 0.5rem;
-    ${textColor}
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-  }
-  .story-content p, .story-content .story-paragraph {
-    line-height: 1.7;
-    margin-bottom: 1.7em;
-    font-family: var(--reader-font-family);
-    font-size: var(--reader-font-size);
-  }
-  @media (max-width: 768px) {
-    .story-content p, .story-content .story-paragraph {
-      margin-bottom: 1.5em;
-      line-height: 1.75;
-    }
-  }`;
-  };
+  
 
   // Apply font styles using CSS variables for smooth transitions
   useEffect(() => {
     try {
       if (import.meta.env?.DEV) {
-        console.log('[Reader] Updating font styles with CSS variables:', { fontFamily, fontSize });
+        console.log('[Reader] Updating font styles with CSS variables:', { fontFamily, fontSize, theme });
       }
       // Set CSS variables on the document root for smooth transitions
       const root = document.documentElement;
       root.style.setProperty('--reader-font-family', availableFonts[fontFamily].family);
       root.style.setProperty('--reader-font-size', `${fontSize}px`);
+      root.style.setProperty('--reader-text-color', theme === 'dark' ? DARK_TEXT_COLOR : LIGHT_TEXT_COLOR);
     } catch (error) {
       console.error('[Reader] Error applying font styles:', error);
     }
-  }, [fontFamily, fontSize, availableFonts]);
+  }, [fontFamily, fontSize, availableFonts, theme]);
   
   // This duplicate has been removed - reading progress tracking is handled above
 
@@ -881,7 +868,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       if (!currentSlugToUse) return null as any;
       try {
         return await fetchWordPressPostBySlug(String(currentSlugToUse));
-      } catch {
+      } catch (err) {
+        try { logReaderError('reader.post.fetchError', 'Failed to fetch post by slug', { slug: String(currentSlugToUse) }); } catch {}
         return null as any;
       }
     },
@@ -1216,8 +1204,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         }
       `}} />
       
-      {/* Reader content styles with smooth font transitions */}
-      <style dangerouslySetInnerHTML={{ __html: generateStoryContentStyles() }} />
+      {/* Reader content styles moved to reader-typography.css */}
 
       {/* Horror overlay rendered via portal to ensure visibility without scrolling; modal and text unchanged */}
       <ReaderHorrorOverlayPortal
@@ -1380,6 +1367,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       }
                     } catch (err) {
                       console.error('[Reader] TOC onSelect error:', err);
+                      try { logReaderError('reader.toc.onSelect', err); } catch {}
                     } finally {
                       setContentsDialogOpen(false);
                     }
@@ -1964,7 +1952,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   tabIndex={0}
                   aria-label="Toggle user interface visibility"
                   aria-pressed={isUIHidden}
-                  style={{ fontSize: `${fontSize}px` }}
                 />
               </div>
             </SwipeNavigation>

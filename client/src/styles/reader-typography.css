@@ -1,0 +1,31 @@
+/* Reader typography and layout driven by CSS variables set from React hooks.
+   This keeps runtime style predictable without inline <style> injection. */
+
+.story-content {
+  font-family: var(--reader-font-family, ui-serif, Georgia, Cambria, "Times New Roman", Times, serif);
+  font-size: var(--reader-font-size, 18px);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 0.5rem;
+  color: var(--reader-text-color, hsl(var(--foreground)));
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.story-content p,
+.story-content .story-paragraph {
+  line-height: 1.7;
+  margin-bottom: 1.7em;
+  font-family: inherit;
+  font-size: 1em; /* inherit base size for consistent scaling */
+}
+
+@media (max-width: 768px) {
+  .story-content p,
+  .story-content .story-paragraph {
+    margin-bottom: 1.5em;
+    line-height: 1.75;
+  }
+}
