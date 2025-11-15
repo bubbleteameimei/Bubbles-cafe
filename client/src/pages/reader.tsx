@@ -78,7 +78,7 @@ import { useThemeCategories } from "@/hooks/use-theme-categories";
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
 // Lazy-mount comment section when near viewport to reduce initial load cost
-function LazyCommentSection({ postId }: { postId: number }) {
+function LazyCommentSection({ postId }: { postId: number }): JSX.Element {
   const [visible, setVisible] = useState(false);
   const anchorRef = useRef<HTMLDivElement | null>(null);
 
@@ -230,8 +230,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Gate footer rendering until horror overlay initialization completes to prevent flash
   const [footerReady, setFooterReady] = useState(false);
 
-  // Derived: any dialog open (used to stabilize layout during overlays/dropdowns)
-  const isAnyDialogOpen = fontDialogOpen || contentsDialogOpen || showDeleteDialog || themeEditorOpen;
+  /* isAnyDialogOpen is declared below, after themeEditorOpen is defined */
 
   // Debug instrumentation toggle: enable when DEV or localStorage('reader_debug') === '1'
   const [debugEnabled, setDebugEnabled] = useState<boolean>(() => {
@@ -257,7 +256,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [savingTheme, setSavingTheme] = useState(false);
   const [overrideThemeCategory, setOverrideThemeCategory] = useState<string | null>(null);
   const [overrideThemeIcon, setOverrideThemeIcon] = useState<string | null>(null);
-  
+
+  // Derived: any dialog open (used to stabilize layout during overlays/dropdowns)
+  const isAnyDialogOpen = fontDialogOpen || contentsDialogOpen || showDeleteDialog || themeEditorOpen;
   
   
   // Dialogs are controlled via state; avoid querying DOM for close buttons
@@ -1070,7 +1071,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
 
   // SEO values for this story
-  const stripHtml = (s: string) => s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '';
+  const stripHtml = (s: string): string => (s ? s.replace(/<\\/?[^>]+(>|$)/g, '').trim() : '');ripHtml = (s: string) => s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '';
   const titleText = stripHtml(getRenderedText(currentPost.title) || 'Story');
   const rawContent = getRenderedText(currentPost.content) || '';
   const contentHtml = sanitizeHtmlContent(rawContent);
