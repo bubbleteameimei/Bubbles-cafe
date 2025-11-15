@@ -873,13 +873,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       if (!currentSlugToUse) return null as any;
       try {
         return await fetchWordPressPostBySlug(String(currentSlugToUse));
-      } catch {
-        return null as any;
-      }
-    },
-    staleTime: 5 * 60 * 1000,
-    enabled: Boolean(currentSlugToUse),
-  }); } catch {}
+      } catch (err) {
+        try { logReaderError('reader.post.fetchError', 'Failed to fetch post by slug', { slug: String(currentSlugToUse) }); } catch {}
         return null as any;
       }
     },
