@@ -383,15 +383,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Debug: toggle via localStorage key "reader_debug" (set to "1" to enable)
   useEffect(() => {
-    try {
-      const onStorage = (e: StorageEvent) => {
-        if (e.key === 'reader_debug') {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'reader_debug') {
+        try {
           setDebugEnabled(e.newValue === '1' || import.meta.env?.DEV === true);
-        }
-      };
+        } catch {}
+      }
+    };
+    try {
       window.addEventListener('storage', onStorage);
-      return () => window.removeEventListener('storage', onStorage);
     } catch {}
+    return () => {
+      try { window.removeEventListener('storage', onStorage); } catch {}
+    };
   }, []);
 
   // Debug: global click tracer (capture phase)
