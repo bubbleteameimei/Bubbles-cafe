@@ -439,13 +439,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }
   
   // Clear any cached data to ensure fresh fetch after sample story removal
-  useEffect(() => {
-    if (import.meta.env?.DEV) {
-      console.log('[Reader] Clearing query cache to ensure fresh data');
-    }
-    queryClient.invalidateQueries({ queryKey: ["posts"] });
-    queryClient.removeQueries({ queryKey: ["posts"] });
-  }, [queryClient]);
+  // Removed broad cache invalidation; reader now targets only its own query keys
 
   // Initialize currentIndex with validation
   const [currentIndex, setCurrentIndex] = useState(() => {
@@ -480,12 +474,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     queryKey: ["wordpress", "reader", "list", isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
       if (import.meta.env?.DEV) {
-        console.log('[Reader] Fetching WordPress posts list...', { routeSlug });
+        console.log('[Reader] Fetching WordPress posts list (trimmed)...', { routeSlug });
       }
 
       try {
-        // Always fetch a list of posts to preserve global navigation context
-        const result = await fetchWordPressPosts({ perPage: 50, includeContent: true });
+        // Fetch a trimmed list for TOC/navigation to reduce payload size
+        const result = await fetchWordPressPosts({ perPage: 30, includeContent: false });
         const posts = Array.isArray(result.posts) ? result.posts : [];
         return { posts, totalPages: result.totalPages ?? 1, total: result.total ?? posts.length };
       } catch (error) {
@@ -570,16 +564,37 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [currentTotals, setCurrentTotals] = useState<ReactionTotals | null>(null);
   const sseRef = useRef<EventSource | null>(null);
 
-  useEffect(() => {
-    try {
-      sseRef.current?.close();
-    } catch {}
-    setCurrentTotals(null);
+  // Defer reactions prefetch and SSE subscription until user interaction or short delay
+  const [sseReady, setSseReady] = useState(false);
 
+  useEffect(() => {
+    setSseReady(false);
     const pid = Number(currentPostId);
     if (!Number.isFinite(pid)) return;
 
-    // Prefetch totals
+    const delay = window.setTimeout(() => { setSseReady(true); }, 3000);
+    const onInteract = () => { setSseReady(true); };
+
+    window.addEventListener('pointerdown', onInteract);
+    window.addEventListener('keydown', onInteract);
+    window.addEventListener('touchstart', onInteract);
+
+    return () => {
+      window.clearTimeout(delay);
+      window.removeEventListener('pointerdown', onInteract);
+      window.removeEventListener('keydown', onInteract);
+      window.removeEventListener('touchstart', onInteract);
+    };
+  }, [currentPostId]);
+
+  useEffect(() => {
+    try { sseRef.current?.close(); } catch {}
+    setCurrentTotals(null);
+
+    const pid = Number(currentPostId);
+    if (!sseReady || !Number.isFinite(pid)) return;
+
+    // Prefetch totals once ready
     (async () => {
       try {
         const totals = await fetchReactionsBatch([pid]);
@@ -621,7 +636,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       try { sseRef.current?.close(); } catch {}
       sseRef.current = null;
     };
-  }, [currentPostId]);
+  }, [currentPostId, sseReady]);
 
   const currentPostLink = useMemo(() => {
     try {
@@ -856,18 +871,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     [currentIndex, posts.length]
   );
 
-  const ensuredCanonicalRef = useRef(false);
-  useEffect(() => {
-    try {
-      if (!ensuredCanonicalRef.current && posts.length > 0 && !routeSlug) {
-        ensuredCanonicalRef.current = true;
-        const slugToUse = String(posts[validCurrentIndex]?.slug ?? posts[validCurrentIndex]?.id);
-        if (slugToUse) {
-          setLocation(`/reader/${encodeURIComponent(slugToUse)}`);
-        }
-      }
-    } catch {}
-  }, [posts, validCurrentIndex, routeSlug, setLocation]);
+  // Avoid auto-redirect from /reader; let the page render predictably without route changes
 
   // Let's make sure we have posts data and current post before rendering
   // Keep previous story content visible while fetching; only return null if no cached data yet
@@ -889,7 +893,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     );
   }
 
-  if (posts.length === 0) {
+  if (!routeSlug && posts.length === 0) {
     return (
       <SimplifiedErrorPage
         statusCode={404}
@@ -901,8 +905,23 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     );
   }
 
-  // Get current post
-  const currentPost = posts[validCurrentIndex];
+  // Determine current slug and fetch full post content by slug (prefer full content for the active story)
+  const currentSlugToUse = routeSlug || (posts[validCurrentIndex]?.slug as any);
+  const { data: currentPostFull } = useQuery<WordPressPost | null>({
+    queryKey: ['wordpress', 'reader', 'post', currentSlugToUse || ''],
+    queryFn: async () => {
+      if (!currentSlugToUse) return null as any;
+      try {
+        return await fetchWordPressPostBySlug(String(currentSlugToUse));
+      } catch {
+        return null as any;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: Boolean(currentSlugToUse),
+  });
+  // Get current post: prefer fully-fetched content
+  const currentPost = (currentPostFull as any) || posts[validCurrentIndex];
 
   
 

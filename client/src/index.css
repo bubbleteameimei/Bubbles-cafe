@@ -294,12 +294,13 @@ body {
 }
 
 /* Container fixes to prevent overflow and remove black borders */
-.container,
-main,
-section,
-article,
-div[class*="layout"],
-div[class*="container"] {
+/* Scoped to reader routes only to avoid global conflicts */
+body:has(main:has([data-reader-page])) .container,
+body:has(main:has([data-reader-page])) main,
+body:has(main:has([data-reader-page])) section,
+body:has(main:has([data-reader-page])) article,
+body:has(main:has([data-reader-page])) div[class*="layout"],
+body:has(main:has([data-reader-page])) div[class*="container"] {
   @apply max-w-full overflow-hidden;
   width: 100% !important;
   max-width: 100% !important;
@@ -495,19 +496,18 @@ div.sidebar-menu-container {
 }
 
 /* Non-homepages: remove forced full-height that can create a visible bottom band */
-/* Non-homepages: remove forced full-height that can create a visible bottom band */
-body:not(:has(.home-page)) .min-h-screen {
+/* Narrowed scope: restrict adjustments to reader routes only */
+body:has(main:has([data-reader-page])) .min-h-screen {
   min-height: auto !important;
 }
-body:not(:has(.home-page)) .page-transition-container,
-body:not(:has(.home-page)) main#main-content,
-body:not(:has(.home-page)) .page-content {
+body:has(main:has([data-reader-page])) .page-transition-container,
+body:has(main:has([data-reader-page])) main#main-content,
+body:has(main:has([data-reader-page])) .page-content {
   min-height: auto !important;
 }
-
-/* On non-home pages, avoid painting the viewport background so short pages don't show a dark band */
-body:not(:has(.home-page)) {
-  background-color: transparent !important;
+/* Avoid painting viewport background specifically on reader routes (use theme background) */
+body:has(main:has([data-reader-page])) {
+  background-color: hsl(var(--background)) !important;
 }
 
 /* Hide the footer on error pages */
