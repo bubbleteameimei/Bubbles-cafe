@@ -1071,7 +1071,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
 
   // SEO values for this story
-  const stripHtml = (s: string): string => (s ? s.replace(/<\\/?[^>]+(>|$)/g, '').trim() : '');ripHtml = (s: string) => s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '';
+  const stripHtml = (s: string): string => (s ? s.replace(/<\\/?[^>]+(>|$)/g, '').trim() : '');
   const titleText = stripHtml(getRenderedText(currentPost.title) || 'Story');
   const rawContent = getRenderedText(currentPost.content) || '';
   const contentHtml = sanitizeHtmlContent(rawContent);
