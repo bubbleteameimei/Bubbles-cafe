@@ -39,8 +39,9 @@ const ReaderTooltip = ({ show }: ReaderTooltipProps) => {
               <div className="flex items-center gap-2 whitespace-nowrap">
                 <EyeOff className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold">
-                  Use “Hide UI” to enter distraction-free mode
+                  Tap story to toggle distraction-free mode
                 </span>
+                <MousePointer className="h-3 w-3 text-primary/80" />
               </div>
               <div className="text-xs text-foreground mt-0.5 flex items-center gap-1.5">
                 <ArrowUp className="h-3 w-3 text-primary" />
