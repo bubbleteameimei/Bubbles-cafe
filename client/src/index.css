@@ -538,3 +538,16 @@ body.error-page-active footer.site-footer {
     transition: none !important;
   }
 }
+
+/* Global site gutters: ensure consistent horizontal spacing on all pages */
+.site-gutters {
+  padding-left: clamp(12px, 3vw, 24px);
+  padding-right: clamp(12px, 3vw, 24px);
+}
+
+/* Apply gutters to primary layout wrappers */
+.page-transition-container,
+.page-content {
+  padding-left: clamp(12px, 3vw, 24px);
+  padding-right: clamp(12px, 3vw, 24px);
+}

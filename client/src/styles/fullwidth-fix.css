@@ -26,8 +26,7 @@ main,
   max-width: 100% !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+  /* Do not zero horizontal padding globally; allow site gutters to apply */
   overflow-x: hidden !important;
   box-sizing: border-box !important;
 }
