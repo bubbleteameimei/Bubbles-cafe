@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"; 
 import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
 import { useCopyProtection } from "@/hooks/useCopyProtection";
+import useInlineCommenting from "@/hooks/useInlineCommenting";
 import ReaderTooltip from "@/components/reader/ReaderTooltip";
 import TableOfContents from "@/components/reader/TableOfContents";
 import SwipeNavigation from "@/components/reader/SwipeNavigation";
@@ -147,6 +148,27 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  const { CommentDialog } = useInlineCommenting({
+    enabled: true,
+    onSubmitComment: async (text, selection, range) => {
+      try {
+        const postId = Number((posts?.[currentIndex] || currentPost)?.id || 0);
+        if (!Number.isFinite(postId) || postId <= 0) return;
+        await apiJson('POST', `/api/posts/${postId}/comments`, {
+          content: text,
+          selectionText: selection,
+          anchorParagraphIndex: Number(range.paragraphIndex ?? -1) >= 0 ? Number(range.paragraphIndex) : undefined,
+          selectionStart: Number.isFinite(range.start) ? Number(range.start) : undefined,
+          selectionEnd: Number.isFinite(range.end) ? Number(range.end) : undefined,
+        });
+        toast({ title: 'Comment added', description: 'Your inline comment has been submitted.' });
+      } catch (e: any) {
+        toast({ title: 'Failed to add comment', description: e?.message || 'Please try again.', variant: 'destructive' });
+      }
+    },
+    contentSelector: '.story-content'
+  });
   
   const logReaderError = (id: string, message: any, extra?: any) => {
     try {
@@ -374,7 +396,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   
   // Create a ref for the content container to attach swipe events and copy protection
-  const contentRef = useCopyProtection(true);
+  const contentRef = useCopyProtection(false);
   // Removed positionRestoredRef as we no longer save reading position
 
   // Debug: toggle via localStorage key "reader_debug" (set to "1" to enable)
@@ -417,7 +439,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     };
     document.addEventListener('click', handler, true);
     return () => document.removeEventListener('click', handler, true);
-  }, [debugEnabled, isUIHidden, fontDialogOpen, contentsDialogOpen, themeEditorOpen]);
+  }, [debugEnabled, isUIHidden, fontDialogOpen, contentsDialogOpen, themeEditorOpen, contentRef]);
 
   // Debug: log bounds and key computed styles when modals open/close and on DF mode change
   useEffect(() => {
@@ -481,11 +503,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           backdropFilter: (cs3 as any).backdropFilter
         });
       }
-      // Log content-visibility state decision
       console.log('[Reader.debug] content-visibility', { isAnyDialogOpen, applied: isAnyDialogOpen ? 'visible (no CV)' : 'auto (CV enabled)' });
     } catch {}
     return undefined;
-  }, [debugEnabled, fontDialogOpen, contentsDialogOpen, themeEditorOpen, isUIHidden, isAnyDialogOpen]);
+  }, [debugEnabled, fontDialogOpen, contentsDialogOpen, themeEditorOpen, isUIHidden, isAnyDialogOpen, contentRef]);
   
   // Delete Post Mutation for admin actions
   const deleteMutation = useMutation({
@@ -2149,6 +2170,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     )
                   ) : null}
                 </div>
+                {/* Inline comment dialog (selection-based) */}
+                <CommentDialog />
               </div>
             </SwipeNavigation>
             

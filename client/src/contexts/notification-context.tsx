@@ -3,6 +3,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { v4 as uuidv4 } from 'uuid';
 import { CreepyTextGlitch } from '@/components/effects/CreepyTextGlitch';
+import { apiRequest } from '@/lib/queryClient';
 
 export type NotificationType = 'info' | 'success' | 'warning' | 'error' | 'new-story' | 'cursed';
 
@@ -81,15 +82,68 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const { toast } = useToast();
   
+  // Load server notifications when available
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiRequest<{ notifications: Array<{ id: number; type: string; title: string; message: string; metadata?: any; isRead: boolean; createdAt: string }> }>('/api/notifications');
+        const mapped: Notification[] = (res.notifications || []).map((n) => ({
+          id: String(n.id),
+          type: (String(n.type).toLowerCase() as NotificationType) || 'info',
+          title: n.title || 'Notification',
+          message: n.message || '',
+          read: !!n.isRead,
+          date: new Date(n.createdAt),
+          link: typeof n.metadata?.link === 'string' ? n.metadata.link : undefined
+        }));
+        setNotifications((prev) => {
+          // Merge while preferring server state; avoid duplicates by id
+          const prevById = new Map(prev.map(p => [p.id, p]));
+          const merged: Notification[] = [...mapped];
+          for (const p of prev) {
+            if (!prevById.has(p.id) && !merged.some(m => m.id === p.id)) {
+              merged.push(p);
+            }
+          }
+          // Sort newest first
+          merged.sort((a, b) => b.date.getTime() - a.date.getTime());
+          return merged;
+        });
+      } catch (e: any) {
+        // Ignore 401/403 (anonymous users)
+        if (e?.status && e.status !== 401 && e.status !== 403) {
+          // non-fatal
+          // console.error('[Notifications] Failed to load server notifications', e);
+        }
+      }
+    })();
+  }, []);
+
   const markAsRead = useCallback((id: string) => {
     setNotifications(prev =>
       prev.map(n => (n.id === id ? { ...n, read: true } : n))
     );
+    // Attempt server sync when id looks numeric
+    const num = Number(id);
+    if (Number.isFinite(num) && num > 0) {
+      apiRequest(`/api/notifications/${num}/read`, {
+        method: 'PATCH',
+        body: JSON.stringify({ isRead: true })
+      }).catch(() => { /* non-fatal */ });
+    }
   }, []);
 
   const markAllAsRead = useCallback(() => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  }, []);
+    // Try to sync for server-backed notifications
+    const ids = notifications.map(n => Number(n.id)).filter(n => Number.isFinite(n) && n > 0);
+    for (const nid of ids) {
+      apiRequest(`/api/notifications/${nid}/read`, {
+        method: 'PATCH',
+        body: JSON.stringify({ isRead: true })
+      }).catch(() => { /* non-fatal */ });
+    }
+  }, [notifications]);
 
   const clearNotifications = useCallback(() => {
     setNotifications([]);

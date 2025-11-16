@@ -11,10 +11,6 @@
   letter-spacing: 0.01em;
   overflow-wrap: break-word;
   word-wrap: break-word;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
 }
 
 /* Ensure images scale to container width and keep aspect ratio */
