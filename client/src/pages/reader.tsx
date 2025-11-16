@@ -660,7 +660,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
       try {
         // Fetch a trimmed list for TOC/navigation to reduce payload size
-        const result = await fetchWordPressPosts({ perPage: 30, includeContent: false });
+        const result = await fetchWordPressPosts({ page: 1, perPage: 100, includeContent: false, maxRetries: 2 });
         const posts = Array.isArray(result.posts) ? result.posts : [];
         return { posts, totalPages: result.totalPages ?? 1, total: result.total ?? posts.length };
       } catch (error) {

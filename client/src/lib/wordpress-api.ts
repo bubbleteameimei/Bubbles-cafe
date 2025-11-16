@@ -186,7 +186,7 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
     slug,
     includeContent = true,
     skipCache = false,
-    maxRetries = 1 // Reduced default retries from 2 to 1 for better performance
+    maxRetries = 2 // Default to 2 retries for smoother reliability
   } = options;
 
   // Check cache first (unless explicitly skipped)
@@ -227,17 +227,38 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
   if (slug) params.append('slug', slug);
   if (!includeContent) params.append('_fields', 'id,date,title,excerpt,slug,featured_media');
 
-  // Try each base in order
+  // Helper: fetch with retries and exponential backoff + jitter
+  async function fetchWithRetries(apiUrl: string, attempts: number, timeoutMs: number): Promise<Response> {
+    let lastErr: any = null;
+    for (let i = 0; i < attempts; i++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(apiUrl, { method: 'GET', headers: { 'Accept': 'application/json' }, signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (!response.ok) throw new Error(`WordPress API error: ${response.status}`);
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) throw new Error(`Unexpected content-type: ${contentType}`);
+        return response;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        lastErr = err;
+        // backoff before next attempt
+        if (i < attempts - 1) {
+          const backoff = 250 * Math.pow(2, i) + Math.floor(Math.random() * 50); // jitter
+          await new Promise((res) => setTimeout(res, backoff));
+        }
+      }
+    }
+    throw lastErr;
+  }
+
+  // Try each base in order with per-base retry attempts
   for (const base of WP_BASES) {
     const apiUrl = `${base}/posts?${params.toString()}`;
+    const attempts = Math.max(1, Number(maxRetries) + 1);
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      const response = await fetch(apiUrl, { method: 'GET', headers: { 'Accept': 'application/json' }, signal: controller.signal });
-      clearTimeout(timeoutId);
-      if (!response.ok) throw new Error(`WordPress API error: ${response.status}`);
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) throw new Error(`Unexpected content-type: ${contentType}`);
+      const response = await fetchWithRetries(apiUrl, attempts, 10000);
       const json = await response.json();
       const postsArray = Array.isArray(json) ? json : (Array.isArray(json?.posts) ? json.posts : null);
       if (!postsArray) throw new Error('Non-array response');
@@ -266,7 +287,7 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
       localStorage.setItem('wp_sync_status', JSON.stringify({ status: 'success', type: 'api_success', message: `Fetched ${result.posts.length} posts`, timestamp: Date.now() }));
       return result;
     } catch (err) {
-      logger.warn(`[WordPress] Base failed, trying next: ${apiUrl}`, err);
+      logger.warn(`[WordPress] Base failed after ${attempts} attempt(s), trying next: ${apiUrl}`, err);
       cacheUtils.saveError(err);
       // try next base
     }
@@ -414,7 +435,7 @@ export async function fetchWordPressPostBySlug(slug: string) {
     const result = await fetchWordPressPosts({ 
       slug, 
       perPage: 1,
-      maxRetries: 1 // Reduced retries for single post lookups
+      maxRetries: 2
     });
 
     if (!result.posts || result.posts.length === 0) {
