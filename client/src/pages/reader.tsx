@@ -1510,8 +1510,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </Dialog>
           </div>
 
-          {/* Narration button */}
-          <div className="flex-grow"></div>
+          
 
           {/* Integrated BookmarkButton in top controls */}
           <BookmarkButton 
