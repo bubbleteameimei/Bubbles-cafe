@@ -43,6 +43,53 @@ type AuthBookmarkStatus = {
   bookmark: BookmarkData | null;
 };
 
+// Anonymous bookmark helpers (localStorage-based)
+const LS_KEY = 'anon_bookmarks';
+type AnonBookmark = { notes?: string; tags?: string[]; lastPosition?: string; createdAt: string };
+
+function readAnonBookmarks(): Record<number, AnonBookmark> {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return {};
+    const obj = JSON.parse(raw);
+    if (obj && typeof obj === 'object') return obj as Record<number, AnonBookmark>;
+    return {};
+  } catch {
+    return {};
+  }
+}
+
+function writeAnonBookmarks(obj: Record<number, AnonBookmark>) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(obj)); } catch {}
+}
+
+function isAnonBookmarked(postId: number): boolean {
+  const bks = readAnonBookmarks();
+  return !!bks[Number(postId)];
+}
+
+function addAnonBookmark(postId: number, data: { notes?: string; tags?: string[] }) {
+  const id = Number(postId);
+  if (!Number.isFinite(id) || id <= 0) return;
+  const bks = readAnonBookmarks();
+  if (!bks[id]) {
+    bks[id] = { createdAt: new Date().toISOString() };
+  }
+  if (data.notes !== undefined) bks[id].notes = data.notes;
+  if (Array.isArray(data.tags)) bks[id].tags = data.tags;
+  writeAnonBookmarks(bks);
+}
+
+function removeAnonBookmark(postId: number) {
+  const id = Number(postId);
+  if (!Number.isFinite(id) || id <= 0) return;
+  const bks = readAnonBookmarks();
+  if (bks[id]) {
+    delete bks[id];
+    writeAnonBookmarks(bks);
+  }
+}
+
 export function BookmarkButton({ postId, className, variant = 'default', showText = true }: BookmarkButtonProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -52,51 +99,47 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
   const [notes, setNotes] = useState('');
   const [tagsInput, setTagsInput] = useState('');
 
-  // Require authentication for bookmarks; remove anonymous fallback
   const apiBasePath = '/api/bookmarks';
   
-  // Query to check if post is already bookmarked
+  // Query to check if post is already bookmarked (auth users only)
   const { data: bookmarkState, isLoading } = useQuery({
     queryKey: [apiBasePath, postId],
     queryFn: async () => {
-      // Only fetch when authenticated
       if (!user) return null;
       try {
-        // Authenticated users get status envelope
         return await apiRequest<AuthBookmarkStatus>(`${apiBasePath}/${postId}`);
       } catch (error) {
-        // If 404, it means not bookmarked which is normal
         if ((error as any).status === 404) {
           return null;
         }
-        // Log any other errors but don't throw to prevent breaking the UI
         console.error('Error checking bookmark status:', error);
         return null;
       }
     },
     enabled: !!user,
-    // Add retry options to handle temporary connection issues
     retry: 2,
     retryDelay: 1000,
-    // Don't refetch on window focus to minimize error repetition
     refetchOnWindowFocus: false,
   });
 
   const bookmarked = user
     ? !!(bookmarkState as AuthBookmarkStatus | null)?.bookmarked
-    : !!bookmarkState;
+    : isAnonBookmarked(postId);
 
-  // Create bookmark mutation
+  // Create bookmark mutation (auth path); anonymous uses localStorage
   const createMutation = useMutation({
     mutationFn: async (data: { notes: string; tags: string[] }) => {
-      // Validate postId before sending request
       if (!postId || typeof postId !== 'number' || postId <= 0) {
         throw new Error('Invalid post ID');
       }
 
-      // Use the authenticated endpoint for creation: /api/bookmarks/:postId
-      const createEndpoint = `${apiBasePath}/${postId}`;
+      if (!user) {
+        // Anonymous: write to localStorage instead of server
+        addAnonBookmark(postId, { notes: data.notes, tags: data.tags });
+        return { success: true, local: true };
+      }
 
+      const createEndpoint = `${apiBasePath}/${postId}`;
       return apiRequest(createEndpoint, {
         method: 'POST',
         body: JSON.stringify({
@@ -107,25 +150,21 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
       });
     },
     onSuccess: (data: any) => {
-      // Optimistically update status query for snappy UI
       if (user) {
         const created = (data?.bookmark ?? null) as BookmarkData | null;
         const status: AuthBookmarkStatus = { success: true, bookmarked: true, bookmark: created };
         queryClient.setQueryData([apiBasePath, postId], status);
-        // Also refresh the list page
         queryClient.invalidateQueries({ queryKey: [apiBasePath] });
       } else {
-        // Anonymous returns raw bookmark
-        queryClient.setQueryData([apiBasePath, postId], data as BookmarkData);
-        queryClient.invalidateQueries({ queryKey: [apiBasePath] });
+        // Anonymous: no server cache; still set a local flag via query client for consistency
+        queryClient.setQueryData([apiBasePath, postId], { success: true, bookmarked: true } as any);
       }
 
       toast({
         title: 'Bookmark added',
-        description: 'This story has been added to your bookmarks.',
+        description: user ? 'This story has been added to your bookmarks.' : 'Saved locally on this device.',
       });
 
-      // Close dialog and reset fields
       setOpen(false);
       setNotes('');
       setTagsInput('');
@@ -144,32 +183,32 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
     },
   });
 
-  // Delete bookmark mutation
+  // Delete bookmark mutation (auth path); anonymous uses localStorage
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      // Validate postId before sending request
       if (!postId || typeof postId !== 'number' || postId <= 0) {
         throw new Error('Invalid post ID for deletion');
       }
-      
+      if (!user) {
+        removeAnonBookmark(postId);
+        return { success: true, local: true };
+      }
       return apiRequest(`${apiBasePath}/${postId}`, {
         method: 'DELETE',
       });
     },
     onSuccess: () => {
-      // Optimistically update
       if (user) {
         const status: AuthBookmarkStatus = { success: true, bookmarked: false, bookmark: null };
         queryClient.setQueryData([apiBasePath, postId], status);
         queryClient.invalidateQueries({ queryKey: [apiBasePath] });
       } else {
-        queryClient.setQueryData([apiBasePath, postId], null);
-        queryClient.invalidateQueries({ queryKey: [apiBasePath] });
+        queryClient.setQueryData([apiBasePath, postId], { success: true, bookmarked: false } as any);
       }
 
       toast({
         title: 'Bookmark removed',
-        description: 'This story has been removed from your bookmarks.',
+        description: user ? 'This story has been removed from your bookmarks.' : 'Removed from local bookmarks.',
       });
     },
     onError: (error) => {
@@ -186,7 +225,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
     },
   });
 
-  // Update bookmark position (called when scrolling or changing pages)
+  // Update bookmark position (auth path only)
   const _updatePositionMutation = useMutation({
     mutationFn: async (position: string) => {
       return apiRequest(`${apiBasePath}/${postId}`, {
@@ -197,7 +236,6 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
       });
     },
     onSuccess: () => {
-      // Silent update - no toast needed
       queryClient.invalidateQueries({ queryKey: [apiBasePath, postId] });
     },
   });
@@ -216,32 +254,6 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
 
   // Reader-style bookmark button
   if (variant === 'reader') {
-    // Require login for bookmarks in reader mode
-    if (!user) {
-      return (
-        <button
-          onClick={() => {
-            try {
-              toast({
-                title: 'Sign in to bookmark',
-                description: 'Create a free account to save stories for later.',
-              });
-            } catch {}
-            // Navigate to auth page shortly
-            setTimeout(() => setLocation('/auth'), 300);
-          }}
-          className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${className}`}
-          aria-label="Sign in to bookmark"
-          data-testid={`bookmark-auth-reader-${postId}`}
-          disabled={isLoading}
-        >
-          <svg className="h-7 w-7 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-          </svg>
-        </button>
-      );
-    }
-
     if (bookmarked) {
       return (
         <button
@@ -337,9 +349,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
                 type="button" 
                 variant="outline" 
                 onClick={() => {
-                  // Close the dialog
                   setOpen(false);
-                  // Navigate programmatically to avoid nested interactive elements
                   setLocation('/bookmarks');
                 }}
                 data-testid="bookmark-view-all"
@@ -352,28 +362,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
     );
   }
 
-  // Default button style
-  if (!user) {
-    return (
-      <Button 
-        variant="outline" 
-        size="sm" 
-        className={className}
-        onClick={() => {
-          toast({
-            title: 'Sign in to bookmark',
-            description: 'Create a free account to save stories for later.',
-          });
-          // Navigate to auth page after a short delay
-          setTimeout(() => window.location.href = '/auth', 1500);
-        }}
-      >
-        <Bookmark className="h-4 w-4 mr-2" />
-        {showText && "Bookmark"}
-      </Button>
-    );
-  }
-
+  // Default button style (shows dialog for both auth and anonymous)
   return (
     <>
       {bookmarked ? (
@@ -470,7 +459,6 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
                 type="button" 
                 variant="outline" 
                 onClick={() => {
-                  // Close the dialog
                   setOpen(false);
                   setLocation('/bookmarks');
                 }}
@@ -490,27 +478,19 @@ export function useBookmarkPosition(postId: number) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  // Require authentication for bookmark position updates; no anonymous endpoint
   const apiBasePath = '/api/bookmarks';
 
   const updatePositionMutation = useMutation({
     mutationFn: async (position: string) => {
-      // Require authentication
-      if (!user) {
-        return null;
-      }
-      // Validate postId
+      if (!user) return null;
       if (!postId || typeof postId !== 'number' || postId <= 0) {
         console.warn('Invalid bookmark position update attempt', { postId });
         return null;
       }
-      
-      // Validate position
       if (!position || typeof position !== 'string') {
         console.warn('Invalid position value for bookmark update', { position });
         return null;
       }
-      
       try {
         return await apiRequest(`${apiBasePath}/${postId}`, {
           method: 'PATCH',
@@ -519,9 +499,7 @@ export function useBookmarkPosition(postId: number) {
           }),
         });
       } catch (error) {
-        // Log the error but don't throw it to prevent UI issues
         console.error('Error updating bookmark position:', error);
-        // Return null instead of throwing to avoid breaking the reader experience
         return null;
       }
     },
@@ -529,10 +507,8 @@ export function useBookmarkPosition(postId: number) {
       queryClient.invalidateQueries({ queryKey: [apiBasePath, postId] });
     },
     onError: (error) => {
-      // Silent error handling - just log to console without user-facing error
       console.error('Error updating bookmark position:', error);
     },
-    // Add retry options
     retry: 1,
     retryDelay: 1000
   });

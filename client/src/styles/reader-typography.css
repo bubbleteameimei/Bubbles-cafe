@@ -17,6 +17,31 @@
   user-select: none;
 }
 
+/* Ensure images scale to container width and keep aspect ratio */
+.story-content img,
+.story-content figure img,
+.story-content picture img {
+  max-width: 100%;
+  height: auto;
+  width: auto;
+  display: block;
+  margin: 1rem auto;
+  object-fit: contain;
+}
+
+/* Make figures not overflow and center captions if present */
+.story-content figure {
+  margin: 1.25rem auto;
+  padding: 0;
+  width: 100%;
+}
+.story-content figure figcaption {
+  font-size: 0.9em;
+  color: hsl(var(--muted-foreground));
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
 .story-content p,
 .story-content .story-paragraph {
   line-height: 1.7;

@@ -747,7 +747,9 @@ router.get('/migrate', isAuthenticated, async (req, res) => {
 // Migration: import anonymous session bookmarks into authenticated account
 router.post('/migrate', isAuthenticated, async (req, res) => {
   try {
-    const anon = (req as any).session?.anonymousBookmarks || req.session?.anonymousBookmarks || {};
+    // Prefer client-provided local payload when available; fall back to session store
+    const localPayload = (req.body && typeof req.body.local === 'object') ? (req.body.local as Record<number, any>) : null;
+    const anon = localPayload || (req as any).session?.anonymousBookmarks || req.session?.anonymousBookmarks || {};
     const entries = Object.entries(anon || {});
     if (!entries.length) {
       return res.json({ success: true, migrated: 0, cleared: false });
@@ -829,11 +831,11 @@ router.post('/migrate', isAuthenticated, async (req, res) => {
       }
     }
 
-    // Clear anonymous session bookmarks after migration
+    // Clear anonymous session bookmarks after migration when using session store
     try {
-      if ((req as any).session?.anonymousBookmarks) {
+      if (!localPayload && (req as any).session?.anonymousBookmarks) {
         (req as any).session.anonymousBookmarks = {};
-      } else if (req.session?.anonymousBookmarks) {
+      } else if (!localPayload && req.session?.anonymousBookmarks) {
         (req.session as any).anonymousBookmarks = {};
       }
     } catch {}
