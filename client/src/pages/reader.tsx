@@ -1691,7 +1691,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </Dialog>
 
               <div className="flex flex-col items-center gap-1">
-                <div ref={metaRowRef} className={`flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/30 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-border/60 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-meta`}>
+                <div ref={metaRowRef} className={`flex flex-nowrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/30 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-border/60 ui-fade-element overflow-x-auto whitespace-nowrap ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-meta`}>
                   {/* Story theme category with icon (index as source of truth) */}
                   {(() => {
                     const md: any = (currentPost as any)?.metadata || {};
@@ -1834,12 +1834,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     const badgeTint = getBadgeTint(themeKey);
 
                     return (
-                      <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border ${badgeTint}`}>
+                      <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border whitespace-nowrap ${badgeTint}`}>
                         {String(chosenIconSlug).includes(':')
                           ? (<Icon icon={String(chosenIconSlug)} className="h-4 w-4" />)
                           : (<ThemeIcon className="h-4 w-4" />)
                         }
-                        <span className="text-xs font-medium">{prettyLabel}</span>
+                        <span className="text-xs font-medium whitespace-nowrap">{prettyLabel}</span>
                       </div>
                     );
                   })()}
@@ -1847,14 +1847,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   <span className="text-muted-foreground">•</span>
                   
                   {/* Date indicator */}
-                  <span className="text-xs px-2 py-1 bg-muted/80 border border-border/50 rounded-md">
+                  <span className="text-xs px-2 py-1 bg-muted/80 border border-border/50 rounded-md whitespace-nowrap">
                     {currentPost.date ? format(new Date(currentPost.date), 'MMM d, yyyy') : 'No date'}
                   </span>
                   
                   <span className="text-muted-foreground">•</span>
                   
                   {/* Estimated reading time */}
-                  <span className="text-xs px-2 py-1 bg-accent/50 rounded-md">
+                  <span className="text-xs px-2 py-1 bg-accent/50 rounded-md whitespace-nowrap">
                     {readingMinutes} min read
                   </span>
 
