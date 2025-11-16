@@ -40,8 +40,6 @@ import { SupportWritingCard } from "@/components/SupportWritingCard";
 import { resolveAuthorId } from "@/lib/reader-navigation";
 
 import SEO from "@/components/SEO";
-import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
-import type { WordPressPost } from "@/lib/wordpress-api";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { trackWordPressRead } from "@/lib/wp-reads";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
@@ -650,21 +648,30 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   });
 
-  const { data: postsData, isLoading, error } = useQuery<{ posts: WordPressPost[]; totalPages: number; total: number }>({
+  const { data: postsData, isLoading, error } = useQuery<{ posts: any[]; totalPages: number; total: number }>({
     // Stabilize the query key so the list is reused across slug changes
-    queryKey: ["wordpress", "reader", "list", isCommunityContent ? "community" : "regular"],
+    queryKey: ["posts", "reader", "list", isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
       if (import.meta.env?.DEV) {
-        console.log('[Reader] Fetching WordPress posts list (trimmed)...', { routeSlug });
+        console.log('[Reader] Fetching internal posts list (trimmed)...', { routeSlug });
       }
 
       try {
         // Fetch a trimmed list for TOC/navigation to reduce payload size
-        const result = await fetchWordPressPosts({ perPage: 30, includeContent: false });
-        const posts = Array.isArray(result.posts) ? result.posts : [];
-        return { posts, totalPages: result.totalPages ?? 1, total: result.total ?? posts.length };
+        const resp = await fetch(`/api/posts?limit=30`, { credentials: 'include' });
+        if (!resp.ok) throw new Error('Failed to fetch posts');
+        const data = await resp.json();
+        const arr = Array.isArray(data.posts) ? data.posts : [];
+        const normalized = arr.map((p: any) => ({
+          ...p,
+          title: (typeof p.title === 'object' && p.title?.rendered) ? p.title : { rendered: p.title || '' },
+          content: p.content ? ((typeof p.content === 'object' && p.content?.rendered) ? p.content : { rendered: p.content }) : undefined,
+          date: p.date || p.createdAt || new Date().toISOString(),
+          slug: p.slug || String(p.id)
+        }));
+        return { posts: normalized, totalPages: 1, total: normalized.length };
       } catch (error) {
-        console.error('[Reader] Error fetching WordPress posts via proxy:', error);
+        console.error('[Reader] Error fetching posts via internal API:', error);
         try { logReaderError('reader.list.fetchError', error); } catch {}
         throw error;
       }
@@ -679,8 +686,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
 
   // Memoized posts array for consistent usage across hooks
-  const posts = useMemo<WordPressPost[]>(() => {
-    const dataPosts: WordPressPost[] | undefined = (postsData as any)?.posts;
+  const posts = useMemo<any[]>(() => {
+    const dataPosts: any[] | undefined = (postsData as any)?.posts;
     return Array.isArray(dataPosts) ? dataPosts : [];
   }, [postsData]);
 
@@ -1033,12 +1040,26 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Determine current slug and fetch full post content by slug (prefer full content for the active story)
   const currentSlugToUse = routeSlug || (posts[validCurrentIndex]?.slug as any);
-  const { data: currentPostFull, isFetching: isFetchingPost } = useQuery<WordPressPost | null>({
-    queryKey: ['wordpress', 'reader', 'post', currentSlugToUse || ''],
+  const { data: currentPostFull, isFetching: isFetchingPost } = useQuery<any | null>({
+    queryKey: ['posts', 'reader', 'post', currentSlugToUse || ''],
     queryFn: async () => {
       if (!currentSlugToUse) return null as any;
       try {
-        return await fetchWordPressPostBySlug(String(currentSlugToUse));
+        // Prefer slug endpoint; fall back to slug-or-id endpoint
+        let res = await fetch(`/api/posts/slug/${encodeURIComponent(String(currentSlugToUse))}`, { credentials: 'include' });
+        if (!res.ok) {
+          res = await fetch(`/api/posts/${encodeURIComponent(String(currentSlugToUse))}`, { credentials: 'include' });
+        }
+        if (!res.ok) throw new Error('Failed to fetch post');
+        const post = await res.json();
+        const normalized = {
+          ...post,
+          title: (typeof post.title === 'object' && post.title?.rendered) ? post.title : { rendered: post.title || '' },
+          content: post.content ? ((typeof post.content === 'object' && post.content?.rendered) ? post.content : { rendered: post.content }) : { rendered: '' },
+          date: post.date || post.createdAt || new Date().toISOString(),
+          slug: post.slug || String(post.id)
+        };
+        return normalized;
       } catch (err) {
         try { logReaderError('reader.post.fetchError', 'Failed to fetch post by slug', { slug: String(currentSlugToUse) }); } catch {}
         return null as any;
@@ -1283,7 +1304,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         wordCount={wordCount}
       />
       
-      
+      {/* Top progress bar */}
+      <div aria-hidden="true" className="fixed top-0 left-0 right-0 z-[60] h-1 pointer-events-none">
+        <div
+          className="h-full bg-primary/80 dark:bg-primary/70 transition-[width] duration-150 ease-out"
+          style={{ width: `${Math.round(animatedProgress)}%` }}
+        />
+      </div>
       
       {/* Reader tooltip for distraction-free mode instructions */}
       <ReaderTooltip show={showTooltip} />
