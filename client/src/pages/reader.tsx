@@ -37,7 +37,7 @@ import { apiJson } from "@/lib/api";
 
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import { resolveAuthorId } from "@/lib/reader-navigation";
-import Footer from "@/components/layout/footer";
+
 import SEO from "@/components/SEO";
 import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
 import type { WordPressPost } from "@/lib/wordpress-api";
@@ -227,8 +227,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [contentsDialogOpen, setContentsDialogOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [randomTipOpen, setRandomTipOpen] = useState(false);
-  // Gate footer rendering until horror overlay initialization completes to prevent flash
-  const [footerReady, setFooterReady] = useState(false);
+  
 
   /* isAnyDialogOpen is declared below, after themeEditorOpen is defined */
 
@@ -371,8 +370,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         sessionStorage.removeItem('reader_horror_expiry_ts');
       }
     } catch {}
-    // Gate footer rendering until overlay init runs to avoid flash-before-modal
-    setFooterReady(true);
+    // Overlay state restored; footer rendering handled globally
   }, []);
 
   
@@ -2306,7 +2304,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               <LazyCommentSection postId={currentPost.id} />
             </div>
         </article>
-        {footerReady ? <Footer /> : null}
+        
       </div>
     </div>
   );

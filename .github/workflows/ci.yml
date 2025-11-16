@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: 'npm'
-      - run: npm ci || npm install
+      - run: npm install
       - run: npm run check
       - run: npm run lint
       - run: npx axe-core --urls http://localhost:3000 || true
@@ -36,7 +36,7 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-      - run: npm ci || npm install
+      - run: npm install
       - run: npm run e2e
       - run: npm run audit --if-present
   secrets-scan:
