@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 import useAdaptiveScroll from '@/hooks/useAdaptiveScroll';
-import useGlobalGentleReturn from '@/hooks/useGlobalGentleReturn';
 
 // Context type for scroll effects
 interface ScrollEffectsContextType {
@@ -18,8 +17,7 @@ const ScrollEffectsContext = createContext<ScrollEffectsContextType>({
   wasRefresh: false
 });
 
-// Reader paths - gentle scroll is now implemented directly in reader page
-// and no longer handled by the global provider
+// Reader paths (kept for potential future use)
 const READER_PATHS = [
   '/reader',
   '/community-story'
@@ -38,48 +36,18 @@ interface ScrollEffectsProviderProps {
  * to prevent jarring user experience when navigating between pages.
  */
 export const ScrollEffectsProvider: React.FC<ScrollEffectsProviderProps> = ({ children }) => {
-  // States for context values (unused but kept for future use)
-  const [_isPositionRestored, setIsPositionRestored] = useState(false);
-  const [_wasRefresh, setWasRefresh] = useState(false);
-  
-  // Get current path to check if this is a reader page
-  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-  
-  // Check if this is a reader page (we'll handle scroll separately there)
-  const _isReaderPath = READER_PATHS.some(path => currentPath.startsWith(path));
-  
   // Initialize adaptive scroll with standard browser behavior
   const { scrollType, isScrolling } = useAdaptiveScroll({
     enabled: true,
     sensitivity: 1.0 // Standard browser sensitivity
   });
-  
-  // Initialize global gentle return - completely disabled for all pages
-  // The reader pages now handle their own scroll position memory
-  const gentleReturn = useGlobalGentleReturn({
-    enabled: false, // Disabled completely for all non-reader pages
-    autoSave: false,
-    showToast: false,
-    maxAgeMs: 1 * 24 * 60 * 60 * 1000, // 1 day (unused since disabled)
-    highlightTarget: '',
-    autoSaveInterval: 0
-  });
-  
-  // Update provider state based on gentle return
-  // This is now a no-op since gentle return is disabled
-  useEffect(() => {
-    if (gentleReturn) {
-      setIsPositionRestored(false); // Always false since memory is disabled
-      setWasRefresh(false);
-    }
-  }, [gentleReturn]);
-  
+
   return (
     <ScrollEffectsContext.Provider
       value={{
         scrollType,
         isScrolling,
-        isPositionRestored: false, // Always false since memory is disabled
+        isPositionRestored: false, // Always false since memory is removed
         wasRefresh: false
       }}
     >
