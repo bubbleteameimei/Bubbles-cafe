@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import useAdaptiveScroll from '@/hooks/useAdaptiveScroll';
 
 // Context type for scroll effects
@@ -41,6 +41,20 @@ export const ScrollEffectsProvider: React.FC<ScrollEffectsProviderProps> = ({ ch
     enabled: true,
     sensitivity: 1.0 // Standard browser sensitivity
   });
+
+  // One-time cleanup of legacy localStorage keys from removed scroll features
+  useEffect(() => {
+    try {
+      const keys = Object.keys(localStorage);
+      for (const k of keys) {
+        if (k.startsWith('gentleReturn_') || k.startsWith('readerGentleScroll_')) {
+          localStorage.removeItem(k);
+        }
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
 
   return (
     <ScrollEffectsContext.Provider
