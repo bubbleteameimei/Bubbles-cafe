@@ -169,6 +169,26 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
       })
     : [];
 
+  // Recommended stories for non-authenticated users when there are no local bookmarks
+  const { 
+    data: recommendedStories = [], 
+    isLoading: isLoadingRecommended,
+    status: recommendedStatus,
+    fetchStatus: recommendedFetchStatus
+  } = useQuery({
+    queryKey: ['/api/posts'],
+    queryFn: async () => {
+      try {
+        const result = await apiRequest<Post[]>('/api/posts?limit=5');
+        return result;
+      } catch (err) {
+        console.error('[BookmarkList] Error fetching recommended stories:', err);
+        throw err;
+      }
+    },
+    enabled: !user && anonIds.length === 0,
+  });
+
   // Enhanced debug logging for loading states
   useEffect(() => {
     console.log(`[BookmarkList] Auth loading:
@@ -264,24 +284,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
 
   // Special handling for non-authenticated users with no local bookmarks: show sign-in + recommendations
   if (!user && anonIds.length === 0) {
-    const { 
-      data: recommendedStories = [], 
-      isLoading: isLoadingRecommended,
-      status: recommendedStatus,
-      fetchStatus: recommendedFetchStatus
-    } = useQuery({
-      queryKey: ['/api/posts'],
-      queryFn: async () => {
-        try {
-          const result = await apiRequest<Post[]>('/api/posts?limit=5');
-          return result;
-        } catch (err) {
-          console.error('[BookmarkList] Error fetching recommended stories:', err);
-          throw err;
-        }
-      },
-      enabled: true,
-    });
+    
 
     return (
       <div className={className}>

@@ -189,14 +189,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const toggleUIWithDebug = (reason: string) => {
     try {
       if (debugEnabled) {
-        // eslint-disable-next-line no-console
         console.log('[Reader.debug] toggleUI invoked', { reason, isUIHiddenBefore: isUIHidden });
       }
     } catch {}
     toggleUI();
     try {
       if (debugEnabled) {
-        // eslint-disable-next-line no-console
         console.log('[Reader.debug] toggleUI scheduled state flip');
       }
     } catch {}
@@ -404,7 +402,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         const t = e.target as HTMLElement | null;
         const withinContent = !!(t && contentRef.current && contentRef.current.contains(t));
         const path = (e as any).composedPath ? (e as any).composedPath().map((n: any) => n?.nodeName || n?.tagName || n?.className || 'node').slice(0, 6) : undefined;
-        // eslint-disable-next-line no-console
         console.log('[Reader.debug] click', {
           target: t?.tagName,
           class: t?.className,
@@ -429,7 +426,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       if (!el) return;
       const r = el.getBoundingClientRect();
       const cs = window.getComputedStyle(el);
-      // eslint-disable-next-line no-console
       console.log('[Reader.debug] bounds', name, {
         rect: { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) },
         opacity: cs.opacity,
@@ -450,7 +446,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       const b = document.body;
       if (b) {
         const cs = window.getComputedStyle(b);
-        // eslint-disable-next-line no-console
         console.log('[Reader.debug] body styles', {
           pointerEvents: cs.pointerEvents,
           paddingRightInline: b.style.paddingRight,
@@ -462,7 +457,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       if (dlg) {
         const r = dlg.getBoundingClientRect();
         const cs2 = window.getComputedStyle(dlg);
-        // eslint-disable-next-line no-console
         console.log('[Reader.debug] dialog content styles', {
           rect: { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) },
           opacity: cs2.opacity,
@@ -477,7 +471,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       if (overlay) {
         const r = overlay.getBoundingClientRect();
         const cs3 = window.getComputedStyle(overlay);
-        // eslint-disable-next-line no-console
         console.log('[Reader.debug] dialog overlay styles', {
           rect: { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) },
           opacity: cs3.opacity,
@@ -489,7 +482,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         });
       }
       // Log content-visibility state decision
-      // eslint-disable-next-line no-console
       console.log('[Reader.debug] content-visibility', { isAnyDialogOpen, applied: isAnyDialogOpen ? 'visible (no CV)' : 'auto (CV enabled)' });
     } catch {}
     return undefined;

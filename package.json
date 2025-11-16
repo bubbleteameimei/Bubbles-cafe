@@ -145,7 +145,7 @@
     "react-markdown": "^10.1.0",
     
     "react-resizable-panels": "^2.1.4",
-    "react-toastify": "^11.0.5",
+    
     
     "recharts": "^2.15.1",
     "remark-gfm": "^4.0.1",
@@ -167,7 +167,7 @@
     "workbox-strategies": "^7.3.0",
     "wouter": "^3.3.5",
     "ws": "^8.18.0",
-    "ytdl-core": "^4.11.5",
+    
     "zod": "^3.23.8",
     "zod-validation-error": "^3.4.0",
     "@radix-ui/react-tooltip": "^1.1.3",
