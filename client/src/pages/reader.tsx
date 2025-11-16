@@ -1408,29 +1408,49 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         <div ref={controlsRowRef} className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-0.5 py-0.5 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-controls`} style={{ minHeight: '40px' }}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={decreaseFontSize}
-              disabled={fontSize <= 12}
-              className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 transition-all duration-300 hover:scale-105"
-              aria-label="Decrease font size"
-            >
-              <Minus className="h-4 w-4 mr-1" />
-              A-
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={increaseFontSize}
-              disabled={fontSize >= 40}
-              className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 transition-all duration-300 hover:scale-105"
-              aria-label="Increase font size"
-            >
-              A+
-              <Plus className="h-4 w-4 ml-1" />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={decreaseFontSize}
+                    disabled={fontSize <= 12}
+                    className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 transition-all duration-300 hover:scale-105"
+                    aria-label="Decrease font size"
+                    title="Decrease font size"
+                  >
+                    <Minus className="h-4 w-4 mr-1" />
+                    A-
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="center" sideOffset={6}>
+                  Decrease text size
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={increaseFontSize}
+                    disabled={fontSize >= 40}
+                    className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 transition-all duration-300 hover:scale-105"
+                    aria-label="Increase font size"
+                    title="Increase font size"
+                  >
+                    A+
+                    <Plus className="h-4 w-4 ml-1" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="center" sideOffset={6}>
+                  Increase text size
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             
             {/* Font Dialog with controlled open state */}
             <Dialog open={fontDialogOpen} onOpenChange={(open) => { if (debugEnabled) { try { console.log('[Reader.debug] FontDialog openChange:', open); } catch {} } setFontDialogOpen(open); try { setUIHidden(false); } catch {} }}>

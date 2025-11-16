@@ -551,13 +551,81 @@ export default function Navigation() {
                 <User className="h-5 w-5" />
               </Button>
             ) : (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-12 w-12 rounded-lg border border-border bg-card hover:bg-muted hover:-translate-y-[1px] will-change-transform text-foreground transition-colors transition-transform duration-200 ease-out active:scale-95"
-              >
-                <User className="h-5 w-5" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-12 w-12 rounded-lg border border-border bg-card hover:bg-muted hover:-translate-y-[1px] will-change-transform text-foreground transition-colors transition-transform duration-200 ease-out active:scale-95"
+                    aria-label="Account menu"
+                    title="Account"
+                  >
+                    <User className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[180px]">
+                  <DropdownMenuLabel>Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <button
+                    className="w-full text-left px-2 py-1.5 text-sm hover:bg-muted rounded"
+                    onClick={() => {
+                      const href = "/profile";
+                      const done = prefetchRouteAsync(href).catch(() => {});
+                      const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                      Promise.race([done, cap]).then(() => setLocation(href));
+                    }}
+                  >
+                    Profile
+                  </button>
+                  <button
+                    className="w-full text-left px-2 py-1.5 text-sm hover:bg-muted rounded"
+                    onClick={() => {
+                      const href = "/bookmarks";
+                      const done = prefetchRouteAsync(href).catch(() => {});
+                      const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                      Promise.race([done, cap]).then(() => setLocation(href));
+                    }}
+                  >
+                    Bookmarks
+                  </button>
+                  <button
+                    className="w-full text-left px-2 py-1.5 text-sm hover:bg-muted rounded"
+                    onClick={() => {
+                      const href = "/settings/quick-settings";
+                      const done = prefetchRouteAsync(href).catch(() => {});
+                      const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                      Promise.race([done, cap]).then(() => setLocation(href));
+                    }}
+                  >
+                    Settings
+                  </button>
+                  <button
+                    className="w-full text-left px-2 py-1.5 text-sm hover:bg-muted rounded"
+                    onClick={() => {
+                      const href = "/notifications";
+                      const done = prefetchRouteAsync(href).catch(() => {});
+                      const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                      Promise.race([done, cap]).then(() => setLocation(href));
+                    }}
+                  >
+                    Notifications
+                  </button>
+                  <DropdownMenuSeparator />
+                  <button
+                    className="w-full text-left px-2 py-1.5 text-sm hover:bg-muted rounded text-destructive"
+                    onClick={async () => {
+                      try {
+                        const { apiJson } = await import("@/lib/api");
+                        await apiJson("POST", "/api/auth/logout");
+                      } catch {}
+                      // Clear any local nav state and return to home
+                      setLocation("/");
+                    }}
+                  >
+                    Sign out
+                  </button>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </div>

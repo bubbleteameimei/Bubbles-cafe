@@ -21,6 +21,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 
 
 import { getReadingTime, extractEngagingExcerpt } from "@/lib/excerpt-lite";
+import { apiRequest } from "@/lib/api";
 import { THEME_CATEGORIES } from "@/lib/themes-lite";
 import type { WordPressPost } from "@/lib/wordpress-api";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
@@ -120,11 +121,7 @@ export default function StoriesIndexContent() {
     if (!q || q.length < 3) return;
     const t = setTimeout(() => {
       try {
-        fetch('/api/analytics/interaction', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ interactionType: 'index_search_query', details: { q }, path: '/stories' })
-        }).catch(() => {});
+        apiRequest('POST', '/api/analytics/interaction', { interactionType: 'index_search_query', details: { q }, path: '/stories' }).catch(() => {});
       } catch {}
     }, 1200);
     return () => clearTimeout(t);
@@ -1101,11 +1098,7 @@ export default function StoriesIndexContent() {
       if (lastZeroResultsQueryRef.current !== q) {
         lastZeroResultsQueryRef.current = q;
         try {
-          fetch('/api/analytics/interaction', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ interactionType: 'index_zero_results', details: { q }, path: '/stories' })
-          }).catch(() => {});
+          apiRequest('POST', '/api/analytics/interaction', { interactionType: 'index_zero_results', details: { q }, path: '/stories' }).catch(() => {});
         } catch {}
       }
     }
