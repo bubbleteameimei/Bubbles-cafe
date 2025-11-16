@@ -7,7 +7,7 @@ import { useCopyProtection } from "@/hooks/useCopyProtection";
 import useInlineCommenting from "@/hooks/useInlineCommenting";
 import ReaderTooltip from "@/components/reader/ReaderTooltip";
 import TableOfContents from "@/components/reader/TableOfContents";
-import SwipeNavigation from "@/components/reader/SwipeNavigation";
+
 import ReaderHorrorOverlayPortal from "@/components/reader/ReaderHorrorOverlayPortal";
 import "@/styles/reader-fixes.css";
 import "@/styles/reader-typography.css";
@@ -2128,52 +2128,45 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </div>
             </div>
 
-            {/* Content needs to be wrapped in a SwipeNavigation component */}
-            <SwipeNavigation
-              onPrevious={goToPreviousStory}
-              onNext={goToNextStory}
-              disabled={showHorrorMessage || posts.length <= 1}
-            >
-              <div className="story-container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
-                <div 
-                  className="story-content cursor-pointer text-justify"
-                  ref={contentRef}
-                  onClick={() => {
-                    if (!fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
-                      toggleUIWithDebug('contentClick');
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if ((e.key === 'Enter' || e.key === ' ') && !fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
-                      e.preventDefault();
-                      toggleUIWithDebug('contentKey');
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Toggle user interface visibility"
-                  aria-pressed={isUIHidden}
-                  {...(isContentReady ? { dangerouslySetInnerHTML: { __html: contentHtml } } : {})}
-                >
-                  {!isContentReady ? (
-                    isFetchingPost ? (
-                      <div aria-busy="true" aria-live="polite" className="space-y-3 py-2">
-                        <div className="h-4 bg-muted rounded" />
-                        <div className="h-4 bg-muted rounded w-11/12" />
-                        <div className="h-4 bg-muted rounded w-10/12" />
-                        <div className="h-4 bg-muted rounded w-9/12" />
-                        <div className="h-4 bg-muted rounded w-4/5" />
-                        <div className="h-4 bg-muted rounded w-2/3" />
-                      </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
-                    )
-                  ) : null}
-                </div>
-                {/* Inline comment dialog (selection-based) */}
-                <CommentDialog />
+            <div className="story-container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
+              <div 
+                className="story-content cursor-pointer text-justify"
+                ref={contentRef}
+                onClick={() => {
+                  if (!fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
+                    toggleUIWithDebug('contentClick');
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && !fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
+                    e.preventDefault();
+                    toggleUIWithDebug('contentKey');
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label="Toggle user interface visibility"
+                aria-pressed={isUIHidden}
+                {...(isContentReady ? { dangerouslySetInnerHTML: { __html: contentHtml } } : {})}
+              >
+                {!isContentReady ? (
+                  isFetchingPost ? (
+                    <div aria-busy="true" aria-live="polite" className="space-y-3 py-2">
+                      <div className="h-4 bg-muted rounded" />
+                      <div className="h-4 bg-muted rounded w-11/12" />
+                      <div className="h-4 bg-muted rounded w-10/12" />
+                      <div className="h-4 bg-muted rounded w-9/12" />
+                      <div className="h-4 bg-muted rounded w-4/5" />
+                      <div className="h-4 bg-muted rounded w-2/3" />
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
+                  )
+                ) : null}
               </div>
-            </SwipeNavigation>
+              {/* Inline comment dialog (selection-based) */}
+              <CommentDialog />
+            </div>
             
             {/* Simple pagination at bottom of story content - extremely compact */}
             <div ref={pagerRowRef} className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-pager`} style={{ minHeight: '64px' }}>
