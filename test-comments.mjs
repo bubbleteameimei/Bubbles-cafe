@@ -1,11 +1,29 @@
-import puppeteer from 'puppeteer';
+import fs from 'fs';
+import puppeteer from 'puppeteer-core';
+
+function resolveChromePath() {
+  const env =
+    process.env.PUPPETEER_EXECUTABLE_PATH ||
+    process.env.CHROME_PATH ||
+    process.env.CHROMIUM_PATH;
+  if (env && fs.existsSync(env)) return env;
+  const candidates = [
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+  ];
+  return candidates.find(p => fs.existsSync(p));
+}
 
 async function captureScreenshot() {
   console.log('Launching browser...');
   const browser = await puppeteer.launch({
     headless: 'new',
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    executablePath: '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium'
+    executablePath: resolveChromePath()
   });
   
   try {

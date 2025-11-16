@@ -1,4 +1,22 @@
-const puppeteer = require('puppeteer');
+const fs = require('fs');
+const puppeteer = require('puppeteer-core');
+
+function resolveChromePath() {
+  const env =
+    process.env.PUPPETEER_EXECUTABLE_PATH ||
+    process.env.CHROME_PATH ||
+    process.env.CHROMIUM_PATH;
+  if (env && fs.existsSync(env)) return env;
+  const candidates = [
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+  ];
+  return candidates.find(p => fs.existsSync(p));
+}
 
 async function testLoadingScreen() {
   console.log("Testing loading screen visibility...");
@@ -6,7 +24,8 @@ async function testLoadingScreen() {
   try {
     // Launch the browser
     const browser = await puppeteer.launch({
-      headless: true,
+      headless: 'new',
+      executablePath: resolveChromePath(),
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     
@@ -17,7 +36,8 @@ async function testLoadingScreen() {
     
     // Navigate to the homepage
     console.log("Navigating to the homepage...");
-    await page.goto('http://localhost:3002/', {
+    const BASE_URL = process.env.APP_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3002';
+    await page.goto(`${BASE_URL}/`, {
       waitUntil: 'networkidle2',
       timeout: 30000
     });
@@ -64,7 +84,7 @@ async function testLoadingScreen() {
     });
     
     // Now find and click a post link
-    const postLinks = await page.$$('a[href^="/reader/"]');
+    const postLinks = await page.$('a[href^="/reader/"]');
     
     if (postLinks.length > 0) {
       // Add a small wait to ensure the page is fully loaded

@@ -2,7 +2,25 @@
  * Test script to verify the updated comment section UI
  */
 
-import puppeteer from 'puppeteer';
+import fs from 'fs';
+import puppeteer from 'puppeteer-core';
+
+function resolveChromePath() {
+  const env =
+    process.env.PUPPETEER_EXECUTABLE_PATH ||
+    process.env.CHROME_PATH ||
+    process.env.CHROMIUM_PATH;
+  if (env && fs.existsSync(env)) return env;
+  const candidates = [
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+  ];
+  return candidates.find(p => fs.existsSync(p));
+}
 
 async function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -34,6 +52,8 @@ async function testCommentSection() {
   let browser;
   try {
     browser = await puppeteer.launch({
+      headless: 'new',
+      executablePath: resolveChromePath(),
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     

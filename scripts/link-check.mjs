@@ -1,4 +1,22 @@
-import puppeteer from 'puppeteer';
+import fs from 'fs';
+import puppeteer from 'puppeteer-core';
+
+function resolveChromePath() {
+  const env =
+    process.env.PUPPETEER_EXECUTABLE_PATH ||
+    process.env.CHROME_PATH ||
+    process.env.CHROMIUM_PATH;
+  if (env && fs.existsSync(env)) return env;
+  const candidates = [
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+  ];
+  return candidates.find(p => fs.existsSync(p));
+}
 
 const BASE_URL = process.env.APP_URL || 'http://localhost:3003';
 const ROUTES = ['/', '/stories', '/reader', '/community', '/settings/profile'];
@@ -40,7 +58,7 @@ async function checkRoute(page, route) {
 }
 
 async function run() {
-  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox','--disable-setuid-sandbox'] });
+  const browser = await puppeteer.launch({ headless: 'new', executablePath: resolveChromePath(), args: ['--no-sandbox','--disable-setuid-sandbox'] });
   const page = await browser.newPage();
   const results = [];
   for (const route of ROUTES) {
@@ -63,7 +81,7 @@ async function run() {
       }
       if (uniqueFail.length) {
         console.log('  Failed requests:');
-        uniqueFail.slice(0, 20).forEach(i => console.log(`   - ${i.errorText} ${i.url}`));
+        uniqueFail.slice(0, 20).forEach i => console.log(`   - ${i.errorText} ${i.url}`));
         if (uniqueFail.length > 20) console.log(`   ...and ${uniqueFail.length - 20} more`);
       }
     }
