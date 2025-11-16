@@ -33,6 +33,7 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
     notifications, 
     unreadCount, 
     markAsRead, 
+    markAsUnread,
     markAllAsRead, 
     clearNotifications,
     addNotification: _addNotification,
@@ -247,9 +248,23 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
                                 <CreepyTextGlitch text="Why are you ignoring me?" intensityFactor={8} permanent={true} /> : 
                                 notification.title}
                             </p>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
-                              {format(notification.date, 'MMM d')}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              {notification.read && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-1 text-xs"
+                                  onClick={(e) => { e.stopPropagation(); markAsUnread(notification.id); }}
+                                  title="Mark as unread"
+                                  aria-label="Mark as unread"
+                                >
+                                  Unread
+                                </Button>
+                              )}
+                              <span className="text-xs text-muted-foreground whitespace-nowrap ml-1">
+                                {format(notification.date, 'MMM d')}
+                              </span>
+                            </div>
                           </div>
                           <p className="text-xs text-muted-foreground">
                             {notification.message}

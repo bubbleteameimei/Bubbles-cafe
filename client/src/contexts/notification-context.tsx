@@ -23,6 +23,7 @@ interface NotificationContextType {
   unreadCount: number;
   addNotification: (notification: Omit<Notification, 'id' | 'date' | 'read'>) => void;
   markAsRead: (id: string) => void;
+  markAsUnread: (id: string) => void;
   markAllAsRead: () => void;
   clearNotifications: () => void;
   showNotificationToast: (notification: Notification) => void;
@@ -144,6 +145,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }).catch(() => { /* non-fatal */ });
     }
   }, [notifications]);
+
+  const markAsUnread = useCallback((id: string) => {
+    setNotifications(prev =>
+      prev.map(n => (n.id === id ? { ...n, read: false } : n))
+    );
+    const num = Number(id);
+    if (Number.isFinite(num) && num > 0) {
+      apiRequest(`/api/notifications/${num}/read`, {
+        method: 'PATCH',
+        body: JSON.stringify({ isRead: false })
+      }).catch(() => { /* non-fatal */ });
+    }
+  }, []);
 
   const clearNotifications = useCallback(() => {
     setNotifications([]);
@@ -277,6 +291,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     unreadCount,
     addNotification,
     markAsRead,
+    markAsUnread,
     markAllAsRead,
     clearNotifications,
     showNotificationToast,
