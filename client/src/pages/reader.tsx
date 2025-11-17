@@ -1779,6 +1779,7 @@ const isContentReady = contentHtml.trim().length > 0;
                     );
                   })()}
                 </div>
+              </div>
 
             <div className="mt-2 pt-3">
               <div className="flex flex-col items-center justify-center gap-6">
@@ -1870,7 +1871,6 @@ const isContentReady = contentHtml.trim().length > 0;
                 {/* Support writing card with auto-wired authorId */}
                 <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
               </div>
-            </div>
         </article>
         
       </div>
