@@ -443,9 +443,32 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       if (!t) return false;
       const interactiveSelector =
         'a, button, input, textarea, select, summary, label, [role="button"], [role="link"], [contenteditable="true"]';
-      return !!t.closest(interactiveSelector);
+      return !!(t.closest ? t.closest(interactiveSelector) : null);
     } catch {
       return false;
+    }
+  };
+
+  // Debounce tap/click toggles to avoid double-trigger on mobile (pointerup + click)
+  const lastToggleAtRef = useRef(0);
+
+  // Centralized gating for content toggle
+  const shouldToggleContent = (e: any): boolean => {
+    try {
+      // Do not toggle when any dialog/overlay is open or inline comment is active
+      if (fontDialogOpen || contentsDialogOpen || showDeleteDialog || showHorrorMessage || themeEditorOpen || isSelecting) {
+        return false;
+      }
+      // Respect prevented events
+      if (e && e.defaultPrevented) return false;
+      // Ignore clicks originating from interactive descendants (links, buttons, inputs, etc.)
+      if (isInteractiveEventTarget(e)) return false;
+      // Ignore when there is active text selection
+      const sel = typeof window !== 'undefined' ? window.getSelection() : null;
+      if (sel && sel.toString().trim().length > 0) return false;
+      return true;
+    } catch {
+      return true;
     }
   };
 
@@ -2184,30 +2207,26 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               <div 
                 className="story-content cursor-pointer text-justify"
                 ref={contentRef}
+                onPointerUp={(e) => {
+                  // Primary handler for tap-to-toggle on mobile
+                  if (!shouldToggleContent(e)) return;
+                  const now = Date.now();
+                  if (now - (lastToggleAtRef.current || 0) < 250) return; // debounce duplicate events
+                  lastToggleAtRef.current = now;
+                  toggleUIWithDebug('contentTap');
+                }}
                 onClick={(e) => {
-                  try {
-                    // Do not toggle when any dialog/overlay is open
-                    if (fontDialogOpen || contentsDialogOpen || showDeleteDialog || showHorrorMessage || themeEditorOpen) return;
-                    // Respect prevented events
-                    if (e.defaultPrevented) return;
-                    // Ignore clicks originating from interactive descendants (links, buttons, inputs, etc.)
-                    if (isInteractiveEventTarget(e)) return;
-                    // Ignore when there is active text selection
-                    const sel = typeof window !== 'undefined' ? window.getSelection() : null;
-                    if (sel && sel.toString().trim().length > 0) return;
-                    // Ignore while inline comment selection/dialog is active
-                    if (isSelecting) return;
-
-                    toggleUIWithDebug('contentClick');
-                  } catch {
-                    // Fallback toggle without gating
-                    toggleUIWithDebug('contentClick');
-                  }
+                  // Fallback click handler (desktop/mouse)
+                  if (!shouldToggleContent(e)) return;
+                  const now = Date.now();
+                  if (now - (lastToggleAtRef.current || 0) < 250) return; // debounce duplicate events
+                  lastToggleAtRef.current = now;
+                  toggleUIWithDebug('contentClick');
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     // Do not toggle when any dialog/overlay is open or inline comment is active
-                    if (fontDialogOpen || contentsDialogOpen || showDeleteDialog || showHorrorMessage || themeEditorOpen || isSelecting) return;
+                    if (!shouldToggleContent(e)) return;
                     // Only toggle when container itself is focused (not an interactive child)
                     if (e.currentTarget !== e.target) return;
                     e.preventDefault();
