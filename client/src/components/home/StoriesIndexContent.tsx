@@ -30,6 +30,7 @@ import { getStoryThemeOverride } from "@shared/story-theme-overrides";
 import { getThemeDefinitionOverride, syncThemeDefinitionOverridesFromServer } from "@/shared/theme-definitions";
 import { getBadgeTint } from "@/lib/theme-badges";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
+import { computeTrendingScores } from "@/lib/trending";
 
 
 import { useThemeCategories } from "@/hooks/use-theme-categories";
@@ -69,6 +70,7 @@ export default function StoriesIndexContent() {
   const cardsGridRef = React.useRef<HTMLDivElement | null>(null);
   const breakpointRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null);
   const fetchedReactionIdsRef = React.useRef<Set<number>>(new Set());
+  const preloadedAllRef = React.useRef<boolean>(false);
   // SSE sources per post to stream live updates (LRU-limited)
   
   
@@ -659,6 +661,7 @@ export default function StoriesIndexContent() {
 
   // Reaction totals map for posts (lazy-fetched for visible cards only)
   const [reactionTotals, setReactionTotals] = useState<Record<number, import("@/api/reactions").ReactionTotals>>({});
+  const [trendingScores, setTrendingScores] = useState<Record<number, number>>({});
   
   useEffect(() => {
     if (!readyReactions) return;
@@ -669,9 +672,8 @@ export default function StoriesIndexContent() {
     let flushTimer: any = null;
 
     // Reactions sources removed (no SSE on index)
-
+    const sources = new Map<any, any>();
     
-
     // Preload a small initial batch near the top of the list to avoid empty counts above the fold
     const preloadInitial = async () => {
       try {
@@ -857,7 +859,7 @@ export default function StoriesIndexContent() {
         compactPosts as any,
         reactionTotals as any,
         14
-      ).then((scores) => {
+      ).then((scores: Record<number, number>) => {
         if (!cancelled) setTrendingScores(scores || {});
       }).catch(() => {
         if (!cancelled) setTrendingScores({});
