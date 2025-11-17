@@ -808,6 +808,22 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     } catch {}
   };
 
+  // Prefetch helper: warm server-rendered payload cache for a post by slug
+  const prefetchRenderedBySlug = (slug?: string) => {
+    try {
+      if (!slug) return;
+      queryClient.prefetchQuery({
+        queryKey: ['wordpress', 'render', String(slug)],
+        queryFn: async () => {
+          const res = await fetch(`/api/wordpress/render/${encodeURIComponent(String(slug))}`, { method: 'GET', credentials: 'include' });
+          if (!res.ok) throw new Error('Render prefetch failed');
+          return await res.json();
+        },
+        staleTime: 5 * 60 * 1000,
+      }).catch(() => {});
+    } catch {}
+  };
+
   // Prefetch neighbor reactions (non-cached, but warms server path)
   const prefetchReactionsForIds = (ids: number[]) => {
     try {
@@ -827,6 +843,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     const t = window.setTimeout(() => {
       prefetchPostBySlug(nextSlug);
       prefetchPostBySlug(prevSlug);
+      prefetchRenderedBySlug(nextSlug);
+      prefetchRenderedBySlug(prevSlug);
       const ids: number[] = [];
       if (typeof nextId === 'number') ids.push(nextId);
       if (typeof prevId === 'number') ids.push(prevId as number);
@@ -844,6 +862,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       const slug = posts[neighborIndex]?.slug as string | undefined;
       const id = posts[neighborIndex]?.id as number | undefined;
       prefetchPostBySlug(slug);
+      prefetchRenderedBySlug(slug);
       if (typeof id === 'number') prefetchReactionsForIds([id]);
     } catch {}
   };
@@ -1187,6 +1206,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     readingMinutes?: number;
     ogImage?: string;
     themes?: string[];
+    themeKey?: string;
+    themeLabel?: string;
+    themeIcon?: string;
+    badgeTintClass?: string;
   }>({
     queryKey: ['wordpress', 'render', currentSlugToUse || ''],
     queryFn: async () => {
@@ -1947,14 +1970,16 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
               <div className="flex flex-col items-center gap-1">
                 <div ref={metaRowRef} className={`flex flex-nowrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground bg-background/70 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-border/60 ui-fade-element overflow-x-auto whitespace-nowrap ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-meta`} style={{ minHeight: '32px' }}>
-                  {/* Story theme category with icon (index as source of truth) */}
+                  {/* Story theme category with icon (prefer server-rendered metadata) */}
                   {(() => {
                     const md: any = (currentPost as any)?.metadata || {};
+                    const sr = serverRendered || null;
 
-                    // Determine primary theme: override -> metadata -> shared detection from title/content
+                    // Determine primary theme: admin override -> metadata -> server -> shared detection
                     const primaryThemeRaw =
                       overrideThemeCategory ||
                       md.themeCategory ||
+                      (sr?.themeLabel || '') ||
                       determineThemeCategory(
                         titleText || 'Story',
                         plainText || ''
@@ -1973,15 +1998,21 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       return raw.toUpperCase().replace(/\s+/g, '_');
                     })();
 
-                    const themeKey = override?.key || derivedKey;
+                    const themeKey =
+                      override?.key ||
+                      overrideThemeCategory ||
+                      md.themeCategory ||
+                      (sr?.themeKey || '') ||
+                      derivedKey;
 
                     const defOverride = getThemeDefinitionOverride(themeKey);
 
-                    // Icon slug priority: story override -> editor override -> metadata -> global override -> shared definition -> ghost
+                    // Icon slug priority: story override -> editor override -> metadata -> server -> global override -> shared definition -> ghost
                     const chosenIconSlug =
                       override?.icon ||
                       overrideThemeIcon ||
                       md.themeIcon ||
+                      (sr?.themeIcon || '') ||
                       defOverride?.icon ||
                       categoriesMap[derivedKey]?.icon ||
                       (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
@@ -2063,10 +2094,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       }
                     })();
 
-                    // Human-friendly label with specific "Horror" suffixes; prefer override label
+                    // Human-friendly label; prefer override and server label
                     const baseLabel =
                       override?.label ||
                       defOverride?.label ||
+                      (sr?.themeLabel || '') ||
                       categoriesMap[derivedKey]?.label ||
                       (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
                       primaryThemeRaw ||
@@ -2074,6 +2106,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
                     const prettyLabel = (() => {
                       if (override?.label) return override.label;
+                      if (sr?.themeLabel) return sr.themeLabel;
                       const l = String(baseLabel).toLowerCase();
                       if (l.includes('cosmic')) return 'Cosmic Horror';
                       if (l.includes('existential')) return 'Existential Horror';
@@ -2085,8 +2118,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       return baseLabel;
                     })();
 
-                    // Tinted badge styles per theme
-                    const badgeTint = getBadgeTint(themeKey);
+                    // Tinted badge styles per theme (prefer server-provided class)
+                    const badgeTint = (sr?.badgeTintClass && sr.badgeTintClass.trim().length > 0)
+                      ? sr.badgeTintClass
+                      : getBadgeTint(themeKey);
 
                     return (
                       <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border whitespace-nowrap ${badgeTint}`}>

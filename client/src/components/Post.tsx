@@ -28,6 +28,8 @@ const extractHorrorExcerptMemo = (content: string, maxLength: number = 250): str
 
 function Post() {
   const { slug } = useParams<{ slug: string }>();
+
+  // Fetch post from DB API for compatibility (community posts)
   const { data: post, isLoading, error } = useQuery({
     queryKey: ['/api/posts/slug', slug],
     queryFn: async () => {
@@ -44,6 +46,18 @@ function Post() {
       } as any;
       return adapted;
     },
+  });
+
+  // Prefer server-rendered sanitized HTML if available (WordPress posts)
+  const { data: serverRendered } = useQuery({
+    queryKey: ['/api/wordpress/render', slug],
+    queryFn: async () => {
+      const res = await fetch(`/api/wordpress/render/${encodeURIComponent(String(slug))}`, { method: 'GET', credentials: 'include' });
+      if (!res.ok) return null;
+      return await res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: Boolean(slug),
   });
 
   if (isLoading) {
@@ -67,22 +81,32 @@ function Post() {
     return <div className="text-center">Post not found</div>;
   }
 
-  // Extract the horror excerpt
-  const excerpt = extractHorrorExcerptMemo(post.content.rendered);
+  // Extract the horror excerpt (prefer server-rendered excerpt)
+  const excerpt = (serverRendered?.excerpt && typeof serverRendered.excerpt === 'string' && serverRendered.excerpt.trim().length > 0)
+    ? serverRendered.excerpt
+    : extractHorrorExcerptMemo(post.content.rendered);
+
+  const titleHtml = (serverRendered?.titleHtml && typeof serverRendered.titleHtml === 'string')
+    ? serverRendered.titleHtml
+    : sanitizeHtml(post.title.rendered);
+
+  const contentHtml = (serverRendered?.contentHtml && typeof serverRendered.contentHtml === 'string')
+    ? serverRendered.contentHtml
+    : sanitizeHtml(post.content.rendered);
 
   return (
     <div className="container mx-auto p-4">
       <Card className="p-6">
         <h1 
           className="text-3xl font-bold mb-4"
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.title.rendered) }}
+          dangerouslySetInnerHTML={{ __html: titleHtml }}
         />
         <p className="mb-4 text-muted-foreground italic">
           "{excerpt}"
         </p>
         <div
           className="prose max-w-none dark:prose-invert"
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content.rendered) }}
+          dangerouslySetInnerHTML={{ __html: contentHtml }}
         />
       </Card>
     </div>
