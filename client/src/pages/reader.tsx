@@ -1090,9 +1090,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const stripHtml = (s: string): string => (s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '');
   const titleText = stripHtml(getRenderedText(currentPost.title) || 'Story');
   const titleRaw = getRenderedText(currentPost.title) || 'Story';
-  const titleHtml = useMemo(() => sanitizeHtmlContent(titleRaw), [titleRaw]);
+  const titleHtml = sanitizeHtmlContent(titleRaw);
   const rawContent = getRenderedText(currentPost.content) || '';
-  const contentHtml = useMemo(() => sanitizeHtmlContent(rawContent), [rawContent]);
+  const contentHtml = sanitizeHtmlContent(rawContent);
   const isContentReady = contentHtml.trim().length > 0;
   const descriptionText = getExcerpt(rawContent, 160);
   const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
