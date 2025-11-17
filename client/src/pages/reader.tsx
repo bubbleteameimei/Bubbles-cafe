@@ -1577,149 +1577,288 @@ const isContentReady = contentHtml.trim().length > 0;
 
               <div className="flex flex-col items-center gap-1">
                 <div ref={metaRowRef} className={`flex flex-nowrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground bg-background/30 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-border/60 ui-fade-element overflow-x-auto whitespace-nowrap ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-meta`} style={{ minHeight: '32px' }}>
-  {(() => {
-    try {
-      const md: any = (currentPost as any)?.metadata || {};
-      const primaryThemeRaw =
-        overrideThemeCategory ||
-        md.themeCategory ||
-        determineThemeCategory(
-          titleText || 'Story',
-          plainText || ''
-        );
-      const override = getStoryThemeOverride((currentPost as any)?.slug as any, titleText as any);
-      const derivedKey = (() => {
-        const raw = String(primaryThemeRaw || '').trim();
-        if (!raw) return 'HORROR';
-        for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-          if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-        }
-        return raw.toUpperCase().replace(/\s+/g, '_');
-      })();
-      const themeKey = override?.key || derivedKey;
-      const defOverride = getThemeDefinitionOverride(themeKey);
-      const chosenIconSlug =
-        override?.icon ||
-        overrideThemeIcon ||
-        md.themeIcon ||
-        defOverride?.icon ||
-        categoriesMap[derivedKey]?.icon ||
-        (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
-        'ghost';
-      const ThemeIcon = (() => {
-        const slug = String(chosenIconSlug).toLowerCase();
-        switch (slug) {
-          case 'skull': return Skull;
-          case 'brain': return Brain;
-          case 'pill': return Pill;
-          case 'cpu': return Cpu;
-          case 'dna': return Dna;
-          case 'ghost': return Ghost;
-          case 'umbrella': return Umbrella;
-          case 'footprints': return Footprints;
-          case 'cloud-rain':
-          case 'cloudrain': return CloudRain;
-          case 'castle': return Castle;
-          case 'bug': return Bug;
-          case 'radiation': return Radiation;
-          case 'user-minus2':
-          case 'userminus2': return UserMinus2;
-          case 'user-plus':
-          case 'userplus': return UserPlus;
-          case 'anchor': return Anchor;
-          case 'alert-triangle':
-          case 'alerttriangle': return AlertTriangle;
-          case 'building': return Building;
-          case 'worm': return Worm;
-          case 'cloud': return Cloud;
-          case 'cloud-fog':
-          case 'cloudfog': return CloudFog;
-          case 'eye': return Eye;
-          case 'hourglass': return Hourglass;
-          case 'knife':
-          case 'utensils':
-          case 'fork-knife':
-          case 'forkknife': return ForkKnife;
-          case 'cat': return Cat;
-          case 'moon': return Moon;
-          case 'dog': return Dog;
-          case 'radio': return Radio;
-          case 'moon-star':
-          case 'moonstar': return MoonStar;
-          case 'box': return Box;
-          case 'car': return Car;
-          case 'alien': return Moon;
-          case 'flask': return FlaskConical;
-          case 'trees':
-          case 'tree': return Trees;
-        }
-        switch (themeKey) {
-          case 'TECHNOLOGICAL': return Cpu;
-          case 'PSYCHOLOGICAL': return Brain;
-          case 'SUPERNATURAL': return Ghost;
-          case 'UNCANNY': return Eye;
-          case 'EXISTENTIAL': return Hourglass;
-          case 'DOPPELGANGER': return UserPlus;
-          case 'CANNIBALISM': return ForkKnife;
-          case 'SLASHER': return Skull;
-          case 'MONSTER': return Cat;
-          case 'ZOMBIE': return Footprints;
-          case 'VAMPIRE': return Moon;
-          case 'WEREWOLF': return Dog;
-          case 'PARANORMAL': return Radio;
-          case 'DREAM_HORROR': return MoonStar;
-          case 'CURSED_OBJECT': return Box;
-          case 'TIME_HORROR': return Clock;
-          case 'APOCALYPTIC': return Radiation;
-          case 'SCIENCE_HORROR': return FlaskConical;
-          case 'FOLK_HORROR': return Trees;
-          case 'GOTHIC': return Castle;
-          case 'COSMIC': return Moon;
-          case 'VEHICULAR': return Car;
-          default: return Ghost;
-        }
-      })();
-      const baseLabel =
-        override?.label ||
-        defOverride?.label ||
-        categoriesMap[derivedKey]?.label ||
-        (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
-        primaryThemeRaw ||
-        'Horror';
-      const prettyLabel = (() => {
-        if (override?.label) return override.label;
-        const l = String(baseLabel).toLowerCase();
-        if (l.includes('cosmic')) return 'Cosmic Horror';
-        if (l.includes('existential')) return 'Existential Horror';
-        if (l.includes('vehicular')) return 'Vehicular Horror';
-        if (l.includes('psychological')) return 'Psychological Horror';
-        if (l.includes('supernatural')) return 'Supernatural Horror';
-        if (l.includes('technological')) return 'Technological Horror';
-        if (l.includes('uncanny')) return 'Uncanny Horror';
-        return baseLabel;
-      })();
-      const badgeTint = getBadgeTint(themeKey);
-      return (
-        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border whitespace-nowrap ${badgeTint}`}>
-          {String(chosenIconSlug).includes(':') ? <Icon icon={String(chosenIconSlug)} className="h-4 w-4" /> : <ThemeIcon className="h-4 w-4" />}
-          <span className="text-xs font-medium whitespace-nowrap">{prettyLabel}</span>
-        </div>
-      );
-    } catch {
-      return null;
-    }
-  })()}
-  <span className="text-muted-foreground">•</span>
-  <span>
-    <time dateTime={String(currentPost.date || (currentPost as any).createdAt || new Date().toISOString())}>
-      {format(new Date(currentPost.date || (currentPost as any).createdAt || Date.now()), 'MMM d, yyyy')}
-    </time>
-  </span>
-  <span className="text-muted-foreground">•</span>
-  <span>{readingMinutes} min read</span>
+                  {/* Story theme category with icon (index as source of truth) */}
+                  {(() => {
+                    const md: any = (currentPost as any)?.metadata || {};
+
+                    // Determine primary theme: override -> metadata -> shared detection from title/content
+                    const primaryThemeRaw =
+                      overrideThemeCategory ||
+                      md.themeCategory ||
+                      determineThemeCategory(
+                        titleText || 'Story',
+                        plainText || ''
+                      );
+
+                    // Story-specific override mapping by slug/title
+                    const override = getStoryThemeOverride((currentPost as any)?.slug as any, titleText as any);
+
+                    // Resolve shared theme key from label or raw category when no override
+                    const derivedKey = (() => {
+                      const raw = String(primaryThemeRaw || '').trim();
+                      if (!raw) return 'HORROR';
+                      for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
+                        if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
+                      }
+                      return raw.toUpperCase().replace(/\s+/g, '_');
+                    })();
+
+                    const themeKey = override?.key || derivedKey;
+
+                    const defOverride = getThemeDefinitionOverride(themeKey);
+
+                    // Icon slug priority: story override -> editor override -> metadata -> global override -> shared definition -> ghost
+                    const chosenIconSlug =
+                      override?.icon ||
+                      overrideThemeIcon ||
+                      md.themeIcon ||
+                      defOverride?.icon ||
+                      categoriesMap[derivedKey]?.icon ||
+                      (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
+                      'ghost';
+
+                    // Lucide icon mapping with broader coverage and theme-key fallbacks
+                    const ThemeIcon = (() => {
+                      const slug = String(chosenIconSlug).toLowerCase();
+                      switch (slug) {
+                        case 'skull': return Skull;
+                        case 'brain': return Brain;
+                        case 'pill': return Pill;
+                        case 'cpu': return Cpu;
+                        case 'dna': return Dna;
+                        case 'ghost': return Ghost;
+                        case 'umbrella': return Umbrella;
+                        case 'footprints': return Footprints;
+                        case 'cloud-rain':
+                        case 'cloudrain': return CloudRain;
+                        case 'castle': return Castle;
+                        case 'bug': return Bug;
+                        case 'radiation': return Radiation;
+                        case 'user-minus2':
+                        case 'userminus2': return UserMinus2;
+                        case 'user-plus':
+                        case 'userplus': return UserPlus;
+                        case 'anchor': return Anchor;
+                        case 'alert-triangle':
+                        case 'alerttriangle': return AlertTriangle;
+                        case 'building': return Building;
+                        case 'worm': return Worm;
+                        case 'cloud': return Cloud;
+                        case 'cloud-fog':
+                        case 'cloudfog': return CloudFog;
+                        case 'eye': return Eye;
+                        case 'hourglass': return Hourglass;
+                        case 'knife':
+                        case 'utensils':
+                        case 'fork-knife':
+                        case 'forkknife': return ForkKnife;
+                        case 'cat': return Cat;
+                        case 'moon': return Moon;
+                        case 'dog': return Dog;
+                        case 'radio': return Radio;
+                        case 'moon-star':
+                        case 'moonstar': return MoonStar;
+                        case 'box': return Box;
+                        case 'car': return Car;
+                        case 'alien': return Moon;
+                        case 'flask': return FlaskConical;
+                        case 'trees':
+                        case 'tree': return Trees;
+                      }
+                      // Fallback by theme key for diversity when slug is unknown
+                      switch (themeKey) {
+                        case 'TECHNOLOGICAL': return Cpu;
+                        case 'PSYCHOLOGICAL': return Brain;
+                        case 'SUPERNATURAL': return Ghost;
+                        case 'UNCANNY': return Eye;
+                        case 'EXISTENTIAL': return Hourglass;
+                        case 'DOPPELGANGER': return UserPlus;
+                        case 'CANNIBALISM': return ForkKnife;
+                        case 'SLASHER': return Skull;
+                        case 'MONSTER': return Cat;
+                        case 'ZOMBIE': return Footprints;
+                        case 'VAMPIRE': return Moon;
+                        case 'WEREWOLF': return Dog;
+                        case 'PARANORMAL': return Radio;
+                        case 'DREAM_HORROR': return MoonStar;
+                        case 'CURSED_OBJECT': return Box;
+                        case 'TIME_HORROR': return Clock;
+                        case 'APOCALYPTIC': return Radiation;
+                        case 'SCIENCE_HORROR': return FlaskConical;
+                        case 'FOLK_HORROR': return Trees;
+                        case 'GOTHIC': return Castle;
+                        case 'COSMIC': return Moon;
+                        case 'VEHICULAR': return Car;
+                        default: return Ghost;
+                      }
+                    })();
+
+                    // Human-friendly label with specific "Horror" suffixes; prefer override label
+                    const baseLabel =
+                      override?.label ||
+                      defOverride?.label ||
+                      categoriesMap[derivedKey]?.label ||
+                      (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
+                      primaryThemeRaw ||
+                      'Horror';
+
+                    const prettyLabel = (() => {
+                      if (override?.label) return override.label;
+                      const l = String(baseLabel).toLowerCase();
+                      if (l.includes('cosmic')) return 'Cosmic Horror';
+                      if (l.includes('existential')) return 'Existential Horror';
+                      if (l.includes('vehicular')) return 'Vehicular Horror';
+                      if (l.includes('psychological')) return 'Psychological Horror';
+                      if (l.includes('supernatural')) return 'Supernatural Horror';
+                      if (l.includes('technological')) return 'Technological Horror';
+                      if (l.includes('uncanny')) return 'Uncanny Horror';
+                      return baseLabel;
+                    })();
+
+                    // Tinted badge styles per theme
+                    const badgeTint = getBadgeTint(themeKey);
+
+                    return (
+                      <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-pager`} style={{ minHeight: '64px' }}>
+              <div className="relative overflow-visible flex items-center justify-center gap-1 bg-background/90 border border-transparent rounded-full h-16 px-1.5 shadow-sm">
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 rounded-full"
+                  style={{ border: '1px solid', borderColor: 'hsl(var(--border) / 0.4)', transform: 'translateY(-1px)' }}
+                />
+                <div className="flex items-center gap-1 translate-y-2">
+                  {/* Previous story button */}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={goToPreviousStory}
+                    className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
+                      isFirstStory 
+                        ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
+                        : 'text-foreground hover:bg-primary/60 hover:text-foreground dark:text-foreground dark:hover:bg-primary/35'
+                    } focus-visible:ring-2 focus-visible:ring-primary/70 hover:ring-2 hover:ring-primary/70 active:bg-primary/60`}
+                    aria-label="Previous story"
+                    disabled={posts.length <= 1 || isFirstStory}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                      <path d="m15 18-6-6 6-6"/>
+                    </svg>
+                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                      Previous Story
+                    </span>
+                  </Button>
+                  
+                  {/* Story counter */}
+                  <div className="px-1 h-5 flex items-center -translate-y-2.5 text-[10px] leading-none text-muted-foreground font-medium">
+                    {currentIndex + 1} of {posts.length}
+                  </div>
+                  
+                  {/* Next story button */}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={goToNextStory}
+                    className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
+                      isLastStory 
+                        ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
+                        : 'text-foreground hover:bg-primary/60 hover:text-foreground dark:text-foreground dark:hover:bg-primary/35'
+                    } focus-visible:ring-2 focus-visible:ring-primary/70 hover:ring-2 hover:ring-primary/70 active:bg-primary/60`}
+                    aria-label="Next story"
+                    disabled={posts.length <= 1 || isLastStory}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                      <path d="m9 18 6-6-6-6"/>
+                    </svg>
+                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                      Next Story
+                    </span>
+                  </Button>
                 </div>
               </div>
+            </div>
 
+           
+           
+            <div className="mt-2 pt-3">
+              <div className="flex flex-col items-center justify-center gap-6">
+                {/* Centered Like/Dislike buttons */}
+                <div className="flex justify-center w-full">
+                  <LikeDislike postId={currentPost.id} slug={currentPost.slug} source="wp" variant="reader" initialTotals={currentTotals} />
+                </div>
+
+                <div ref={shareRowRef} className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-share`}>
+                  <p className="text-sm text-muted-foreground font-medium">✨ Loved the story? Share it or follow for more! ✨</p>
+                  <div className="flex items-center gap-3">
+                    {/* Native Share Button */}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({
+                            title: getRenderedText(currentPost.title) || 'Story',
+                            url: window.location.href
+                          });
+                        } else {
+                          navigator.clipboard.writeText(window.location.href);
+                          toast({
+                            title: "Link Copied",
+                            description: "Story link copied to clipboard!"
+                          });
+                        }
+                      }}
+                      className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      <span className="sr-only">Share</span>
+                    </Button>
+
+                    {/* Social Icons */}
+                    <div className="flex gap-3">
+                      {/* Twitter */}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          window.open('https://twitter.com/Bubbleteameimei', '_blank', 'noopener,noreferrer');
+                        }}
+                        className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                      >
+                        <FaTwitter className="h-4 w-4" />
+                        <span className="sr-only">Follow on Twitter</span>
+                      </Button>
+                      
+                      {/* WordPress */}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          window.open('https://bubbleteameimei.wordpress.com/', '_blank', 'noopener,noreferrer');
+                        }}
+                        className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                      >
+                        <FaWordpress className="h-4 w-4" />
+                        <span className="sr-only">Follow on WordPress</span>
+                      </Button>
+                      
+                      {/* Instagram */}
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                      >
+                        <a href="https://www.instagram.com/Bubbleteameimei/" target="_blank" rel="noreferrer">
+                          <FaInstagram className="h-4 w-4" />
+                          <span className="sr-only">Follow on Instagram</span>
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             {/* Comment section (lazy-mounted near viewport) */}
             <div className="mt-8">
               <LazyCommentSection postId={currentPost.id} />

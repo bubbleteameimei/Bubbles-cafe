@@ -1480,7 +1480,6 @@ export default function StoriesIndexContent() {
                     );
                   })}
                 </div>
-              )}
               {latestPosts.length > visibleCount && latestPosts.length <= 60 && (
                 <div className="mt-4 flex justify-center">
                   <Button
