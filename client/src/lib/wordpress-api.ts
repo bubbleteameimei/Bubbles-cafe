@@ -274,8 +274,7 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
     const attempts = Math.max(1, Number(maxRetries) + 1);
     try {
       const response = await fetchWithRetries(apiUrl, attempts, 10000);
-      const jsonText = await response.text();
-      const json = safeJsonParse(jsonText);
+      const json = await response.json();
       const postsArray = Array.isArray(json) ? json : Array.isArray((json as any)?.posts) ? (json as any).posts : null;
       if (!postsArray) throw new Error('Non-array response');
 
@@ -413,7 +412,12 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
                 date: post.date || post.createdAt,
                 slug: post.slug,
                 title: { rendered: post.title?.rendered || post.title },
-                content: { rendered: post.content?.rendered || post.content },
+                content: {
+                  rendered:
+                    options.includeContent === false
+                      ? 'Content unavailable'
+                      : (post.content?.rendered || post.content),
+                },
                 excerpt: {
                   rendered:
                     post.excerpt?.rendered ||
@@ -435,7 +439,10 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
           date: post.date || post.createdAt,
           slug: post.slug,
           title: { rendered: post.title?.rendered || post.title },
-          content: { rendered: post.content?.rendered || post.content },
+          content: {
+            rendered:
+              options.includeContent === false ? 'Content unavailable' : (post.content?.rendered || post.content),
+          },
           excerpt: {
             rendered:
               post.excerpt?.rendered ||
