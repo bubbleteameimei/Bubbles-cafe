@@ -287,7 +287,8 @@ export default function Home() {
                           const target = await getLatestReaderPath();
                           setLocation(target);
                         } catch {
-                          setLocation('/reader');
+                          const fallbackSlug = postsResponse?.posts?.[0]?.slug;
+                          setLocation(fallbackSlug ? `/reader/${encodeURIComponent(String(fallbackSlug))}` : '/reader');
                         }
                       }}
                       onMouseEnter={() => { try { void import('@/pages/reader'); } catch {} }}
@@ -332,8 +333,8 @@ export default function Home() {
                         const target = await getLatestReaderPath();
                         setLocation(target);
                       } catch {
-                        setLocation('/reader');
-
+                        const fallbackSlug = postsResponse?.posts?.[0]?.slug;
+                        setLocation(fallbackSlug ? `/reader/${encodeURIComponent(String(fallbackSlug))}` : '/reader');
                       }
                     }} 
                     className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl relative bg-card/60 backdrop-blur-xl border border-border/50 shadow-xl transition-all duration-300"

@@ -1124,6 +1124,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       }
     },
     staleTime: 5 * 60 * 1000,
+    keepPreviousData: true,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     enabled: Boolean(currentSlugToUse),
   });
 
@@ -1291,14 +1294,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       } while (randomIndex === currentIndex);
       
       checkRapidNavigation();
-      setCurrentIndex(randomIndex);
       try {
         const nextSlug = String(posts[randomIndex]?.slug ?? posts[randomIndex]?.id);
         if (nextSlug) {
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+      window.scrollTo({ top: 0, behavior: 'auto' });
     }
   };
   
@@ -1308,14 +1310,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     if (posts && posts.length > 1 && currentIndex > 0) {
       const newIndex = currentIndex - 1;
       checkRapidNavigation();
-      setCurrentIndex(newIndex);
       try {
         const nextSlug = String(posts[newIndex]?.slug ?? posts[newIndex]?.id);
         if (nextSlug) {
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+      window.scrollTo({ top: 0, behavior: 'auto' });
     }
   };
   
@@ -1325,14 +1326,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     if (posts && posts.length > 1 && currentIndex < posts.length - 1) {
       const newIndex = currentIndex + 1;
       checkRapidNavigation();
-      setCurrentIndex(newIndex);
       try {
         const nextSlug = String(posts[newIndex]?.slug ?? posts[newIndex]?.id);
         if (nextSlug) {
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+      window.scrollTo({ top: 0, behavior: 'auto' });
     }
   };
   
