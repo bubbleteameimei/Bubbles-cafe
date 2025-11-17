@@ -186,7 +186,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const { CommentDialog } = useInlineCommenting({
+  const { CommentDialog, isSelecting } = useInlineCommenting({
     enabled: true,
     onSubmitComment: async (text, selection, range) => {
       try {
@@ -435,6 +435,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Create a ref for the content container to attach swipe events and copy protection
   const contentRef = useCopyProtection(false);
   // Removed positionRestoredRef as we no longer save reading position
+
+  // Helper: determine if the event target is interactive (links, buttons, inputs, etc.)
+  const isInteractiveEventTarget = (e: any): boolean => {
+    try {
+      const t = (e && e.target) as HTMLElement | null;
+      if (!t) return false;
+      const interactiveSelector =
+        'a, button, input, textarea, select, summary, label, [role="button"], [role="link"], [contenteditable="true"]';
+      return !!t.closest(interactiveSelector);
+    } catch {
+      return false;
+    }
+  };
 
   // Debug: toggle via localStorage key "reader_debug" (set to "1" to enable)
   useEffect(() => {
@@ -2171,13 +2184,32 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               <div 
                 className="story-content cursor-pointer text-justify"
                 ref={contentRef}
-                onClick={() => {
-                  if (!fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
+                onClick={(e) => {
+                  try {
+                    // Do not toggle when any dialog/overlay is open
+                    if (fontDialogOpen || contentsDialogOpen || showDeleteDialog || showHorrorMessage || themeEditorOpen) return;
+                    // Respect prevented events
+                    if (e.defaultPrevented) return;
+                    // Ignore clicks originating from interactive descendants (links, buttons, inputs, etc.)
+                    if (isInteractiveEventTarget(e)) return;
+                    // Ignore when there is active text selection
+                    const sel = typeof window !== 'undefined' ? window.getSelection() : null;
+                    if (sel && sel.toString().trim().length > 0) return;
+                    // Ignore while inline comment selection/dialog is active
+                    if (isSelecting) return;
+
+                    toggleUIWithDebug('contentClick');
+                  } catch {
+                    // Fallback toggle without gating
                     toggleUIWithDebug('contentClick');
                   }
                 }}
                 onKeyDown={(e) => {
-                  if ((e.key === 'Enter' || e.key === ' ') && !fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    // Do not toggle when any dialog/overlay is open or inline comment is active
+                    if (fontDialogOpen || contentsDialogOpen || showDeleteDialog || showHorrorMessage || themeEditorOpen || isSelecting) return;
+                    // Only toggle when container itself is focused (not an interactive child)
+                    if (e.currentTarget !== e.target) return;
                     e.preventDefault();
                     toggleUIWithDebug('contentKey');
                   }
