@@ -2313,20 +2313,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               <LazyCommentSection postId={currentPost.id} />
             </div>
 
-            {/* Social sharing and support section  */}
-              <div
-                aria-hidden="true"
-                className="border-b border-border"
-                style={{
-                  width: '100%',
-                  marginLeft: '0',
-                  marginRight: '0',
-                  position: 'relative',
-                  left: 0,
-                  transform: 'none'
-                }}
-              />
-              <div className="social-support-section mt-8 pt-6" style={{ minHeight: '180px' }}>
+            {/* Social sharing and support section */}
+              <div className="social-support-section mt-4 pt-2">
                 {/* Support writing card with auto-wired authorId */}
                 <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
               </div>
