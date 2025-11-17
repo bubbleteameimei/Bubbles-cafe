@@ -1,14 +1,10 @@
 /**
  * WordPress API Integration
- * 
- * This module provides a robust interface for interacting with the WordPress API,
- * with comprehensive error handling, validation, and fallback mechanisms.
- * 
- * Features:
- * - Enhanced error detection and handling
- * - Local storage cache with fallback support 
- * - Automatic retries for intermittent failures
- * - Rich logging for debugging
+ *
+ * Robust interface for interacting with the WordPress API with:
+ * - Enhanced error handling and retries
+ * - Local cache and server fallback
+ * - Lightweight logging (session-gated for noisy errors)
  */
 
 import { z } from 'zod';
@@ -21,7 +17,7 @@ const WP_BASES: string[] = [
   '/api/wordpress', // Prefer server proxy to avoid browser CORS
   import.meta.env.VITE_WORDPRESS_API_URL || '',
   'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com',
-  'https://bubbleteameimei.wordpress.com/wp-json/wp/v2'
+  'https://bubbleteameimei.wordpress.com/wp-json/wp/v2',
 ].filter(Boolean);
 
 // Fallback to server API if WordPress is unavailable
@@ -33,30 +29,34 @@ const CACHE_DURATION_MS = 2 * 60 * 1000; // 2 minutes
 const LAST_ERROR_KEY = 'wp_last_error';
 
 // WordPress post schema with relaxed validation - allows more flexibility for parsing
-export const wordpressPostSchema = z.object({
-  id: z.number(),
-  date: z.string(),
-  modified: z.string().optional(),
-  slug: z.string(),
-  status: z.string().optional(),
-  type: z.string().optional(),
-  link: z.string().optional(),
-  title: z.object({
-    rendered: z.string()
-  }),
-  content: z.object({
-    rendered: z.string(),
-    protected: z.boolean().optional()
-  }),
-  excerpt: z.object({
-    rendered: z.string()
-  }).optional(),
-  author: z.number().optional(),
-  featured_media: z.number().optional(),
-  categories: z.array(z.number()).optional(),
-  tags: z.array(z.number()).optional(),
-  meta: z.record(z.any()).optional()
-}).passthrough(); // Allow additional properties
+export const wordpressPostSchema = z
+  .object({
+    id: z.number(),
+    date: z.string(),
+    modified: z.string().optional(),
+    slug: z.string(),
+    status: z.string().optional(),
+    type: z.string().optional(),
+    link: z.string().optional(),
+    title: z.object({
+      rendered: z.string(),
+    }),
+    content: z.object({
+      rendered: z.string(),
+      protected: z.boolean().optional(),
+    }),
+    excerpt: z
+      .object({
+        rendered: z.string(),
+      })
+      .optional(),
+    author: z.number().optional(),
+    featured_media: z.number().optional(),
+    categories: z.array(z.number()).optional(),
+    tags: z.array(z.number()).optional(),
+    meta: z.record(z.any()).optional(),
+  })
+  .passthrough(); // Allow additional properties
 
 // WordPress post type
 export type WordPressPost = z.infer<typeof wordpressPostSchema>;
@@ -105,7 +105,7 @@ const cacheUtils = {
     try {
       const cacheItem = {
         data,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       localStorage.setItem(key, JSON.stringify(cacheItem));
       logger.debug(`[WordPress] Cache saved: ${key}`);
@@ -139,11 +139,14 @@ const cacheUtils = {
 
   saveError(error: any): void {
     try {
-      localStorage.setItem(LAST_ERROR_KEY, JSON.stringify({
-        message: error?.message || 'Unknown error',
-        timestamp: Date.now(),
-        details: error
-      }));
+      localStorage.setItem(
+        LAST_ERROR_KEY,
+        JSON.stringify({
+          message: error?.message || 'Unknown error',
+          timestamp: Date.now(),
+          details: error,
+        }),
+      );
     } catch (e) {
       logger.warn(`[WordPress] Failed to save error details`, e);
     }
@@ -156,7 +159,7 @@ const cacheUtils = {
     } catch (e) {
       return null;
     }
-  }
+  },
 };
 
 /**
@@ -167,9 +170,11 @@ function safeJsonParse(text: string): any {
     return JSON.parse(text);
   } catch (error) {
     logger.error(`[WordPress] JSON parse error`, error);
-    logger.warn(`[WordPress] Problematic JSON content truncated`, { preview: text.substring(0, 100) });
+    logger.warn(`[WordPress] Problematic JSON content truncated`, {
+      preview: text.substring(0, 100),
+    });
     throw new Error('Invalid JSON response');
-   }
+  }
 }
 
 /**
@@ -187,7 +192,7 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
     slug,
     includeContent = true,
     skipCache = false,
-    maxRetries = 2 // Default to 2 retries for smoother reliability
+    maxRetries = 2, // Default to 2 retries for smoother reliability
   } = options;
 
   // Check cache first (unless explicitly skipped)
@@ -202,7 +207,12 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
           const posts = Array.isArray(cachedResult.posts) ? cachedResult.posts : [];
           const hasMissingContent = posts.some((p: any) => {
             const rendered = p?.content?.rendered;
-            return !rendered || typeof rendered !== 'string' || rendered.trim().length === 0 || rendered === 'Content unavailable';
+            return (
+              !rendered ||
+              typeof rendered !== 'string' ||
+              rendered.trim().length === 0 ||
+              rendered === 'Content unavailable'
+            );
           });
           if (hasMissingContent) {
             logger.info('[WordPress] Cached result lacks full content; refetching');
@@ -235,7 +245,11 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
       try {
-        const response = await fetch(apiUrl, { method: 'GET', headers: { 'Accept': 'application/json' }, signal: controller.signal });
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          signal: controller.signal,
+        });
         clearTimeout(timeoutId);
         if (!response.ok) throw new Error(`WordPress API error: ${response.status}`);
         const contentType = response.headers.get('content-type') || '';
@@ -260,8 +274,9 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
     const attempts = Math.max(1, Number(maxRetries) + 1);
     try {
       const response = await fetchWithRetries(apiUrl, attempts, 10000);
-      const json = await response.json();
-      const postsArray = Array.isArray(json) ? json : (Array.isArray(json?.posts) ? json.posts : null);
+      const jsonText = await response.text();
+      const json = safeJsonParse(jsonText);
+      const postsArray = Array.isArray(json) ? json : Array.isArray((json as any)?.posts) ? (json as any).posts : null;
       if (!postsArray) throw new Error('Non-array response');
 
       const validatedPosts = postsArray.map((post: any) => {
@@ -273,7 +288,7 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
             slug: post.slug || `post-${post.id || Date.now()}`,
             title: { rendered: post.title?.rendered || 'Untitled Post' },
             content: { rendered: post.content?.rendered || 'Content unavailable' },
-            excerpt: { rendered: post.excerpt?.rendered || '' }
+            excerpt: { rendered: post.excerpt?.rendered || '' },
           };
         }
         return result.data;
@@ -282,10 +297,18 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
       const result = {
         posts: validatedPosts,
         totalPages: parseInt(response.headers.get('X-WP-TotalPages') || '1'),
-        total: parseInt(response.headers.get('X-WP-Total') || String(validatedPosts.length))
+        total: parseInt(response.headers.get('X-WP-Total') || String(validatedPosts.length)),
       };
       cacheUtils.saveToCache(cacheUtils.getCacheKey(options), result);
-      localStorage.setItem('wp_sync_status', JSON.stringify({ status: 'success', type: 'api_success', message: `Fetched ${result.posts.length} posts`, timestamp: Date.now() }));
+      localStorage.setItem(
+        'wp_sync_status',
+        JSON.stringify({
+          status: 'success',
+          type: 'api_success',
+          message: `Fetched ${result.posts.length} posts`,
+          timestamp: Date.now(),
+        }),
+      );
       return result;
     } catch (err) {
       // Gate repeated base-failure logs once per session to reduce noise
@@ -295,7 +318,10 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
           logger.warn(`[WordPress] Base failed, trying next: ${apiUrl}`, err);
           sessionStorage.setItem(key, '1');
           // Report once to server for diagnostics
-          logOnce(`wp_base_fail_${base}`, `WordPress base failed`, { apiUrl, error: err instanceof Error ? err.message : String(err) });
+          logOnce(`wp_base_fail_${base}`, `WordPress base failed`, {
+            apiUrl,
+            error: err instanceof Error ? err.message : String(err),
+          });
         }
       } catch {
         logger.warn(`[WordPress] Base failed, trying next: ${apiUrl}`, err);
@@ -303,7 +329,8 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
       cacheUtils.saveError(err);
       // try next base
     }
-  
+  }
+
   // All bases failed, use server API fallback
   return await fallbackToServerAPI(options);
 }
@@ -316,9 +343,10 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
   logger.info(`[WordPress] Attempting fallback to server API`);
 
   try {
-    // Usest check for locally synced posts from auto-sync if available
+    // Use check for locally synced posts from auto-sync if available
     // This provides an additional layer of reliability
-    if (!options.slug) {  // Local sync fallback only works for post listings, not single post by slug
+    if (!options.slug) {
+      // Local sync fallback only works for post listings, not single post by slug
       const localSyncedPosts = checkLocalSyncedPosts();
 
       if (localSyncedPosts && localSyncedPosts.posts.length > 0) {
@@ -335,7 +363,7 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
           totalPages: Math.ceil(localSyncedPosts.posts.length / perPage),
           total: localSyncedPosts.posts.length,
           fromLocalSync: true,
-          fromFallback: true
+          fromFallback: true,
         };
       }
     }
@@ -363,26 +391,40 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
     const data = await response.json();
 
     // Extract posts array from proxy response
-    const postsArr = Array.isArray(data?.posts) ? data.posts : (Array.isArray(data) ? data : []);
+    const postsArr = Array.isArray(data?.posts) ? data.posts : Array.isArray(data) ? (data as any) : [];
 
     // Format response in WordPress-compatible format
-    let formattedResult;
+    let formattedResult: {
+      posts: any[];
+      totalPages: number;
+      total: number;
+      fromFallback?: boolean;
+      fromLocalSync?: boolean;
+    };
 
     if (options.slug) {
       // Single post response
       const post: any = postsArr[0];
       formattedResult = {
-        posts: post ? [{
-          id: post.id,
-          date: post.date || post.createdAt,
-          slug: post.slug,
-          title: { rendered: post.title?.rendered || post.title },
-          content: { rendered: post.content?.rendered || post.content },
-          excerpt: { rendered: post.excerpt?.rendered || (post.content?.rendered || post.content || '').substring(0, 150) + '...' }
-        }] : [],
+        posts: post
+          ? [
+              {
+                id: post.id,
+                date: post.date || post.createdAt,
+                slug: post.slug,
+                title: { rendered: post.title?.rendered || post.title },
+                content: { rendered: post.content?.rendered || post.content },
+                excerpt: {
+                  rendered:
+                    post.excerpt?.rendered ||
+                    `${(post.content?.rendered || post.content || '').substring(0, 150)}...`,
+                },
+              },
+            ]
+          : [],
         totalPages: 1,
         total: post ? 1 : 0,
-        fromFallback: true
+        fromFallback: true,
       };
     } else {
       // Multiple posts response
@@ -394,18 +436,25 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
           slug: post.slug,
           title: { rendered: post.title?.rendered || post.title },
           content: { rendered: post.content?.rendered || post.content },
-          excerpt: { rendered: post.excerpt?.rendered || (post.content?.rendered || post.content || '').substring(0, 150) + '...' }
+          excerpt: {
+            rendered:
+              post.excerpt?.rendered ||
+              `${(post.content?.rendered || post.content || '').substring(0, 150)}...`,
+          },
         })),
-        totalPages: typeof data?.totalPages === 'number' ? data.totalPages : 1,
-        total: typeof data?.total === 'number' ? data.total : posts.length,
-        fromFallback: true
+        totalPages: typeof (data as any)?.totalPages === 'number' ? (data as any).totalPages : 1,
+        total: typeof (data as any)?.total === 'number' ? (data as any).total : posts.length,
+        fromFallback: true,
       };
     }
 
     logger.info(`[WordPress] Fallback successful, retrieved ${formattedResult.posts.length} posts`);
     return formattedResult;
   } catch (fallbackError) {
-    logger.error('[WordPress] Both primary and fallback fetches failed', { original: error, fallback: fallbackError });
+    logger.error('[WordPress] Both primary and fallback fetches failed', {
+      original: error,
+      fallback: fallbackError,
+    });
     return { posts: [], totalPages: 0, total: 0, fromFallback: true };
   }
 }
@@ -430,12 +479,12 @@ export async function fetchWordPressPostBySlug(slug: string) {
         // We found it locally, but still attempt to refresh from API in background
         // This ensures we always try to get the latest version when possible
         setTimeout(() => {
-          fetchWordPressPosts({ 
-            slug, 
+          fetchWordPressPosts({
+            slug,
             perPage: 1,
             skipCache: true,
-            maxRetries: 1
-          }).catch(e => logger.warn('[WordPress] Background refresh failed', e));
+            maxRetries: 1,
+          }).catch((e) => logger.warn('[WordPress] Background refresh failed', e));
         }, 1000);
 
         return localPost;
@@ -443,10 +492,10 @@ export async function fetchWordPressPostBySlug(slug: string) {
     }
 
     // Post not found locally or no local sync available, fetch from API
-    const result = await fetchWordPressPosts({ 
-      slug, 
+    const result = await fetchWordPressPosts({
+      slug,
       perPage: 1,
-      maxRetries: 2
+      maxRetries: 2,
     });
 
     if (!result.posts || result.posts.length === 0) {
@@ -456,12 +505,11 @@ export async function fetchWordPressPostBySlug(slug: string) {
 
     logger.info(`[WordPress] Successfully retrieved post: ${slug}`);
     return result.posts[0];
-
   } catch (error) {
     // Handle and format the error
     handleError(error, {
       category: ErrorCategory.WORDPRESS,
-      showToast: true
+      showToast: true,
     });
 
     // Re-throw to allow component error boundaries to catch
@@ -512,11 +560,9 @@ export function getExcerpt(content: string, maxLength: number = 160): string {
 
   // Find a good breaking point
   const truncated = trimmed.substring(0, maxLength);
-  const lastSpace = truncated.lastIndexOf(' ');
+  const lastSpace = truncated.lastIndexOf(' '');
 
-  return lastSpace > 0 
-    ? `${truncated.substring(0, lastSpace)}...` 
-    : `${truncated}...`;
+  return lastSpace > 0 ? `${truncated.substring(0, lastSpace)}...` : `${truncated}...`;
 }
 
 /**
@@ -539,10 +585,6 @@ export function getReadingTime(content: string): number {
   return Math.max(1, minutes);
 }
 
-/**
- * Check if the WordPress API is available
- * Returns true if the API is reachable, false otherwise
- */
 /**
  * Check if the WordPress API is available with improved reliability
  * - Implements multiple endpoints check
@@ -578,11 +620,23 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
-        const response = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' }, signal: controller.signal });
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          signal: controller.signal,
+        });
         clearTimeout(timeoutId);
         if (response.ok) {
           localStorage.setItem('wp_api_status', JSON.stringify({ available: true, timestamp: now, base }));
-          localStorage.setItem('wp_sync_status', JSON.stringify({ status: 'success', type: 'api_available', message: 'WordPress API connection established', timestamp: now }));
+          localStorage.setItem(
+            'wp_sync_status',
+            JSON.stringify({
+              status: 'success',
+              type: 'api_available',
+              message: 'WordPress API connection established',
+              timestamp: now,
+            }),
+          );
           logger.info(`[WordPress] API status check: Available (${base})`);
           return true;
         }
@@ -595,18 +649,24 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
     logger.warn('[WordPress] All API endpoints failed');
 
     // Cache the failed status
-    localStorage.setItem('wp_api_status', JSON.stringify({
-      available: false,
-      timestamp: now
-    }));
+    localStorage.setItem(
+      'wp_api_status',
+      JSON.stringify({
+        available: false,
+        timestamp: now,
+      }),
+    );
 
     // Update user-facing sync status for API unavailable
-    localStorage.setItem('wp_sync_status', JSON.stringify({
-      status: 'warning',
-      type: 'api_unavailable',
-      message: 'WordPress API connection unavailable - using cached content',
-      timestamp: now
-    }));
+    localStorage.setItem(
+      'wp_sync_status',
+      JSON.stringify({
+        status: 'warning',
+        type: 'api_unavailable',
+        message: 'WordPress API connection unavailable - using cached content',
+        timestamp: now,
+      }),
+    );
 
     return false;
   } catch (error) {
@@ -614,24 +674,30 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
 
     handleError(error, {
       category: ErrorCategory.NETWORK,
-      silent: true // Don't show toast for status check
+      silent: true, // Don't show toast for status check
     });
 
     // Cache the error status
-    localStorage.setItem('wp_api_status', JSON.stringify({
-      available: false,
-      timestamp: now,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }));
+    localStorage.setItem(
+      'wp_api_status',
+      JSON.stringify({
+        available: false,
+        timestamp: now,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }),
+    );
 
     // Update user-facing sync status for API check failure
-    localStorage.setItem('wp_sync_status', JSON.stringify({
-      status: 'error',
-      type: 'api_check_error',
-      message: 'Unable to check WordPress API status - using cached content',
-      timestamp: now,
-      errorDetails: error instanceof Error ? error.message : 'Unknown error'
-    }));
+    localStorage.setItem(
+      'wp_sync_status',
+      JSON.stringify({
+        status: 'error',
+        type: 'api_check_error',
+        message: 'Unable to check WordPress API status - using cached content',
+        timestamp: now,
+        errorDetails: error instanceof Error ? error.message : 'Unknown error',
+      }),
+    );
 
     return false;
   }
@@ -640,7 +706,12 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
 /**
  * Check for and utilize locally synced posts from the sync service
  */
-export function checkLocalSyncedPosts() {
+export function checkLocalSyncedPosts(): {
+  posts: WordPressPost[];
+  totalPages: number;
+  total: number;
+  fromLocalSync: boolean;
+} | null {
   try {
     // This key should match the one in wordpress-sync.ts
     const LOCAL_POSTS_KEY = 'wp_local_posts';
@@ -662,12 +733,14 @@ export function checkLocalSyncedPosts() {
     // No timeout - posts will persist indefinitely
     // Just log how old they are for debugging purposes
 
-    logger.info(`[WordPress] Found ${parsedData.posts.length} locally synced posts from ${Math.round(ageHours * 10) / 10}h ago`);
+    logger.info(
+      `[WordPress] Found ${parsedData.posts.length} locally synced posts from ${Math.round(ageHours * 10) / 10}h ago`,
+    );
     return {
       posts: parsedData.posts,
       totalPages: 1,
       total: parsedData.posts.length,
-      fromLocalSync: true
+      fromLocalSync: true,
     };
   } catch (error) {
     logger.error('[WordPress] Error checking local synced posts', error);
@@ -687,7 +760,7 @@ export function preloadWordPressPosts(): Promise<void> {
     checkWordPressApiStatus()
       .then(refreshInBackground)
       .then(() => resolve())
-      .catch(error => {
+      .catch((error) => {
         logger.warn('[WordPress] Preload failed', error);
         // Resolve to avoid blocking app start; content will load on demand
         resolve();
@@ -703,12 +776,12 @@ export function preloadWordPressPosts(): Promise<void> {
     }
 
     // API is available, fetch posts normally with minimal options for faster load
-    return fetchWordPressPosts({ 
+    return fetchWordPressPosts({
       perPage: 3, // Reduced number of posts for initial load
       skipCache: false, // Use cache if available
       maxRetries: 0, // No retries for background refresh
-      includeContent: false // Skip content for faster loading
-    }).then(result => {
+      includeContent: false, // Skip content for faster loading
+    }).then((result) => {
       logger.info(`[WordPress] Preloaded ${result.posts?.length || 0} posts successfully`);
       return result;
     });
