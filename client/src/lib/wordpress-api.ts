@@ -303,9 +303,7 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
       cacheUtils.saveError(err);
       // try next base
     }
-  }
-  }
-
+  
   // All bases failed, use server API fallback
   return await fallbackToServerAPI(options);
 }

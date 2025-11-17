@@ -1331,7 +1331,7 @@ export default function StoriesIndexContent() {
                     </div>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <button className="text-left text-xl md:text-2xl font-semibold tracking-tight leading-tight hover:text-primary group-hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
+                        <button className="text-left text-xl md:text-2xl font-semibold tracking-tight leading-tight hover:text-primary group-hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)} style={{ minHeight: '48px' }}>
                           {renderHighlighted(String(featuredStory.title || ''))}
                         </button>
                         {(() => {
@@ -1340,7 +1340,7 @@ export default function StoriesIndexContent() {
                           const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                           return (
                             <div className="-mt-1">
-                              <Badge className={"w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border " + badgeTint}>
+                              <Badge className={"w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap " + badgeTint}>
                                 {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                 {label}
                               </Badge>
@@ -1543,11 +1543,12 @@ export default function StoriesIndexContent() {
                       >
                         {popularPosts.map(pop => (
                           <div key={pop.id} className="snap-start min-w-[260px] sm:min-w-[300px] md:min-w-[320px]">
-                            <Card className="rounded-lg border border-border/50 bg-card/70 hover:bg-card transition">
+                            <Card className="rounded-lg border border-border/60 bg-card/70 hover:bg-card transition">
                               <CardContent className="p-3">
                                 <button
                                   className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
                                   onClick={() => navigateToReader(pop.slug || pop.id)}
+                                  style={{ minHeight: '36px' }}
                                 >
                                   {pop.title}
                                 </button>
@@ -1557,7 +1558,7 @@ export default function StoriesIndexContent() {
                                   const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                   return (
                                     <div className="mt-1">
-                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}>
                                         {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                         {label}
                                       </Badge>
@@ -1665,7 +1666,7 @@ export default function StoriesIndexContent() {
                                 <CardContent className="p-4 pb-4">
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="flex-1 min-w-0">
-                                      <CardTitle className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary">
+                                      <CardTitle className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary" style={{ minHeight: '48px' }}>
                                         {renderHighlighted(String(post.title || ''))}
                                       </CardTitle>
                                       {(() => {
@@ -1674,7 +1675,7 @@ export default function StoriesIndexContent() {
                                         const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                         return (
                                           <div className="mt-1">
-                                            <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                            <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}>
                                               {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                               {label}
                                             </Badge>
@@ -1768,6 +1769,7 @@ export default function StoriesIndexContent() {
                               <div className="flex-1 min-w-0">
                                 <CardTitle
                                   className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary"
+                                  style={{ minHeight: '48px' }}
                                 >
                                   {renderHighlighted(String(post.title || ''))}
                                 </CardTitle>
@@ -1777,7 +1779,7 @@ export default function StoriesIndexContent() {
                                   const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                   return (
                                     <div className="mt-1">
-                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}>
                                         {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                         {label}
                                       </Badge>
