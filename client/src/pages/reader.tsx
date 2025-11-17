@@ -758,9 +758,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     const delay = window.setTimeout(() => { setSseReady(true); }, 3000);
     const onInteract = () => { setSseReady(true); };
 
-    window.addEventListener('pointerdown', onInteract);
-    window.addEventListener('keydown', onInteract);
-    window.addEventListener('touchstart', onInteract);
+    window.addEventListener('pointerdown', onInteract, { passive: true } as any);
+window.addEventListener('keydown', onInteract);
+window.addEventListener('touchstart', onInteract, { passive: true } as any);
 
     return () => {
       window.clearTimeout(delay);
@@ -1090,8 +1090,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const stripHtml = (s: string): string => (s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '');
   const titleText = stripHtml(getRenderedText(currentPost.title) || 'Story');
   const rawContent = getRenderedText(currentPost.content) || '';
-  const contentHtml = sanitizeHtmlContent(rawContent);
-  const isContentReady = contentHtml.trim().length > 0;
+const contentHtml = useMemo(() => sanitizeHtmlContent(rawContent), [rawContent]);
+const isContentReady = contentHtml.trim().length > 0;
   const descriptionText = getExcerpt(rawContent, 160);
   const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
   const published = currentPost.date || new Date().toISOString();
@@ -1129,8 +1129,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     );
   }
 
-  // Apply theme detection to current post
-  const detectedThemes = detectThemes(getRenderedText(currentPost.content) || '');
+  
 
   // Horror easter egg function
   const checkRapidNavigation = () => {
@@ -1210,7 +1209,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       } while (randomIndex === currentIndex);
       
       checkRapidNavigation();
-      setCurrentIndex(randomIndex);
+      
       try {
         const nextSlug = String(posts[randomIndex]?.slug ?? posts[randomIndex]?.id);
         if (nextSlug) {
@@ -1227,7 +1226,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     if (posts && posts.length > 1 && currentIndex > 0) {
       const newIndex = currentIndex - 1;
       checkRapidNavigation();
-      setCurrentIndex(newIndex);
+      
       try {
         const nextSlug = String(posts[newIndex]?.slug ?? posts[newIndex]?.id);
         if (nextSlug) {
@@ -1244,7 +1243,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     if (posts && posts.length > 1 && currentIndex < posts.length - 1) {
       const newIndex = currentIndex + 1;
       checkRapidNavigation();
-      setCurrentIndex(newIndex);
+      
       try {
         const nextSlug = String(posts[newIndex]?.slug ?? posts[newIndex]?.id);
         if (nextSlug) {
@@ -1686,7 +1685,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </Dialog>
 
               <div className="flex flex-col items-center gap-1">
-                <div ref={metaRowRef} className={`flex flex-nowrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/30 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-border/60 ui-fade-element overflow-x-auto whitespace-nowrap ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-meta`} style={{ minHeight: '32px' }}>
+                <div ref={metaRowRef} className={`flex flex-nowrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground bg-background/30 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-border/60 ui-fade-element overflow-x-auto whitespace-nowrap ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-meta`} style={{ minHeight: '32px' }}>
                   {/* Story theme category with icon (index as source of truth) */}
                   {(() => {
                     const md: any = (currentPost as any)?.metadata || {};
@@ -2132,12 +2131,21 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               <div 
                 className="story-content cursor-pointer text-justify"
                 ref={contentRef}
-                onClick={() => {
+                onClick={(e) => {
+                  try {
+                    const sel = window.getSelection();
+                    if (sel && sel.toString().trim().length > 0) return;
+                    const t = e.target as HTMLElement | null;
+                    if (t && (t.closest('a, button, [role="button"], input, textarea, select, summary, details') || (t as any).isContentEditable)) {
+                      return;
+                    }
+                  } catch {}
                   if (!fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
                     toggleUIWithDebug('contentClick');
                   }
                 }}
                 onKeyDown={(e) => {
+                  if (e.target !== e.currentTarget) return;
                   if ((e.key === 'Enter' || e.key === ' ') && !fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
                     e.preventDefault();
                     toggleUIWithDebug('contentKey');
