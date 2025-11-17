@@ -64,6 +64,61 @@ function detectThemesServer(html: string): string[] {
 
 export function registerWordPressRenderRoutes(app: Express): void {
   /**
+   * GET /api/wordpress/render
+   * Fetch a page of WordPress posts and return server-rendered fields for index cards:
+   * sanitized title HTML, excerpt, basic theme hints. Keeps payload small.
+   * Query: ?page=1&per_page=30
+   */
+  app.get('/api/wordpress/render', async (req: Request, res: Response) => {
+    try {
+      const page = Math.max(1, Number(req.query.page ?? 1));
+      const perPage = Math.min(60, Math.max(1, Number(req.query.per_page ?? 30)));
+      const wpBase = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts';
+      const url = `${wpBase}?page=${page}&per_page=${perPage}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(`WordPress API error: ${response.status} ${response.statusText} ${text.slice(0, 200)}`);
+      }
+      const arr = await response.json();
+      if (!Array.isArray(arr) || arr.length === 0) {
+        res.json({ items: [], page, perPage, hasMore: false });
+        return;
+      }
+
+      const { sanitizeHtml } = await import('../utils/sanitizer');
+
+      const items = arr.map((post: any) => {
+        const rawTitle = (post?.title && typeof post.title.rendered === 'string') ? post.title.rendered : String(post?.title || 'Story');
+        const rawContent = (post?.content && typeof post.content.rendered === 'string') ? post.content.rendered : String(post?.content || '');
+        const titleHtml = sanitizeHtml(rawTitle);
+        const excerpt = getExcerptServer(rawContent, 160);
+        const themeKey = determineThemeCategory(rawTitle || 'Story', rawContent || '');
+        const themeInfo = (THEME_CATEGORIES as any)[themeKey] || { label: 'Horror', icon: 'ghost' };
+        const themeLabel = String(themeInfo.label || 'Horror');
+        const themeIcon = String(themeInfo.icon || 'ghost');
+
+        return {
+          id: Number(post.id),
+          slug: String(post.slug || ''),
+          date: String(post.date || new Date().toISOString()),
+          titleHtml,
+          excerpt,
+          themeKey,
+          themeLabel,
+          themeIcon,
+        };
+      });
+
+      const hasMore = arr.length === perPage;
+      res.json({ items, page, perPage, hasMore });
+    } catch (error) {
+      log(`Error rendering WordPress index list: ${error instanceof Error ? error.message : String(error)}`, 'wordpress-render');
+      res.status(500).json({ error: 'Failed to render WordPress index list' });
+    }
+  });
+
+  /**
    * GET /api/wordpress/render/:slug
    * Fetch a WordPress post by slug and return server-rendered fields:
    * sanitized title/content HTML, excerpt, word count, reading time, og image, and detected themes.

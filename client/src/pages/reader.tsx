@@ -15,7 +15,7 @@ import {
   Share2, Minus, Plus, Shuffle, ChevronLeft, ChevronRight,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
   Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog, BookText, Trash, X, Pencil, Clock,
-  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Bone, Type
+  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Knife, Bone, Type
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from 'date-fns';
@@ -1979,7 +1979,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     const primaryThemeRaw =
                       overrideThemeCategory ||
                       md.themeCategory ||
-                      (sr?.themeLabel || '') ||
                       determineThemeCategory(
                         titleText || 'Story',
                         plainText || ''
@@ -2002,7 +2001,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       override?.key ||
                       overrideThemeCategory ||
                       md.themeCategory ||
-                      (sr?.themeKey || '') ||
                       derivedKey;
 
                     const defOverride = getThemeDefinitionOverride(themeKey);
@@ -2012,7 +2010,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       override?.icon ||
                       overrideThemeIcon ||
                       md.themeIcon ||
-                      (sr?.themeIcon || '') ||
                       defOverride?.icon ||
                       categoriesMap[derivedKey]?.icon ||
                       (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
@@ -2049,7 +2046,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         case 'cloudfog': return CloudFog;
                         case 'eye': return Eye;
                         case 'hourglass': return Hourglass;
-                        case 'knife': return ForkKnife;
+                        case 'knife': return Knife;
                         case 'utensils':
                         case 'fork-knife':
                         case 'forkknife': return ForkKnife;
@@ -2098,7 +2095,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     const baseLabel =
                       override?.label ||
                       defOverride?.label ||
-                      (sr?.themeLabel || '') ||
                       categoriesMap[derivedKey]?.label ||
                       (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
                       primaryThemeRaw ||
@@ -2106,7 +2102,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
                     const prettyLabel = (() => {
                       if (override?.label) return override.label;
-                      if (sr?.themeLabel) return sr.themeLabel;
                       const l = String(baseLabel).toLowerCase();
                       if (l.includes('cosmic')) return 'Cosmic Horror';
                       if (l.includes('existential')) return 'Existential Horror';
@@ -2118,10 +2113,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       return baseLabel;
                     })();
 
-                    // Tinted badge styles per theme (prefer server-provided class)
-                    const badgeTint = (sr?.badgeTintClass && sr.badgeTintClass.trim().length > 0)
-                      ? sr.badgeTintClass
-                      : getBadgeTint(themeKey);
+                    // Tinted badge styles per theme
+                    const badgeTint = getBadgeTint(themeKey);
 
                     return (
                       <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border whitespace-nowrap ${badgeTint}`}>

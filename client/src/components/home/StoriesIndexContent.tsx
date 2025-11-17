@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, lazy, Suspense } from "react";
-import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
+import { useSuspenseInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { type posts } from "@shared/schema";
 type Post = typeof posts.$inferSelect;
 import { useLocation } from "wouter";
@@ -11,7 +11,7 @@ import {
   ArrowRight, Clock, Calendar, Award, Search, Eye, Heart,
   Ghost, Skull, Brain, Pill, Cpu, Dna, Umbrella, Footprints, CloudRain, Castle, Bug, Radiation,
   UserMinus2, UserPlus, Anchor, AlertTriangle, Building, Worm, Cloud, CloudFog, Flame,
-  ForkKnife, Cat, Moon, Dog, Radio, MoonStar, Box, Car, FlaskConical, Trees, Bone, Hourglass
+  ForkKnife, Knife, Cat, Moon, Dog, Radio, MoonStar, Box, Car, FlaskConical, Trees, Bone, Hourglass
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 import MostLikedList from "@/components/home/MostLikedList";
@@ -328,6 +328,43 @@ export default function StoriesIndexContent() {
     return [] as Post[];
   }, [hasPaginatedPosts, data]);
 
+  // Server-rendered index metadata (sanitized excerpts and theme hints) for first page
+  const { data: renderIndex } = useQuery<{
+    items: Array<{ slug: string; excerpt?: string; themeKey?: string; themeLabel?: string; themeIcon?: string; titleHtml?: string }>;
+  }>({
+    queryKey: ['wordpress', 'render', 'list', 1],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/wordpress/render?page=1&per_page=60`, { method: 'GET', credentials: 'include' });
+        if (!res.ok) throw new Error(`Render list API error: ${res.status}`);
+        return await res.json();
+      } catch {
+        return null as any;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const renderMetaBySlug = useMemo(() => {
+    const map: Record<string, { excerpt?: string; themeKey?: string; themeLabel?: string; themeIcon?: string; titleHtml?: string }> = {};
+    try {
+      const items = (renderIndex as any)?.items || [];
+      for (const it of items) {
+        if (!it || !it.slug) continue;
+        map[String(it.slug)] = {
+          excerpt: (it.excerpt || ''),
+          themeKey: (it.themeKey || ''),
+          themeLabel: (it.themeLabel || ''),
+          themeIcon: (it.themeIcon || ''),
+          titleHtml: (it.titleHtml || ''),
+        };
+      }
+    } catch { /* ignore */ }
+    return map;
+  }, [renderIndex]);
+
   const sortedPosts = [...allPosts].sort((a: Post, b: Post) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
@@ -517,6 +554,8 @@ export default function StoriesIndexContent() {
     const md: any = (p as any)?.metadata || {};
     const title = String(p.title || '');
     const content = String(p.content || '');
+    const server = renderMetaBySlug[(p as any)?.slug as string] || null;
+
     const primaryThemeRaw =
       md.themeCategory ||
       sharedDetermineThemeCategory(title, content);
@@ -541,7 +580,7 @@ export default function StoriesIndexContent() {
       defOverride?.label ||
       (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
       primaryThemeRaw ||
-      'Horror';
+      (server?.themeLabel || 'Horror');
 
     const prettyLabel = (() => {
       if (override?.label) return override.label;
@@ -569,7 +608,7 @@ export default function StoriesIndexContent() {
       md?.themeIcon ||
       defOverride?.icon ||
       (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
-      'ghost';
+      (server?.themeIcon || 'ghost');
 
     if (themeKey === 'BODY_HORROR') {
       iconSlug = 'bone';
@@ -610,7 +649,7 @@ export default function StoriesIndexContent() {
       case 'flame': return Flame;
       case 'eye': return Eye;
       case 'hourglass': return Hourglass;
-      case 'knife':
+      case 'knife': return Knife;
       case 'utensils':
       case 'fork-knife':
       case 'forkknife': return ForkKnife;
@@ -1360,7 +1399,7 @@ export default function StoriesIndexContent() {
                       </div>
                     </div>
                     <p className="text-[15px] sm:text-[16px] text-muted-foreground leading-6 mt-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                      {extractEngagingExcerpt(featuredStory.content, 220)}
+                      {renderMetaBySlug[String(featuredStory.slug || '')]?.excerpt || extractEngagingExcerpt(featuredStory.content, 220)}
                     </p>
                     
                     <div className="mt-3 flex items-center justify-between">
@@ -1453,7 +1492,7 @@ export default function StoriesIndexContent() {
                               })()}
 
                               <p className="text-[13px] text-muted-foreground leading-5 mt-1 line-clamp-1">
-                                {extractEngagingExcerpt(s.content, 100)}
+                                {renderMetaBySlug[String(s.slug || '')]?.excerpt || extractEngagingExcerpt(s.content, 100)}
                               </p>
 
                               <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
@@ -1566,7 +1605,7 @@ export default function StoriesIndexContent() {
                                   );
                                 })()}
                                 <p className="text-[13px] text-muted-foreground leading-5 mt-1 line-clamp-1">
-                                  {extractEngagingExcerpt(pop.content, 100)}
+                                  {renderMetaBySlug[String(pop.slug || '')]?.excerpt || extractEngagingExcerpt(pop.content, 100)}
                                 </p>
                                 <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
                                   <div className="flex items-center gap-1">
@@ -1695,7 +1734,7 @@ export default function StoriesIndexContent() {
                                     </div>
                                   </div>
                                   <p className="text-[13px] text-muted-foreground leading-6 mt-7 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                                    {extractEngagingExcerpt(post.content, 200)}
+                                    {renderMetaBySlug[String(post.slug || '')]?.excerpt || extractEngagingExcerpt(post.content, 200)}
                                   </p>
                                 </CardContent>
                                 <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
@@ -1800,7 +1839,7 @@ export default function StoriesIndexContent() {
                             </div>
                             
                             <p className="text-[15px] sm:text-[16px] text-muted-foreground leading-6 mt-7 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                              {extractEngagingExcerpt(post.content, 200)}
+                              {renderMetaBySlug[String(post.slug || '')]?.excerpt || extractEngagingExcerpt(post.content, 200)}
                             </p>
                           </CardContent>
                           <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
