@@ -1641,6 +1641,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 )}
                 <h1
               className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
+              style={{ minHeight: '48px' }}
               dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(getRenderedText(currentPost.title) || 'Story') }}
             />
               </div>
@@ -1685,7 +1686,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </Dialog>
 
               <div className="flex flex-col items-center gap-1">
-                <div ref={metaRowRef} className={`flex flex-nowrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/30 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-border/60 ui-fade-element overflow-x-auto whitespace-nowrap ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-meta`}>
+                <div ref={metaRowRef} className={`flex flex-nowrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/30 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-border/60 ui-fade-element overflow-x-auto whitespace-nowrap ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-meta`} style={{ minHeight: '32px' }}>
                   {/* Story theme category with icon (index as source of truth) */}
                   {(() => {
                     const md: any = (currentPost as any)?.metadata || {};

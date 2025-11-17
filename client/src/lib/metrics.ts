@@ -111,3 +111,29 @@ export function schedulePerformanceSummary() {
   } catch {}
 }
 
+/**
+ * Log once-per-session helper to reduce repeated console/network noise.
+ * Uses sessionStorage gate keyed by the provided id.
+ */
+export function logOnce(id: string, message: string, extra?: Record<string, any>) {
+  try {
+    const key = `log_once_${id}`;
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(key)) return;
+    try { sessionStorage.setItem(key, '1'); } catch {}
+    // Console for immediate visibility
+    try { console.warn(`[once] ${message}`, extra || ''); } catch {}
+    // Optional: send to server errors endpoint
+    try {
+      const API_BASE = getApiBaseUrl();
+      const url = API_BASE ? `${API_BASE}/api/errors` : '/api/errors';
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        keepalive: true,
+        body: JSON.stringify({ id, message, extra }),
+      }).catch(() => {});
+    } catch {}
+  } catch {}
+}
+

@@ -33,6 +33,7 @@ import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { VirtualScrollArea } from "@/components/ui/VirtualScrollArea";
 import { computeTrendingScores } from "@/lib/trending";
 import { useThemeCategories } from "@/hooks/use-theme-categories";
+import { logOnce } from "@/lib/metrics";
 
 
 
@@ -736,7 +737,7 @@ export default function StoriesIndexContent() {
         };
         sources.set(postId, { es, ts: Date.now() });
       } catch (err) {
-        console.error('[Index] Failed to open SSE stream:', err);
+        try { logOnce('index.sse.open', 'Failed to open SSE stream', { error: err instanceof Error ? err.message : String(err) }); } catch {}
         setReactionsUnavailable(true);
       }
     };
@@ -766,7 +767,7 @@ export default function StoriesIndexContent() {
           ensureSse(id);
         }
       } catch (err) {
-        console.error('[Index] Failed to preload initial reactions:', err);
+        try { logOnce('index.reactions.preload', 'Failed to preload initial reactions', { error: err instanceof Error ? err.message : String(err) }); } catch {}
         reactionsErrorCountRef.current += 1;
         if (reactionsErrorCountRef.current >= 3) {
           setReactionsUnavailable(true);
@@ -796,7 +797,7 @@ export default function StoriesIndexContent() {
           ensureSse(id);
         }
       } catch (err) {
-        console.error('[Index] Failed to flush reaction batch:', err);
+        try { logOnce('index.reactions.flush', 'Failed to flush reaction batch', { error: err instanceof Error ? err.message : String(err) }); } catch {}
         reactionsErrorCountRef.current += 1;
         if (reactionsErrorCountRef.current >= 3) {
           setReactionsUnavailable(true);

@@ -17,10 +17,13 @@ import "@/lib/fetch-csrf";
 import { getApiBaseUrl } from "@/lib/asset-path";
 import { enableViewTransitions } from "@/lib/view-transitions";
 
-// Global unhandled promise rejection handler
+// Global unhandled promise rejection handler (gate repeated logs once per session)
 window.addEventListener("unhandledrejection", (event) => {
   try {
     const msg = event?.reason instanceof Error ? event.reason.message : String(event?.reason ?? "Unknown");
+    const gateKey = `once_unhandled_${btoa(unescape(encodeURIComponent(String(msg))).slice(0, 64))}`;
+    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(gateKey)) return;
+    try { sessionStorage.setItem(gateKey, "1"); } catch {}
     const API_BASE = getApiBaseUrl();
     const url = API_BASE ? `${API_BASE}/api/errors` : "/api/errors";
     fetch(url, {

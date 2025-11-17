@@ -14,6 +14,7 @@
 import { z } from 'zod';
 import { ErrorCategory, handleError } from './error-handler';
 import logger from '@/utils/secure-client-logger';
+import { logOnce } from '@/lib/metrics';
 
 // Supported WordPress API bases (tries in order). You can override via VITE_WORDPRESS_API_URL.
 const WP_BASES: string[] = [
@@ -287,10 +288,22 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
       localStorage.setItem('wp_sync_status', JSON.stringify({ status: 'success', type: 'api_success', message: `Fetched ${result.posts.length} posts`, timestamp: Date.now() }));
       return result;
     } catch (err) {
-      logger.warn(`[WordPress] Base failed after ${attempts} attempt(s), trying next: ${apiUrl}`, err);
+      // Gate repeated base-failure logs once per session to reduce noise
+      try {
+        const key = `wp_warned_${base}`;
+        if (!sessionStorage.getItem(key)) {
+          logger.warn(`[WordPress] Base failed, trying next: ${apiUrl}`, err);
+          sessionStorage.setItem(key, '1');
+          // Report once to server for diagnostics
+          logOnce(`wp_base_fail_${base}`, `WordPress base failed`, { apiUrl, error: err instanceof Error ? err.message : String(err) });
+        }
+      } catch {
+        logger.warn(`[WordPress] Base failed, trying next: ${apiUrl}`, err);
+      }
       cacheUtils.saveError(err);
       // try next base
     }
+  }
   }
 
   // All bases failed, use server API fallback
