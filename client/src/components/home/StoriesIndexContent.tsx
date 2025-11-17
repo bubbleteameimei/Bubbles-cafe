@@ -30,8 +30,8 @@ import { getStoryThemeOverride } from "@shared/story-theme-overrides";
 import { getThemeDefinitionOverride, syncThemeDefinitionOverridesFromServer } from "@/shared/theme-definitions";
 import { getBadgeTint } from "@/lib/theme-badges";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
-import { VirtualScrollArea } from "@/components/ui/VirtualScrollArea";
-import { computeTrendingScores } from "@/lib/trending";
+
+
 import { useThemeCategories } from "@/hooks/use-theme-categories";
 import { logOnce } from "@/lib/metrics";
 
@@ -56,12 +56,12 @@ function wpToPost(post: WordPressPost): Post {
 export default function StoriesIndexContent() {
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<'newest' | 'oldest' | 'popular' | 'shortest'>("newest");
+  const [sort, setSort] = useState<'newest' | 'oldest' | 'shortest'>("newest");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   // Defer heavy search-driven computations to improve INP
   const deferredSearch = React.useDeferredValue(search);
   const [categoryPills, setCategoryPills] = useState<Array<{ key: string; count: number; pretty: string }>>([]);
-  const [trendingScores, setTrendingScores] = useState<Record<number, number>>({});
+  
   const [reactionsUnavailable, setReactionsUnavailable] = useState<boolean>(false);
   
   const [visibleCount, setVisibleCount] = useState<number>(6);
@@ -70,12 +70,12 @@ export default function StoriesIndexContent() {
   const breakpointRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null);
   const fetchedReactionIdsRef = React.useRef<Set<number>>(new Set());
   // SSE sources per post to stream live updates (LRU-limited)
-  const sseSourcesRef = React.useRef<Map<number, { es: EventSource; ts: number }>>(new Map());
-  const MAX_SSE_CONNECTIONS = 4;
+  
+  
   // Track SSE/preload errors to avoid flashing the \"unavailable\" banner on transient failures
   const reactionsErrorCountRef = React.useRef<number>(0);
   // Track whether we've prefetched totals for all posts to avoid repeated work
-  const preloadedAllRef = React.useRef<boolean>(false);
+  
   // Deduplicate zero-results analytics by query
   const lastZeroResultsQueryRef = React.useRef<string>('');
   // Fuzzy search offload to worker
@@ -668,79 +668,9 @@ export default function StoriesIndexContent() {
     let pending: number[] = [];
     let flushTimer: any = null;
 
-    // Capture current SSE map reference to use in cleanup (avoid ref changing)
-    const sources = sseSourcesRef.current;
+    // Reactions sources removed (no SSE on index)
 
-    // SSE sources per post to stream live updates
-    // sseSourcesRef is defined at component scope
-
-    const ensureSse = (postId: number) => {
-      try {
-        if (!Number.isFinite(postId)) return;
-        if (sources.has(postId)) {
-          // Touch timestamp for LRU
-          const obj = sources.get(postId);
-          if (obj) obj.ts = Date.now();
-          return;
-        }
-
-        // LRU cap: close oldest connection if at capacity
-        if (sources.size >= MAX_SSE_CONNECTIONS) {
-          let oldestKey: number | null = null;
-          let oldestTs = Infinity;
-          for (const [key, obj] of sources.entries()) {
-            if (obj.ts < oldestTs) {
-              oldestTs = obj.ts;
-              oldestKey = key;
-            }
-          }
-          if (oldestKey != null) {
-            try { sources.get(oldestKey)?.es.close(); } catch {}
-            sources.delete(oldestKey);
-          }
-        }
-
-        const url = `/api/posts/${postId}/reactions/stream`;
-        const es = new EventSource(url, { withCredentials: true } as any);
-        const onMessage = (e: MessageEvent) => {
-          try {
-            const payload = JSON.parse(e.data || '{}');
-            if (payload && typeof payload.postId === 'number') {
-              setReactionTotals(prev => ({ ...prev, [payload.postId]: {
-                postId: payload.postId,
-                baselineLikes: Number(payload.baselineLikes || 0),
-                baselineDislikes: Number(payload.baselineDislikes || 0),
-                likesCount: Number(payload.likesCount || 0),
-                dislikesCount: Number(payload.dislikesCount || 0),
-                totals: {
-                  likes: Number(payload.totals?.likes || (Number(payload.baselineLikes || 0) + Number(payload.likesCount || 0))),
-                  dislikes: Number(payload.totals?.dislikes || (Number(payload.baselineDislikes || 0) + Number(payload.dislikesCount || 0))),
-                }
-              }}));
-              fetched.add(payload.postId);
-              // Reset transient error state on any successful message
-              reactionsErrorCountRef.current = 0;
-              // On any successful SSE message, clear the unavailable banner without reading stale state
-              setReactionsUnavailable(false);
-            }
-          } catch {}
-        };
-        es.addEventListener('initial', onMessage);
-        es.addEventListener('update', onMessage);
-        es.onerror = () => { 
-          // Increment error count; only show banner after repeated errors
-          reactionsErrorCountRef.current += 1;
-          if (reactionsErrorCountRef.current >= 3) {
-            setReactionsUnavailable(true);
-          }
-          // keep alive; browser will reconnect
-        };
-        sources.set(postId, { es, ts: Date.now() });
-      } catch (err) {
-        try { logOnce('index.sse.open', 'Failed to open SSE stream', { error: err instanceof Error ? err.message : String(err) }); } catch {}
-        setReactionsUnavailable(true);
-      }
-    };
+    
 
     // Preload a small initial batch near the top of the list to avoid empty counts above the fold
     const preloadInitial = async () => {
@@ -762,10 +692,7 @@ export default function StoriesIndexContent() {
           }
           setReactionTotals((prev) => ({ ...prev, ...map }));
         }
-        // Open SSE streams for visible/initial posts
-        for (const id of candidateIds) {
-          ensureSse(id);
-        }
+        
       } catch (err) {
         try { logOnce('index.reactions.preload', 'Failed to preload initial reactions', { error: err instanceof Error ? err.message : String(err) }); } catch {}
         reactionsErrorCountRef.current += 1;
@@ -792,10 +719,7 @@ export default function StoriesIndexContent() {
           }
           setReactionTotals((prev) => ({ ...prev, ...update }));
         }
-        // Ensure SSE for all newly observed ids
-        for (const id of unique) {
-          ensureSse(id);
-        }
+        
       } catch (err) {
         try { logOnce('index.reactions.flush', 'Failed to flush reaction batch', { error: err instanceof Error ? err.message : String(err) }); } catch {}
         reactionsErrorCountRef.current += 1;
@@ -968,34 +892,7 @@ export default function StoriesIndexContent() {
       case 'oldest':
         list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
         break;
-      case 'popular':
-        list.sort((a, b) => {
-          const map = trendingScores;
-          if (map && Object.keys(map).length > 0) {
-            const aScore = map[a.id] ?? 0;
-            const bScore = map[b.id] ?? 0;
-            return bScore - aScore;
-          }
-          // Fallback to inline calculation when scores not ready
-          const aTotals = reactionTotals[a.id];
-          const bTotals = reactionTotals[b.id];
-          const aLikes = Number(aTotals?.totals?.likes ?? 0);
-          const bLikes = Number(bTotals?.totals?.likes ?? 0);
-          
-          const aViews = (a.metadata && (a.metadata as any).pageViews) ? Number((a.metadata as any).pageViews) : 0;
-          const bViews = (b.metadata && (b.metadata as any).pageViews) ? Number((b.metadata as any).pageViews) : 0;
-          const now = Date.now();
-          const dayMs = 24 * 60 * 60 * 1000;
-          const windowDays = 14;
-          const aAgeDays = Math.max(0, (now - new Date(a.createdAt).getTime()) / dayMs);
-          const bAgeDays = Math.max(0, (now - new Date(b.createdAt).getTime()) / dayMs);
-          const aDecay = Math.max(0.2, 1 - (aAgeDays / windowDays));
-          const bDecay = Math.max(0.2, 1 - (bAgeDays / windowDays));
-          const aScore = (aLikes * 2.5 + aViews * 0.8) * aDecay;
-          const bScore = (bLikes * 2.5 + bViews * 0.8) * bDecay;
-          return bScore - aScore;
-        });
-        break;
+      
       case 'shortest':
         list.sort((a, b) => String(a.content || '').length - String(b.content || '').length);
         break;
@@ -1005,7 +902,7 @@ export default function StoriesIndexContent() {
         break;
     }
     return list;
-  }, [sortedPosts, categoryFilter, deferredSearch, sort, reactionTotals, trendingScores]);
+  }, [sortedPosts, categoryFilter, deferredSearch, sort, reactionTotals]);
 
   const currentPosts = filteredPosts;
   const titleMatches = useMemo(() => {
@@ -1125,57 +1022,7 @@ export default function StoriesIndexContent() {
       return [...all].sort((a, b) => String(a.content || '').length - String(b.content || '').length)[0];
     }
 
-    // If explicitly sorting by popular, pick highest likes + engagement using live reaction totals
-    if (sort === 'popular') {
-      const now = Date.now();
-      const dayMs = 24 * 60 * 60 * 1000;
-      const windowDays = 14;
-
-      const useScores = Object.keys(trendingScores).length > 0;
-      const topByPopular = useScores
-        ? [...all]
-            .map(p => ({ p, score: trendingScores[p.id] ?? 0 }))
-            .sort((a, b) => b.score - a.score)
-            .map(x => x.p)
-        : [...all]
-            .map(p => {
-              const totals = reactionTotals[p.id];
-              const likes = Number(totals?.totals?.likes ?? 0);
-              const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
-              const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
-              const decay = Math.max(0.2, 1 - (ageDays / windowDays));
-              const score = (likes * 2.5 + views * 0.8) * decay;
-              return { p, score };
-            })
-            .sort((a, b) => b.score - a.score)
-            .map(x => x.p);
-
-      const lastTheme = (() => {
-        try { return localStorage.getItem('lastFeaturedTheme') || ''; } catch { return ''; }
-      })();
-
-      const pick = (() => {
-        const getThemeKey = (p: Post) => {
-          const md: any = (p as any)?.metadata || {};
-          const primary = md.themeCategory || sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
-          const raw = String(primary || '').trim();
-          if (!raw) return '';
-          for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-            if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-          }
-          return raw.toUpperCase().replace(/\\s+/g, '_');
-        };
-        if (!topByPopular.length) return all[0] || null;
-        const first = topByPopular[0];
-        const firstKey = getThemeKey(first);
-        if (lastTheme && firstKey.toUpperCase() === lastTheme.toUpperCase() && topByPopular.length > 1) {
-          return topByPopular[1];
-        }
-        return first;
-      })();
-
-      return pick || all[0];
-    }
+    
 
     // Otherwise, pick by engagement/recency
     const sortedByEngagement = all.sort((a, b) => {
@@ -1227,7 +1074,7 @@ export default function StoriesIndexContent() {
     });
 
     return sortedByEngagement[0];
-  }, [sortedPosts, sort, reactionTotals, deferredSearch, closestTitleMatch, trendingScores]);
+  }, [sortedPosts, sort, reactionTotals, deferredSearch, closestTitleMatch]);
 
   // Persist last featured theme for diversity in subsequent sessions
   useEffect(() => {
@@ -1277,7 +1124,7 @@ export default function StoriesIndexContent() {
         <ContinueReadingBanner />
         <div className="w-full pb-12 pt-0 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
           {/* Sticky controls header (mobile-first) */}
-          <div className="sticky top-0 z-30 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6 py-2 sm:py-3 mt-8 sm:mt-12">
+          <div className="sticky top-0 z-30 bg-background px-4 sm:px-6 py-2 sm:py-3 mt-8 sm:mt-12">
             <div className="grid grid-cols-1 lg:grid-cols-3 items-center gap-6">
               <div className="relative w-full lg:col-span-1">
                 <Input
@@ -1314,7 +1161,7 @@ export default function StoriesIndexContent() {
                         <Select
                           value={sort}
                           onValueChange={(value) =>
-                            setSort(value as 'newest' | 'oldest' | 'popular' | 'shortest')
+                            setSort(value as 'newest' | 'oldest' | 'shortest')
                           }
                         >
                           <SelectTrigger className="w-28 h-7 text-[11px]" aria-label="Sort stories">
@@ -1323,7 +1170,7 @@ export default function StoriesIndexContent() {
                           <SelectContent>
                             <SelectItem value="newest">Newest</SelectItem>
                             <SelectItem value="oldest">Oldest</SelectItem>
-                            <SelectItem value="popular">Popular</SelectItem>
+                            
                             <SelectItem value="shortest">Shortest</SelectItem>
                           </SelectContent>
                         </Select>
@@ -1391,13 +1238,7 @@ export default function StoriesIndexContent() {
                   </CardContent>
                 </Card>
               </div>
-              <div className="lg:col-span-2">
-                <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
-                  <CardContent className="p-4">
-                    <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} />
-                  </CardContent>
-                </Card>
-              </div>
+              
             </div>
           )}
 
@@ -1424,7 +1265,7 @@ export default function StoriesIndexContent() {
                 {deferredSearch.trim() ? (
                   <>
                     <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4 leading-relaxed">
-                      We couldn’t find any stories matching “{deferredSearch.trim()}”. Try the closest matches below or explore popular stories.
+                      We couldn’t find any stories matching “{deferredSearch.trim()}”. Try the closest matches below or explore the most liked stories.
                     </p>
 
                     <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
@@ -1481,260 +1322,67 @@ export default function StoriesIndexContent() {
                       <Button variant="outline" size="sm" onClick={() => setSearch("")} className="h-9 px-3">
                         Clear search
                       </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          try {
-                            const useScores = Object.keys(trendingScores).length > 0;
-                            const topPopular = useScores
-                              ? [...sortedPosts]
-                                  .map(p => ({ p, score: trendingScores[p.id] ?? 0 }))
-                                  .sort((a, b) => b.score - a.score)
-                                  .slice(0, 5)
-                                  .map(x => x.p)
-                              : [...sortedPosts]
-                                  .map(p => {
-                                    const totals = reactionTotals[p.id];
-                                    const likes = Number(totals?.totals?.likes ?? 0);
-                                    const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
-                                    const now = Date.now();
-                                    const dayMs = 24 * 60 * 60 * 1000;
-                                    const windowDays = 14;
-                                    const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
-                                    const decay = Math.max(0.2, 1 - (ageDays / windowDays));
-                                    const score = (likes * 2.5 + views * 0.8) * decay;
-                                    return { p, score };
-                                  })
-                                  .sort((a, b) => b.score - a.score)
-                                  .slice(0, 5)
-                                  .map(x => x.p);
-
-                            if (topPopular.length > 0) {
-                              const pick = topPopular[Math.floor(Math.random() * topPopular.length)];
-                              navigateToReader(pick.slug || pick.id);
-                            } else {
-                              setSort("popular");
-                            }
-                          } catch {
-                            setSort("popular");
-                          }
-                        }}
-                        className="h-9 px-3"
-                      >
-                        Browse popular
-                      </Button>
+                      
                     </div>
                   </>
                 ) : (
                   <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed">
-                    Explore popular stories below.
+                    Explore most liked stories below.
                   </p>
                 )}
 
-                {/* Popular right now mini carousel */}
+                {/* Most liked stories (replaces previous "Popular right now" section) */}
                 <div className="mt-2">
-                    <div className="text-left sm:text-center mb-2 text-xs font-medium text-muted-foreground">
-                      Popular right now
-                    </div>
-                    <div className="relative">
-                      <div
-                        className="flex gap-3 sm:gap-4 overflow-x-auto snap-x snap-mandatory scroll-px-3 sm:scroll-px-4 [-webkit-overflow-scrolling:touch]"
-                        aria-label="Popular stories"
-                      >
-                        {popularPosts.map(pop => (
-                          <div key={pop.id} className="snap-start min-w-[260px] sm:min-w-[300px] md:min-w-[320px]">
-                            <Card className="rounded-lg border border-border/60 bg-card/70 hover:bg-card transition">
-                              <CardContent className="p-3">
-                                <button
-                                  className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
-                                  onClick={() => navigateToReader(pop.slug || pop.id)}
-                                  style={{ minHeight: '36px' }}
-                                >
-                                  {pop.title}
-                                </button>
-                                {(() => {
-                                  const { key, label, iconSlug } = computeThemeMeta(pop);
-                                  const badgeTint = getBadgeTint(key);
-                                  const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
-                                  return (
-                                    <div className="mt-1">
-                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}>
-                                        {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
-                                        {label}
-                                      </Badge>
-                                    </div>
-                                  );
-                                })()}
-                                <p className="text-[13px] text-muted-foreground leading-5 mt-1 line-clamp-1">
-                                  {extractEngagingExcerpt(pop.content, 100)}
-                                </p>
-                                <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
-                                  <div className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    <time>{new Date(pop.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    <span>{getReadingTime(pop.content)}</span>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                  <div className="text-left sm:text-center mb-2 text-xs font-medium text-muted-foreground">
+                    Most liked stories
                   </div>
-                {/* Category tags under carousel controls */}
+                  <Card className="rounded-lg border border-border/60 bg-card/80 shadow-sm">
+                    <CardContent className="p-4">
+                      <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} />
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Category tags */}
                 <div className="mt-8 px-2">
-                    <>
-                      {categoryPills.length > 0 && (
-                        <>
-                          <div className="text-center text-base md:text-lg font-medium text-muted-foreground mb-3 md:mb-4">All categories</div>
-                          <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
+                  <>
+                    {categoryPills.length > 0 && (
+                      <>
+                        <div className="text-center text-base md:text-lg font-medium text-muted-foreground mb-3 md:mb-4">All categories</div>
+                        <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
+                          <button
+                            type="button"
+                            className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter === 'all' ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}
+                            onClick={() => setCategoryFilter('all')}
+                            aria-pressed={categoryFilter === 'all'}
+                          >
+                            All
+                          </button>
+                          {categoryPills.map(p => (
                             <button
                               type="button"
-                              className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter === 'all' ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}
-                              onClick={() => setCategoryFilter('all')}
-                              aria-pressed={categoryFilter === 'all'}
+                              key={p.key}
+                              className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter.toLowerCase() === p.key.toLowerCase() ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}
+                              onClick={() => setCategoryFilter(p.key)}
+                              aria-pressed={categoryFilter.toLowerCase() === p.key.toLowerCase()}
+                              title={`${p.pretty} (${p.count})`}
                             >
-                              All
+                              {p.pretty} <span className="ml-1 text-muted-foreground">({p.count})</span>
                             </button>
-                            {categoryPills.map(p => (
-                              <button
-                                type="button"
-                                key={p.key}
-                                className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter.toLowerCase() === p.key.toLowerCase() ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}
-                                onClick={() => setCategoryFilter(p.key)}
-                                aria-pressed={categoryFilter.toLowerCase() === p.key.toLowerCase()}
-                                title={`${p.pretty} (${p.count})`}
-                              >
-                                {p.pretty} <span className="ml-1 text-muted-foreground">({p.count})</span>
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </>
-                  </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
                 </div>
+              </div>
               </div>
           ) : (
             <>
-              {latestPosts.length > 60 ? (
-                // Virtualized rows for large lists (row = gridCols items)
-                <VirtualScrollArea
-                  items={(() => {
-                    const cols = gridCols || 1;
-                    const rows: Post[][] = [];
-                    for (let i = 0; i < latestPosts.length; i += cols) {
-                      rows.push(latestPosts.slice(i, i + cols));
-                    }
-                    return rows;
-                  })()}
-                  itemHeight={360}
-                  containerHeight={Math.max(400, containerHeight - 200)}
-                  overscan={3}
-                  className="rounded-md border border-transparent content-visibility-auto"
-                  renderItem={(row, rowIdx) => {
-                    const cols = gridCols || 1;
-                    return (
-                      <div className={cols >= 3 ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6' : (cols === 2 ? 'grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6' : 'grid grid-cols-1 gap-5 md:gap-6')}>
-                        {row.map((post, idx) => {
-                          const md: any = post.metadata || {};
-                          let themeCategory = "";
-                          if (md && typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
-                            themeCategory = String(md.themeCategory);
-                          } else {
-                            try {
-                              const derived = sharedDetermineThemeCategory(String(post.title || ''), String(post.content || ''));
-                              themeCategory = String(derived || '');
-                            } catch {}
-                          }
-
-                          return (
-                            <article
-                              key={post.id}
-                              data-idx={rowIdx * cols + idx}
-                              data-post-id={post.id}
-                              className="group story-card-container relative"
-                            >
-                              <Card
-                                onClick={() => navigateToReader(post.slug || post.id)}
-                                className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] will-change-transform cursor-pointer"
-                              >
-                                <CardContent className="p-4 pb-4">
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="flex-1 min-w-0">
-                                      <CardTitle className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary" style={{ minHeight: '48px' }}>
-                                        {renderHighlighted(String(post.title || ''))}
-                                      </CardTitle>
-                                      {(() => {
-                                        const { key, label, iconSlug } = computeThemeMeta(post);
-                                        const badgeTint = getBadgeTint(key);
-                                        const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
-                                        return (
-                                          <div className="mt-1">
-                                            <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}>
-                                              {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
-                                              {label}
-                                            </Badge>
-                                          </div>
-                                        );
-                                      })()}
-                                    </div>
-                                    <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
-                                      <div className="flex items-center gap-1 justify-end">
-                                        <Calendar className="h-3 w-3" />
-                                        <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
-                                      </div>
-                                      <div className="flex items-center gap-1 justify-end" title={`~${String(post.content || '').trim().split(/\s+/).length} words`}>
-                                        <Clock className="h-3 w-3" />
-                                        <span>{getReadingTime(post.content)}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <p className="text-[13px] text-muted-foreground leading-6 mt-7 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                                    {extractEngagingExcerpt(post.content, 200)}
-                                  </p>
-                                </CardContent>
-                                <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
-                                  <div className="w-full flex items-center justify-between">
-                                    {readyReactions && post && post.id && (
-                                      <Suspense fallback={null}>
-                                        <LikeDislike 
-                                          key={`like-${post.id}`} 
-                                          postId={post.id}
-                                          slug={post.slug}
-                                          source="wp"
-                                          variant="index"
-                                          initialTotals={reactionTotals[post.id] || null}
-                                        />
-                                      </Suspense>
-                                    )}
-                                    <Button
-                                      size="sm"
-                                      onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
-                                      className="h-9 px-4 transition-all"
-                                    >
-                                      Read story
-                                      <ArrowRight className="h-4 w-4 ml-1" />
-                                    </Button>
-                                  </div>
-                                </CardFooter>
-                              </Card>
-                            </article>
-                          );
-                        })}
-                      </div>
-                    );
-                  }}
-                />
-              ) : (
-                <div
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 content-visibility-auto"
-                  ref={cardsGridRef as any}
-                >
+              <div
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 content-visibility-auto"
+                ref={cardsGridRef as any}
+              >
                   {latestPosts.slice(0, visibleCount).map((post, idx) => {
                     
                     const md: any = post.metadata || {};

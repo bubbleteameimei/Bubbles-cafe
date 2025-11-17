@@ -329,7 +329,7 @@
   padding: 0.75rem 1.25rem;
   border-radius: 8px;
   border: 1px solid hsl(var(--border));
-  backdrop-filter: blur(8px);
+  
 }
 
 .floating-navigation-enter {
@@ -439,3 +439,95 @@
   font-family: inherit;
   transition: font-size 0.15s ease-in-out;
 }
+
+/* Distraction-free fade: dim UI chrome while preserving layout */
+.ui-fade-element {
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity;
+}
+.ui-hidden {
+  opacity: 0.35;
+  pointer-events: auto;
+}
+.story-content {
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+/* Distraction-free mode: keep navbar visible but subtle */
+.reader-page[data-distraction-free="true"] header.main-header {
+  opacity: 0.55;
+  visibility: visible;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  transform: none;
+  will-change: opacity;
+}
+
+/* Tiny indicator for mobile when in distraction-free mode */
+.reader-page[data-distraction-free="true"]::after {
+  content: "↑ Tap to exit";
+  position: fixed;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: hsl(var(--background));
+  color: hsl(var(--muted-foreground));
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 30;
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+}
+
+/* Ensure better mobile compatibility */
+@media (max-width: 640px) {
+  .reader-page[data-distraction-free="true"]::after {
+    font-size: 0.6rem;
+    padding: 1px 5px;
+    top: 3px;
+  }
+}
+
+/* Only show pointer cursor on story content */
+.reader-page .story-content {
+  cursor: pointer;
+}
+
+/* Set default cursor for everything */
+.reader-page {
+  cursor: default;
+  scrollbar-gutter: stable;
+}
+
+/* Set pointer cursor only for interactive elements */
+.reader-page button,
+.reader-page a,
+.reader-page [role="button"],
+.reader-page input[type="button"],
+.reader-page input[type="submit"] {
+  cursor: pointer;
+}
+
+/* Make interactive elements inside story content use pointer cursor */
+.reader-page .story-content button,
+.reader-page .story-content a,
+.reader-page .story-content [role="button"] {
+  cursor: pointer;
+}
+
+.main-header {
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+  will-change: opacity, visibility;
+}
+
+/* Reader debug outlines for hit-testing and bounds */
+.reader-page[data-debug="1"] .debug-outline { outline: 1px dashed rgba(255,0,0,.6); outline-offset: 0; }
+.reader-page[data-debug="1"] .debug-outline-controls { outline-color: #d97706; } /* amber */
+.reader-page[data-debug="1"] .debug-outline-meta { outline-color: #10b981; } /* emerald */
+.reader-page[data-debug="1"] .debug-outline-nav { outline-color: #3b82f6; } /* blue */
+.reader-page[data-debug="1"] .debug-outline-pager { outline-color: #a855f7; } /* purple */
+.reader-page[data-debug="1"] .debug-outline-share { outline-color: #ef4444; } /* red */
+.reader-page[data-debug="1"] .debug-outline-content { outline-color: #22d3ee; } /* cyan */

@@ -906,28 +906,6 @@ window.addEventListener('touchstart', onInteract, { passive: true } as any);
 
   // Persist reading progress to server for cross-device resume (throttled)
   const lastProgressSentRef = useRef<{ percent: number; ts: number }>({ percent: 0, ts: 0 });
-  useEffect(() => {
-    try {
-      if (!isAuthenticated) return;
-      const slug = routeSlug || autoSaveSlug || posts?.[currentIndex]?.slug;
-      if (!slug) return;
-
-      const now = Date.now();
-      const rounded = Math.round(readingProgress);
-      const diff = Math.abs(rounded - (lastProgressSentRef.current.percent || 0));
-      const tooSoon = now - (lastProgressSentRef.current.ts || 0) < 15000; // 15s throttle
-
-      if (diff >= 10 && !tooSoon) {
-        apiJson<any>('POST', '/api/reading-progress', {
-          postSlug: String(slug),
-          percentCompleted: rounded
-        }).then((_res) => {
-          // Successful; record timestamp and last percent sent
-          lastProgressSentRef.current = { percent: rounded, ts: Date.now() };
-        }).catch(() => { /* non-fatal */ });
-      }
-    } catch { /* non-fatal */ }
-  }, [readingProgress, routeSlug, autoSaveSlug, posts, currentIndex, isAuthenticated]);
 
   // Reset active timers when post changes
   useEffect(() => {
@@ -956,55 +934,12 @@ window.addEventListener('touchstart', onInteract, { passive: true } as any);
     return () => document.removeEventListener('visibilitychange', handler);
   }, []);
 
-  // Fire a WordPress.com stats pixel once per session when:
-  // - user has scrolled at least 30%
-  // - at least 2 seconds of active (visible) time on the current post
-  // - user has interacted (click/keydown/touch)
-  // - analytics consent is allowed
-  // - tab is visible at the moment of firing
+  // Consolidated analytics gate: read pixel, finish_read, and progress persistence (throttled)
   useEffect(() => {
     try {
-      if (!currentPostId) return;
+      const pid = Number(currentPostId);
+      if (!Number.isFinite(pid)) return;
 
-      const sessionKey = `wp_read_tracked_${currentPostId}`;
-      const dayKey = (() => {
-        const d = new Date();
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `wp_read_tracked_day_${currentPostId}_${y}${m}${day}`;
-      })();
-
-      const alreadySession = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(sessionKey) : null;
-      const alreadyDay = typeof localStorage !== 'undefined' ? localStorage.getItem(dayKey) : null;
-      const isVisible = typeof document !== 'undefined' ? document.visibilityState === 'visible' : true;
-      const analyticsAllowed = (() => { try { return isCategoryAllowed('analytics'); } catch { return true; } })();
-
-      const elapsedActiveMs =
-        activeAccumulatedMsRef.current +
-        (readActiveStartRef.current != null ? (Date.now() - readActiveStartRef.current) : 0);
-
-      if (
-        readingProgress >= 30 &&
-        elapsedActiveMs >= 2000 &&
-        !alreadySession &&
-        !alreadyDay &&
-        analyticsAllowed &&
-        userInteractedRef.current &&
-        isVisible
-      ) {
-        trackWordPressRead(currentPostId, currentPostLink);
-      }
-    } catch {
-      // no-op
-    }
-    // Re-evaluate on progress changes, post changes, interaction and visibility transitions
-  }, [readingProgress, currentPostId, currentPostLink, interactionCount, visibilityTick, isCategoryAllowed]);
-
-  // Finish-read tracking (local analytics): 90% scroll and ≥ 60s active time
-  useEffect(() => {
-    try {
-      if (!currentPostId) return;
       const isVisible = typeof document !== 'undefined' ? document.visibilityState === 'visible' : true;
       const analyticsAllowed = (() => { try { return isCategoryAllowed('analytics'); } catch { return true; } })();
       if (!analyticsAllowed || !userInteractedRef.current || !isVisible) return;
@@ -1013,28 +948,49 @@ window.addEventListener('touchstart', onInteract, { passive: true } as any);
         activeAccumulatedMsRef.current +
         (readActiveStartRef.current != null ? (Date.now() - readActiveStartRef.current) : 0);
 
-      const finishKey = `finish_read_tracked_${currentPostId}`;
-      const already = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(finishKey) : null;
+      // WordPress read pixel: 30% progress and ≥2s active time. Internally deduplicated per session/day.
+      if (readingProgress >= 30 && elapsedActiveMs >= 2000) {
+        try { trackWordPressRead(pid, currentPostLink); } catch {}
+      }
 
-      if (readingProgress >= 90 && elapsedActiveMs >= 60000 && !already) {
-        try {
-          if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem(finishKey, '1');
-          }
-        } catch {}
-        // Record local engagement metric
+      // Finish-read tracking: 90% and ≥60s active time, once per session.
+      const finishKey = `finish_read_tracked_${pid}`;
+      const alreadyFinish = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(finishKey) : null;
+      if (readingProgress >= 90 && elapsedActiveMs >= 60000 && !alreadyFinish) {
+        try { sessionStorage.setItem(finishKey, '1'); } catch {}
         const post = posts?.[currentIndex] as any;
         trackInteraction('finish_read', {
-          postId: currentPostId,
+          postId: pid,
           slug: post?.slug,
           progress: readingProgress,
           timeMs: elapsedActiveMs
         });
       }
+
+      // Persist reading progress to server for cross-device resume (15s throttle, ≥10% change)
+      if (isAuthenticated) {
+        const slug = routeSlug || autoSaveSlug || posts?.[currentIndex]?.slug;
+        if (slug) {
+          const now = Date.now();
+          const rounded = Math.round(readingProgress);
+          const diff = Math.abs(rounded - (lastProgressSentRef.current.percent || 0));
+          const tooSoon = now - (lastProgressSentRef.current.ts || 0) < 15000; // 15s throttle
+          if (diff >= 10 && !tooSoon) {
+            apiJson<any>('POST', '/api/reading-progress', {
+              postSlug: String(slug),
+              percentCompleted: rounded
+            }).then(() => {
+              lastProgressSentRef.current = { percent: rounded, ts: Date.now() };
+            }).catch(() => {});
+          }
+        }
+      }
     } catch {
       // no-op
     }
-  }, [readingProgress, currentPostId, interactionCount, visibilityTick, isCategoryAllowed, currentIndex, posts]);
+  }, [readingProgress, currentPostId, currentPostLink, isCategoryAllowed, isAuthenticated, routeSlug, autoSaveSlug, posts, currentIndex, interactionCount, visibilityTick]);
+
+  
 
   
 
@@ -1322,108 +1278,7 @@ const isContentReady = contentHtml.trim().length > 0;
       
       {/* Reader tooltip for distraction-free mode instructions */}
       <ReaderTooltip show={showTooltip} />
-      {/* CSS for distraction-free mode transitions */}
-      <style dangerouslySetInnerHTML={{__html: `
-        /* Distraction-free fade: dim UI chrome while preserving layout */
-        .ui-fade-element {
-          transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-          will-change: opacity;
-        }
-        .ui-hidden {
-          opacity: 0.35;
-          pointer-events: auto;
-        }
-        .story-content {
-          transition: color 0.2s ease, background-color 0.2s ease;
-        }
-        
-        /* Distraction-free mode: keep navbar visible but subtle */
-        .reader-page[data-distraction-free="true"] header.main-header {
-          opacity: 0.55;
-          visibility: visible;
-          transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          pointer-events: auto;
-          transform: none;
-          will-change: opacity;
-        }
-        
-        /* Tiny indicator for mobile when in distraction-free mode */
-        .reader-page[data-distraction-free="true"]::after {
-          content: "↑ Tap to exit";
-          position: fixed;
-          top: 5px;
-          left: 50%;
-          transform: translateX(-50%);
-          background-color: hsl(var(--background));
-          color: hsl(var(--muted-foreground));
-          font-size: 0.65rem;
-          padding: 1px 6px;
-          border-radius: 4px;
-          opacity: 0.6;
-          pointer-events: none;
-          z-index: 30;
-          border: 1px solid hsl(var(--border));
-          box-shadow: 0 1px 1px rgba(0,0,0,0.05);
-        }
-        
-        /* Ensure better mobile compatibility */
-        @media (max-width: 640px) {
-          .reader-page[data-distraction-free="true"]::after {
-            font-size: 0.6rem;
-            padding: 1px 5px;
-            top: 3px;
-          }
-        }
-        
-        /* Only show pointer cursor on story content */
-        .reader-page .story-content {
-          cursor: pointer;
-        }
-        
-        /* Set default cursor for everything */
-        .reader-page {
-          cursor: default;
-          scrollbar-gutter: stable;
-        }
-        
-        /* Set pointer cursor only for interactive elements */
-        .reader-page button,
-        .reader-page a,
-        .reader-page [role="button"],
-        .reader-page input[type="button"],
-        .reader-page input[type="submit"] {
-          cursor: pointer;
-        }
-        
-        /* Keep the story content cursor as pointer to indicate clickable for distraction-free mode */
-        .reader-page .story-content {
-          cursor: pointer;
-        }
-        
-        /* Make interactive elements inside story content use pointer cursor */
-        .reader-page .story-content button,
-        .reader-page .story-content a,
-        .reader-page .story-content [role="button"] {
-          cursor: pointer;
-        }
-        
-        .main-header {
-          transition: opacity 0.4s ease, visibility 0.4s ease;
-          will-change: opacity, visibility;
-        }
-      `}} />
-      {debugEnabled ? (
-        <style dangerouslySetInnerHTML={{__html: `
-          /* Reader debug outlines for hit-testing and bounds */
-          .reader-page[data-debug="1"] .debug-outline { outline: 1px dashed rgba(255,0,0,.6); outline-offset: 0; }
-          .reader-page[data-debug="1"] .debug-outline-controls { outline-color: #d97706; } /* amber */
-          .reader-page[data-debug="1"] .debug-outline-meta { outline-color: #10b981; } /* emerald */
-          .reader-page[data-debug="1"] .debug-outline-nav { outline-color: #3b82f6; } /* blue */
-          .reader-page[data-debug="1"] .debug-outline-pager { outline-color: #a855f7; } /* purple */
-          .reader-page[data-debug="1"] .debug-outline-share { outline-color: #ef4444; } /* red */
-          .reader-page[data-debug="1"] .debug-outline-content { outline-color: #22d3ee; } /* cyan */
-        `}} />
-      ) : null}
+      
       
       {/* Reader content styles moved to reader-typography.css */}
 
@@ -1864,352 +1719,8 @@ const isContentReady = contentHtml.trim().length > 0;
                     const badgeTint = getBadgeTint(themeKey);
 
                     return (
-                      <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border whitespace-nowrap ${badgeTint}`}>
-                        {String(chosenIconSlug).includes(':')
-                          ? (<Icon icon={String(chosenIconSlug)} className="h-4 w-4" />)
-                          : (<ThemeIcon className="h-4 w-4" />)
-                        }
-                        <span className="text-xs font-medium whitespace-nowrap">{prettyLabel}</span>
-                      </div>
-                    );
-                  })()}
-                  
-                  <span className="text-muted-foreground">•</span>
-                  
-                  {/* Date indicator */}
-                  <span className="text-xs px-2 py-1 bg-muted/80 border border-border/50 rounded-md whitespace-nowrap">
-                    {currentPost.date ? format(new Date(currentPost.date), 'MMM d, yyyy') : 'No date'}
-                  </span>
-                  
-                  <span className="text-muted-foreground">•</span>
-                  
-                  {/* Estimated reading time */}
-                  <span className="text-xs px-2 py-1 bg-accent/50 rounded-md whitespace-nowrap">
-                    {readingMinutes} min read
-                  </span>
-
-                  {/* Admin: inline edit theme */}
-                  {isAdmin && (
-                    <>
-                      <span className="text-muted-foreground">•</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2"
-                        onClick={() => {
-                          try {
-                            const currentCat =
-                              (currentPost as any)?.themeCategory ||
-                              (currentPost as any)?.metadata?.themeCategory ||
-                              '';
-                            const auto = determineThemeCategory(
-                              titleText || 'Story',
-                              plainText || ''
-                            );
-                            const initCat = String(currentCat || auto || 'HORROR');
-                            setSelectedThemeCat(initCat);
-                            const metaIcon = (currentPost as any)?.metadata?.themeIcon as string | undefined;
-                            const defIcon =
-                              SHARED_THEME_CATEGORIES[
-                                initCat as keyof typeof SHARED_THEME_CATEGORIES
-                              ]?.icon || 'ghost';
-                            setSelectedThemeIcon(String(metaIcon || defIcon));
-                            setThemeEditorOpen(true);
-                          } catch {
-                            setSelectedThemeCat('HORROR');
-                            setSelectedThemeIcon('ghost');
-                            setThemeEditorOpen(true);
-                          }
-                        }}
-                      >
-                        <Pencil className="h-3.5 w-3.5 mr-1" />
-                        <span className="text-xs">Edit theme</span>
-                      </Button>
-                    </>
-                  )}
-                </div>
-
-                {/* Admin Theme Editor Dialog */}
-                {isAdmin && (
-                  <Dialog open={themeEditorOpen} onOpenChange={(open) => { if (debugEnabled) { try { console.log('[Reader.debug] ThemeEditor dialog openChange:', open); } catch {} } setThemeEditorOpen(open); }}>
-                    <DialogContent className="max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Edit Story Theme</DialogTitle>
-                        <DialogDescription>
-                          Choose the theme category and icon shown on this story.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-2">
-                        <div className="space-y-2">
-                          <span id="theme-category-label" className="text-sm font-medium">Theme category</span>
-                          <Select
-                            value={selectedThemeCat}
-                            onValueChange={(v) => {
-                              setSelectedThemeCat(v);
-                              // Update default icon when category changes
-                              const def =
-                                SHARED_THEME_CATEGORIES[
-                                  v as keyof typeof SHARED_THEME_CATEGORIES
-                                ]?.icon || 'ghost';
-                              setSelectedThemeIcon(def);
-                            }}
-                          >
-                            <SelectTrigger className="w-full" aria-labelledby="theme-category-label">
-                              <SelectValue placeholder="Select a theme" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {(categoriesList.length
-                                ? categoriesList.map((item) => {
-                                    const key = String(item.key);
-                                    const label = String(item.label);
-                                    const base = label;
-                                    const l = String(base).toLowerCase();
-                                    const refined = (() => {
-                                      if (l.includes('cosmic')) return 'Cosmic Horror';
-                                      if (l.includes('existential')) return 'Existential Horror';
-                                      if (l.includes('vehicular')) return 'Vehicular Horror';
-                                      if (l.includes('psychological')) return 'Psychological Horror';
-                                      if (l.includes('supernatural')) return 'Supernatural Horror';
-                                      if (l.includes('technological')) return 'Technological Horror';
-                                      if (l.includes('uncanny')) return 'Uncanny Horror';
-                                      if (l.includes('gothic')) return 'Gothic Horror';
-                                      if (l.includes('folk')) return 'Folk Horror';
-                                      if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
-                                      if (l.includes('cannibal')) return 'Cannibalism Horror';
-                                      if (l.includes('science')) return 'Science Horror';
-                                      if (l.includes('apocalyptic')) return 'Apocalyptic Horror';
-                                      if (l.includes('stalking')) return 'Stalker/Pursuit Horror';
-                                      if (l.includes('doppelganger')) return 'Identity Horror';
-                                      return base;
-                                    })();
-                                    return (
-                                      <SelectItem key={key} value={key}>
-                                        {refined}
-                                      </SelectItem>
-                                    );
-                                  })
-                                : Object.entries(SHARED_THEME_CATEGORIES as Record<string, { label: string; icon: string }>).map(([key, info]) => {
-                                    const base = info.label;
-                                    const l = String(base).toLowerCase();
-                                    const refined = (() => {
-                                      if (l.includes('cosmic')) return 'Cosmic Horror';
-                                      if (l.includes('existential')) return 'Existential Horror';
-                                      if (l.includes('vehicular')) return 'Vehicular Horror';
-                                      if (l.includes('psychological')) return 'Psychological Horror';
-                                      if (l.includes('supernatural')) return 'Supernatural Horror';
-                                      if (l.includes('technological')) return 'Technological Horror';
-                                      if (l.includes('uncanny')) return 'Uncanny Horror';
-                                      if (l.includes('gothic')) return 'Gothic Horror';
-                                      if (l.includes('folk')) return 'Folk Horror';
-                                      if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
-                                      if (l.includes('cannibal')) return 'Cannibalism Horror';
-                                      if (l.includes('science')) return 'Science Horror';
-                                      if (l.includes('apocalyptic')) return 'Apocalyptic Horror';
-                                      if (l.includes('stalking')) return 'Stalker/Pursuit Horror';
-                                      if (l.includes('doppelganger')) return 'Identity Horror';
-                                      return base;
-                                    })();
-                                    return (
-                                      <SelectItem key={key} value={key}>
-                                        {refined}
-                                      </SelectItem>
-                                    );
-                                  })
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="theme-icon" className="text-sm font-medium">Icon (slug)</Label>
-                          <Input
-                            id="theme-icon"
-                            value={selectedThemeIcon}
-                            onChange={(e) => setSelectedThemeIcon(e.target.value)}
-                            placeholder="e.g., ghost, skull, brain"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Common options: ghost, skull, brain, bug, cpu, footprints, cloud-rain, castle
-                          </p>
-                        </div>
-                      </div>
-                      <DialogFooter className="gap-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            try {
-                              const auto = determineThemeCategory(
-                                titleText || 'Story',
-                                plainText || ''
-                              );
-                              const autoCat = String(auto || 'HORROR');
-                              setSelectedThemeCat(autoCat);
-                              const defIcon =
-                                SHARED_THEME_CATEGORIES[
-                                  autoCat as keyof typeof SHARED_THEME_CATEGORIES
-                                ]?.icon || 'ghost';
-                              setSelectedThemeIcon(defIcon);
-                            } catch {
-                              setSelectedThemeCat('HORROR');
-                              setSelectedThemeIcon('ghost');
-                            }
-                          }}
-                        >
-                          Auto-detect
-                        </Button>
-                        <Button
-                          onClick={async () => {
-                            try {
-                              setSavingTheme(true);
-                              const csrfToken = document.cookie.replace(
-                                /(?:(?:^|.*;\s*)XSRF-TOKEN\s*\=\s*([^;]*).*$)|^.*$/,
-                                "$1"
-                              );
-                              const res = await fetch(`/api/posts/${currentPost.id}/theme`, {
-                                method: 'PATCH',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                  'X-CSRF-Token': csrfToken
-                                },
-                                credentials: 'include',
-                                body: JSON.stringify({
-                                  themeCategory: selectedThemeCat,
-                                  themeIcon: selectedThemeIcon,
-                                  // snake_case for older compatibility
-                                  theme_category: selectedThemeCat,
-                                  icon: selectedThemeIcon
-                                })
-                              });
-                              if (!res.ok) {
-                                const data = await res.json().catch(() => null);
-                                throw new Error(data?.error || 'Failed to update theme');
-                              }
-                              setOverrideThemeCategory(selectedThemeCat);
-                              setOverrideThemeIcon(selectedThemeIcon);
-                              setThemeEditorOpen(false);
-                              toast({
-                                title: 'Theme updated',
-                                description: 'Theme and icon were updated for this story.'
-                              });
-                            } catch (err: any) {
-                              toast({
-                                title: 'Update failed',
-                                description: err?.message || 'Could not update theme. Make sure this story exists in the database.',
-                                variant: 'destructive'
-                              });
-                            } finally {
-                              setSavingTheme(false);
-                            }
-                          }}
-                          disabled={savingTheme}
-                        >
-                          {savingTheme ? 'Saving…' : 'Save'}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                )}
-
-                {/* Original navigation controls moved here under time-to-read */}
-                <div ref={navRowRef} className={`flex justify-center items-center gap-4 py-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-nav`}>
-                  {/* Previous - match Next size and feel */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={goToPreviousStory}
-                    disabled={posts.length <= 1 || isFirstStory}
-                    className="h-10 w-28 rounded-md bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-2" />
-                    <span className="font-medium">Previous</span>
-                  </Button>
-
-                  {/* Random - icon only, circular */}
-                  <TooltipProvider>
-                    <Tooltip open={randomTipOpen} onOpenChange={setRandomTipOpen}>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => {
-                            setRandomTipOpen(true);
-                            window.setTimeout(() => setRandomTipOpen(false), 800);
-                            goToRandomStory();
-                          }}
-                          disabled={posts.length <= 1}
-                          aria-label="Random story"
-                          title="Random"
-                          className="h-10 w-10 rounded-full bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
-                        >
-                          <Shuffle className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" align="center">Random</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-
-                  {/* Next - keep as baseline and match sizing */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={goToNextStory}
-                    disabled={posts.length <= 1 || isLastStory}
-                    className="h-10 w-28 rounded-md bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    <span className="font-medium">Next</span>
-                    <ChevronRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <div className="story-container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
-              <div 
-                className="story-content cursor-pointer text-justify"
-                ref={contentRef}
-                onClick={(e) => {
-                  try {
-                    const sel = window.getSelection();
-                    if (sel && sel.toString().trim().length > 0) return;
-                    const t = e.target as HTMLElement | null;
-                    if (t && (t.closest('a, button, [role="button"], input, textarea, select, summary, details') || (t as any).isContentEditable)) {
-                      return;
-                    }
-                  } catch {}
-                  if (!fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
-                    toggleUIWithDebug('contentClick');
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.target !== e.currentTarget) return;
-                  if ((e.key === 'Enter' || e.key === ' ') && !fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
-                    e.preventDefault();
-                    toggleUIWithDebug('contentKey');
-                  }
-                }}
-                role="button"
-                tabIndex={0}
-                aria-label="Toggle user interface visibility"
-                aria-pressed={isUIHidden}
-                {...(isContentReady ? { dangerouslySetInnerHTML: { __html: contentHtml } } : {})}
-              >
-                {!isContentReady ? (
-                  isFetchingPost ? (
-                    <div aria-busy="true" aria-live="polite" className="text-sm text-muted-foreground py-2">
-                      Loading story…
-                    </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
-                  )
-                ) : null}
-              </div>
-              {/* Inline comment dialog (selection-based) */}
-              <CommentDialog />
-            </div>
-            
-            {/* Simple pagination at bottom of story content - extremely compact */}
-            <div ref={pagerRowRef} className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-pager`} style={{ minHeight: '64px' }}>
-              <div className="relative overflow-visible flex items-center justify-center gap-1 bg-background/90 backdrop-blur-md border border-transparent rounded-full h-16 px-1.5 shadow-sm">
+                      <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-pager`} style={{ minHeight: '64px' }}>
+              <div className="relative overflow-visible flex items-center justify-center gap-1 bg-background/90 border border-transparent rounded-full h-16 px-1.5 shadow-sm">
                 <span
                   aria-hidden="true"
                   className="pointer-events-none absolute inset-0 rounded-full"
@@ -2232,7 +1743,7 @@ const isContentReady = contentHtml.trim().length > 0;
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
                       <path d="m15 18-6-6 6-6"/>
                     </svg>
-                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
                       Previous Story
                     </span>
                   </Button>
@@ -2258,7 +1769,7 @@ const isContentReady = contentHtml.trim().length > 0;
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
                       <path d="m9 18 6-6-6-6"/>
                     </svg>
-                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
                       Next Story
                     </span>
                   </Button>

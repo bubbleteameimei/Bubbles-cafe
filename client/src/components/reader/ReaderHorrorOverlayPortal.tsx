@@ -95,7 +95,7 @@ export default function ReaderHorrorOverlayPortal({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.28, ease: "easeOut" }}
-        className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md overflow-hidden"
+        className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 overflow-hidden"
         style={{
           zIndex: 2147483647,
           width: "100vw",

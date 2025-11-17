@@ -27,7 +27,7 @@ const ReaderTooltip = ({ show }: ReaderTooltipProps) => {
           {/* Use the exact same container class as the About page to ensure consistent width */}
           <div className="container max-w-4xl mx-auto px-4">
             <motion.div 
-              className="relative bg-background/95 border border-primary/30 ring-2 ring-primary/30 backdrop-blur-md shadow-xl rounded-lg px-4 py-3 flex flex-col items-center gap-1 text-center mx-auto"
+              className="relative bg-background/95 border border-primary/30 ring-2 ring-primary/30 shadow-xl rounded-lg px-4 py-3 flex flex-col items-center gap-1 text-center mx-auto"
               animate={{ y: [0, -5, 0], scale: [1, 1.02, 1] }}
               transition={{ 
                 y: { repeat: 2, duration: 1.2, repeatType: "reverse", ease: "easeInOut" },
