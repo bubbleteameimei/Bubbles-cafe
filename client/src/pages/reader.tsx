@@ -1089,8 +1089,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // SEO values for this story
   const stripHtml = (s: string): string => (s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '');
   const titleText = stripHtml(getRenderedText(currentPost.title) || 'Story');
+  const titleRaw = getRenderedText(currentPost.title) || 'Story';
+  const titleHtml = useMemo(() => sanitizeHtmlContent(titleRaw), [titleRaw]);
   const rawContent = getRenderedText(currentPost.content) || '';
-  const contentHtml = sanitizeHtmlContent(rawContent);
+  const contentHtml = useMemo(() => sanitizeHtmlContent(rawContent), [rawContent]);
   const isContentReady = contentHtml.trim().length > 0;
   const descriptionText = getExcerpt(rawContent, 160);
   const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
@@ -1642,7 +1644,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 <h1
               className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
               style={{ minHeight: '48px' }}
-              dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(getRenderedText(currentPost.title) || 'Story') }}
+              dangerouslySetInnerHTML={{ __html: titleHtml }}
             />
               </div>
               

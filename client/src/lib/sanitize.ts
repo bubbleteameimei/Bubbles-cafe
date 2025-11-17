@@ -1,5 +1,32 @@
 import DOMPurify from 'dompurify';
 
+// Lightweight LRU cache to avoid re-sanitizing identical HTML on every render.
+// This dramatically reduces CPU cost in the reader where many state changes occur (scroll, SSE, toggles).
+const __sanitizeCache = new Map<string, string>();
+const __MAX_SANITIZE_CACHE_ENTRIES = 256;
+function __sanitizeCacheGet(key: string): string | undefined {
+  const value = __sanitizeCache.get(key);
+  if (value !== undefined) {
+    // Move entry to the end to approximate LRU behavior
+    try {
+      __sanitizeCache.delete(key);
+      __sanitizeCache.set(key, value);
+    } catch { /* ignore */ }
+  }
+  return value;
+}
+function __sanitizeCacheSet(key: string, value: string): void {
+  try {
+    __sanitizeCache.set(key, value);
+    if (__sanitizeCache.size > __MAX_SANITIZE_CACHE_ENTRIES) {
+      const firstKey = __sanitizeCache.keys().next().value as string | undefined;
+      if (typeof firstKey === 'string') {
+        __sanitizeCache.delete(firstKey);
+      }
+    }
+  } catch { /* ignore */ }
+}
+
 /**
  * Sanitize HTML using DOMPurify with a conservative configuration and
  * a small post-processing step to harden URLs and anchor attributes.
@@ -12,6 +39,12 @@ import DOMPurify from 'dompurify';
  */
 export function sanitizeHtml(input: string): string {
   try {
+    // Fast path: return cached value when available to avoid repeated heavy work.
+    const fromCache = __sanitizeCacheGet(input);
+    if (fromCache !== undefined) {
+      return fromCache;
+    }
+
     const sanitized = DOMPurify.sanitize(input, {
       // Keep DOMPurify defaults and forbid a few additional risky tags
       FORBID_TAGS: ['script', 'object', 'embed', 'iframe', 'form', 'input', 'button', 'link', 'meta'],
@@ -147,7 +180,9 @@ export function sanitizeHtml(input: string): string {
       }
     });
 
-    return doc.body.innerHTML;
+    const output = doc.body.innerHTML;
+    __sanitizeCacheSet(input, output);
+    return output;
   } catch (err) {
     console.error('[sanitizeHtml] Failed to sanitize content:', err);
     return input;
