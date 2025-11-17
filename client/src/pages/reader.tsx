@@ -437,13 +437,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Removed positionRestoredRef as we no longer save reading position
 
   // Helper: determine if the event target is interactive (links, buttons, inputs, etc.)
+  // Important: do not treat the container itself (role="button") as interactive,
+  // so that tapping empty space still toggles distraction-free mode.
   const isInteractiveEventTarget = (e: any): boolean => {
     try {
       const t = (e && e.target) as HTMLElement | null;
+      const current = (e && e.currentTarget) as HTMLElement | null;
       if (!t) return false;
       const interactiveSelector =
         'a, button, input, textarea, select, summary, label, [role="button"], [role="link"], [contenteditable="true"]';
-      return !!(t.closest ? t.closest(interactiveSelector) : null);
+      const closest = t.closest ? (t.closest(interactiveSelector) as HTMLElement | null) : null;
+      if (!closest) return false;
+      if (current && closest === current) return false;
+      return true;
     } catch {
       return false;
     }
