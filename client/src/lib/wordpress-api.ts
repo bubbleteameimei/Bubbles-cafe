@@ -560,7 +560,8 @@ export function getExcerpt(content: string, maxLength: number = 160): string {
 
   // Find a good breaking point
   const truncated = trimmed.substring(0, maxLength);
-  const lastSpace = truncated.lastIndexOf(' '');
+  const lastSpace = truncated.lastIndexOf(' ');ncated = trimmed.substring(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(' ');
 
   return lastSpace > 0 ? `${truncated.substring(0, lastSpace)}...` : `${truncated}...`;
 }
