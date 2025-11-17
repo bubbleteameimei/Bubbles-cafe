@@ -15,8 +15,20 @@ import { SupportWritingCard } from "@/components/SupportWritingCard";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const heroRef = useRef<HTMLDivElement | null>(null);
+  const heroRef = useRef&lt;HTMLDivElement | null&gt;(null);
   const [inView, setInView] = useState(false);
+  // Play homepage intro animations only once per session
+  const [playIntro] = useState&lt;boolean&gt;(() =&gt; {
+    try {
+      if (typeof window !== 'undefined' &amp;&amp; typeof sessionStorage !== 'undefined') {
+        const hasPlayed = sessionStorage.getItem('home_intro_played') === '1';
+        if (!hasPlayed) sessionStorage.setItem('home_intro_played', '1');
+        return !hasPlayed;
+      }
+    } catch {}
+    return false;
+  });
+  const enableIntro = playIntro &amp;&amp; inView;
   
   // Basic setup for homepage without background images
   useEffect(() => {
@@ -149,11 +161,11 @@ export default function Home() {
               >
                 Browse Stories
                 <motion.div
-                  animate={{ 
+                  animate={playIntro ? { 
                     x: [0, 3, 0],
                     rotate: [0, 10, -5, 0],
                     scale: [1, 1.05, 0.98, 1]
-                  }}
+                  } : undefined}
                   transition={{ 
                     duration: 3,
                     repeat: Infinity,
@@ -176,9 +188,9 @@ export default function Home() {
               >
                 Try Again
                 <motion.div
-                  animate={{ 
+                  animate={playIntro ? { 
                     x: [0, 4, 0]
-                  }}
+                  } : undefined}
                   transition={{ 
                     duration: 1.8,
                     repeat: Infinity,
@@ -208,8 +220,8 @@ export default function Home() {
             <div className="h-2 sm:h-3 md:h-4" aria-hidden="true"></div>
             <div className="relative">
               <motion.h1
-                initial={{ opacity: 0, y: 12 }}
-                animate={inView ? { opacity: 1, y: 0 } : undefined}
+                initial={enableIntro ? { opacity: 0, y: 12 } : false}
+                animate={enableIntro ? { opacity: 1, y: 0 } : undefined}
                 transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
                 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-foreground flex flex-col items-center"
               >
@@ -222,8 +234,8 @@ export default function Home() {
             <div className="h-8 sm:h-10 md:h-12"></div>
           
             <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={inView ? { opacity: 1, y: 0 } : undefined}
+              initial={enableIntro ? { opacity: 0, y: 8 } : false}
+              animate={enableIntro ? { opacity: 1, y: 0 } : undefined}
               transition={{ duration: 0.4, delay: 0.16, ease: 'easeOut' }}
               className="px-4 max-w-2xl mx-auto"
             >
@@ -234,8 +246,8 @@ export default function Home() {
             </motion.div>
 
               <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={inView ? { opacity: 1, y: 0 } : undefined}
+                initial={enableIntro ? { opacity: 0, y: 8 } : false}
+                animate={enableIntro ? { opacity: 1, y: 0 } : undefined}
                 transition={{ duration: 0.4, delay: 0.22, ease: 'easeOut' }}
                 className="w-full mt-2 sm:mt-3"
               >
@@ -257,7 +269,7 @@ export default function Home() {
                     >
                       <span className="text-center mr-1">Browse Stories</span>
                       <motion.div
-                        animate={inView ? {
+                        animate={enableIntro ? {
                           rotate: [0, 10, -6, 4, 0],
                           scale: [1, 1.06, 0.98, 1.03, 1]
                         } : undefined}
@@ -298,7 +310,7 @@ export default function Home() {
                     >
                       <span className="text-center mr-1">Start Reading</span>
                       <motion.div
-                        animate={inView ? { x: [0, 4, 0] } : undefined}
+                        animate={enableIntro ? { x: [0, 4, 0] } : undefined}
                         transition={{ 
                           duration: 0.6,
                           repeat: Infinity,
@@ -356,8 +368,8 @@ export default function Home() {
                     />
                     <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground w-full mb-4 sm:mb-5 md:mb-6 line-clamp-2 px-2 sm:px-3 leading-relaxed md:leading-relaxed font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
                       <motion.span
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        initial={playIntro ? { opacity: 0, y: 10 } : false}
+                        animate={playIntro ? { opacity: 1, y: 0 } : undefined}
                         transition={{ duration: 0.3, delay: 0.1 }}
                       >
                         {(() => {
@@ -418,7 +430,7 @@ export default function Home() {
                 Try the Bubble's Cafe App!
               </h3>
               <motion.div
-                animate={{ x: [0, 3, 0] }}
+                animate={playIntro ? { x: [0, 3, 0] } : undefined}
                 transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 1.4, ease: "easeInOut" }}
               >
                 <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8 group-hover:translate-x-1 transition-transform duration-300" />
