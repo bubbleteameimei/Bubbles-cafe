@@ -11,7 +11,7 @@ import {
   ArrowRight, Clock, Calendar, Award, Search, Eye, Heart,
   Ghost, Skull, Brain, Pill, Cpu, Dna, Umbrella, Footprints, CloudRain, Castle, Bug, Radiation,
   UserMinus2, UserPlus, Anchor, AlertTriangle, Building, Worm, Cloud, CloudFog, Flame,
-  ForkKnife, Knife, Cat, Moon, Dog, Radio, MoonStar, Box, Car, FlaskConical, Trees, Bone, Hourglass
+  ForkKnife, Cat, Moon, Dog, Radio, MoonStar, Box, Car, FlaskConical, Trees, Bone, Hourglass
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 import MostLikedList from "@/components/home/MostLikedList";
@@ -649,7 +649,7 @@ export default function StoriesIndexContent() {
       case 'flame': return Flame;
       case 'eye': return Eye;
       case 'hourglass': return Hourglass;
-      case 'knife': return Knife;
+      case 'knife': return ForkKnife;
       case 'utensils':
       case 'fork-knife':
       case 'forkknife': return ForkKnife;

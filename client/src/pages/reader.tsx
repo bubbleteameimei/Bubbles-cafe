@@ -15,7 +15,7 @@ import {
   Share2, Minus, Plus, Shuffle, ChevronLeft, ChevronRight,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
   Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog, BookText, Trash, X, Pencil, Clock,
-  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Knife, Bone, Type
+  Eye, Hourglass, Cat, Moon, Dog, Radio, MoonStar, Box, Car, UserPlus, FlaskConical, Trees, ForkKnife, Bone, Type
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from 'date-fns';
@@ -2046,7 +2046,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         case 'cloudfog': return CloudFog;
                         case 'eye': return Eye;
                         case 'hourglass': return Hourglass;
-                        case 'knife': return Knife;
+                        case 'knife': return ForkKnife;
                         case 'utensils':
                         case 'fork-knife':
                         case 'forkknife': return ForkKnife;
