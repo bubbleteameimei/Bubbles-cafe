@@ -15,12 +15,12 @@ import { SupportWritingCard } from "@/components/SupportWritingCard";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const heroRef = useRef&lt;HTMLDivElement | null&gt;(null);
+  const heroRef = useRef<HTMLDivElement | null>(null);
   const [inView, setInView] = useState(false);
   // Play homepage intro animations only once per session
-  const [playIntro] = useState&lt;boolean&gt;(() =&gt; {
+  const [playIntro] = useState<boolean>(() => {
     try {
-      if (typeof window !== 'undefined' &amp;&amp; typeof sessionStorage !== 'undefined') {
+      if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
         const hasPlayed = sessionStorage.getItem('home_intro_played') === '1';
         if (!hasPlayed) sessionStorage.setItem('home_intro_played', '1');
         return !hasPlayed;
@@ -28,7 +28,7 @@ export default function Home() {
     } catch {}
     return false;
   });
-  const enableIntro = playIntro &amp;&amp; inView;
+  const enableIntro = playIntro && inView;
   
   // Basic setup for homepage without background images
   useEffect(() => {
