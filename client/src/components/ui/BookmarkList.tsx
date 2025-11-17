@@ -39,6 +39,31 @@ interface BookmarkListProps {
   showFilter?: boolean;
 }
 
+// Anonymous bookmarks storage
+const LS_KEY = 'anon_bookmarks';
+type AnonBookmark = { notes?: string; tags?: string[]; lastPosition?: string; createdAt: string };
+function readAnonBookmarks(): Record<number, AnonBookmark> {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return {};
+    const obj = JSON.parse(raw);
+    if (obj && typeof obj === 'object') return obj as Record<number, AnonBookmark>;
+    return {};
+  } catch { return {}; }
+}
+function writeAnonBookmarks(obj: Record<number, AnonBookmark>) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(obj)); } catch {}
+}
+function removeAnonBookmarkLocal(postId: number) {
+  const id = Number(postId);
+  if (!Number.isFinite(id) || id <= 0) return;
+  const bks = readAnonBookmarks();
+  if (bks[id]) {
+    delete bks[id];
+    writeAnonBookmarks(bks);
+  }
+}
+
 export function BookmarkList({ className, limit, showFilter = true }: BookmarkListProps) {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
@@ -47,36 +72,29 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   const [filterTag, setFilterTag] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // One-click migration: check for migratable anonymous bookmarks after login
-  const { data: migrateDryRun, isLoading: isLoadingMigrateCheck } = useQuery({
-    queryKey: ['/api/bookmarks/migrate', 'dryRun'],
-    queryFn: async () => {
-      if (!user) return { success: true, migratable: 0 };
-      try {
-        return await apiRequest<{ success: boolean; migratable: number }>('/api/bookmarks/migrate');
-      } catch (err) {
-        console.error('[BookmarkList] Migration dry-run failed:', err);
-        return { success: false, migratable: 0 };
-      }
-    },
-    enabled: !!user,
-  });
+  // Local migratable count (for authenticated users)
+  const localAnon = readAnonBookmarks();
+  const localMigratableCount = Object.keys(localAnon).length;
 
+  // One-click migration banner: use local count when logged in
   const migrateMutation = useMutation({
     mutationFn: async () => {
+      // Send local bookmarks payload to server for import
       return apiRequest<{ success: boolean; migrated: number; cleared: boolean }>('/api/bookmarks/migrate', {
         method: 'POST',
+        body: JSON.stringify({ local: localAnon }),
       });
     },
     onSuccess: (data) => {
+      // Clear local after import
+      try { localStorage.removeItem(LS_KEY); } catch {}
       queryClient.invalidateQueries({ queryKey: ['/api/bookmarks'] });
       queryClient.invalidateQueries({ queryKey: ['/api/bookmarks', { tag: filterTag }] });
-      queryClient.invalidateQueries({ queryKey: ['/api/bookmarks/migrate', 'dryRun'] });
       if (data?.success) {
         toast({
           title: 'Bookmarks imported',
           description: data.migrated > 0
-            ? `Imported ${data.migrated} bookmark${data.migrated === 1 ? '' : 's'} from previous sessions.`
+            ? `Imported ${data.migrated} bookmark${data.migrated === 1 ? '' : 's'} from this device.`
             : 'No bookmarks found to import.',
         });
       }
@@ -91,9 +109,6 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
     },
   });
 
-  // Safe derived value to avoid undefined during initial load
-  const migratableCount = Number(migrateDryRun?.migratable ?? 0);
-
   // Query to fetch all bookmarks for authenticated users
   const { data: authBookmarks = [], isLoading: isLoadingAuth, error: authError, status: authStatus, fetchStatus: authFetchStatus } = useQuery({
     queryKey: ['/api/bookmarks', { tag: filterTag }],
@@ -102,10 +117,8 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
       const url = filterTag
         ? `/api/bookmarks/tag/${encodeURIComponent(filterTag)}`
         : '/api/bookmarks';
-      console.log(`[BookmarkList] Fetching authenticated bookmarks with URL: ${url}`);
       try {
         const result = await apiRequest<BookmarkWithPost[]>(url);
-        console.log(`[BookmarkList] Successfully fetched ${result.length} authenticated bookmarks`);
         return result;
       } catch (err) {
         console.error('[BookmarkList] Error fetching authenticated bookmarks:', err);
@@ -115,15 +128,48 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
     enabled: !!user,
   });
   
-  // Query to fetch anonymous bookmarks for non-authenticated users
-  // Anonymous bookmarks are no longer supported; require login for bookmarks
-  const anonymousBookmarks: BookmarkWithPost[] = [];
-  const isLoadingAnonymous = false;
-  const anonymousError: any = null;
-  const anonymousStatus: 'success' | 'error' | 'pending' = 'success';
-  const anonymousFetchStatus: 'idle' | 'fetching' | 'paused' = 'idle';
-  
-  // Query to fetch recommended stories for non-authenticated users with no bookmarks
+  // Anonymous bookmarks: fetch post summaries for local ids and merge
+  const anonIds = Object.keys(localAnon).map(id => Number(id)).filter(n => Number.isFinite(n));
+  const { data: anonSummary = { results: [] as any[] }, isLoading: isLoadingAnonymous, error: anonymousError, status: anonymousStatus, fetchStatus: anonymousFetchStatus } = useQuery({
+    queryKey: ['/api/posts/summary', { ids: anonIds }],
+    queryFn: async () => {
+      if (!anonIds.length) return { results: [] };
+      const url = `/api/posts/summary?ids=${anonIds.join(',')}`;
+      try {
+        return await apiRequest<{ results: Array<{ id: number; title: string; slug: string; excerpt: string; createdAt: string }> }>(url);
+      } catch (err) {
+        console.error('[BookmarkList] Error fetching anonymous summaries:', err);
+        throw err;
+      }
+    },
+    enabled: !user && anonIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const anonymousBookmarks: BookmarkWithPost[] = (!user && anonIds.length > 0)
+    ? (anonSummary.results || []).map((post: any) => {
+        const b = localAnon[Number(post.id)] || localAnon[Number((post as any).wordpressId)] || {};
+        return {
+          id: Number(post.id),
+          userId: 0,
+          postId: Number(post.id),
+          notes: (b.notes ?? null) as string | null,
+          tags: Array.isArray(b.tags) ? b.tags : null,
+          lastPosition: typeof b.lastPosition === 'string' ? b.lastPosition : '0',
+          createdAt: b.createdAt || post.createdAt || new Date().toISOString(),
+          post: {
+            id: Number(post.id),
+            title: String(post.title || 'Untitled'),
+            slug: String(post.slug || ''),
+            excerpt: String(post.excerpt || ''),
+            createdAt: String(post.createdAt || b.createdAt || new Date().toISOString()),
+          },
+        } as BookmarkWithPost;
+      })
+    : [];
+
+  // Recommended stories for non-authenticated users when there are no local bookmarks
   const { 
     data: recommendedStories = [], 
     isLoading: isLoadingRecommended,
@@ -132,103 +178,78 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   } = useQuery({
     queryKey: ['/api/posts'],
     queryFn: async () => {
-      console.log('[BookmarkList] Fetching recommended stories');
       try {
         const result = await apiRequest<Post[]>('/api/posts?limit=5');
-        console.log(`[BookmarkList] Successfully fetched ${result.length} recommended stories`);
         return result;
       } catch (err) {
         console.error('[BookmarkList] Error fetching recommended stories:', err);
         throw err;
       }
     },
-    // Only enable for non-authenticated users
-    enabled: !user,
+    enabled: !user && anonIds.length === 0,
   });
-  
-  // Enhanced debug logging for loading states with more detailed information
+
+  // Enhanced debug logging for loading states
   useEffect(() => {
-    console.log(`[BookmarkList] Auth loading state changed: 
+    console.log(`[BookmarkList] Auth loading:
       - isLoadingAuth: ${isLoadingAuth}
       - Status: ${authStatus}
-      - Fetch status: ${authFetchStatus}
-      - Time: ${new Date().toISOString()}`);
+      - Fetch status: ${authFetchStatus}`);
   }, [isLoadingAuth, authStatus, authFetchStatus]);
   
   useEffect(() => {
-    console.log(`[BookmarkList] Anonymous loading state changed: 
+    console.log(`[BookmarkList] Anonymous loading:
       - isLoadingAnonymous: ${isLoadingAnonymous}
       - Status: ${anonymousStatus}
-      - Fetch status: ${anonymousFetchStatus}
-      - Time: ${new Date().toISOString()}`);
+      - Fetch status: ${anonymousFetchStatus}`);
   }, [isLoadingAnonymous, anonymousStatus, anonymousFetchStatus]);
-  
-  useEffect(() => {
-    console.log(`[BookmarkList] Recommended loading state changed: 
-      - isLoadingRecommended: ${isLoadingRecommended}
-      - Status: ${recommendedStatus}
-      - Fetch status: ${recommendedFetchStatus}
-      - Time: ${new Date().toISOString()}`);
-  }, [isLoadingRecommended, recommendedStatus, recommendedFetchStatus]);
 
-  // Delete authenticated bookmark mutation
+  // Delete bookmark mutations
   const deleteAuthMutation = useMutation({
     mutationFn: async (postId: number) => {
-      // Validate input
       if (!postId || typeof postId !== 'number' || postId <= 0) {
         throw new Error('Invalid post ID for bookmark deletion');
       }
-      
-      return apiRequest(`/api/bookmarks/${postId}`, {
-        method: 'DELETE',
-      });
+      return apiRequest(`/api/bookmarks/${postId}`, { method: 'DELETE' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bookmarks'] });
-      toast({
-        title: 'Bookmark removed',
-        description: 'The bookmark has been removed successfully.',
-      });
+      toast({ title: 'Bookmark removed', description: 'The bookmark has been removed successfully.' });
     },
     onError: (error) => {
       console.error('Error removing authenticated bookmark:', error);
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'Failed to remove bookmark. Please try again.';
-      
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to remove bookmark. Please try again.';
+      toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
+    },
+  });
+
+  const deleteAnonMutation = useMutation({
+    mutationFn: async (postId: number) => {
+      removeAnonBookmarkLocal(postId);
+      return { success: true };
+    },
+    onSuccess: () => {
+      toast({ title: 'Bookmark removed', description: 'Removed from local bookmarks.' });
+    },
+    onError: (error) => {
+      console.error('Error removing anonymous bookmark:', error);
+      toast({ title: 'Error', description: 'Failed to remove local bookmark.', variant: 'destructive' });
     },
   });
   
-  
-  
-  // Use the appropriate mutation based on user authentication status
-  const deleteMutation = deleteAuthMutation;
+  const deleteMutation = user ? deleteAuthMutation : deleteAnonMutation;
 
   // Handle removing a bookmark
   const handleRemoveBookmark = (postId: number) => {
     try {
       if (!postId || typeof postId !== 'number' || postId <= 0) {
-        toast({
-          title: 'Error',
-          description: 'Invalid bookmark ID. Please try again.',
-          variant: 'destructive',
-        });
+        toast({ title: 'Error', description: 'Invalid bookmark ID. Please try again.', variant: 'destructive' });
         return;
       }
-      
       deleteMutation.mutate(postId);
     } catch (error) {
       console.error('Error in handleRemoveBookmark:', error);
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred. Please try again.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'An unexpected error occurred. Please try again.', variant: 'destructive' });
     }
   };
 
@@ -238,7 +259,6 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   // Filter bookmarks by search query
   const filteredBookmarks = bookmarks.filter((bookmark: BookmarkWithPost) => {
     if (!searchQuery) return true;
-    
     const searchLower = searchQuery.toLowerCase();
     return (
       bookmark.post.title.toLowerCase().includes(searchLower) ||
@@ -262,19 +282,26 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   // Display a limited number of bookmarks if specified
   const displayedBookmarks = limit ? filteredBookmarks.slice(0, limit) : filteredBookmarks;
 
-  // Special handling for non-authenticated users: require login and show recommendations
-  if (!user) {
+  // Special handling for non-authenticated users with no local bookmarks: show sign-in + recommendations
+  if (!user && anonIds.length === 0) {
+    
+
     return (
       <div className={className}>
         <div className="text-center p-6 bg-muted/20 rounded-lg border border-border/50 mb-8">
           <Bookmark className="mx-auto h-12 w-12 opacity-20 mb-4" />
           <h3 className="text-lg font-semibold mb-2">Discover your reading list</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Create a free account to bookmark stories and track your reading progress.
+            You can bookmark stories locally without signing in, or create a free account to sync them across devices.
           </p>
-          <Button variant="default" size="sm" onClick={() => setLocation('/auth')}>
-            Sign in to get started
-          </Button>
+          <div className="flex items-center justify-center gap-2">
+            <Button variant="default" size="sm" onClick={() => setLocation('/auth')}>
+              Sign in
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setLocation('/index')}>
+              Browse stories
+            </Button>
+          </div>
         </div>
 
         {isLoadingRecommended ? (
@@ -358,7 +385,6 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
           overlayZIndex={100}
         >
           <div className="invisible">
-            {/* This creates proper space for the content while invisible */}
             <div className="h-[200px] w-full flex items-center justify-center">
               <span className="sr-only">Loading bookmarks...</span>
             </div>
@@ -390,11 +416,11 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
 
   return (
     <div className={className}>
-      {/* One-click migration banner for authenticated users */}
-      {user && migratableCount > 0 && (
+      {/* One-click migration banner for authenticated users using local count */}
+      {user && localMigratableCount > 0 && (
         <div className="p-3 mb-4 rounded-md border border-border/60 bg-muted/30 flex items-center justify-between">
           <div className="text-sm">
-            You have {migratableCount} bookmark{migratableCount === 1 ? '' : 's'} from previous sessions. Import them into your account?
+            You have {localMigratableCount} local bookmark{localMigratableCount === 1 ? '' : 's'} on this device. Import them into your account?
           </div>
           <Button
             variant="default"

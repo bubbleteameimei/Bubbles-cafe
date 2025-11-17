@@ -3,7 +3,6 @@ import ContactForm from "@/components/contact/contact-form";
 import { FreshNewsletterForm } from "@/components/newsletter/fresh-newsletter-form";
 import { Button } from "@/components/ui/button";
 import { Mail, MessageSquare, HelpCircle, PenSquare } from "lucide-react";
-import Footer from "@/components/layout/footer";
 
 export default function Contact() {
   return (
@@ -91,7 +90,6 @@ export default function Contact() {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }

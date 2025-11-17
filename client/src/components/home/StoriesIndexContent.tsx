@@ -21,6 +21,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 
 
 import { getReadingTime, extractEngagingExcerpt } from "@/lib/excerpt-lite";
+import { apiRequest } from "@/lib/api";
 import { THEME_CATEGORIES } from "@/lib/themes-lite";
 import type { WordPressPost } from "@/lib/wordpress-api";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
@@ -32,6 +33,7 @@ import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { VirtualScrollArea } from "@/components/ui/VirtualScrollArea";
 import { computeTrendingScores } from "@/lib/trending";
 import { useThemeCategories } from "@/hooks/use-theme-categories";
+import { logOnce } from "@/lib/metrics";
 
 
 
@@ -120,11 +122,7 @@ export default function StoriesIndexContent() {
     if (!q || q.length < 3) return;
     const t = setTimeout(() => {
       try {
-        fetch('/api/analytics/interaction', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ interactionType: 'index_search_query', details: { q }, path: '/stories' })
-        }).catch(() => {});
+        apiRequest('POST', '/api/analytics/interaction', { interactionType: 'index_search_query', details: { q }, path: '/stories' }).catch(() => {});
       } catch {}
     }, 1200);
     return () => clearTimeout(t);
@@ -722,7 +720,8 @@ export default function StoriesIndexContent() {
               fetched.add(payload.postId);
               // Reset transient error state on any successful message
               reactionsErrorCountRef.current = 0;
-              if (reactionsUnavailable) setReactionsUnavailable(false);
+              // On any successful SSE message, clear the unavailable banner without reading stale state
+              setReactionsUnavailable(false);
             }
           } catch {}
         };
@@ -738,7 +737,7 @@ export default function StoriesIndexContent() {
         };
         sources.set(postId, { es, ts: Date.now() });
       } catch (err) {
-        console.error('[Index] Failed to open SSE stream:', err);
+        try { logOnce('index.sse.open', 'Failed to open SSE stream', { error: err instanceof Error ? err.message : String(err) }); } catch {}
         setReactionsUnavailable(true);
       }
     };
@@ -768,7 +767,7 @@ export default function StoriesIndexContent() {
           ensureSse(id);
         }
       } catch (err) {
-        console.error('[Index] Failed to preload initial reactions:', err);
+        try { logOnce('index.reactions.preload', 'Failed to preload initial reactions', { error: err instanceof Error ? err.message : String(err) }); } catch {}
         reactionsErrorCountRef.current += 1;
         if (reactionsErrorCountRef.current >= 3) {
           setReactionsUnavailable(true);
@@ -798,7 +797,7 @@ export default function StoriesIndexContent() {
           ensureSse(id);
         }
       } catch (err) {
-        console.error('[Index] Failed to flush reaction batch:', err);
+        try { logOnce('index.reactions.flush', 'Failed to flush reaction batch', { error: err instanceof Error ? err.message : String(err) }); } catch {}
         reactionsErrorCountRef.current += 1;
         if (reactionsErrorCountRef.current >= 3) {
           setReactionsUnavailable(true);
@@ -1100,11 +1099,7 @@ export default function StoriesIndexContent() {
       if (lastZeroResultsQueryRef.current !== q) {
         lastZeroResultsQueryRef.current = q;
         try {
-          fetch('/api/analytics/interaction', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ interactionType: 'index_zero_results', details: { q }, path: '/stories' })
-          }).catch(() => {});
+          apiRequest('POST', '/api/analytics/interaction', { interactionType: 'index_zero_results', details: { q }, path: '/stories' }).catch(() => {});
         } catch {}
       }
     }
@@ -1336,7 +1331,7 @@ export default function StoriesIndexContent() {
                     </div>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <button className="text-left text-xl md:text-2xl font-semibold tracking-tight leading-tight hover:text-primary group-hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}>
+                        <button className="text-left text-xl md:text-2xl font-semibold tracking-tight leading-tight hover:text-primary group-hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)} style={{ minHeight: '48px' }}>
                           {renderHighlighted(String(featuredStory.title || ''))}
                         </button>
                         {(() => {
@@ -1345,7 +1340,7 @@ export default function StoriesIndexContent() {
                           const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                           return (
                             <div className="-mt-1">
-                              <Badge className={"w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border " + badgeTint}>
+                              <Badge className={"w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap " + badgeTint}>
                                 {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                 {label}
                               </Badge>
@@ -1548,11 +1543,12 @@ export default function StoriesIndexContent() {
                       >
                         {popularPosts.map(pop => (
                           <div key={pop.id} className="snap-start min-w-[260px] sm:min-w-[300px] md:min-w-[320px]">
-                            <Card className="rounded-lg border border-border/50 bg-card/70 hover:bg-card transition">
+                            <Card className="rounded-lg border border-border/60 bg-card/70 hover:bg-card transition">
                               <CardContent className="p-3">
                                 <button
                                   className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
                                   onClick={() => navigateToReader(pop.slug || pop.id)}
+                                  style={{ minHeight: '36px' }}
                                 >
                                   {pop.title}
                                 </button>
@@ -1562,7 +1558,7 @@ export default function StoriesIndexContent() {
                                   const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                   return (
                                     <div className="mt-1">
-                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}>
                                         {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                         {label}
                                       </Badge>
@@ -1670,7 +1666,7 @@ export default function StoriesIndexContent() {
                                 <CardContent className="p-4 pb-4">
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="flex-1 min-w-0">
-                                      <CardTitle className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary">
+                                      <CardTitle className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary" style={{ minHeight: '48px' }}>
                                         {renderHighlighted(String(post.title || ''))}
                                       </CardTitle>
                                       {(() => {
@@ -1679,7 +1675,7 @@ export default function StoriesIndexContent() {
                                         const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                         return (
                                           <div className="mt-1">
-                                            <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                            <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}>
                                               {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                               {label}
                                             </Badge>
@@ -1773,6 +1769,7 @@ export default function StoriesIndexContent() {
                               <div className="flex-1 min-w-0">
                                 <CardTitle
                                   className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary"
+                                  style={{ minHeight: '48px' }}
                                 >
                                   {renderHighlighted(String(post.title || ''))}
                                 </CardTitle>
@@ -1782,7 +1779,7 @@ export default function StoriesIndexContent() {
                                   const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                   return (
                                     <div className="mt-1">
-                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}>
                                         {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                         {label}
                                       </Badge>

@@ -40,6 +40,7 @@ import { RefreshProvider } from './contexts/refresh-context';
 const PostsPrefetcher = React.lazy(() => import('./components/providers/PostsPrefetcher'));
 import { initSmoothScroll } from './lib/smooth-scroll';
 import { useA11y } from '@/hooks/useA11y';
+import Footer from './components/layout/footer';
 
 
 // New: BackToTopButton (scroll-to-top)
@@ -452,7 +453,7 @@ const AppContent = () => {
       </a>
       <div
         className={`page-transition-container w-full min-w-full max-w-full overflow-x-hidden bg-background text-foreground 
-          m-0 p-0 px-0 mx-0 flex flex-col`}
+          m-0 mx-0 flex flex-col site-gutters`}
          style={{ width: '100%', minWidth: '100%', maxWidth: '100%', margin: '0 auto', paddingTop: isReaderLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)' }}>
         {/* Main navigation bar */}
         <AppNavbar />
@@ -677,6 +678,8 @@ const AppContent = () => {
             
           </main>
         </React.Suspense>
+        {/* Global footer across all non-error routes */}
+        <Footer />
       </div>
     </ErrorBoundary>
   );

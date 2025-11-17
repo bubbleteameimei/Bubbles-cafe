@@ -101,10 +101,9 @@ body {
     }
   }
 
-  /* Prevent black box flash during page transitions */
-  * {
-    transition: background-color 0.1s ease;
-  }
+  /* Prevent dark-mode white flash: remove global background-color transition.
+     Theme-change transitions are scoped to html.theme-smooth below. */
+  /* (Removed global background-color transition to avoid flicker) */
 
   /* Ensure smooth loading transitions */
   .loading-active {
@@ -294,19 +293,19 @@ body {
 }
 
 /* Container fixes to prevent overflow and remove black borders */
-.container,
-main,
-section,
-article,
-div[class*="layout"],
-div[class*="container"] {
+/* Scoped to reader routes only to avoid global conflicts */
+body:has(main:has([data-reader-page])) .container,
+body:has(main:has([data-reader-page])) main,
+body:has(main:has([data-reader-page])) section,
+body:has(main:has([data-reader-page])) article,
+body:has(main:has([data-reader-page])) div[class*="layout"],
+body:has(main:has([data-reader-page])) div[class*="container"] {
   @apply max-w-full overflow-hidden;
   width: 100% !important;
   max-width: 100% !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
-  padding-left: 0.5rem !important;
-  padding-right: 0.5rem !important;
+  /* Do not force horizontal padding; let global gutters and local components control spacing */
   box-sizing: border-box !important;
   /* Keep solid backgrounds for readability */
   background-color: hsl(var(--background)) !important;
@@ -397,8 +396,7 @@ div[data-reader-page="true"] .container,
 .reader-page article,
 .reader-page section {
   overflow-x: hidden !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+  /* Allow global site gutters to apply; do not zero horizontal padding here */
 }
 
 /* Ensure outer transition container does not allow horizontal overflow on reader routes */
@@ -494,20 +492,16 @@ div.sidebar-menu-container {
   will-change: transform;
 }
 
-/* Non-homepages: remove forced full-height that can create a visible bottom band */
-/* Non-homepages: remove forced full-height that can create a visible bottom band */
-body:not(:has(.home-page)) .min-h-screen {
-  min-height: auto !important;
-}
-body:not(:has(.home-page)) .page-transition-container,
-body:not(:has(.home-page)) main#main-content,
-body:not(:has(.home-page)) .page-content {
-  min-height: auto !important;
-}
+/* Reader route: do not override min-height on primary containers.
+   Allow Tailwind's default .min-h-screen (100vh) to stabilize layout when modals lock body scroll.
+   Keeping default prevents content height shrink/expand on dialog open/close, reducing layout shifts. */
+/* (Removed the reader-specific min-height: auto overrides) */
 
-/* On non-home pages, avoid painting the viewport background so short pages don't show a dark band */
-body:not(:has(.home-page)) {
-  background-color: transparent !important;
+/* Keep reader route background stable and force scrollbar presence (Safari lacks scrollbar-gutter) */
+body:has(main:has([data-reader-page])) {
+  background-color: hsl(var(--background)) !important;
+  /* Always reserve vertical scrollbar space on reader routes to prevent width shifts on dialog open/close */
+  overflow-y: scroll !important;
 }
 
 /* Hide the footer on error pages */
@@ -515,10 +509,10 @@ body.error-page-active footer.site-footer {
   display: none !important;
 }
 
-/* Reader: neutralize modal-induced body padding that causes layout shifts */
-body:has([data-reader-page="true"])[style*="padding-right"] {
-  padding-right: 0 !important;
-}
+/* Reader: allow Radix Dialog to manage body padding-right to prevent layout shifts.
+   Previously we forced padding-right: 0 which caused the content to reflow on modal open/close.
+   With scrollbar-gutter: stable both-edges already set on html/body, Radix's compensation is safe.
+   If further issues arise, consider using a custom overlay class to scope adjustments instead of touching body. */
 
 /* Sidebar: ensure the first group sits flush to the top */
 [data-sidebar="sidebar"] [data-sidebar="group"]:first-child {
@@ -540,4 +534,24 @@ body:has([data-reader-page="true"])[style*="padding-right"] {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* Global site gutters: ensure consistent horizontal spacing on all pages */
+.site-gutters {
+  padding-left: clamp(12px, 3vw, 24px);
+  padding-right: clamp(12px, 3vw, 24px);
+}
+
+/* Apply gutters to primary layout wrappers */
+.page-transition-container,
+.page-content {
+  padding-left: clamp(12px, 3vw, 24px);
+  padding-right: clamp(12px, 3vw, 24px);
+}
+
+/* Avoid duplicate footers:
+   If both a page-specific footer and the global footer exist, hide the first one (page-specific),
+   so the global footer (rendered last) is used consistently. Pages with only one footer remain unaffected. */
+body:not(.error-page-active):has(footer.site-footer ~ footer.site-footer) footer.site-footer:first-of-type {
+  display: none !important;
 }

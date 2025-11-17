@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"; 
 import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
 import { useCopyProtection } from "@/hooks/useCopyProtection";
+import useInlineCommenting from "@/hooks/useInlineCommenting";
 import ReaderTooltip from "@/components/reader/ReaderTooltip";
 import TableOfContents from "@/components/reader/TableOfContents";
-import SwipeNavigation from "@/components/reader/SwipeNavigation";
+
 import ReaderHorrorOverlayPortal from "@/components/reader/ReaderHorrorOverlayPortal";
 import "@/styles/reader-fixes.css";
+import "@/styles/reader-typography.css";
 import { 
   Share2, Minus, Plus, Shuffle, ChevronLeft, ChevronRight,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
@@ -36,7 +38,7 @@ import { apiJson } from "@/lib/api";
 
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import { resolveAuthorId } from "@/lib/reader-navigation";
-import Footer from "@/components/layout/footer";
+
 import SEO from "@/components/SEO";
 import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
 import type { WordPressPost } from "@/lib/wordpress-api";
@@ -77,7 +79,7 @@ import { useThemeCategories } from "@/hooks/use-theme-categories";
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
 // Lazy-mount comment section when near viewport to reduce initial load cost
-function LazyCommentSection({ postId }: { postId: number }) {
+function LazyCommentSection({ postId }: { postId: number }): JSX.Element {
   const [visible, setVisible] = useState(false);
   const anchorRef = useRef<HTMLDivElement | null>(null);
 
@@ -147,6 +149,47 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  const { CommentDialog } = useInlineCommenting({
+    enabled: true,
+    onSubmitComment: async (text, selection, range) => {
+      try {
+        const postId = Number((posts?.[currentIndex] || currentPost)?.id || 0);
+        if (!Number.isFinite(postId) || postId <= 0) return;
+        await apiJson('POST', `/api/posts/${postId}/comments`, {
+          content: text,
+          selectionText: selection,
+          anchorParagraphIndex: Number(range.paragraphIndex ?? -1) >= 0 ? Number(range.paragraphIndex) : undefined,
+          selectionStart: Number.isFinite(range.start) ? Number(range.start) : undefined,
+          selectionEnd: Number.isFinite(range.end) ? Number(range.end) : undefined,
+        });
+        toast({ title: 'Comment added', description: 'Your inline comment has been submitted.' });
+      } catch (e: any) {
+        toast({ title: 'Failed to add comment', description: e?.message || 'Please try again.', variant: 'destructive' });
+      }
+    },
+    contentSelector: '.story-content'
+  });
+  
+  const logReaderError = (id: string, message: any, extra?: any) => {
+    try {
+      const key = `reader_error_logged_${id}`;
+      // Gate each error id to once per session to avoid noisy logs
+      const already = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(key) : null;
+      if (already) return;
+      try { sessionStorage.setItem(key, '1'); } catch {}
+      fetch('/api/errors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          id,
+          message: typeof message === 'string' ? message : (message && (message.message || String(message))) || 'Unknown',
+          extra
+        })
+      }).catch(() => {});
+    } catch {}
+  };
+  
   // Add authentication hook to check user role for admin actions
   const { user, isAuthenticated } = useAuth();
   const isAdmin = user?.isAdmin === true;
@@ -163,10 +206,26 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   // One-click distraction-free mode - toggle UI visibility with click
   const { isUIHidden, toggleUI, showTooltip, setUIHidden } = useReaderUIToggle();
+
+  // Debug: wrap toggle to trace invocations
+  const toggleUIWithDebug = (reason: string) => {
+    try {
+      if (debugEnabled) {
+        console.log('[Reader.debug] toggleUI invoked', { reason, isUIHiddenBefore: isUIHidden });
+      }
+    } catch {}
+    toggleUI();
+    try {
+      if (debugEnabled) {
+        console.log('[Reader.debug] toggleUI scheduled state flip');
+      }
+    } catch {}
+  };
+
   // Reset UI hidden state on theme changes to avoid unpredictable layout shifts
   useEffect(() => {
     try { setUIHidden(false); } catch {}
-  }, [theme]);
+  }, [theme, setUIHidden]);
 
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
@@ -188,8 +247,26 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [contentsDialogOpen, setContentsDialogOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [randomTipOpen, setRandomTipOpen] = useState(false);
-  // Gate footer rendering until horror overlay initialization completes to prevent flash
-  const [footerReady, setFooterReady] = useState(false);
+  
+
+  /* isAnyDialogOpen is declared below, after themeEditorOpen is defined */
+
+  // Debug instrumentation toggle: enable when DEV or localStorage('reader_debug') === '1'
+  const [debugEnabled, setDebugEnabled] = useState<boolean>(() => {
+    try {
+      const flag = localStorage.getItem('reader_debug');
+      return flag === '1' || import.meta.env?.DEV === true;
+    } catch {
+      return import.meta.env?.DEV === true;
+    }
+  });
+
+  // Refs for bounds and style logging
+  const controlsRowRef = useRef<HTMLDivElement | null>(null);
+  const metaRowRef = useRef<HTMLDivElement | null>(null);
+  const navRowRef = useRef<HTMLDivElement | null>(null);
+  const pagerRowRef = useRef<HTMLDivElement | null>(null);
+  const shareRowRef = useRef<HTMLDivElement | null>(null);
 
   // Inline admin theme editor state
   const [themeEditorOpen, setThemeEditorOpen] = useState(false);
@@ -198,16 +275,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [savingTheme, setSavingTheme] = useState(false);
   const [overrideThemeCategory, setOverrideThemeCategory] = useState<string | null>(null);
   const [overrideThemeIcon, setOverrideThemeIcon] = useState<string | null>(null);
+
+  // Derived: any dialog open (used to stabilize layout during overlays/dropdowns)
+  const isAnyDialogOpen = fontDialogOpen || contentsDialogOpen || showDeleteDialog || themeEditorOpen;
   
   
-  
-  // Helper function to close dialogs safely
-  const safeCloseDialog = () => {
-    const closeButton = document.querySelector('[aria-label="Close"]');
-    if (closeButton instanceof HTMLElement) {
-      closeButton.click();
-    }
-  };
+  // Dialogs are controlled via state; avoid querying DOM for close buttons
   
   // Reading progress tracking with scroll-based calculation and rAF smoothing
   useEffect(() => {
@@ -317,15 +390,123 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         sessionStorage.removeItem('reader_horror_expiry_ts');
       }
     } catch {}
-    // Gate footer rendering until overlay init runs to avoid flash-before-modal
-    setFooterReady(true);
+    // Overlay state restored; footer rendering handled globally
   }, []);
 
   
   
   // Create a ref for the content container to attach swipe events and copy protection
-  const contentRef = useCopyProtection(true);
+  const contentRef = useCopyProtection(false);
   // Removed positionRestoredRef as we no longer save reading position
+
+  // Debug: toggle via localStorage key "reader_debug" (set to "1" to enable)
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'reader_debug') {
+        try {
+          setDebugEnabled(e.newValue === '1' || import.meta.env?.DEV === true);
+        } catch {}
+      }
+    };
+    try {
+      window.addEventListener('storage', onStorage);
+    } catch {}
+    return () => {
+      try { window.removeEventListener('storage', onStorage); } catch {}
+    };
+  }, []);
+
+  // Debug: global click tracer (capture phase)
+  useEffect(() => {
+    if (!debugEnabled) return undefined;
+    const handler = (e: Event) => {
+      try {
+        const t = e.target as HTMLElement | null;
+        const withinContent = !!(t && contentRef.current && contentRef.current.contains(t));
+        const path = (e as any).composedPath ? (e as any).composedPath().map((n: any) => n?.nodeName || n?.tagName || n?.className || 'node').slice(0, 6) : undefined;
+        console.log('[Reader.debug] click', {
+          target: t?.tagName,
+          class: t?.className,
+          id: t?.id,
+          withinContent,
+          isUIHidden,
+          fontDialogOpen,
+          contentsDialogOpen,
+          themeEditorOpen,
+          path
+        });
+      } catch {}
+    };
+    document.addEventListener('click', handler, true);
+    return () => document.removeEventListener('click', handler, true);
+  }, [debugEnabled, isUIHidden, fontDialogOpen, contentsDialogOpen, themeEditorOpen, contentRef]);
+
+  // Debug: log bounds and key computed styles when modals open/close and on DF mode change
+  useEffect(() => {
+    if (!debugEnabled) return undefined;
+    const logEl = (name: string, el: HTMLElement | null | undefined) => {
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const cs = window.getComputedStyle(el);
+      console.log('[Reader.debug] bounds', name, {
+        rect: { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) },
+        opacity: cs.opacity,
+        zIndex: cs.zIndex,
+        pointerEvents: cs.pointerEvents,
+        bg: cs.backgroundColor,
+        filter: cs.filter,
+        backdropFilter: (cs as any).backdropFilter
+      });
+    };
+    logEl('controlsRow', controlsRowRef.current || undefined);
+    logEl('metaRow', metaRowRef.current || undefined);
+    logEl('navRow', navRowRef.current || undefined);
+    logEl('pagerRow', pagerRowRef.current || undefined);
+    logEl('shareRow', shareRowRef.current || undefined);
+    logEl('storyContent', contentRef.current || undefined);
+    try {
+      const b = document.body;
+      if (b) {
+        const cs = window.getComputedStyle(b);
+        console.log('[Reader.debug] body styles', {
+          pointerEvents: cs.pointerEvents,
+          paddingRightInline: b.style.paddingRight,
+          overflowX: cs.overflowX,
+          overflowY: cs.overflowY
+        });
+      }
+      const dlg = document.querySelector('[role="dialog"]') as HTMLElement | null;
+      if (dlg) {
+        const r = dlg.getBoundingClientRect();
+        const cs2 = window.getComputedStyle(dlg);
+        console.log('[Reader.debug] dialog content styles', {
+          rect: { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) },
+          opacity: cs2.opacity,
+          zIndex: cs2.zIndex,
+          pointerEvents: cs2.pointerEvents,
+          bg: cs2.backgroundColor,
+          filter: cs2.filter,
+          backdropFilter: (cs2 as any).backdropFilter
+        });
+      }
+      const overlay = document.querySelector('[data-radix-dialog-overlay]') as HTMLElement | null;
+      if (overlay) {
+        const r = overlay.getBoundingClientRect();
+        const cs3 = window.getComputedStyle(overlay);
+        console.log('[Reader.debug] dialog overlay styles', {
+          rect: { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) },
+          opacity: cs3.opacity,
+          zIndex: cs3.zIndex,
+          pointerEvents: cs3.pointerEvents,
+          bg: cs3.backgroundColor,
+          filter: cs3.filter,
+          backdropFilter: (cs3 as any).backdropFilter
+        });
+      }
+      console.log('[Reader.debug] content-visibility', { isAnyDialogOpen, applied: isAnyDialogOpen ? 'visible (no CV)' : 'auto (CV enabled)' });
+    } catch {}
+    return undefined;
+  }, [debugEnabled, fontDialogOpen, contentsDialogOpen, themeEditorOpen, isUIHidden, isAnyDialogOpen, contentRef]);
   
   // Delete Post Mutation for admin actions
   const deleteMutation = useMutation({
@@ -439,13 +620,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }
   
   // Clear any cached data to ensure fresh fetch after sample story removal
-  useEffect(() => {
-    if (import.meta.env?.DEV) {
-      console.log('[Reader] Clearing query cache to ensure fresh data');
-    }
-    queryClient.invalidateQueries({ queryKey: ["posts"] });
-    queryClient.removeQueries({ queryKey: ["posts"] });
-  }, [queryClient]);
+  // Removed broad cache invalidation; reader now targets only its own query keys
 
   // Initialize currentIndex with validation
   const [currentIndex, setCurrentIndex] = useState(() => {
@@ -480,16 +655,17 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     queryKey: ["wordpress", "reader", "list", isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
       if (import.meta.env?.DEV) {
-        console.log('[Reader] Fetching WordPress posts list...', { routeSlug });
+        console.log('[Reader] Fetching WordPress posts list (trimmed)...', { routeSlug });
       }
 
       try {
-        // Always fetch a list of posts to preserve global navigation context
-        const result = await fetchWordPressPosts({ perPage: 50, includeContent: true });
+        // Fetch a trimmed list for TOC/navigation to reduce payload size
+        const result = await fetchWordPressPosts({ page: 1, perPage: 100, includeContent: false, maxRetries: 2 });
         const posts = Array.isArray(result.posts) ? result.posts : [];
         return { posts, totalPages: result.totalPages ?? 1, total: result.total ?? posts.length };
       } catch (error) {
         console.error('[Reader] Error fetching WordPress posts via proxy:', error);
+        try { logReaderError('reader.list.fetchError', error); } catch {}
         throw error;
       }
     },
@@ -569,17 +745,39 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Reaction totals for the current post (prefetch + SSE to minimize pop-in)
   const [currentTotals, setCurrentTotals] = useState<ReactionTotals | null>(null);
   const sseRef = useRef<EventSource | null>(null);
+  const sseErrorCountRef = useRef(0);
+
+  // Defer reactions prefetch and SSE subscription until user interaction or short delay
+  const [sseReady, setSseReady] = useState(false);
 
   useEffect(() => {
-    try {
-      sseRef.current?.close();
-    } catch {}
-    setCurrentTotals(null);
-
+    setSseReady(false);
     const pid = Number(currentPostId);
     if (!Number.isFinite(pid)) return;
 
-    // Prefetch totals
+    const delay = window.setTimeout(() => { setSseReady(true); }, 3000);
+    const onInteract = () => { setSseReady(true); };
+
+    window.addEventListener('pointerdown', onInteract);
+    window.addEventListener('keydown', onInteract);
+    window.addEventListener('touchstart', onInteract);
+
+    return () => {
+      window.clearTimeout(delay);
+      window.removeEventListener('pointerdown', onInteract);
+      window.removeEventListener('keydown', onInteract);
+      window.removeEventListener('touchstart', onInteract);
+    };
+  }, [currentPostId]);
+
+  useEffect(() => {
+    try { sseRef.current?.close(); } catch {}
+    setCurrentTotals(null);
+
+    const pid = Number(currentPostId);
+    if (!sseReady || !Number.isFinite(pid)) return;
+
+    // Prefetch totals once ready
     (async () => {
       try {
         const totals = await fetchReactionsBatch([pid]);
@@ -593,6 +791,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     // Subscribe to SSE for live totals
     try {
       const es = new EventSource(`/api/posts/${pid}/reactions/stream`, { withCredentials: true } as any);
+      sseErrorCountRef.current = 0;
       const onMessage = (e: MessageEvent) => {
         try {
           const payload = JSON.parse(e.data || '{}');
@@ -613,7 +812,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       };
       es.addEventListener('initial', onMessage);
       es.addEventListener('update', onMessage);
-      es.onerror = () => { /* keep alive */ };
+      es.onerror = () => {
+        sseErrorCountRef.current += 1;
+        if (sseErrorCountRef.current === 3) {
+          try { logReaderError('reader.sse.error', 'SSE connection error', { postId: pid }); } catch {}
+        }
+        // keep alive; browser will reconnect
+      };
       sseRef.current = es;
     } catch { /* ignore */ }
 
@@ -621,7 +826,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       try { sseRef.current?.close(); } catch {}
       sseRef.current = null;
     };
-  }, [currentPostId]);
+  }, [currentPostId, sseReady]);
 
   const currentPostLink = useMemo(() => {
     try {
@@ -795,55 +1000,23 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   }, [readingProgress, currentPostId, interactionCount, visibilityTick, isCategoryAllowed, currentIndex, posts]);
 
-  // Create a function to generate the styles
-  const generateStoryContentStyles = () => {
-    // Use fixed constants for better text readability
-    const textColor = theme === 'dark' 
-      ? `color: ${DARK_TEXT_COLOR};` 
-      : `color: ${LIGHT_TEXT_COLOR};`;
-    
-    // Return the main styles using CSS variables for font family and size
-    return `
-  .story-content {
-    font-family: var(--reader-font-family);
-    font-size: var(--reader-font-size);
-    width: 100%;
-    margin: 0 auto;
-    padding: 0 0.5rem;
-    ${textColor}
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-  }
-  .story-content p, .story-content .story-paragraph {
-    line-height: 1.7;
-    margin-bottom: 1.7em;
-    font-family: var(--reader-font-family);
-    font-size: var(--reader-font-size);
-  }
-  @media (max-width: 768px) {
-    .story-content p, .story-content .story-paragraph {
-      margin-bottom: 1.5em;
-      line-height: 1.75;
-    }
-  }`;
-  };
+  
 
   // Apply font styles using CSS variables for smooth transitions
   useEffect(() => {
     try {
       if (import.meta.env?.DEV) {
-        console.log('[Reader] Updating font styles with CSS variables:', { fontFamily, fontSize });
+        console.log('[Reader] Updating font styles with CSS variables:', { fontFamily, fontSize, theme });
       }
       // Set CSS variables on the document root for smooth transitions
       const root = document.documentElement;
       root.style.setProperty('--reader-font-family', availableFonts[fontFamily].family);
       root.style.setProperty('--reader-font-size', `${fontSize}px`);
+      root.style.setProperty('--reader-text-color', theme === 'dark' ? DARK_TEXT_COLOR : LIGHT_TEXT_COLOR);
     } catch (error) {
       console.error('[Reader] Error applying font styles:', error);
     }
-  }, [fontFamily, fontSize, availableFonts]);
+  }, [fontFamily, fontSize, availableFonts, theme]);
   
   // This duplicate has been removed - reading progress tracking is handled above
 
@@ -856,18 +1029,24 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     [currentIndex, posts.length]
   );
 
-  const ensuredCanonicalRef = useRef(false);
-  useEffect(() => {
-    try {
-      if (!ensuredCanonicalRef.current && posts.length > 0 && !routeSlug) {
-        ensuredCanonicalRef.current = true;
-        const slugToUse = String(posts[validCurrentIndex]?.slug ?? posts[validCurrentIndex]?.id);
-        if (slugToUse) {
-          setLocation(`/reader/${encodeURIComponent(slugToUse)}`);
-        }
+  // Avoid auto-redirect from /reader; let the page render predictably without route changes
+
+  // Determine current slug and fetch full post content by slug (prefer full content for the active story)
+  const currentSlugToUse = routeSlug || (posts[validCurrentIndex]?.slug as any);
+  const { data: currentPostFull, isFetching: isFetchingPost } = useQuery<WordPressPost | null>({
+    queryKey: ['wordpress', 'reader', 'post', currentSlugToUse || ''],
+    queryFn: async () => {
+      if (!currentSlugToUse) return null as any;
+      try {
+        return await fetchWordPressPostBySlug(String(currentSlugToUse));
+      } catch (err) {
+        try { logReaderError('reader.post.fetchError', 'Failed to fetch post by slug', { slug: String(currentSlugToUse) }); } catch {}
+        return null as any;
       }
-    } catch {}
-  }, [posts, validCurrentIndex, routeSlug, setLocation]);
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: Boolean(currentSlugToUse),
+  });
 
   // Let's make sure we have posts data and current post before rendering
   // Keep previous story content visible while fetching; only return null if no cached data yet
@@ -889,7 +1068,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     );
   }
 
-  if (posts.length === 0) {
+  if (!routeSlug && posts.length === 0) {
     return (
       <SimplifiedErrorPage
         statusCode={404}
@@ -900,18 +1079,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       />
     );
   }
-
-  // Get current post
-  const currentPost = posts[validCurrentIndex];
+  // Get current post: prefer fully-fetched content
+  const currentPost = (currentPostFull as any) || posts[validCurrentIndex];
 
   
 
   
 
   // SEO values for this story
-  const stripHtml = (s: string) => s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '';
+  const stripHtml = (s: string): string => (s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '');
   const titleText = stripHtml(getRenderedText(currentPost.title) || 'Story');
   const rawContent = getRenderedText(currentPost.content) || '';
+  const contentHtml = sanitizeHtmlContent(rawContent);
+  const isContentReady = contentHtml.trim().length > 0;
   const descriptionText = getExcerpt(rawContent, 160);
   const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
   const published = currentPost.date || new Date().toISOString();
@@ -1087,7 +1267,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   return (
     <div className="relative bg-background reader-page overflow-x-hidden overflow-y-visible pt-0 pb-0 flex flex-col"
       data-reader-page="true" 
-      data-distraction-free={isUIHidden ? "true" : "false"}>
+      data-distraction-free={isUIHidden ? "true" : "false"}
+      data-debug={debugEnabled ? "1" : "0"}>
       
       <SEO 
         title={titleText}
@@ -1196,9 +1377,20 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           will-change: opacity, visibility;
         }
       `}} />
+      {debugEnabled ? (
+        <style dangerouslySetInnerHTML={{__html: `
+          /* Reader debug outlines for hit-testing and bounds */
+          .reader-page[data-debug="1"] .debug-outline { outline: 1px dashed rgba(255,0,0,.6); outline-offset: 0; }
+          .reader-page[data-debug="1"] .debug-outline-controls { outline-color: #d97706; } /* amber */
+          .reader-page[data-debug="1"] .debug-outline-meta { outline-color: #10b981; } /* emerald */
+          .reader-page[data-debug="1"] .debug-outline-nav { outline-color: #3b82f6; } /* blue */
+          .reader-page[data-debug="1"] .debug-outline-pager { outline-color: #a855f7; } /* purple */
+          .reader-page[data-debug="1"] .debug-outline-share { outline-color: #ef4444; } /* red */
+          .reader-page[data-debug="1"] .debug-outline-content { outline-color: #22d3ee; } /* cyan */
+        `}} />
+      ) : null}
       
-      {/* Reader content styles with smooth font transitions */}
-      <style dangerouslySetInnerHTML={{ __html: generateStoryContentStyles() }} />
+      {/* Reader content styles moved to reader-typography.css */}
 
       {/* Horror overlay rendered via portal to ensure visibility without scrolling; modal and text unchanged */}
       <ReaderHorrorOverlayPortal
@@ -1226,35 +1418,55 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         
 
         {/* Font controls/TOC spacing below header and progress bar */}
-        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-0.5 py-0.5 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} style={{ minHeight: '40px' }}>
+        <div ref={controlsRowRef} className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-0.5 py-0.5 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-controls`} style={{ minHeight: '40px' }}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={decreaseFontSize}
-              disabled={fontSize <= 12}
-              className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 transition-all duration-300 hover:scale-105"
-              aria-label="Decrease font size"
-            >
-              <Minus className="h-4 w-4 mr-1" />
-              A-
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={increaseFontSize}
-              disabled={fontSize >= 40}
-              className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 transition-all duration-300 hover:scale-105"
-              aria-label="Increase font size"
-            >
-              A+
-              <Plus className="h-4 w-4 ml-1" />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={decreaseFontSize}
+                    disabled={fontSize <= 12}
+                    className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 transition-all duration-300 hover:scale-105"
+                    aria-label="Decrease font size"
+                    title="Decrease font size"
+                  >
+                    <Minus className="h-4 w-4 mr-1" />
+                    A-
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="center" sideOffset={6}>
+                  Decrease text size
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={increaseFontSize}
+                    disabled={fontSize >= 40}
+                    className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 transition-all duration-300 hover:scale-105"
+                    aria-label="Increase font size"
+                    title="Increase font size"
+                  >
+                    A+
+                    <Plus className="h-4 w-4 ml-1" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="center" sideOffset={6}>
+                  Increase text size
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             
             {/* Font Dialog with controlled open state */}
-            <Dialog open={fontDialogOpen} onOpenChange={(open) => { setFontDialogOpen(open); try { setUIHidden(false); } catch {} }}>
+            <Dialog open={fontDialogOpen} onOpenChange={(open) => { if (debugEnabled) { try { console.log('[Reader.debug] FontDialog openChange:', open); } catch {} } setFontDialogOpen(open); try { setUIHidden(false); } catch {} }}>
               <DialogTrigger asChild>
                 <Button
                   variant="outline"
@@ -1298,10 +1510,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </Dialog>
           </div>
 
-          {/* Narration button */}
-          <div className="flex-grow"></div>
-
-          {/* Theme toggle button removed as requested */}
+          
 
           {/* Integrated BookmarkButton in top controls */}
           <BookmarkButton 
@@ -1314,7 +1523,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           {/* Text-to-speech functionality removed */}
 
           {/* Contents Dialog with controlled open state - non-fullscreen with close button */}
-          <Dialog open={contentsDialogOpen} onOpenChange={(open) => { setContentsDialogOpen(open); try { setUIHidden(false); } catch {} }}>
+          <Dialog open={contentsDialogOpen} onOpenChange={(open) => { if (debugEnabled) { try { console.log('[Reader.debug] TOC Dialog openChange:', open); } catch {} } setContentsDialogOpen(open); try { setUIHidden(false); } catch {} }}>
             <DialogTrigger asChild>
               <Button
                 variant="default"
@@ -1361,6 +1570,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       }
                     } catch (err) {
                       console.error('[Reader] TOC onSelect error:', err);
+                      try { logReaderError('reader.toc.onSelect', err); } catch {}
                     } finally {
                       setContentsDialogOpen(false);
                     }
@@ -1387,7 +1597,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
         <article
             key={currentPost.id}
-            className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none content-visibility-auto"
+            className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
           >
             {/* Navigation buttons above story content removed; now placed under time-to-read */}
 
@@ -1431,6 +1641,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 )}
                 <h1
               className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
+              style={{ minHeight: '48px' }}
               dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(getRenderedText(currentPost.title) || 'Story') }}
             />
               </div>
@@ -1475,7 +1686,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </Dialog>
 
               <div className="flex flex-col items-center gap-1">
-                <div className={`flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/30 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-border/60 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                <div ref={metaRowRef} className={`flex flex-nowrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/30 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-border/60 ui-fade-element overflow-x-auto whitespace-nowrap ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-meta`} style={{ minHeight: '32px' }}>
                   {/* Story theme category with icon (index as source of truth) */}
                   {(() => {
                     const md: any = (currentPost as any)?.metadata || {};
@@ -1618,12 +1829,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     const badgeTint = getBadgeTint(themeKey);
 
                     return (
-                      <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border ${badgeTint}`}>
+                      <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border whitespace-nowrap ${badgeTint}`}>
                         {String(chosenIconSlug).includes(':')
                           ? (<Icon icon={String(chosenIconSlug)} className="h-4 w-4" />)
                           : (<ThemeIcon className="h-4 w-4" />)
                         }
-                        <span className="text-xs font-medium">{prettyLabel}</span>
+                        <span className="text-xs font-medium whitespace-nowrap">{prettyLabel}</span>
                       </div>
                     );
                   })()}
@@ -1631,14 +1842,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   <span className="text-muted-foreground">•</span>
                   
                   {/* Date indicator */}
-                  <span className="text-xs px-2 py-1 bg-muted/80 border border-border/50 rounded-md">
+                  <span className="text-xs px-2 py-1 bg-muted/80 border border-border/50 rounded-md whitespace-nowrap">
                     {currentPost.date ? format(new Date(currentPost.date), 'MMM d, yyyy') : 'No date'}
                   </span>
                   
                   <span className="text-muted-foreground">•</span>
                   
                   {/* Estimated reading time */}
-                  <span className="text-xs px-2 py-1 bg-accent/50 rounded-md">
+                  <span className="text-xs px-2 py-1 bg-accent/50 rounded-md whitespace-nowrap">
                     {readingMinutes} min read
                   </span>
 
@@ -1685,7 +1896,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
                 {/* Admin Theme Editor Dialog */}
                 {isAdmin && (
-                  <Dialog open={themeEditorOpen} onOpenChange={setThemeEditorOpen}>
+                  <Dialog open={themeEditorOpen} onOpenChange={(open) => { if (debugEnabled) { try { console.log('[Reader.debug] ThemeEditor dialog openChange:', open); } catch {} } setThemeEditorOpen(open); }}>
                     <DialogContent className="max-w-md">
                       <DialogHeader>
                         <DialogTitle>Edit Story Theme</DialogTitle>
@@ -1865,7 +2076,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 )}
 
                 {/* Original navigation controls moved here under time-to-read */}
-                <div className={`flex justify-center items-center gap-4 py-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                <div ref={navRowRef} className={`flex justify-center items-center gap-4 py-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-nav`}>
                   {/* Previous - match Next size and feel */}
                   <Button
                     variant="outline"
@@ -1917,41 +2128,43 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </div>
             </div>
 
-            {/* Content needs to be wrapped in a SwipeNavigation component */}
-            <SwipeNavigation
-              onPrevious={goToPreviousStory}
-              onNext={goToNextStory}
-              disabled={showHorrorMessage || posts.length <= 1}
-            >
-              <div className="story-container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
-                <div 
-                  className="story-content cursor-pointer text-justify"
-                  ref={contentRef}
-                  dangerouslySetInnerHTML={{ 
-                    __html: sanitizeHtmlContent(getRenderedText(currentPost.content) || 'No content available.') 
-                  }}
-                  onClick={() => {
-                    if (!fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
-                      toggleUI();
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if ((e.key === 'Enter' || e.key === ' ') && !fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
-                      e.preventDefault();
-                      toggleUI();
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Toggle user interface visibility"
-                  aria-pressed={isUIHidden}
-                  style={{ fontSize: `${fontSize}px` }}
-                />
+            <div className="story-container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
+              <div 
+                className="story-content cursor-pointer text-justify"
+                ref={contentRef}
+                onClick={() => {
+                  if (!fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
+                    toggleUIWithDebug('contentClick');
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && !fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
+                    e.preventDefault();
+                    toggleUIWithDebug('contentKey');
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label="Toggle user interface visibility"
+                aria-pressed={isUIHidden}
+                {...(isContentReady ? { dangerouslySetInnerHTML: { __html: contentHtml } } : {})}
+              >
+                {!isContentReady ? (
+                  isFetchingPost ? (
+                    <div aria-busy="true" aria-live="polite" className="text-sm text-muted-foreground py-2">
+                      Loading story…
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
+                  )
+                ) : null}
               </div>
-            </SwipeNavigation>
+              {/* Inline comment dialog (selection-based) */}
+              <CommentDialog />
+            </div>
             
             {/* Simple pagination at bottom of story content - extremely compact */}
-            <div className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} style={{ minHeight: '64px' }}>
+            <div ref={pagerRowRef} className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-pager`} style={{ minHeight: '64px' }}>
               <div className="relative overflow-visible flex items-center justify-center gap-1 bg-background/90 backdrop-blur-md border border-transparent rounded-full h-16 px-1.5 shadow-sm">
                 <span
                   aria-hidden="true"
@@ -2018,7 +2231,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   <LikeDislike postId={currentPost.id} slug={currentPost.slug} source="wp" variant="reader" initialTotals={currentTotals} />
                 </div>
 
-                <div className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                <div ref={shareRowRef} className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-share`}>
                   <p className="text-sm text-muted-foreground font-medium">✨ Loved the story? Share it or follow for more! ✨</p>
                   <div className="flex items-center gap-3">
                     {/* Native Share Button */}
@@ -2091,30 +2304,18 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </div>
             </div>
             
-            {/* Social sharing and support section  */}
-              <div
-                aria-hidden="true"
-                className="border-b border-border"
-                style={{
-                  width: '100%',
-                  marginLeft: '0',
-                  marginRight: '0',
-                  position: 'relative',
-                  left: 0,
-                  transform: 'none'
-                }}
-              />
-              <div className="social-support-section mt-8 pt-6" style={{ minHeight: '180px', contentVisibility: 'auto', contain: 'layout paint style' }}>
-                {/* Support writing card with auto-wired authorId */}
-                <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
-              </div>
-
             {/* Comment section (lazy-mounted near viewport) */}
             <div className="mt-8">
               <LazyCommentSection postId={currentPost.id} />
             </div>
+
+            {/* Social sharing and support section */}
+              <div className="social-support-section mt-4 pt-2">
+                {/* Support writing card with auto-wired authorId */}
+                <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
+              </div>
         </article>
-        {footerReady ? <Footer /> : null}
+        
       </div>
     </div>
   );
