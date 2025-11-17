@@ -1871,6 +1871,7 @@ const isContentReady = contentHtml.trim().length > 0;
                 {/* Support writing card with auto-wired authorId */}
                 <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
               </div>
+            </div>
         </article>
         
       </div>
