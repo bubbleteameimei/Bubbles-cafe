@@ -96,15 +96,15 @@ export function useSwipeClose({
     };
     
     // Add event listeners with passive option to improve performance
-    element.addEventListener('touchstart', handleTouchStart, { passive: false });
-    element.addEventListener('touchmove', handleTouchMove, { passive: false });
-    element.addEventListener('touchend', handleTouchEnd);
+    element.addEventListener('touchstart', handleTouchStart as EventListener, { passive: true });
+    element.addEventListener('touchmove', handleTouchMove as EventListener, { passive: true });
+    element.addEventListener('touchend', handleTouchEnd as EventListener);
     
     // Clean up
     return () => {
-      element.removeEventListener('touchstart', handleTouchStart);
-      element.removeEventListener('touchmove', handleTouchMove);
-      element.removeEventListener('touchend', handleTouchEnd);
+      element.removeEventListener('touchstart', handleTouchStart as EventListener);
+      element.removeEventListener('touchmove', handleTouchMove as EventListener);
+      element.removeEventListener('touchend', handleTouchEnd as EventListener);
     };
   }, [touchStart, hasTriggeredClose, onClose, minSwipeDistance, direction, ref, maxDiagonalRatio]);
 

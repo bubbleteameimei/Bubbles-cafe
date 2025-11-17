@@ -889,9 +889,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     const delay = window.setTimeout(() => { setSseReady(true); }, 3000);
     const onInteract = () => { setSseReady(true); };
 
-    window.addEventListener('pointerdown', onInteract);
+    window.addEventListener('pointerdown', onInteract, { passive: true });
     window.addEventListener('keydown', onInteract);
-    window.addEventListener('touchstart', onInteract);
+    window.addEventListener('touchstart', onInteract, { passive: true });
 
     return () => {
       window.clearTimeout(delay);

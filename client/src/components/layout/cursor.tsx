@@ -24,7 +24,7 @@ export default function Cursor() {
     };
 
     if (isMobile) {
-      window.addEventListener("touchmove", handleTouchMove);
+      window.addEventListener("touchmove", handleTouchMove, { passive: true });
     } else {
       window.addEventListener("mousemove", handleMouseMove);
     }
