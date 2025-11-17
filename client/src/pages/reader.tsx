@@ -2151,13 +2151,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               >
                 {!isContentReady ? (
                   isFetchingPost ? (
-                    <div aria-busy="true" aria-live="polite" className="space-y-3 py-2">
-                      <div className="h-4 bg-muted rounded" />
-                      <div className="h-4 bg-muted rounded w-11/12" />
-                      <div className="h-4 bg-muted rounded w-10/12" />
-                      <div className="h-4 bg-muted rounded w-9/12" />
-                      <div className="h-4 bg-muted rounded w-4/5" />
-                      <div className="h-4 bg-muted rounded w-2/3" />
+                    <div aria-busy="true" aria-live="polite" className="text-sm text-muted-foreground py-2">
+                      Loading story…
                     </div>
                   ) : (
                     <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
