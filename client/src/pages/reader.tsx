@@ -433,7 +433,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   
   // Create a ref for the content container to attach swipe events and copy protection
-  const contentRef = useCopyProtection(false);
+  const contentRef = useCopyProtection(true);
   // Removed positionRestoredRef as we no longer save reading position
 
   // Helper: determine if the event target is interactive (links, buttons, inputs, etc.)
@@ -1376,8 +1376,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           will-change: opacity;
         }
         .ui-hidden {
-          opacity: 0.35;
+          opacity: 0.2; /* stronger dimming */
           pointer-events: auto;
+        }
+        /* Lift dimness on hover or focus for discoverability */
+        .reader-page[data-distraction-free="true"] .ui-fade-element:hover,
+        .reader-page[data-distraction-free="true"] .ui-fade-element:focus-within {
+          opacity: 1;
         }
         .story-content {
           transition: color 0.2s ease, background-color 0.2s ease;
@@ -1385,12 +1390,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         
         /* Distraction-free mode: keep navbar visible but subtle */
         .reader-page[data-distraction-free="true"] header.main-header {
-          opacity: 0.55;
+          opacity: 0.25; /* much dimmer header */
           visibility: visible;
           transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           pointer-events: auto;
           transform: none;
           will-change: opacity;
+        }
+        .reader-page[data-distraction-free="true"] header.main-header:hover {
+          opacity: 1; /* brighten on hover */
         }
         
         /* Tiny indicator for mobile when in distraction-free mode */
