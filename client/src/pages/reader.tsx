@@ -1776,9 +1776,10 @@ const isContentReady = contentHtml.trim().length > 0;
                 </div>
               </div>
             </div>
+                    );
+                  })()}
+                </div>
 
-           
-           
             <div className="mt-2 pt-3">
               <div className="flex flex-col items-center justify-center gap-6">
                 {/* Centered Like/Dislike buttons */}
