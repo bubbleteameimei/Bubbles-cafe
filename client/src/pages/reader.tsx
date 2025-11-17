@@ -795,6 +795,58 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   }, [currentIndex, postsData, routeSlug]);
 
+  // Prefetch helper: warm content cache for a post by slug
+  const prefetchPostBySlug = (slug?: string) => {
+    try {
+      if (!slug) return;
+      queryClient.prefetchQuery({
+        queryKey: ['wordpress', 'reader', 'post', String(slug)],
+        queryFn: async () => await fetchWordPressPostBySlug(String(slug)),
+        staleTime: 5 * 60 * 1000,
+      }).catch(() => {});
+    } catch {}
+  };
+
+  // Prefetch neighbor reactions (non-cached, but warms server path)
+  const prefetchReactionsForIds = (ids: number[]) => {
+    try {
+      if (!ids || ids.length === 0) return;
+      fetchReactionsBatch(ids).catch(() => {});
+    } catch {}
+  };
+
+  // Idle prefetch neighbors shortly after landing on a story
+  useEffect(() => {
+    if (!Array.isArray(posts) || posts.length === 0) return;
+    const nextSlug = posts[currentIndex + 1]?.slug as string | undefined;
+    const prevSlug = posts[currentIndex - 1]?.slug as string | undefined;
+    const nextId = posts[currentIndex + 1]?.id as number | undefined;
+    const prevId = posts[currentIndex - 1]?.id as number | undefined;
+
+    const t = window.setTimeout(() => {
+      prefetchPostBySlug(nextSlug);
+      prefetchPostBySlug(prevSlug);
+      const ids: number[] = [];
+      if (typeof nextId === 'number') ids.push(nextId);
+      if (typeof prevId === 'number') ids.push(prevId as number);
+      if (ids.length) prefetchReactionsForIds(ids);
+    }, 350);
+    return () => window.clearTimeout(t);
+  }, [currentIndex, posts, queryClient]);
+
+  // Hover/focus prefetch helpers for navigation
+  const prefetchNeighbor = (dir: 'next' | 'prev') => {
+    try {
+      if (!Array.isArray(posts) || posts.length === 0) return;
+      const neighborIndex = dir === 'next' ? currentIndex + 1 : currentIndex - 1;
+      if (neighborIndex < 0 || neighborIndex >= posts.length) return;
+      const slug = posts[neighborIndex]?.slug as string | undefined;
+      const id = posts[neighborIndex]?.id as number | undefined;
+      prefetchPostBySlug(slug);
+      if (typeof id === 'number') prefetchReactionsForIds([id]);
+    } catch {}
+  };
+
   // Position restoration notification has been removed as requested
 
   useEffect(() => {
@@ -1124,7 +1176,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       }
     },
     staleTime: 5 * 60 * 1000,
-    keepPreviousData: true,
+    placeholderData: (previous) => previous as WordPressPost | null,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     enabled: Boolean(currentSlugToUse),
@@ -1646,14 +1698,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   }))}
                   onSelect={(selected) => {
                     try {
-                      // Prefer match by slug when available
-                      const foundIndex = posts.findIndex((p: any) =>
-                        (selected.slug && p.slug === selected.slug) || p.id === selected.id
-                      );
-                      if (foundIndex >= 0) {
-                        setCurrentIndex(foundIndex);
-                        // Keep URL in sync with selected story to fix TOC routing
-                        setLocation(`/reader/${encodeURIComponent(String(posts[foundIndex].slug || posts[foundIndex].id))}`);
+                      const targetSlug = String(selected.slug || posts.find((p: any) => p.id === selected.id)?.slug || '');
+                      if (targetSlug) {
+                        // Route-first: change URL; index will align via effect
+                        setLocation(`/reader/${encodeURIComponent(targetSlug)}`);
+                        // Warm content & reactions in the background for instant display
+                        prefetchPostBySlug(targetSlug);
+                        const target = posts.find((p: any) => p.slug === targetSlug);
+                        if (target?.id) prefetchReactionsForIds([Number(target.id)]);
                         // Scroll to top for a clean transition
                         window.scrollTo({ top: 0, behavior: 'auto' });
                       }
@@ -2171,6 +2223,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     variant="outline"
                     size="sm"
                     onClick={goToPreviousStory}
+                    onMouseEnter={() => prefetchNeighbor('prev')}
+                    onFocus={() => prefetchNeighbor('prev')}
                     disabled={posts.length <= 1 || isFirstStory}
                     className="h-10 w-28 rounded-md bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
                   >
@@ -2207,6 +2261,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     variant="outline"
                     size="sm"
                     onClick={goToNextStory}
+                    onMouseEnter={() => prefetchNeighbor('next')}
+                    onFocus={() => prefetchNeighbor('next')}
                     disabled={posts.length <= 1 || isLastStory}
                     className="h-10 w-28 rounded-md bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
                   >
@@ -2281,6 +2337,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     variant="ghost" 
                     size="icon" 
                     onClick={goToPreviousStory}
+                    onMouseEnter={() => prefetchNeighbor('prev')}
+                    onFocus={() => prefetchNeighbor('prev')}
                     className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
                       isFirstStory 
                         ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
@@ -2307,6 +2365,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     variant="ghost" 
                     size="icon" 
                     onClick={goToNextStory}
+                    onMouseEnter={() => prefetchNeighbor('next')}
+                    onFocus={() => prefetchNeighbor('next')}
                     className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
                       isLastStory 
                         ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
