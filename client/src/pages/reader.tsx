@@ -1283,13 +1283,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         wordCount={wordCount}
       />
       
-      {/* Top progress bar */}
-      <div aria-hidden="true" className="fixed top-0 left-0 right-0 z-[60] h-1 pointer-events-none">
-        <div
-          className="h-full bg-primary/80 dark:bg-primary/70 transition-[width] duration-150 ease-out"
-          style={{ width: `${Math.round(animatedProgress)}%` }}
-        />
-      </div>
+      
       
       {/* Reader tooltip for distraction-free mode instructions */}
       <ReaderTooltip show={showTooltip} />
@@ -2314,6 +2308,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </div>
             </div>
             
+            {/* Comment section (lazy-mounted near viewport) */}
+            <div className="mt-8">
+              <LazyCommentSection postId={currentPost.id} />
+            </div>
+
             {/* Social sharing and support section  */}
               <div
                 aria-hidden="true"
@@ -2331,11 +2330,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 {/* Support writing card with auto-wired authorId */}
                 <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
               </div>
-
-            {/* Comment section (lazy-mounted near viewport) */}
-            <div className="mt-8">
-              <LazyCommentSection postId={currentPost.id} />
-            </div>
         </article>
         
       </div>
