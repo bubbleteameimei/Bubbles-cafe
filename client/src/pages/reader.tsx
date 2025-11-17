@@ -42,6 +42,7 @@ import { resolveAuthorId } from "@/lib/reader-navigation";
 import SEO from "@/components/SEO";
 import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
 import type { WordPressPost } from "@/lib/wordpress-api";
+import type { ThemeCategory } from "@/shared/types";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { trackWordPressRead } from "@/lib/wp-reads";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
@@ -887,19 +888,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     if (!Number.isFinite(pid)) return;
 
     const delay = window.setTimeout(() => { setSseReady(true); }, 3000);
-    const onInteract = () => { setSseReady(true); };
-
-    window.addEventListener('pointerdown', onInteract, { passive: true });
-    window.addEventListener('keydown', onInteract);
-    window.addEventListener('touchstart', onInteract, { passive: true });
+    if (hasInteracted) setSseReady(true);
 
     return () => {
       window.clearTimeout(delay);
-      window.removeEventListener('pointerdown', onInteract);
-      window.removeEventListener('keydown', onInteract);
-      window.removeEventListener('touchstart', onInteract);
     };
-  }, [currentPostId]);
+  }, [currentPostId, hasInteracted]);
 
   useEffect(() => {
     try { sseRef.current?.close(); } catch {}
@@ -972,17 +966,16 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const { isCategoryAllowed } = useCookieConsent();
 
   // Interaction gating
-  const userInteractedRef = useRef<boolean>(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const [interactionCount, setInteractionCount] = useState(0);
   useEffect(() => {
+    if (hasInteracted) return;
     const onInteract = () => {
-      if (!userInteractedRef.current) {
-        userInteractedRef.current = true;
-        setInteractionCount((c) => c + 1);
-        window.removeEventListener('pointerdown', onInteract);
-        window.removeEventListener('keydown', onInteract);
-        window.removeEventListener('touchstart', onInteract);
-      }
+      setHasInteracted(true);
+      setInteractionCount((c) => c + 1);
+      window.removeEventListener('pointerdown', onInteract);
+      window.removeEventListener('keydown', onInteract);
+      window.removeEventListener('touchstart', onInteract);
     };
     window.addEventListener('pointerdown', onInteract, { passive: true });
     window.addEventListener('keydown', onInteract);
@@ -992,7 +985,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       window.removeEventListener('keydown', onInteract);
       window.removeEventListener('touchstart', onInteract);
     };
-  }, []);
+  }, [hasInteracted]);
 
   // Visibility-aware active time tracking
   const readActiveStartRef = useRef<number | null>(null);
@@ -1085,7 +1078,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         !alreadySession &&
         !alreadyDay &&
         analyticsAllowed &&
-        userInteractedRef.current &&
+        hasInteracted &&
         isVisible
       ) {
         trackWordPressRead(currentPostId, currentPostLink);
@@ -1102,7 +1095,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       if (!currentPostId) return;
       const isVisible = typeof document !== 'undefined' ? document.visibilityState === 'visible' : true;
       const analyticsAllowed = (() => { try { return isCategoryAllowed('analytics'); } catch { return true; } })();
-      if (!analyticsAllowed || !userInteractedRef.current || !isVisible) return;
+      if (!analyticsAllowed || !hasInteracted || !isVisible) return;
 
       const elapsedActiveMs =
         activeAccumulatedMsRef.current +
@@ -1182,6 +1175,65 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     enabled: Boolean(currentSlugToUse),
   });
 
+  // Prepare sanitized HTML and keywords during idle time to avoid blocking render
+  const [sanitizedTitleHtml, setSanitizedTitleHtml] = useState<string>('');
+  const [sanitizedContentHtml, setSanitizedContentHtml] = useState<string>('');
+  const [keywords, setKeywords] = useState<ThemeCategory[]>([]);
+
+  // Idle scheduling helpers (polyfill)
+  const requestIdle = (cb: () => void, timeout = 200): number => {
+    if (typeof (window as any).requestIdleCallback === 'function') {
+      return (window as any).requestIdleCallback(() => cb(), { timeout });
+    }
+    return window.setTimeout(cb, 0) as unknown as number;
+  };
+  const cancelIdle = (id: number | null) => {
+    if (id == null) return;
+    if (typeof (window as any).cancelIdleCallback === 'function') {
+      (window as any).cancelIdleCallback(id);
+    } else {
+      window.clearTimeout(id);
+    }
+  };
+
+  const titleIdleRef = useRef<number | null>(null);
+  const contentIdleRef = useRef<number | null>(null);
+  const keywordsIdleRef = useRef<number | null>(null);
+
+  // Determine raw content candidates to sanitize
+  const rawTitleCandidate = getRenderedText((currentPostFull as any)?.title || (posts[validCurrentIndex] as any)?.title) || 'Story';
+  const rawContentCandidate = getRenderedText((currentPostFull as any)?.content || (posts[validCurrentIndex] as any)?.content) || '';
+
+  useEffect(() => {
+    cancelIdle(titleIdleRef.current);
+    let cancelled = false;
+    titleIdleRef.current = requestIdle(() => {
+      if (cancelled) return;
+      try { setSanitizedTitleHtml(sanitizeHtmlContent(rawTitleCandidate)); } catch { setSanitizedTitleHtml(rawTitleCandidate); }
+    }, 200);
+    return () => { cancelled = true; cancelIdle(titleIdleRef.current); titleIdleRef.current = null; };
+  }, [rawTitleCandidate]);
+
+  useEffect(() => {
+    cancelIdle(contentIdleRef.current);
+    let cancelled = false;
+    contentIdleRef.current = requestIdle(() => {
+      if (cancelled) return;
+      try { setSanitizedContentHtml(sanitizeHtmlContent(rawContentCandidate)); } catch { setSanitizedContentHtml(rawContentCandidate); }
+    }, 200);
+    return () => { cancelled = true; cancelIdle(contentIdleRef.current); contentIdleRef.current = null; };
+  }, [rawContentCandidate]);
+
+  useEffect(() => {
+    cancelIdle(keywordsIdleRef.current);
+    let cancelled = false;
+    keywordsIdleRef.current = requestIdle(() => {
+      if (cancelled) return;
+      try { setKeywords(detectThemesMemo(rawContentCandidate) as any); } catch { setKeywords([]); }
+    }, 250);
+    return () => { cancelled = true; cancelIdle(keywordsIdleRef.current); keywordsIdleRef.current = null; };
+  }, [rawContentCandidate]);
+
   // Let's make sure we have posts data and current post before rendering
   // Keep previous story content visible while fetching; only return null if no cached data yet
   const hasCachedPosts = Array.isArray((postsData as any)?.posts) && ((postsData as any)?.posts?.length > 0);
@@ -1224,17 +1276,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const stripHtml = (s: string): string => (s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '');
   const titleText = stripHtml(getRenderedText(currentPost.title) || 'Story');
   const titleRaw = getRenderedText(currentPost.title) || 'Story';
-  const titleHtml = sanitizeHtmlContent(titleRaw);
   const rawContent = getRenderedText(currentPost.content) || '';
-  const contentHtml = sanitizeHtmlContent(rawContent);
-  const isContentReady = contentHtml.trim().length > 0;
+  const isContentReady = sanitizedContentHtml.trim().length > 0;
   const descriptionText = getExcerptMemo(rawContent, 160);
   const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
   const published = currentPost.date || new Date().toISOString();
   const plainText = stripHtml(rawContent);
   const wordCount = plainText ? plainText.split(/\s+/).filter(Boolean).length : 0;
   const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
-  const keywords = detectThemesMemo(rawContent);
   const ogImageFromContent = (() => {
     try {
       const html = getRenderedText(currentPost.content) || '';
@@ -1783,7 +1832,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 <h1
               className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
               style={{ minHeight: '48px' }}
-              dangerouslySetInnerHTML={{ __html: titleHtml }}
+              dangerouslySetInnerHTML={{ __html: sanitizedTitleHtml }}
             />
               </div>
               
@@ -2307,15 +2356,21 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 tabIndex={0}
                 aria-label="Toggle user interface visibility"
                 aria-pressed={isUIHidden}
-                {...(isContentReady ? { dangerouslySetInnerHTML: { __html: contentHtml } } : {})}
+                {...(isContentReady ? { dangerouslySetInnerHTML: { __html: sanitizedContentHtml } } : {})}
               >
                 {!isContentReady ? (
-                  isFetchingPost ? (
+                  (rawContent && rawContent.trim().length > 0) ? (
                     <div aria-busy="true" aria-live="polite" className="text-sm text-muted-foreground py-2">
                       Loading story…
                     </div>
                   ) : (
-                    <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
+                    isFetchingPost ? (
+                      <div aria-busy="true" aria-live="polite" className="text-sm text-muted-foreground py-2">
+                        Loading story…
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
+                    )
                   )
                 ) : null}
               </div>
