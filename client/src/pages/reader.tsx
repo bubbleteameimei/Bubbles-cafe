@@ -119,6 +119,42 @@ function LazyCommentSection({ postId }: { postId: number }): JSX.Element {
     }
   };
 
+  // Lightweight memoization for sanitization results to avoid recomputing on minor re-renders.
+  // Cache keyed by the raw HTML string. Capped to avoid unbounded growth.
+  const __sanitizeCache: Map<string, string> = (() => {
+    try {
+      // Persist across component remounts in the same session
+      if (typeof window !== 'undefined') {
+        const existing = (window as any).__readerSanitizeCache as Map<string, string> | undefined;
+        if (existing) return existing;
+        const created = new Map<string, string>();
+        (window as any).__readerSanitizeCache = created;
+        return created;
+      }
+    } catch {
+      // ignore
+    }
+    return new Map<string, string>();
+  })();
+
+  const sanitizeHtmlMemo = (html: string): string => {
+    const key = typeof html === 'string' ? html : String(html || '');
+    const cached = __sanitizeCache.get(key);
+    if (cached) return cached;
+    const result = sanitizeHtmlContent(key);
+    try {
+      __sanitizeCache.set(key, result);
+      // Simple cap: trim oldest when size exceeds 64
+      if (__sanitizeCache.size > 64) {
+        const first = __sanitizeCache.keys().next().value;
+        if (first) __sanitizeCache.delete(first);
+      }
+    } catch {
+      // ignore cache errors
+    }
+    return result;
+  };
+
   // Normalize WordPress fields (string or { rendered: string }) to a string
   const getRenderedText = (value: any): string => {
     try {
@@ -1090,7 +1126,7 @@ window.addEventListener('touchstart', onInteract, { passive: true } as any);
   const stripHtml = (s: string): string => (s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '');
   const titleText = stripHtml(getRenderedText(currentPost.title) || 'Story');
   const rawContent = getRenderedText(currentPost.content) || '';
-const contentHtml = useMemo(() => sanitizeHtmlContent(rawContent), [rawContent]);
+const contentHtml = sanitizeHtmlMemo(rawContent);
 const isContentReady = contentHtml.trim().length > 0;
   const descriptionText = getExcerpt(rawContent, 160);
   const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
