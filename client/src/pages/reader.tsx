@@ -879,6 +879,28 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const sseRef = useRef<EventSource | null>(null);
   const sseErrorCountRef = useRef(0);
 
+  // Interaction gating
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [interactionCount, setInteractionCount] = useState(0);
+  useEffect(() => {
+    if (hasInteracted) return;
+    const onInteract = () => {
+      setHasInteracted(true);
+      setInteractionCount((c) => c + 1);
+      window.removeEventListener('pointerdown', onInteract);
+      window.removeEventListener('keydown', onInteract);
+      window.removeEventListener('touchstart', onInteract);
+    };
+    window.addEventListener('pointerdown', onInteract, { passive: true });
+    window.addEventListener('keydown', onInteract);
+    window.addEventListener('touchstart', onInteract, { passive: true });
+    return () => {
+      window.removeEventListener('pointerdown', onInteract);
+      window.removeEventListener('keydown', onInteract);
+      window.removeEventListener('touchstart', onInteract);
+    };
+  }, [hasInteracted]);
+
   // Defer reactions prefetch and SSE subscription until user interaction or short delay
   const [sseReady, setSseReady] = useState(false);
 
@@ -964,28 +986,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Cookie consent for analytics
   const { isCategoryAllowed } = useCookieConsent();
-
-  // Interaction gating
-  const [hasInteracted, setHasInteracted] = useState(false);
-  const [interactionCount, setInteractionCount] = useState(0);
-  useEffect(() => {
-    if (hasInteracted) return;
-    const onInteract = () => {
-      setHasInteracted(true);
-      setInteractionCount((c) => c + 1);
-      window.removeEventListener('pointerdown', onInteract);
-      window.removeEventListener('keydown', onInteract);
-      window.removeEventListener('touchstart', onInteract);
-    };
-    window.addEventListener('pointerdown', onInteract, { passive: true });
-    window.addEventListener('keydown', onInteract);
-    window.addEventListener('touchstart', onInteract, { passive: true });
-    return () => {
-      window.removeEventListener('pointerdown', onInteract);
-      window.removeEventListener('keydown', onInteract);
-      window.removeEventListener('touchstart', onInteract);
-    };
-  }, [hasInteracted]);
 
   // Visibility-aware active time tracking
   const readActiveStartRef = useRef<number | null>(null);
@@ -1175,6 +1175,55 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     enabled: Boolean(currentSlugToUse),
   });
 
+  // Server-rendered sanitized HTML and derived metadata (offload heavy work)
+  const { data: serverRendered } = useQuery<{
+    id: number;
+    slug: string;
+    date: string;
+    titleHtml?: string;
+    contentHtml?: string;
+    excerpt?: string;
+    wordCount?: number;
+    readingMinutes?: number;
+    ogImage?: string;
+    themes?: string[];
+  }>({
+    queryKey: ['wordpress', 'render', currentSlugToUse || ''],
+    queryFn: async () => {
+      if (!currentSlugToUse) return null as any;
+      try {
+        const res = await fetch(`/api/wordpress/render/${encodeURIComponent(String(currentSlugToUse))}`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+        if (!res.ok) throw new Error(`Render API error: ${res.status}`);
+        return await res.json();
+      } catch (err) {
+        // Non-fatal: fall back to client-side sanitization
+        return null as any;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    enabled: Boolean(currentSlugToUse),
+  });
+
+  // Prefer server-sanitized HTML when available
+  useEffect(() => {
+    try {
+      if (serverRendered?.titleHtml && typeof serverRendered.titleHtml === 'string') {
+        setSanitizedTitleHtml(serverRendered.titleHtml);
+      }
+      if (serverRendered?.contentHtml && typeof serverRendered.contentHtml === 'string') {
+        setSanitizedContentHtml(serverRendered.contentHtml);
+      }
+      if (Array.isArray(serverRendered?.themes) && serverRendered!.themes!.length > 0) {
+        setKeywords(serverRendered!.themes as any);
+      }
+    } catch {}
+  }, [serverRendered]);
+
   // Prepare sanitized HTML and keywords during idle time to avoid blocking render
   const [sanitizedTitleHtml, setSanitizedTitleHtml] = useState<string>('');
   const [sanitizedContentHtml, setSanitizedContentHtml] = useState<string>('');
@@ -1205,6 +1254,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const rawContentCandidate = getRenderedText((currentPostFull as any)?.content || (posts[validCurrentIndex] as any)?.content) || '';
 
   useEffect(() => {
+    // Prefer server-rendered sanitized title when available
+    if (serverRendered?.titleHtml && typeof serverRendered.titleHtml === 'string') {
+      setSanitizedTitleHtml(serverRendered.titleHtml);
+      return;
+    }
     cancelIdle(titleIdleRef.current);
     let cancelled = false;
     titleIdleRef.current = requestIdle(() => {
@@ -1212,9 +1266,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       try { setSanitizedTitleHtml(sanitizeHtmlContent(rawTitleCandidate)); } catch { setSanitizedTitleHtml(rawTitleCandidate); }
     }, 200);
     return () => { cancelled = true; cancelIdle(titleIdleRef.current); titleIdleRef.current = null; };
-  }, [rawTitleCandidate]);
+  }, [rawTitleCandidate, serverRendered?.titleHtml]);
 
   useEffect(() => {
+    // Prefer server-rendered sanitized content when available
+    if (serverRendered?.contentHtml && typeof serverRendered.contentHtml === 'string') {
+      setSanitizedContentHtml(serverRendered.contentHtml);
+      return;
+    }
     cancelIdle(contentIdleRef.current);
     let cancelled = false;
     contentIdleRef.current = requestIdle(() => {
@@ -1222,9 +1281,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       try { setSanitizedContentHtml(sanitizeHtmlContent(rawContentCandidate)); } catch { setSanitizedContentHtml(rawContentCandidate); }
     }, 200);
     return () => { cancelled = true; cancelIdle(contentIdleRef.current); contentIdleRef.current = null; };
-  }, [rawContentCandidate]);
+  }, [rawContentCandidate, serverRendered?.contentHtml]);
 
   useEffect(() => {
+    // Prefer server-rendered theme detection when available
+    if (Array.isArray(serverRendered?.themes) && serverRendered!.themes!.length > 0) {
+      setKeywords(serverRendered!.themes as any);
+      return;
+    }
     cancelIdle(keywordsIdleRef.current);
     let cancelled = false;
     keywordsIdleRef.current = requestIdle(() => {
@@ -1232,7 +1296,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       try { setKeywords(detectThemesMemo(rawContentCandidate) as any); } catch { setKeywords([]); }
     }, 250);
     return () => { cancelled = true; cancelIdle(keywordsIdleRef.current); keywordsIdleRef.current = null; };
-  }, [rawContentCandidate]);
+  }, [rawContentCandidate, serverRendered?.themes]);
 
   // Let's make sure we have posts data and current post before rendering
   // Keep previous story content visible while fetching; only return null if no cached data yet
@@ -1278,12 +1342,18 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const titleRaw = getRenderedText(currentPost.title) || 'Story';
   const rawContent = getRenderedText(currentPost.content) || '';
   const isContentReady = sanitizedContentHtml.trim().length > 0;
-  const descriptionText = getExcerptMemo(rawContent, 160);
+  const descriptionText = (serverRendered?.excerpt && serverRendered.excerpt.trim().length > 0)
+    ? serverRendered.excerpt
+    : getExcerptMemo(rawContent, 160);
   const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
   const published = currentPost.date || new Date().toISOString();
   const plainText = stripHtml(rawContent);
-  const wordCount = plainText ? plainText.split(/\s+/).filter(Boolean).length : 0;
-  const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
+  const wordCount = typeof serverRendered?.wordCount === 'number' && serverRendered.wordCount > 0
+    ? serverRendered.wordCount
+    : (plainText ? plainText.split(/\s+/).filter(Boolean).length : 0);
+  const readingMinutes = typeof serverRendered?.readingMinutes === 'number' && serverRendered.readingMinutes > 0
+    ? serverRendered.readingMinutes
+    : Math.max(1, Math.ceil(wordCount / 200));
   const ogImageFromContent = (() => {
     try {
       const html = getRenderedText(currentPost.content) || '';

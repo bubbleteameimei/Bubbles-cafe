@@ -62,6 +62,65 @@ function logEvent(message: string, meta?: Record<string, unknown>) {
   console.log(`[LOG] ${message}`, meta || '');
 }
 
+function stripHtmlServer(html: string): string {
+  if (!html) return '';
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getReadingTimeServer(html: string, wpm: number = 225): { minutes: number; wordCount: number } {
+  const text = stripHtmlServer(html);
+  const words = text.length ? text.split(/\s+/).filter(Boolean) : [];
+  const minutes = Math.max(1, Math.ceil(words.length / wpm));
+  return { minutes, wordCount: words.length };
+}
+
+function getExcerptServer(html: string, maxLength: number = 160): string {
+  const text = stripHtmlServer(html);
+  if (text.length <= maxLength) return text;
+  const truncated = text.substring(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(' ');
+  return lastSpace > 0 ? `${truncated.substring(0, lastSpace)}...` : `${truncated}...`;
+}
+
+function detectThemesServer(html: string): string[] {
+  const text = stripHtmlServer(html).toLowerCase();
+  const themes: Array<{ key: string; kws: string[] }> = [
+    { key: 'Parasite', kws: ['parasite', 'infection', 'larva', 'worm', 'bug'] },
+    { key: 'Cosmic', kws: ['cosmic', 'ancient', 'eldritch', 'cthulhu', 'void'] },
+    { key: 'Psychological', kws: ['sanity', 'mind', 'delusion', 'hallucination', 'psych'] },
+    { key: 'Technological', kws: ['machine', 'computer', 'ai', 'algorithm', 'digital'] },
+    { key: 'Body Horror', kws: ['flesh', 'mutation', 'organs', 'grotesque'] },
+    { key: 'Psychopath', kws: ['murder', 'killer', 'torture', 'sadist'] },
+    { key: 'Supernatural', kws: ['ghost', 'spirit', 'haunt', 'poltergeist'] },
+    { key: 'Uncanny', kws: ['uncanny', 'doll', 'mannequin'] },
+    { key: 'Cannibalism', kws: ['cannibal', 'devour', 'human meat'] },
+    { key: 'Stalking', kws: ['stalk', 'chase', 'hunt', 'follow'] },
+    { key: 'Existential', kws: ['existential', 'meaning', 'void', 'nothingness'] },
+    { key: 'Gothic', kws: ['gothic', 'castle', 'mansion', 'victorian'] },
+    { key: 'Vehicular', kws: ['car', 'vehicle', 'drive', 'highway'] },
+    { key: 'Doppelgänger', kws: ['double', 'mirror', 'twin', 'copy'] },
+    { key: 'Slasher', kws: ['slasher', 'knife', 'blood', 'chase'] },
+    { key: 'Horror', kws: ['horror', 'fear', 'terror', 'dark'] },
+    { key: 'Death', kws: ['death', 'grave', 'funeral', 'afterlife'] },
+  ];
+  const scores: Array<{ key: string; score: number }> = [];
+  for (const t of themes) {
+    let score = 0;
+    for (const kw of t.kws) {
+      const rx = new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\export function registerWordPressSyncRoutes(app: Express): void {')}\\b`, 'gi');
+      const matches = text.match(rx);
+      if (matches) score += matches.length;
+    }
+    if (score > 0) scores.push({ key: t.key, score });
+  }
+  return scores.sort((a, b) => b.score - a.score).slice(0, 3).map(s => s.key);
+}
+
 export function registerWordPressSyncRoutes(app: Express): void {
   /**
    * GET /api/wordpress/status

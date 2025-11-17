@@ -32,6 +32,7 @@ import { registerNotificationPreferencesRoutes } from './notification-preference
 import tipsRouter from './tips';
 import configRoutes from './config';
 import { handleSseSubscription } from '../utils/reactions-sse';
+import { registerWordPressRenderRoutes } from './wordpress-render';
 
 const routesLogger = createSecureLogger('RoutesIndex');
 
@@ -44,6 +45,10 @@ export function registerModularRoutes(app: Express) {
     // SEO routes (robots.txt, sitemap.xml)
     app.use('/', seoRoutes);
     routesLogger.info('SEO routes registered');
+
+    // Server-side WordPress render routes (sanitized HTML and derived metadata)
+    registerWordPressRenderRoutes(app);
+    routesLogger.info('WordPress render routes registered');
 
     // SECURITY FIX: Secure CSRF token endpoint
     app.get('/api/csrf-token', getCsrfToken);

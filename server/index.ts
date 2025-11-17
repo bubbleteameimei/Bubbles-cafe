@@ -15,6 +15,7 @@ import { createLogger, requestLogger } from "./utils/debug-logger";
 import { requestIdMiddleware } from "./utils/request-id";
 
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
+import { registerWordPressRenderRoutes } from "./routes/wordpress-render";
 import { registerEmailServiceRoutes } from "./routes/email-service";
 import { registerBookmarkRoutes } from "./routes/bookmark-routes";
 import { registerPaymentRoutes } from "./routes/payment";
