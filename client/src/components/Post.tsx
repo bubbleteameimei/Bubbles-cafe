@@ -7,6 +7,25 @@ import { extractHorrorExcerpt } from "@/lib/content-analysis";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Local memoized wrapper to avoid recomputing horror excerpt for identical content
+const __horrorExcerptMemo = new Map<string, string>();
+const extractHorrorExcerptMemo = (content: string, maxLength: number = 250): string => {
+  try {
+    const key = `${maxLength}::${content}`;
+    const cached = __horrorExcerptMemo.get(key);
+    if (typeof cached === 'string') return cached;
+    const result = extractHorrorExcerpt(content, maxLength);
+    __horrorExcerptMemo.set(key, result);
+    if (__horrorExcerptMemo.size > 256) {
+      const firstKey = __horrorExcerptMemo.keys().next().value as string | undefined;
+      if (typeof firstKey === 'string') __horrorExcerptMemo.delete(firstKey);
+    }
+    return result;
+  } catch {
+    return extractHorrorExcerpt(content, maxLength);
+  }
+};
+
 function Post() {
   const { slug } = useParams<{ slug: string }>();
   const { data: post, isLoading, error } = useQuery({
@@ -49,7 +68,7 @@ function Post() {
   }
 
   // Extract the horror excerpt
-  const excerpt = extractHorrorExcerpt(post.content.rendered);
+  const excerpt = extractHorrorExcerptMemo(post.content.rendered);
 
   return (
     <div className="container mx-auto p-4">

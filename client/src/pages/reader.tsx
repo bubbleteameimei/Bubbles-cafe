@@ -119,6 +119,43 @@ function LazyCommentSection({ postId }: { postId: number }): JSX.Element {
     }
   };
 
+  // Memoized helpers to avoid recomputing derived values for identical content
+  const __excerptMemo = new Map<string, string>();
+  const __detectThemesMemo = new Map<string, ReturnType<typeof detectThemes>>();
+
+  const getExcerptMemo = (html: string, maxLength: number = 160): string => {
+    try {
+      const key = `${maxLength}::${html}`;
+      const cached = __excerptMemo.get(key);
+      if (typeof cached === 'string') return cached;
+      const result = getExcerpt(html, maxLength);
+      __excerptMemo.set(key, result);
+      if (__excerptMemo.size > 256) {
+        const firstKey = __excerptMemo.keys().next().value as string | undefined;
+        if (typeof firstKey === 'string') __excerptMemo.delete(firstKey);
+      }
+      return result;
+    } catch {
+      return getExcerpt(html, maxLength);
+    }
+  };
+
+  const detectThemesMemo = (content: string) => {
+    try {
+      const cached = __detectThemesMemo.get(content);
+      if (cached) return cached;
+      const result = detectThemes(content);
+      __detectThemesMemo.set(content, result);
+      if (__detectThemesMemo.size > 256) {
+        const firstKey = __detectThemesMemo.keys().next().value as string | undefined;
+        if (typeof firstKey === 'string') __detectThemesMemo.delete(firstKey);
+      }
+      return result;
+    } catch {
+      return detectThemes(content);
+    }
+  };
+
   // Normalize WordPress fields (string or { rendered: string }) to a string
   const getRenderedText = (value: any): string => {
     try {
@@ -1094,13 +1131,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const rawContent = getRenderedText(currentPost.content) || '';
   const contentHtml = sanitizeHtmlContent(rawContent);
   const isContentReady = contentHtml.trim().length > 0;
-  const descriptionText = getExcerpt(rawContent, 160);
+  const descriptionText = getExcerptMemo(rawContent, 160);
   const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
   const published = currentPost.date || new Date().toISOString();
   const plainText = stripHtml(rawContent);
   const wordCount = plainText ? plainText.split(/\s+/).filter(Boolean).length : 0;
   const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
-  const keywords = detectThemes(rawContent);
+  const keywords = detectThemesMemo(rawContent);
   const ogImageFromContent = (() => {
     try {
       const html = getRenderedText(currentPost.content) || '';
@@ -1132,7 +1169,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }
 
   // Apply theme detection to current post
-  const detectedThemes = detectThemes(getRenderedText(currentPost.content) || '');
+  const detectedThemes = detectThemesMemo(getRenderedText(currentPost.content) || '');
 
   // Horror easter egg function
   const checkRapidNavigation = () => {

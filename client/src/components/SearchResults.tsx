@@ -13,6 +13,25 @@ import { getThemeDefinitionOverride } from '@/shared/theme-definitions';
 import { Icon } from '@iconify/react';
 import { getBadgeTint } from '@/lib/theme-badges';
 
+// Local memoized wrapper to avoid recomputing excerpts for identical content
+const __excerptMemo = new Map<string, string>();
+const getExcerptMemo = (html: string, maxLength: number = 250): string => {
+  try {
+    const key = `${maxLength}::${html}`;
+    const cached = __excerptMemo.get(key);
+    if (typeof cached === 'string') return cached;
+    const result = getExcerpt(html, maxLength);
+    __excerptMemo.set(key, result);
+    if (__excerptMemo.size > 256) {
+      const firstKey = __excerptMemo.keys().next().value as string | undefined;
+      if (typeof firstKey === 'string') __excerptMemo.delete(firstKey);
+    }
+    return result;
+  } catch {
+    return getExcerpt(html, maxLength);
+  }
+};
+
 interface SearchResultsProps {
   query: string;
   onSelect?: () => void;
@@ -49,7 +68,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query, onSelect }) => {
     const normalizedQuery = query.toLowerCase();
     const results = posts.filter(post => {
       const title = post.title.rendered.toLowerCase();
-      const content = getExcerpt(post.content.rendered).toLowerCase();
+      const content = getExcerptMemo(post.content.rendered).toLowerCase();
       
       return title.includes(normalizedQuery) || content.includes(normalizedQuery);
     });
@@ -177,7 +196,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query, onSelect }) => {
               </Badge>
             </div>
             <div className="text-sm text-muted-foreground line-clamp-2 mt-2">
-              {getExcerpt(post.content.rendered)}
+              {getExcerptMemo(post.content.rendered)}
             </div>
             <div className="flex items-center mt-2 text-xs text-muted-foreground">
               <Clock className="h-3 w-3 mr-1" />
