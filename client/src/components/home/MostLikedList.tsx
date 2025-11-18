@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Star, Calendar, Clock, Heart, Bone } from 'lucide-react';
+import { Star, Calendar, Clock, Heart, Bone, Ghost, Skull, Brain, Pill, Cpu, Dna, Umbrella, Footprints, CloudRain, Castle, Bug, Radiation, UserMinus2, UserPlus, Anchor, AlertTriangle, Building, Worm, Cloud, CloudFog, Flame, Eye, Hourglass, ForkKnife, Cat, Moon, Dog, Radio, MoonStar, Box, Car, FlaskConical, Trees } from 'lucide-react';
 import { getReadingTime } from '@/lib/content-analysis';
 import { extractEngagingExcerpt } from '@/lib/excerpt-lite';
 import { type posts } from '@shared/schema';
@@ -11,7 +11,6 @@ import { THEME_CATEGORIES } from '@/lib/themes-lite';
 import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } from '@shared/theme-categories';
 import { getStoryThemeOverride } from '@shared/story-theme-overrides';
 import { getThemeDefinitionOverride } from '@/shared/theme-definitions';
-import { Icon } from '@iconify/react';
 import { getBadgeTint } from '@/lib/theme-badges';
 
 type Post = typeof posts.$inferSelect;
@@ -81,6 +80,84 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
       .slice(0, need);
     return [...primary, ...recent];
   }, [sortedByLikes, posts]);
+
+  // Lucide mapping only
+  const getThemeIconFor = (themeKeyStr: string, iconSlugStr: string) => {
+    const slug = String(iconSlugStr || '').toLowerCase();
+    switch (slug) {
+      case 'skull': return Skull;
+      case 'brain': return Brain;
+      case 'pill': return Pill;
+      case 'cpu': return Cpu;
+      case 'dna': return Dna;
+      case 'ghost': return Ghost;
+      case 'umbrella': return Umbrella;
+      case 'footprints': return Footprints;
+      case 'cloud-rain':
+      case 'cloudrain': return CloudRain;
+      case 'castle': return Castle;
+      case 'bug': return Bug;
+      case 'radiation': return Radiation;
+      case 'user-minus2':
+      case 'userminus2': return UserMinus2;
+      case 'user-plus':
+      case 'userplus': return UserPlus;
+      case 'anchor': return Anchor;
+      case 'alert-triangle':
+      case 'alerttriangle': return AlertTriangle;
+      case 'building': return Building;
+      case 'worm': return Worm;
+      case 'cloud': return Cloud;
+      case 'cloud-fog':
+      case 'cloudfog': return CloudFog;
+      case 'flame': return Flame;
+      case 'eye': return Eye;
+      case 'hourglass': return Hourglass;
+      case 'knife': return ForkKnife;
+      case 'utensils':
+      case 'fork-knife':
+      case 'forkknife': return ForkKnife;
+      case 'cat': return Cat;
+      case 'moon': return Moon;
+      case 'dog': return Dog;
+      case 'radio': return Radio;
+      case 'moon-star':
+      case 'moonstar': return MoonStar;
+      case 'box': return Box;
+      case 'car': return Car;
+      case 'alien': return Moon;
+      case 'flask': return FlaskConical;
+      case 'trees':
+      case 'tree': return Trees;
+      case 'bone': return Bone;
+    }
+    switch (String(themeKeyStr || '').toUpperCase()) {
+      case 'TECHNOLOGICAL': return Cpu;
+      case 'PSYCHOLOGICAL': return Brain;
+      case 'SUPERNATURAL': return Ghost;
+      case 'UNCANNY': return Eye;
+      case 'EXISTENTIAL': return Hourglass;
+      case 'DOPPELGANGER': return UserPlus;
+      case 'CANNIBALISM': return ForkKnife;
+      case 'SLASHER': return Skull;
+      case 'MONSTER': return Cat;
+      case 'ZOMBIE': return Footprints;
+      case 'VAMPIRE': return Moon;
+      case 'WEREWOLF': return Dog;
+      case 'PARANORMAL': return Radio;
+      case 'DREAM_HORROR': return MoonStar;
+      case 'CURSED_OBJECT': return Box;
+      case 'TIME_HORROR': return Clock;
+      case 'APOCALYPTIC': return Radiation;
+      case 'SCIENCE_HORROR': return FlaskConical;
+      case 'BODY_HORROR': return Bone;
+      case 'FOLK_HORROR': return Trees;
+      case 'GOTHIC': return Castle;
+      case 'COSMIC': return Moon;
+      case 'VEHICULAR': return Car;
+      default: return Ghost;
+    }
+  };
 
   return (
     <div>
@@ -152,18 +229,13 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                               (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
                               'ghost';
 
-                            const isIconify = String(chosenIconSlug).includes(':');
-                            const showBone = String(chosenIconSlug).toLowerCase() === 'bone' || themeKey === 'BODY_HORROR';
-
                             const badgeTint = getBadgeTint(themeKey);
+                            const ThemeIconCmp: any = getThemeIconFor(themeKey, chosenIconSlug);
 
                             return (
                               <div className="mt-1">
                                 <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                  {isIconify
-                                    ? (<Icon icon={String(chosenIconSlug)} className="h-3 w-3" />)
-                                    : (showBone ? <Bone className="h-3 w-3" /> : null)
-                                  }
+                                  {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                   {prettyLabel}
                                 </Badge>
                               </div>

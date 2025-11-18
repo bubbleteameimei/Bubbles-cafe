@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { determineThemeCategory as sharedDetermineThemeCategory, THEME_CATEGORIES as SHARED_THEME_CATEGORIES } from '@shared/theme-categories';
 import { getStoryThemeOverride } from '@shared/story-theme-overrides';
 import { getThemeDefinitionOverride } from '@/shared/theme-definitions';
-import { Icon } from '@iconify/react';
+
 import { getBadgeTint } from '@/lib/theme-badges';
 
 // Local memoized wrapper to avoid recomputing excerpts for identical content
@@ -144,9 +144,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query, onSelect }) => {
           defOverride?.icon ||
           (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
           'ghost';
-        if (String(iconSlug).toLowerCase() === 'knife') iconSlug = 'mdi:knife';
         if (themeKey === 'BODY_HORROR') iconSlug = 'bone';
-        const isIconify = String(iconSlug).includes(':');
 
         const ThemeIconCmp = (() => {
           const slug = String(iconSlug).toLowerCase();
@@ -192,7 +190,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query, onSelect }) => {
             <div className="font-medium" dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.title.rendered) }} />
             <div className="mt-1">
               <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : <ThemeIconCmp className="h-3 w-3" />}
+                <ThemeIconCmp className="h-3 w-3" />
                 {prettyLabel}
               </Badge>
             </div>

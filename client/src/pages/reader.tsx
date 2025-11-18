@@ -71,7 +71,7 @@ import { Label } from "@/components/ui/label";
 import { THEME_CATEGORIES as SHARED_THEME_CATEGORIES, determineThemeCategory } from "@shared/theme-categories";
 import { getStoryThemeOverride } from "@shared/story-theme-overrides";
 import { getThemeDefinitionOverride, syncThemeDefinitionOverridesFromServer } from "@/shared/theme-definitions";
-import { Icon } from "@iconify/react";
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getBadgeTint } from "@/lib/theme-badges";
 import { useThemeCategories } from "@/hooks/use-theme-categories";
@@ -1903,9 +1903,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       categoriesMap[derivedKey]?.icon ||
                       (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
                       'ghost';
-                    if (String(chosenIconSlug).toLowerCase() === 'knife') {
-                      chosenIconSlug = 'mdi:knife';
-                    }
+                    
 
                     // Lucide icon mapping with broader coverage and theme-key fallbacks
                     const ThemeIcon = (() => {
