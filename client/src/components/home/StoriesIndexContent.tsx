@@ -571,7 +571,7 @@ export default function StoriesIndexContent() {
       return raw.toUpperCase().replace(/\s+/g, '_');
     })();
 
-    const themeKey = override?.key || derivedKey;
+    const themeKey = override?.key || (server?.themeKey ? String(server.themeKey).toUpperCase() : undefined) || derivedKey;
 
     const defOverride = getThemeDefinitionOverride(themeKey);
 
@@ -875,9 +875,9 @@ export default function StoriesIndexContent() {
     }
 
     // Observe DOM mutations to re-observe dynamically added cards (virtualization/dynamic mounts)
-    let mo: MutationObserver | null = null;
+    let moObs: MutationObserver | undefined;
     try {
-      mo = new MutationObserver((mutations) => {
+      const observer = new MutationObserver((mutations) => {
         for (const m of mutations) {
           m.addedNodes.forEach((node) => {
             if (node instanceof HTMLElement) {
@@ -889,9 +889,8 @@ export default function StoriesIndexContent() {
           });
         }
       });
-      if (mo) {
-        mo.observe(document.body, { childList: true, subtree: true });
-      }
+      observer.observe(document.body, { childList: true, subtree: true });
+      moObs = observer;
     } catch {}
 
     // Start with a small initial preload + SSE
@@ -929,9 +928,12 @@ export default function StoriesIndexContent() {
       }
     };
 
-    const idleCb = (window as any).requestIdleCallback as ((cb: () => void, opts?: { timeout?: number }) => void) | undefined;
-    if (idleCb) {
-      idleCb(() => { if (mounted) setTimeout(() => { void preloadRemaining(); }, 400); }, { timeout: 2500 });
+    const idleCbAny = (window as any).requestIdleCallback as unknown;
+    if (typeof idleCbAny === 'function') {
+      (idleCbAny as (cb: () => void, opts?: { timeout?: number }) => void)(
+        () => { if (mounted) setTimeout(() => { void preloadRemaining(); }, 400); },
+        { timeout: 2500 }
+      );
     } else {
       setTimeout(() => { if (mounted) void preloadRemaining(); }, 1200);
     }
@@ -948,7 +950,7 @@ export default function StoriesIndexContent() {
     return () => {
       mounted = false;
       window.removeEventListener("reaction:updated", onUpdate as EventListener);
-      try { mo?.disconnect(); } catch {}
+      try { moObs?.disconnect(); } catch {}
       try { io?.disconnect(); } catch {}
       if (flushTimer) clearTimeout(flushTimer);
       // Close SSE sources using captured reference

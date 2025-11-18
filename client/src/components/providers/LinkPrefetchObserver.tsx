@@ -61,11 +61,13 @@ export function LinkPrefetchObserver() {
 
     // Initial scan and rescan on DOM changes
     scan();
-    const mo = new MutationObserver(() => {
-      scan();
-    });
+    let moObs: MutationObserver | undefined;
     try {
-      mo.observe(document.body, { childList: true, subtree: true });
+      const observer = new MutationObserver(() => {
+        scan();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+      moObs = observer;
     } catch {}
 
     return () => {
@@ -73,7 +75,7 @@ export function LinkPrefetchObserver() {
         observer.disconnect();
       } catch {}
       try {
-        mo.disconnect();
+        moObs?.disconnect();
       } catch {}
     };
   }, []);

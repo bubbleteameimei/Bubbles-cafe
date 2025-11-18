@@ -1889,7 +1889,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     const themeKey =
                       override?.key ||
                       overrideThemeCategory ||
-                      md.themeCategory ||
+                      (sr?.themeKey ? String(sr.themeKey).toUpperCase() : undefined) ||
                       derivedKey;
 
                     const defOverride = getThemeDefinitionOverride(themeKey);
