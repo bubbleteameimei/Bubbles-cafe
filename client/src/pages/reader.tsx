@@ -47,7 +47,6 @@ import { sanitizeHtml } from "@/lib/sanitize";
 import { trackWordPressRead } from "@/lib/wp-reads";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
 import { trackInteraction } from "@/lib/metrics";
-import { fetchReactionsBatch, type ReactionTotals } from "@/api/reactions";
 
 
 import {
@@ -824,13 +823,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     } catch {}
   };
 
-  // Prefetch neighbor reactions (non-cached, but warms server path)
-  const prefetchReactionsForIds = (ids: number[]) => {
-    try {
-      if (!ids || ids.length === 0) return;
-      fetchReactionsBatch(ids).catch(() => {});
-    } catch {}
-  };
+  // Prefetch neighbor reactions disabled; keep stub for compatibility
+  const prefetchReactionsForIds = (_ids: number[]) => {};
 
   // Idle prefetch neighbors shortly after landing on a story
   useEffect(() => {
@@ -845,10 +839,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       prefetchPostBySlug(prevSlug);
       prefetchRenderedBySlug(nextSlug);
       prefetchRenderedBySlug(prevSlug);
-      const ids: number[] = [];
-      if (typeof nextId === 'number') ids.push(nextId);
-      if (typeof prevId === 'number') ids.push(prevId as number);
-      if (ids.length) prefetchReactionsForIds(ids);
+      
     }, 350);
     return () => window.clearTimeout(t);
   }, [currentIndex, posts, queryClient]);
@@ -863,7 +854,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       const id = posts[neighborIndex]?.id as number | undefined;
       prefetchPostBySlug(slug);
       prefetchRenderedBySlug(slug);
-      if (typeof id === 'number') prefetchReactionsForIds([id]);
+      
     } catch {}
   };
 
@@ -893,12 +884,16 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   }, [posts, currentIndex]);
 
-  // Reaction totals for the current post (prefetch + SSE to minimize pop-in)
-  const [currentTotals, setCurrentTotals] = useState<ReactionTotals | null>(null);
-  const sseRef = useRef<EventSource | null>(null);
-  const sseErrorCountRef = useRef(0);
+  const currentPostLink = useMemo(() => {
+    try {
+      const post = posts?.[currentIndex];
+      return (post as any)?.link as string | undefined;
+    } catch {
+      return undefined;
+    }
+  }, [posts, currentIndex]);
 
-  // Interaction gating
+  // Interaction gating (used for analytics only)
   const [hasInteracted, setHasInteracted] = useState(false);
   const [interactionCount, setInteractionCount] = useState(0);
   useEffect(() => {
@@ -919,89 +914,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       window.removeEventListener('touchstart', onInteract);
     };
   }, [hasInteracted]);
-
-  // Defer reactions prefetch and SSE subscription until user interaction or short delay
-  const [sseReady, setSseReady] = useState(false);
-
-  useEffect(() => {
-    setSseReady(false);
-    const pid = Number(currentPostId);
-    if (!Number.isFinite(pid)) return;
-
-    const delay = window.setTimeout(() => { setSseReady(true); }, 3000);
-    if (hasInteracted) setSseReady(true);
-
-    return () => {
-      window.clearTimeout(delay);
-    };
-  }, [currentPostId, hasInteracted]);
-
-  useEffect(() => {
-    try { sseRef.current?.close(); } catch {}
-    setCurrentTotals(null);
-
-    const pid = Number(currentPostId);
-    if (!sseReady || !Number.isFinite(pid)) return;
-
-    // Prefetch totals once ready
-    (async () => {
-      try {
-        const totals = await fetchReactionsBatch([pid]);
-        const first = totals && totals[0];
-        if (first && Number(first.postId) === pid) {
-          setCurrentTotals(first);
-        }
-      } catch { /* ignore */ }
-    })();
-
-    // Subscribe to SSE for live totals
-    try {
-      const es = new EventSource(`/api/posts/${pid}/reactions/stream`, { withCredentials: true } as any);
-      sseErrorCountRef.current = 0;
-      const onMessage = (e: MessageEvent) => {
-        try {
-          const payload = JSON.parse(e.data || '{}');
-          if (payload && typeof payload.postId === 'number') {
-            setCurrentTotals({
-              postId: Number(payload.postId),
-              baselineLikes: Number(payload.baselineLikes || 0),
-              baselineDislikes: Number(payload.baselineDislikes || 0),
-              likesCount: Number(payload.likesCount || 0),
-              dislikesCount: Number(payload.dislikesCount || 0),
-              totals: {
-                likes: Number(payload.totals?.likes || (Number(payload.baselineLikes || 0) + Number(payload.likesCount || 0))),
-                dislikes: Number(payload.totals?.dislikes || (Number(payload.baselineDislikes || 0) + Number(payload.dislikesCount || 0))),
-              }
-            });
-          }
-        } catch {}
-      };
-      es.addEventListener('initial', onMessage);
-      es.addEventListener('update', onMessage);
-      es.onerror = () => {
-        sseErrorCountRef.current += 1;
-        if (sseErrorCountRef.current === 3) {
-          try { logReaderError('reader.sse.error', 'SSE connection error', { postId: pid }); } catch {}
-        }
-        // keep alive; browser will reconnect
-      };
-      sseRef.current = es;
-    } catch { /* ignore */ }
-
-    return () => {
-      try { sseRef.current?.close(); } catch {}
-      sseRef.current = null;
-    };
-  }, [currentPostId, sseReady]);
-
-  const currentPostLink = useMemo(() => {
-    try {
-      const post = posts?.[currentIndex];
-      return (post as any)?.link as string | undefined;
-    } catch {
-      return undefined;
-    }
-  }, [posts, currentIndex]);
 
   // Cookie consent for analytics
   const { isCategoryAllowed } = useCookieConsent();
@@ -1277,49 +1189,26 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const rawContentCandidate = getRenderedText((currentPostFull as any)?.content || (posts[validCurrentIndex] as any)?.content) || '';
 
   useEffect(() => {
-    // Prefer server-rendered sanitized title when available
-    if (serverRendered?.titleHtml && typeof serverRendered.titleHtml === 'string') {
-      setSanitizedTitleHtml(serverRendered.titleHtml);
-      return;
-    }
-    cancelIdle(titleIdleRef.current);
-    let cancelled = false;
-    titleIdleRef.current = requestIdle(() => {
-      if (cancelled) return;
+    const serverHtml = serverRendered?.titleHtml;
+    if (typeof serverHtml === 'string' && serverHtml.trim().length > 0) {
+      setSanitizedTitleHtml(serverHtml);
+    } else {
       try { setSanitizedTitleHtml(sanitizeHtmlContent(rawTitleCandidate)); } catch { setSanitizedTitleHtml(rawTitleCandidate); }
-    }, 200);
-    return () => { cancelled = true; cancelIdle(titleIdleRef.current); titleIdleRef.current = null; };
+    }
   }, [rawTitleCandidate, serverRendered?.titleHtml]);
 
   useEffect(() => {
-    // Prefer server-rendered sanitized content when available
-    if (serverRendered?.contentHtml && typeof serverRendered.contentHtml === 'string') {
-      setSanitizedContentHtml(serverRendered.contentHtml);
-      return;
-    }
-    cancelIdle(contentIdleRef.current);
-    let cancelled = false;
-    contentIdleRef.current = requestIdle(() => {
-      if (cancelled) return;
+    const serverHtml = serverRendered?.contentHtml;
+    if (typeof serverHtml === 'string' && serverHtml.trim().length > 0) {
+      setSanitizedContentHtml(serverHtml);
+    } else {
       try { setSanitizedContentHtml(sanitizeHtmlContent(rawContentCandidate)); } catch { setSanitizedContentHtml(rawContentCandidate); }
-    }, 200);
-    return () => { cancelled = true; cancelIdle(contentIdleRef.current); contentIdleRef.current = null; };
+    }
   }, [rawContentCandidate, serverRendered?.contentHtml]);
 
   useEffect(() => {
-    // Prefer server-rendered theme detection when available
-    if (Array.isArray(serverRendered?.themes) && serverRendered!.themes!.length > 0) {
-      setKeywords(serverRendered!.themes as any);
-      return;
-    }
-    cancelIdle(keywordsIdleRef.current);
-    let cancelled = false;
-    keywordsIdleRef.current = requestIdle(() => {
-      if (cancelled) return;
-      try { setKeywords(detectThemesMemo(rawContentCandidate) as any); } catch { setKeywords([]); }
-    }, 250);
-    return () => { cancelled = true; cancelIdle(keywordsIdleRef.current); keywordsIdleRef.current = null; };
-  }, [rawContentCandidate, serverRendered?.themes]);
+    try { setKeywords(detectThemesMemo(rawContentCandidate) as any); } catch { setKeywords([]); }
+  }, [rawContentCandidate]);
 
   // Let's make sure we have posts data and current post before rendering
   // Keep previous story content visible while fetching; only return null if no cached data yet
@@ -1847,7 +1736,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         // Warm content & reactions in the background for instant display
                         prefetchPostBySlug(targetSlug);
                         const target = posts.find((p: any) => p.slug === targetSlug);
-                        if (target?.id) prefetchReactionsForIds([Number(target.id)]);
+                        
                         // Scroll to top for a clean transition
                         window.scrollTo({ top: 0, behavior: 'auto' });
                       }
@@ -2006,7 +1895,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     const defOverride = getThemeDefinitionOverride(themeKey);
 
                     // Icon slug priority: story override -> editor override -> metadata -> server -> global override -> shared definition -> ghost
-                    const chosenIconSlug =
+                    let chosenIconSlug =
                       override?.icon ||
                       overrideThemeIcon ||
                       md.themeIcon ||
@@ -2014,6 +1903,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       categoriesMap[derivedKey]?.icon ||
                       (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
                       'ghost';
+                    if (String(chosenIconSlug).toLowerCase() === 'knife') {
+                      chosenIconSlug = 'mdi:knife';
+                    }
 
                     // Lucide icon mapping with broader coverage and theme-key fallbacks
                     const ThemeIcon = (() => {
@@ -2454,23 +2346,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 tabIndex={0}
                 aria-label="Toggle user interface visibility"
                 aria-pressed={isUIHidden}
-                {...(isContentReady ? { dangerouslySetInnerHTML: { __html: sanitizedContentHtml } } : {})}
+                dangerouslySetInnerHTML={{ __html: sanitizedContentHtml }}
               >
-                {!isContentReady ? (
-                  (rawContent && rawContent.trim().length > 0) ? (
-                    <div aria-busy="true" aria-live="polite" className="text-sm text-muted-foreground py-2">
-                      Loading story…
-                    </div>
-                  ) : (
-                    isFetchingPost ? (
-                      <div aria-busy="true" aria-live="polite" className="text-sm text-muted-foreground py-2">
-                        Loading story…
-                      </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
-                    )
-                  )
-                ) : null}
               </div>
               {/* Inline comment dialog (selection-based) */}
               <CommentDialog />
@@ -2545,7 +2422,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               <div className="flex flex-col items-center justify-center gap-6">
                 {/* Centered Like/Dislike buttons */}
                 <div className="flex justify-center w-full">
-                  <LikeDislike postId={currentPost.id} slug={currentPost.slug} source="wp" variant="reader" initialTotals={currentTotals} />
+                  <LikeDislike postId={currentPost.id} slug={currentPost.slug} source="wp" variant="reader" />
                 </div>
 
                 <div ref={shareRowRef} className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-share`}>

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
 import MostLikedList from "@/components/home/MostLikedList";
+import { Icon } from "@iconify/react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -85,7 +86,7 @@ export default function StoriesIndexContent() {
   const sortedPostsRef = React.useRef<Post[]>([]);
 
   // Defer only reaction widgets; render the rest immediately to avoid layout shifts
-  const [readyReactions, setReadyReactions] = useState(false);
+  const [readyReactions, setReadyReactions] = useState(true);
   useEffect(() => {
     const start = () => {
       setReadyReactions(true);
@@ -610,6 +611,10 @@ export default function StoriesIndexContent() {
       (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
       (server?.themeIcon || 'ghost');
 
+    // Normalize legacy 'knife' to Iconify for consistent visuals
+    if (String(iconSlug).toLowerCase() === 'knife') {
+      iconSlug = 'mdi:knife';
+    }
     if (themeKey === 'BODY_HORROR') {
       iconSlug = 'bone';
     }
@@ -700,7 +705,7 @@ export default function StoriesIndexContent() {
   const [reactionTotals, setReactionTotals] = useState<Record<number, import("@/api/reactions").ReactionTotals>>({});
   
   useEffect(() => {
-    if (!readyReactions) return;
+    return;
     let mounted = true;
     const fetched = fetchedReactionIdsRef.current;
     let io: IntersectionObserver | null = null;
@@ -1377,10 +1382,11 @@ export default function StoriesIndexContent() {
                           const { key, label, iconSlug } = computeThemeMeta(featuredStory);
                           const badgeTint = getBadgeTint(key);
                           const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
+                          const isIconify = String(iconSlug).includes(":");
                           return (
                             <div className="-mt-1">
                               <Badge className={"w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap " + badgeTint}>
-                                {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : (ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null)}
                                 {label}
                               </Badge>
                             </div>
@@ -1481,10 +1487,11 @@ export default function StoriesIndexContent() {
                                 const { key, label, iconSlug } = computeThemeMeta(s as Post);
                                 const badgeTint = getBadgeTint(key);
                                 const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
+                                const isIconify = String(iconSlug).includes(":");
                                 return (
                                   <div className="mt-1">
                                     <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                      {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                      {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : (ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null)}
                                       {label}
                                     </Badge>
                                   </div>
@@ -1595,10 +1602,11 @@ export default function StoriesIndexContent() {
                                   const { key, label, iconSlug } = computeThemeMeta(pop);
                                   const badgeTint = getBadgeTint(key);
                                   const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
+                                  const isIconify = String(iconSlug).includes(":");
                                   return (
                                     <div className="mt-1">
                                       <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}>
-                                        {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                        {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : (ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null)}
                                         {label}
                                       </Badge>
                                     </div>
@@ -1712,10 +1720,11 @@ export default function StoriesIndexContent() {
                                         const { key, label, iconSlug } = computeThemeMeta(post);
                                         const badgeTint = getBadgeTint(key);
                                         const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
+                                        const isIconify = String(iconSlug).includes(":");
                                         return (
                                           <div className="mt-1">
                                             <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}>
-                                              {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                              {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : (ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null)}
                                               {label}
                                             </Badge>
                                           </div>

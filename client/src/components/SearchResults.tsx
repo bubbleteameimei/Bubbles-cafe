@@ -144,6 +144,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query, onSelect }) => {
           defOverride?.icon ||
           (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
           'ghost';
+        if (String(iconSlug).toLowerCase() === 'knife') iconSlug = 'mdi:knife';
         if (themeKey === 'BODY_HORROR') iconSlug = 'bone';
         const isIconify = String(iconSlug).includes(':');
 
