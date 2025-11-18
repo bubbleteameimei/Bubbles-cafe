@@ -889,7 +889,9 @@ export default function StoriesIndexContent() {
           });
         }
       });
-      mo.observe(document.body, { childList: true, subtree: true });
+      if (mo) {
+        mo.observe(document.body, { childList: true, subtree: true });
+      }
     } catch {}
 
     // Start with a small initial preload + SSE
@@ -927,9 +929,9 @@ export default function StoriesIndexContent() {
       }
     };
 
-    const idle = (window as any).requestIdleCallback as undefined | ((cb: () => void, opts?: { timeout?: number }) => void);
-    if (typeof idle === 'function') {
-      idle(() => { if (mounted) setTimeout(() => { void preloadRemaining(); }, 400); }, { timeout: 2500 });
+    const idleCb = (window as any).requestIdleCallback as ((cb: () => void, opts?: { timeout?: number }) => void) | undefined;
+    if (idleCb) {
+      idleCb(() => { if (mounted) setTimeout(() => { void preloadRemaining(); }, 400); }, { timeout: 2500 });
     } else {
       setTimeout(() => { if (mounted) void preloadRemaining(); }, 1200);
     }
@@ -1712,11 +1714,10 @@ export default function StoriesIndexContent() {
                                         const { key, label, iconSlug } = computeThemeMeta(post);
                                         const badgeTint = getBadgeTint(key);
                                         const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
-                                        const isIconify = String(iconSlug).includes(":");
                                         return (
                                           <div className="mt-1">
                                             <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}>
-                                              {isIconify ? <Icon icon={String(iconSlug)} className="h-3 w-3" /> : (ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null)}
+                                              {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                               {label}
                                             </Badge>
                                           </div>
@@ -1748,7 +1749,6 @@ export default function StoriesIndexContent() {
                                           slug={post.slug}
                                           source="wp"
                                           variant="index"
-                                          initialTotals={reactionTotals[post.id] || null}
                                         />
                                       </Suspense>
                                     )}
@@ -1853,7 +1853,6 @@ export default function StoriesIndexContent() {
                                     slug={post.slug}
                                     source="wp"
                                     variant="index"
-                                    initialTotals={reactionTotals[post.id] || null}
                                   />
                                 </Suspense>
                               )}

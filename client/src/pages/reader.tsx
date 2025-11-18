@@ -2008,10 +2008,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
                     return (
                       <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border whitespace-nowrap ${badgeTint}`}>
-                        {String(chosenIconSlug).includes(':')
-                          ? (<Icon icon={String(chosenIconSlug)} className="h-4 w-4" />)
-                          : (<ThemeIcon className="h-4 w-4" />)
-                        }
+                        <ThemeIcon className="h-4 w-4" />
                         <span className="text-xs font-medium whitespace-nowrap">{prettyLabel}</span>
                       </div>
                     );
