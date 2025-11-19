@@ -19,9 +19,10 @@ interface MostLikedListProps {
   posts: Post[];
   onNavigate: (slugOrId: string | number) => void;
   totalsMap?: Record<number, ReactionTotals>;
+  renderMetaBySlug?: Record<string, { themeKey?: string; themeLabel?: string; themeIcon?: string }>;
 }
 
-const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigate, totalsMap: totalsFromParent }) => {
+const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigate, totalsMap: totalsFromParent, renderMetaBySlug }) => {
   const [totalsMap, setTotalsMap] = useState<Record<number, ReactionTotals>>(totalsFromParent || {});
 
   // If totals not provided by parent, fetch a small batch to avoid late-pop-in
@@ -194,8 +195,10 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                           </h4>
                           {(() => {
                             const md: any = (featured as any)?.metadata || {};
+                            const serverKey = renderMetaBySlug?.[String(featured.slug || '')]?.themeKey;
                             const primaryThemeRaw =
                               md.themeCategory ||
+                              (serverKey ? serverKey : undefined) ||
                               determineThemeCategory(String(featured.title || ''), String(featured.content || ''));
 
                             const override = getStoryThemeOverride(featured.slug as any, featured.title as any);
@@ -209,7 +212,7 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
                               return raw.toUpperCase().replace(/\s+/g, '_');
                             })();
 
-                            const themeKey = override?.key || derivedKey;
+                            const themeKey = override?.key || (serverKey ? String(serverKey).toUpperCase() : undefined) || derivedKey;
 
                             const defOverride = getThemeDefinitionOverride(themeKey);
 
@@ -234,8 +237,8 @@ const MostLikedListComponent: React.FC<MostLikedListProps> = ({ posts, onNavigat
 
                             return (
                               <div className="mt-1">
-                                <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                  {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border whitespace-nowrap ${badgeTint}`}>
+                                  {ThemeIconCmp ? <ThemeIconCmp className="h-3.5 w-3.5" /> : null}
                                   {prettyLabel}
                                 </Badge>
                               </div>

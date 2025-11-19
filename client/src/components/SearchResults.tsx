@@ -189,8 +189,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query, onSelect }) => {
           >
             <div className="font-medium" dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.title.rendered) }} />
             <div className="mt-1">
-              <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                <ThemeIconCmp className="h-3 w-3" />
+              <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border whitespace-nowrap ${badgeTint}`}>
+                <ThemeIconCmp className="h-3.5 w-3.5" />
                 {prettyLabel}
               </Badge>
             </div>

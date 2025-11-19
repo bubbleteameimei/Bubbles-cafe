@@ -2007,10 +2007,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     const badgeTint = getBadgeTint(themeKey);
 
                     return (
-                      <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border whitespace-nowrap ${badgeTint}`}>
-                        <ThemeIcon className="h-4 w-4" />
-                        <span className="text-xs font-medium whitespace-nowrap">{prettyLabel}</span>
-                      </div>
+                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border whitespace-nowrap ${badgeTint}`}>
+                        <ThemeIcon className="h-3.5 w-3.5" />
+                        {prettyLabel}
+                      </Badge>
                     );
                   })()}
                   

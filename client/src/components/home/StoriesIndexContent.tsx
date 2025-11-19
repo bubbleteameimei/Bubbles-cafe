@@ -1378,8 +1378,8 @@ export default function StoriesIndexContent() {
                           const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                           return (
                             <div className="-mt-1">
-                              <Badge className={"w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap " + badgeTint}>
-                                {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                              <Badge className={"w-fit text-[12px] font-medium tracking-wide px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border whitespace-nowrap " + badgeTint}>
+                                {ThemeIconCmp ? <ThemeIconCmp className="h-3.5 w-3.5" /> : null}
                                 {label}
                               </Badge>
                             </div>
@@ -1432,7 +1432,7 @@ export default function StoriesIndexContent() {
               <div className="lg:col-span-2">
                 <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
                   <CardContent className="p-4">
-                    <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} />
+                    <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} renderMetaBySlug={renderMetaBySlug} />
                   </CardContent>
                 </Card>
               </div>
@@ -1482,8 +1482,8 @@ export default function StoriesIndexContent() {
                                 const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                 return (
                                   <div className="mt-1">
-                                    <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
-                                      {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                    <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border whitespace-nowrap ${badgeTint}`}>
+                                      {ThemeIconCmp ? <ThemeIconCmp className="h-3.5 w-3.5" /> : null}
                                       {label}
                                     </Badge>
                                   </div>
@@ -1596,8 +1596,8 @@ export default function StoriesIndexContent() {
                                   const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                   return (
                                     <div className="mt-1">
-                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}>
-                                        {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border whitespace-nowrap ${badgeTint}`}>
+                                        {ThemeIconCmp ? <ThemeIconCmp className="h-3.5 w-3.5" /> : null}
                                         {label}
                                       </Badge>
                                     </div>
@@ -1713,8 +1713,8 @@ export default function StoriesIndexContent() {
                                         const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                         return (
                                           <div className="mt-1">
-                                            <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}>
-                                              {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                            <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border whitespace-nowrap ${badgeTint}`}>
+                                              {ThemeIconCmp ? <ThemeIconCmp className="h-3.5 w-3.5" /> : null}
                                               {label}
                                             </Badge>
                                           </div>
