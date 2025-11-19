@@ -2,13 +2,13 @@ name: deploy-cloudflare-worker
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
   deploy:
-    if: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' && secrets.CLOUDFLARE_API_TOKEN != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,9 +23,14 @@ jobs:
       - name: Install (deterministic)
         run: npm ci
 
-      - name: Deploy to Cloudflare Workers
+      - name: Deploy to Cloudflare Workers (push only)
+        if: ${{ github.event_name == 'push' }}
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
+          if [ -z "$CLOUDFLARE_ACCOUNT_ID" ] || [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::warning ::Cloudflare secrets are not set. Skipping deploy."
+            exit 0
+          fi
           npx wrangler deploy --config wrangler.jsonc --no-bundle false
