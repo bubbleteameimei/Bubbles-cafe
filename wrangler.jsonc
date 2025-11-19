@@ -16,18 +16,18 @@
   },
 
   "kv_namespaces": [
-    { "binding": "IDEMPOTENCY_KV", "id": "" },
-    { "binding": "USER_CACHE_KV", "id": "" },
-    { "binding": "SYNC_METADATA_KV", "id": "" },
-    { "binding": "ANALYTICS_KV", "id": "" },
-    { "binding": "CACHE_KV", "id": "" }
+    { "binding": "IDEMPOTENCY_KV", "id": "2919525761cd4e6faa06bb219e4a293e" },
+    { "binding": "USER_CACHE_KV", "id": "85dd5d1c736742afa1e0fce282ef548a" },
+    { "binding": "SYNC_METADATA_KV", "id": "bfcdd8e8af824f05b392db8682891548" },
+    { "binding": "ANALYTICS_KV", "id": "d0665e7aa4574e3192cce136a1ca3a23" },
+    { "binding": "CACHE_KV", "id": "ffc0fafeb8724f27aa293bf9ddc49358" }
   ],
 
   "durable_objects": {
     "bindings": [
-      { "name": "LOCKS_DO", "class_name": "LocksObject" },
-      { "name": "RATE_LIMIT_DO", "class_name": "RateLimitObject" },
-      { "name": "IDEMPOTENCY_DO", "class_name": "IdempotencyObject" }
+      { "name": "LOCKS_DO", "class_name": "LocksObject", "script_name": "bubbles-api" },
+      { "name": "RATE_LIMIT_DO", "class_name": "RateLimitObject", "script_name": "bubbles-api" },
+      { "name": "IDEMPOTENCY_DO", "class_name": "IdempotencyObject", "script_name": "bubbles-api" }
     ]
   },
 
