@@ -90,11 +90,8 @@ export default function StoriesIndexContent() {
     const start = () => {
       setReadyReactions(true);
     };
-    const ric = (window as any).requestIdleCallback as
-      | ((cb: () => void, opts?: { timeout?: number }) => void)
-      | undefined;
-    if (typeof ric === 'function') {
-      ric(() => start(), { timeout: 1200 });
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(() => start(), { timeout: 1200 });
     } else {
       setTimeout(start, 700);
     }
@@ -448,9 +445,8 @@ export default function StoriesIndexContent() {
         if (!cancelled) setCategoryPills(pills);
       } catch {}
     };
-    const ric = (window as any)?.requestIdleCallback as any;
-    if (typeof ric === 'function') {
-      ric(() => compute(), { timeout: 1200 });
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(() => compute(), { timeout: 1200 });
     } else {
       setTimeout(compute, 0);
     }
@@ -982,9 +978,8 @@ export default function StoriesIndexContent() {
         if (!cancelled) setTrendingScores({});
       });
     };
-    const ric = (window as any)?.requestIdleCallback as any;
-    if (typeof ric === 'function') {
-      ric(() => schedule(), { timeout: 1500 });
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(() => schedule(), { timeout: 1500 });
     } else {
       setTimeout(schedule, 0);
     }
