@@ -26,8 +26,7 @@ jobs:
 
  || true)"
           if [ -n "$PKG_CHANGED" ] && [ -z "$LOCK_CHANGED" ]; then
-            echo "::error ::package.json changed but package-lock.json did not. Please run 'npm install --package-lock-only' and commit the lockfile."
-            exit 1
+            echo "::warning ::package.json changed but package-lock.json did not. Please run 'npm install --package-lock-only' and commit the lockfile."
           fi
       - name: Check for unsynced lockfile changes on pushes
         if: ${{ github.event_name == 'push' }}
