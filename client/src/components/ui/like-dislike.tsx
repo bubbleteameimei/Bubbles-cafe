@@ -65,7 +65,6 @@ export function LikeDislike({
   variant = 'index',
   initialTotals = null
 }: LikeDislikeProps) {
-  const { toast: _toast } = useToast();
 
   // Initialize from localStorage to avoid flicker and preserve user state across pages
   const initialLocalState = (() => {
@@ -493,4 +492,3 @@ export function LikeDislike({
     </div>
   );
 }
-
