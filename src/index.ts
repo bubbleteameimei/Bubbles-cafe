@@ -13,7 +13,7 @@ interface Env {
   SYNC_METADATA_KV: KVNamespace;
   ANALYTICS_KV: KVNamespace;
   CACHE_KV: KVNamespace;
-  
+
   LOCKS_DO: DurableObjectNamespace;
   RATE_LIMIT_DO: DurableObjectNamespace;
   IDEMPOTENCY_DO: DurableObjectNamespace;
@@ -31,7 +31,7 @@ interface Env {
   EMAIL_PROVIDER_API_KEY: string;
   GMAIL_APP_PASSWORD: string;
   GMAIL_ADMIN_EMAIL: string;
-  
+
   BACKEND_BASE_URL: string;
   FRONTEND_URL: string;
   NODE_ENV: string;
@@ -133,7 +133,7 @@ export class LocksObject {
 async function callSupabaseRpc(
   env: Env,
   functionName: string,
-  payload: Record<string, any>
+  payload: Record<string, any>,
 ): Promise<Response> {
   const url = `${env.SUPABASE_URL}/rest/v1/rpc/${functionName}`;
   return fetch(url, {
@@ -165,14 +165,16 @@ async function checkRateLimit(
   env: Env,
   key: string,
   limit: number,
-  window: number
+  window: number,
 ): Promise<boolean> {
   const id = env.RATE_LIMIT_DO.idFromName(key);
   const obj = env.RATE_LIMIT_DO.get(id);
-  const response = await obj.fetch(new Request('https://worker', {
-    method: 'POST',
-    body: JSON.stringify({ key, limit, window }),
-  }));
+  const response = await obj.fetch(
+    new Request('https://worker', {
+      method: 'POST',
+      body: JSON.stringify({ key, limit, window }),
+    }),
+  );
   const result = (await response.json()) as any;
   return result.allowed !== false;
 }
@@ -180,14 +182,16 @@ async function checkRateLimit(
 async function getOrCheckIdempotency(
   env: Env,
   key: string,
-  ttl: number
+  ttl: number,
 ): Promise<{ isNew: boolean; cached?: any }> {
   const id = env.IDEMPOTENCY_DO.idFromName(key);
   const obj = env.IDEMPOTENCY_DO.get(id);
-  const response = await obj.fetch(new Request('https://worker', {
-    method: 'POST',
-    body: JSON.stringify({ key, ttl }),
-  }));
+  const response = await obj.fetch(
+    new Request('https://worker', {
+      method: 'POST',
+      body: JSON.stringify({ key, ttl }),
+    }),
+  );
   const result = (await response.json()) as any;
   return { isNew: !result.cached, cached: result.cached };
 }
@@ -238,11 +242,7 @@ router.post('/api/analytics/vitals', async (req: Request, env: Env) => {
 
     // Queue to KV for batch processing
     const eventId = crypto.randomUUID();
-    await env.ANALYTICS_KV.put(
-      `vitals-${eventId}`,
-      JSON.stringify(body),
-      { expirationTtl: 86400 }
-    );
+    await env.ANALYTICS_KV.put(`vitals-${eventId}`, JSON.stringify(body), { expirationTtl: 86400 });
 
     return json({ success: true, eventId });
   } catch (error) {
@@ -254,11 +254,9 @@ router.post('/api/analytics/pageview', async (req: Request, env: Env) => {
   try {
     const body = (await req.json?.()) || {};
     const eventId = crypto.randomUUID();
-    await env.ANALYTICS_KV.put(
-      `pageview-${eventId}`,
-      JSON.stringify(body),
-      { expirationTtl: 86400 }
-    );
+    await env.ANALYTICS_KV.put(`pageview-${eventId}`, JSON.stringify(body), {
+      expirationTtl: 86400,
+    });
     return json({ success: true, eventId });
   } catch (error) {
     return json({ error: String(error) }, { status: 400 });
@@ -269,11 +267,9 @@ router.post('/api/analytics/interaction', async (req: Request, env: Env) => {
   try {
     const body = (await req.json?.()) || {};
     const eventId = crypto.randomUUID();
-    await env.ANALYTICS_KV.put(
-      `interaction-${eventId}`,
-      JSON.stringify(body),
-      { expirationTtl: 86400 }
-    );
+    await env.ANALYTICS_KV.put(`interaction-${eventId}`, JSON.stringify(body), {
+      expirationTtl: 86400,
+    });
     return json({ success: true, eventId });
   } catch (error) {
     return json({ error: String(error) }, { status: 400 });
@@ -284,11 +280,9 @@ router.post('/api/analytics/performance', async (req: Request, env: Env) => {
   try {
     const body = (await req.json?.()) || {};
     const eventId = crypto.randomUUID();
-    await env.ANALYTICS_KV.put(
-      `performance-${eventId}`,
-      JSON.stringify(body),
-      { expirationTtl: 86400 }
-    );
+    await env.ANALYTICS_KV.put(`performance-${eventId}`, JSON.stringify(body), {
+      expirationTtl: 86400,
+    });
     return json({ success: true, eventId });
   } catch (error) {
     return json({ error: String(error) }, { status: 400 });
@@ -335,11 +329,9 @@ router.get('/api/bookmarks', async (req: Request, env: Env) => {
     }
 
     const data = await response.json();
-    await env.USER_CACHE_KV.put(
-      `bookmarks-${token.slice(0, 20)}`,
-      JSON.stringify(data),
-      { expirationTtl: 3600 }
-    );
+    await env.USER_CACHE_KV.put(`bookmarks-${token.slice(0, 20)}`, JSON.stringify(data), {
+      expirationTtl: 3600,
+    });
 
     return json(data);
   } catch (error) {
@@ -477,10 +469,12 @@ router.post('/api/wordpress/sync/manual', async (req: Request, env: Env) => {
     const lockId = env.LOCKS_DO.idFromName('wordpress-sync');
     const lock = env.LOCKS_DO.get(lockId);
 
-    const acquired = await lock.fetch(new Request('https://worker', {
-      method: 'POST',
-      body: JSON.stringify({ key: 'wordpress-sync', action: 'acquire' }),
-    }));
+    const acquired = await lock.fetch(
+      new Request('https://worker', {
+        method: 'POST',
+        body: JSON.stringify({ key: 'wordpress-sync', action: 'acquire' }),
+      }),
+    );
 
     const lockData = (await acquired.json()) as any;
     if (!lockData.acquired) {
@@ -492,7 +486,7 @@ router.post('/api/wordpress/sync/manual', async (req: Request, env: Env) => {
       const wpRes = await fetch(`${env.WORDPRESS_API}?per_page=100&orderby=modified&order=desc`);
       if (!wpRes.ok) throw new Error('WordPress API failed');
 
-      const posts = await wpRes.json() as any[];
+      const posts = (await wpRes.json()) as any[];
 
       // Batch upsert to Supabase
       for (const batch of posts) {
@@ -513,10 +507,12 @@ router.post('/api/wordpress/sync/manual', async (req: Request, env: Env) => {
       return json({ success: true, postsProcessed: posts.length });
     } finally {
       // Release lock
-      await lock.fetch(new Request('https://worker', {
-        method: 'POST',
-        body: JSON.stringify({ key: 'wordpress-sync', action: 'release' }),
-      }));
+      await lock.fetch(
+        new Request('https://worker', {
+          method: 'POST',
+          body: JSON.stringify({ key: 'wordpress-sync', action: 'release' }),
+        }),
+      );
     }
   } catch (error) {
     await env.SYNC_METADATA_KV.put('last_sync_status', `error: ${String(error)}`);
