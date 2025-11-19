@@ -2,7 +2,6 @@
   "name": "bubbles-api",
   "main": "src/index.ts",
   "compatibility_date": "2024-12-19",
-  "type": "service",
 
   "vars": {
     "BACKEND_BASE_URL": "https://api.bubblescafe.space",
