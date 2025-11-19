@@ -177,9 +177,11 @@
     "@supabase/supabase-js": "^2.75.0",
     "@iconify/react": "^4.1.1",
     "@vercel/analytics": "^1.4.1",
-    "@vercel/speed-insights": "^1.1.0"
+    "@vercel/speed-insights": "^1.1.0",
+    "itty-router": "^4.1.0"
   },
   "devDependencies": {
+    "wrangler": "^3.96.0",
     "@playwright/test": "^1.49.1",
     "@replit/vite-plugin-runtime-error-modal": "^0.0.3",
     "@tailwindcss/typography": "^0.5.15",
