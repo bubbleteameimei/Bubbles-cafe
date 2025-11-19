@@ -18,18 +18,42 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: 'npm'
-      - name: Verify package-lock.json is in sync
+      - name: Verify package-lock.json is in sync (PR - blocking)
+        if: ${{ github.event_name == 'pull_request' }}
         run: |
           # Regenerate lockfile in a throwaway workspace and fail if it changes
           npm install --package-lock-only
           git --no-pager diff --exit-code package-lock.json || (echo "package-lock.json is out of sync with package.json" && exit 1)
+      - name: Verify package-lock.json is in sync (push - warn only)
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          set +e
+          npm install --package-lock-only
+          if ! git --no-pager diff --exit-code package-lock.json; then
+            echo "::warning ::package-lock.json is out of sync with package.json. A separate workflow will regenerate the lockfile."
+          fi
       - name: Install dependencies (deterministic)
         run: npm ci
       - run: npm run check
       - run: npm run lint
-      - run: npx axe-core --urls http://localhost:3000 || true
-      - run: npm run build
-      - run: npm run budget
+      - name: Build
+        run: npm run build
+      - name: Preview site and run axe (non-blocking)
+        run: |
+          set -e
+          npx vite preview --port 3000 --host &
+          PREVIEW_PID=$!
+          for i in {1..30}; do
+            if curl -fsS http://localhost:3000 >/dev/null 2>&1; then
+              echo "Preview is up"
+              break
+            fi
+            sleep 1
+          done
+          npx axe-core --urls http://localhost:3000 || true
+          kill $PREVIEW_PID || true
+      - name: Bundle budget
+        run: npm run budget
         env:
           BUNDLE_BUDGET_KB: '800'
       - run: npm test --silent
