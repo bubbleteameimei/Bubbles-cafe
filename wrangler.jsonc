@@ -1,18 +1,20 @@
-// Cloudflare Wrangler configuration for deploying the built static site in ./dist
+// Cloudflare Wrangler configuration for deploying a Worker script (edge logic)
 {
-  // Change this if you prefer a different Worker name
   "name": "bubblescafe-worker",
 
-  // Use today's date for compatibility; adjust later only if needed by Wrangler
+  // Pin to a recent compatibility date; adjust if Wrangler requests a newer date
   "compatibility_date": "2025-11-19",
 
-  // Serve static assets from the Vite build output directory
-  "assets": "./dist",
+  // Entry to the Worker script
+  "main": "src/worker.ts",
 
-  // Deploy to workers.dev by default; configure routes if binding to a custom domain
+  // Cloudflare account id (token provided via GitHub Secrets)
+  "account_id": "50154307e88967cd12ab1262230de6ac",
+
+  // Deploy to workers.dev by default; add routes for custom domains when ready
   "workers_dev": true
 
-  // If you later add a custom domain, add:
+  // Example of route binding (uncomment when you want to attach to a zone):
   // "routes": [
   //   { "pattern": "bubblescafe.space/*", "zone_name": "bubblescafe.space" }
   // ]
