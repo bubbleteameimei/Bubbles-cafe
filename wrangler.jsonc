@@ -1,23 +1,78 @@
 {
-  "name": "bubbles-cafe-worker",
+  "name": "bubbles-api",
   "main": "src/index.ts",
   "compatibility_date": "2024-12-19",
+  "type": "service",
+  
   "env": {
     "production": {
       "routes": [
         {
-          "pattern": "https://bubbles-cafe.space/*",
-          "zone_id": ""
+          "pattern": "api.bubblescafe.space/*",
+          "zone_name": "bubblescafe.space"
         }
-      ],
-      "vars": {
-        "BACKEND_URL": "https://api.bubblescafe.space"
-      }
+      ]
+    }
+  },
+
+  "kv_namespaces": [
+    { "binding": "IDEMPOTENCY_KV", "id": "" },
+    { "binding": "USER_CACHE_KV", "id": "" },
+    { "binding": "SYNC_METADATA_KV", "id": "" },
+    { "binding": "ANALYTICS_KV", "id": "" },
+    { "binding": "CACHE_KV", "id": "" }
+  ],
+
+  "durable_objects": {
+    "bindings": [
+      { "name": "LOCKS_DO", "class_name": "LocksObject" },
+      { "name": "RATE_LIMIT_DO", "class_name": "RateLimitObject" },
+      { "name": "IDEMPOTENCY_DO", "class_name": "IdempotencyObject" }
+    ]
+  },
+
+  "triggers": {
+    "crons": [
+      "0 * * * *"
+    ]
+  },
+
+  "vars": {
+    "BACKEND_BASE_URL": "https://api.bubblescafe.space",
+    "FRONTEND_URL": "https://bubblescafe.space",
+    "NODE_ENV": "production",
+    "ENABLE_WORDPRESS_SCHEDULER": "true"
+  },
+
+  "secrets": [
+    "SUPABASE_URL",
+    "SUPABASE_ANON_KEY",
+    "SUPABASE_POOLER_URL",
+    "DATABASE_URL",
+    "WORDPRESS_API",
+    "WORDPRESS_SYNC_KEY",
+    "CSRF_SECRET",
+    "STRIPE_WEBHOOK_SECRET",
+    "PAYSTACK_SECRET_KEY",
+    "PAYSTACK_PUBLIC_KEY",
+    "EMAIL_PROVIDER_API_KEY",
+    "GMAIL_APP_PASSWORD",
+    "GMAIL_ADMIN_EMAIL"
+  ],
+
+  "observability": {
+    "enabled": false,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
     },
-    "development": {
-      "vars": {
-        "BACKEND_URL": "http://localhost:3000"
-      }
+    "traces": {
+      "enabled": true,
+      "persist": true,
+      "head_sampling_rate": 1
     }
   }
 }
