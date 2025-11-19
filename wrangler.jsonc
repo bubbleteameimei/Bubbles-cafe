@@ -3,16 +3,12 @@
   "main": "src/index.ts",
   "compatibility_date": "2024-12-19",
   "type": "service",
-  
-  "env": {
-    "production": {
-      "routes": [
-        {
-          "pattern": "api.bubblescafe.space/*",
-          "zone_name": "bubblescafe.space"
-        }
-      ]
-    }
+
+  "vars": {
+    "BACKEND_BASE_URL": "https://api.bubblescafe.space",
+    "FRONTEND_URL": "https://bubblescafe.space",
+    "NODE_ENV": "production",
+    "ENABLE_WORDPRESS_SCHEDULER": "true"
   },
 
   "kv_namespaces": [
@@ -32,33 +28,39 @@
   },
 
   "triggers": {
-    "crons": [
-      "0 * * * *"
-    ]
+    "crons": ["0 * * * *"]
   },
 
-  "vars": {
-    "BACKEND_BASE_URL": "https://api.bubblescafe.space",
-    "FRONTEND_URL": "https://bubblescafe.space",
-    "NODE_ENV": "production",
-    "ENABLE_WORDPRESS_SCHEDULER": "true"
+  "env": {
+    "production": {
+      "routes": [
+        {
+          "pattern": "api.bubblescafe.space/*",
+          "zone_name": "bubblescafe.space"
+        }
+      ],
+      "vars": {
+        "BACKEND_BASE_URL": "https://api.bubblescafe.space",
+        "FRONTEND_URL": "https://bubblescafe.space",
+        "NODE_ENV": "production",
+        "ENABLE_WORDPRESS_SCHEDULER": "true"
+      },
+      "kv_namespaces": [
+        { "binding": "IDEMPOTENCY_KV", "id": "2919525761cd4e6faa06bb219e4a293e" },
+        { "binding": "USER_CACHE_KV", "id": "85dd5d1c736742afa1e0fce282ef548a" },
+        { "binding": "SYNC_METADATA_KV", "id": "bfcdd8e8af824f05b392db8682891548" },
+        { "binding": "ANALYTICS_KV", "id": "d0665e7aa4574e3192cce136a1ca3a23" },
+        { "binding": "CACHE_KV", "id": "ffc0fafeb8724f27aa293bf9ddc49358" }
+      ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "LOCKS_DO", "class_name": "LocksObject", "script_name": "bubbles-api" },
+          { "name": "RATE_LIMIT_DO", "class_name": "RateLimitObject", "script_name": "bubbles-api" },
+          { "name": "IDEMPOTENCY_DO", "class_name": "IdempotencyObject", "script_name": "bubbles-api" }
+        ]
+      }
+    }
   },
-
-  "secrets": [
-    "SUPABASE_URL",
-    "SUPABASE_ANON_KEY",
-    "SUPABASE_POOLER_URL",
-    "DATABASE_URL",
-    "WORDPRESS_API",
-    "WORDPRESS_SYNC_KEY",
-    "CSRF_SECRET",
-    "STRIPE_WEBHOOK_SECRET",
-    "PAYSTACK_SECRET_KEY",
-    "PAYSTACK_PUBLIC_KEY",
-    "EMAIL_PROVIDER_API_KEY",
-    "GMAIL_APP_PASSWORD",
-    "GMAIL_ADMIN_EMAIL"
-  ],
 
   "observability": {
     "enabled": false,
