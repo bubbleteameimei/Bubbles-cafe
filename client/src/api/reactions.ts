@@ -57,11 +57,14 @@ export async function fetchReactionsBatch(postIds: number[]): Promise<ReactionTo
   if (validIds.length === 0) return [];
 
   const idsParam = validIds.join(',');
-  const data = await fetchWithFallback<{ results: ReactionTotals[] }>(`/api/posts/reactions-batch?ids=${encodeURIComponent(idsParam)}`, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-  });
+  const data = await fetchWithFallback<{ results: ReactionTotals[] }>(
+    `/api/posts/reactions-batch?ids=${encodeURIComponent(idsParam)}`,
+    {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    },
+  );
   return Array.isArray(data?.results) ? data.results : [];
 }
 

@@ -1,46 +1,93 @@
-import React, { useMemo, useState, useEffect, lazy, Suspense } from "react";
-import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
-import { type posts } from "@shared/schema";
+import React, { useMemo, useState, useEffect, lazy, Suspense } from 'react';
+import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { type posts } from '@shared/schema';
 type Post = typeof posts.$inferSelect;
-import { useLocation } from "wouter";
-import SEO from "@/components/SEO";
+import { useLocation } from 'wouter';
+import SEO from '@/components/SEO';
 
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
-  ArrowRight, Clock, Calendar, Award, Search, Eye, Heart,
-  Ghost, Skull, Brain, Pill, Cpu, Dna, Umbrella, Footprints, CloudRain, Castle, Bug, Radiation,
-  UserMinus2, UserPlus, Anchor, AlertTriangle, Building, Worm, Cloud, CloudFog, Flame,
-  ForkKnife, Cat, Moon, Dog, Radio, MoonStar, Box, Car, FlaskConical, Trees, Bone, Hourglass
-} from "lucide-react";
-const LikeDislike = lazy(() => import("@/components/ui/like-dislike").then(m => ({ default: m.LikeDislike })));
-import MostLikedList from "@/components/home/MostLikedList";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+  ArrowRight,
+  Clock,
+  Calendar,
+  Award,
+  Search,
+  Eye,
+  Heart,
+  Ghost,
+  Skull,
+  Brain,
+  Pill,
+  Cpu,
+  Dna,
+  Umbrella,
+  Footprints,
+  CloudRain,
+  Castle,
+  Bug,
+  Radiation,
+  UserMinus2,
+  UserPlus,
+  Anchor,
+  AlertTriangle,
+  Building,
+  Worm,
+  Cloud,
+  CloudFog,
+  Flame,
+  ForkKnife,
+  Cat,
+  Moon,
+  Dog,
+  Radio,
+  MoonStar,
+  Box,
+  Car,
+  FlaskConical,
+  Trees,
+  Bone,
+  Hourglass,
+} from 'lucide-react';
+const LikeDislike = lazy(() =>
+  import('@/components/ui/like-dislike').then((m) => ({ default: m.LikeDislike })),
+);
+import MostLikedList from '@/components/home/MostLikedList';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from '@/components/ui/select';
 
-
-import { getReadingTime, extractEngagingExcerpt } from "@/lib/excerpt-lite";
-import { apiRequest } from "@/lib/api";
-import { THEME_CATEGORIES } from "@/lib/themes-lite";
-import type { WordPressPost } from "@/lib/wordpress-api";
-import { fetchWordPressPosts } from "@/lib/wordpress-api";
-import { determineThemeCategory as sharedDetermineThemeCategory, THEME_CATEGORIES as SHARED_THEME_CATEGORIES } from "@shared/theme-categories";
-import { getStoryThemeOverride } from "@shared/story-theme-overrides";
-import { getThemeDefinitionOverride, syncThemeDefinitionOverridesFromServer } from "@/shared/theme-definitions";
-import { getBadgeTint } from "@/lib/theme-badges";
-import ContinueReadingBanner from "@/components/ContinueReadingBanner";
-import { VirtualScrollArea } from "@/components/ui/VirtualScrollArea";
-import { computeTrendingScores } from "@/lib/trending";
-import { useThemeCategories } from "@/hooks/use-theme-categories";
-import { logOnce } from "@/lib/metrics";
-
-
+import { getReadingTime, extractEngagingExcerpt } from '@/lib/excerpt-lite';
+import { apiRequest } from '@/lib/api';
+import { THEME_CATEGORIES } from '@/lib/themes-lite';
+import type { WordPressPost } from '@/lib/wordpress-api';
+import { fetchWordPressPosts } from '@/lib/wordpress-api';
+import {
+  determineThemeCategory as sharedDetermineThemeCategory,
+  THEME_CATEGORIES as SHARED_THEME_CATEGORIES,
+} from '@shared/theme-categories';
+import { getStoryThemeOverride } from '@shared/story-theme-overrides';
+import {
+  getThemeDefinitionOverride,
+  syncThemeDefinitionOverridesFromServer,
+} from '@/shared/theme-definitions';
+import { getBadgeTint } from '@/lib/theme-badges';
+import ContinueReadingBanner from '@/components/ContinueReadingBanner';
+import { VirtualScrollArea } from '@/components/ui/VirtualScrollArea';
+import { computeTrendingScores } from '@/lib/trending';
+import { useThemeCategories } from '@/hooks/use-theme-categories';
+import { logOnce } from '@/lib/metrics';
 
 // Lightweight converter from WordPress API post to local Post shape
 function wpToPost(post: WordPressPost): Post {
-  const title = post?.title?.rendered?.trim() || "Untitled Story";
-  const content = post?.content?.rendered || "";
+  const title = post?.title?.rendered?.trim() || 'Untitled Story';
+  const content = post?.content?.rendered || '';
   const slug = post?.slug || `post-${post?.id ?? Date.now()}`;
   const createdAt = post?.date ? new Date(post.date) : new Date();
   return {
@@ -49,21 +96,23 @@ function wpToPost(post: WordPressPost): Post {
     content,
     slug,
     createdAt,
-    metadata: {}
+    metadata: {},
   } as unknown as Post;
 }
 
 export default function StoriesIndexContent() {
   const [, setLocation] = useLocation();
-  const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<'newest' | 'oldest' | 'popular' | 'shortest'>("newest");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<'newest' | 'oldest' | 'popular' | 'shortest'>('newest');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   // Defer heavy search-driven computations to improve INP
   const deferredSearch = React.useDeferredValue(search);
-  const [categoryPills, setCategoryPills] = useState<Array<{ key: string; count: number; pretty: string }>>([]);
+  const [categoryPills, setCategoryPills] = useState<
+    Array<{ key: string; count: number; pretty: string }>
+  >([]);
   const [trendingScores, setTrendingScores] = useState<Record<number, number>>({});
   const [reactionsUnavailable, setReactionsUnavailable] = useState<boolean>(false);
-  
+
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [pageSize, setPageSize] = useState<number>(6);
   const cardsGridRef = React.useRef<HTMLDivElement | null>(null);
@@ -105,11 +154,17 @@ export default function StoriesIndexContent() {
 
   // Viewport-aware container height for virtualization and sticky header spacing
   const [containerHeight, setContainerHeight] = useState<number>(() => {
-    try { return window.innerHeight; } catch { return 800; }
+    try {
+      return window.innerHeight;
+    } catch {
+      return 800;
+    }
   });
   useEffect(() => {
     const onResize = () => {
-      try { setContainerHeight(window.innerHeight); } catch {}
+      try {
+        setContainerHeight(window.innerHeight);
+      } catch {}
     };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
@@ -125,7 +180,11 @@ export default function StoriesIndexContent() {
     if (!q || q.length < 3) return;
     const t = setTimeout(() => {
       try {
-        apiRequest('POST', '/api/analytics/interaction', { interactionType: 'index_search_query', details: { q }, path: '/stories' }).catch(() => {});
+        apiRequest('POST', '/api/analytics/interaction', {
+          interactionType: 'index_search_query',
+          details: { q },
+          path: '/stories',
+        }).catch(() => {});
       } catch {}
     }, 1200);
     return () => clearTimeout(t);
@@ -144,7 +203,10 @@ export default function StoriesIndexContent() {
   };
   const queryTokens = useMemo(() => {
     const q = normalizeText(deferredSearch.trim().toLowerCase());
-    return q.split(/[^a-z0-9]+/).filter(Boolean).map(stem);
+    return q
+      .split(/[^a-z0-9]+/)
+      .filter(Boolean)
+      .map(stem);
   }, [deferredSearch]);
 
   const renderHighlighted = (text: string) => {
@@ -165,7 +227,11 @@ export default function StoriesIndexContent() {
 
     for (const { start, end } of indices) {
       if (start > lastIndex) parts.push(text.slice(lastIndex, start));
-      parts.push(<mark key={start} className="bg-primary/15 text-foreground rounded px-0.5">{text.slice(start, end)}</mark>);
+      parts.push(
+        <mark key={start} className="bg-primary/15 text-foreground rounded px-0.5">
+          {text.slice(start, end)}
+        </mark>,
+      );
       lastIndex = end;
     }
     parts.push(text.slice(lastIndex));
@@ -174,10 +240,14 @@ export default function StoriesIndexContent() {
 
   // Plain normalization and small edit-distance for fuzzy title matching (≤ 2 typos)
   const normalizePlain = (s: string) =>
-    s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    s
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
 
   const levenshtein = (a: string, b: string): number => {
-    const m = a.length, n = b.length;
+    const m = a.length,
+      n = b.length;
     if (!m) return n;
     if (!n) return m;
     const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
@@ -186,19 +256,11 @@ export default function StoriesIndexContent() {
     for (let i = 1; i <= m; i++) {
       for (let j = 1; j <= n; j++) {
         const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-        dp[i][j] = Math.min(
-          dp[i - 1][j] + 1,
-          dp[i][j - 1] + 1,
-          dp[i - 1][j - 1] + cost
-        );
+        dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
       }
     }
     return dp[m][n];
   };
-
-  
-
-  
 
   // Sync global theme definitions from server once on mount (updates local overrides)
   useEffect(() => {
@@ -211,7 +273,9 @@ export default function StoriesIndexContent() {
         setVisibleCount((c) => c);
       } catch {}
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Compute page size and initial visible count based on viewport for story cards view (breakpoint-aware, no thrash)
@@ -219,13 +283,14 @@ export default function StoriesIndexContent() {
     const compute = () => {
       try {
         const w = window.innerWidth;
-        const cat: 'mobile' | 'tablet' | 'desktop' = w >= 1024 ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
+        const cat: 'mobile' | 'tablet' | 'desktop' =
+          w >= 1024 ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
         if (breakpointRef.current !== cat) {
           breakpointRef.current = cat;
-          const initial = w >= 1024 ? 6 : (w >= 768 ? 4 : 3);
+          const initial = w >= 1024 ? 6 : w >= 768 ? 4 : 3;
           setPageSize(initial);
           setVisibleCount((c) => (c < initial ? initial : c));
-          setGridCols(cat === 'desktop' ? 3 : (cat === 'tablet' ? 2 : 1));
+          setGridCols(cat === 'desktop' ? 3 : cat === 'tablet' ? 2 : 1);
         }
       } catch {
         if (breakpointRef.current !== 'mobile') {
@@ -240,8 +305,6 @@ export default function StoriesIndexContent() {
     window.addEventListener('resize', compute);
     return () => window.removeEventListener('resize', compute);
   }, []);
-
-  
 
   // Navigation function
   const navigateToReader = (slugOrId: string | number) => {
@@ -262,15 +325,19 @@ export default function StoriesIndexContent() {
       if (!raw) return null;
       const data = JSON.parse(raw);
       if (data && Array.isArray(data.posts)) {
-        return { posts: (data.posts as Post[]), hasMore: !!data.hasMore, page: 1 };
+        return { posts: data.posts as Post[], hasMore: !!data.hasMore, page: 1 };
       }
     } catch {}
     return null;
   }, []);
 
   // Paginated query
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery<{ posts: Post[]; hasMore: boolean; page: number }>({
-    queryKey: ["wordpress", "posts"],
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery<{
+    posts: Post[];
+    hasMore: boolean;
+    page: number;
+  }>({
+    queryKey: ['wordpress', 'posts'],
     queryFn: async ({ pageParam = 1 }) => {
       const page = typeof pageParam === 'number' ? pageParam : 1;
       const wpResponse = await fetchWordPressPosts({
@@ -290,7 +357,7 @@ export default function StoriesIndexContent() {
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     initialPageParam: 1,
-    initialData: cachedPage1 ? { pages: [cachedPage1], pageParams: [1] } as any : undefined,
+    initialData: cachedPage1 ? ({ pages: [cachedPage1], pageParams: [1] } as any) : undefined,
   });
 
   // Cache first page posts locally after fetch to improve cold-start rendering
@@ -308,7 +375,8 @@ export default function StoriesIndexContent() {
   useEffect(() => {
     const onScroll = () => {
       try {
-        const scrollY = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+        const scrollY =
+          window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
         const vh = window.innerHeight || 800;
         const docH = document.documentElement.scrollHeight || document.body.scrollHeight || 0;
         const pct = (scrollY + vh) / Math.max(1, docH);
@@ -321,18 +389,19 @@ export default function StoriesIndexContent() {
     return () => window.removeEventListener('scroll', onScroll);
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const hasPaginatedPosts = data?.pages && data.pages.length > 0 && data.pages[0]?.posts?.length > 0;
+  const hasPaginatedPosts =
+    data?.pages && data.pages.length > 0 && data.pages[0]?.posts?.length > 0;
 
   // Initialize posts array with memoization
   const allPosts: Post[] = useMemo(() => {
     if (hasPaginatedPosts) {
-      return data!.pages.flatMap(page => page.posts) as Post[];
+      return data!.pages.flatMap((page) => page.posts) as Post[];
     }
     return [] as Post[];
   }, [hasPaginatedPosts, data]);
 
-  const sortedPosts = [...allPosts].sort((a: Post, b: Post) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  const sortedPosts = [...allPosts].sort(
+    (a: Post, b: Post) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 
   // Keep a ref of latest sortedPosts for worker mapping
@@ -344,15 +413,23 @@ export default function StoriesIndexContent() {
   useEffect(() => {
     try {
       if (!searchWorkerRef.current && typeof Worker !== 'undefined') {
-        const w = new Worker(new URL('../../workers/search.worker.ts', import.meta.url), { type: 'module' });
+        const w = new Worker(new URL('../../workers/search.worker.ts', import.meta.url), {
+          type: 'module',
+        });
         w.onmessage = (e: MessageEvent) => {
           try {
             const data = e.data || {};
             const bestId = typeof data.bestId === 'number' ? data.bestId : null;
-            const suggestionIds: number[] = Array.isArray(data.suggestionIds) ? data.suggestionIds : [];
-            const byId = new Map<number, Post>(sortedPostsRef.current.map((p: Post) => [Number((p as any).id), p]));
+            const suggestionIds: number[] = Array.isArray(data.suggestionIds)
+              ? data.suggestionIds
+              : [];
+            const byId = new Map<number, Post>(
+              sortedPostsRef.current.map((p: Post) => [Number((p as any).id), p]),
+            );
             setClosestTitleMatchW(bestId && byId.get(bestId) ? byId.get(bestId)! : null);
-            setSearchSuggestionsW(suggestionIds.map(id => byId.get(id)).filter(Boolean) as Post[]);
+            setSearchSuggestionsW(
+              suggestionIds.map((id) => byId.get(id)).filter(Boolean) as Post[],
+            );
           } catch {
             setClosestTitleMatchW(null);
             setSearchSuggestionsW([]);
@@ -362,7 +439,9 @@ export default function StoriesIndexContent() {
       }
     } catch {}
     return () => {
-      try { searchWorkerRef.current?.terminate(); } catch {}
+      try {
+        searchWorkerRef.current?.terminate();
+      } catch {}
       searchWorkerRef.current = null;
     };
   }, []);
@@ -379,7 +458,10 @@ export default function StoriesIndexContent() {
     try {
       w.postMessage({
         query: q,
-        posts: sortedPosts.map(p => ({ id: Number((p as any).id), title: String(p.title || '') }))
+        posts: sortedPosts.map((p) => ({
+          id: Number((p as any).id),
+          title: String(p.title || ''),
+        })),
       });
     } catch {
       setClosestTitleMatchW(null);
@@ -398,7 +480,10 @@ export default function StoriesIndexContent() {
           let key = String(md.themeCategory || '').trim();
           if (!key) {
             try {
-              const derived = sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
+              const derived = sharedDetermineThemeCategory(
+                String(p.title || ''),
+                String(p.content || ''),
+              );
               key = String(derived || '').trim();
             } catch {}
           }
@@ -407,7 +492,10 @@ export default function StoriesIndexContent() {
         }
         const pills = Array.from(counts.entries())
           .map(([key, count]) => {
-            const pretty = key.replace(/_/g, ' ').toLowerCase().replace(/^./, c => c.toUpperCase());
+            const pretty = key
+              .replace(/_/g, ' ')
+              .toLowerCase()
+              .replace(/^./, (c) => c.toUpperCase());
             return { key, count, pretty };
           })
           .sort((a, b) => b.count - a.count);
@@ -420,7 +508,9 @@ export default function StoriesIndexContent() {
     } else {
       setTimeout(compute, 0);
     }
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [allPosts]);
 
   // Compute the closest title match (token-aware, substring + <=2 typos) for featured card search
@@ -430,12 +520,15 @@ export default function StoriesIndexContent() {
     // Offload heavy fuzzy matching to worker for longer queries
     if (raw.length >= 3 && closestTitleMatchW) return closestTitleMatchW;
 
-    const tokenize = (s: string) => normalizePlain(s).split(/[^a-z0-9]+/).filter(Boolean);
+    const tokenize = (s: string) =>
+      normalizePlain(s)
+        .split(/[^a-z0-9]+/)
+        .filter(Boolean);
     const jaccard = (a: string[], b: string[]) => {
       if (!a.length || !b.length) return 0;
       const setA = new Set(a);
       const setB = new Set(b);
-      const inter = [...setA].filter(x => setB.has(x)).length;
+      const inter = [...setA].filter((x) => setB.has(x)).length;
       const union = new Set([...a, ...b]).size;
       return inter / union;
     };
@@ -454,10 +547,11 @@ export default function StoriesIndexContent() {
       const tTokens = tokenize(title);
 
       const containsSub = tn.includes(qn);
-      const tokenContains = tTokens.some(tt => tt.includes(qn)) || qTokens.some(qt => tn.includes(qt));
+      const tokenContains =
+        tTokens.some((tt) => tt.includes(qn)) || qTokens.some((qt) => tn.includes(qt));
 
       // Per-token minimum edit distance to any title token
-      const perTokenMinD = qTokens.map(qt => {
+      const perTokenMinD = qTokens.map((qt) => {
         let md = Infinity;
         for (const tt of tTokens) {
           const d = levenshtein(tt, qt);
@@ -467,7 +561,7 @@ export default function StoriesIndexContent() {
         return md;
       });
 
-      const anyClose = perTokenMinD.some(d => d <= 2);
+      const anyClose = perTokenMinD.some((d) => d <= 2);
 
       // Accept only if we have a direct substring match OR a close token match (and query length is reasonable)
       if (!(containsSub || (longEnough && anyClose))) continue;
@@ -506,7 +600,10 @@ export default function StoriesIndexContent() {
       let key = String(md.themeCategory || '').trim();
       if (!key) {
         try {
-          const derived = sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
+          const derived = sharedDetermineThemeCategory(
+            String(p.title || ''),
+            String(p.content || ''),
+          );
           key = String(derived || '').trim();
         } catch {}
       }
@@ -520,9 +617,7 @@ export default function StoriesIndexContent() {
     const md: any = (p as any)?.metadata || {};
     const title = String(p.title || '');
     const content = String(p.content || '');
-    const primaryThemeRaw =
-      md.themeCategory ||
-      sharedDetermineThemeCategory(title, content);
+    const primaryThemeRaw = md.themeCategory || sharedDetermineThemeCategory(title, content);
 
     const override = getStoryThemeOverride((p as any)?.slug as any, title as any);
 
@@ -558,7 +653,8 @@ export default function StoriesIndexContent() {
       if (l.includes('uncanny')) return 'Uncanny Horror';
       if (l.includes('gothic')) return 'Gothic Horror';
       if (l.includes('folk')) return 'Folk Horror';
-      if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
+      if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation'))
+        return 'Parasitic Horror';
       if (l.includes('cannibal')) return 'Cannibalism Horror';
       if (l.includes('science')) return 'Science Horror';
       if (l.includes('apocalyptic')) return 'Apocalyptic Horror';
@@ -585,84 +681,145 @@ export default function StoriesIndexContent() {
   const getThemeIconFor = (themeKey: string, iconSlug: string) => {
     const slug = String(iconSlug || '').toLowerCase();
     switch (slug) {
-      case 'skull': return Skull;
-      case 'brain': return Brain;
-      case 'pill': return Pill;
-      case 'cpu': return Cpu;
-      case 'dna': return Dna;
-      case 'ghost': return Ghost;
-      case 'umbrella': return Umbrella;
-      case 'footprints': return Footprints;
+      case 'skull':
+        return Skull;
+      case 'brain':
+        return Brain;
+      case 'pill':
+        return Pill;
+      case 'cpu':
+        return Cpu;
+      case 'dna':
+        return Dna;
+      case 'ghost':
+        return Ghost;
+      case 'umbrella':
+        return Umbrella;
+      case 'footprints':
+        return Footprints;
       case 'cloud-rain':
-      case 'cloudrain': return CloudRain;
-      case 'castle': return Castle;
-      case 'bug': return Bug;
-      case 'radiation': return Radiation;
+      case 'cloudrain':
+        return CloudRain;
+      case 'castle':
+        return Castle;
+      case 'bug':
+        return Bug;
+      case 'radiation':
+        return Radiation;
       case 'user-minus2':
-      case 'userminus2': return UserMinus2;
+      case 'userminus2':
+        return UserMinus2;
       case 'user-plus':
-      case 'userplus': return UserPlus;
-      case 'anchor': return Anchor;
+      case 'userplus':
+        return UserPlus;
+      case 'anchor':
+        return Anchor;
       case 'alert-triangle':
-      case 'alerttriangle': return AlertTriangle;
-      case 'building': return Building;
-      case 'worm': return Worm;
-      case 'cloud': return Cloud;
+      case 'alerttriangle':
+        return AlertTriangle;
+      case 'building':
+        return Building;
+      case 'worm':
+        return Worm;
+      case 'cloud':
+        return Cloud;
       case 'cloud-fog':
-      case 'cloudfog': return CloudFog;
-      case 'flame': return Flame;
-      case 'eye': return Eye;
-      case 'hourglass': return Hourglass;
+      case 'cloudfog':
+        return CloudFog;
+      case 'flame':
+        return Flame;
+      case 'eye':
+        return Eye;
+      case 'hourglass':
+        return Hourglass;
       case 'knife':
       case 'utensils':
       case 'fork-knife':
-      case 'forkknife': return ForkKnife;
-      case 'cat': return Cat;
-      case 'moon': return Moon;
-      case 'dog': return Dog;
-      case 'radio': return Radio;
+      case 'forkknife':
+        return ForkKnife;
+      case 'cat':
+        return Cat;
+      case 'moon':
+        return Moon;
+      case 'dog':
+        return Dog;
+      case 'radio':
+        return Radio;
       case 'moon-star':
-      case 'moonstar': return MoonStar;
-      case 'box': return Box;
-      case 'car': return Car;
-      case 'alien': return Moon;
-      case 'flask': return FlaskConical;
+      case 'moonstar':
+        return MoonStar;
+      case 'box':
+        return Box;
+      case 'car':
+        return Car;
+      case 'alien':
+        return Moon;
+      case 'flask':
+        return FlaskConical;
       case 'trees':
-      case 'tree': return Trees;
-      case 'bone': return Bone;
+      case 'tree':
+        return Trees;
+      case 'bone':
+        return Bone;
     }
     // Fallback by theme key
     switch (String(themeKey || '').toUpperCase()) {
-      case 'TECHNOLOGICAL': return Cpu;
-      case 'PSYCHOLOGICAL': return Brain;
-      case 'SUPERNATURAL': return Ghost;
-      case 'UNCANNY': return Eye;
-      case 'EXISTENTIAL': return Hourglass;
-      case 'DOPPELGANGER': return UserPlus;
-      case 'CANNIBALISM': return ForkKnife;
-      case 'SLASHER': return Skull;
-      case 'MONSTER': return Cat;
-      case 'ZOMBIE': return Footprints;
-      case 'VAMPIRE': return Moon;
-      case 'WEREWOLF': return Dog;
-      case 'PARANORMAL': return Radio;
-      case 'DREAM_HORROR': return MoonStar;
-      case 'CURSED_OBJECT': return Box;
-      case 'TIME_HORROR': return Clock;
-      case 'APOCALYPTIC': return Radiation;
-      case 'SCIENCE_HORROR': return FlaskConical;
-      case 'BODY_HORROR': return Bone;
-      case 'FOLK_HORROR': return Trees;
-      case 'GOTHIC': return Castle;
-      case 'COSMIC': return Moon;
-      case 'VEHICULAR': return Car;
-      default: return Ghost;
+      case 'TECHNOLOGICAL':
+        return Cpu;
+      case 'PSYCHOLOGICAL':
+        return Brain;
+      case 'SUPERNATURAL':
+        return Ghost;
+      case 'UNCANNY':
+        return Eye;
+      case 'EXISTENTIAL':
+        return Hourglass;
+      case 'DOPPELGANGER':
+        return UserPlus;
+      case 'CANNIBALISM':
+        return ForkKnife;
+      case 'SLASHER':
+        return Skull;
+      case 'MONSTER':
+        return Cat;
+      case 'ZOMBIE':
+        return Footprints;
+      case 'VAMPIRE':
+        return Moon;
+      case 'WEREWOLF':
+        return Dog;
+      case 'PARANORMAL':
+        return Radio;
+      case 'DREAM_HORROR':
+        return MoonStar;
+      case 'CURSED_OBJECT':
+        return Box;
+      case 'TIME_HORROR':
+        return Clock;
+      case 'APOCALYPTIC':
+        return Radiation;
+      case 'SCIENCE_HORROR':
+        return FlaskConical;
+      case 'BODY_HORROR':
+        return Bone;
+      case 'FOLK_HORROR':
+        return Trees;
+      case 'GOTHIC':
+        return Castle;
+      case 'COSMIC':
+        return Moon;
+      case 'VEHICULAR':
+        return Car;
+      default:
+        return Ghost;
     }
   };
 
   // Reaction totals map for posts (lazy-fetched for visible cards only)
-  const [reactionTotals, setReactionTotals] = useState<Record<number, import("@/api/reactions").ReactionTotals>>({});
-  
+  const [reactionTotals, setReactionTotals] = useState<
+    Record<number, import('@/api/reactions').ReactionTotals>
+  >({});
+
   useEffect(() => {
     if (!readyReactions) return;
     let mounted = true;
@@ -698,7 +855,9 @@ export default function StoriesIndexContent() {
             }
           }
           if (oldestKey != null) {
-            try { sources.get(oldestKey)?.es.close(); } catch {}
+            try {
+              sources.get(oldestKey)?.es.close();
+            } catch {}
             sources.delete(oldestKey);
           }
         }
@@ -709,17 +868,26 @@ export default function StoriesIndexContent() {
           try {
             const payload = JSON.parse(e.data || '{}');
             if (payload && typeof payload.postId === 'number') {
-              setReactionTotals(prev => ({ ...prev, [payload.postId]: {
-                postId: payload.postId,
-                baselineLikes: Number(payload.baselineLikes || 0),
-                baselineDislikes: Number(payload.baselineDislikes || 0),
-                likesCount: Number(payload.likesCount || 0),
-                dislikesCount: Number(payload.dislikesCount || 0),
-                totals: {
-                  likes: Number(payload.totals?.likes || (Number(payload.baselineLikes || 0) + Number(payload.likesCount || 0))),
-                  dislikes: Number(payload.totals?.dislikes || (Number(payload.baselineDislikes || 0) + Number(payload.dislikesCount || 0))),
-                }
-              }}));
+              setReactionTotals((prev) => ({
+                ...prev,
+                [payload.postId]: {
+                  postId: payload.postId,
+                  baselineLikes: Number(payload.baselineLikes || 0),
+                  baselineDislikes: Number(payload.baselineDislikes || 0),
+                  likesCount: Number(payload.likesCount || 0),
+                  dislikesCount: Number(payload.dislikesCount || 0),
+                  totals: {
+                    likes: Number(
+                      payload.totals?.likes ||
+                        Number(payload.baselineLikes || 0) + Number(payload.likesCount || 0),
+                    ),
+                    dislikes: Number(
+                      payload.totals?.dislikes ||
+                        Number(payload.baselineDislikes || 0) + Number(payload.dislikesCount || 0),
+                    ),
+                  },
+                },
+              }));
               fetched.add(payload.postId);
               // Reset transient error state on any successful message
               reactionsErrorCountRef.current = 0;
@@ -730,7 +898,7 @@ export default function StoriesIndexContent() {
         };
         es.addEventListener('initial', onMessage);
         es.addEventListener('update', onMessage);
-        es.onerror = () => { 
+        es.onerror = () => {
           // Increment error count; only show banner after repeated errors
           reactionsErrorCountRef.current += 1;
           if (reactionsErrorCountRef.current >= 3) {
@@ -740,7 +908,11 @@ export default function StoriesIndexContent() {
         };
         sources.set(postId, { es, ts: Date.now() });
       } catch (err) {
-        try { logOnce('index.sse.open', 'Failed to open SSE stream', { error: err instanceof Error ? err.message : String(err) }); } catch {}
+        try {
+          logOnce('index.sse.open', 'Failed to open SSE stream', {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        } catch {}
         setReactionsUnavailable(true);
       }
     };
@@ -748,17 +920,20 @@ export default function StoriesIndexContent() {
     // Preload a small initial batch near the top of the list to avoid empty counts above the fold
     const preloadInitial = async () => {
       try {
-        const initialBatchSize = Math.max(INITIAL_BATCH_MIN_SIZE, Math.min(sortedPosts.length, (visibleCount || 0) + (gridCols || 1) * 6));
+        const initialBatchSize = Math.max(
+          INITIAL_BATCH_MIN_SIZE,
+          Math.min(sortedPosts.length, (visibleCount || 0) + (gridCols || 1) * 6),
+        );
         const candidateIds = sortedPosts
           .slice(0, initialBatchSize)
           .map((p: Post) => Number(p.id))
           .filter((n: number) => Number.isFinite(n));
         const idsToFetch = candidateIds.filter((id: number) => !fetched.has(id));
         if (idsToFetch.length > 0) {
-          const { fetchReactionsBatch } = await import("@/api/reactions");
+          const { fetchReactionsBatch } = await import('@/api/reactions');
           const totals = await fetchReactionsBatch(idsToFetch);
           if (!mounted) return;
-          const map: Record<number, import("@/api/reactions").ReactionTotals> = {};
+          const map: Record<number, import('@/api/reactions').ReactionTotals> = {};
           for (const t of totals) {
             map[t.postId] = t;
             fetched.add(t.postId);
@@ -770,7 +945,11 @@ export default function StoriesIndexContent() {
           ensureSse(id);
         }
       } catch (err) {
-        try { logOnce('index.reactions.preload', 'Failed to preload initial reactions', { error: err instanceof Error ? err.message : String(err) }); } catch {}
+        try {
+          logOnce('index.reactions.preload', 'Failed to preload initial reactions', {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        } catch {}
         reactionsErrorCountRef.current += 1;
         if (reactionsErrorCountRef.current >= 3) {
           setReactionsUnavailable(true);
@@ -785,10 +964,10 @@ export default function StoriesIndexContent() {
         pending = [];
         const toFetch = unique.filter((id) => Number.isFinite(id) && !fetched.has(id));
         if (toFetch.length > 0) {
-          const { fetchReactionsBatch } = await import("@/api/reactions");
+          const { fetchReactionsBatch } = await import('@/api/reactions');
           const totals = await fetchReactionsBatch(toFetch.slice(0, REACTIONS_BATCH_CHUNK_SIZE));
           if (!mounted) return;
-          const update: Record<number, import("@/api/reactions").ReactionTotals> = {};
+          const update: Record<number, import('@/api/reactions').ReactionTotals> = {};
           for (const t of totals) {
             update[t.postId] = t;
             fetched.add(t.postId);
@@ -800,7 +979,11 @@ export default function StoriesIndexContent() {
           ensureSse(id);
         }
       } catch (err) {
-        try { logOnce('index.reactions.flush', 'Failed to flush reaction batch', { error: err instanceof Error ? err.message : String(err) }); } catch {}
+        try {
+          logOnce('index.reactions.flush', 'Failed to flush reaction batch', {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        } catch {}
         reactionsErrorCountRef.current += 1;
         if (reactionsErrorCountRef.current >= 3) {
           setReactionsUnavailable(true);
@@ -822,18 +1005,22 @@ export default function StoriesIndexContent() {
         (entries) => {
           for (const entry of entries) {
             const el = entry.target as HTMLElement;
-            const idAttr = el.getAttribute("data-post-id");
+            const idAttr = el.getAttribute('data-post-id');
             const id = idAttr ? Number(idAttr) : NaN;
             if (entry.isIntersecting && Number.isFinite(id)) {
               schedule(id);
-              try { io?.unobserve(el); } catch {}
+              try {
+                io?.unobserve(el);
+              } catch {}
             }
           }
         },
-        { root: null, rootMargin: "200px", threshold: 0.01 }
+        { root: null, rootMargin: '200px', threshold: 0.01 },
       );
       // Observe current cards
-      document.querySelectorAll<HTMLElement>(".story-card-container[data-post-id]").forEach((n) => io?.observe(n));
+      document
+        .querySelectorAll<HTMLElement>('.story-card-container[data-post-id]')
+        .forEach((n) => io?.observe(n));
     } catch {
       // no-op
     }
@@ -845,10 +1032,12 @@ export default function StoriesIndexContent() {
         for (const m of mutations) {
           m.addedNodes.forEach((node) => {
             if (node instanceof HTMLElement) {
-              if (node.matches?.(".story-card-container[data-post-id]")) {
+              if (node.matches?.('.story-card-container[data-post-id]')) {
                 io?.observe(node);
               }
-              node.querySelectorAll?.(".story-card-container[data-post-id]").forEach((el) => io?.observe(el as HTMLElement));
+              node
+                .querySelectorAll?.('.story-card-container[data-post-id]')
+                .forEach((el) => io?.observe(el as HTMLElement));
             }
           });
         }
@@ -871,14 +1060,14 @@ export default function StoriesIndexContent() {
           preloadedAllRef.current = true;
           return;
         }
-        const { fetchReactionsBatch } = await import("@/api/reactions");
+        const { fetchReactionsBatch } = await import('@/api/reactions');
         // Chunk into batches to avoid large payloads
         for (let i = 0; i < ids.length; i += REACTIONS_BATCH_CHUNK_SIZE) {
           if (!mounted) return;
           const chunk = ids.slice(i, i + REACTIONS_BATCH_CHUNK_SIZE);
           const totals = await fetchReactionsBatch(chunk);
           if (!mounted) return;
-          const update: Record<number, import("@/api/reactions").ReactionTotals> = {};
+          const update: Record<number, import('@/api/reactions').ReactionTotals> = {};
           for (const t of totals) {
             update[t.postId] = t;
             fetched.add(t.postId);
@@ -891,32 +1080,50 @@ export default function StoriesIndexContent() {
       }
     };
 
-    const idle = (window as any).requestIdleCallback as undefined | ((cb: () => void, opts?: { timeout?: number }) => void);
+    const idle = (window as any).requestIdleCallback as
+      | undefined
+      | ((cb: () => void, opts?: { timeout?: number }) => void);
     if (typeof idle === 'function') {
-      idle(() => { if (mounted) setTimeout(() => { void preloadRemaining(); }, 400); }, { timeout: 2500 });
+      idle(
+        () => {
+          if (mounted)
+            setTimeout(() => {
+              void preloadRemaining();
+            }, 400);
+        },
+        { timeout: 2500 },
+      );
     } else {
-      setTimeout(() => { if (mounted) void preloadRemaining(); }, 1200);
+      setTimeout(() => {
+        if (mounted) void preloadRemaining();
+      }, 1200);
     }
 
     // Listen for reaction updates from LikeDislike
     const onUpdate = (e: Event) => {
-      const detail = (e as CustomEvent).detail as import("@/api/reactions").ReactionTotals;
-      if (!detail || typeof detail.postId !== "number") return;
+      const detail = (e as CustomEvent).detail as import('@/api/reactions').ReactionTotals;
+      if (!detail || typeof detail.postId !== 'number') return;
       setReactionTotals((prev) => ({ ...prev, [detail.postId]: detail }));
       fetched.add(detail.postId);
     };
-    window.addEventListener("reaction:updated", onUpdate as EventListener);
+    window.addEventListener('reaction:updated', onUpdate as EventListener);
 
     return () => {
       mounted = false;
-      window.removeEventListener("reaction:updated", onUpdate as EventListener);
-      try { mo?.disconnect(); } catch {}
-      try { io?.disconnect(); } catch {}
+      window.removeEventListener('reaction:updated', onUpdate as EventListener);
+      try {
+        mo?.disconnect();
+      } catch {}
+      try {
+        io?.disconnect();
+      } catch {}
       if (flushTimer) clearTimeout(flushTimer);
       // Close SSE sources using captured reference
       try {
         for (const obj of sources.values()) {
-          try { obj.es.close(); } catch {}
+          try {
+            obj.es.close();
+          } catch {}
         }
         sources.clear();
       } catch {}
@@ -927,20 +1134,18 @@ export default function StoriesIndexContent() {
   useEffect(() => {
     let cancelled = false;
     const schedule = () => {
-      const compactPosts = sortedPosts.map(p => ({
+      const compactPosts = sortedPosts.map((p) => ({
         id: Number(p.id),
         createdAt: p.createdAt as any,
         views: Number((p as any)?.metadata?.pageViews ?? 0),
       }));
-      computeTrendingScores(
-        compactPosts as any,
-        reactionTotals as any,
-        14
-      ).then((scores) => {
-        if (!cancelled) setTrendingScores(scores || {});
-      }).catch(() => {
-        if (!cancelled) setTrendingScores({});
-      });
+      computeTrendingScores(compactPosts as any, reactionTotals as any, 14)
+        .then((scores) => {
+          if (!cancelled) setTrendingScores(scores || {});
+        })
+        .catch(() => {
+          if (!cancelled) setTrendingScores({});
+        });
     };
     const ric = (window as any)?.requestIdleCallback as any;
     if (typeof ric === 'function') {
@@ -948,14 +1153,16 @@ export default function StoriesIndexContent() {
     } else {
       setTimeout(schedule, 0);
     }
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [sortedPosts, reactionTotals]);
 
   // Filter and sort posts for display
   const filteredPosts = useMemo(() => {
     let list = [...sortedPosts];
     if (categoryFilter !== 'all') {
-      list = list.filter(p => {
+      list = list.filter((p) => {
         const md = (p.metadata || {}) as Record<string, any>;
         return String(md.themeCategory || '').toLowerCase() === categoryFilter.toLowerCase();
       });
@@ -964,7 +1171,11 @@ export default function StoriesIndexContent() {
     // Title-only search (exact substring match), no fuzzy or content-based matching.
     const q = deferredSearch.trim().toLowerCase();
     if (q) {
-      list = list.filter(p => String(p.title || '').toLowerCase().includes(q));
+      list = list.filter((p) =>
+        String(p.title || '')
+          .toLowerCase()
+          .includes(q),
+      );
     }
 
     switch (sort) {
@@ -984,16 +1195,18 @@ export default function StoriesIndexContent() {
           const bTotals = reactionTotals[b.id];
           const aLikes = Number(aTotals?.totals?.likes ?? 0);
           const bLikes = Number(bTotals?.totals?.likes ?? 0);
-          
-          const aViews = (a.metadata && (a.metadata as any).pageViews) ? Number((a.metadata as any).pageViews) : 0;
-          const bViews = (b.metadata && (b.metadata as any).pageViews) ? Number((b.metadata as any).pageViews) : 0;
+
+          const aViews =
+            a.metadata && (a.metadata as any).pageViews ? Number((a.metadata as any).pageViews) : 0;
+          const bViews =
+            b.metadata && (b.metadata as any).pageViews ? Number((b.metadata as any).pageViews) : 0;
           const now = Date.now();
           const dayMs = 24 * 60 * 60 * 1000;
           const windowDays = 14;
           const aAgeDays = Math.max(0, (now - new Date(a.createdAt).getTime()) / dayMs);
           const bAgeDays = Math.max(0, (now - new Date(b.createdAt).getTime()) / dayMs);
-          const aDecay = Math.max(0.2, 1 - (aAgeDays / windowDays));
-          const bDecay = Math.max(0.2, 1 - (bAgeDays / windowDays));
+          const aDecay = Math.max(0.2, 1 - aAgeDays / windowDays);
+          const bDecay = Math.max(0.2, 1 - bAgeDays / windowDays);
           const aScore = (aLikes * 2.5 + aViews * 0.8) * aDecay;
           const bScore = (bLikes * 2.5 + bViews * 0.8) * bDecay;
           return bScore - aScore;
@@ -1014,7 +1227,11 @@ export default function StoriesIndexContent() {
   const titleMatches = useMemo(() => {
     const q = deferredSearch.trim().toLowerCase();
     if (!q) return [] as Post[];
-    return sortedPosts.filter(p => String(p.title || '').toLowerCase().includes(q));
+    return sortedPosts.filter((p) =>
+      String(p.title || '')
+        .toLowerCase()
+        .includes(q),
+    );
   }, [deferredSearch, sortedPosts]);
 
   // Suggestions for zero-results (closest title matches by simple heuristics)
@@ -1024,18 +1241,21 @@ export default function StoriesIndexContent() {
     // Use worker-computed suggestions for longer queries
     if (q.length >= 3 && searchSuggestionsW.length) return searchSuggestionsW;
 
-    const tokenize = (s: string) => normalizeText(s.toLowerCase()).split(/[^a-z0-9]+/).filter(Boolean);
+    const tokenize = (s: string) =>
+      normalizeText(s.toLowerCase())
+        .split(/[^a-z0-9]+/)
+        .filter(Boolean);
     const jaccard = (a: string[], b: string[]) => {
       if (!a.length || !b.length) return 0;
       const setA = new Set(a);
       const setB = new Set(b);
-      const inter = [...setA].filter(x => setB.has(x)).length;
+      const inter = [...setA].filter((x) => setB.has(x)).length;
       const union = new Set([...a, ...b]).size;
       return inter / union;
     };
     const qTokens = tokenize(q);
     const score = (p: Post) => {
-      const title = String(p.title || "");
+      const title = String(p.title || '');
       const tTok = tokenize(title);
       let minD = Infinity;
       for (const qt of qTokens) {
@@ -1046,22 +1266,22 @@ export default function StoriesIndexContent() {
       }
       const includesBonus = title.toLowerCase().includes(q) ? 3 : 0;
       const j = jaccard(qTokens, tTok);
-      const distanceBoost = minD <= 2 ? (2 - minD) : -minD * 0.15;
-      return includesBonus + (j * 2) + distanceBoost;
+      const distanceBoost = minD <= 2 ? 2 - minD : -minD * 0.15;
+      return includesBonus + j * 2 + distanceBoost;
     };
     return [...sortedPosts]
-      .map(p => ({ p, s: score(p) }))
-      .filter(x => x.s > 0.5)
+      .map((p) => ({ p, s: score(p) }))
+      .filter((x) => x.s > 0.5)
       .sort((a, b) => b.s - a.s)
       .slice(0, 3)
-      .map(x => x.p);
+      .map((x) => x.p);
   }, [deferredSearch, sortedPosts, searchSuggestionsW]);
 
   // Latest Stories list - always sorted newest->oldest; search does NOT change this list
   const latestPosts = useMemo(() => {
     let list = [...sortedPosts];
     if (categoryFilter !== 'all') {
-      list = list.filter(p => {
+      list = list.filter((p) => {
         const md = (p.metadata || {}) as Record<string, any>;
         return String(md.themeCategory || '').toLowerCase() === categoryFilter.toLowerCase();
       });
@@ -1074,23 +1294,28 @@ export default function StoriesIndexContent() {
   const popularPosts = useMemo(() => {
     const useScores = Object.keys(trendingScores).length > 0;
     const arr = [...sortedPosts]
-      .map(p => ({
+      .map((p) => ({
         p,
-        score: useScores ? (trendingScores[p.id] ?? 0) : (() => {
-          const totals = reactionTotals[p.id];
-          const likes = Number(totals?.totals?.likes ?? 0);
-          const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
-          const now = Date.now();
-          const dayMs = 24 * 60 * 60 * 1000;
-          const windowDays = 14;
-          const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
-          const decay = Math.max(0.2, 1 - (ageDays / windowDays));
-          return (likes * 2.5 + views * 0.8) * decay;
-        })()
+        score: useScores
+          ? (trendingScores[p.id] ?? 0)
+          : (() => {
+              const totals = reactionTotals[p.id];
+              const likes = Number(totals?.totals?.likes ?? 0);
+              const views =
+                p.metadata && (p.metadata as any).pageViews
+                  ? Number((p.metadata as any).pageViews)
+                  : 0;
+              const now = Date.now();
+              const dayMs = 24 * 60 * 60 * 1000;
+              const windowDays = 14;
+              const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
+              const decay = Math.max(0.2, 1 - ageDays / windowDays);
+              return (likes * 2.5 + views * 0.8) * decay;
+            })(),
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 6)
-      .map(x => x.p);
+      .map((x) => x.p);
     return arr;
   }, [sortedPosts, reactionTotals, trendingScores]);
 
@@ -1102,7 +1327,11 @@ export default function StoriesIndexContent() {
       if (lastZeroResultsQueryRef.current !== q) {
         lastZeroResultsQueryRef.current = q;
         try {
-          apiRequest('POST', '/api/analytics/interaction', { interactionType: 'index_zero_results', details: { q }, path: '/stories' }).catch(() => {});
+          apiRequest('POST', '/api/analytics/interaction', {
+            interactionType: 'index_zero_results',
+            details: { q },
+            path: '/stories',
+          }).catch(() => {});
         } catch {}
       }
     }
@@ -1119,13 +1348,19 @@ export default function StoriesIndexContent() {
 
     // Respect dropdown criteria directly for the featured pick
     if (sort === 'newest') {
-      return [...all].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+      return [...all].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      )[0];
     }
     if (sort === 'oldest') {
-      return [...all].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
+      return [...all].sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      )[0];
     }
     if (sort === 'shortest') {
-      return [...all].sort((a, b) => String(a.content || '').length - String(b.content || '').length)[0];
+      return [...all].sort(
+        (a, b) => String(a.content || '').length - String(b.content || '').length,
+      )[0];
     }
 
     // If explicitly sorting by popular, pick highest likes + engagement using live reaction totals
@@ -1137,33 +1372,44 @@ export default function StoriesIndexContent() {
       const useScores = Object.keys(trendingScores).length > 0;
       const topByPopular = useScores
         ? [...all]
-            .map(p => ({ p, score: trendingScores[p.id] ?? 0 }))
+            .map((p) => ({ p, score: trendingScores[p.id] ?? 0 }))
             .sort((a, b) => b.score - a.score)
-            .map(x => x.p)
+            .map((x) => x.p)
         : [...all]
-            .map(p => {
+            .map((p) => {
               const totals = reactionTotals[p.id];
               const likes = Number(totals?.totals?.likes ?? 0);
-              const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
+              const views =
+                p.metadata && (p.metadata as any).pageViews
+                  ? Number((p.metadata as any).pageViews)
+                  : 0;
               const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
-              const decay = Math.max(0.2, 1 - (ageDays / windowDays));
+              const decay = Math.max(0.2, 1 - ageDays / windowDays);
               const score = (likes * 2.5 + views * 0.8) * decay;
               return { p, score };
             })
             .sort((a, b) => b.score - a.score)
-            .map(x => x.p);
+            .map((x) => x.p);
 
       const lastTheme = (() => {
-        try { return localStorage.getItem('lastFeaturedTheme') || ''; } catch { return ''; }
+        try {
+          return localStorage.getItem('lastFeaturedTheme') || '';
+        } catch {
+          return '';
+        }
       })();
 
       const pick = (() => {
         const getThemeKey = (p: Post) => {
           const md: any = (p as any)?.metadata || {};
-          const primary = md.themeCategory || sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
+          const primary =
+            md.themeCategory ||
+            sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
           const raw = String(primary || '').trim();
           if (!raw) return '';
-          for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
+          for (const [key, info] of Object.entries(
+            SHARED_THEME_CATEGORIES as Record<string, any>,
+          )) {
             if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
           }
           return raw.toUpperCase().replace(/\\s+/g, '_');
@@ -1171,7 +1417,11 @@ export default function StoriesIndexContent() {
         if (!topByPopular.length) return all[0] || null;
         const first = topByPopular[0];
         const firstKey = getThemeKey(first);
-        if (lastTheme && firstKey.toUpperCase() === lastTheme.toUpperCase() && topByPopular.length > 1) {
+        if (
+          lastTheme &&
+          firstKey.toUpperCase() === lastTheme.toUpperCase() &&
+          topByPopular.length > 1
+        ) {
           return topByPopular[1];
         }
         return first;
@@ -1187,44 +1437,48 @@ export default function StoriesIndexContent() {
       const now = Date.now();
       const dayInMs = 24 * 60 * 60 * 1000;
       const sevenDaysInMs = 7 * dayInMs;
-      const aRecency = Math.max(0, Math.min(1, 1 - ((now - aDate) / sevenDaysInMs)));
-      const bRecency = Math.max(0, Math.min(1, 1 - ((now - bDate) / sevenDaysInMs)));
+      const aRecency = Math.max(0, Math.min(1, 1 - (now - aDate) / sevenDaysInMs));
+      const bRecency = Math.max(0, Math.min(1, 1 - (now - bDate) / sevenDaysInMs));
       const aTotals = reactionTotals[a.id];
       const bTotals = reactionTotals[b.id];
       const aLikes = Number(aTotals?.totals?.likes ?? 0);
       const bLikes = Number(bTotals?.totals?.likes ?? 0);
       const aDislikes = Number(aTotals?.totals?.dislikes ?? 0);
       const bDislikes = Number(bTotals?.totals?.dislikes ?? 0);
-      const aViews = a.metadata && (a.metadata as any).pageViews
-        ? Number((a.metadata as any).pageViews)
-        : 0;
-      const bViews = b.metadata && (b.metadata as any).pageViews
-        ? Number((b.metadata as any).pageViews)
-        : 0;
-      const aReadTime = a.metadata && typeof a.metadata === 'object' && 
-        'averageReadTime' in (a.metadata as Record<string, unknown>) ?
-        Number((a.metadata as Record<string, unknown>).averageReadTime || 0) : 0;
-      const bReadTime = b.metadata && typeof b.metadata === 'object' && 
-        'averageReadTime' in (b.metadata as Record<string, unknown>) ?
-        Number((b.metadata as Record<string, unknown>).averageReadTime || 0) : 0;
-      const aHasTheme = a.metadata && typeof a.metadata === 'object' && 
-        'themeCategory' in (a.metadata as Record<string, unknown>) ? 5 : 0;
-      const bHasTheme = b.metadata && typeof b.metadata === 'object' && 
-        'themeCategory' in (b.metadata as Record<string, unknown>) ? 5 : 0;
+      const aViews =
+        a.metadata && (a.metadata as any).pageViews ? Number((a.metadata as any).pageViews) : 0;
+      const bViews =
+        b.metadata && (b.metadata as any).pageViews ? Number((b.metadata as any).pageViews) : 0;
+      const aReadTime =
+        a.metadata &&
+        typeof a.metadata === 'object' &&
+        'averageReadTime' in (a.metadata as Record<string, unknown>)
+          ? Number((a.metadata as Record<string, unknown>).averageReadTime || 0)
+          : 0;
+      const bReadTime =
+        b.metadata &&
+        typeof b.metadata === 'object' &&
+        'averageReadTime' in (b.metadata as Record<string, unknown>)
+          ? Number((b.metadata as Record<string, unknown>).averageReadTime || 0)
+          : 0;
+      const aHasTheme =
+        a.metadata &&
+        typeof a.metadata === 'object' &&
+        'themeCategory' in (a.metadata as Record<string, unknown>)
+          ? 5
+          : 0;
+      const bHasTheme =
+        b.metadata &&
+        typeof b.metadata === 'object' &&
+        'themeCategory' in (b.metadata as Record<string, unknown>)
+          ? 5
+          : 0;
 
-      const aScore = (aLikes * 3) + 
-                     aViews + 
-                     (aReadTime * 0.5) - 
-                     (aDislikes * 0.5) +
-                     (aRecency * 15) + 
-                     aHasTheme;
+      const aScore =
+        aLikes * 3 + aViews + aReadTime * 0.5 - aDislikes * 0.5 + aRecency * 15 + aHasTheme;
 
-      const bScore = (bLikes * 3) + 
-                     bViews + 
-                     (bReadTime * 0.5) - 
-                     (bDislikes * 0.5) +
-                     (bRecency * 15) + 
-                     bHasTheme;
+      const bScore =
+        bLikes * 3 + bViews + bReadTime * 0.5 - bDislikes * 0.5 + bRecency * 15 + bHasTheme;
 
       return bScore - aScore;
     });
@@ -1237,12 +1491,20 @@ export default function StoriesIndexContent() {
     if (!featuredStory) return;
     try {
       const md: any = (featuredStory as any)?.metadata || {};
-      const primary = md.themeCategory || sharedDetermineThemeCategory(String(featuredStory.title || ''), String(featuredStory.content || ''));
+      const primary =
+        md.themeCategory ||
+        sharedDetermineThemeCategory(
+          String(featuredStory.title || ''),
+          String(featuredStory.content || ''),
+        );
       const raw = String(primary || '').trim();
       let key = '';
       if (raw) {
         for (const [k, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-          if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) { key = k; break; }
+          if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) {
+            key = k;
+            break;
+          }
         }
         key ||= raw.toUpperCase().replace(/\s+/g, '_');
       }
@@ -1256,10 +1518,7 @@ export default function StoriesIndexContent() {
         <div className="text-center space-y-4">
           <h2 className="text-xl font-semibold text-foreground">Unable to load stories</h2>
           <p className="text-muted-foreground">Please try again later</p>
-          <Button
-            variant="outline"
-            onClick={() => window.location.reload()}
-          >
+          <Button variant="outline" onClick={() => window.location.reload()}>
             Retry
           </Button>
         </div>
@@ -1268,42 +1527,47 @@ export default function StoriesIndexContent() {
   }
 
   return (
-      <div className="min-h-screen bg-background flex flex-col overflow-x-hidden overflow-y-auto">
-        {/* Canonical for stories index */}
-        <SEO
-          title="Index"
-          description="Browse the index of dark, psychological, and gothic fiction at Bubble’s Cafe."
-          canonical="/index"
-          type="website"
-        />
-        {/* Continue Reading ribbon (local progress) */}
-        <ContinueReadingBanner />
-        <div className="w-full pb-12 pt-0 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
-          {/* Sticky controls header (mobile-first) */}
-          <div className="sticky top-0 z-30 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6 py-2 sm:py-3 mt-8 sm:mt-12">
-            <div className="grid grid-cols-1 lg:grid-cols-3 items-center gap-6">
-              <div className="relative w-full lg:col-span-1">
-                <Input
-                  placeholder="Search stories..."
-                  className="pl-3 pr-10 w-full"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">⏎</span>
-              </div>
-              {/* Removed duplicate sort dropdown above featured story; keeping the one inside the featured box */}
+    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden overflow-y-auto">
+      {/* Canonical for stories index */}
+      <SEO
+        title="Index"
+        description="Browse the index of dark, psychological, and gothic fiction at Bubble’s Cafe."
+        canonical="/index"
+        type="website"
+      />
+      {/* Continue Reading ribbon (local progress) */}
+      <ContinueReadingBanner />
+      <div className="w-full pb-12 pt-0 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
+        {/* Sticky controls header (mobile-first) */}
+        <div className="sticky top-0 z-30 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6 py-2 sm:py-3 mt-8 sm:mt-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 items-center gap-6">
+            <div className="relative w-full lg:col-span-1">
+              <Input
+                placeholder="Search stories..."
+                className="pl-3 pr-10 w-full"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">
+                ⏎
+              </span>
             </div>
+            {/* Removed duplicate sort dropdown above featured story; keeping the one inside the featured box */}
           </div>
+        </div>
 
-          {/* Status banner for reactions subsystem */}
-          {reactionsUnavailable && (
-            <div className="mb-4 rounded-md border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
-              Live reactions are temporarily unavailable. Counts will appear once the connection is restored.
-            </div>
-          )}
+        {/* Status banner for reactions subsystem */}
+        {reactionsUnavailable && (
+          <div className="mb-4 rounded-md border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
+            Live reactions are temporarily unavailable. Counts will appear once the connection is
+            restored.
+          </div>
+        )}
 
-          {/* Featured row */}
-          {(featuredStory && sortedPosts.length > 0 && (!deferredSearch.trim() || titleMatches.length > 0 || !!closestTitleMatch)) && (
+        {/* Featured row */}
+        {featuredStory &&
+          sortedPosts.length > 0 &&
+          (!deferredSearch.trim() || titleMatches.length > 0 || !!closestTitleMatch) && (
             <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6 content-visibility-auto">
               <div className="lg:col-span-1">
                 <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
@@ -1334,7 +1598,11 @@ export default function StoriesIndexContent() {
                     </div>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <button className="text-left text-xl md:text-2xl font-semibold tracking-tight leading-tight hover:text-primary group-hover:text-primary line-clamp-2" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)} style={{ minHeight: '48px' }}>
+                        <button
+                          className="text-left text-xl md:text-2xl font-semibold tracking-tight leading-tight hover:text-primary group-hover:text-primary line-clamp-2"
+                          onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}
+                          style={{ minHeight: '48px' }}
+                        >
                           {renderHighlighted(String(featuredStory.title || ''))}
                         </button>
                         {(() => {
@@ -1343,7 +1611,12 @@ export default function StoriesIndexContent() {
                           const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                           return (
                             <div className="-mt-1">
-                              <Badge className={"w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap " + badgeTint}>
+                              <Badge
+                                className={
+                                  'w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ' +
+                                  badgeTint
+                                }
+                              >
                                 {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                 {label}
                               </Badge>
@@ -1354,25 +1627,45 @@ export default function StoriesIndexContent() {
                       <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
                         <div className="flex items-center gap-1 justify-end">
                           <Calendar className="h-3 w-3" />
-                          <time>{new Date(featuredStory.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
+                          <time>
+                            {new Date(featuredStory.createdAt).toLocaleDateString(undefined, {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </time>
                         </div>
-                        <div className="flex items-center gap-1 justify-end" title={`~${String(featuredStory.content || '').trim().split(/\s+/).length} words`}>
+                        <div
+                          className="flex items-center gap-1 justify-end"
+                          title={`~${
+                            String(featuredStory.content || '')
+                              .trim()
+                              .split(/\s+/).length
+                          } words`}
+                        >
                           <Clock className="h-3 w-3" />
                           <span>{getReadingTime(featuredStory.content)}</span>
                         </div>
                       </div>
                     </div>
-                    <p className="text-[15px] sm:text-[16px] text-muted-foreground leading-6 mt-6 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
+                    <p
+                      className="text-[15px] sm:text-[16px] text-muted-foreground leading-6 mt-6 line-clamp-3 font-sans"
+                      style={{
+                        fontFamily:
+                          "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
+                      }}
+                    >
                       {extractEngagingExcerpt(featuredStory.content, 220)}
                     </p>
-                    
+
                     <div className="mt-3 flex items-center justify-between">
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         {(() => {
                           const md: any = (featuredStory as any)?.metadata || {};
                           const totals = reactionTotals[featuredStory.id] || null;
                           const likes = Number(totals?.totals?.likes ?? 0);
-                          const views = md && (md as any).pageViews ? Number((md as any).pageViews) : 0;
+                          const views =
+                            md && (md as any).pageViews ? Number((md as any).pageViews) : 0;
                           const readingTimeStr = getReadingTime(featuredStory.content);
                           return (
                             <>
@@ -1386,7 +1679,11 @@ export default function StoriesIndexContent() {
                           );
                         })()}
                       </div>
-                      <Button size="sm" onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)} className="h-9 px-4 transition-transform active:scale-95">
+                      <Button
+                        size="sm"
+                        onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}
+                        className="h-9 px-4 transition-transform active:scale-95"
+                      >
                         Read story
                         <ArrowRight className="h-4 w-4 ml-1" />
                       </Button>
@@ -1397,477 +1694,585 @@ export default function StoriesIndexContent() {
               <div className="lg:col-span-2">
                 <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
                   <CardContent className="p-4">
-                    <MostLikedList posts={sortedPosts} onNavigate={navigateToReader} totalsMap={reactionTotals} />
+                    <MostLikedList
+                      posts={sortedPosts}
+                      onNavigate={navigateToReader}
+                      totalsMap={reactionTotals}
+                    />
                   </CardContent>
                 </Card>
               </div>
             </div>
           )}
 
-          
-          <div className="mt-2 mb-3">
-            <div className="flex justify-between items-center">
-              <h1 className="text-2xl md:text-3xl font-decorative uppercase">LATEST STORIES</h1>
-              <div className="text-sm md:text-base text-muted-foreground">
-                {latestPosts.length} stories
+        <div className="mt-2 mb-3">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl md:text-3xl font-decorative uppercase">LATEST STORIES</h1>
+            <div className="text-sm md:text-base text-muted-foreground">
+              {latestPosts.length} stories
+            </div>
+          </div>
+        </div>
+
+        {/* Stories List */}
+        {deferredSearch.trim() && titleMatches.length === 0 && !closestTitleMatch ? (
+          <div className="mx-auto max-w-full sm:max-w-2xl md:max-w-3xl text-center py-8 sm:py-10 md:py-12 rounded-xl border border-border/60 bg-card/80 px-3 sm:px-6 shadow-sm overflow-hidden">
+            <div className="w-full">
+              <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4 mt-2">
+                <Search className="h-5 w-5 text-primary" />
+                <h2 className="text-lg sm:text-xl font-semibold">No matches found</h2>
+              </div>
+
+              {deferredSearch.trim() ? (
+                <>
+                  <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4 leading-relaxed">
+                    We couldn’t find any stories matching “{deferredSearch.trim()}”. Try the closest
+                    matches below or explore popular stories.
+                  </p>
+
+                  <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+                    {searchSuggestions.length ? (
+                      searchSuggestions.map((s) => (
+                        <Card
+                          key={s.id}
+                          className="rounded-lg border border-border/60 bg-card/70 hover:bg-card transition"
+                        >
+                          <CardContent className="p-3">
+                            <button
+                              className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
+                              onClick={() => navigateToReader(s.slug || s.id)}
+                              title={s.title}
+                            >
+                              {s.title}
+                            </button>
+                            {(() => {
+                              const { key, label, iconSlug } = computeThemeMeta(s as Post);
+                              const badgeTint = getBadgeTint(key);
+                              const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
+                              return (
+                                <div className="mt-1">
+                                  <Badge
+                                    className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}
+                                  >
+                                    {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                    {label}
+                                  </Badge>
+                                </div>
+                              );
+                            })()}
+
+                            <p className="text-[13px] text-muted-foreground leading-5 mt-1 line-clamp-1">
+                              {extractEngagingExcerpt(s.content, 100)}
+                            </p>
+
+                            <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                <time>
+                                  {new Date(s.createdAt).toLocaleDateString(undefined, {
+                                    month: 'short',
+                                    day: 'numeric',
+                                  })}
+                                </time>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                <span>{getReadingTime(s.content)}</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="col-span-1 sm:col-span-2 text-sm text-muted-foreground">
+                        No close matches. Try clearing your search or exploring popular stories.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSearch('')}
+                      className="h-9 px-3"
+                    >
+                      Clear search
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        try {
+                          const useScores = Object.keys(trendingScores).length > 0;
+                          const topPopular = useScores
+                            ? [...sortedPosts]
+                                .map((p) => ({ p, score: trendingScores[p.id] ?? 0 }))
+                                .sort((a, b) => b.score - a.score)
+                                .slice(0, 5)
+                                .map((x) => x.p)
+                            : [...sortedPosts]
+                                .map((p) => {
+                                  const totals = reactionTotals[p.id];
+                                  const likes = Number(totals?.totals?.likes ?? 0);
+                                  const views =
+                                    p.metadata && (p.metadata as any).pageViews
+                                      ? Number((p.metadata as any).pageViews)
+                                      : 0;
+                                  const now = Date.now();
+                                  const dayMs = 24 * 60 * 60 * 1000;
+                                  const windowDays = 14;
+                                  const ageDays = Math.max(
+                                    0,
+                                    (now - new Date(p.createdAt).getTime()) / dayMs,
+                                  );
+                                  const decay = Math.max(0.2, 1 - ageDays / windowDays);
+                                  const score = (likes * 2.5 + views * 0.8) * decay;
+                                  return { p, score };
+                                })
+                                .sort((a, b) => b.score - a.score)
+                                .slice(0, 5)
+                                .map((x) => x.p);
+
+                          if (topPopular.length > 0) {
+                            const pick = topPopular[Math.floor(Math.random() * topPopular.length)];
+                            navigateToReader(pick.slug || pick.id);
+                          } else {
+                            setSort('popular');
+                          }
+                        } catch {
+                          setSort('popular');
+                        }
+                      }}
+                      className="h-9 px-3"
+                    >
+                      Browse popular
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed">
+                  Explore popular stories below.
+                </p>
+              )}
+
+              {/* Popular right now mini carousel */}
+              <div className="mt-2">
+                <div className="text-left sm:text-center mb-2 text-xs font-medium text-muted-foreground">
+                  Popular right now
+                </div>
+                <div className="relative">
+                  <div
+                    className="flex gap-3 sm:gap-4 overflow-x-auto snap-x snap-mandatory scroll-px-3 sm:scroll-px-4 [-webkit-overflow-scrolling:touch]"
+                    aria-label="Popular stories"
+                  >
+                    {popularPosts.map((pop) => (
+                      <div
+                        key={pop.id}
+                        className="snap-start min-w-[260px] sm:min-w-[300px] md:min-w-[320px]"
+                      >
+                        <Card className="rounded-lg border border-border/60 bg-card/70 hover:bg-card transition">
+                          <CardContent className="p-3">
+                            <button
+                              className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
+                              onClick={() => navigateToReader(pop.slug || pop.id)}
+                              style={{ minHeight: '36px' }}
+                            >
+                              {pop.title}
+                            </button>
+                            {(() => {
+                              const { key, label, iconSlug } = computeThemeMeta(pop);
+                              const badgeTint = getBadgeTint(key);
+                              const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
+                              return (
+                                <div className="mt-1">
+                                  <Badge
+                                    className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}
+                                  >
+                                    {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                    {label}
+                                  </Badge>
+                                </div>
+                              );
+                            })()}
+                            <p className="text-[13px] text-muted-foreground leading-5 mt-1 line-clamp-1">
+                              {extractEngagingExcerpt(pop.content, 100)}
+                            </p>
+                            <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                <time>
+                                  {new Date(pop.createdAt).toLocaleDateString(undefined, {
+                                    month: 'short',
+                                    day: 'numeric',
+                                  })}
+                                </time>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                <span>{getReadingTime(pop.content)}</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {/* Category tags under carousel controls */}
+              <div className="mt-8 px-2">
+                <>
+                  {categoryPills.length > 0 && (
+                    <>
+                      <div className="text-center text-base md:text-lg font-medium text-muted-foreground mb-3 md:mb-4">
+                        All categories
+                      </div>
+                      <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
+                        <button
+                          type="button"
+                          className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter === 'all' ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}
+                          onClick={() => setCategoryFilter('all')}
+                          aria-pressed={categoryFilter === 'all'}
+                        >
+                          All
+                        </button>
+                        {categoryPills.map((p) => (
+                          <button
+                            type="button"
+                            key={p.key}
+                            className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter.toLowerCase() === p.key.toLowerCase() ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}
+                            onClick={() => setCategoryFilter(p.key)}
+                            aria-pressed={categoryFilter.toLowerCase() === p.key.toLowerCase()}
+                            title={`${p.pretty} (${p.count})`}
+                          >
+                            {p.pretty}{' '}
+                            <span className="ml-1 text-muted-foreground">({p.count})</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
               </div>
             </div>
           </div>
-          
+        ) : (
+          <>
+            {latestPosts.length > 60 ? (
+              // Virtualized rows for large lists (row = gridCols items)
+              <VirtualScrollArea
+                items={(() => {
+                  const cols = gridCols || 1;
+                  const rows: Post[][] = [];
+                  for (let i = 0; i < latestPosts.length; i += cols) {
+                    rows.push(latestPosts.slice(i, i + cols));
+                  }
+                  return rows;
+                })()}
+                itemHeight={360}
+                containerHeight={Math.max(400, containerHeight - 200)}
+                overscan={3}
+                className="rounded-md border border-transparent content-visibility-auto"
+                renderItem={(row, rowIdx) => {
+                  const cols = gridCols || 1;
+                  return (
+                    <div
+                      className={
+                        cols >= 3
+                          ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6'
+                          : cols === 2
+                            ? 'grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6'
+                            : 'grid grid-cols-1 gap-5 md:gap-6'
+                      }
+                    >
+                      {row.map((post, idx) => {
+                        const md: any = post.metadata || {};
+                        let themeCategory = '';
+                        if (md && typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
+                          themeCategory = String(md.themeCategory);
+                        } else {
+                          try {
+                            const derived = sharedDetermineThemeCategory(
+                              String(post.title || ''),
+                              String(post.content || ''),
+                            );
+                            themeCategory = String(derived || '');
+                          } catch {}
+                        }
 
-          {/* Stories List */}
-          {deferredSearch.trim() && titleMatches.length === 0 && !closestTitleMatch ? (
-            <div className="mx-auto max-w-full sm:max-w-2xl md:max-w-3xl text-center py-8 sm:py-10 md:py-12 rounded-xl border border-border/60 bg-card/80 px-3 sm:px-6 shadow-sm overflow-hidden">
-              <div className="w-full">
-                <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4 mt-2">
-                  <Search className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg sm:text-xl font-semibold">No matches found</h2>
-                </div>
+                        return (
+                          <article
+                            key={post.id}
+                            data-idx={rowIdx * cols + idx}
+                            data-post-id={post.id}
+                            className="group story-card-container relative"
+                          >
+                            <Card
+                              onClick={() => navigateToReader(post.slug || post.id)}
+                              className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] will-change-transform cursor-pointer"
+                            >
+                              <CardContent className="p-4 pb-4">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <CardTitle
+                                      className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary"
+                                      style={{ minHeight: '48px' }}
+                                    >
+                                      {renderHighlighted(String(post.title || ''))}
+                                    </CardTitle>
+                                    {(() => {
+                                      const { key, label, iconSlug } = computeThemeMeta(post);
+                                      const badgeTint = getBadgeTint(key);
+                                      const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
+                                      return (
+                                        <div className="mt-1">
+                                          <Badge
+                                            className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}
+                                          >
+                                            {ThemeIconCmp ? (
+                                              <ThemeIconCmp className="h-3 w-3" />
+                                            ) : null}
+                                            {label}
+                                          </Badge>
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+                                  <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
+                                    <div className="flex items-center gap-1 justify-end">
+                                      <Calendar className="h-3 w-3" />
+                                      <time>
+                                        {new Date(post.createdAt).toLocaleDateString(undefined, {
+                                          month: 'short',
+                                          day: 'numeric',
+                                          year: 'numeric',
+                                        })}
+                                      </time>
+                                    </div>
+                                    <div
+                                      className="flex items-center gap-1 justify-end"
+                                      title={`~${
+                                        String(post.content || '')
+                                          .trim()
+                                          .split(/\s+/).length
+                                      } words`}
+                                    >
+                                      <Clock className="h-3 w-3" />
+                                      <span>{getReadingTime(post.content)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <p
+                                  className="text-[13px] text-muted-foreground leading-6 mt-7 line-clamp-3 font-sans"
+                                  style={{
+                                    fontFamily:
+                                      "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
+                                  }}
+                                >
+                                  {extractEngagingExcerpt(post.content, 200)}
+                                </p>
+                              </CardContent>
+                              <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
+                                <div className="w-full flex items-center justify-between">
+                                  {readyReactions && post && post.id && (
+                                    <Suspense fallback={null}>
+                                      <LikeDislike
+                                        key={`like-${post.id}`}
+                                        postId={post.id}
+                                        slug={post.slug}
+                                        source="wp"
+                                        variant="index"
+                                        initialTotals={reactionTotals[post.id] || null}
+                                      />
+                                    </Suspense>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigateToReader(post.slug || post.id);
+                                    }}
+                                    className="h-9 px-4 transition-all"
+                                  >
+                                    Read story
+                                    <ArrowRight className="h-4 w-4 ml-1" />
+                                  </Button>
+                                </div>
+                              </CardFooter>
+                            </Card>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  );
+                }}
+              />
+            ) : (
+              <div
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 content-visibility-auto"
+                ref={cardsGridRef as any}
+              >
+                {latestPosts.slice(0, visibleCount).map((post, idx) => {
+                  const md: any = post.metadata || {};
+                  // Prefer metadata theme; otherwise detect from title/content for WordPress API posts
+                  let themeCategory = '';
+                  if (md && typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
+                    themeCategory = String(md.themeCategory);
+                  } else {
+                    try {
+                      const derived = sharedDetermineThemeCategory(
+                        String(post.title || ''),
+                        String(post.content || ''),
+                      );
+                      themeCategory = String(derived || '');
+                    } catch {}
+                  }
+                  const themeInfo = themeCategory
+                    ? THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES]
+                    : null;
+                  const displayName = themeCategory
+                    ? themeCategory.charAt(0) +
+                      themeCategory.slice(1).toLowerCase().replace(/_/g, ' ')
+                    : '';
 
-                {deferredSearch.trim() ? (
-                  <>
-                    <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4 leading-relaxed">
-                      We couldn’t find any stories matching “{deferredSearch.trim()}”. Try the closest matches below or explore popular stories.
-                    </p>
-
-                    <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
-                      {searchSuggestions.length ? searchSuggestions.map(s => (
-                          <Card key={s.id} className="rounded-lg border border-border/60 bg-card/70 hover:bg-card transition">
-                            <CardContent className="p-3">
-                              <button
-                                className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
-                                onClick={() => navigateToReader(s.slug || s.id)}
-                                title={s.title}
+                  return (
+                    <article
+                      key={post.id}
+                      data-idx={idx}
+                      data-post-id={post.id}
+                      className="group story-card-container relative"
+                    >
+                      <Card
+                        onClick={() => navigateToReader(post.slug || post.id)}
+                        className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] will-change-transform cursor-pointer"
+                      >
+                        <CardContent className="p-4 pb-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <CardTitle
+                                className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary"
+                                style={{ minHeight: '48px' }}
                               >
-                                {s.title}
-                              </button>
+                                {renderHighlighted(String(post.title || ''))}
+                              </CardTitle>
                               {(() => {
-                                const { key, label, iconSlug } = computeThemeMeta(s as Post);
+                                const { key, label, iconSlug } = computeThemeMeta(post);
                                 const badgeTint = getBadgeTint(key);
                                 const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
                                 return (
                                   <div className="mt-1">
-                                    <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border ${badgeTint}`}>
+                                    <Badge
+                                      className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}
+                                    >
                                       {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
                                       {label}
                                     </Badge>
                                   </div>
                                 );
                               })()}
-
-                              <p className="text-[13px] text-muted-foreground leading-5 mt-1 line-clamp-1">
-                                {extractEngagingExcerpt(s.content, 100)}
-                              </p>
-
-                              <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  <time>{new Date(s.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  <span>{getReadingTime(s.content)}</span>
-                                </div>
+                            </div>
+                            <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
+                              <div className="flex items-center gap-1 justify-end">
+                                <Calendar className="h-3 w-3" />
+                                <time>
+                                  {new Date(post.createdAt).toLocaleDateString(undefined, {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  })}
+                                </time>
                               </div>
-                            </CardContent>
-                          </Card>
-                        )) : (
-                          <div className="col-span-1 sm:col-span-2 text-sm text-muted-foreground">
-                            No close matches. Try clearing your search or exploring popular stories.
-                          </div>
-                        )}
-                    </div>
-
-                    
-
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <Button variant="outline" size="sm" onClick={() => setSearch("")} className="h-9 px-3">
-                        Clear search
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          try {
-                            const useScores = Object.keys(trendingScores).length > 0;
-                            const topPopular = useScores
-                              ? [...sortedPosts]
-                                  .map(p => ({ p, score: trendingScores[p.id] ?? 0 }))
-                                  .sort((a, b) => b.score - a.score)
-                                  .slice(0, 5)
-                                  .map(x => x.p)
-                              : [...sortedPosts]
-                                  .map(p => {
-                                    const totals = reactionTotals[p.id];
-                                    const likes = Number(totals?.totals?.likes ?? 0);
-                                    const views = p.metadata && (p.metadata as any).pageViews ? Number((p.metadata as any).pageViews) : 0;
-                                    const now = Date.now();
-                                    const dayMs = 24 * 60 * 60 * 1000;
-                                    const windowDays = 14;
-                                    const ageDays = Math.max(0, (now - new Date(p.createdAt).getTime()) / dayMs);
-                                    const decay = Math.max(0.2, 1 - (ageDays / windowDays));
-                                    const score = (likes * 2.5 + views * 0.8) * decay;
-                                    return { p, score };
-                                  })
-                                  .sort((a, b) => b.score - a.score)
-                                  .slice(0, 5)
-                                  .map(x => x.p);
-
-                            if (topPopular.length > 0) {
-                              const pick = topPopular[Math.floor(Math.random() * topPopular.length)];
-                              navigateToReader(pick.slug || pick.id);
-                            } else {
-                              setSort("popular");
-                            }
-                          } catch {
-                            setSort("popular");
-                          }
-                        }}
-                        className="h-9 px-3"
-                      >
-                        Browse popular
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed">
-                    Explore popular stories below.
-                  </p>
-                )}
-
-                {/* Popular right now mini carousel */}
-                <div className="mt-2">
-                    <div className="text-left sm:text-center mb-2 text-xs font-medium text-muted-foreground">
-                      Popular right now
-                    </div>
-                    <div className="relative">
-                      <div
-                        className="flex gap-3 sm:gap-4 overflow-x-auto snap-x snap-mandatory scroll-px-3 sm:scroll-px-4 [-webkit-overflow-scrolling:touch]"
-                        aria-label="Popular stories"
-                      >
-                        {popularPosts.map(pop => (
-                          <div key={pop.id} className="snap-start min-w-[260px] sm:min-w-[300px] md:min-w-[320px]">
-                            <Card className="rounded-lg border border-border/60 bg-card/70 hover:bg-card transition">
-                              <CardContent className="p-3">
-                                <button
-                                  className="text-left text-sm font-medium line-clamp-2 hover:text-primary"
-                                  onClick={() => navigateToReader(pop.slug || pop.id)}
-                                  style={{ minHeight: '36px' }}
-                                >
-                                  {pop.title}
-                                </button>
-                                {(() => {
-                                  const { key, label, iconSlug } = computeThemeMeta(pop);
-                                  const badgeTint = getBadgeTint(key);
-                                  const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
-                                  return (
-                                    <div className="mt-1">
-                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}>
-                                        {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
-                                        {label}
-                                      </Badge>
-                                    </div>
-                                  );
-                                })()}
-                                <p className="text-[13px] text-muted-foreground leading-5 mt-1 line-clamp-1">
-                                  {extractEngagingExcerpt(pop.content, 100)}
-                                </p>
-                                <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
-                                  <div className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    <time>{new Date(pop.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    <span>{getReadingTime(pop.content)}</span>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                {/* Category tags under carousel controls */}
-                <div className="mt-8 px-2">
-                    <>
-                      {categoryPills.length > 0 && (
-                        <>
-                          <div className="text-center text-base md:text-lg font-medium text-muted-foreground mb-3 md:mb-4">All categories</div>
-                          <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
-                            <button
-                              type="button"
-                              className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter === 'all' ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}
-                              onClick={() => setCategoryFilter('all')}
-                              aria-pressed={categoryFilter === 'all'}
-                            >
-                              All
-                            </button>
-                            {categoryPills.map(p => (
-                              <button
-                                type="button"
-                                key={p.key}
-                                className={`px-3 py-1.5 rounded-full border text-xs ${categoryFilter.toLowerCase() === p.key.toLowerCase() ? 'bg-primary/15 border-primary/30' : 'bg-card border-border/60 hover:bg-card/80'}`}
-                                onClick={() => setCategoryFilter(p.key)}
-                                aria-pressed={categoryFilter.toLowerCase() === p.key.toLowerCase()}
-                                title={`${p.pretty} (${p.count})`}
+                              <div
+                                className="flex items-center gap-1 justify-end"
+                                title={`~${String(post.content || '').split(/\s+/).length} words`}
                               >
-                                {p.pretty} <span className="ml-1 text-muted-foreground">({p.count})</span>
-                              </button>
-                            ))}
+                                <Clock className="h-3 w-3" />
+                                <span>{getReadingTime(post.content)}</span>
+                              </div>
+                            </div>
                           </div>
-                        </>
-                      )}
-                    </>
-                  </div>
-                </div>
+
+                          <p
+                            className="text-[15px] sm:text-[16px] text-muted-foreground leading-6 mt-7 line-clamp-3 font-sans"
+                            style={{
+                              fontFamily:
+                                "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
+                            }}
+                          >
+                            {extractEngagingExcerpt(post.content, 200)}
+                          </p>
+                        </CardContent>
+                        <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
+                          <div className="w-full flex items-center justify-between">
+                            {readyReactions && post && post.id && (
+                              <Suspense fallback={null}>
+                                <LikeDislike
+                                  key={`like-${post.id}`}
+                                  postId={post.id}
+                                  slug={post.slug}
+                                  source="wp"
+                                  variant="index"
+                                  initialTotals={reactionTotals[post.id] || null}
+                                />
+                              </Suspense>
+                            )}
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigateToReader(post.slug || post.id);
+                              }}
+                              className="h-9 px-4 transition-all"
+                            >
+                              Read story
+                              <ArrowRight className="h-4 w-4 ml-1" />
+                            </Button>
+                          </div>
+                        </CardFooter>
+                      </Card>
+                    </article>
+                  );
+                })}
               </div>
-          ) : (
-            <>
-              {latestPosts.length > 60 ? (
-                // Virtualized rows for large lists (row = gridCols items)
-                <VirtualScrollArea
-                  items={(() => {
-                    const cols = gridCols || 1;
-                    const rows: Post[][] = [];
-                    for (let i = 0; i < latestPosts.length; i += cols) {
-                      rows.push(latestPosts.slice(i, i + cols));
-                    }
-                    return rows;
-                  })()}
-                  itemHeight={360}
-                  containerHeight={Math.max(400, containerHeight - 200)}
-                  overscan={3}
-                  className="rounded-md border border-transparent content-visibility-auto"
-                  renderItem={(row, rowIdx) => {
-                    const cols = gridCols || 1;
-                    return (
-                      <div className={cols >= 3 ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6' : (cols === 2 ? 'grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6' : 'grid grid-cols-1 gap-5 md:gap-6')}>
-                        {row.map((post, idx) => {
-                          const md: any = post.metadata || {};
-                          let themeCategory = "";
-                          if (md && typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
-                            themeCategory = String(md.themeCategory);
-                          } else {
-                            try {
-                              const derived = sharedDetermineThemeCategory(String(post.title || ''), String(post.content || ''));
-                              themeCategory = String(derived || '');
-                            } catch {}
-                          }
-
-                          return (
-                            <article
-                              key={post.id}
-                              data-idx={rowIdx * cols + idx}
-                              data-post-id={post.id}
-                              className="group story-card-container relative"
-                            >
-                              <Card
-                                onClick={() => navigateToReader(post.slug || post.id)}
-                                className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] will-change-transform cursor-pointer"
-                              >
-                                <CardContent className="p-4 pb-4">
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="flex-1 min-w-0">
-                                      <CardTitle className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary" style={{ minHeight: '48px' }}>
-                                        {renderHighlighted(String(post.title || ''))}
-                                      </CardTitle>
-                                      {(() => {
-                                        const { key, label, iconSlug } = computeThemeMeta(post);
-                                        const badgeTint = getBadgeTint(key);
-                                        const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
-                                        return (
-                                          <div className="mt-1">
-                                            <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}>
-                                              {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
-                                              {label}
-                                            </Badge>
-                                          </div>
-                                        );
-                                      })()}
-                                    </div>
-                                    <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
-                                      <div className="flex items-center gap-1 justify-end">
-                                        <Calendar className="h-3 w-3" />
-                                        <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
-                                      </div>
-                                      <div className="flex items-center gap-1 justify-end" title={`~${String(post.content || '').trim().split(/\s+/).length} words`}>
-                                        <Clock className="h-3 w-3" />
-                                        <span>{getReadingTime(post.content)}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <p className="text-[13px] text-muted-foreground leading-6 mt-7 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                                    {extractEngagingExcerpt(post.content, 200)}
-                                  </p>
-                                </CardContent>
-                                <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
-                                  <div className="w-full flex items-center justify-between">
-                                    {readyReactions && post && post.id && (
-                                      <Suspense fallback={null}>
-                                        <LikeDislike 
-                                          key={`like-${post.id}`} 
-                                          postId={post.id}
-                                          slug={post.slug}
-                                          source="wp"
-                                          variant="index"
-                                          initialTotals={reactionTotals[post.id] || null}
-                                        />
-                                      </Suspense>
-                                    )}
-                                    <Button
-                                      size="sm"
-                                      onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
-                                      className="h-9 px-4 transition-all"
-                                    >
-                                      Read story
-                                      <ArrowRight className="h-4 w-4 ml-1" />
-                                    </Button>
-                                  </div>
-                                </CardFooter>
-                              </Card>
-                            </article>
-                          );
-                        })}
-                      </div>
-                    );
-                  }}
-                />
-              ) : (
-                <div
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 content-visibility-auto"
-                  ref={cardsGridRef as any}
-                >
-                  {latestPosts.slice(0, visibleCount).map((post, idx) => {
-                    
-                    const md: any = post.metadata || {};
-                    // Prefer metadata theme; otherwise detect from title/content for WordPress API posts
-                    let themeCategory = "";
-                    if (md && typeof md.themeCategory === 'string' && md.themeCategory.trim()) {
-                      themeCategory = String(md.themeCategory);
-                    } else {
-                      try {
-                        const derived = sharedDetermineThemeCategory(String(post.title || ''), String(post.content || ''));
-                        themeCategory = String(derived || '');
-                      } catch {}
-                    }
-                    const themeInfo = themeCategory ? THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] : null;
-                    const displayName = themeCategory
-                      ? themeCategory.charAt(0) + themeCategory.slice(1).toLowerCase().replace(/_/g, ' ')
-                      : '';
-
-                    return (
-                      <article
-                        key={post.id}
-                        data-idx={idx}
-                        data-post-id={post.id}
-                        className="group story-card-container relative"
-                      >
-                        <Card
-                          onClick={() => navigateToReader(post.slug || post.id)}
-                          className="h-full overflow-hidden rounded-xl border border-border/60 bg-card/80 transition-all duration-300 ease-out hover:bg-card hover:shadow-lg hover:ring-1 hover:ring-primary/25 hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] will-change-transform cursor-pointer"
-                        >
-                          <CardContent className="p-4 pb-4">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <CardTitle
-                                  className="text-xl md:text-2xl font-semibold tracking-tight group-hover:text-primary"
-                                  style={{ minHeight: '48px' }}
-                                >
-                                  {renderHighlighted(String(post.title || ''))}
-                                </CardTitle>
-                                {(() => {
-                                  const { key, label, iconSlug } = computeThemeMeta(post);
-                                  const badgeTint = getBadgeTint(key);
-                                  const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
-                                  return (
-                                    <div className="mt-1">
-                                      <Badge className={`w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ${badgeTint}`}>
-                                        {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
-                                        {label}
-                                      </Badge>
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-                              <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
-                                <div className="flex items-center gap-1 justify-end">
-                                  <Calendar className="h-3 w-3" />
-                                  <time>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
-                                </div>
-                                <div className="flex items-center gap-1 justify-end" title={`~${String(post.content || '').split(/\s+/).length} words`}>
-                                  <Clock className="h-3 w-3" />
-                                  <span>{getReadingTime(post.content)}</span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <p className="text-[15px] sm:text-[16px] text-muted-foreground leading-6 mt-7 line-clamp-3 font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                              {extractEngagingExcerpt(post.content, 200)}
-                            </p>
-                          </CardContent>
-                          <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
-                            <div className="w-full flex items-center justify-between">
-                              {readyReactions && post && post.id && (
-                                <Suspense fallback={null}>
-                                  <LikeDislike 
-                                    key={`like-${post.id}`} 
-                                    postId={post.id}
-                                    slug={post.slug}
-                                    source="wp"
-                                    variant="index"
-                                    initialTotals={reactionTotals[post.id] || null}
-                                  />
-                                </Suspense>
-                              )}
-                              <Button
-                                size="sm"
-                                onClick={(e) => { e.stopPropagation(); navigateToReader(post.slug || post.id); }}
-                                className="h-9 px-4 transition-all"
-                              >
-                                Read story
-                                <ArrowRight className="h-4 w-4 ml-1" />
-                              </Button>
-                            </div>
-                          </CardFooter>
-                        </Card>
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
-              {latestPosts.length > visibleCount && latestPosts.length <= 60 && (
-                <div className="mt-4 flex justify-center">
-                  <Button
-                    className="h-10 px-5 rounded-lg border border-border/60 shadow-sm"
-                    disabled={isFetchingNextPage}
-                    onClick={async () => {
-                      try {
-                        const current = visibleCount;
-                        const needed = current + pageSize;
-                        if (needed > latestPosts.length && hasNextPage) {
-                          await fetchNextPage();
-                        }
-                        setVisibleCount((c) => {
-                          const next = c + pageSize;
-                          requestAnimationFrame(() => {
-                            const el = document.querySelector(`[data-idx="${c}"]`) as HTMLElement | null;
-                            el?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
-                          });
-                          return next;
-                        });
-                      } catch {
-                        setVisibleCount((c) => c + pageSize);
+            )}
+            {latestPosts.length > visibleCount && latestPosts.length <= 60 && (
+              <div className="mt-4 flex justify-center">
+                <Button
+                  className="h-10 px-5 rounded-lg border border-border/60 shadow-sm"
+                  disabled={isFetchingNextPage}
+                  onClick={async () => {
+                    try {
+                      const current = visibleCount;
+                      const needed = current + pageSize;
+                      if (needed > latestPosts.length && hasNextPage) {
+                        await fetchNextPage();
                       }
-                    }}
-                  >
-                    {isFetchingNextPage ? 'Loading…' : 'Read more'}
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+                      setVisibleCount((c) => {
+                        const next = c + pageSize;
+                        requestAnimationFrame(() => {
+                          const el = document.querySelector(
+                            `[data-idx="${c}"]`,
+                          ) as HTMLElement | null;
+                          el?.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start',
+                            inline: 'nearest',
+                          });
+                        });
+                        return next;
+                      });
+                    } catch {
+                      setVisibleCount((c) => c + pageSize);
+                    }
+                  }}
+                >
+                  {isFetchingNextPage ? 'Loading…' : 'Read more'}
+                </Button>
+              </div>
+            )}
+          </>
+        )}
       </div>
+    </div>
   );
 }
