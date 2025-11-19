@@ -1,0 +1,19 @@
+// Cloudflare Wrangler configuration for deploying the built static site in ./dist
+{
+  // Change this if you prefer a different Worker name
+  "name": "bubblescafe-worker",
+
+  // Use today's date for compatibility; adjust later only if needed by Wrangler
+  "compatibility_date": "2025-11-19",
+
+  // Serve static assets from the Vite build output directory
+  "assets": "./dist",
+
+  // Deploy to workers.dev by default; configure routes if binding to a custom domain
+  "workers_dev": true
+
+  // If you later add a custom domain, add:
+  // "routes": [
+  //   { "pattern": "bubblescafe.space/*", "zone_name": "bubblescafe.space" }
+  // ]
+}
