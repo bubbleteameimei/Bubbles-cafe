@@ -7,7 +7,7 @@
     "BACKEND_BASE_URL": "https://api.bubblescafe.space",
     "FRONTEND_URL": "https://bubblescafe.space",
     "NODE_ENV": "production",
-    "ENABLE_WORDPRESS_SCHEDULER": "true",
+    "ENABLE_WORDPRESS_SCHEDULER": "true"
   },
 
   "kv_namespaces": [
@@ -15,19 +15,19 @@
     { "binding": "USER_CACHE_KV", "id": "85dd5d1c736742afa1e0fce282ef548a" },
     { "binding": "SYNC_METADATA_KV", "id": "bfcdd8e8af824f05b392db8682891548" },
     { "binding": "ANALYTICS_KV", "id": "d0665e7aa4574e3192cce136a1ca3a23" },
-    { "binding": "CACHE_KV", "id": "ffc0fafeb8724f27aa293bf9ddc49358" },
+    { "binding": "CACHE_KV", "id": "ffc0fafeb8724f27aa293bf9ddc49358" }
   ],
 
   "durable_objects": {
     "bindings": [
       { "name": "LOCKS_DO", "class_name": "LocksObject", "script_name": "bubbles-api" },
       { "name": "RATE_LIMIT_DO", "class_name": "RateLimitObject", "script_name": "bubbles-api" },
-      { "name": "IDEMPOTENCY_DO", "class_name": "IdempotencyObject", "script_name": "bubbles-api" },
-    ],
+      { "name": "IDEMPOTENCY_DO", "class_name": "IdempotencyObject", "script_name": "bubbles-api" }
+    ]
   },
 
   "triggers": {
-    "crons": ["0 * * * *"],
+    "crons": ["0 * * * *"]
   },
 
   "env": {
@@ -35,38 +35,30 @@
       "routes": [
         {
           "pattern": "api.bubblescafe.space/*",
-          "zone_name": "bubblescafe.space",
-        },
+          "zone_name": "bubblescafe.space"
+        }
       ],
       "vars": {
         "BACKEND_BASE_URL": "https://api.bubblescafe.space",
         "FRONTEND_URL": "https://bubblescafe.space",
         "NODE_ENV": "production",
-        "ENABLE_WORDPRESS_SCHEDULER": "true",
+        "ENABLE_WORDPRESS_SCHEDULER": "true"
       },
       "kv_namespaces": [
         { "binding": "IDEMPOTENCY_KV", "id": "2919525761cd4e6faa06bb219e4a293e" },
         { "binding": "USER_CACHE_KV", "id": "85dd5d1c736742afa1e0fce282ef548a" },
         { "binding": "SYNC_METADATA_KV", "id": "bfcdd8e8af824f05b392db8682891548" },
         { "binding": "ANALYTICS_KV", "id": "d0665e7aa4574e3192cce136a1ca3a23" },
-        { "binding": "CACHE_KV", "id": "ffc0fafeb8724f27aa293bf9ddc49358" },
+        { "binding": "CACHE_KV", "id": "ffc0fafeb8724f27aa293bf9ddc49358" }
       ],
       "durable_objects": {
         "bindings": [
           { "name": "LOCKS_DO", "class_name": "LocksObject", "script_name": "bubbles-api" },
-          {
-            "name": "RATE_LIMIT_DO",
-            "class_name": "RateLimitObject",
-            "script_name": "bubbles-api",
-          },
-          {
-            "name": "IDEMPOTENCY_DO",
-            "class_name": "IdempotencyObject",
-            "script_name": "bubbles-api",
-          },
-        ],
-      },
-    },
+          { "name": "RATE_LIMIT_DO", "class_name": "RateLimitObject", "script_name": "bubbles-api" },
+          { "name": "IDEMPOTENCY_DO", "class_name": "IdempotencyObject", "script_name": "bubbles-api" }
+        ]
+      }
+    }
   },
 
   "observability": {
@@ -76,12 +68,12 @@
       "enabled": true,
       "head_sampling_rate": 1,
       "persist": true,
-      "invocation_logs": true,
+      "invocation_logs": true
     },
     "traces": {
       "enabled": true,
       "persist": true,
-      "head_sampling_rate": 1,
-    },
-  },
+      "head_sampling_rate": 1
+    }
+  }
 }
