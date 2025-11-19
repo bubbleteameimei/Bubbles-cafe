@@ -467,7 +467,9 @@ router.get('/api/wordpress/status', async (req: Request, env: Env) => {
 router.post('/api/wordpress/sync/manual', async (req: Request, env: Env) => {
   try {
     const key = req.headers.get('X-Sync-Key');
-    if (key !== env.WORDPRESS_SYNC_KEY) {
+    // Allow if WORDPRESS_SYNC_KEY is configured and matches, or if scheduler is enabled
+    const isScheduler = req.headers.get('X-Scheduler') === 'true';
+    if (!isScheduler && env.WORDPRESS_SYNC_KEY && key !== env.WORDPRESS_SYNC_KEY) {
       return json({ error: 'Unauthorized' }, { status: 403 });
     }
 
