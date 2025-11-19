@@ -28,6 +28,8 @@ interface Stats {
   userInteracted: boolean;
 }
 
+const ACTION_THROTTLE_MS = 250;
+
 const getStorageKey = (postId: number, slug?: string, source: 'local' | 'wp' = 'local') =>
   slug && slug.trim()
     ? `reaction-${source}:${slug.trim()}`
@@ -253,7 +255,7 @@ export function LikeDislike({
 
   const handleLike = async () => {
     const now = Date.now();
-    if (isPendingRef.current || (now - lastActionTsRef.current) < 250) return;
+    if (isPendingRef.current || (now - lastActionTsRef.current) < ACTION_THROTTLE_MS) return;
     isPendingRef.current = true;
     setIsPending(true);
     lastActionTsRef.current = now;
@@ -332,7 +334,7 @@ export function LikeDislike({
 
   const handleDislike = async () => {
     const now = Date.now();
-    if (isPendingRef.current || (now - lastActionTsRef.current) < 250) return;
+    if (isPendingRef.current || (now - lastActionTsRef.current) < ACTION_THROTTLE_MS) return;
     isPendingRef.current = true;
     setIsPending(true);
     lastActionTsRef.current = now;
