@@ -1,9 +1,86 @@
 /**
  * Shared badge tint mapping used by both server and client to keep UI consistent.
- * Returns a Tailwind class string based on a normalized uppercase theme key.
+ * Returns a Tailwind class string based on a normalized theme key.
+ * Accepts canonical uppercase keys (preferred) and gracefully canonicalizes labels/synonyms.
  */
+import { THEME_CATEGORIES } from './theme-categories';
+
+function canonicalizeThemeKey(input: string | undefined | null): string {
+  const raw = String(input || '').trim();
+  if (!raw) return 'HORROR';
+
+  // If already uppercase-like, normalize separators
+  let key = raw.toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+
+  // Fast-path common synonyms and legacy keys
+  const SYNONYMS: Record<string, string> = {
+    // direct canonical
+    'PARASITE': 'PARASITE',
+    'COSMIC': 'COSMIC',
+    'PSYCHOLOGICAL': 'PSYCHOLOGICAL',
+    'TECHNOLOGICAL': 'TECHNOLOGICAL',
+    'BODY_HORROR': 'BODY_HORROR',
+    'PSYCHOPATH': 'SLASHER', // legacy -> SLASHER tint
+    'SUPERNATURAL': 'SUPERNATURAL',
+    'UNCANNY': 'UNCANNY',
+    'CANNIBALISM': 'CANNIBALISM',
+    'STALKING': 'STALKING',
+    'EXISTENTIAL': 'EXISTENTIAL',
+    'GOTHIC': 'GOTHIC',
+    'VEHICULAR': 'VEHICULAR',
+    'DOPPELGANGER': 'DOPPELGANGER',
+    'SLASHER': 'SLASHER',
+    'HORROR': 'HORROR',
+    'DEATH': 'DEATH',
+
+    // extended aliases
+    'PARANORMAL_HORROR': 'PARANORMAL',
+    'PARANORMAL': 'PARANORMAL',
+    'DREAM_NIGHTMARE': 'DREAM_HORROR',
+    'DREAM_HORROR': 'DREAM_HORROR',
+    'VAMPIRIC_HORROR': 'VAMPIRE',
+    'VAMPIRE': 'VAMPIRE',
+    'LYCANTHROPIC_HORROR': 'WEREWOLF',
+    'WEREWOLF': 'WEREWOLF',
+    'CREATURE_HORROR': 'MONSTER',
+    'MONSTER': 'MONSTER',
+    'INFESTATION_HORROR': 'PARASITE',
+    'IDENTITY_HORROR': 'IDENTITY_HORROR',
+    'ECO_HORROR': 'FOLK_HORROR',
+    'DEMONIC_HORROR': 'DEMONIC',
+    'DEMONIC': 'DEMONIC',
+    'ISOLATION_HORROR': 'ISOLATION_HORROR',
+    'SURVIVAL_HORROR': 'SURVIVAL_HORROR',
+    'AQUATIC': 'AQUATIC',
+    'DYSTOPIAN': 'DYSTOPIAN',
+    'ELEMENTAL': 'FOLK_HORROR',
+    'IDENTITY': 'IDENTITY_HORROR',
+    'MEDICAL': 'SCIENCE_HORROR',
+    'RITUAL': 'OCCULT',
+    'FOLK_HORROR': 'FOLK_HORROR',
+    'CURSED_OBJECT': 'CURSED_OBJECT',
+    'TIME_HORROR': 'TIME_HORROR',
+    'SCIENCE_HORROR': 'SCIENCE_HORROR',
+    'APOCALYPTIC': 'APOCALYPTIC',
+    'URBAN_HORROR': 'URBAN_HORROR',
+  };
+
+  if (SYNONYMS[key]) return SYNONYMS[key];
+
+  // Attempt label-to-key mapping using shared catalog (case-insensitive label match)
+  for (const [k, info] of Object.entries(THEME_CATEGORIES as Record<string, any>)) {
+    const label = String((info as any)?.label || '').trim().toLowerCase();
+    if (label && label === raw.trim().toLowerCase()) {
+      return k;
+    }
+  }
+
+  // Fallback: trust normalized key
+  return key;
+}
+
 export function getBadgeTint(themeKeyRaw: string | undefined | null): string {
-  const themeKey = String(themeKeyRaw || '').toUpperCase();
+  const themeKey = canonicalizeThemeKey(themeKeyRaw);
 
   switch (themeKey) {
     // Core mappings with varied palette
@@ -17,7 +94,7 @@ export function getBadgeTint(themeKeyRaw: string | undefined | null): string {
     // Extended variety
     case 'STALKING': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700';
     case 'CANNIBALISM': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
-    case 'PSYCHOPATH': return 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200 dark:bg-fuchsia-900/30 dark:text-fuchsia-300 dark:border-fuchsia-700';
+    case 'SLASHER': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700';
     case 'DOPPELGANGER': return 'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-700';
     case 'VEHICULAR': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700';
     case 'PARASITE': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700';
@@ -33,7 +110,6 @@ export function getBadgeTint(themeKeyRaw: string | undefined | null): string {
 
     // Additional keys used across the app
     case 'FOLK_HORROR': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700';
-    case 'SLASHER': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700';
     case 'MONSTER': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark:text-stone-300 dark:border-stone-700';
     case 'ZOMBIE': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700';
     case 'VAMPIRE': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700';
@@ -44,27 +120,8 @@ export function getBadgeTint(themeKeyRaw: string | undefined | null): string {
     case 'APOCALYPTIC': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700';
     case 'SCIENCE_HORROR': return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700';
 
-    // Synonyms and extended keys -> map to closest canonical tint
-    case 'PARANORMAL_HORROR': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700'; // = PARANORMAL
-    case 'DREAM_NIGHTMARE': return 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700'; // = DREAM_HORROR
-    case 'VAMPIRIC_HORROR': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700'; // = VAMPIRE
-    case 'LYCANTHROPIC_HORROR': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700'; // = WEREWOLF
-    case 'CREATURE_HORROR': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark:text-stone-300 dark:border-stone-700'; // = MONSTER
-    case 'INFESTATION_HORROR': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700'; // = PARASITE
-    case 'IDENTITY_HORROR': return 'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-700'; // ~ DOPPELGANGER
-    case 'ECO_HORROR': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700'; // = FOLK_HORROR
-    case 'DEMONIC_HORROR': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700'; // infernal/demonic
-    case 'DEMONIC': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700';
-    case 'ISOLATION_HORROR': return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-900/30 dark:text-stone-300 dark:border-stone-700';
-    case 'SURVIVAL_HORROR': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700';
-    case 'AQUATIC': return 'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-700';
-    case 'DYSTOPIAN': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700';
-    case 'ELEMENTAL': return 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-700'; // map to eco/folk
-    case 'IDENTITY': return 'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-700';
-    case 'MEDICAL': return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700';
-    case 'RITUAL': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700';
-
     default:
+      // Fallback to neutral styling if truly unknown
       return 'bg-primary/10 text-foreground border-primary/20 dark:bg-primary/10 dark:text-foreground dark:border-primary/20';
   }
 }
