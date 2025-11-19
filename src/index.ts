@@ -558,7 +558,8 @@ export default {
         await fetch('https://api.bubblescafe.space/api/wordpress/sync/manual', {
           method: 'POST',
           headers: {
-            'X-Sync-Key': env.WORDPRESS_SYNC_KEY,
+            'X-Scheduler': 'true',
+            'X-Sync-Key': env.WORDPRESS_SYNC_KEY || 'scheduler',
           },
         });
       }
