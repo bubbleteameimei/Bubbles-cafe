@@ -72,6 +72,9 @@ export default function StoriesIndexContent() {
   // SSE sources per post to stream live updates (LRU-limited)
   const sseSourcesRef = React.useRef<Map<number, { es: EventSource; ts: number }>>(new Map());
   const MAX_SSE_CONNECTIONS = 4;
+  const REACTIONS_BATCH_CHUNK_SIZE = 60;
+  const FLUSH_DEBOUNCE_MS = 200;
+  const INITIAL_BATCH_MIN_SIZE = 24;
   // Track SSE/preload errors to avoid flashing the \"unavailable\" banner on transient failures
   const reactionsErrorCountRef = React.useRef<number>(0);
   // Track whether we've prefetched totals for all posts to avoid repeated work
@@ -745,7 +748,7 @@ export default function StoriesIndexContent() {
     // Preload a small initial batch near the top of the list to avoid empty counts above the fold
     const preloadInitial = async () => {
       try {
-        const initialBatchSize = Math.max(24, Math.min(sortedPosts.length, (visibleCount || 0) + (gridCols || 1) * 6));
+        const initialBatchSize = Math.max(INITIAL_BATCH_MIN_SIZE, Math.min(sortedPosts.length, (visibleCount || 0) + (gridCols || 1) * 6));
         const candidateIds = sortedPosts
           .slice(0, initialBatchSize)
           .map((p: Post) => Number(p.id))
@@ -783,7 +786,7 @@ export default function StoriesIndexContent() {
         const toFetch = unique.filter((id) => Number.isFinite(id) && !fetched.has(id));
         if (toFetch.length > 0) {
           const { fetchReactionsBatch } = await import("@/api/reactions");
-          const totals = await fetchReactionsBatch(toFetch.slice(0, 60));
+          const totals = await fetchReactionsBatch(toFetch.slice(0, REACTIONS_BATCH_CHUNK_SIZE));
           if (!mounted) return;
           const update: Record<number, import("@/api/reactions").ReactionTotals> = {};
           for (const t of totals) {
@@ -811,7 +814,7 @@ export default function StoriesIndexContent() {
       flushTimer = setTimeout(() => {
         flushTimer = null;
         void flush();
-      }, 200);
+      }, FLUSH_DEBOUNCE_MS);
     };
 
     try {
@@ -870,9 +873,9 @@ export default function StoriesIndexContent() {
         }
         const { fetchReactionsBatch } = await import("@/api/reactions");
         // Chunk into batches to avoid large payloads
-        for (let i = 0; i < ids.length; i += 60) {
+        for (let i = 0; i < ids.length; i += REACTIONS_BATCH_CHUNK_SIZE) {
           if (!mounted) return;
-          const chunk = ids.slice(i, i + 60);
+          const chunk = ids.slice(i, i + REACTIONS_BATCH_CHUNK_SIZE);
           const totals = await fetchReactionsBatch(chunk);
           if (!mounted) return;
           const update: Record<number, import("@/api/reactions").ReactionTotals> = {};

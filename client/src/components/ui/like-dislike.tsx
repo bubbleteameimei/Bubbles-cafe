@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { fetchReactions, submitReaction } from "@/api/reactions";
 
 
