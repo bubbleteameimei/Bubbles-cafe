@@ -1,6 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import './SocialLoginButtons.css';
-import { getApiBaseUrl } from '@/lib/asset-path';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface SocialLoginButtonsProps {
@@ -8,32 +7,49 @@ interface SocialLoginButtonsProps {
   onError?: (error: Error) => void;
 }
 
+interface GoogleConfig {
+  clientId: string | null;
+  redirectUri: string;
+}
+
 export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginButtonsProps) {
   const [status, setStatus] = useState<string | null>(null);
+  const [googleConfig, setGoogleConfig] = useState<GoogleConfig | null>(null);
+  const [configLoaded, setConfigLoaded] = useState(false);
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const res = await fetch('/api/config/public', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          setGoogleConfig(data.googleOAuth || { clientId: null, redirectUri: '' });
+        }
+      } catch (e) {
+        console.error('[SocialLoginButtons] Failed to fetch config:', e);
+      } finally {
+        setConfigLoaded(true);
+      }
+    };
+    fetchConfig();
+  }, []);
 
   const handleGoogleLogin = useCallback(async () => {
     try {
       setStatus('Starting Google sign-in…');
 
-      // Direct Google OAuth only
-      const clientId = (import.meta as any)?.env?.VITE_GOOGLE_CLIENT_ID;
-      if (!clientId) {
-        const msg = 'Google login not configured: missing VITE_GOOGLE_CLIENT_ID.';
+      if (!googleConfig?.clientId) {
+        const msg = 'Google login not configured.';
         setStatus(msg);
         throw new Error(msg);
       }
 
-      const apiBase = getApiBaseUrl();
-      const redirectUri =
-        (import.meta as any)?.env?.VITE_GOOGLE_REDIRECT_URI ||
-        (apiBase ? `${apiBase}/api/auth/callback` : '/api/auth/callback');
-
       const params = new URLSearchParams({
-        client_id: String(clientId),
-        redirect_uri: String(redirectUri),
+        client_id: googleConfig.clientId,
+        redirect_uri: googleConfig.redirectUri,
         response_type: 'code',
         scope: 'openid email profile',
-        prompt: 'consent'
+        prompt: 'consent',
       });
 
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
@@ -48,12 +64,11 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
         console.error('[SocialLoginButtons] Google login error:', err);
       }
     }
-  }, [onError]);
+  }, [googleConfig, onError]);
 
   const disabled = useMemo(() => {
-    const clientId = (import.meta as any)?.env?.VITE_GOOGLE_CLIENT_ID;
-    return !clientId;
-  }, []);
+    return !configLoaded || !googleConfig?.clientId;
+  }, [configLoaded, googleConfig]);
 
   return (
     <div className="social-auth-buttons">
