@@ -1,5 +1,5 @@
 {
-  "name": "bubbles-api",
+  "name": "bubbles-cafe",
   "main": "src/index.ts",
   "compatibility_date": "2024-12-19",
 
@@ -20,9 +20,13 @@
 
   "durable_objects": {
     "bindings": [
-      { "name": "LOCKS_DO", "class_name": "LocksObject", "script_name": "bubbles-api" },
-      { "name": "RATE_LIMIT_DO", "class_name": "RateLimitObject", "script_name": "bubbles-api" },
-      { "name": "IDEMPOTENCY_DO", "class_name": "IdempotencyObject", "script_name": "bubbles-api" },
+      { "name": "LOCKS_DO", "class_name": "LocksObject", "script_name": "bubbles-cafe" },
+      { "name": "RATE_LIMIT_DO", "class_name": "RateLimitObject", "script_name": "bubbles-cafe" },
+      {
+        "name": "IDEMPOTENCY_DO",
+        "class_name": "IdempotencyObject",
+        "script_name": "bubbles-cafe",
+      },
     ],
   },
 
@@ -53,16 +57,16 @@
       ],
       "durable_objects": {
         "bindings": [
-          { "name": "LOCKS_DO", "class_name": "LocksObject", "script_name": "bubbles-api" },
+          { "name": "LOCKS_DO", "class_name": "LocksObject", "script_name": "bubbles-cafe" },
           {
             "name": "RATE_LIMIT_DO",
             "class_name": "RateLimitObject",
-            "script_name": "bubbles-api",
+            "script_name": "bubbles-cafe",
           },
           {
             "name": "IDEMPOTENCY_DO",
             "class_name": "IdempotencyObject",
-            "script_name": "bubbles-api",
+            "script_name": "bubbles-cafe",
           },
         ],
       },
@@ -71,17 +75,5 @@
 
   "observability": {
     "enabled": false,
-    "head_sampling_rate": 1,
-    "logs": {
-      "enabled": true,
-      "head_sampling_rate": 1,
-      "persist": true,
-      "invocation_logs": true,
-    },
-    "traces": {
-      "enabled": true,
-      "persist": true,
-      "head_sampling_rate": 1,
-    },
   },
 }
