@@ -440,8 +440,9 @@ export { RateLimitObject, IdempotencyObject, LocksObject } from "./durable-objec
 // SCHEDULED HANDLERS (Cron) + Default Export
 // ============================================================================
 export default {
-  async fetch(request: Request, env: Env) {
-    return router.handle(request, env);
+  // itty-router v5 uses `router.fetch` (v4 used `router.handle`)
+  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    return router.fetch(request, env, ctx);
   },
 
   async scheduled(_event: ScheduledEvent, env: Env) {
