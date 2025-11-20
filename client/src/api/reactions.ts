@@ -48,12 +48,23 @@ export async function fetchReactions(postId: number): Promise<ReactionTotals> {
 }
 
 export async function fetchReactionsBatch(postIds: number[]): Promise<ReactionTotals[]> {
-  const idsParam = postIds.join(',');
-  const data = await fetchWithFallback<{ results: ReactionTotals[] }>(`/api/posts/reactions-batch?ids=${encodeURIComponent(idsParam)}`, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-  });
+  // Filter out invalid IDs (NaN, undefined, etc.) to prevent malformed requests
+  const validIds = (Array.isArray(postIds) ? postIds : [])
+    .filter((id) => Number.isFinite(Number(id)))
+    .map((id) => Number(id));
+
+  // Early return for empty list to avoid unnecessary API call
+  if (validIds.length === 0) return [];
+
+  const idsParam = validIds.join(',');
+  const data = await fetchWithFallback<{ results: ReactionTotals[] }>(
+    `/api/posts/reactions-batch?ids=${encodeURIComponent(idsParam)}`,
+    {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    },
+  );
   return Array.isArray(data?.results) ? data.results : [];
 }
 
