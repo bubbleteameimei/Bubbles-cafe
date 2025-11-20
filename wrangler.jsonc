@@ -7,7 +7,7 @@
     "BACKEND_BASE_URL": "https://api.bubblescafe.space",
     "FRONTEND_URL": "https://bubblescafe.space",
     "NODE_ENV": "production",
-    "ENABLE_WORDPRESS_SCHEDULER": "true",
+    "ENABLE_WORDPRESS_SCHEDULER": "true"
   },
 
   "kv_namespaces": [
@@ -15,23 +15,25 @@
     { "binding": "USER_CACHE_KV", "id": "85dd5d1c736742afa1e0fce282ef548a" },
     { "binding": "SYNC_METADATA_KV", "id": "bfcdd8e8af824f05b392db8682891548" },
     { "binding": "ANALYTICS_KV", "id": "d0665e7aa4574e3192cce136a1ca3a23" },
-    { "binding": "CACHE_KV", "id": "ffc0fafeb8724f27aa293bf9ddc49358" },
+    { "binding": "CACHE_KV", "id": "ffc0fafeb8724f27aa293bf9ddc49358" }
   ],
 
+  // 🚨 CORRECTED BINDINGS (Top-Level)
+  // These now point to the separate 'bubbles-cafe-do-host' service.
   "durable_objects": {
     "bindings": [
-      { "name": "LOCKS_DO", "class_name": "LocksObject", "script_name": "bubbles-cafe" },
-      { "name": "RATE_LIMIT_DO", "class_name": "RateLimitObject", "script_name": "bubbles-cafe" },
+      { "name": "LOCKS_DO", "class_name": "LocksObject", "script_name": "bubbles-cafe-do-host" },
+      { "name": "RATE_LIMIT_DO", "class_name": "RateLimitObject", "script_name": "bubbles-cafe-do-host" },
       {
         "name": "IDEMPOTENCY_DO",
         "class_name": "IdempotencyObject",
-        "script_name": "bubbles-cafe",
-      },
-    ],
+        "script_name": "bubbles-cafe-do-host"
+      }
+    ]
   },
 
   "triggers": {
-    "crons": ["0 * * * *"],
+    "crons": ["0 * * * *"]
   },
 
   "env": {
@@ -39,41 +41,60 @@
       "routes": [
         {
           "pattern": "api.bubblescafe.space/*",
-          "zone_name": "bubblescafe.space",
-        },
+          "zone_name": "bubblescafe.space"
+        }
       ],
       "vars": {
         "BACKEND_BASE_URL": "https://api.bubblescafe.space",
         "FRONTEND_URL": "https://bubblescafe.space",
         "NODE_ENV": "production",
-        "ENABLE_WORDPRESS_SCHEDULER": "true",
+        "ENABLE_WORDPRESS_SCHEDULER": "true"
       },
       "kv_namespaces": [
         { "binding": "IDEMPOTENCY_KV", "id": "2919525761cd4e6faa06bb219e4a293e" },
         { "binding": "USER_CACHE_KV", "id": "85dd5d1c736742afa1e0fce282ef548a" },
         { "binding": "SYNC_METADATA_KV", "id": "bfcdd8e8af824f05b392db8682891548" },
         { "binding": "ANALYTICS_KV", "id": "d0665e7aa4574e3192cce136a1ca3a23" },
-        { "binding": "CACHE_KV", "id": "ffc0fafeb8724f27aa293bf9ddc49358" },
+        { "binding": "CACHE_KV", "id": "ffc0fafeb8724f27aa293bf9ddc49358" }
       ],
+      
+      // 🚨 CORRECTED BINDINGS (Production Environment)
       "durable_objects": {
         "bindings": [
-          { "name": "LOCKS_DO", "class_name": "LocksObject", "script_name": "bubbles-cafe" },
+          { "name": "LOCKS_DO", "class_name": "LocksObject", "script_name": "bubbles-cafe-do-host" },
           {
             "name": "RATE_LIMIT_DO",
             "class_name": "RateLimitObject",
-            "script_name": "bubbles-cafe",
+            "script_name": "bubbles-cafe-do-host"
           },
           {
             "name": "IDEMPOTENCY_DO",
             "class_name": "IdempotencyObject",
-            "script_name": "bubbles-cafe",
-          },
-        ],
-      },
-    },
+            "script_name": "bubbles-cafe-do-host"
+          }
+        ]
+      }
+    }
   },
 
+  // 🚨 NEW SERVICE DEFINITION (Durable Object Host)
+  // This service hosts the actual class implementations from durable-objects.ts
+  "workers": [
+    {
+      "name": "bubbles-cafe-do-host",
+      "main": "durable-objects.ts", // Path to the new file you created
+      "compatibility_date": "2024-12-19",
+      "durable_objects": {
+        "bindings": [
+          { "name": "LOCKS_DO", "class_name": "LocksObject" },
+          { "name": "RATE_LIMIT_DO", "class_name": "RateLimitObject" },
+          { "name": "IDEMPOTENCY_DO", "class_name": "IdempotencyObject" }
+        ]
+      }
+    }
+  ],
+
   "observability": {
-    "enabled": false,
-  },
+    "enabled": false
+  }
 }
