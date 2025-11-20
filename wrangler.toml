@@ -2,7 +2,8 @@
 name = "bubbles-cafe"
 main = "src/index.ts"
 compatibility_date = "2025-11-20"
-account_id = "YOUR_ACTUAL_CLOUDFLARE_ACCOUNT_ID"
+account_id = "50154307e88967cd12ab1262230de6ac"
+
 
 # Environment variables
 [vars]
@@ -50,3 +51,16 @@ zone_name = "bubblescafe.space"
 # Observability
 [observability]
 enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1
+
