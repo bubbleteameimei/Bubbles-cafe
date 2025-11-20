@@ -1,7 +1,7 @@
 
 name = "bubbles-cafe"
 main = "src/index.ts"
-compatibility_date = "2024-12-19"
+compatibility_date = "2025-12-20"
 
 # Environment variables
 [vars]
@@ -23,17 +23,17 @@ kv_namespaces = [
 [[durable_objects.bindings]]
 name = "LOCKS_DO"
 class_name = "LocksObject"
-script_name = "bubbles-cafe-do-host"
+script_name = "bubbles-cafe"
 
 [[durable_objects.bindings]]
 name = "RATE_LIMIT_DO"
 class_name = "RateLimitObject"
-script_name = "bubbles-cafe-do-host"
+script_name = "bubbles-cafe"
 
 [[durable_objects.bindings]]
 name = "IDEMPOTENCY_DO"
 class_name = "IdempotencyObject"
-script_name = "bubbles-cafe-do-host"
+script_name = "bubbles-cafe"
 
 # Cron triggers
 [triggers]
