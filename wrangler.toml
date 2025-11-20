@@ -1,7 +1,7 @@
 
 name = "bubbles-cafe"
 main = "src/index.ts"
-compatibility_date = "2025-12-20"
+compatibility_date = "2025-11-20"
 
 # Environment variables
 [vars]
@@ -19,21 +19,23 @@ kv_namespaces = [
   { binding = "CACHE_KV", id = "ffc0fafeb8724f27aa293bf9ddc49358" }
 ]
 
-# Durable Objects - referencing the DO host worker
+# Durable Objects - using local classes (no script_name)
 [[durable_objects.bindings]]
 name = "LOCKS_DO"
 class_name = "LocksObject"
-script_name = "bubbles-cafe"
 
 [[durable_objects.bindings]]
 name = "RATE_LIMIT_DO"
 class_name = "RateLimitObject"
-script_name = "bubbles-cafe"
 
 [[durable_objects.bindings]]
 name = "IDEMPOTENCY_DO"
 class_name = "IdempotencyObject"
-script_name = "bubbles-cafe"
+
+# Durable Objects migrations
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["LocksObject", "RateLimitObject", "IdempotencyObject"]
 
 # Cron triggers
 [triggers]
