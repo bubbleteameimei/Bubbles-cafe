@@ -415,12 +415,75 @@ router.post("/api/wordpress/sync/manual", async (req: Request, env: Env) => {
   }
 });
 
-// API DOMAIN REDIRECT: If path is not /api/* or /health, redirect to frontend
+// Minimal posts APIs to support sitemaps and external consumers
+router.get("/api/posts", async (req: Request, env: Env) => {
+  try {
+    const url = new URL(req.url);
+    const limit = Math.min(Number(url.searchParams.get("limit") || "100"), 1000);
+
+    if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+      const tableUrl = `${env.SUPABASE_URL}/rest/v1/posts?select=id,slug,date,created_at&order=modified.desc&limit=${limit}`;
+      const res = await fetch(tableUrl, {
+        headers: {
+          apikey: env.SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+          Accept: "application/json",
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const posts = Array.isArray(data)
+          ? data.map((x: any) => ({ id: x.id, slug: x.slug, date: x.date ?? x.created_at }))
+          : [];
+        return json(
+          { posts },
+          { headers: { "Cache-Control": "max-age=300, stale-while-revalidate=600" } }
+        );
+      }
+    }
+
+    return json({ posts: [] }, { headers: { "Cache-Control": "max-age=60" } });
+  } catch {
+    return json({ posts: [] }, { headers: { "Cache-Control": "max-age=60" } });
+  }
+});
+
+router.get("/api/posts/community", async (_req: Request, env: Env) => {
+  try {
+    // If a separate community table exists, attempt to read it; otherwise fall back to empty.
+    if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+      const tableUrl = `${env.SUPABASE_URL}/rest/v1/community_posts?select=id,slug,date,created_at&order=modified.desc&limit=1000`;
+      const res = await fetch(tableUrl, {
+        headers: {
+          apikey: env.SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+          Accept: "application/json",
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const posts = Array.isArray(data)
+          ? data.map((x: any) => ({ id: x.id, slug: x.slug, date: x.date ?? x.created_at }))
+          : [];
+        return json(
+          { posts },
+          { headers: { "Cache-Control": "max-age=300, stale-while-revalidate=600" } }
+        );
+      }
+    }
+
+    return json({ posts: [] }, { headers: { "Cache-Control": "max-age=60" } });
+  } catch {
+    return json({ posts: [] }, { headers: { "Cache-Control": "max-age=60" } });
+  }
+});
+
+// API DOMAIN REDIRECT: Redirect all non-API/non-health paths (including "/") to the frontend
 router.all("*", async (req: Request, env: Env) => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (!path.startsWith("/api/") && !path.startsWith("/health") && path !== "/") {
+  if (!path.startsWith("/api/") && path !== "/health") {
     const redirectUrl = new URL(path + url.search, env.FRONTEND_URL);
     return new Response(null, {
       status: 308,
@@ -457,17 +520,19 @@ export default {
         });
       }
 
-      const analyticsKeys = await env.ANALYTICS_KV.list();
-      const batch = analyticsKeys.keys.slice(0, 100);
+      if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+        const analyticsKeys = await env.ANALYTICS_KV.list();
+        const batch = analyticsKeys.keys.slice(0, 100);
 
-      for (const key of batch) {
-        const eventData = await env.ANALYTICS_KV.get(key.name);
-        if (eventData) {
-          await callSupabaseRpc(env, "log_analytics_event", {
-            event_type: key.name.split("-")[0],
-            data: JSON.parse(eventData),
-          });
-          await env.ANALYTICS_KV.delete(key.name);
+        for (const key of batch) {
+          const eventData = await env.ANALYTICS_KV.get(key.name);
+          if (eventData) {
+            await callSupabaseRpc(env, "log_analytics_event", {
+              event_type: key.name.split("-")[0],
+              data: JSON.parse(eventData),
+            });
+            await env.ANALYTICS_KV.delete(key.name);
+          }
         }
       }
     } catch (error) {
