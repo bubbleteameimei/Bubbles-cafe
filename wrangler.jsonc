@@ -22,7 +22,11 @@
     "bindings": [
       { "name": "LOCKS_DO", "class_name": "LocksObject", "script_name": "bubbles-cafe" },
       { "name": "RATE_LIMIT_DO", "class_name": "RateLimitObject", "script_name": "bubbles-cafe" },
-      { "name": "IDEMPOTENCY_DO", "class_name": "IdempotencyObject", "script_name": "bubbles-cafe" },
+      {
+        "name": "IDEMPOTENCY_DO",
+        "class_name": "IdempotencyObject",
+        "script_name": "bubbles-cafe",
+      },
     ],
   },
 
