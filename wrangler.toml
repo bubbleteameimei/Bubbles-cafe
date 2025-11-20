@@ -34,11 +34,6 @@ class_name = "RateLimitObject"
 name = "IDEMPOTENCY_DO"
 class_name = "IdempotencyObject"
 
-# Durable Objects migrations
-[[migrations]]
-tag = "v1"
-new_sqlite_classes = ["LocksObject", "RateLimitObject", "IdempotencyObject"]
-
 # Cron triggers
 [triggers]
 crons = ["0 * * * *"]
