@@ -49,7 +49,7 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
         redirect_uri: googleConfig.redirectUri,
         response_type: 'code',
         scope: 'openid email profile',
-        prompt: 'consent'
+        prompt: 'consent',
       });
 
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
