@@ -112,3 +112,11 @@ export { RateLimitObject, IdempotencyObject, LocksObject };
 export default {
   fetch: () => new Response("Durable Object Host is running.", { status: 200 })
 }
+// At the end of durable-objects.ts
+export { RateLimitObject, IdempotencyObject, LocksObject };
+
+// And the minimal default export
+export default {
+  fetch: () => new Response("Durable Object Host is running.", { status: 200 })
+};
+
