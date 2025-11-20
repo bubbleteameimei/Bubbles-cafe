@@ -37,7 +37,7 @@ class_name = "IdempotencyObject"
 # Durable Objects migrations
 [[migrations]]
 tag = "v1"
-new_classes = ["LocksObject", "RateLimitObject", "IdempotencyObject"]
+new_sqlite_classes = ["LocksObject", "RateLimitObject", "IdempotencyObject"]
 
 # Cron triggers
 [triggers]
