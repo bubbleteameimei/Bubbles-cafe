@@ -2,6 +2,7 @@
 name = "bubbles-cafe"
 main = "src/index.ts"
 compatibility_date = "2025-11-20"
+account_id = "YOUR_ACTUAL_CLOUDFLARE_ACCOUNT_ID"
 
 # Environment variables
 [vars]
