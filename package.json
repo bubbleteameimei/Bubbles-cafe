@@ -177,7 +177,8 @@
     "@supabase/supabase-js": "^2.75.0",
     "@iconify/react": "^4.1.1",
     "@vercel/analytics": "^1.4.1",
-    "@vercel/speed-insights": "^1.1.0"
+    "@vercel/speed-insights": "^1.1.0",
+    "itty-router": "^4.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.1",
