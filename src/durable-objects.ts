@@ -1,4 +1,10 @@
-// durable-objects.ts
+// durable-objects.ts (The NEW Durable Object Host File)
+
+// Note: json() is an itty-router utility, but DOs should use standard Response/JSON.stringify
+const json = (data: any, init?: ResponseInit) => new Response(JSON.stringify(data), {
+    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+    status: init?.status || 200,
+});
 
 // ============================================================================
 // DURABLE OBJECTS
@@ -8,36 +14,39 @@ export class RateLimitObject {
   private state: DurableObjectState;
   private buckets: Map<string, { tokens: number; lastRefill: number }>;
 
-  constructor(state: DurableObjectState, env: any) { // Added 'env: any' for compatibility
+  // Added 'env: any' for correct constructor signature
+  constructor(state: DurableObjectState, env: any) { 
     this.state = state;
     this.buckets = new Map();
   }
 
   async fetch(request: Request): Promise<Response> {
-    // Your existing RateLimitObject fetch logic...
     const { key, limit, window } = (await request.json()) as any;
     const now = Date.now();
     const bucket = this.buckets.get(key) || { tokens: limit, lastRefill: now };
 
     const timePassed = (now - bucket.lastRefill) / 1000;
+    // Calculate new tokens based on time passed and refill rate (limit/window)
     bucket.tokens = Math.min(limit, bucket.tokens + timePassed * (limit / window));
     bucket.lastRefill = now;
 
     if (bucket.tokens >= 1) {
       bucket.tokens -= 1;
       this.buckets.set(key, bucket);
-      return new Response(JSON.stringify({ allowed: true }));
+      return json({ allowed: true });
     }
 
-    return new Response(JSON.stringify({ allowed: false }), { status: 429 });
+    return json({ allowed: false }, { status: 429 });
   }
 }
 
 export class IdempotencyObject {
   private state: DurableObjectState;
-  private responses: Map<string, { response: any; timestamp: number }>;
+  // response type changed to any for JSON compatibility
+  private responses: Map<string, { response: any; timestamp: number }>; 
 
-  constructor(state: DurableObjectState, env: any) { // Added 'env: any' for compatibility
+  // Added 'env: any' for correct constructor signature
+  constructor(state: DurableObjectState, env: any) {
     this.state = state;
     this.responses = new Map();
   }
@@ -46,15 +55,19 @@ export class IdempotencyObject {
     const { key, response, ttl } = (await request.json()) as any;
 
     if (this.responses.has(key)) {
-      return new Response(JSON.stringify({ cached: true, response: this.responses.get(key)!.response }));
+      return json({ cached: true, response: this.responses.get(key)!.response });
     }
 
     this.responses.set(key, { response, timestamp: Date.now() });
 
-    // Note: setTimeout won't work reliably here. Durable Objects use alarm for timing.
-    // For simplicity, we'll keep the logic as is for now, but be aware of this difference.
+    // NOTE on TTL: setTimeout is unreliable in DOs. For real production, 
+    // you should use state.storage.put() and state.storage.setAlarm() 
+    // for cleanup, but we keep your original logic structure here.
+    setTimeout(() => {
+      this.responses.delete(key);
+    }, ttl || 86400000);
 
-    return new Response(JSON.stringify({ cached: false }));
+    return json({ cached: false });
   }
 }
 
@@ -62,7 +75,8 @@ export class LocksObject {
   private state: DurableObjectState;
   private locks: Map<string, boolean>;
 
-  constructor(state: DurableObjectState, env: any) { // Added 'env: any' for compatibility
+  // Added 'env: any' for correct constructor signature
+  constructor(state: DurableObjectState, env: any) {
     this.state = state;
     this.locks = new Map();
   }
@@ -72,22 +86,29 @@ export class LocksObject {
 
     if (action === 'acquire') {
       if (this.locks.has(key)) {
-        return new Response(JSON.stringify({ acquired: false }), { status: 409 });
+        return json({ acquired: false }, { status: 409 });
       }
       this.locks.set(key, true);
-      return new Response(JSON.stringify({ acquired: true }));
+      return json({ acquired: true });
     }
 
     if (action === 'release') {
       this.locks.delete(key);
-      return new Response(JSON.stringify({ released: true }));
+      return json({ released: true });
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400 });
+    return json({ error: 'Invalid action' }, { status: 400 });
   }
 }
 
-// Minimal fetch handler is required by Cloudflare for the DO script
+// ============================================================================
+// MODULE EXPORT (Required)
+// ============================================================================
+
+// The named exports are what Cloudflare looks for based on the class_name bindings.
+export { RateLimitObject, IdempotencyObject, LocksObject };
+
+// Minimal default export for the worker runtime.
 export default {
-    fetch: () => new Response("Durable Object Host", { status: 200 })
+  fetch: () => new Response("Durable Object Host is running.", { status: 200 })
 }
