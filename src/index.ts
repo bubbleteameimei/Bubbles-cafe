@@ -115,6 +115,36 @@ async function getOrCheckIdempotency(
   return { isNew: !result.cached, cached: result.cached };
 }
 
+async function proxyToBackend(req: Request, env: Env): Promise<Response> {
+  try {
+    const backendBase = env.BACKEND_BASE_URL;
+    if (!backendBase) {
+      return json({ error: "Backend not configured" }, { status: 502 });
+    }
+
+    const incomingUrl = new URL(req.url);
+    const targetUrl = new URL(incomingUrl.pathname + incomingUrl.search, backendBase);
+
+    const headers = new Headers(req.headers);
+    headers.delete("host");
+
+    const init: RequestInit = {
+      method: req.method,
+      headers,
+      redirect: "manual",
+    };
+
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      init.body = req.body;
+    }
+
+    const upstreamResponse = await fetch(targetUrl.toString(), init);
+    return upstreamResponse;
+  } catch (error) {
+    return json({ error: String(error) }, { status: 502 });
+  }
+}
+
 // ============================================================================
 // ROUTE HANDLERS
 // ============================================================================
@@ -219,62 +249,13 @@ router.get("/api/analytics/site", async (_req: Request, env: Env) => {
   }
 });
 
-// BOOKMARKS: Supabase RPC
+// BOOKMARKS: proxy to backend (uses existing Express + DB + Supabase logic)
 router.get("/api/bookmarks", async (req: Request, env: Env) => {
-  try {
-    const token = req.headers.get("Authorization")?.replace("Bearer ", "");
-    if (!token || !(await verifySupabaseJwt(token, env))) {
-      return json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const cached = await env.USER_CACHE_KV.get(`bookmarks-${token.slice(0, 20)}`);
-    if (cached) {
-      return json(JSON.parse(cached), {
-        headers: { "Cache-Control": "max-age=30, stale-while-revalidate=60" },
-      });
-    }
-
-    const response = await callSupabaseRpc(env, "get_user_bookmarks", {});
-    if (!response.ok) {
-      return json({ error: "Failed to fetch bookmarks" }, { status: 500 });
-    }
-
-    const data = await response.json();
-    await env.USER_CACHE_KV.put(`bookmarks-${token.slice(0, 20)}`, JSON.stringify(data), {
-      expirationTtl: 3600,
-    });
-
-    return json(data);
-  } catch (error) {
-    return json({ error: String(error) }, { status: 500 });
-  }
+  return proxyToBackend(req, env);
 });
 
-router.post("/api/bookmarks/:postId", async (req: any, env: Env) => {
-  try {
-    const { postId } = req.params as any;
-    const token = req.headers.get("Authorization")?.replace("Bearer ", "");
-    if (!token || !(await verifySupabaseJwt(token, env))) {
-      return json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = (await (req as any).json?.()) || {};
-
-    const response = await callSupabaseRpc(env, "add_bookmark", {
-      post_id: postId,
-      ...body,
-    });
-
-    if (!response.ok) {
-      return json({ error: "Failed to add bookmark" }, { status: 500 });
-    }
-
-    await env.USER_CACHE_KV.delete(`bookmarks-${token.slice(0, 20)}`);
-
-    return json({ success: true });
-  } catch (error) {
-    return json({ error: String(error) }, { status: 500 });
-  }
+router.post("/api/bookmarks/:postId", async (req: Request, env: Env) => {
+  return proxyToBackend(req, env);
 });
 
 // EMAIL SERVICE
@@ -415,83 +396,34 @@ router.post("/api/wordpress/sync/manual", async (req: Request, env: Env) => {
   }
 });
 
-// Minimal posts APIs to support sitemaps and external consumers
+// Minimal posts APIs: proxy to backend so existing Express storage logic is reused
 router.get("/api/posts", async (req: Request, env: Env) => {
-  try {
-    const url = new URL(req.url);
-    const limit = Math.min(Number(url.searchParams.get("limit") || "100"), 1000);
-
-    if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
-      const tableUrl = `${env.SUPABASE_URL}/rest/v1/posts?select=id,slug,date,created_at&order=modified.desc&limit=${limit}`;
-      const res = await fetch(tableUrl, {
-        headers: {
-          apikey: env.SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
-          Accept: "application/json",
-        },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const posts = Array.isArray(data)
-          ? data.map((x: any) => ({ id: x.id, slug: x.slug, date: x.date ?? x.created_at }))
-          : [];
-        return json(
-          { posts },
-          { headers: { "Cache-Control": "max-age=300, stale-while-revalidate=600" } }
-        );
-      }
-    }
-
-    return json({ posts: [] }, { headers: { "Cache-Control": "max-age=60" } });
-  } catch {
-    return json({ posts: [] }, { headers: { "Cache-Control": "max-age=60" } });
-  }
+  return proxyToBackend(req, env);
 });
 
-router.get("/api/posts/community", async (_req: Request, env: Env) => {
-  try {
-    // If a separate community table exists, attempt to read it; otherwise fall back to empty.
-    if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
-      const tableUrl = `${env.SUPABASE_URL}/rest/v1/community_posts?select=id,slug,date,created_at&order=modified.desc&limit=1000`;
-      const res = await fetch(tableUrl, {
-        headers: {
-          apikey: env.SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
-          Accept: "application/json",
-        },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const posts = Array.isArray(data)
-          ? data.map((x: any) => ({ id: x.id, slug: x.slug, date: x.date ?? x.created_at }))
-          : [];
-        return json(
-          { posts },
-          { headers: { "Cache-Control": "max-age=300, stale-while-revalidate=600" } }
-        );
-      }
-    }
-
-    return json({ posts: [] }, { headers: { "Cache-Control": "max-age=60" } });
-  } catch {
-    return json({ posts: [] }, { headers: { "Cache-Control": "max-age=60" } });
-  }
+router.get("/api/posts/community", async (req: Request, env: Env) => {
+  return proxyToBackend(req, env);
 });
 
-// API DOMAIN REDIRECT: Redirect all non-API/non-health paths (including "/") to the frontend
+// API DOMAIN REDIRECT + BACKEND PROXY
+// - All unknown /api/* routes are proxied to the legacy backend (Express server)
+// - All non-API paths are redirected to the frontend
 router.all("*", async (req: Request, env: Env) => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (!path.startsWith("/api/") && path !== "/health") {
-    const redirectUrl = new URL(path + url.search, env.FRONTEND_URL);
-    return new Response(null, {
-      status: 308,
-      headers: { Location: redirectUrl.toString() },
-    });
+  if (path.startsWith("/api/")) {
+    if (env.BACKEND_BASE_URL) {
+      return proxyToBackend(req, env);
+    }
+    return json({ error: "Not Found" }, { status: 404 });
   }
 
-  return json({ error: "Not Found" }, { status: 404 });
+  const redirectUrl = new URL(path + url.search, env.FRONTEND_URL);
+  return new Response(null, {
+    status: 308,
+    headers: { Location: redirectUrl.toString() },
+  });
 });
 
 // ============================================================================
