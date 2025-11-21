@@ -115,34 +115,62 @@ async function getOrCheckIdempotency(
   return { isNew: !result.cached, cached: result.cached };
 }
 
+/**
+ * Proxy helper: forwards the incoming request to the legacy backend (Express) when needed.
+ * This preserves full backend functionality (auth, search, comments, etc.) while the
+ * Worker gradually takes over more routes.
+ */
 async function proxyToBackend(req: Request, env: Env): Promise<Response> {
-  try {
-    const backendBase = env.BACKEND_BASE_URL;
-    if (!backendBase) {
-      return json({ error: "Backend not configured" }, { status: 502 });
-    }
-
-    const incomingUrl = new URL(req.url);
-    const targetUrl = new URL(incomingUrl.pathname + incomingUrl.search, backendBase);
-
-    const headers = new Headers(req.headers);
-    headers.delete("host");
-
-    const init: RequestInit = {
-      method: req.method,
-      headers,
-      redirect: "manual",
-    };
-
-    if (req.method !== "GET" && req.method !== "HEAD") {
-      init.body = req.body;
-    }
-
-    const upstreamResponse = await fetch(targetUrl.toString(), init);
-    return upstreamResponse;
-  } catch (error) {
-    return json({ error: String(error) }, { status: 502 });
+  const backendBase = (env.BACKEND_BASE_URL || "").trim();
+  if (!backendBase) {
+    return json({ error: "Not Found" }, { status: 404 });
   }
+
+  let backendUrl: URL;
+  let incomingUrl: URL;
+  try {
+    backendUrl = new URL(backendBase);
+    incomingUrl = new URL(req.url);
+  } catch {
+    return json({ error: "Not Found" }, { status: 404 });
+  }
+
+  // Avoid proxy loops (e.g. BACKEND_BASE_URL accidentally pointing back to this Worker)
+  if (backendUrl.host === incomingUrl.host) {
+    return json({ error: "Not Found" }, { status: 404 });
+  }
+
+  // Build target URL by combining backend base with the incoming path/query
+  const target = new URL(incomingUrl.pathname + incomingUrl.search, backendUrl);
+
+  // Clone the incoming request into a new Request with the target URL
+  const init: RequestInit = {
+    method: req.method,
+    headers: new Headers(req.headers),
+    redirect: "manual",
+    // Body will be copied below for non-GET/HEAD
+  };
+
+  // Remove Cloudflare-specific hop-by-hop headers that shouldn't be forwarded
+  init.headers.delete("host");
+  init.headers.delete("cf-connecting-ip");
+  init.headers.delete("cf-ipcountry");
+  init.headers.delete("cf-ray");
+  init.headers.delete("cf-worker");
+  init.headers.delete("x-forwarded-host");
+
+  // Add forwarding headers for backend visibility
+  init.headers.set("x-forwarded-host", incomingUrl.host);
+  init.headers.set("x-forwarded-proto", incomingUrl.protocol.replace(":", ""));
+
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    // For non-GET/HEAD, clone the body stream
+    init.body = req.body;
+  }
+
+  const proxiedRequest = new Request(target.toString(), init);
+
+  return fetch(proxiedRequest);
 }
 
 // ============================================================================
@@ -150,7 +178,7 @@ async function proxyToBackend(req: Request, env: Env): Promise<Response> {
 // ============================================================================
 
 // HEALTH
-router.get("/api/health", async (req: Request, env: Env) => {
+router.get("/api/health", async (_req: Request, _env: Env) => {
   try {
     const started = Date.now();
     const healthRes = {
@@ -249,7 +277,7 @@ router.get("/api/analytics/site", async (_req: Request, env: Env) => {
   }
 });
 
-// BOOKMARKS: proxy to backend (uses existing Express + DB + Supabase logic)
+// BOOKMARKS: proxy to legacy backend for full feature set (tags, notes, migration, etc.)
 router.get("/api/bookmarks", async (req: Request, env: Env) => {
   return proxyToBackend(req, env);
 });
@@ -396,7 +424,7 @@ router.post("/api/wordpress/sync/manual", async (req: Request, env: Env) => {
   }
 });
 
-// Minimal posts APIs: proxy to backend so existing Express storage logic is reused
+// POSTS: proxy to backend for full-featured API (listing, pagination, summaries, etc.)
 router.get("/api/posts", async (req: Request, env: Env) => {
   return proxyToBackend(req, env);
 });
@@ -405,25 +433,26 @@ router.get("/api/posts/community", async (req: Request, env: Env) => {
   return proxyToBackend(req, env);
 });
 
-// API DOMAIN REDIRECT + BACKEND PROXY
-// - All unknown /api/* routes are proxied to the legacy backend (Express server)
-// - All non-API paths are redirected to the frontend
+// API DOMAIN REDIRECT / FALLBACK PROXY
 router.all("*", async (req: Request, env: Env) => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (path.startsWith("/api/")) {
-    if (env.BACKEND_BASE_URL) {
-      return proxyToBackend(req, env);
-    }
-    return json({ error: "Not Found" }, { status: 404 });
+  // Non-API paths (including "/") should go to the frontend
+  if (!path.startsWith("/api/") && path !== "/health") {
+    const redirectUrl = new URL(path + url.search, env.FRONTEND_URL);
+    return new Response(null, {
+      status: 308,
+      headers: { Location: redirectUrl.toString() },
+    });
   }
 
-  const redirectUrl = new URL(path + url.search, env.FRONTEND_URL);
-  return new Response(null, {
-    status: 308,
-    headers: { Location: redirectUrl.toString() },
-  });
+  // For any unhandled /api/* routes, forward to the legacy backend.
+  if (path.startsWith("/api/")) {
+    return proxyToBackend(req, env);
+  }
+
+  return json({ error: "Not Found" }, { status: 404 });
 });
 
 // ============================================================================
