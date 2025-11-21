@@ -365,7 +365,7 @@ router.post("/api/bookmarks/:postId", async (req: Request, env: Env) => {
   return proxyToBackend(req, env);
 });
 
-// NEWSLETTER SUBSCRIBE (Worker-native, Supabase-backed)
+// NEWSLETTER SUBSCRIBE / UNSUBSCRIBE (Worker-native, Supabase-backed)
 async function handleNewsletterSubscribe(req: Request, env: Env): Promise<Response> {
   let email: string | null = null;
   let metadata: Record<string, any> | undefined;
@@ -373,26 +373,27 @@ async function handleNewsletterSubscribe(req: Request, env: Env): Promise<Respon
   try {
     const body = (await (req as any).json?.()) || {};
     email = typeof body.email === "string" ? body.email.trim() : "";
-    metadata = (body && typeof body.metadata === "object" && body.metadata !== null) ? body.metadata as Record<string, any> : undefined;
+    metadata = (body && typeof body.metadata === "object" && body.metadata !== null)
+      ? (body.metadata as Record<string, any>)
+      : undefined;
   } catch {
     return json(
-      { success: false, message: "Invalid JSON body" },
+      { success: false, message: "Invalid subscription data" },
       { status: 400 },
     );
   }
 
   if (!email) {
     return json(
-      { success: false, message: "Email is required" },
+      { success: false, message: "Please enter a valid email address" },
       { status: 400 },
     );
   }
 
-  // Basic email sanity check
   const simpleEmailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
   if (!simpleEmailRegex.test(email)) {
     return json(
-      { success: false, message: "Please provide a valid email address" },
+      { success: false, message: "Please enter a valid email address" },
       { status: 400 },
     );
   }
@@ -415,10 +416,7 @@ async function handleNewsletterSubscribe(req: Request, env: Env): Promise<Respon
   let existing: any | null = null;
   try {
     const url = new URL(`${baseUrl}/rest/v1/newsletter_subscriptions`);
-    url.searchParams.set(
-      "select",
-      "id,email,status,metadata,created_at,updated_at",
-    );
+    url.searchParams.set("select", "id,email,status,metadata,created_at,updated_at");
     url.searchParams.set("email", `eq.${email}`);
     url.searchParams.set("limit", "1");
 
@@ -428,7 +426,7 @@ async function handleNewsletterSubscribe(req: Request, env: Env): Promise<Respon
     });
     if (!res.ok && res.status !== 406) {
       return json(
-        { success: false, message: "Failed to look up subscription" },
+        { success: false, message: "An error occurred while subscribing to the newsletter" },
         { status: 500 },
       );
     }
@@ -437,7 +435,7 @@ async function handleNewsletterSubscribe(req: Request, env: Env): Promise<Respon
       existing = rows[0];
     }
   } catch {
-    // Proceed as if no existing subscription; we still allow subscribe attempts
+    // Treat as no existing subscription; we'll still attempt to insert
   }
 
   let subscription = existing;
@@ -465,7 +463,7 @@ async function handleNewsletterSubscribe(req: Request, env: Env): Promise<Respon
 
       if (!res.ok) {
         return json(
-          { success: false, message: "Failed to update subscription" },
+          { success: false, message: "An error occurred while subscribing to the newsletter" },
           { status: 500 },
         );
       }
@@ -487,13 +485,8 @@ async function handleNewsletterSubscribe(req: Request, env: Env): Promise<Respon
       });
 
       if (!res.ok) {
-        const text = await res.text().catch(() => "");
         return json(
-          {
-            success: false,
-            message: "Failed to create subscription",
-            detail: text.slice(0, 200) || undefined,
-          },
+          { success: false, message: "An error occurred while subscribing to the newsletter" },
           { status: 500 },
         );
       }
@@ -503,12 +496,12 @@ async function handleNewsletterSubscribe(req: Request, env: Env): Promise<Respon
     }
   } catch {
     return json(
-      { success: false, message: "Newsletter subscription failed" },
+      { success: false, message: "An error occurred while subscribing to the newsletter" },
       { status: 500 },
     );
   }
 
-  // Send a welcome email best-effort; do not fail the subscription if this fails
+  // Send a welcome email best-effort; do not fail subscription if this fails
   let emailSent = false;
   let emailMessage =
     "Welcome email could not be sent at this time, but your subscription is active";
@@ -567,6 +560,88 @@ async function handleNewsletterSubscribe(req: Request, env: Env): Promise<Respon
   });
 }
 
+async function handleNewsletterUnsubscribe(req: Request, env: Env): Promise<Response> {
+  let email: string | null = null;
+
+  try {
+    const body = (await (req as any).json?.()) || {};
+    email = typeof body.email === "string" ? body.email.trim() : "";
+  } catch {
+    return json(
+      { success: false, message: "Invalid email address" },
+      { status: 400 },
+    );
+  }
+
+  if (!email) {
+    return json(
+      { success: false, message: "Invalid email address" },
+      { status: 400 },
+    );
+  }
+
+  const simpleEmailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  if (!simpleEmailRegex.test(email)) {
+    return json(
+      { success: false, message: "Invalid email address" },
+      { status: 400 },
+    );
+  }
+
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json(
+      { success: false, message: "An error occurred while unsubscribing from the newsletter" },
+      { status: 500 },
+    );
+  }
+
+  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+  const headers: Record<string, string> = {
+    apikey: env.SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+
+  try {
+    const patchUrl = new URL(`${baseUrl}/rest/v1/newsletter_subscriptions`);
+    patchUrl.searchParams.set("email", `eq.${email}`);
+
+    const res = await fetch(patchUrl.toString(), {
+      method: "PATCH",
+      headers: {
+        ...headers,
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        status: "unsubscribed",
+        updated_at: new Date().toISOString(),
+      }),
+    });
+
+    if (!res.ok) {
+      return json(
+        { success: false, message: "An error occurred while unsubscribing from the newsletter" },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    const subscription = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+
+    return json({
+      success: true,
+      message: "Successfully unsubscribed from the newsletter",
+      data: subscription,
+    });
+  } catch {
+    return json(
+      { success: false, message: "An error occurred while unsubscribing from the newsletter" },
+      { status: 500 },
+    );
+  }
+}
+
 router.post(
   "/api/newsletter/subscribe",
   async (req: Request, env: Env) => handleNewsletterSubscribe(req, env),
@@ -575,6 +650,11 @@ router.post(
 router.post(
   "/api/newsletter-direct/subscribe",
   async (req: Request, env: Env) => handleNewsletterSubscribe(req, env),
+);
+
+router.post(
+  "/api/newsletter/unsubscribe",
+  async (req: Request, env: Env) => handleNewsletterUnsubscribe(req, env),
 );
 
 // EMAIL SERVICE
