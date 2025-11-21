@@ -304,28 +304,6 @@ async function resolveLocalPostIdFromExternal(
  * This preserves full backend functionality (auth, search, comments, etc.) while the
  * Worker gradually takes over more routes.
  */
-async function proxyToBackend(req: Request, env: Env): Promise<Response> {etOrCheckIdempotency(
-  env: Env,
-  key: string,
-  ttl: number
-): Promise<{ isNew: boolean; cached?: any }> {
-  const id = env.IDEMPOTENCY_DO.idFromName(key);
-  const obj = env.IDEMPOTENCY_DO.get(id);
-  const response = await obj.fetch(
-    new Request("https://worker", {
-      method: "POST",
-      body: JSON.stringify({ key, ttl }),
-    })
-  );
-  const result = (await response.json()) as any;
-  return { isNew: !result.cached, cached: result.cached };
-}
-
-/**
- * Proxy helper: forwards the incoming request to the legacy backend (Express) when needed.
- * This preserves full backend functionality (auth, search, comments, etc.) while the
- * Worker gradually takes over more routes.
- */
 async function proxyToBackend(req: Request, env: Env): Promise<Response> {
   const backendBase = (env.BACKEND_BASE_URL || "").trim();
   if (!backendBase) {
@@ -1275,6 +1253,132 @@ router.delete(
     }
   }
 );
+
+// GET /api/bookmarks/migrate - dry-run migratable count (JWT clients use localStorage; return 0)
+// Legacy/session clients without JWT still proxy to backend.
+router.get("/api/bookmarks/migrate", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+  const token = getBearerToken(req);
+  if (!token) {
+    return proxyToBackend(req, env);
+  }
+  // For Supabase-JWT clients we no longer track anonymous bookmarks on the server.
+  // Migration uses client-provided local payload only, so report zero migratable here.
+  return json({ success: true, migratable: 0 });
+});
+
+// POST /api/bookmarks/migrate - import anonymous/local bookmarks into authenticated account
+router.post("/api/bookmarks/migrate", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+  const token = getBearerToken(req);
+  if (!token) {
+    return proxyToBackend(req, env);
+  }
+
+  try {
+    const body = (await (req as any).json?.()) || {};
+    const localPayload =
+      body &&
+      typeof body.local === "object" &&
+      body.local !== null
+        ? (body.local as Record<string, any>)
+        : null;
+
+    const entries = localPayload ? Object.entries(localPayload) : [];
+    if (!entries.length) {
+      // Nothing to migrate; cleared flag reflects whether client passed local payload or not
+      return json({ success: true, migrated: 0, cleared: !!localPayload });
+    }
+
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!Number.isFinite(userId || NaN)) {
+      return json(
+        { success: false, message: "User not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    };
+
+    let migrated = 0;
+
+    for (const [rawId, b] of entries as [string, any][]) {
+      const wpOrLocalId = Number(rawId);
+      if (!Number.isFinite(wpOrLocalId)) continue;
+
+      const postId = await resolveLocalPostIdFromExternal(env, wpOrLocalId);
+      if (!Number.isFinite(postId || NaN)) continue;
+
+      // Check if bookmark already exists for this user/post
+      try {
+        const checkUrl = new URL(`${baseUrl}/rest/v1/bookmarks`);
+        checkUrl.searchParams.set("select", "id");
+        checkUrl.searchParams.set("user_id", `eq.${userId}`);
+        checkUrl.searchParams.set("post_id", `eq.${postId}`);
+        checkUrl.searchParams.set("limit", "1");
+
+        const checkRes = await fetch(checkUrl.toString(), {
+          headers,
+        });
+
+        if (!checkRes.ok) {
+          // Skip this entry on error; continue with others
+          continue;
+        }
+
+        const existing = (await checkRes.json().catch(() => [])) as any[];
+        if (Array.isArray(existing) && existing.length > 0) {
+          // Already bookmarked
+          continue;
+        }
+
+        const insertBody: Record<string, any> = {
+          user_id: userId,
+          post_id: postId,
+          notes: b?.notes ?? null,
+          tags: Array.isArray(b?.tags) ? b.tags : null,
+          last_position:
+            typeof b?.lastPosition === "string" && b.lastPosition
+              ? b.lastPosition
+              : "0",
+        };
+
+        const insRes = await fetch(`${baseUrl}/rest/v1/bookmarks`, {
+          method: "POST",
+          headers: {
+            ...headers,
+            Prefer: "return=representation",
+          },
+          body: JSON.stringify(insertBody),
+        });
+
+        if (insRes.ok) {
+          migrated += 1;
+        }
+      } catch {
+        // Ignore individual failures; continue migrating others
+        continue;
+      }
+    }
+
+    return json({ success: true, migrated, cleared: true });
+  } catch {
+    return json(
+      { success: false, message: "Failed to migrate bookmarks" },
+      { status: 500 }
+    );
+  }
+});
 
 // NEWSLETTER SUBSCRIBE / UNSUBSCRIBE (Worker-native, Supabase-backed)
 async function handleNewsletterSubscribe(req: Request, env: Env): Promise<Response> {
