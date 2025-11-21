@@ -17,14 +17,53 @@ interface LikeDislikeProps {
   initialTotals?: ReactionTotals | null;
 }
 
+type ReactionState = 'like' | 'dislike' | 'none';
+
 interface Stats {
+  // Totals as displayed to the user (baseline + dynamic)
   likes: number;
   dislikes: number;
+
+  // Dynamic counts excluding baseline
+  likesCount: number;
+  dislikesCount: number;
+
   baseStats: {
-    likes: number;
-    dislikes: number;
+    baselineLikes: number;
+    baselineDislikes: number;
+    totalsLikes: number;
+    totalsDislikes: number;
   };
+
   userInteracted: boolean;
+}
+
+function computeReactionDelta(prev: ReactionState, next: ReactionState) {
+  if (prev === next) return { deltaLikes: 0, deltaDislikes: 0 };
+
+  let deltaLikes = 0;
+  let deltaDislikes = 0;
+
+  if (prev === 'none') {
+    if (next === 'like') deltaLikes = 1;
+    else if (next === 'dislike') deltaDislikes = 1;
+  } else if (prev === 'like') {
+    if (next === 'none') {
+      deltaLikes = -1;
+    } else if (next === 'dislike') {
+      deltaLikes = -1;
+      deltaDislikes = 1;
+    }
+  } else if (prev === 'dislike') {
+    if (next === 'none') {
+      deltaDislikes = -1;
+    } else if (next === 'like') {
+      deltaLikes = 1;
+      deltaDislikes = -1;
+    }
+  }
+
+  return { deltaLikes, deltaDislikes };
 }
 
 const ACTION_THROTTLE_MS = 250;
@@ -45,7 +84,12 @@ function readLocalReaction(storageKey: string): 'like' | 'dislike' | 'none' {
   }
 }
 
-function writeLocalReaction(storageKey: string, state: 'like' | 'dislike' | 'none', stats: Stats) {
+function writeLocalReaction(
+  storageKey: string,
+  state: 'like' | 'dislike' | 'none',
+  stats: Stats,
+  _context?: { postId: number; slug?: string; source?: 'local' | 'wp' },
+) {
   try {
     localStorage.setItem(storageKey, JSON.stringify({ state, stats }));
   } catch {}
@@ -85,7 +129,14 @@ export function LikeDislike({
   const [stats, setStats] = useState<Stats>({
     likes: 0,
     dislikes: 0,
-    baseStats: { likes: 0, dislikes: 0 },
+    likesCount: 0,
+    dislikesCount: 0,
+    baseStats: {
+      baselineLikes: 0,
+      baselineDislikes: 0,
+      totalsLikes: 0,
+      totalsDislikes: 0,
+    },
     userInteracted: false,
   });
   const [reactionError, setReactionError] = useState(false);
@@ -122,17 +173,24 @@ export function LikeDislike({
           if (!mounted) return;
         }
 
-        let likes = Number(data?.totals?.likes ?? 0);
-        let dislikes = Number(data?.totals?.dislikes ?? 0);
-        let baseLikes = Number(data?.baselineLikes ?? 0);
-        let baseDislikes = Number(data?.baselineDislikes ?? 0);
+        const likes = Number(data?.totals?.likes ?? 0);
+        const dislikes = Number(data?.totals?.dislikes ?? 0);
+        const baseLikes = Number(data?.baselineLikes ?? 0);
+        const baseDislikes = Number(data?.baselineDislikes ?? 0);
+
+        const likesCount = Math.max(0, likes - baseLikes);
+        const dislikesCount = Math.max(0, dislikes - baseDislikes);
 
         const computedStats: Stats = {
           likes,
           dislikes,
+          likesCount,
+          dislikesCount,
           baseStats: {
-            likes: baseLikes,
-            dislikes: baseDislikes,
+            baselineLikes: baseLikes,
+            baselineDislikes: baseDislikes,
+            totalsLikes: likes,
+            totalsDislikes: dislikes,
           },
           userInteracted: false,
         };
@@ -150,16 +208,10 @@ export function LikeDislike({
         try {
           const detail = {
             postId,
-            baselineLikes: Number(computedStats.baseStats.likes || 0),
-            baselineDislikes: Number(computedStats.baseStats.dislikes || 0),
-            likesCount: Math.max(
-              0,
-              Number(computedStats.likes) - Number(computedStats.baseStats.likes || 0),
-            ),
-            dislikesCount: Math.max(
-              0,
-              Number(computedStats.dislikes) - Number(computedStats.baseStats.dislikes || 0),
-            ),
+            baselineLikes: Number(computedStats.baseStats.baselineLikes || 0),
+            baselineDislikes: Number(computedStats.baseStats.baselineDislikes || 0),
+            likesCount: Number(computedStats.likesCount || 0),
+            dislikesCount: Number(computedStats.dislikesCount || 0),
             totals: {
               likes: Number(computedStats.likes),
               dislikes: Number(computedStats.dislikes),
@@ -215,12 +267,19 @@ export function LikeDislike({
     const baseLikes = Number(data?.baselineLikes ?? 0);
     const baseDislikes = Number(data?.baselineDislikes ?? 0);
 
+    const likesCount = Math.max(0, likes - baseLikes);
+    const dislikesCount = Math.max(0, dislikes - baseDislikes);
+
     const newStats: Stats = {
       likes,
       dislikes,
+      likesCount,
+      dislikesCount,
       baseStats: {
-        likes: baseLikes,
-        dislikes: baseDislikes,
+        baselineLikes: baseLikes,
+        baselineDislikes: baseDislikes,
+        totalsLikes: likes,
+        totalsDislikes: dislikes,
       },
       userInteracted: true,
     };
@@ -238,8 +297,8 @@ export function LikeDislike({
             postId,
             baselineLikes: baseLikes,
             baselineDislikes: baseDislikes,
-            likesCount: Math.max(0, Number(likes) - Number(baseLikes)),
-            dislikesCount: Math.max(0, Number(dislikes) - Number(baseDislikes)),
+            likesCount,
+            dislikesCount,
             totals: { likes: Number(likes), dislikes: Number(dislikes) },
           },
         }),
@@ -252,10 +311,10 @@ export function LikeDislike({
   };
 
   const composeTotals = (s: Stats): import('@/api/reactions').ReactionTotals => {
-    const baseLikes = Number(s.baseStats.likes || 0);
-    const baseDislikes = Number(s.baseStats.dislikes || 0);
-    const totalsLikes = Number(s.likes);
-    const totalsDislikes = Number(s.dislikes);
+    const baseLikes = Number(s.baseStats.baselineLikes || 0);
+    const baseDislikes = Number(s.baseStats.baselineDislikes || 0);
+    const totalsLikes = Number(s.baseStats.totalsLikes || s.likes);
+    const totalsDislikes = Number(s.baseStats.totalsDislikes || s.dislikes);
     return {
       postId,
       baselineLikes: baseLikes,
@@ -276,78 +335,130 @@ export function LikeDislike({
     setIsPending(true);
     lastActionTsRef.current = now;
 
+    const prevState: ReactionState = liked ? 'like' : disliked ? 'dislike' : 'none';
     const nextLiked = !liked;
     const nextDisliked = nextLiked ? false : disliked;
-
-    // Optimistic UI update
-    const baseLikes = Number(stats.baseStats.likes || 0);
-    const baseDislikes = Number(stats.baseStats.dislikes || 0);
-    let likes = Number(stats.likes || baseLikes);
-    let dislikes = Number(stats.dislikes || baseDislikes);
-
-    if (!liked && !disliked && nextLiked) {
-      likes += 1;
-    } else if (disliked && nextLiked) {
-      dislikes = Math.max(0, dislikes - 1);
-      likes += 1;
-    } else if (liked && !nextLiked) {
-      likes = Math.max(0, likes - 1);
-    }
-
-    const optimistic: Stats = {
-      likes,
-      dislikes,
-      baseStats: { likes: baseLikes, dislikes: baseDislikes },
-      userInteracted: true,
-    };
+    const nextState: ReactionState = nextLiked ? 'like' : nextDisliked ? 'dislike' : 'none';
 
     setLiked(nextLiked);
     setDisliked(nextDisliked);
-    setStats(optimistic);
-    writeLocalReaction(
-      storageKey,
-      nextLiked ? 'like' : nextDisliked ? 'dislike' : 'none',
-      optimistic,
-    );
-    onUpdate?.(optimistic.likes, optimistic.dislikes);
-    try {
+    onLike?.(nextLiked);
+    onDislike?.(nextDisliked);
+
+    // Optimistic update
+    setStats((prev) => {
+      const current: Stats =
+        prev ||
+        ({
+          likes: 0,
+          dislikes: 0,
+          likesCount: 0,
+          dislikesCount: 0,
+          baseStats: {
+            baselineLikes: 0,
+            baselineDislikes: 0,
+            totalsLikes: 0,
+            totalsDislikes: 0,
+          },
+          userInteracted: false,
+        } as Stats);
+
+      const baseLikes = Number(current.baseStats.baselineLikes ?? 0);
+      const baseDislikes = Number(current.baseStats.baselineDislikes ?? 0);
+
+      const currentLikesCount =
+        current.likesCount ?? Math.max(0, current.likes - baseLikes);
+      const currentDislikesCount =
+        current.dislikesCount ?? Math.max(0, current.dislikes - baseDislikes);
+
+      const { deltaLikes, deltaDislikes } = computeReactionDelta(prevState, nextState);
+
+      const likesCount = Math.max(0, currentLikesCount + deltaLikes);
+      const dislikesCount = Math.max(0, currentDislikesCount + deltaDislikes);
+
+      const totalsLikes = baseLikes + likesCount;
+      const totalsDislikes = baseDislikes + dislikesCount;
+
+      const updated: Stats = {
+        likes: totalsLikes,
+        dislikes: totalsDislikes,
+        likesCount,
+        dislikesCount,
+        baseStats: {
+          baselineLikes: baseLikes,
+          baselineDislikes: baseDislikes,
+          totalsLikes,
+          totalsDislikes,
+        },
+        userInteracted: true,
+      };
+
+      writeLocalReaction(storageKey, nextState, updated, { postId, slug, source });
+      onUpdate?.(updated.likes, updated.dislikes);
+
       window.dispatchEvent(
-        new CustomEvent('reaction:updated', { detail: composeTotals(optimistic) }),
+        new CustomEvent('reaction:updated', {
+          detail: {
+            postId,
+            slug,
+            source,
+            totals: {
+              likes: totalsLikes,
+              dislikes: totalsDislikes,
+            },
+          },
+        }),
       );
-    } catch {}
 
-    // Immediate feedback before server sync
-    if (nextLiked) {
-      showInlineToast('Thanks for liking! 😘', 'like');
-      onLike?.(true);
-    } else {
-      onLike?.(false);
-    }
+      return updated;
+    });
 
-    // Server sync
     try {
-      const data = await submitReaction(postId, true);
-      applyServerTotals(data);
-      // onLike callback already handled
-    } catch (error) {
-      console.error(`[LikeDislike] Error handling like for post ${postId}:`, error);
-      // Roll back optimistic update on failure
-      showInlineToast('Failed to update like. Please try again.', 'error');
-      const prevState = readLocalReaction(storageKey);
-      // Recompute from previous local state
-      const prevLiked = prevState === 'like';
-      const prevDisliked = prevState === 'dislike';
-      setLiked(prevLiked);
-      setDisliked(prevDisliked);
-      // Force refetch of totals next time by marking error
-      setReactionError(true);
-      // Schedule a gentle refetch to reconcile totals
-      window.setTimeout(async () => {
-        try {
-          const data = await fetchReactions(postId);
-          applyServerTotals(data);
-        } catch {}
-      }, 800);
+      const data = await submitReaction(postId, true, { prevState, nextState });
+      const baseLikes = Number(data.baselineLikes ?? 0);
+      const baseDislikes = Number(data.baselineDislikes ?? 0);
+      const likesCount = Number(data.likesCount ?? 0);
+      const dislikesCount = Number(data.dislikesCount ?? 0);
+      const totalsLikes = Number(data.totals?.likes ?? baseLikes + likesCount);
+      const totalsDislikes = Number(
+        data.totals?.dislikes ?? baseDislikes + dislikesCount,
+      );
+
+      const synced: Stats = {
+        likes: totalsLikes,
+        dislikes: totalsDislikes,
+        likesCount,
+        dislikesCount,
+        baseStats: {
+          baselineLikes: baseLikes,
+          baselineDislikes: baseDislikes,
+          totalsLikes,
+          totalsDislikes,
+        },
+        userInteracted: true,
+      };
+
+      setStats(synced);
+      writeLocalReaction(storageKey, nextState, synced, { postId, slug, source });
+      onUpdate?.(synced.likes, synced.dislikes);
+
+      window.dispatchEvent(
+        new CustomEvent('reaction:updated', {
+          detail: {
+            postId,
+            slug,
+            source,
+            totals: {
+              likes: totalsLikes,
+              dislikes: totalsDislikes,
+            },
+          },
+        }),
+      );
+    } catch (err) {
+      console.error('Failed to submit like reaction:', err);
+      showInlineToast('Failed to record your like. Please try again.', 'error');
+      // Keep optimistic UI state; a later fetch will correct totals if needed
     } finally {
       isPendingRef.current = false;
       setIsPending(false);
@@ -361,79 +472,130 @@ export function LikeDislike({
     setIsPending(true);
     lastActionTsRef.current = now;
 
+    const prevState: ReactionState = liked ? 'like' : disliked ? 'dislike' : 'none';
     const nextDisliked = !disliked;
     const nextLiked = nextDisliked ? false : liked;
+    const nextState: ReactionState = nextLiked ? 'like' : nextDisliked ? 'dislike' : 'none';
 
-    // Optimistic UI update
-    const baseLikes = Number(stats.baseStats.likes || 0);
-    const baseDislikes = Number(stats.baseStats.dislikes || 0);
-    let likes = Number(stats.likes || baseLikes);
-    let dislikes = Number(stats.dislikes || baseDislikes);
-
-    if (!disliked && !liked && nextDisliked) {
-      dislikes += 1;
-    } else if (liked && nextDisliked) {
-      likes = Math.max(0, likes - 1);
-      dislikes += 1;
-    } else if (disliked && !nextDisliked) {
-      dislikes = Math.max(0, dislikes - 1);
-    }
-
-    const optimistic: Stats = {
-      likes,
-      dislikes,
-      baseStats: { likes: baseLikes, dislikes: baseDislikes },
-      userInteracted: true,
-    };
-
-    setDisliked(nextDisliked);
     setLiked(nextLiked);
-    setStats(optimistic);
-    writeLocalReaction(
-      storageKey,
-      nextDisliked ? 'dislike' : nextLiked ? 'like' : 'none',
-      optimistic,
-    );
-    onUpdate?.(optimistic.likes, optimistic.dislikes);
-    try {
+    setDisliked(nextDisliked);
+    onLike?.(nextLiked);
+    onDislike?.(nextDisliked);
+
+    // Optimistic update
+    setStats((prev) => {
+      const current: Stats =
+        prev ||
+        ({
+          likes: 0,
+          dislikes: 0,
+          likesCount: 0,
+          dislikesCount: 0,
+          baseStats: {
+            baselineLikes: 0,
+            baselineDislikes: 0,
+            totalsLikes: 0,
+            totalsDislikes: 0,
+          },
+          userInteracted: false,
+        } as Stats);
+
+      const baseLikes = Number(current.baseStats.baselineLikes ?? 0);
+      const baseDislikes = Number(current.baseStats.baselineDislikes ?? 0);
+
+      const currentLikesCount =
+        current.likesCount ?? Math.max(0, current.likes - baseLikes);
+      const currentDislikesCount =
+        current.dislikesCount ?? Math.max(0, current.dislikes - baseDislikes);
+
+      const { deltaLikes, deltaDislikes } = computeReactionDelta(prevState, nextState);
+
+      const likesCount = Math.max(0, currentLikesCount + deltaLikes);
+      const dislikesCount = Math.max(0, currentDislikesCount + deltaDislikes);
+
+      const totalsLikes = baseLikes + likesCount;
+      const totalsDislikes = baseDislikes + dislikesCount;
+
+      const updated: Stats = {
+        likes: totalsLikes,
+        dislikes: totalsDislikes,
+        likesCount,
+        dislikesCount,
+        baseStats: {
+          baselineLikes: baseLikes,
+          baselineDislikes: baseDislikes,
+          totalsLikes,
+          totalsDislikes,
+        },
+        userInteracted: true,
+      };
+
+      writeLocalReaction(storageKey, nextState, updated, { postId, slug, source });
+      onUpdate?.(updated.likes, updated.dislikes);
+
       window.dispatchEvent(
-        new CustomEvent('reaction:updated', { detail: composeTotals(optimistic) }),
+        new CustomEvent('reaction:updated', {
+          detail: {
+            postId,
+            slug,
+            source,
+            totals: {
+              likes: totalsLikes,
+              dislikes: totalsDislikes,
+            },
+          },
+        }),
       );
-    } catch {}
 
-    // Immediate feedback before server sync
-    if (nextDisliked) {
-      showInlineToast('Thanks for the feedback! 😔', 'dislike');
-      onDislike?.(true);
-    } else {
-      onDislike?.(false);
-    }
+      return updated;
+    });
 
-    // Server sync
     try {
-      const data = await submitReaction(postId, false);
+      const data = await submitReaction(postId, false, { prevState, nextState });
+      const baseLikes = Number(data.baselineLikes ?? 0);
+      const baseDislikes = Number(data.baselineDislikes ?? 0);
+      const likesCount = Number(data.likesCount ?? 0);
+      const dislikesCount = Number(data.dislikesCount ?? 0);
+      const totalsLikes = Number(data.totals?.likes ?? baseLikes + likesCount);
+      const totalsDislikes = Number(
+        data.totals?.dislikes ?? baseDislikes + dislikesCount,
+      );
 
-      setDisliked(nextDisliked);
-      setLiked(nextLiked);
-      applyServerTotals(data);
-      // onDislike callback already handled
-    } catch (error) {
-      console.error(`[LikeDislike] Error handling dislike for post ${postId}:`, error);
-      // Roll back optimistic update on failure
-      showInlineToast('Failed to update dislike. Please try again.', 'error');
-      const prevState = readLocalReaction(storageKey);
-      const prevLiked = prevState === 'like';
-      const prevDisliked = prevState === 'dislike';
-      setLiked(prevLiked);
-      setDisliked(prevDisliked);
-      setReactionError(true);
-      // Schedule a gentle refetch to reconcile totals
-      window.setTimeout(async () => {
-        try {
-          const data = await fetchReactions(postId);
-          applyServerTotals(data);
-        } catch {}
-      }, 800);
+      const synced: Stats = {
+        likes: totalsLikes,
+        dislikes: totalsDislikes,
+        likesCount,
+        dislikesCount,
+        baseStats: {
+          baselineLikes: baseLikes,
+          baselineDislikes: baseDislikes,
+          totalsLikes,
+          totalsDislikes,
+        },
+        userInteracted: true,
+      };
+
+      setStats(synced);
+      writeLocalReaction(storageKey, nextState, synced, { postId, slug, source });
+      onUpdate?.(synced.likes, synced.dislikes);
+
+      window.dispatchEvent(
+        new CustomEvent('reaction:updated', {
+          detail: {
+            postId,
+            slug,
+            source,
+            totals: {
+              likes: totalsLikes,
+              dislikes: totalsDislikes,
+            },
+          },
+        }),
+      );
+    } catch (err) {
+      console.error('Failed to submit dislike reaction:', err);
+      showInlineToast('Failed to record your dislike. Please try again.', 'error');
+      // Keep optimistic UI state; a later fetch will correct totals if needed
     } finally {
       isPendingRef.current = false;
       setIsPending(false);

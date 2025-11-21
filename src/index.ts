@@ -2857,6 +2857,811 @@ router.get("/api/posts/community", async (req: Request, env: Env) => {
   }
 });
 
+// Reactions: Supabase-backed Worker endpoints with legacy fallback
+
+type ReactionState = "like" | "dislike" | "none";
+
+function parseReactionState(value: any): ReactionState {
+  if (value === "like" || value === "dislike") return value;
+  return "none";
+}
+
+function computeReactionDelta(
+  prev: ReactionState,
+  next: ReactionState
+): {
+  deltaLikes: number;
+  deltaDislikes: number;
+} {
+  if (prev === next) return { deltaLikes: 0, deltaDislikes: 0 };
+  let deltaLikes = 0;
+  let deltaDislikes = 0;
+
+  if (prev === "none") {
+    if (next === "like") deltaLikes = 1;
+    else if (next === "dislike") deltaDislikes = 1;
+  } else if (prev === "like") {
+    if (next === "none") {
+      deltaLikes = -1;
+    } else if (next === "dislike") {
+      deltaLikes = -1;
+      deltaDislikes = 1;
+    }
+  } else if (prev === "dislike") {
+    if (next === "none") {
+      deltaDislikes = -1;
+    } else if (next === "like") {
+      deltaLikes = 1;
+      deltaDislikes = -1;
+    }
+  }
+
+  return { deltaLikes, deltaDislikes };
+}
+
+// GET /api/posts/:id/reactions - single post reaction totals
+router.get("/api/posts/:id/reactions", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  try {
+    const urlObj = new URL(req.url);
+    const segments = urlObj.pathname.split("/");
+    const idSegment =
+      segments.length >= 2 ? segments[segments.length - 2] : "";
+    const rawId = parseInt(decodeURIComponent(idSegment || ""), 10);
+    if (!Number.isFinite(rawId) || rawId <= 0) {
+      return json({ error: "Invalid post id" }, { status: 400 });
+    }
+
+    const summaries = await buildPostSummaries(env, [rawId]);
+    if (!summaries.length) {
+      return json({ error: "Post not found" }, { status: 404 });
+    }
+
+    const s = summaries[0] as any;
+    const reactions = s.reactions || {};
+    const baselineLikes = Number(reactions.baselineLikes ?? 0);
+    const baselineDislikes = Number(reactions.baselineDislikes ?? 0);
+    const likesCount = Number(reactions.likesCount ?? 0);
+    const dislikesCount = Number(reactions.dislikesCount ?? 0);
+
+    return json({
+      postId: Number(s.localPostId ?? s.id ?? rawId),
+      baselineLikes,
+      baselineDislikes,
+      likesCount,
+      dislikesCount,
+      totals: {
+        likes: baselineLikes + likesCount,
+        dislikes: baselineDislikes + dislikesCount,
+      },
+    });
+  } catch {
+    return proxyToBackend(req, env);
+  }
+});
+
+// GET /api/posts/reactions-batch?ids=1,2,3
+router.get("/api/posts/reactions-batch", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  try {
+    const urlObj = new URL(req.url);
+    const search = urlObj.searchParams;
+    const rawParams = [
+      ...search.getAll("ids"),
+      ...search.getAll("id"),
+    ];
+    const joined = rawParams.length ? rawParams.join(",") : "";
+    const list = joined
+      .split(",")
+      .map((s) => Number(s.trim()))
+      .filter((n) => Number.isFinite(n) && n > 0);
+
+    const ids = Array.from(new Set(list));
+    if (!ids.length) {
+      return json({ results: [] });
+    }
+
+    const summaries = await buildPostSummaries(env, ids);
+    const results = summaries.map((s: any) => {
+      const reactions = s.reactions || {};
+      const baselineLikes = Number(reactions.baselineLikes ?? 0);
+      const baselineDislikes = Number(reactions.baselineDislikes ?? 0);
+      const likesCount = Number(reactions.likesCount ?? 0);
+      const dislikesCount = Number(reactions.dislikesCount ?? 0);
+      const localId = Number(s.localPostId ?? s.id ?? 0);
+
+      return {
+        postId: localId,
+        baselineLikes,
+        baselineDislikes,
+        likesCount,
+        dislikesCount,
+        totals: {
+          likes: baselineLikes + likesCount,
+          dislikes: baselineDislikes + dislikesCount,
+        },
+      };
+    });
+
+    return json({ results });
+  } catch {
+    return proxyToBackend(req, env);
+  }
+});
+
+// POST /api/posts/:id/reaction - update aggregate reaction counters
+router.post("/api/posts/:id/reaction", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  try {
+    const urlObj = new URL(req.url);
+    const segments = urlObj.pathname.split("/");
+    const idSegment =
+      segments.length >= 2 ? segments[segments.length - 2] : "";
+    const rawId = parseInt(decodeURIComponent(idSegment || ""), 10);
+    if (!Number.isFinite(rawId) || rawId <= 0) {
+      return json({ error: "Invalid post id" }, { status: 400 });
+    }
+
+    const body = (await (req as any).json?.()) || {};
+    const isLike = Boolean((body as any).isLike);
+    const prevState = parseReactionState((body as any).prevState);
+    const hasExplicitNextState =
+      body && Object.prototype.hasOwnProperty.call(body, "nextState");
+    let nextState = parseReactionState((body as any).nextState);
+
+    // For legacy callers that don't send nextState, derive it from isLike.
+    // If nextState is provided (including "none"), respect it.
+    if (!hasExplicitNextState) {
+      nextState = isLike ? "like" : "dislike";
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceHeaders: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+      Accept: "application/json",
+    };
+
+    const localPostId = await resolveLocalPostIdFromExternal(env, rawId);
+    if (!Number.isFinite(localPostId || NaN)) {
+      return json({ error: "Post not found" }, { status: 404 });
+    }
+    const postId = Number(localPostId);
+
+    const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
+    postsUrl.searchParams.set(
+      "select",
+      "id,baseline_likes,baseline_dislikes,likes_count,dislikes_count"
+    );
+    postsUrl.searchParams.set("id", `eq.${postId}`);
+    postsUrl.searchParams.set("limit", "1");
+
+    const res = await fetch(postsUrl.toString(), { headers: serviceHeaders });
+    if (!res.ok) {
+      return json({ error: "Failed to update reaction" }, { status: 500 });
+    }
+    const rows = (await res.json().catch(() => [])) as any[];
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return json({ error: "Post not found" }, { status: 404 });
+    }
+
+    const row = rows[0] as any;
+    const baselineLikes = Number(row.baseline_likes ?? row.baselineLikes ?? 0);
+    const baselineDislikes = Number(
+      row.baseline_dislikes ?? row.baselineDislikes ?? 0
+    );
+    const currentLikesCount = Number(
+      row.likes_count ?? row.likesCount ?? 0
+    );
+    const currentDislikesCount = Number(
+      row.dislikes_count ?? row.dislikesCount ?? 0
+    );
+
+    const { deltaLikes, deltaDislikes } = computeReactionDelta(
+      prevState,
+      nextState
+    );
+    const newLikesCount = Math.max(0, currentLikesCount + deltaLikes);
+    const newDislikesCount = Math.max(
+      0,
+      currentDislikesCount + deltaDislikes
+    );
+
+    let finalLikesCount = newLikesCount;
+    let finalDislikesCount = newDislikesCount;
+
+    try {
+      const updateUrl = new URL(`${baseUrl}/rest/v1/posts`);
+      updateUrl.searchParams.set("id", `eq.${postId}`);
+
+      const updateRes = await fetch(updateUrl.toString(), {
+        method: "PATCH",
+        headers: {
+          ...serviceHeaders,
+          "Content-Type": "application/json",
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify({
+          likes_count: newLikesCount,
+          dislikes_count: newDislikesCount,
+        }),
+      });
+
+      if (updateRes.ok) {
+        const updatedRows = (await updateRes.json().catch(() => [])) as any[];
+        if (Array.isArray(updatedRows) && updatedRows.length > 0) {
+          const updated = updatedRows[0] as any;
+          finalLikesCount = Number(
+            updated.likes_count ?? updated.likesCount ?? newLikesCount
+          );
+          finalDislikesCount = Number(
+            updated.dislikes_count ??
+              updated.dislikesCount ??
+              newDislikesCount
+          );
+        }
+      }
+    } catch {
+      // best-effort; fall back to optimistic values on error
+    }
+
+    const totalsLikes = baselineLikes + finalLikesCount;
+    const totalsDislikes = baselineDislikes + finalDislikesCount;
+
+    return json({
+      postId,
+      baselineLikes,
+      baselineDislikes,
+      likesCount: finalLikesCount,
+      dislikesCount: finalDislikesCount,
+      totals: {
+        likes: totalsLikes,
+        dislikes: totalsDislikes,
+      },
+    });
+  } catch {
+    return proxyToBackend(req, env);
+  }
+});
+
+// Comments: Supabase-backed list/create/flag with legacy fallback
+
+function parseCookies(header: string | null): Record<string, string> {
+  const result: Record<string, string> = {};
+  if (!header) return result;
+  try {
+    const parts = header.split(";");
+    for (const part of parts) {
+      const [name, ...rest] = part.split("=");
+      const key = name.trim();
+      if (!key) continue;
+      const value = rest.join("=").trim();
+      if (!value) continue;
+      result[key] = decodeURIComponent(value);
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return result;
+}
+
+function getAnonCommentIdFromCookie(header: string | null): string | null {
+  const cookies = parseCookies(header);
+  return cookies["anon_comment_id"] || null;
+}
+
+function makeAnonCommentId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `${Date.now().toString(36)}-${Math.random()
+      .toString(36)
+      .slice(2)}`;
+  }
+}
+
+// GET /api/posts/:postId/comments - list comments for a post
+router.get(
+  "/api/posts/:postId/comments",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
+    }
+
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.split("/");
+      const idSegment =
+        segments.length >= 2 ? segments[segments.length - 2] : "";
+      const rawPostId = parseInt(
+        decodeURIComponent(idSegment || ""),
+        10
+      );
+      if (!Number.isFinite(rawPostId) || rawPostId <= 0) {
+        return json({ error: "Invalid post id" }, { status: 400 });
+      }
+
+      const localPostId = await resolveLocalPostIdFromExternal(
+        env,
+        rawPostId
+      );
+      if (!Number.isFinite(localPostId || NaN)) {
+        return json([]);
+      }
+
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const headers: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+        Accept: "application/json",
+      };
+
+      const commentsUrl = new URL(`${baseUrl}/rest/v1/comments`);
+      commentsUrl.searchParams.set(
+        "select",
+        "id,content,post_id,user_id,is_approved,edited,edited_at,metadata,created_at,parent_id"
+      );
+      commentsUrl.searchParams.set(
+        "post_id",
+        `eq.${Number(localPostId)}`
+      );
+      commentsUrl.searchParams.set("order", "created_at.desc");
+      commentsUrl.searchParams.set("limit", "500");
+
+      const res = await fetch(commentsUrl.toString(), { headers });
+      if (res.status === 401 || res.status === 403) {
+        return proxyToBackend(req, env);
+      }
+      if (!res.ok) {
+        return json(
+          { error: "Failed to fetch comments" },
+          { status: 500 }
+        );
+      }
+
+      const rows = (await res.json().catch(() => [])) as any[];
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return json([]);
+      }
+
+      let userKey: string | null = null;
+      const token = getBearerToken(req);
+      if (token) {
+        const userId = await getSupabaseUserIdFromJwt(env, token);
+        if (Number.isFinite(userId || NaN)) {
+          userKey = String(userId);
+        }
+      }
+      if (!userKey) {
+        const cookieHeader =
+          req.headers.get("Cookie") || req.headers.get("cookie") || "";
+        const anonId = getAnonCommentIdFromCookie(cookieHeader);
+        if (anonId) {
+          userKey = `anon:${anonId}`;
+        }
+      }
+
+      const enhanced = rows.map((row: any) => {
+        let metadata = row.metadata;
+        if (metadata && typeof metadata === "string") {
+          try {
+            metadata = JSON.parse(metadata);
+          } catch {
+            metadata = {};
+          }
+        }
+        if (!metadata || typeof metadata !== "object") {
+          metadata = {};
+        }
+        const meta = metadata as any;
+
+        const baseApproved =
+          (row as any).approved === undefined
+            ? Boolean(row.is_approved)
+            : Boolean((row as any).approved);
+        const ownerKey =
+          meta && meta.ownerKey != null ? String(meta.ownerKey) : null;
+        const isOwner =
+          !!userKey && !!ownerKey && String(ownerKey) === userKey;
+        const uxApproved = baseApproved || isOwner;
+
+        const author =
+          (meta && meta.author) ||
+          (meta && meta.name) ||
+          "Guest";
+
+        return {
+          id: row.id,
+          content: row.content ?? "",
+          createdAt: row.created_at,
+          metadata: {
+            ...meta,
+            author,
+          },
+          is_approved: row.is_approved === true,
+          approved: uxApproved,
+          parentId:
+            row.parent_id != null
+              ? Number(row.parent_id)
+              : null,
+          isOwner,
+        };
+      });
+
+      return json(enhanced);
+    } catch {
+      return proxyToBackend(req, env);
+    }
+  }
+);
+
+// POST /api/posts/:postId/comments - create a new comment or reply
+router.post(
+  "/api/posts/:postId/comments",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
+    }
+
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.split("/");
+      const idSegment =
+        segments.length >= 2 ? segments[segments.length - 2] : "";
+      const rawPostId = parseInt(
+        decodeURIComponent(idSegment || ""),
+        10
+      );
+      if (!Number.isFinite(rawPostId) || rawPostId <= 0) {
+        return json({ error: "Invalid post id" }, { status: 400 });
+      }
+
+      const body = (await (req as any).json?.()) || {};
+      const rawContent =
+        typeof body.content === "string" ? body.content : "";
+      const content = rawContent.trim();
+      if (!content) {
+        return json(
+          { error: "Content is required" },
+          { status: 400 }
+        );
+      }
+
+      const localPostId = await resolveLocalPostIdFromExternal(
+        env,
+        rawPostId
+      );
+      if (!Number.isFinite(localPostId || NaN)) {
+        return json({ error: "Post not found" }, { status: 404 });
+      }
+
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const headers: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      };
+
+      const token = getBearerToken(req);
+      let userId: number | null = null;
+      if (token) {
+        const uid = await getSupabaseUserIdFromJwt(env, token);
+        if (Number.isFinite(uid || NaN)) {
+          userId = Number(uid);
+        }
+      }
+
+      const cookieHeader =
+        req.headers.get("Cookie") || req.headers.get("cookie") || "";
+      let anonId = getAnonCommentIdFromCookie(cookieHeader);
+      let setAnonCookie = false;
+      if (!userId) {
+        if (!anonId) {
+          anonId = makeAnonCommentId();
+          setAnonCookie = true;
+        }
+      }
+
+      const userKey =
+        userId != null && Number.isFinite(userId)
+          ? String(userId)
+          : `anon:${anonId}`;
+
+      const authorFromBody =
+        typeof body.author === "string" ? body.author.trim() : "";
+      const author =
+        authorFromBody ||
+        (userId != null ? "User" : "Guest");
+
+      const needsModeration = Boolean(body.needsModeration === true);
+      const moderationStatus = String(
+        body.moderationStatus || ""
+      ).toLowerCase();
+      const holdForReview =
+        needsModeration ||
+        moderationStatus === "flagged" ||
+        moderationStatus === "under_review";
+
+      const isApproved = !holdForReview;
+
+      const selectionStart =
+        typeof body.selectionStart === "number"
+          ? body.selectionStart
+          : Number.isFinite(Number(body.selectionStart))
+          ? Number(body.selectionStart)
+          : undefined;
+      const selectionEnd =
+        typeof body.selectionEnd === "number"
+          ? body.selectionEnd
+          : Number.isFinite(Number(body.selectionEnd))
+          ? Number(body.selectionEnd)
+          : undefined;
+      const anchorParagraphIndex =
+        typeof body.anchorParagraphIndex === "number"
+          ? body.anchorParagraphIndex
+          : Number.isFinite(Number(body.anchorParagraphIndex))
+          ? Number(body.anchorParagraphIndex)
+          : undefined;
+      const selectionText =
+        typeof body.selectionText === "string"
+          ? body.selectionText
+          : undefined;
+
+      const metadata: any = {
+        author,
+        isAnonymous: !userId,
+        moderated: holdForReview,
+        originalContent: content,
+        replyCount: 0,
+        ownerKey: userKey,
+      };
+
+      if (
+        selectionText &&
+        selectionStart != null &&
+        selectionEnd != null
+      ) {
+        metadata.selectionAnchor = {
+          startOffset: Number(selectionStart),
+          endOffset: Number(selectionEnd),
+          paragraphIndex:
+            anchorParagraphIndex != null
+              ? Number(anchorParagraphIndex)
+              : undefined,
+          text: selectionText,
+        };
+      }
+
+      const parentIdRaw = (body as any).parentId;
+      const parentId =
+        typeof parentIdRaw === "number"
+          ? parentIdRaw
+          : Number.isFinite(Number(parentIdRaw))
+          ? Number(parentIdRaw)
+          : null;
+
+      const insertBody: Record<string, any> = {
+        post_id: Number(localPostId),
+        user_id:
+          userId != null && Number.isFinite(userId) ? userId : null,
+        content,
+        parent_id: parentId,
+        is_approved: isApproved,
+        metadata,
+        created_at: new Date().toISOString(),
+      };
+
+      const insertRes = await fetch(
+        `${baseUrl}/rest/v1/comments`,
+        {
+          method: "POST",
+          headers: {
+            ...headers,
+            Prefer: "return=representation",
+          },
+          body: JSON.stringify(insertBody),
+        }
+      );
+
+      if (insertRes.status === 401 || insertRes.status === 403) {
+        return proxyToBackend(req, env);
+      }
+      if (!insertRes.ok) {
+        return json(
+          { error: "Failed to create comment" },
+          { status: 500 }
+        );
+      }
+
+      const rows = (await insertRes.json().catch(() => [])) as any[];
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return json(
+          { error: "Failed to create comment" },
+          { status: 500 }
+        );
+      }
+
+      const row = rows[0] as any;
+      let metaOut = row.metadata;
+      if (metaOut && typeof metaOut === "string") {
+        try {
+          metaOut = JSON.parse(metaOut);
+        } catch {
+          metaOut = {};
+        }
+      }
+      if (!metaOut || typeof metaOut !== "object") {
+        metaOut = {};
+      }
+
+      const baseApproved = row.is_approved === true;
+      const approved = baseApproved || true;
+
+      const responseComment = {
+        id: row.id,
+        content: row.content ?? content,
+        createdAt: row.created_at ?? insertBody.created_at,
+        metadata: metaOut,
+        is_approved: row.is_approved === true,
+        approved,
+        parentId:
+          row.parent_id != null
+            ? Number(row.parent_id)
+            : insertBody.parent_id,
+        isOwner: true,
+      };
+
+      const headersInit: Record<string, string> = {};
+      if (setAnonCookie && !userId && anonId) {
+        headersInit["Set-Cookie"] =
+          `anon_comment_id=${encodeURIComponent(
+            anonId
+          )}; Path=/; Max-Age=31536000; SameSite=Lax`;
+      }
+
+      return json(responseComment, {
+        status: 201,
+        headers: headersInit,
+      });
+    } catch {
+      return proxyToBackend(req, env);
+    }
+  }
+);
+
+// POST /api/comments/:id/flag - flag a comment for moderation
+router.post(
+  "/api/comments/:id/flag",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
+    }
+
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.split("/");
+      const idSegment =
+        segments.length >= 2 ? segments[segments.length - 2] : "";
+      const commentId = parseInt(
+        decodeURIComponent(idSegment || ""),
+        10
+      );
+      if (!Number.isFinite(commentId) || commentId <= 0) {
+        return json({ error: "Invalid comment id" }, { status: 400 });
+      }
+
+      const body = (await (req as any).json?.()) || {};
+      const reason =
+        typeof body.reason === "string" && body.reason.trim().length > 0
+          ? body.reason.trim()
+          : "inappropriate content";
+
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const headers: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+        Accept: "application/json",
+      };
+
+      const getUrl = new URL(`${baseUrl}/rest/v1/comments`);
+      getUrl.searchParams.set("select", "id,metadata");
+      getUrl.searchParams.set("id", `eq.${commentId}`);
+      getUrl.searchParams.set("limit", "1");
+
+      const res = await fetch(getUrl.toString(), { headers });
+      if (res.status === 401 || res.status === 403) {
+        return proxyToBackend(req, env);
+      }
+      if (!res.ok) {
+        return json(
+          { error: "Failed to flag comment" },
+          { status: 500 }
+        );
+      }
+
+      const rows = (await res.json().catch(() => [])) as any[];
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return json(
+          { error: "Comment not found" },
+          { status: 404 }
+        );
+      }
+
+      let metadata = rows[0].metadata;
+      if (metadata && typeof metadata === "string") {
+        try {
+          metadata = JSON.parse(metadata);
+        } catch {
+          metadata = {};
+        }
+      }
+      if (!metadata || typeof metadata !== "object") {
+        metadata = {};
+      }
+
+      const token = getBearerToken(req);
+      let userKey: string | null = null;
+      if (token) {
+        const userId = await getSupabaseUserIdFromJwt(env, token);
+        if (Number.isFinite(userId || NaN)) {
+          userKey = String(userId);
+        }
+      }
+      if (!userKey) {
+        const cookieHeader =
+          req.headers.get("Cookie") || req.headers.get("cookie") || "";
+        const anonId = getAnonCommentIdFromCookie(cookieHeader);
+        userKey = anonId ? `anon:${anonId}` : "anon";
+      }
+
+      const updatedMeta = {
+        ...(metadata as any),
+        status: "flagged",
+        flaggedAt: new Date().toISOString(),
+        flaggedBy: userKey,
+        flagReason: reason,
+      };
+
+      const updateUrl = new URL(`${baseUrl}/rest/v1/comments`);
+      updateUrl.searchParams.set("id", `eq.${commentId}`);
+
+      const updRes = await fetch(updateUrl.toString(), {
+        method: "PATCH",
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({ metadata: updatedMeta }),
+      });
+
+      if (updRes.status === 401 || updRes.status === 403) {
+        return proxyToBackend(req, env);
+      }
+      if (!updRes.ok) {
+        return json(
+          { error: "Failed to flag comment" },
+          { status: 500 }
+        );
+      }
+
+      return json({ success: true });
+    } catch {
+      return proxyToBackend(req, env);
+    }
+  }
+);
+
 router.get("/api/trending-stories", async (_req: Request, env: Env) => {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return json({ posts: [] });
