@@ -538,7 +538,9 @@ router.get("/api/wordpress/posts", async (req: Request, env: Env) => {
     if (search) params.set("search", search.trim());
     if (fields) params.set("_fields", fields.trim());
 
-    const wpBase = env.WORDPRESS_API || "https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts";
+    const wpBase =
+      env.WORDPRESS_API ||
+      "https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts";
     const wpUrl = `${wpBase}?${params.toString()}`;
 
     const wpRes = await fetch(wpUrl);
@@ -579,6 +581,157 @@ router.get("/api/wordpress/posts", async (req: Request, env: Env) => {
         success: false,
         message: `Error fetching WordPress posts`,
       },
+      { status: 500 }
+    );
+  }
+});
+
+// READING PROGRESS: Supabase-backed (JWT + RLS), Worker-native
+
+// GET /api/reading-progress/history - full reading history for current user
+router.get("/api/reading-progress/history", async (req: Request, env: Env) => {
+  try {
+    const authHeader =
+      req.headers.get("Authorization") || req.headers.get("authorization") || "";
+    if (!authHeader.toLowerCase().startsWith("bearer ")) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+    const token = authHeader.slice(7).trim();
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
+    }
+
+    const url = `${env.SUPABASE_URL}/rest/v1/reading_progress?select=post_id,progress,last_read_at,user_id&order=last_read_at.desc&limit=500`;
+    const res = await fetch(url, {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      return json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!res.ok) {
+      return json(
+        { error: "Failed to fetch reading history" },
+        { status: 500 }
+      );
+    }
+
+    const rows = (await res.json().catch(() => [])) as any;
+    if (!Array.isArray(rows)) {
+      return json({ history: [] });
+    }
+    return json({ history: rows });
+  } catch (error) {
+    return json(
+      { error: "Failed to fetch reading history" },
+      { status: 500 }
+    );
+  }
+});
+
+// GET /api/reading-progress/:slug - latest progress for current user
+router.get("/api/reading-progress/:slug", async (req: Request, env: Env) => {
+  try {
+    const authHeader =
+      req.headers.get("Authorization") || req.headers.get("authorization") || "";
+    if (!authHeader.toLowerCase().startsWith("bearer ")) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+    const token = authHeader.slice(7).trim();
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
+    }
+
+    const urlObj = new URL(req.url);
+    const segments = urlObj.pathname.split("/");
+    const slug = decodeURIComponent(segments[segments.length - 1] || "").trim();
+    if (!slug) {
+      return json({ error: "slug is required" }, { status: 400 });
+    }
+
+    // Resolve post id by slug
+    const postsUrl = `${env.SUPABASE_URL}/rest/v1/posts?select=id&slug=eq.${encodeURIComponent(
+      slug
+    )}&limit=1`;
+    const postsRes = await fetch(postsUrl, {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (postsRes.status === 401 || postsRes.status === 403) {
+      return json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!postsRes.ok) {
+      return json(
+        { error: "Failed to resolve post" },
+        { status: 500 }
+      );
+    }
+
+    const posts = (await postsRes.json().catch(() => [])) as any[];
+    if (!Array.isArray(posts) || posts.length === 0 || posts[0]?.id == null) {
+      return json({ error: "Post not found" }, { status: 404 });
+    }
+    const postId = Number(posts[0].id);
+    if (!Number.isFinite(postId)) {
+      return json({ error: "Post not found" }, { status: 404 });
+    }
+
+    // Fetch latest reading progress for this post (RLS restricts to current user)
+    const progressUrl = `${env.SUPABASE_URL}/rest/v1/reading_progress?select=post_id,progress,last_read_at,user_id&post_id=eq.${postId}&order=last_read_at.desc&limit=1`;
+    const progRes = await fetch(progressUrl, {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (progRes.status === 401 || progRes.status === 403) {
+      return json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!progRes.ok) {
+      return json(
+        { error: "Failed to fetch reading progress" },
+        { status: 500 }
+      );
+    }
+
+    const rows = (await progRes.json().catch(() => [])) as any[];
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return json({ progress: null });
+    }
+
+    const row = rows[0] as any;
+    const percentCompleted = Number(row.progress);
+    const lastReadAt = row.last_read_at;
+
+    return json({
+      progress: {
+        postId,
+        userId: row.user_id != null ? Number(row.user_id) : undefined,
+        percentCompleted: Number.isFinite(percentCompleted)
+          ? percentCompleted
+          : 0,
+        lastReadAt,
+      },
+    });
+  } catch (error) {
+    return json(
+      { error: "Failed to fetch reading progress" },
       { status: 500 }
     );
   }
