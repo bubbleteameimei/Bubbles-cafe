@@ -2592,13 +2592,240 @@ router.get("/api/posts/summary", async (req: Request, env: Env) => {
   }
 });
 
-// POSTS listing/community: still proxied to backend for now (full-featured API)
+// POSTS listing/community: Supabase-backed for read operations with backend fallback
+
+function mapSupabasePostRowToPost(row: any): any {
+  const content = typeof row.content === "string" ? row.content : "";
+  const metadata =
+    row.metadata && typeof row.metadata === "object" ? row.metadata : {};
+
+  const readingTimeMinutesValue =
+    row.reading_time_minutes != null
+      ? Number(row.reading_time_minutes)
+      : Math.max(
+          1,
+          Math.ceil(
+            content
+              .split(/\s+/)
+              .filter((w: string) => w.length > 0).length / 200
+          )
+        );
+
+  const likesCount = Number(row.likes_count ?? row.likesCount ?? 0);
+  const dislikesCount = Number(row.dislikes_count ?? row.dislikesCount ?? 0);
+  const baselineLikes = Number(
+    row.baseline_likes ?? row.baselineLikes ?? 0
+  );
+  const baselineDislikes = Number(
+    row.baseline_dislikes ?? row.baselineDislikes ?? 0
+  );
+
+  const themeCategory =
+    row.theme_category ??
+    (metadata as any)?.themeCategory ??
+    null;
+
+  return {
+    id: Number(row.id),
+    title: row.title ?? "",
+    content,
+    slug: row.slug ?? "",
+    excerpt: row.excerpt ?? null,
+    authorId: row.author_id != null ? Number(row.author_id) : undefined,
+    isSecret: Boolean(row.is_secret),
+    isAdminPost:
+      typeof row.isAdminPost === "boolean"
+        ? row.isAdminPost
+        : (metadata as any)?.isAdminPost ?? null,
+    matureContent: Boolean(row.mature_content),
+    themeCategory,
+    readingTimeMinutes: readingTimeMinutesValue,
+    likesCount,
+    dislikesCount,
+    baselineLikes,
+    baselineDislikes,
+    metadata,
+    createdAt: row.created_at ?? new Date().toISOString(),
+  };
+}
+
+async function fetchSupabasePosts(env: Env): Promise<any[]> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return [];
+  }
+
+  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+  const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
+  postsUrl.searchParams.set(
+    "select",
+    "id,title,content,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at"
+  );
+  postsUrl.searchParams.set("order", "created_at.desc");
+  postsUrl.searchParams.set("limit", "1000");
+
+  const res = await fetch(postsUrl.toString(), {
+    headers: {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+      Accept: "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch posts from Supabase");
+  }
+
+  const rows = (await res.json().catch(() => [])) as any[];
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+
+  return rows.map(mapSupabasePostRowToPost);
+}
+
 router.get("/api/posts", async (req: Request, env: Env) => {
-  return proxyToBackend(req, env);
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  try {
+    const urlObj = new URL(req.url);
+    const search = urlObj.searchParams;
+    const pageParam = Number(search.get("page") || "1");
+    const limitParam = Number(search.get("limit") || "16");
+
+    const page =
+      Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+    const limitRaw =
+      Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 16;
+    const limit = Math.max(1, Math.min(limitRaw, 100));
+
+    const category = (search.get("category") || "").trim();
+    const searchTerm = (search.get("search") || "").trim().toLowerCase();
+
+    const allPosts = await fetchSupabasePosts(env);
+    if (!allPosts.length) {
+      return json({ posts: [], hasMore: false });
+    }
+
+    let filtered = allPosts;
+
+    if (category) {
+      const catLower = category.toLowerCase();
+      filtered = filtered.filter((post) => {
+        const meta =
+          post.metadata && typeof post.metadata === "object"
+            ? post.metadata
+            : {};
+        const theme = String(
+          post.themeCategory ||
+            (meta as any).themeCategory ||
+            ""
+        ).toLowerCase();
+        return theme === catLower;
+      });
+    }
+
+    if (searchTerm) {
+      filtered = filtered.filter((post) => {
+        const title = String(post.title || "").toLowerCase();
+        const excerpt = String(post.excerpt || "").toLowerCase();
+        const content = String(post.content || "").toLowerCase();
+        return (
+          title.includes(searchTerm) ||
+          excerpt.includes(searchTerm) ||
+          content.includes(searchTerm)
+        );
+      });
+    }
+
+    const total = filtered.length;
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const pageItems =
+      start < total ? filtered.slice(start, end) : [];
+    const hasMore = end < total;
+
+    return json({ posts: pageItems, hasMore });
+  } catch {
+    return proxyToBackend(req, env);
+  }
 });
 
 router.get("/api/posts/community", async (req: Request, env: Env) => {
-  return proxyToBackend(req, env);
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  try {
+    const urlObj = new URL(req.url);
+    const search = urlObj.searchParams;
+    const pageParam = Number(search.get("page") || "1");
+    const limitParam = Number(search.get("limit") || "16");
+
+    const page =
+      Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+    const limitRaw =
+      Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 16;
+    const limit = Math.max(1, Math.min(limitRaw, 100));
+
+    const category = (search.get("category") || "").trim();
+    const searchTerm = (search.get("search") || "").trim().toLowerCase();
+
+    const allPosts = await fetchSupabasePosts(env);
+    if (!allPosts.length) {
+      return json({ posts: [], hasMore: false });
+    }
+
+    // Restrict to community posts (metadata.isCommunityPost === true)
+    let filtered = allPosts.filter((post) => {
+      const meta =
+        post.metadata && typeof post.metadata === "object"
+          ? post.metadata
+          : {};
+      return (meta as any).isCommunityPost === true;
+    });
+
+    if (category) {
+      const catLower = category.toLowerCase();
+      filtered = filtered.filter((post) => {
+        const meta =
+          post.metadata && typeof post.metadata === "object"
+            ? post.metadata
+            : {};
+        const theme = String(
+          post.themeCategory ||
+            (meta as any).themeCategory ||
+            ""
+        ).toLowerCase();
+        return theme === catLower;
+      });
+    }
+
+    if (searchTerm) {
+      filtered = filtered.filter((post) => {
+        const title = String(post.title || "").toLowerCase();
+        const excerpt = String(post.excerpt || "").toLowerCase();
+        const content = String(post.content || "").toLowerCase();
+        return (
+          title.includes(searchTerm) ||
+          excerpt.includes(searchTerm) ||
+          content.includes(searchTerm)
+        );
+      });
+    }
+
+    const total = filtered.length;
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const pageItems =
+      start < total ? filtered.slice(start, end) : [];
+    const hasMore = end < total;
+
+    return json({ posts: pageItems, hasMore });
+  } catch {
+    return proxyToBackend(req, env);
+  }
 });
 
 // API DOMAIN REDIRECT / FALLBACK PROXY

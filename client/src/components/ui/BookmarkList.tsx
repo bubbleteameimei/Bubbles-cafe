@@ -179,8 +179,9 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
     queryKey: ['/api/posts'],
     queryFn: async () => {
       try {
-        const result = await apiRequest<Post[]>('/api/posts?limit=5');
-        return result;
+        const result = await apiRequest<{ posts?: Post[] }>('/api/posts?limit=5');
+        const posts = Array.isArray(result?.posts) ? result.posts : [];
+        return posts;
       } catch (err) {
         console.error('[BookmarkList] Error fetching recommended stories:', err);
         throw err;
