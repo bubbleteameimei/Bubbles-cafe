@@ -39,6 +39,9 @@ interface Env {
   GMAIL_APP_PASSWORD: string;
   GMAIL_ADMIN_EMAIL: string;
 
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_REDIRECT_URI?: string;
+
   BACKEND_BASE_URL: string;
   FRONTEND_URL: string;
   NODE_ENV: string;
@@ -202,6 +205,76 @@ router.get("/health", async () => {
   return json({ status: "ok" });
 });
 
+// CONFIG: Public client bootstrap (Supabase, URLs, Google OAuth)
+router.get("/api/config/public", async (req: Request, env: Env) => {
+  try {
+    const url = new URL(req.url);
+    const protocol = url.protocol; // e.g. "https:"
+    const host = url.host.toLowerCase();
+
+    const apiBase = (() => {
+      try {
+        if (host.startsWith("api.")) return `${protocol}//${host}`;
+        const cleanHost = host.startsWith("www.") ? host.slice(4) : host;
+        return `${protocol}//api.${cleanHost}`;
+      } catch {
+        return "https://api.bubblescafe.space";
+      }
+    })();
+
+    const frontendBase = (env.FRONTEND_URL || "https://bubblescafe.space").replace(/\/+$/, "");
+
+    const supabaseUrl = env.SUPABASE_URL || "";
+    const supabaseAnonKey = env.SUPABASE_ANON_KEY || "";
+
+    const googleClientId = env.GOOGLE_CLIENT_ID || null;
+    const googleRedirectUri =
+      env.GOOGLE_REDIRECT_URI || `${apiBase}/api/auth/callback`;
+
+    const payload = {
+      apiBase,
+      frontendUrl: frontendBase,
+      supabase: {
+        url: supabaseUrl || null,
+        anonKey: supabaseAnonKey || null,
+      },
+      googleOAuth: {
+        clientId: googleClientId,
+        redirectUri: googleRedirectUri,
+      },
+    };
+
+    return json(payload, {
+      headers: {
+        "Cache-Control": "no-store, max-age=0",
+      },
+    });
+  } catch (e) {
+    return json(
+      { error: "Failed to load public configuration" },
+      { status: 500 }
+    );
+  }
+});
+
+// ERROR REPORTING endpoint used by client metrics logger
+router.post("/api/errors", async (req: Request) => {
+  try {
+    const body = await req.json().catch(() => ({}));
+    const id = (body as any)?.id;
+    const message = (body as any)?.message;
+    const extra = (body as any)?.extra;
+
+    // Log to Worker logs for observability
+    console.warn("[ClientError]", { id, message, extra });
+
+    return new Response(null, { status: 204 });
+  } catch {
+    // Even on parse errors, respond 204 to avoid impacting client UX
+    return new Response(null, { status: 204 });
+  }
+});
+
 // ANALYTICS: Write to KV queue
 router.post("/api/analytics/vitals", async (req: Request, env: Env) => {
   try {
@@ -215,7 +288,9 @@ router.post("/api/analytics/vitals", async (req: Request, env: Env) => {
     }
 
     const eventId = crypto.randomUUID();
-    await env.ANALYTICS_KV.put(`vitals-${eventId}`, JSON.stringify(body), { expirationTtl: 86400 });
+    await env.ANALYTICS_KV.put(`vitals-${eventId}`, JSON.stringify(body), {
+      expirationTtl: 86400,
+    });
 
     return json({ success: true, eventId });
   } catch (error) {
@@ -253,9 +328,13 @@ router.post("/api/analytics/performance", async (req: Request, env: Env) => {
   try {
     const body = (await (req as any).json?.()) || {};
     const eventId = crypto.randomUUID();
-    await env.ANALYTICS_KV.put(`performance-${eventId}`, JSON.stringify(body), {
-      expirationTtl: 86400,
-    });
+    await env.ANALYTICS_KV.put(
+      `performance-${eventId}`,
+      JSON.stringify(body),
+      {
+        expirationTtl: 86400,
+      }
+    );
     return json({ success: true, eventId });
   } catch (error) {
     return json({ error: String(error) }, { status: 400 });
@@ -390,7 +469,9 @@ router.post("/api/wordpress/sync/manual", async (req: Request, env: Env) => {
     }
 
     try {
-      const wpRes = await fetch(`${env.WORDPRESS_API}?per_page=100&orderby=modified&order=desc`);
+      const wpRes = await fetch(
+        `${env.WORDPRESS_API}?per_page=100&orderby=modified&order=desc`
+      );
       if (!wpRes.ok) throw new Error("WordPress API failed");
 
       const posts = (await wpRes.json()) as any[];
@@ -406,7 +487,10 @@ router.post("/api/wordpress/sync/manual", async (req: Request, env: Env) => {
         });
       }
 
-      await env.SYNC_METADATA_KV.put("last_sync_timestamp", new Date().toISOString());
+      await env.SYNC_METADATA_KV.put(
+        "last_sync_timestamp",
+        new Date().toISOString()
+      );
       await env.SYNC_METADATA_KV.put("last_sync_status", "success");
 
       return json({ success: true, postsProcessed: posts.length });
@@ -419,8 +503,84 @@ router.post("/api/wordpress/sync/manual", async (req: Request, env: Env) => {
       );
     }
   } catch (error) {
-    await env.SYNC_METADATA_KV.put("last_sync_status", `error: ${String(error)}`);
+    await env.SYNC_METADATA_KV.put(
+      "last_sync_status",
+      `error: ${String(error)}`
+    );
     return json({ error: String(error) }, { status: 500 });
+  }
+});
+
+// WORDPRESS POSTS PROXY (avoids browser CORS and matches Express shape)
+router.get("/api/wordpress/posts", async (req: Request, env: Env) => {
+  try {
+    const incomingUrl = new URL(req.url);
+    const pageParam = incomingUrl.searchParams.get("page");
+    const perPageParam = incomingUrl.searchParams.get("per_page");
+    const slug = incomingUrl.searchParams.get("slug") || "";
+    const search = incomingUrl.searchParams.get("search") || "";
+    const fields = incomingUrl.searchParams.get("_fields") || "";
+
+    const page = Number.isFinite(Number(pageParam)) && Number(pageParam) > 0 ? Number(pageParam) : 1;
+    const perPageRaw = Number(perPageParam);
+    const per_page =
+      Number.isFinite(perPageRaw) && perPageRaw > 0
+        ? Math.max(1, Math.min(100, perPageRaw))
+        : 100;
+
+    const params = new URLSearchParams();
+    if (slug) {
+      params.set("slug", slug.trim());
+    } else {
+      params.set("page", String(page));
+      params.set("per_page", String(per_page));
+    }
+    if (search) params.set("search", search.trim());
+    if (fields) params.set("_fields", fields.trim());
+
+    const wpBase = env.WORDPRESS_API || "https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts";
+    const wpUrl = `${wpBase}?${params.toString()}`;
+
+    const wpRes = await fetch(wpUrl);
+    if (!wpRes.ok) {
+      const text = await wpRes.text().catch(() => "");
+      throw new Error(
+        `WordPress API error: ${wpRes.status} ${wpRes.statusText} ${text.slice(
+          0,
+          200
+        )}`
+      );
+    }
+
+    const posts = await wpRes.json();
+
+    const totalPagesHeader = wpRes.headers.get("X-WP-TotalPages");
+    const totalHeader = wpRes.headers.get("X-WP-Total");
+    const totalPages = totalPagesHeader ? parseInt(totalPagesHeader, 10) : 1;
+    const total = totalHeader
+      ? parseInt(totalHeader, 10)
+      : Array.isArray(posts)
+      ? posts.length
+      : 0;
+
+    return json({
+      success: true,
+      posts,
+      totalPages,
+      total,
+    });
+  } catch (error) {
+    console.error(
+      "[WordPress] Error fetching posts via Worker proxy",
+      error instanceof Error ? error.message : String(error)
+    );
+    return json(
+      {
+        success: false,
+        message: `Error fetching WordPress posts`,
+      },
+      { status: 500 }
+    );
   }
 });
 
