@@ -3,15 +3,14 @@
  * Standardized logic to determine the latest story reader path and resolve author id.
  */
 
+import { apiRequest } from './queryClient';
+
 export async function getLatestReaderPath(): Promise<string> {
   try {
-    const res = await fetch('/api/posts?limit=1', { credentials: 'include' }).catch(() => null as any);
-    if (res && res.ok) {
-      const data = await res.json().catch(() => null);
-      const slug = data?.posts?.[0]?.slug;
-      if (slug) {
-        return `/reader/${encodeURIComponent(String(slug))}`;
-      }
+    const data = await apiRequest<{ posts?: Array<{ slug?: string }> }>('/api/posts?limit=1');
+    const slug = data?.posts?.[0]?.slug;
+    if (slug) {
+      return `/reader/${encodeURIComponent(String(slug))}`;
     }
   } catch {
     // no-op

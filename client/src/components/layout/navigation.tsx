@@ -41,7 +41,7 @@ function prefetchAuthPages(): void {
 export default function Navigation() {
   const [location, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const [searchValue, setSearchValue] = useState("");
 
@@ -615,8 +615,7 @@ export default function Navigation() {
                     className="w-full text-left px-2 py-1.5 text-sm hover:bg-muted rounded text-destructive"
                     onClick={async () => {
                       try {
-                        const { apiJson } = await import("@/lib/api");
-                        await apiJson("POST", "/api/auth/logout");
+                        await logout();
                       } catch {}
                       // Clear any local nav state and return to home
                       setLocation("/");

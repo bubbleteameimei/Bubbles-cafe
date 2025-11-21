@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { BookOpen, X } from "lucide-react";
 import { useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 
 type SavedPosition = {
   scrollY: number;
@@ -73,9 +74,8 @@ export default function ContinueReadingBanner() {
     queryKey: ["/api/posts/slug", slug],
     enabled: Boolean(slug) && !dismissed,
     queryFn: async () => {
-      const res = await fetch(`/api/posts/slug/${encodeURIComponent(slug as string)}`);
-      if (!res.ok) throw new Error("Failed to load post");
-      return (await res.json()) as PostSummary;
+      if (!slug) throw new Error("Missing slug");
+      return await apiRequest<PostSummary>(`/api/posts/slug/${encodeURIComponent(slug as string)}`);
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -85,9 +85,12 @@ export default function ContinueReadingBanner() {
     queryKey: ["/api/reading-progress", slug],
     enabled: Boolean(slug) && !dismissed,
     queryFn: async () => {
-      const res = await fetch(`/api/reading-progress/${encodeURIComponent(slug as string)}`, { credentials: 'include' });
-      if (!res.ok) return null;
-      return await res.json();
+      if (!slug) return null;
+      try {
+        return await apiRequest<any>(`/api/reading-progress/${encodeURIComponent(slug as string)}`);
+      } catch {
+        return null;
+      }
     },
     staleTime: 2 * 60 * 1000,
   });

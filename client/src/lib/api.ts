@@ -8,10 +8,32 @@
 import { applyCSRFToken, fetchCsrfTokenIfNeeded, refreshCsrfToken } from './csrf-token';
 import { formatError, notifyError, ErrorCategory, ErrorSeverity } from './error-handler';
 import { getApiBaseUrl } from './asset-path';
+import { supabase, initSupabase } from './supabase';
 
 // Compute the API base dynamically with preview-awareness and env override
 function resolveApiBase(): string {
   try { return getApiBaseUrl(); } catch { return import.meta.env.VITE_API_URL || ''; }
+}
+
+// Attach Supabase access token as Authorization header when available
+async function attachAuthHeader(options: RequestInit): Promise<RequestInit> {
+  try {
+    const ready = await initSupabase();
+    if (!ready) return options;
+
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data?.session?.access_token) return options;
+
+    const token = data.session.access_token;
+    const headers = new Headers(options.headers as any);
+    if (!headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    return { ...options, headers };
+  } catch {
+    return options;
+  }
 }
 
 export async function apiRequest(
@@ -23,15 +45,18 @@ export async function apiRequest(
     'Content-Type': 'application/json',
   };
 
-  const options: RequestInit = {
+  const baseOptions: RequestInit = {
     method,
     headers,
     credentials: 'include', // Include cookies for auth
   };
 
   if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-    options.body = JSON.stringify(body);
+    baseOptions.body = JSON.stringify(body);
   }
+
+  // Attach Supabase auth header when available
+  const options = await attachAuthHeader(baseOptions);
 
   // Construct the full URL
   const base = resolveApiBase();
