@@ -880,6 +880,131 @@ router.get("/api/wordpress/posts", async (req: Request, env: Env) => {
 
 // READING PROGRESS: Supabase-backed (JWT + RLS), Worker-native
 
+// POST /api/reading-progress - upsert progress for current user by slug
+router.post("/api/reading-progress", async (req: Request, env: Env) => {
+  try {
+    // If Supabase isn't configured or there's no Bearer token, fall back to legacy backend
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
+    }
+    const authHeader =
+      req.headers.get("Authorization") || req.headers.get("authorization") || "";
+    if (!authHeader.toLowerCase().startsWith("bearer ")) {
+      return proxyToBackend(req, env);
+    }
+    const token = authHeader.slice(7).trim();
+
+    const body = (await (req as any).json?.()) || {};
+    const postSlug = typeof body.postSlug === "string" ? body.postSlug : "";
+    const percent = Number(body.percentCompleted);
+
+    if (!postSlug) {
+      return json({ error: "postSlug is required" }, { status: 400 });
+    }
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+      return json(
+        { error: "percentCompleted must be a number between 0 and 100" },
+        { status: 400 },
+      );
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    };
+
+    // Resolve post id by slug
+    const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
+    postsUrl.searchParams.set("select", "id");
+    postsUrl.searchParams.set("slug", `eq.${postSlug}`);
+    postsUrl.searchParams.set("limit", "1");
+
+    const postsRes = await fetch(postsUrl.toString(), {
+      headers,
+    });
+
+    if (postsRes.status === 401 || postsRes.status === 403) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+    if (!postsRes.ok) {
+      return json(
+        { error: "Failed to resolve post" },
+        { status: 500 },
+      );
+    }
+
+    const posts = (await postsRes.json().catch(() => [])) as any[];
+    if (!Array.isArray(posts) || posts.length === 0 || posts[0]?.id == null) {
+      return json({ error: "Post not found" }, { status: 404 });
+    }
+    const postId = Number(posts[0].id);
+    if (!Number.isFinite(postId)) {
+      return json({ error: "Post not found" }, { status: 404 });
+    }
+
+    // Resolve numeric user id via users table (RLS ensures we only see current user)
+    const userUrl = new URL(`${baseUrl}/rest/v1/users`);
+    userUrl.searchParams.set("select", "id");
+    userUrl.searchParams.set("limit", "1");
+
+    const userRes = await fetch(userUrl.toString(), {
+      headers,
+    });
+
+    if (userRes.status === 401 || userRes.status === 403) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+    if (!userRes.ok) {
+      return json(
+        { error: "Failed to resolve user" },
+        { status: 500 },
+      );
+    }
+
+    const users = (await userRes.json().catch(() => [])) as any[];
+    if (!Array.isArray(users) || users.length === 0 || users[0]?.id == null) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+    const userId = Number(users[0].id);
+    if (!Number.isFinite(userId)) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    // Insert reading progress row; RLS ensures user_id matches auth.uid() via users table
+    const progressUrl = `${baseUrl}/rest/v1/reading_progress`;
+    const insertRes = await fetch(progressUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        post_id: postId,
+        user_id: userId,
+        progress: String(percent),
+        last_read_at: new Date().toISOString(),
+      }),
+    });
+
+    if (insertRes.status === 401 || insertRes.status === 403) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+    if (!insertRes.ok) {
+      return json(
+        { error: "Failed to save reading progress" },
+        { status: 500 },
+      );
+    }
+
+    return json({ success: true }, { status: 201 });
+  } catch (_error) {
+    return json(
+      { error: "Failed to save reading progress" },
+      { status: 500 },
+    );
+  }
+});
+
 // GET /api/reading-progress/history - full reading history for current user
 router.get("/api/reading-progress/history", async (req: Request, env: Env) => {
   try {
