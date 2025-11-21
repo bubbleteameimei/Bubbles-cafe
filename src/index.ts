@@ -27,6 +27,7 @@ interface Env {
 
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
   SUPABASE_POOLER_URL?: string;
   DATABASE_URL?: string;
   WORDPRESS_API: string;
@@ -80,6 +81,261 @@ async function verifySupabaseJwt(token: string, env: Env): Promise<boolean> {
     return res.ok;
   } catch {
     return false;
+  }
+}
+
+interface SupabaseAuthUser {
+  id: string;
+  email: string | null;
+  user_metadata?: any;
+  app_metadata?: any;
+  [key: string]: any;
+}
+
+async function getSupabaseAuthUser(
+  env: Env,
+  token: string
+): Promise<SupabaseAuthUser | null> {
+  if (!env.SUPABASE_URL || !token) return null;
+  try {
+    const base = env.SUPABASE_URL.replace(/\/+$/, "");
+    const res = await fetch(`${base}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+    if (!res.ok) return null;
+    const parsed = (await res.json().catch(() => null)) as any;
+    if (!parsed || !parsed.id) return null;
+    return {
+      id: String(parsed.id),
+      email:
+        typeof parsed.email === "string"
+          ? parsed.email.toLowerCase()
+          : null,
+      user_metadata: parsed.user_metadata ?? {},
+      app_metadata: parsed.app_metadata ?? {},
+      ...parsed,
+    } as SupabaseAuthUser;
+  } catch {
+    return null;
+  }
+}
+
+function mapDbUserRowToApiUser(row: any): {
+  id: number;
+  email: string;
+  username: string;
+  isAdmin: boolean;
+  fullName?: string | null;
+  bio?: string | null;
+  avatar?: string | null;
+} {
+  const meta =
+    row && typeof row.metadata === "object" && row.metadata !== null
+      ? (row.metadata as any)
+      : {};
+  const fullName =
+    meta.fullName ??
+    meta.displayName ??
+    null;
+  const avatar =
+    meta.avatar ??
+    meta.photoURL ??
+    null;
+  const bio = meta.bio ?? null;
+  return {
+    id: Number(row.id),
+    email: String(row.email || ""),
+    username: String(row.username || ""),
+    isAdmin: row.is_admin === true || row.isAdmin === true,
+    fullName,
+    bio,
+    avatar,
+  };
+}
+
+async function upsertLocalUserFromSupabaseAuth(
+  env: Env,
+  authUser: SupabaseAuthUser
+): Promise<{
+  id: number;
+  email: string;
+  username: string;
+  isAdmin: boolean;
+  fullName?: string | null;
+  bio?: string | null;
+  avatar?: string | null;
+} | null> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return null;
+  }
+  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  const headers: Record<string, string> = {
+    apikey: serviceKey,
+    Authorization: `Bearer ${serviceKey}`,
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+
+  const email =
+    (authUser.email && authUser.email.toLowerCase().trim()) || null;
+  const supabaseUserId = String(authUser.id || "");
+  const userMeta = (authUser.user_metadata || {}) as any;
+  const appMeta = (authUser.app_metadata || {}) as any;
+  const provider =
+    appMeta.provider ||
+    appMeta.provider_id ||
+    "supabase";
+  const displayName =
+    userMeta.full_name ||
+    userMeta.name ||
+    userMeta.displayName ||
+    null;
+  const photoURL =
+    userMeta.avatar_url ||
+    userMeta.picture ||
+    null;
+
+  // Try lookup by supabaseUserId in metadata
+  let row: any | null = null;
+  try {
+    const byIdUrl = new URL(`${baseUrl}/rest/v1/users`);
+    byIdUrl.searchParams.set("select", "id,email,username,is_admin,metadata");
+    byIdUrl.searchParams.set(
+      "metadata->>supabaseUserId",
+      `eq.${supabaseUserId}`
+    );
+    byIdUrl.searchParams.set("limit", "1");
+    const res = await fetch(byIdUrl.toString(), { headers });
+    if (res.ok) {
+      const rows = (await res.json().catch(() => [])) as any[];
+      if (Array.isArray(rows) && rows.length > 0) {
+        row = rows[0];
+      }
+    }
+  } catch {
+    // ignore lookup errors
+  }
+
+  // Fallback: lookup by email
+  if (!row && email) {
+    try {
+      const byEmailUrl = new URL(`${baseUrl}/rest/v1/users`);
+      byEmailUrl.searchParams.set(
+        "select",
+        "id,email,username,is_admin,metadata"
+      );
+      byEmailUrl.searchParams.set("email", `eq.${email}`);
+      byEmailUrl.searchParams.set("limit", "1");
+      const res = await fetch(byEmailUrl.toString(), { headers });
+      if (res.ok) {
+        const rows = (await res.json().catch(() => [])) as any[];
+        if (Array.isArray(rows) && rows.length > 0) {
+          row = rows[0];
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const nowIso = new Date().toISOString();
+
+  if (row) {
+    let meta =
+      row.metadata && typeof row.metadata === "object"
+        ? (row.metadata as any)
+        : {};
+    meta = {
+      ...meta,
+      supabaseUserId,
+      provider,
+      lastLogin: nowIso,
+      displayName: meta.displayName ?? displayName ?? null,
+      fullName: meta.fullName ?? displayName ?? null,
+      photoURL: meta.photoURL ?? photoURL ?? null,
+      avatar: meta.avatar ?? photoURL ?? null,
+      email: meta.email ?? email ?? meta.email ?? null,
+    };
+
+    try {
+      const patchUrl = new URL(`${baseUrl}/rest/v1/users`);
+      patchUrl.searchParams.set("id", `eq.${row.id}`);
+      const patchRes = await fetch(patchUrl.toString(), {
+        method: "PATCH",
+        headers: {
+          ...headers,
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify({ metadata: meta }),
+      });
+      if (patchRes.ok) {
+        const rows = (await patchRes.json().catch(() => [])) as any[];
+        if (Array.isArray(rows) && rows.length > 0) {
+          row = rows[0];
+        } else {
+          row.metadata = meta;
+        }
+      } else {
+        row.metadata = meta;
+      }
+    } catch {
+      row.metadata = meta;
+    }
+
+    return mapDbUserRowToApiUser(row);
+  }
+
+  if (!email) {
+    return null;
+  }
+
+  // Create new local user
+  const usernameBase =
+    (userMeta.username as string) ||
+    (email ? email.split("@")[0] : "user");
+  const username = usernameBase.trim() || "user";
+  const passwordHashPlaceholder = "supabase-auth-only";
+
+  const insertPayload = {
+    email,
+    username,
+    password_hash: passwordHashPlaceholder,
+    is_admin: false,
+    metadata: {
+      email,
+      supabaseUserId,
+      provider,
+      lastLogin: nowIso,
+      displayName,
+      fullName: displayName,
+      photoURL,
+      avatar: photoURL,
+    },
+  };
+
+  try {
+    const insertRes = await fetch(`${baseUrl}/rest/v1/users`, {
+      method: "POST",
+      headers: {
+        ...headers,
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify(insertPayload),
+    });
+    if (!insertRes.ok) {
+      return null;
+    }
+    const rows = (await insertRes.json().catch(() => [])) as any[];
+    if (!Array.isArray(rows) || !rows.length) {
+      return null;
+    }
+    return mapDbUserRowToApiUser(rows[0]);
+  } catch {
+    return null;
   }
 }
 
@@ -466,6 +722,195 @@ router.get("/api/config/public", async (req: Request, env: Env) => {
     );
   }
 });
+
+// AUTH: Supabase JWT login -> local user profile
+router.post(
+  "/api/auth/supabase/login",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
+    }
+
+    try {
+      let token: string | null = null;
+      const header =
+        req.headers.get("Authorization") ||
+        req.headers.get("authorization") ||
+        "";
+      if (header.toLowerCase().startsWith("bearer ")) {
+        token = header.slice(7).trim();
+      }
+
+      if (!token) {
+        const body = (await (req as any).json?.().catch(() => ({}))) || {};
+        if (
+          body &&
+          typeof body.access_token === "string" &&
+          body.access_token.trim()
+        ) {
+          token = body.access_token.trim();
+        }
+      }
+
+      if (!token) {
+        return json(
+          { error: "Missing access_token (Bearer or body)" },
+          { status: 400 }
+        );
+      }
+
+      const authUser = await getSupabaseAuthUser(env, token);
+      if (!authUser || !authUser.id) {
+        return json(
+          { error: "Invalid Supabase token" },
+          { status: 401 }
+        );
+      }
+
+      const localUser = await upsertLocalUserFromSupabaseAuth(
+        env,
+        authUser
+      );
+
+      if (localUser) {
+        return json({ success: true, user: localUser });
+      }
+
+      const fallbackEmail =
+        authUser.email && authUser.email.trim()
+          ? authUser.email.trim()
+          : "";
+      const fallbackUsername =
+        (authUser.user_metadata &&
+          typeof authUser.user_metadata.username === "string" &&
+          authUser.user_metadata.username.trim()) ||
+        (fallbackEmail
+          ? fallbackEmail.split("@")[0]
+          : "user");
+
+      const fallbackUser = {
+        id: -1,
+        email: fallbackEmail,
+        username: fallbackUsername,
+        isAdmin: false,
+        fullName:
+          (authUser.user_metadata &&
+            (authUser.user_metadata.full_name ||
+              authUser.user_metadata.name ||
+              authUser.user_metadata.displayName)) ||
+          null,
+        bio: null,
+        avatar:
+          (authUser.user_metadata &&
+            (authUser.user_metadata.avatar_url ||
+              authUser.user_metadata.picture)) ||
+          null,
+      };
+
+      return json({ success: true, user: fallbackUser });
+    } catch {
+      return json(
+        { error: "Failed to process Supabase login" },
+        { status: 500 }
+      );
+    }
+  }
+);
+
+// AUTH STATUS: simple check based on Supabase JWT
+router.get(
+  "/api/auth/status",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
+    }
+
+    try {
+      const header =
+        req.headers.get("Authorization") ||
+        req.headers.get("authorization") ||
+        "";
+      if (!header.toLowerCase().startsWith("bearer ")) {
+        return json({
+          isAuthenticated: false,
+          authenticated: false,
+          user: null,
+        });
+      }
+      const token = header.slice(7).trim();
+      if (!token) {
+        return json({
+          isAuthenticated: false,
+          authenticated: false,
+          user: null,
+        });
+      }
+
+      const authUser = await getSupabaseAuthUser(env, token);
+      if (!authUser || !authUser.id) {
+        return json({
+          isAuthenticated: false,
+          authenticated: false,
+          user: null,
+        });
+      }
+
+      const localUser = await upsertLocalUserFromSupabaseAuth(
+        env,
+        authUser
+      );
+
+      if (localUser) {
+        return json({
+          isAuthenticated: true,
+          authenticated: true,
+          user: localUser,
+        });
+      }
+
+      const email =
+        authUser.email && authUser.email.trim()
+          ? authUser.email.trim()
+          : "";
+      const username =
+        (authUser.user_metadata &&
+          typeof authUser.user_metadata.username === "string" &&
+          authUser.user_metadata.username.trim()) ||
+        (email ? email.split("@")[0] : "user");
+
+      const user = {
+        id: -1,
+        email,
+        username,
+        isAdmin: false,
+        fullName:
+          (authUser.user_metadata &&
+            (authUser.user_metadata.full_name ||
+              authUser.user_metadata.name ||
+              authUser.user_metadata.displayName)) ||
+          null,
+        bio: null,
+        avatar:
+          (authUser.user_metadata &&
+            (authUser.user_metadata.avatar_url ||
+              authUser.user_metadata.picture)) ||
+          null,
+      };
+
+      return json({
+        isAuthenticated: true,
+        authenticated: true,
+        user,
+      });
+    } catch {
+      return json({
+        isAuthenticated: false,
+        authenticated: false,
+        user: null,
+      });
+    }
+  }
+);
 
 // ERROR REPORTING endpoint used by client metrics logger
 router.post("/api/errors", async (req: Request) => {
