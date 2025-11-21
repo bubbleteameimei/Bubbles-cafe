@@ -2169,7 +2169,430 @@ router.get("/api/reading-progress/:slug", async (req: Request, env: Env) => {
   }
 });
 
-// POSTS: proxy to backend for full-featured API (listing, pagination, summaries, etc.)
+/**
+ * Build post summaries (basic fields + reactions + analytics) using Supabase REST.
+ * Returns summaries keyed by the raw external IDs provided (which may be local IDs or WordPress IDs).
+ */
+async function buildPostSummaries(env: Env, rawIds: number[]): Promise<any[]> {
+  try {
+    const ids = Array.from(
+      new Set(
+        rawIds
+          .map((n) => Number(n))
+          .filter((n) => Number.isFinite(n) && n > 0)
+      )
+    ).slice(0, 50); // Cap to 50 IDs per call to avoid excessive fan-out
+
+    if (!ids.length) {
+      return [];
+    }
+
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return [];
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceHeaders: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+      Accept: "application/json",
+    };
+
+    // 1) Fetch direct local posts by id
+    const directUrl = new URL(`${baseUrl}/rest/v1/posts`);
+    directUrl.searchParams.set(
+      "select",
+      "id,title,slug,excerpt,created_at,baseline_likes,baseline_dislikes,likes_count,dislikes_count,metadata"
+    );
+    directUrl.searchParams.set("id", `in.(${ids.join(",")})`);
+
+    let directRows: any[] = [];
+    try {
+      const res = await fetch(directUrl.toString(), {
+        headers: serviceHeaders,
+      });
+      if (res.ok) {
+        const rows = (await res.json().catch(() => [])) as any[];
+        if (Array.isArray(rows)) {
+          directRows = rows;
+        }
+      }
+    } catch {
+      // ignore; fallback mapping still works
+    }
+
+    const directMap = new Map<number, any>();
+    const allRowsByLocalId = new Map<number, any>();
+
+    for (const row of directRows) {
+      const localId = Number(row.id);
+      if (!Number.isFinite(localId)) continue;
+      directMap.set(localId, row);
+      allRowsByLocalId.set(localId, row);
+    }
+
+    // 2) Resolve external -> local ids for any ids not directly found
+    const externalToLocal = new Map<number, number>();
+    for (const rawId of ids) {
+      if (directMap.has(rawId)) {
+        externalToLocal.set(rawId, rawId);
+        continue;
+      }
+      const localId = await resolveLocalPostIdFromExternal(env, rawId);
+      if (localId && Number.isFinite(localId)) {
+        externalToLocal.set(rawId, Number(localId));
+      }
+    }
+
+    // 3) Fetch missing local rows
+    const neededLocalIds: number[] = [];
+    for (const localId of externalToLocal.values()) {
+      if (!allRowsByLocalId.has(localId)) {
+        neededLocalIds.push(localId);
+      }
+    }
+
+    if (neededLocalIds.length) {
+      const moreUrl = new URL(`${baseUrl}/rest/v1/posts`);
+      moreUrl.searchParams.set(
+        "select",
+        "id,title,slug,excerpt,created_at,baseline_likes,baseline_dislikes,likes_count,dislikes_count,metadata"
+      );
+      moreUrl.searchParams.set("id", `in.(${neededLocalIds.join(",")})`);
+
+      try {
+        const res = await fetch(moreUrl.toString(), {
+          headers: serviceHeaders,
+        });
+        if (res.ok) {
+          const rows = (await res.json().catch(() => [])) as any[];
+          if (Array.isArray(rows)) {
+            for (const row of rows) {
+              const localId = Number(row.id);
+              if (!Number.isFinite(localId)) continue;
+              allRowsByLocalId.set(localId, row);
+            }
+          }
+        }
+      } catch {
+        // ignore; partial results still fine
+      }
+    }
+
+    // 4) Fetch analytics (best-effort, may be disabled by RLS)
+    const localPostIds = Array.from(new Set(Array.from(allRowsByLocalId.keys())));
+    const analyticsMap = new Map<number, any>();
+
+    if (localPostIds.length) {
+      const analyticsUrl = new URL(`${baseUrl}/rest/v1/analytics`);
+      analyticsUrl.searchParams.set(
+        "select",
+        "post_id,page_views,unique_visitors,average_read_time,bounce_rate,updated_at"
+      );
+      analyticsUrl.searchParams.set("post_id", `in.(${localPostIds.join(",")})`);
+
+      try {
+        const res = await fetch(analyticsUrl.toString(), {
+          headers: serviceHeaders,
+        });
+        if (res.ok) {
+          const rows = (await res.json().catch(() => [])) as any[];
+          if (Array.isArray(rows)) {
+            for (const row of rows) {
+              const pid = Number(row.post_id ?? row.postId);
+              if (!Number.isFinite(pid)) continue;
+              analyticsMap.set(pid, row);
+            }
+          }
+        }
+      } catch {
+        // analytics are optional; continue with reactions only
+      }
+    }
+
+    // 5) Build ordered summaries keyed by raw external ids
+    const results: any[] = [];
+
+    for (const rawId of ids) {
+      const localId = externalToLocal.get(rawId);
+      if (!localId) continue;
+      const row = allRowsByLocalId.get(localId);
+      if (!row) continue;
+
+      const baselineLikes = Number(
+        (row as any).baseline_likes ??
+          (row as any).baselineLikes ??
+          0
+      );
+      const baselineDislikes = Number(
+        (row as any).baseline_dislikes ??
+          (row as any).baselineDislikes ??
+          0
+      );
+      const likesCount = Number(
+        (row as any).likes_count ?? (row as any).likesCount ?? 0
+      );
+      const dislikesCount = Number(
+        (row as any).dislikes_count ??
+          (row as any).dislikesCount ??
+          0
+      );
+
+      const metadata = (row as any).metadata;
+      let wordpressId: number | undefined;
+      try {
+        const wpIdRaw =
+          metadata && typeof metadata === "object"
+            ? (metadata as any).wordpressId
+            : undefined;
+        const wpIdNum = Number(wpIdRaw);
+        if (Number.isFinite(wpIdNum) && wpIdNum > 0) {
+          wordpressId = wpIdNum;
+        }
+      } catch {
+        // ignore metadata parse issues
+      }
+
+      const a = analyticsMap.get(localId);
+      const analytics =
+        a && typeof a === "object"
+          ? {
+              pageViews: Number(
+                (a as any).page_views ??
+                  (a as any).pageViews ??
+                  0
+              ),
+              uniqueVisitors: Number(
+                (a as any).unique_visitors ??
+                  (a as any).uniqueVisitors ??
+                  0
+              ),
+              averageReadTime: Number(
+                (a as any).average_read_time ??
+                  (a as any).averageReadTime ??
+                  0
+              ),
+              bounceRate: Number(
+                (a as any).bounce_rate ??
+                  (a as any).bounceRate ??
+                  0
+              ),
+              updatedAt:
+                (a as any).updated_at ??
+                (a as any).updatedAt ??
+                null,
+            }
+          : null;
+
+      results.push({
+        id: Number(rawId),
+        localPostId: localId,
+        wordpressId,
+        title: (row as any).title ?? "",
+        slug: (row as any).slug ?? "",
+        excerpt:
+          (row as any).excerpt ??
+          "",
+        createdAt:
+          (row as any).created_at ??
+          (row as any).createdAt ??
+          new Date().toISOString(),
+        reactions: {
+          baselineLikes,
+          baselineDislikes,
+          likesCount,
+          dislikesCount,
+          totals: {
+            likes: baselineLikes + likesCount,
+            dislikes: baselineDislikes + dislikesCount,
+          },
+        },
+        analytics,
+      });
+    }
+
+    return results;
+  } catch {
+    return [];
+  }
+}
+
+// POSTS: Worker-native slug/summary endpoints (Supabase-backed) with legacy listing proxy
+
+// GET /api/posts/slug/:slug - fetch full post by slug
+router.get("/api/posts/slug/:slug", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  try {
+    const urlObj = new URL(req.url);
+    const segments = urlObj.pathname.split("/");
+    const rawSlug = decodeURIComponent(segments[segments.length - 1] || "").trim();
+    if (!rawSlug) {
+      return json({ error: "Slug is required" }, { status: 400 });
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
+    postsUrl.searchParams.set(
+      "select",
+      "id,title,content,excerpt,slug,author_id,is_secret,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at"
+    );
+    postsUrl.searchParams.set("slug", `eq.${rawSlug}`);
+    postsUrl.searchParams.set("limit", "1");
+
+    const res = await fetch(postsUrl.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return json(
+        { error: "Failed to fetch post" },
+        { status: 500 }
+      );
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return json({ error: "Post not found" }, { status: 404 });
+    }
+
+    const row = rows[0] as any;
+    const content = typeof row.content === "string" ? row.content : "";
+    const readingTimeMinutesValue =
+      row.reading_time_minutes != null
+        ? Number(row.reading_time_minutes)
+        : Math.max(
+            1,
+            Math.ceil(
+              content
+                .split(/\s+/)
+                .filter((w: string) => w.length > 0).length / 200
+            )
+          );
+
+    const metadata =
+      row.metadata && typeof row.metadata === "object"
+        ? row.metadata
+        : undefined;
+
+    const likesCount = Number(
+      row.likes_count ?? row.likesCount ?? 0
+    );
+    const dislikesCount = Number(
+      row.dislikes_count ?? row.dislikesCount ?? 0
+    );
+
+    const baselineLikes = Number(
+      row.baseline_likes ?? row.baselineLikes ?? 0
+    );
+    const baselineDislikes = Number(
+      row.baseline_dislikes ?? row.baselineDislikes ?? 0
+    );
+
+    const post = {
+      id: Number(row.id),
+      title: row.title ?? "",
+      content,
+      slug: row.slug ?? rawSlug,
+      excerpt: row.excerpt ?? null,
+      authorId:
+        row.author_id != null ? Number(row.author_id) : undefined,
+      isSecret: Boolean(row.is_secret),
+      isAdminPost: null,
+      matureContent: Boolean(row.mature_content),
+      themeCategory:
+        row.theme_category ??
+        (metadata as any)?.themeCategory ??
+        null,
+      readingTimeMinutes: readingTimeMinutesValue,
+      likesCount,
+      dislikesCount,
+      baselineLikes,
+      baselineDislikes,
+      metadata: metadata ?? {},
+      createdAt: row.created_at ?? new Date().toISOString(),
+    };
+
+    return json(post);
+  } catch {
+    return json(
+      { error: "Failed to fetch post" },
+      { status: 500 }
+    );
+  }
+});
+
+// GET /api/posts/:id/summary - single post summary by external id
+router.get("/api/posts/:id/summary", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  try {
+    const urlObj = new URL(req.url);
+    const segments = urlObj.pathname.split("/");
+    // .../api/posts/:id/summary -> second to last segment is id
+    const idSegment = segments.length >= 2 ? segments[segments.length - 2] : "";
+    const rawId = parseInt(decodeURIComponent(idSegment || ""), 10);
+    if (!Number.isFinite(rawId) || rawId <= 0) {
+      return json({ error: "Invalid post id" }, { status: 400 });
+    }
+
+    const summaries = await buildPostSummaries(env, [rawId]);
+    if (!summaries.length) {
+      return json({ error: "Post not found" }, { status: 404 });
+    }
+
+    return json(summaries[0]);
+  } catch {
+    return json(
+      { error: "Failed to fetch post summary" },
+      { status: 500 }
+    );
+  }
+});
+
+// GET /api/posts/summary?ids=1,2,3 - batch summaries by external ids
+router.get("/api/posts/summary", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  try {
+    const urlObj = new URL(req.url);
+    const search = urlObj.searchParams;
+    const rawParams = [
+      ...search.getAll("ids"),
+      ...search.getAll("id"),
+    ];
+    const joined = rawParams.length ? rawParams.join(",") : "";
+    const list = joined
+      .split(",")
+      .map((s) => Number(s.trim()))
+      .filter((n) => Number.isFinite(n) && n > 0);
+
+    const ids = Array.from(new Set(list));
+    if (!ids.length) {
+      return json({ results: [] });
+    }
+
+    const results = await buildPostSummaries(env, ids);
+    return json({ results });
+  } catch {
+    return json(
+      { error: "Failed to fetch post summaries" },
+      { status: 500 }
+    );
+  }
+});
+
+// POSTS listing/community: still proxied to backend for now (full-featured API)
 router.get("/api/posts", async (req: Request, env: Env) => {
   return proxyToBackend(req, env);
 });

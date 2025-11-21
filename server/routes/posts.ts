@@ -936,7 +936,8 @@ router.get('/:id/summary',
       const dislikesCount = Number((post as any).dislikesCount ?? 0);
 
       return res.json({
-        id: Number(post.id),
+        id: Number(id),
+        localPostId: Number(post.id),
         title: post.title,
         slug: post.slug,
         excerpt: post.excerpt,
@@ -1052,7 +1053,9 @@ router.get('/summary',
         const dislikesCount = Number((row as any).dislikesCount ?? 0);
 
         results.push({
-          id: Number(row.id),
+          id: Number(rawId),
+          localPostId: Number(row.id),
+          wordpressId: (row as any).wordpressId ?? undefined,
           title: row.title,
           slug: row.slug,
           excerpt: row.excerpt,
