@@ -1,7 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase, initSupabase } from '@/lib/supabase';
-import { getApiBaseUrl } from '@/lib/asset-path';
-import { fetchCsrfTokenIfNeeded, createCSRFRequest } from '@/lib/csrf-token';
 
 interface User {
   id: number;
@@ -44,9 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const finalizeServerSession = useCallback(async (access_token: string, rememberMe?: boolean) => {
-    const API_BASE = getApiBaseUrl();
-    const url = API_BASE ? `${API_BASE}/api/auth/supabase/login` : '/api/auth/supabase/login';
-    const resp = await fetch(url, {
+    // Use relative path; getApiBaseUrl already resolves to the API domain when needed
+    const resp = await fetch('/api/auth/supabase/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -69,51 +66,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = useCallback(async () => {
     try {
       setIsLoading(true);
-      const API_BASE = getApiBaseUrl();
-      const url = API_BASE ? `${API_BASE}/api/auth/status` : '/api/auth/status';
-      const response = await fetch(url, { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        const isAuth = (data?.authenticated ?? data?.isAuthenticated) === true;
-        if (isAuth) {
-          setUser(data.user);
-        } else {
-          // Attempt to re-establish a server session from Supabase if available
-          const ready = await initSupabase();
-          if (ready) {
-            try {
-              const { data: s } = await supabase.auth.getSession();
-              const token = s?.session?.access_token;
-              if (token) {
-                await finalizeServerSession(token);
-              } else {
-                setUser(null);
-              }
-            } catch {
-              setUser(null);
-            }
-          } else {
-            setUser(null);
-          }
-        }
-      } else {
-        // Non-200 response: try to finalize from Supabase token as a fallback
-        const ready = await initSupabase();
-        if (ready) {
-          try {
-            const { data: s } = await supabase.auth.getSession();
-            const token = s?.session?.access_token;
-            if (token) {
-              await finalizeServerSession(token);
-            } else {
-              setUser(null);
-            }
-          } catch {
-            setUser(null);
-          }
-        } else {
+      const ready = await initSupabase();
+      if (!ready) {
+        setUser(null);
+        return;
+      }
+
+      const { data, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error('[Auth] Supabase session error:', sessionError.message);
+        setUser(null);
+        return;
+      }
+
+      const token = data?.session?.access_token;
+      if (token) {
+        try {
+          await finalizeServerSession(token);
+        } catch (e) {
+          console.error('[Auth] finalizeServerSession error:', e);
           setUser(null);
         }
+      } else {
+        setUser(null);
       }
     } catch (error) {
       console.error('[Auth] Auth check error:', error);
@@ -217,24 +192,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      // Clear Supabase session (no-op if not configured)
-      try { await supabase.auth.signOut(); } catch {}
-
-      // Clear server session with CSRF protection
-      const API_BASE = getApiBaseUrl();
-      const url = API_BASE ? `${API_BASE}/api/auth/logout` : '/api/auth/logout';
-      await fetchCsrfTokenIfNeeded();
-      const response = await fetch(url, createCSRFRequest('POST'));
-      if (!response.ok) {
-        let message = 'Logout failed';
+      const ready = await initSupabase();
+      if (ready) {
         try {
-          const data = await response.json();
-          message = (data as any).message || message;
-        } catch {}
-        throw new Error(message);
+          await supabase.auth.signOut();
+        } catch {
+          // Ignore Supabase sign-out errors on client
+        }
       }
-
       setUser(null);
       try { localStorage.removeItem('auth_token'); } catch {}
     } catch (err) {

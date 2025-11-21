@@ -868,13 +868,31 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const activeAccumulatedMsRef = useRef<number>(0);
   const [visibilityTick, setVisibilityTick] = useState(0);
 
-  // Persist reading progress to server for cross-device resume (throttled)
+  // Persist reading progress locally and to server for cross-device resume (throttled)
   const lastProgressSentRef = useRef<{ percent: number; ts: number }>({ percent: 0, ts: 0 });
   useEffect(() => {
     try {
-      if (!isAuthenticated) return;
-      const slug = routeSlug || autoSaveSlug || posts?.[currentIndex]?.slug;
+      const slug = routeSlug || autoSaveSlug || (posts?.[currentIndex] as any)?.slug;
       if (!slug) return;
+
+      // Always update local storage so the "Continue Reading" banner works for all users
+      if (typeof window !== 'undefined') {
+        const scrollPosition = window.scrollY || 0;
+        const progressData = {
+          slug: String(slug),
+          scrollPosition,
+          percentRead: Math.max(0, Math.min(100, readingProgress)),
+          lastRead: new Date().toISOString()
+        };
+        try {
+          localStorage.setItem(`readingProgress_${slug}`, JSON.stringify(progressData));
+        } catch {
+          // Ignore storage errors (private mode, quotas, etc.)
+        }
+      }
+
+      // Server sync only for authenticated users
+      if (!isAuthenticated) return;
 
       const now = Date.now();
       const rounded = Math.round(readingProgress);
@@ -885,12 +903,18 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         apiJson<any>('POST', '/api/reading-progress', {
           postSlug: String(slug),
           percentCompleted: rounded
-        }).then((_res) => {
-          // Successful; record timestamp and last percent sent
-          lastProgressSentRef.current = { percent: rounded, ts: Date.now() };
-        }).catch(() => { /* non-fatal */ });
+        })
+          .then(() => {
+            // Successful; record timestamp and last percent sent
+            lastProgressSentRef.current = { percent: rounded, ts: Date.now() };
+          })
+          .catch(() => {
+            // Non-fatal: keep local progress even if server call fails
+          });
       }
-    } catch { /* non-fatal */ }
+    } catch {
+      // Non-fatal: reading should never break due to progress persistence
+    }
   }, [readingProgress, routeSlug, autoSaveSlug, posts, currentIndex, isAuthenticated]);
 
   // Reset active timers when post changes

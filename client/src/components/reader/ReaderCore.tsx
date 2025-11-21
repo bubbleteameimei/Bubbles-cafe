@@ -93,12 +93,14 @@ export function ReaderCore({ slug, onPostLoad, onError }: ReaderCoreProps) {
         if (deltaPct >= 5 && deltaTime >= 10_000) {
           state.lastSavedPct = pct;
           state.lastSavedAt = now;
-          await fetch('/api/reading-progress', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ postSlug: slug, percentCompleted: pct })
-          }).catch(() => {});
+          try {
+            await apiJson('POST', '/api/reading-progress', {
+              postSlug: slug,
+              percentCompleted: pct
+            });
+          } catch {
+            // Ignore failures; reading progress persistence is best-effort
+          }
         }
       } catch {
         // Non-fatal

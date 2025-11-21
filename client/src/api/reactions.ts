@@ -68,11 +68,23 @@ export async function fetchReactionsBatch(postIds: number[]): Promise<ReactionTo
   return Array.isArray(data?.results) ? data.results : [];
 }
 
-export async function submitReaction(postId: number, isLike: boolean): Promise<ReactionTotals> {
+export async function submitReaction(
+  postId: number,
+  isLike: boolean,
+  options?: { prevState?: 'like' | 'dislike' | 'none'; nextState?: 'like' | 'dislike' | 'none' }
+): Promise<ReactionTotals> {
+  const payload: any = { isLike };
+  if (options && typeof options.prevState === 'string') {
+    payload.prevState = options.prevState;
+  }
+  if (options && typeof options.nextState === 'string') {
+    payload.nextState = options.nextState;
+  }
+
   return fetchWithFallback<ReactionTotals>(`/api/posts/${postId}/reaction`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ isLike }),
+    body: JSON.stringify(payload),
   });
 }

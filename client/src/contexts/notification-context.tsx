@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { v4 as uuidv4 } from 'uuid';
 import { CreepyTextGlitch } from '@/components/effects/CreepyTextGlitch';
 import { apiRequest } from '@/lib/queryClient';
+import { fetchWordPressPosts } from '@/lib/wordpress-api';
 
 export type NotificationType = 'info' | 'success' | 'warning' | 'error' | 'new-story' | 'cursed';
 
@@ -255,21 +256,26 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     
     const checkForNewStories = async () => {
       try {
-        const response = await fetch('/api/posts?limit=1');
-        if (!response.ok) return;
-        
-        const data = await response.json();
-        if (!data.posts || !data.posts.length) return;
-        
-        const latestPost = data.posts[0];
-        const postDate = new Date(latestPost.date);
-        
+        const result = await fetchWordPressPosts({ perPage: 1, includeContent: false, maxRetries: 1 });
+        const posts = Array.isArray((result as any)?.posts) ? (result as any).posts : [];
+        if (!posts.length) return;
+
+        const latestPost = posts[0] as any;
+        const postDate = new Date(
+          latestPost?.date ||
+          latestPost?.createdAt ||
+          latestPost?.modified ||
+          new Date().toISOString()
+        );
+
         if (postDate > lastChecked && !notifications.some(n => n.storyId === latestPost.id)) {
+          const title = latestPost?.title?.rendered || 'New Story';
+          const slug = latestPost?.slug || latestPost?.id;
           addNotification({
             type: 'new-story',
             title: 'New Story Published',
-            message: `"${latestPost.title.rendered}" is now available to read!`,
-            link: `/reader/${latestPost.slug}`,
+            message: `"${title}" is now available to read!`,
+            link: `/reader/${slug}`,
             storyId: latestPost.id
           });
         }

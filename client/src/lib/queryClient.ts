@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { getApiPath } from './asset-path';
 import { applyCSRFToken, fetchCsrfTokenIfNeeded, refreshCsrfToken } from './csrf-token';
+import { supabase, initSupabase } from './supabase';
 
 // Enhanced API error with better type checking and error categorization
 export class APIError extends Error {
@@ -37,6 +38,27 @@ export class APIError extends Error {
 
   get isNetworkError(): boolean {
     return this.code === 'NETWORK_ERROR';
+  }
+}
+
+// Attach Supabase access token as Authorization header when available
+async function attachAuthHeader(options: RequestInit): Promise<RequestInit> {
+  try {
+    const ready = await initSupabase();
+    if (!ready) return options;
+
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data?.session?.access_token) return options;
+
+    const token = data.session.access_token;
+    const headers = new Headers(options.headers as any);
+    if (!headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    return { ...options, headers };
+  } catch {
+    return options;
   }
 }
 
@@ -99,8 +121,8 @@ export async function apiRequest<T = unknown>(
 
   const isFormData = options.body instanceof FormData;
 
-  // Prepare request options
-  const requestOptions: RequestInit = {
+  // Prepare base request options
+  const baseOptions: RequestInit = {
     method: options.method || 'GET',
     headers: {
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
@@ -109,6 +131,9 @@ export async function apiRequest<T = unknown>(
     credentials: 'include',
     ...options,
   };
+
+  // Attach Supabase auth token when available
+  const requestOptions = await attachAuthHeader(baseOptions);
 
   try {
     const fullUrl = url.startsWith('http') ? url : getApiPath(url);

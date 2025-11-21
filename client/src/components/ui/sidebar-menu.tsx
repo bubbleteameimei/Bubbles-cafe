@@ -12,6 +12,7 @@ import { useLocation } from "wouter"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
+import { apiRequest } from "@/lib/queryClient"
 import {
   Collapsible,
   CollapsibleContent,
@@ -153,28 +154,24 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       switch (href) {
         case '/stories':
         case '/index': {
-          await fetch('/api/posts?limit=100', { credentials: 'include' }).catch(() => {});
+          await apiRequest('/api/posts?limit=100').catch(() => {});
           break;
         }
         case '/community': {
-          await fetch('/api/posts/community?limit=50', { credentials: 'include' }).catch(() => {});
+          await apiRequest('/api/posts/community?limit=50').catch(() => {});
           break;
         }
         case '/bookmarks': {
           // Require authentication for bookmarks; no anonymous fallback
-          await fetch('/api/bookmarks', { credentials: 'include' }).catch(() => {});
-          break;
-        }
-        case '/profile': {
-          await fetch('/api/auth/status', { credentials: 'include' }).catch(() => {});
+          await apiRequest('/api/bookmarks').catch(() => {});
           break;
         }
         case '/search': {
-          await fetch('/api/search/suggest?limit=8', { credentials: 'include' }).catch(() => {});
+          await apiRequest('/api/search/suggest?limit=8').catch(() => {});
           break;
         }
         case '/reader': {
-          await fetch('/api/posts?page=1&limit=9', { credentials: 'include' }).catch(() => {});
+          await apiRequest('/api/posts?page=1&limit=9').catch(() => {});
           break;
         }
         default:
@@ -292,28 +289,24 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       switch (href) {
         case '/stories':
         case '/index': {
-          await fetch('/api/posts?limit=100', { credentials: 'include' }).catch(() => {});
+          await apiRequest('/api/posts?limit=100').catch(() => {});
           break;
         }
         case '/community': {
-          await fetch('/api/posts/community?limit=50', { credentials: 'include' }).catch(() => {});
+          await apiRequest('/api/posts/community?limit=50').catch(() => {});
           break;
         }
         case '/bookmarks': {
           // Require authentication for bookmarks; no anonymous fallback
-          await fetch('/api/bookmarks', { credentials: 'include' }).catch(() => {});
-          break;
-        }
-        case '/profile': {
-          await fetch('/api/auth/status', { credentials: 'include' }).catch(() => {});
+          await apiRequest('/api/bookmarks').catch(() => {});
           break;
         }
         case '/search': {
-          await fetch('/api/search/suggest?limit=8', { credentials: 'include' }).catch(() => {});
+          await apiRequest('/api/search/suggest?limit=8').catch(() => {});
           break;
         }
         case '/reader': {
-          await fetch('/api/posts?page=1&limit=9', { credentials: 'include' }).catch(() => {});
+          await apiRequest('/api/posts?page=1&limit=9').catch(() => {});
           break;
         }
         default:

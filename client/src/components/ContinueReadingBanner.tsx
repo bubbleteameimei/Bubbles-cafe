@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { BookOpen, X } from "lucide-react";
 import { useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 
 type SavedPosition = {
   scrollY: number;
@@ -43,23 +44,76 @@ export default function ContinueReadingBanner() {
   const latest = useMemo(() => {
     try {
       const entries: Array<{ slug: string; pos: SavedPosition }> = [];
+
       for (const key of Object.keys(localStorage)) {
-        if (key.startsWith("readerGentleScroll_")) {
-          const slug = key.replace("readerGentleScroll_", "");
-          if (!slug) continue;
-          const json = localStorage.getItem(key);
-          if (!json) continue;
-          const pos = JSON.parse(json) as SavedPosition;
-          entries.push({ slug, pos });
+        if (!key.startsWith("readingProgress_")) continue;
+
+        const slug = key.replace("readingProgress_", "");
+        if (!slug) continue;
+
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+
+        let percentRead = 0;
+        let scrollY = 0;
+        let timestamp = 0;
+
+        try {
+          const parsed = JSON.parse(raw) as {
+            slug?: string;
+            scrollPosition?: number;
+            percentRead?: number;
+            progress?: number;
+            lastRead?: string;
+            timestamp?: number;
+          };
+
+          const rawPct =
+            typeof parsed.percentRead === "number"
+              ? parsed.percentRead
+              : typeof parsed.progress === "number"
+              ? parsed.progress
+              : 0;
+
+          percentRead = Number.isFinite(rawPct) ? rawPct : 0;
+
+          const rawScroll =
+            typeof parsed.scrollPosition === "number" ? parsed.scrollPosition : 0;
+          scrollY = Number.isFinite(rawScroll) ? rawScroll : 0;
+
+          if (typeof parsed.timestamp === "number" && Number.isFinite(parsed.timestamp)) {
+            timestamp = parsed.timestamp;
+          } else if (parsed.lastRead) {
+            const t = Date.parse(parsed.lastRead);
+            if (Number.isFinite(t)) {
+              timestamp = t;
+            }
+          }
+        } catch {
+          // Fallback: value might just be a percentage string
+          const pct = Number(raw);
+          percentRead = Number.isFinite(pct) ? pct : 0;
+          scrollY = 0;
+          timestamp = Date.now();
         }
+
+        if (!timestamp || !Number.isFinite(timestamp)) {
+          timestamp = Date.now();
+        }
+
+        entries.push({ slug, pos: { scrollY, timestamp, percentRead } });
       }
+
       if (entries.length === 0) return null;
+
       // Pick most recent
       entries.sort((a, b) => b.pos.timestamp - a.pos.timestamp);
       const top = entries[0];
-      // Only show if they read at least a little
+
       const pct = Math.round(top.pos.percentRead || 0);
-      if (pct < 3 && top.pos.scrollY < 150) return null;
+      // Only show if they actually read a bit
+      if (pct < 3) return null;
+
       return top;
     } catch {
       return null;
@@ -69,13 +123,12 @@ export default function ContinueReadingBanner() {
   const slug = latest?.slug;
 
   // Load post title by slug
-  const { data, isLoading, isError } = useQuery({
+  const { data } = useQuery({
     queryKey: ["/api/posts/slug", slug],
     enabled: Boolean(slug) && !dismissed,
     queryFn: async () => {
-      const res = await fetch(`/api/posts/slug/${encodeURIComponent(slug as string)}`);
-      if (!res.ok) throw new Error("Failed to load post");
-      return (await res.json()) as PostSummary;
+      if (!slug) throw new Error("Missing slug");
+      return await apiRequest<PostSummary>(`/api/posts/slug/${encodeURIComponent(slug as string)}`);
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -85,9 +138,12 @@ export default function ContinueReadingBanner() {
     queryKey: ["/api/reading-progress", slug],
     enabled: Boolean(slug) && !dismissed,
     queryFn: async () => {
-      const res = await fetch(`/api/reading-progress/${encodeURIComponent(slug as string)}`, { credentials: 'include' });
-      if (!res.ok) return null;
-      return await res.json();
+      if (!slug) return null;
+      try {
+        return await apiRequest<any>(`/api/reading-progress/${encodeURIComponent(slug as string)}`);
+      } catch {
+        return null;
+      }
     },
     staleTime: 2 * 60 * 1000,
   });
@@ -98,6 +154,8 @@ export default function ContinueReadingBanner() {
   const localPct = Math.round(latest?.pos.percentRead || 0);
   const serverPct = Number(serverProgress?.progress?.percentCompleted || 0);
   const pct = Math.max(localPct, serverPct); // prefer higher of local/server
+
+  if (!Number.isFinite(pct) || pct <= 0) return null;
 
   const title = data ? parseTitle(data.title) : "Continue Reading";
   const safeTitle = sanitize(title);
@@ -140,6 +198,7 @@ export default function ContinueReadingBanner() {
                 variant="outline"
                 onClick={() => {
                   try {
+                    localStorage.removeItem(`readingProgress_${slug}`);
                     localStorage.removeItem(`readerGentleScroll_${slug}`);
                   } catch {}
                   setDismissed(true);
