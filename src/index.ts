@@ -6907,6 +6907,66 @@ router.post(
   }
 );
 
+router.get("/api/themes/categories", async (_req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({
+      categories: [],
+      total: 0,
+      source: "supabase-not-configured",
+    });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/theme_categories`);
+    url.searchParams.set(
+      "select",
+      "key,label,icon,is_active,sort_order",
+    );
+    url.searchParams.set("is_active", "eq.true");
+    url.searchParams.set("order", "sort_order.asc,label.asc");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return json(
+        { categories: [], total: 0, source: "supabase-error" },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    const categories = Array.isArray(rows)
+      ? rows
+          .filter((row) => row && row.key)
+          .map((row) => ({
+            key: String(row.key),
+            label: String(row.label || row.key),
+            icon: row.icon ? String(row.icon) : null,
+            sortOrder:
+              row.sort_order != null ? Number(row.sort_order) : 0,
+          }))
+      : [];
+
+    return json({
+      categories,
+      total: categories.length,
+      source: "supabase",
+    });
+  } catch {
+    return json(
+      { categories: [], total: 0, source: "supabase-error" },
+      { status: 500 },
+    );
+  }
+});
+
 router.get("/api/trending-stories", async (_req: Request, env: Env) => {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return json({ posts: [] });
@@ -8365,6 +8425,240 @@ router.get(
 );
 
 // USER NOTIFICATIONS: Supabase-backed, with legacy fallback
+
+// User notification preferences (Supabase-backed) - replaces Express /api/user/notification-preferences
+router.get("/api/user/notification-preferences", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json(
+      { error: "Supabase not configured" },
+      { status: 500 },
+    );
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const userId = await getSupabaseUserIdFromJwt(env, token);
+  if (!Number.isFinite(userId || NaN)) {
+    return json({ error: "User not authenticated" }, { status: 401 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    };
+
+    const listUrl = new URL(`${baseUrl}/rest/v1/user_notification_preferences`);
+    listUrl.searchParams.set(
+      "select",
+      "user_id,story_updates,community_activity,security_alerts,reading_reminders,recommendations,preferred_time,timezone,updated_at",
+    );
+    listUrl.searchParams.set("user_id", `eq.${userId}`);
+    listUrl.searchParams.set("limit", "1");
+
+    const res = await fetch(listUrl.toString(), { headers });
+    if (!res.ok) {
+      return json(
+        { error: "Failed to load notification preferences" },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    let row = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+
+    if (!row) {
+      const defaults = {
+        user_id: Number(userId),
+        story_updates: true,
+        community_activity: true,
+        security_alerts: true,
+        reading_reminders: false,
+        recommendations: true,
+        preferred_time: "evening",
+        timezone: "pst",
+      };
+
+      const insertRes = await fetch(
+        `${baseUrl}/rest/v1/user_notification_preferences`,
+        {
+          method: "POST",
+          headers: { ...headers, Prefer: "return=representation" },
+          body: JSON.stringify(defaults),
+        },
+      );
+
+      if (!insertRes.ok) {
+        return json(
+          { error: "Failed to create notification preferences" },
+          { status: 500 },
+        );
+      }
+
+      const inserted = (await insertRes.json().catch(() => [])) as any[];
+      row =
+        Array.isArray(inserted) && inserted.length > 0
+          ? inserted[0]
+          : defaults;
+    }
+
+    const payload = {
+      storyUpdates: row.story_updates !== false,
+      communityActivity: row.community_activity !== false,
+      securityAlerts: row.security_alerts !== false,
+      readingReminders: row.reading_reminders === true,
+      recommendations: row.recommendations !== false,
+      preferredTime: row.preferred_time || "evening",
+      timezone: row.timezone || "pst",
+    };
+
+    return json(payload);
+  } catch {
+    return json(
+      { error: "Failed to load notification preferences" },
+      { status: 500 },
+    );
+  }
+});
+
+router.patch(
+  "/api/user/notification-preferences",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 },
+      );
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!Number.isFinite(userId || NaN)) {
+      return json({ error: "User not authenticated" }, { status: 401 });
+    }
+
+    let body: any;
+    try {
+      body = (await (req as any).json?.().catch(() => ({}))) || {};
+    } catch {
+      return json(
+        { error: "Invalid payload" },
+        { status: 400 },
+      );
+    }
+
+    const update: any = {};
+
+    if (typeof body.storyUpdates === "boolean") {
+      update.story_updates = body.storyUpdates;
+    }
+    if (typeof body.communityActivity === "boolean") {
+      update.community_activity = body.communityActivity;
+    }
+    if (typeof body.securityAlerts === "boolean") {
+      update.security_alerts = body.securityAlerts;
+    }
+    if (typeof body.readingReminders === "boolean") {
+      update.reading_reminders = body.readingReminders;
+    }
+    if (typeof body.recommendations === "boolean") {
+      update.recommendations = body.recommendations;
+    }
+    if (typeof body.preferredTime === "string") {
+      update.preferred_time = body.preferredTime;
+    }
+    if (typeof body.timezone === "string") {
+      update.timezone = body.timezone;
+    }
+
+    // Backward-compatible snake_case keys
+    if (typeof body.story_updates === "boolean") {
+      update.story_updates = body.story_updates;
+    }
+    if (typeof body.community_activity === "boolean") {
+      update.community_activity = body.community_activity;
+    }
+    if (typeof body.reading_reminders === "boolean") {
+      update.reading_reminders = body.reading_reminders;
+    }
+
+    if (Object.keys(update).length === 0) {
+      return json(
+        { error: "No valid fields to update" },
+        { status: 400 },
+      );
+    }
+
+    try {
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+      const headers: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      };
+
+      const upsertUrl = new URL(
+        `${baseUrl}/rest/v1/user_notification_preferences`,
+      );
+      upsertUrl.searchParams.set("on_conflict", "user_id");
+
+      const upsertRes = await fetch(upsertUrl.toString(), {
+        method: "POST",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify({
+          user_id: Number(userId),
+          ...update,
+        }),
+      });
+
+      if (!upsertRes.ok) {
+        return json(
+          { error: "Failed to update notification preferences" },
+          { status: 500 },
+        );
+      }
+
+      const rows = (await upsertRes.json().catch(() => [])) as any[];
+      const row =
+        Array.isArray(rows) && rows.length > 0
+          ? rows[0]
+          : {
+              user_id: Number(userId),
+              ...update,
+            };
+
+      const payload = {
+        storyUpdates: row.story_updates !== false,
+        communityActivity: row.community_activity !== false,
+        securityAlerts: row.security_alerts !== false,
+        readingReminders: row.reading_reminders === true,
+        recommendations: row.recommendations !== false,
+        preferredTime: row.preferred_time || "evening",
+        timezone: row.timezone || "pst",
+      };
+
+      return json(payload);
+    } catch {
+      return json(
+        { error: "Failed to update notification preferences" },
+        { status: 500 },
+      );
+    }
+  },
+);
 
 // User privacy settings (Supabase-backed) - replaces Express /api/user/privacy-settings
 router.get("/api/user/privacy-settings", async (req: Request, env: Env) => {
