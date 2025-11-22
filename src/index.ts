@@ -835,7 +835,7 @@ async function proxyToBackend(req: Request, env: Env): Promise<Response> {
 // ============================================================================
 
 // HEALTH
-router.get("/api/health", async (_req: Request, _env: Env) =&gt; {
+router.get("/api/health", async (_req: Request, _env: Env) => {
   try {
     const started = Date.now();
     const healthRes = {
@@ -855,7 +855,7 @@ router.get("/api/health", async (_req: Request, _env: Env) =&gt; {
   }
 });
 
-router.get("/health", async () =&gt; {
+router.get("/health", async () => {
   return json({ status: "ok" });
 });
 
@@ -863,10 +863,10 @@ router.get("/health", async () =&gt; {
 // Note: Worker APIs are JWT-based and do not require CSRF protection.
 // This endpoint returns a stateless token so clients expecting /api/csrf-token
 // can continue to function without relying on the legacy Express backend.
-router.get("/api/csrf-token", async (_req: Request) =&gt; {
+router.get("/api/csrf-token", async (_req: Request) => {
   try {
     const token = crypto.randomUUID();
-    const headers: Record&lt;string, string&gt; = {
+    const headers: Record<string, string> = {
       "Cache-Control": "no-store, max-age=0",
     };
     try {
@@ -882,13 +882,13 @@ router.get("/api/csrf-token", async (_req: Request) =&gt; {
 });
 
 // CONFIG: Public client bootstrap (Supabase, URLs, Google OAuth)
-router.get("/api/config/public", async (req: Request, env: Env) =&gt; {
+router.get("/api/config/public", async (req: Request, env: Env) => {
   try {
     const url = new URL(req.url);
     const protocol = url.protocol; // e.g. "https:"
     const host = url.host.toLowerCase();
 
-    const apiBase = (() =&gt; {
+    const apiBase = (() => {
       try {
         if (host.startsWith("api.")) return `${protocol}//${host}`;
         const cleanHost = host.startsWith("www.") ? host.slice(4) : host;
