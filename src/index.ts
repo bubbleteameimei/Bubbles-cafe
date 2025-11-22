@@ -8424,6 +8424,194 @@ router.get(
   }
 );
 
+// PATCH /api/user/notification-preferences - upsert preferences for current user
+router.patch(
+  "/api/user/notification-preferences",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 },
+      );
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!Number.isFinite(userId || NaN)) {
+      return json({ error: "User not authenticated" }, { status: 401 });
+    }
+
+    let body: any;
+    try {
+      body = (await (req as any).json?.().catch(() => ({}))) || {};
+    } catch {
+      body = {};
+    }
+
+    const patch: Record<string, any> = {};
+
+    const applyBool = (
+      camelKey: string,
+      snakeKey: string | null,
+      column: string
+    ) => {
+      let value: any;
+      if (Object.prototype.hasOwnProperty.call(body, camelKey)) {
+        value = body[camelKey];
+      }
+      if (snakeKey && Object.prototype.hasOwnProperty.call(body, snakeKey)) {
+        value = body[snakeKey];
+      }
+      if (typeof value === "boolean") {
+        patch[column] = value;
+      }
+    };
+
+    applyBool("storyUpdates", "story_updates", "story_updates");
+    applyBool("communityActivity", "community_activity", "community_activity");
+    applyBool("securityAlerts", null, "security_alerts");
+    applyBool("readingReminders", "reading_reminders", "reading_reminders");
+    applyBool("recommendations", null, "recommendations");
+
+    if (Object.prototype.hasOwnProperty.call(body, "preferredTime")) {
+      const v = body.preferredTime;
+      patch.preferred_time = v == null ? null : String(v);
+    }
+    if (Object.prototype.hasOwnProperty.call(body, "timezone")) {
+      const v = body.timezone;
+      patch.timezone = v == null ? null : String(v);
+    }
+
+    patch.updated_at = new Date().toISOString();
+
+    try {
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+      const headersBase: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      };
+
+      const listUrl = new URL(
+        `${baseUrl}/rest/v1/user_notification_preferences`
+      );
+      listUrl.searchParams.set(
+        "select",
+        "user_id,story_updates,community_activity,security_alerts,reading_reminders,recommendations,preferred_time,timezone,updated_at",
+      );
+      listUrl.searchParams.set("user_id", `eq.${userId}`);
+      listUrl.searchParams.set("limit", "1");
+
+      const existingRes = await fetch(listUrl.toString(), {
+        method: "GET",
+        headers: headersBase,
+      });
+
+      if (!existingRes.ok && existingRes.status !== 406) {
+        return json(
+          { error: "Failed to update notification preferences" },
+          { status: 500 },
+        );
+      }
+
+      const existingRows = (await existingRes
+        .json()
+        .catch(() => [])) as any[];
+      const existing =
+        Array.isArray(existingRows) && existingRows.length > 0
+          ? existingRows[0]
+          : null;
+
+      const writeUrl = new URL(
+        `${baseUrl}/rest/v1/user_notification_preferences`
+      );
+      let method: "PATCH" | "POST" = "PATCH";
+      let writeBody: any = patch;
+
+      if (!existing) {
+        method = "POST";
+        writeBody = { user_id: userId, ...patch };
+      } else {
+        writeUrl.searchParams.set("user_id", `eq.${userId}`);
+      }
+
+      const writeRes = await fetch(writeUrl.toString(), {
+        method,
+        headers: {
+          ...headersBase,
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify(writeBody),
+      });
+
+      if (!writeRes.ok) {
+        return json(
+          { error: "Failed to update notification preferences" },
+          { status: 500 },
+        );
+      }
+
+      const rows = (await writeRes.json().catch(() => [])) as any[];
+      const row =
+        Array.isArray(rows) && rows.length > 0
+          ? rows[0]
+          : existing;
+
+      if (!row) {
+        return json(
+          { error: "Failed to update notification preferences" },
+          { status: 500 },
+        );
+      }
+
+      const preferences = {
+        storyUpdates:
+          typeof row.story_updates === "boolean"
+            ? row.story_updates
+            : true,
+        communityActivity:
+          typeof row.community_activity === "boolean"
+            ? row.community_activity
+            : true,
+        securityAlerts:
+          typeof row.security_alerts === "boolean"
+            ? row.security_alerts
+            : true,
+        readingReminders:
+          typeof row.reading_reminders === "boolean"
+            ? row.reading_reminders
+            : false,
+        recommendations:
+          typeof row.recommendations === "boolean"
+            ? row.recommendations
+            : true,
+        preferredTime:
+          typeof row.preferred_time === "string" &&
+          row.preferred_time.trim()
+            ? row.preferred_time
+            : null,
+        timezone:
+          typeof row.timezone === "string" && row.timezone.trim()
+            ? row.timezone
+            : null,
+      };
+
+      return json(preferences);
+    } catch {
+      return json(
+        { error: "Failed to update notification preferences" },
+        { status: 500 },
+      );
+    }
+  }
+);
+
 // USER NOTIFICATIONS: Supabase-backed, with legacy fallback
 
 // User notification preferences (Supabase-backed) - replaces Express /api/user/notification-preferences
@@ -8473,6 +8661,82 @@ router.get("/api/user/notification-preferences", async (req: Request, env: Env) 
 
     const rows = (await res.json().catch(() => [])) as any[];
     let row = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+
+    if (!row) {
+      const __defaultNotificationPreferences = {
+        user_id: userId,
+        story_updates: true,
+        community_activity: true,
+        security_alerts: true,
+        reading_reminders: false,
+        recommendations: true,
+        preferred_time: null,
+        timezone: null,
+      };
+
+      const createRes = await fetch(
+        `${baseUrl}/rest/v1/user_notification_preferences`,
+        {
+          method: "POST",
+          headers: {
+            ...headers,
+            Prefer: "return=representation",
+          },
+          body: JSON.stringify(__defaultNotificationPreferences),
+        },
+      );
+
+      if (!createRes.ok) {
+        return json(
+          { error: "Failed to create notification preferences" },
+          { status: 500 },
+        );
+      }
+
+      const createdRows = (await createRes.json().catch(() => [])) as any[];
+      row =
+        Array.isArray(createdRows) && createdRows.length > 0
+          ? createdRows[0]
+          : __defaultNotificationPreferences;
+    }
+
+    if (!row) {
+      return json(
+        { error: "Failed to load notification preferences" },
+        { status: 500 },
+      );
+    }
+
+    const __notificationPreferences = {
+      storyUpdates:
+        typeof row.story_updates === "boolean" ? row.story_updates : true,
+      communityActivity:
+        typeof row.community_activity === "boolean"
+          ? row.community_activity
+          : true,
+      securityAlerts:
+        typeof row.security_alerts === "boolean"
+          ? row.security_alerts
+          : true,
+      readingReminders:
+        typeof row.reading_reminders === "boolean"
+          ? row.reading_reminders
+          : false,
+      recommendations:
+        typeof row.recommendations === "boolean"
+          ? row.recommendations
+          : true,
+      preferredTime:
+        typeof row.preferred_time === "string" && row.preferred_time.trim()
+          ? row.preferred_time
+          : null,
+      timezone:
+        typeof row.timezone === "string" && row.timezone.trim()
+          ? row.timezone
+          : null,
+    };
+
+    return json(__notificationPreferences);
 
     if (!row) {
       const defaults = {
