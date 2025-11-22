@@ -59,7 +59,7 @@ Preferred communication style: Simple, everyday language.
 - **User Management**: Registration, authentication, profile management, admin user management, role-based access control.
 - **Reader Experience**: Responsive design, theme support, progress tracking, bookmarking, interactive elements, mobile optimization.
 - **Administrative Features**: Consolidated admin menu with sections for Dashboard, Content Management (Stories, Content, WordPress Sync), User Management (Users, Moderation), and Insights & Reports (Analytics, Statistics, Feedback, Bug Reports).
-- **Deployment Strategy**: Split architecture with Frontend on Vercel, Backend on Render, and PostgreSQL on Supabase. Cross-domain CORS, secure cookie configuration, environment-specific rate limiting, database connection pooling. HTTPS enforcement, SameSite=None cookies, IP whitelisting.
+- **Deployment Strategy**: Split architecture with Frontend on Vercel, API on Cloudflare Workers, and PostgreSQL on Supabase. A legacy Express/Render backend remains for local development and SSR but is no longer used in production for the public API. Cross-domain CORS, secure cookie configuration, environment-specific rate limiting, database connection pooling. HTTPS enforcement, SameSite=None cookies, IP whitelisting.
 
 ## External Dependencies
 - **React Ecosystem**: React, React DOM, React Query

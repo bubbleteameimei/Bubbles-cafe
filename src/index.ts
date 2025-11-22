@@ -835,7 +835,7 @@ async function proxyToBackend(req: Request, env: Env): Promise<Response> {
 // ============================================================================
 
 // HEALTH
-router.get("/api/health", async (_req: Request, _env: Env) => {
+router.get("/api/health", async (_req: Request, _env: Env) =&gt; {
   try {
     const started = Date.now();
     const healthRes = {
@@ -855,18 +855,40 @@ router.get("/api/health", async (_req: Request, _env: Env) => {
   }
 });
 
-router.get("/health", async () => {
+router.get("/health", async () =&gt; {
   return json({ status: "ok" });
 });
 
+// CSRF TOKEN: compatibility endpoint for legacy clients
+// Note: Worker APIs are JWT-based and do not require CSRF protection.
+// This endpoint returns a stateless token so clients expecting /api/csrf-token
+// can continue to function without relying on the legacy Express backend.
+router.get("/api/csrf-token", async (_req: Request) =&gt; {
+  try {
+    const token = crypto.randomUUID();
+    const headers: Record&lt;string, string&gt; = {
+      "Cache-Control": "no-store, max-age=0",
+    };
+    try {
+      headers["Set-Cookie"] =
+        `XSRF-TOKEN=${encodeURIComponent(token)}; Path=/; SameSite=Lax; Secure`;
+    } catch {
+      // Ignore cookie errors (non-browser contexts)
+    }
+    return json({ csrfToken: token }, { headers });
+  } catch {
+    return json({ csrfToken: null }, { status: 200 });
+  }
+});
+
 // CONFIG: Public client bootstrap (Supabase, URLs, Google OAuth)
-router.get("/api/config/public", async (req: Request, env: Env) => {
+router.get("/api/config/public", async (req: Request, env: Env) =&gt; {
   try {
     const url = new URL(req.url);
     const protocol = url.protocol; // e.g. "https:"
     const host = url.host.toLowerCase();
 
-    const apiBase = (() => {
+    const apiBase = (() =&gt; {
       try {
         if (host.startsWith("api.")) return `${protocol}//${host}`;
         const cleanHost = host.startsWith("www.") ? host.slice(4) : host;
@@ -8343,7 +8365,525 @@ router.get(
 );
 
 // USER NOTIFICATIONS: Supabase-backed, with legacy fallback
-router.get("/api/notifications", async (req: Request, env: Env) => {
+
+// User privacy settings (Supabase-backed) - replaces Express /api/user/privacy-settings
+router.get("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Supabase not configured" }, { status: 500 });
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const userId = await getSupabaseUserIdFromJwt(env, token);
+  if (!Number.isFinite(userId || NaN)) {
+    return json({ error: "User not authenticated" }, { status: 401 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record&lt;string, string&gt; = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    };
+
+    const listUrl = new URL(`${baseUrl}/rest/v1/user_privacy_settings`);
+    listUrl.searchParams.set(
+      "select",
+      "user_id,profile_visible,share_reading_history,anonymous_commenting,two_factor_auth_enabled,login_notifications,updated_at",
+    );
+    listUrl.searchParams.set("user_id", `eq.${userId}`);
+    listUrl.searchParams.set("limit", "1");
+
+    const res = await fetch(listUrl.toString(), { headers });
+    if (!res.ok) {
+      return json(
+        { error: "Failed to load privacy settings" },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await res.json().catch(() =&gt; [])) as any[];
+    let row = Array.isArray(rows) &amp;&amp; rows.length &gt; 0 ? rows[0] : null;
+
+    if (!row) {
+      const defaults = {
+        user_id: Number(userId),
+        profile_visible: true,
+        share_reading_history: false,
+        anonymous_commenting: false,
+        two_factor_auth_enabled: false,
+        login_notifications: true,
+      };
+      const insertRes = await fetch(
+        `${baseUrl}/rest/v1/user_privacy_settings`,
+        {
+          method: "POST",
+          headers: { ...headers, Prefer: "return=representation" },
+          body: JSON.stringify(defaults),
+        },
+      );
+      if (!insertRes.ok) {
+        return json(
+          { error: "Failed to create privacy settings" },
+          { status: 500 },
+        );
+      }
+      const inserted = (await insertRes.json().catch(() =&gt; [])) as any[];
+      row =
+        Array.isArray(inserted) &amp;&amp; inserted.length &gt; 0
+          ? inserted[0]
+          : defaults;
+    }
+
+    const payload = {
+      profileVisible: row.profile_visible === true,
+      shareReadingHistory: row.share_reading_history === true,
+      anonymousCommenting: row.anonymous_commenting === true,
+      twoFactorAuthEnabled: row.two_factor_auth_enabled === true,
+      loginNotifications: row.login_notifications !== false,
+    };
+
+    return json(payload);
+  } catch {
+    return json(
+      { error: "Failed to load privacy settings" },
+      { status: 500 },
+    );
+  }
+});
+
+router.patch("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Supabase not configured" }, { status: 500 });
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const userId = await getSupabaseUserIdFromJwt(env, token);
+  if (!Number.isFinite(userId || NaN)) {
+    return json({ error: "User not authenticated" }, { status: 401 });
+  }
+
+  let body: any;
+  try {
+    body = (await (req as any).json?.().catch(() =&gt; ({}))) || {};
+  } catch {
+    body = {};
+  }
+
+  const patch: Record&lt;string, any&gt; = {};
+
+  if (Object.prototype.hasOwnProperty.call(body, "profileVisible")) {
+    patch.profile_visible = !!body.profileVisible;
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "shareReadingHistory")) {
+    patch.share_reading_history = !!body.shareReadingHistory;
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "anonymousCommenting")) {
+    patch.anonymous_commenting = !!body.anonymousCommenting;
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "twoFactorAuthEnabled")) {
+    patch.two_factor_auth_enabled = !!body.twoFactorAuthEnabled;
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "loginNotifications")) {
+    patch.login_notifications = !!body.loginNotifications;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return json(
+      { error: "No valid fields in request" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record&lt;string, string&gt; = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    };
+
+    // Check for existing row
+    const listUrl = new URL(`${baseUrl}/rest/v1/user_privacy_settings`);
+    listUrl.searchParams.set(
+      "select",
+      "user_id,profile_visible,share_reading_history,anonymous_commenting,two_factor_auth_enabled,login_notifications,updated_at",
+    );
+    listUrl.searchParams.set("user_id", `eq.${userId}`);
+    listUrl.searchParams.set("limit", "1");
+
+    const res = await fetch(listUrl.toString(), { headers });
+    if (!res.ok) {
+      return json(
+        { error: "Failed to update privacy settings" },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await res.json().catch(() =&gt; [])) as any[];
+    const existing = Array.isArray(rows) &amp;&amp; rows.length &gt; 0 ? rows[0] : null;
+
+    let row: any;
+
+    if (existing) {
+      const updateUrl = new URL(`${baseUrl}/rest/v1/user_privacy_settings`);
+      updateUrl.searchParams.set("user_id", `eq.${userId}`);
+
+      const updateRes = await fetch(updateUrl.toString(), {
+        method: "PATCH",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify(patch),
+      });
+
+      if (!updateRes.ok) {
+        return json(
+          { error: "Failed to update privacy settings" },
+          { status: 500 },
+        );
+      }
+
+      const updatedRows = (await updateRes.json().catch(() =&gt; [])) as any[];
+      row =
+        Array.isArray(updatedRows) &amp;&amp; updatedRows.length &gt; 0
+          ? updatedRows[0]
+          : existing;
+    } else {
+      const defaults = {
+        user_id: Number(userId),
+        profile_visible: true,
+        share_reading_history: false,
+        anonymous_commenting: false,
+        two_factor_auth_enabled: false,
+        login_notifications: true,
+      };
+      const insertBody = { ...defaults, ...patch };
+
+      const insertRes = await fetch(
+        `${baseUrl}/rest/v1/user_privacy_settings`,
+        {
+          method: "POST",
+          headers: { ...headers, Prefer: "return=representation" },
+          body: JSON.stringify(insertBody),
+        },
+      );
+
+      if (!insertRes.ok) {
+        return json(
+          { error: "Failed to save privacy settings" },
+          { status: 500 },
+        );
+      }
+
+      const inserted = (await insertRes.json().catch(() =&gt; [])) as any[];
+      row =
+        Array.isArray(inserted) &amp;&amp; inserted.length &gt; 0
+          ? inserted[0]
+          : insertBody;
+    }
+
+    const payload = {
+      profileVisible: row.profile_visible === true,
+      shareReadingHistory: row.share_reading_history === true,
+      anonymousCommenting: row.anonymous_commenting === true,
+      twoFactorAuthEnabled: row.two_factor_auth_enabled === true,
+      loginNotifications: row.login_notifications !== false,
+    };
+
+    return json(payload);
+  } catch {
+    return json(
+      { error: "Failed to save privacy settings" },
+      { status: 500 },
+    );
+  }
+});
+
+// User notification preferences (Supabase-backed) - replaces Express /api/user/notification-preferences
+router.get(
+  "/api/user/notification-preferences",
+  async (req: Request, env: Env) =&gt; {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json({ error: "Supabase not configured" }, { status: 500 });
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!Number.isFinite(userId || NaN)) {
+      return json({ error: "User not authenticated" }, { status: 401 });
+    }
+
+    try {
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const serviceKey =
+        env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+      const headers: Record&lt;string, string&gt; = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      };
+
+      const listUrl = new URL(
+        `${baseUrl}/rest/v1/user_notification_preferences`,
+      );
+      listUrl.searchParams.set(
+        "select",
+        "user_id,story_updates,community_activity,security_alerts,reading_reminders,recommendations,preferred_time,timezone,updated_at",
+      );
+      listUrl.searchParams.set("user_id", `eq.${userId}`);
+      listUrl.searchParams.set("limit", "1");
+
+      const res = await fetch(listUrl.toString(), { headers });
+      if (!res.ok) {
+        return json(
+          { error: "Failed to load notification preferences" },
+          { status: 500 },
+        );
+      }
+
+      const rows = (await res.json().catch(() =&gt; [])) as any[];
+      let row = Array.isArray(rows) &amp;&amp; rows.length &gt; 0 ? rows[0] : null;
+
+      if (!row) {
+        const defaults = {
+          user_id: Number(userId),
+          story_updates: true,
+          community_activity: true,
+          security_alerts: true,
+          reading_reminders: false,
+          recommendations: true,
+          preferred_time: "evening",
+          timezone: "pst",
+        };
+        const insertRes = await fetch(
+          `${baseUrl}/rest/v1/user_notification_preferences`,
+          {
+            method: "POST",
+            headers: { ...headers, Prefer: "return=representation" },
+            body: JSON.stringify(defaults),
+          },
+        );
+        if (!insertRes.ok) {
+          return json(
+            { error: "Failed to create notification preferences" },
+            { status: 500 },
+          );
+        }
+        const inserted = (await insertRes.json().catch(() =&gt; [])) as any[];
+        row =
+          Array.isArray(inserted) &amp;&amp; inserted.length &gt; 0
+            ? inserted[0]
+            : defaults;
+      }
+
+      const payload = {
+        storyUpdates: row.story_updates !== false,
+        communityActivity: row.community_activity !== false,
+        securityAlerts: row.security_alerts !== false,
+        readingReminders: row.reading_reminders === true,
+        recommendations: row.recommendations !== false,
+        preferredTime: row.preferred_time || "evening",
+        timezone: row.timezone || "pst",
+      };
+
+      return json(payload);
+    } catch {
+      return json(
+        { error: "Failed to load notification preferences" },
+        { status: 500 },
+      );
+    }
+  },
+);
+
+router.patch(
+  "/api/user/notification-preferences",
+  async (req: Request, env: Env) =&gt; {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json({ error: "Supabase not configured" }, { status: 500 });
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!Number.isFinite(userId || NaN)) {
+      return json({ error: "User not authenticated" }, { status: 401 });
+    }
+
+    let body: any;
+    try {
+      body = (await (req as any).json?.().catch(() =&gt; ({}))) || {};
+    } catch {
+      body = {};
+    }
+
+    const patch: Record&lt;string, any&gt; = {};
+
+    const coerceBool = (value: any) =&gt; !!value;
+
+    const applyBool = (keys: string[], column: string) =&gt; {
+      for (const key of keys) {
+        if (Object.prototype.hasOwnProperty.call(body, key)) {
+          patch[column] = coerceBool((body as any)[key]);
+          break;
+        }
+      }
+    };
+
+    applyBool(["storyUpdates", "story_updates"], "story_updates");
+    applyBool(["communityActivity", "community_activity"], "community_activity");
+    applyBool(["securityAlerts", "security_alerts"], "security_alerts");
+    applyBool(["readingReminders", "reading_reminders"], "reading_reminders");
+    applyBool(["recommendations"], "recommendations");
+
+    if (Object.prototype.hasOwnProperty.call(body, "preferredTime")) {
+      patch.preferred_time = String(body.preferredTime);
+    }
+    if (Object.prototype.hasOwnProperty.call(body, "timezone")) {
+      patch.timezone = String(body.timezone);
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return json(
+        { error: "No valid fields in request" },
+        { status: 400 },
+      );
+    }
+
+    try {
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const serviceKey =
+        env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+      const headers: Record&lt;string, string&gt; = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      };
+
+      const listUrl = new URL(
+        `${baseUrl}/rest/v1/user_notification_preferences`,
+      );
+      listUrl.searchParams.set(
+        "select",
+        "user_id,story_updates,community_activity,security_alerts,reading_reminders,recommendations,preferred_time,timezone,updated_at",
+      );
+      listUrl.searchParams.set("user_id", `eq.${userId}`);
+      listUrl.searchParams.set("limit", "1");
+
+      const res = await fetch(listUrl.toString(), { headers });
+      if (!res.ok) {
+        return json(
+          { error: "Failed to update notification preferences" },
+          { status: 500 },
+        );
+      }
+
+      const rows = (await res.json().catch(() =&gt; [])) as any[];
+      const existing = Array.isArray(rows) &amp;&amp; rows.length &gt; 0 ? rows[0] : null;
+
+      let row: any;
+
+      if (existing) {
+        const updateUrl = new URL(
+          `${baseUrl}/rest/v1/user_notification_preferences`,
+        );
+        updateUrl.searchParams.set("user_id", `eq.${userId}`);
+
+        const updateRes = await fetch(updateUrl.toString(), {
+          method: "PATCH",
+          headers: { ...headers, Prefer: "return=representation" },
+          body: JSON.stringify(patch),
+        });
+
+        if (!updateRes.ok) {
+          return json(
+            { error: "Failed to update notification preferences" },
+            { status: 500 },
+          );
+        }
+
+        const updatedRows = (await updateRes.json().catch(() =&gt; [])) as any[];
+        row =
+          Array.isArray(updatedRows) &amp;&amp; updatedRows.length &gt; 0
+            ? updatedRows[0]
+            : existing;
+      } else {
+        const defaults = {
+          user_id: Number(userId),
+          story_updates: true,
+          community_activity: true,
+          security_alerts: true,
+          reading_reminders: false,
+          recommendations: true,
+          preferred_time: "evening",
+          timezone: "pst",
+        };
+        const insertBody = { ...defaults, ...patch };
+
+        const insertRes = await fetch(
+          `${baseUrl}/rest/v1/user_notification_preferences`,
+          {
+            method: "POST",
+            headers: { ...headers, Prefer: "return=representation" },
+            body: JSON.stringify(insertBody),
+          },
+        );
+
+        if (!insertRes.ok) {
+          return json(
+            { error: "Failed to save notification preferences" },
+            { status: 500 },
+          );
+        }
+
+        const inserted = (await insertRes.json().catch(() =&gt; [])) as any[];
+        row =
+          Array.isArray(inserted) &amp;&amp; inserted.length &gt; 0
+            ? inserted[0]
+            : insertBody;
+      }
+
+      const payload = {
+        storyUpdates: row.story_updates !== false,
+        communityActivity: row.community_activity !== false,
+        securityAlerts: row.security_alerts !== false,
+        readingReminders: row.reading_reminders === true,
+        recommendations: row.recommendations !== false,
+        preferredTime: row.preferred_time || "evening",
+        timezone: row.timezone || "pst",
+      };
+
+      return json(payload);
+    } catch {
+      return json(
+        { error: "Failed to save notification preferences" },
+        { status: 500 },
+      );
+    }
+  },
+);
+
+router.get("/api/notifications", async (req: Request, env: Env) =&gt; {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return proxyToBackend(req, env);
   }
@@ -8382,10 +8922,10 @@ router.get("/api/notifications", async (req: Request, env: Env) => {
       );
     }
 
-    const rows = (await resp.json().catch(() => [])) as any[];
-    const notifications = rows.map((n) => {
+    const rows = (await resp.json().catch(() =&gt; [])) as any[];
+    const notifications = rows.map((n) =&gt; {
       const meta =
-        n && typeof n.metadata === "object" && n.metadata !== null ? n.metadata : {};
+        n &amp;&amp; typeof n.metadata === "object" &amp;&amp; n.metadata !== null ? n.metadata : {};
       return {
         id: n.id,
         type: String(n.type || "info"),

@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useToast } from "@/hooks/use-toast"
+import { getApiPath } from "@/lib/asset-path"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -202,7 +203,7 @@ export function NotificationSettingsForm() {
     let isMounted = true;
     (async () => {
       try {
-        const res = await fetch('/api/user/notification-preferences', { credentials: 'include' });
+        const res = await fetch(getApiPath("/api/user/notification-preferences"), { credentials: "include" });
         if (!res.ok) return;
         const prefs = await res.json();
         if (isMounted && prefs) {
@@ -226,7 +227,7 @@ export function NotificationSettingsForm() {
   // Memoize the submit handler to prevent recreation on renders
   const onSubmit = useCallback(async (data: z.infer<typeof NotificationFormSchema>) => {
     try {
-      const res = await fetch('/api/user/notification-preferences', {
+      const res = await fetch(getApiPath("/api/user/notification-preferences"), {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
