@@ -8367,6 +8367,232 @@ router.get(
 // USER NOTIFICATIONS: Supabase-backed, with legacy fallback
 
 // User privacy settings (Supabase-backed) - replaces Express /api/user/privacy-settings
+router.get("/api/user/privacy-settings", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Supabase not configured" }, { status: 500 });
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const userId = await getSupabaseUserIdFromJwt(env, token);
+  if (!Number.isFinite(userId || NaN)) {
+    return json({ error: "User not authenticated" }, { status: 401 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    };
+
+    const listUrl = new URL(`${baseUrl}/rest/v1/user_privacy_settings`);
+    listUrl.searchParams.set(
+      "select",
+      "user_id,profile_visible,share_reading_history,anonymous_commenting,two_factor_auth_enabled,login_notifications,updated_at",
+    );
+    listUrl.searchParams.set("user_id", `eq.${userId}`);
+    listUrl.searchParams.set("limit", "1");
+
+    const res = await fetch(listUrl.toString(), { headers });
+    if (!res.ok) {
+      return json(
+        { error: "Failed to load privacy settings" },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    let row = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+
+    if (!row) {
+      const defaults = {
+        user_id: Number(userId),
+        profile_visible: true,
+        share_reading_history: false,
+        anonymous_commenting: false,
+        two_factor_auth_enabled: false,
+        login_notifications: true,
+      };
+      const insertRes = await fetch(
+        `${baseUrl}/rest/v1/user_privacy_settings`,
+        {
+          method: "POST",
+          headers: { ...headers, Prefer: "return=representation" },
+          body: JSON.stringify(defaults),
+        },
+      );
+      if (!insertRes.ok) {
+        return json(
+          { error: "Failed to create privacy settings" },
+          { status: 500 },
+        );
+      }
+      const inserted = (await insertRes.json().catch(() => [])) as any[];
+      row =
+        Array.isArray(inserted) && inserted.length > 0
+          ? inserted[0]
+          : defaults;
+    }
+
+    const payload = {
+      profileVisible: row.profile_visible === true,
+      shareReadingHistory: row.share_reading_history === true,
+      anonymousCommenting: row.anonymous_commenting === true,
+      twoFactorAuthEnabled: row.two_factor_auth_enabled === true,
+      loginNotifications: row.login_notifications !== false,
+    };
+
+    return json(payload);
+  } catch {
+    return json(
+      { error: "Failed to load privacy settings" },
+      { status: 500 },
+    );
+  }
+});
+
+router.patch("/api/user/privacy-settings", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Supabase not configured" }, { status: 500 });
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const userId = await getSupabaseUserIdFromJwt(env, token);
+  if (!Number.isFinite(userId || NaN)) {
+    return json({ error: "User not authenticated" }, { status: 401 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    };
+
+    const body = (await (req as any).json?.().catch(() => ({}))) || {};
+
+    const allowedKeys: Record<string, string> = {
+      profileVisible: "profile_visible",
+      shareReadingHistory: "share_reading_history",
+      anonymousCommenting: "anonymous_commenting",
+      twoFactorAuthEnabled: "two_factor_auth_enabled",
+      loginNotifications: "login_notifications",
+    };
+
+    const updatePayload: Record<string, any> = {};
+    for (const [key, dbKey] of Object.entries(allowedKeys)) {
+      if (Object.prototype.hasOwnProperty.call(body, key)) {
+        const value = (body as any)[key];
+        if (typeof value !== "boolean") {
+          return json(
+            { error: `Field "${key}" must be a boolean` },
+            { status: 400 },
+          );
+        }
+        updatePayload[dbKey] = value;
+      }
+    }
+
+    if (Object.keys(updatePayload).length === 0) {
+      return json(
+        { error: "No valid fields provided" },
+        { status: 400 },
+      );
+    }
+
+    // First try to PATCH an existing row
+    const patchUrl = new URL(`${baseUrl}/rest/v1/user_privacy_settings`);
+    patchUrl.searchParams.set("user_id", `eq.${userId}`);
+
+    let row: any | null = null;
+
+    try {
+      const patchRes = await fetch(patchUrl.toString(), {
+        method: "PATCH",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify(updatePayload),
+      });
+
+      if (!patchRes.ok && patchRes.status !== 406) {
+        return json(
+          { error: "Failed to update privacy settings" },
+          { status: 500 },
+        );
+      }
+
+      const rows = (await patchRes.json().catch(() => [])) as any[];
+      if (Array.isArray(rows) && rows.length > 0) {
+        row = rows[0];
+      }
+    } catch {
+      // If PATCH fails for any reason, we'll fall back to an insert below
+    }
+
+    // If no existing row was updated, insert a new one with defaults + patch
+    if (!row) {
+      const defaults = {
+        user_id: Number(userId),
+        profile_visible: true,
+        share_reading_history: false,
+        anonymous_commenting: false,
+        two_factor_auth_enabled: false,
+        login_notifications: true,
+      };
+      const insertBody = { ...defaults, ...updatePayload };
+
+      const insertRes = await fetch(
+        `${baseUrl}/rest/v1/user_privacy_settings`,
+        {
+          method: "POST",
+          headers: { ...headers, Prefer: "return=representation" },
+          body: JSON.stringify(insertBody),
+        },
+      );
+
+      if (!insertRes.ok) {
+        return json(
+          { error: "Failed to update privacy settings" },
+          { status: 500 },
+        );
+      }
+
+      const inserted = (await insertRes.json().catch(() => [])) as any[];
+      row =
+        Array.isArray(inserted) && inserted.length > 0
+          ? inserted[0]
+          : insertBody;
+    }
+
+    const payload = {
+      profileVisible: row.profile_visible === true,
+      shareReadingHistory: row.share_reading_history === true,
+      anonymousCommenting: row.anonymous_commenting === true,
+      twoFactorAuthEnabled: row.two_factor_auth_enabled === true,
+      loginNotifications: row.login_notifications !== false,
+    };
+
+    return json(payload);
+  } catch {
+    return json(
+      { error: "Failed to update privacy settings" },
+      { status: 500 },
+    );
+  }
+});rivacy settings (Supabase-backed) - replaces Express /api/user/privacy-settings
 router.get("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return json({ error: "Supabase not configured" }, { status: 500 });
