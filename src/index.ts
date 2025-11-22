@@ -630,61 +630,14 @@ function recordTrendingQuery(query: string): void {
 }
 
 /**
- * Proxy helper: forwards the incoming request to the legacy backend (Express) when needed.
- * This preserves full backend functionality (auth, search, comments, etc.) while the
- * Worker gradually takes over more routes.
+ * Legacy backend proxy stub.
+ *
+ * Previously, this forwarded requests to an Express/Render backend using
+ * BACKEND_BASE_URL. That backend is now retired; we keep this function so
+ * existing call sites compile, but it no longer performs any network proxying.
  */
-async function proxyToBackend(req: Request, env: Env): Promise<Response> {
-  const backendBase = (env.BACKEND_BASE_URL || "").trim();
-  if (!backendBase) {
-    return json({ error: "Not Found" }, { status: 404 });
-  }
-
-  let backendUrl: URL;
-  let incomingUrl: URL;
-  try {
-    backendUrl = new URL(backendBase);
-    incomingUrl = new URL(req.url);
-  } catch {
-    return json({ error: "Not Found" }, { status: 404 });
-  }
-
-  // Avoid proxy loops (e.g. BACKEND_BASE_URL accidentally pointing back to this Worker)
-  if (backendUrl.host === incomingUrl.host) {
-    return json({ error: "Not Found" }, { status: 404 });
-  }
-
-  // Build target URL by combining backend base with the incoming path/query
-  const target = new URL(incomingUrl.pathname + incomingUrl.search, backendUrl);
-
-  // Clone the incoming request into a new Request with the target URL
-  const init: RequestInit = {
-    method: req.method,
-    headers: new Headers(req.headers),
-    redirect: "manual",
-    // Body will be copied below for non-GET/HEAD
-  };
-
-  // Remove Cloudflare-specific hop-by-hop headers that shouldn't be forwarded
-  init.headers.delete("host");
-  init.headers.delete("cf-connecting-ip");
-  init.headers.delete("cf-ipcountry");
-  init.headers.delete("cf-ray");
-  init.headers.delete("cf-worker");
-  init.headers.delete("x-forwarded-host");
-
-  // Add forwarding headers for backend visibility
-  init.headers.set("x-forwarded-host", incomingUrl.host);
-  init.headers.set("x-forwarded-proto", incomingUrl.protocol.replace(":", ""));
-
-  if (req.method !== "GET" && req.method !== "HEAD") {
-    // For non-GET/HEAD, clone the body stream
-    init.body = req.body;
-  }
-
-  const proxiedRequest = new Request(target.toString(), init);
-
-  return fetch(proxiedRequest);
+async function proxyToBackend(_req: Request, _env: Env): Promise<Response> {
+  return json({ error: "Not Found" }, { status: 404 });
 }
 
 // ============================================================================

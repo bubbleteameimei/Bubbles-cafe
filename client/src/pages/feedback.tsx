@@ -243,6 +243,8 @@ export default function UserFeedbackPage() {
     rejected: 0,
     responseRate: 0
   };
+
+  const feedbackItems = feedbackData?.feedback ?? [];
   
   return (
     <div className="container mx-auto p-6 max-w-4xl">
@@ -358,7 +360,7 @@ export default function UserFeedbackPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {feedbackData.feedback.map((item: any) => (
+                    {feedbackItems.map((item: any) => (
                       <TableRow key={item.id} className="hover:bg-gray-50/80">
                         <TableCell className="font-medium capitalize">{item.type}</TableCell>
                         <TableCell className="max-w-xs truncate">{item.content}</TableCell>
