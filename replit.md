@@ -75,3 +75,13 @@ Preferred communication style: Simple, everyday language.
 - **Analytics**: PostHog
 - **Performance**: Web Vitals
 - **Content Source**: WordPress API (bubbleteameimei.wordpress.com)
+
+## Local Development (preferred)
+
+For day-to-day development, use the Cloudflare Worker + Vite workflow instead of the legacy Node/Express server:
+
+- API (Cloudflare Worker): `npm run dev:worker`
+- Frontend (Vite): `npm run dev:client`
+- Both in parallel: `npm run dev:full`
+
+The legacy Express server (`npm run dev`, `npm run dev:server`) is kept only for optional local experimentation and SSR and is no longer used in production for the public API.
