@@ -43,6 +43,7 @@
     "validate:all": "npm run check && npm run lint && npm run security:scan && tsx scripts/check-public-images.ts",
     "deps:audit:light": "node scripts/deps-audit.mjs",
     "budget": "node scripts/bundle-budget.cjs",
+    "check:routes": "node scripts/check-route-parity.mjs",
     "test": "vitest run --coverage",
     "e2e": "playwright test --config=playwright.config.ts"
   },
