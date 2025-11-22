@@ -735,19 +735,6 @@ async function updateWordPressSyncMetadata(
 // In-memory cache and trending tracker for search (ephemeral per Worker isolate)
 const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const searchCache = new Map<string, { ts: number; data: any }>();
-const trendingQueries = new Map<string, number>();mple HTML stripper for safe text rendering in search/trending responses
-function stripHtml(value: any): string {
-  try {
-    const str = String(value ?? "");
-    return str.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-  } catch {
-    return "";
-  }
-}
-
-// In-memory cache and trending tracker for search (ephemeral per Worker isolate)
-const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const searchCache = new Map<string, { ts: number; data: any }>();
 const trendingQueries = new Map<string, number>();
 
 function makeSearchCacheKey(params: Record<string, unknown>): string {
