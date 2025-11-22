@@ -5,6 +5,7 @@ import { storage } from "../storage";
 import { z } from "zod";
 import { insertCommentSchema, updateCommentSchema } from "@shared/schema";
 import { apiRateLimiter } from '../middlewares/rate-limiter';
+import { requireAuth, requireAdmin } from '../middlewares/auth';
 import { moderateComment } from "../utils/comment-moderation";
 import { clearCacheItem } from '../middlewares/api-cache';
 import { createSupabaseClientWithToken } from '../utils/supabase';
@@ -145,6 +146,18 @@ router.post(
 	})
 );
 
+// GET /api/comments/pending - list comments awaiting moderation (admin only)
+router.get(
+	'/comments/pending',
+	requireAuth,
+	requireAdmin,
+	apiRateLimiter,
+	asyncHandler(async (req: Request, res: Response) => {
+		const pending = await storage.getPendingComments();
+		res.json(pending);
+	})
+);
+
 // POST /api/comments/:id/vote - upvote/downvote by user or anonymous session
 router.post(
 	'/comments/:id/vote',
@@ -237,6 +250,52 @@ router.post(
 		};
 
 		await storage.updateComment(commentId, { metadata: updatedMeta });
+		res.json({ success: true });
+	})
+);
+
+// POST /api/comments/:id/approve - approve a pending comment (admin only)
+router.post(
+	'/comments/:id/approve',
+	apiRateLimiter,
+	requireAuth,
+	requireAdmin,
+	validateParams(commentIdSchema),
+	asyncHandler(async (req: Request, res: Response) => {
+		const commentId = Number((req.params as any).id);
+		const existing = await storage.getComment(commentId);
+		if (!existing) {
+			throw createError('Comment not found', 404);
+		}
+		const updated = await storage.updateComment(commentId, { is_approved: true });
+		try {
+			if ((existing as any).postId) {
+				clearCacheItem(`/api/posts/${(existing as any).postId}/comments`);
+			}
+		} catch {}
+		res.json(updated);
+	})
+);
+
+// POST /api/comments/:id/reject - reject (delete) a pending comment (admin only)
+router.post(
+	'/comments/:id/reject',
+	apiRateLimiter,
+	requireAuth,
+	requireAdmin,
+	validateParams(commentIdSchema),
+	asyncHandler(async (req: Request, res: Response) => {
+		const commentId = Number((req.params as any).id);
+		const existing = await storage.getComment(commentId);
+		if (!existing) {
+			throw createError('Comment not found', 404);
+		}
+		await storage.deleteComment(commentId);
+		try {
+			if ((existing as any).postId) {
+				clearCacheItem(`/api/posts/${(existing as any).postId}/comments`);
+			}
+		} catch {}
 		res.json({ success: true });
 	})
 );

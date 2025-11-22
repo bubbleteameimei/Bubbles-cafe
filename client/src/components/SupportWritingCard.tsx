@@ -49,18 +49,18 @@ export const SupportWritingCard = ({ className = "", authorId, hideCard = false 
     // Log tip intent to backend (pending status); only if authorId known
     try {
       if (typeof authorIdInternal === 'number' && Number.isFinite(authorIdInternal) && authorIdInternal > 0) {
-        await fetch('/api/tips', {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        await apiJson(
+          'POST',
+          '/api/tips',
+          {
             authorId: authorIdInternal,
             amount: '0', // intent only; actual amount recorded via webhook
             currency: 'USD',
             status: 'pending',
             message: 'support_intent'
-          })
-        }).catch(() => {});
+          },
+          { showToast: false }
+        ).catch(() => {});
       }
     } catch {
       // non-fatal

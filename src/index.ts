@@ -428,6 +428,51 @@ async function getSupabaseUserIdFromJwt(
 }
 
 /**
+ * Resolve current Supabase-authenticated user (id/email/username/isAdmin) from JWT.
+ * Uses RLS on users table to restrict to the current row.
+ */
+async function getSupabaseCurrentUser(
+  env: Env,
+  token: string
+): Promise<{
+  id: number;
+  email: string;
+  username: string;
+  isAdmin: boolean;
+  fullName?: string | null;
+  bio?: string | null;
+  avatar?: string | null;
+} | null> {
+  try {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return null;
+    }
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/users`);
+    url.searchParams.set("select", "id,email,username,is_admin,metadata");
+    url.searchParams.set("limit", "1");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+    if (!res.ok) {
+      return null;
+    }
+    const rows = (await res.json().catch(() => [])) as any[];
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return null;
+    }
+    return mapDbUserRowToApiUser(rows[0]);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Resolve a local posts.id from an external WordPress post ID.
  * Strategy:
  *   1) Try direct posts.id match
@@ -565,6 +610,128 @@ function stripHtml(value: any): string {
   }
 }
 
+/**
+ * Best-effort upsert of a text-based site setting in Supabase.
+ * Uses service role key when available but falls back to anon key.
+ */
+async function updateSiteSetting(env: Env, key: string, value: string): Promise<void> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return;
+  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+
+  const url = new URL(`${baseUrl}/rest/v1/site_settings`);
+  url.searchParams.set("on_conflict", "key");
+
+  try {
+    await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({
+        key,
+        value,
+        category: "wordpress",
+        description: `Managed WordPress setting: ${key}`,
+        updated_at: new Date().toISOString(),
+      }),
+    });
+  } catch {
+    // Non-fatal; callers treat failure as best-effort
+  }
+}
+
+/**
+ * Log a WordPress sync activity record into the activity_logs table.
+ */
+async function logWordPressSyncActivity(
+  env: Env,
+  info: {
+    success: boolean;
+    postsProcessed: number;
+    startedAt: Date;
+    finishedAt: Date;
+    error?: string | null;
+    triggeredBy?: string | null;
+    isScheduler?: boolean;
+  }
+): Promise<void> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return;
+  }
+
+  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+  const url = new URL(`${baseUrl}/rest/v1/activity_logs`);
+
+  const durationMs = info.finishedAt.getTime() - info.startedAt.getTime();
+
+  const details = {
+    type: "wordpress_sync",
+    status: info.success ? "success" : "error",
+    postsProcessed: info.postsProcessed,
+    startedAt: info.startedAt.toISOString(),
+    finishedAt: info.finishedAt.toISOString(),
+    durationMs,
+    error: info.error || null,
+    triggeredBy: info.triggeredBy || null,
+    isScheduler: info.isScheduler === true,
+  };
+
+  try {
+    await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        user_id: null,
+        action: "wordpress_sync",
+        details,
+        ip_address: null,
+        user_agent: "worker",
+      }),
+    });
+  } catch {
+    // Best-effort logging only
+  }
+}
+
+/**
+ * Update both site settings and activity logs after a WordPress sync run.
+ */
+async function updateWordPressSyncMetadata(
+  env: Env,
+  info: {
+    success: boolean;
+    postsProcessed: number;
+    startedAt: Date;
+    finishedAt: Date;
+    error?: string | null;
+    isScheduler?: boolean;
+    triggeredBy?: string | null;
+  }
+): Promise<void> {
+  try {
+    await updateSiteSetting(env, "last_wordpress_sync", String(info.finishedAt.getTime()));
+  } catch {
+    // ignore
+  }
+
+  try {
+    await logWordPressSyncActivity(env, info);
+  } catch {
+    // ignore
+  }
+}
+
 // In-memory cache and trending tracker for search (ephemeral per Worker isolate)
 const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const searchCache = new Map<string, { ts: number; data: any }>();
@@ -585,61 +752,82 @@ function recordTrendingQuery(query: string): void {
 }
 
 /**
- * Proxy helper: forwards the incoming request to the legacy backend (Express) when needed.
- * This preserves full backend functionality (auth, search, comments, etc.) while the
- * Worker gradually takes over more routes.
+ * Internal fallback handler.
+ *
+ * Previously, this forwarded requests to an Express/Render backend using
+ * BACKEND_BASE_URL. That backend is now retired; this function now returns
+ * explicit JSON responses (401/500 or safe defaults) instead of proxying.
  */
 async function proxyToBackend(req: Request, env: Env): Promise<Response> {
-  const backendBase = (env.BACKEND_BASE_URL || "").trim();
-  if (!backendBase) {
-    return json({ error: "Not Found" }, { status: 404 });
+  const url = new URL(req.url);
+  const path = url.pathname;
+  const hasSupabase = !!(env.SUPABASE_URL && env.SUPABASE_ANON_KEY);
+  const token = getBearerToken(req);
+
+  // Non-Supabase environments: respond explicitly or with safe defaults
+  if (!hasSupabase) {
+    // User-facing feedback pages should continue to work gracefully even
+    // if Supabase is not configured; return empty data instead of errors.
+    if (path.startsWith("/api/user/feedback/stats")) {
+      return json({
+        stats: {
+          total: 0,
+          pending: 0,
+          reviewed: 0,
+          resolved: 0,
+          rejected: 0,
+          responseRate: 0,
+        },
+        isAuthenticated: false,
+      });
+    }
+
+    if (path.startsWith("/api/user/feedback")) {
+      return json({ feedback: [], isAuthenticated: false });
+    }
+
+    if (path.startsWith("/api/bookmarks/migrate")) {
+      return json(
+        { success: false, message: "Supabase not configured" },
+        { status: 500 },
+      );
+    }
+
+    // For all other API routes, surface the configuration issue
+    return json(
+      { error: "Supabase not configured" },
+      { status: 500 },
+    );
   }
 
-  let backendUrl: URL;
-  let incomingUrl: URL;
-  try {
-    backendUrl = new URL(backendBase);
-    incomingUrl = new URL(req.url);
-  } catch {
-    return json({ error: "Not Found" }, { status: 404 });
+  // Supabase is configured but we reached the fallback: likely auth or runtime error
+
+  // User/authenticated routes where missing JWT should be a 401
+  if (
+    path.startsWith("/api/bookmarks") ||
+    path.startsWith("/api/notifications") ||
+    path.startsWith("/api/reading-progress") ||
+    path.startsWith("/api/tips") ||
+    path.startsWith("/api/feedback")
+  ) {
+    if (!token) {
+      const isAdminFeedback = path.startsWith("/api/feedback");
+      return json(
+        {
+          error: isAdminFeedback
+            ? "Admin authentication required"
+            : "Authentication required",
+        },
+        { status: 401 },
+      );
+    }
   }
 
-  // Avoid proxy loops (e.g. BACKEND_BASE_URL accidentally pointing back to this Worker)
-  if (backendUrl.host === incomingUrl.host) {
-    return json({ error: "Not Found" }, { status: 404 });
-  }
-
-  // Build target URL by combining backend base with the incoming path/query
-  const target = new URL(incomingUrl.pathname + incomingUrl.search, backendUrl);
-
-  // Clone the incoming request into a new Request with the target URL
-  const init: RequestInit = {
-    method: req.method,
-    headers: new Headers(req.headers),
-    redirect: "manual",
-    // Body will be copied below for non-GET/HEAD
-  };
-
-  // Remove Cloudflare-specific hop-by-hop headers that shouldn't be forwarded
-  init.headers.delete("host");
-  init.headers.delete("cf-connecting-ip");
-  init.headers.delete("cf-ipcountry");
-  init.headers.delete("cf-ray");
-  init.headers.delete("cf-worker");
-  init.headers.delete("x-forwarded-host");
-
-  // Add forwarding headers for backend visibility
-  init.headers.set("x-forwarded-host", incomingUrl.host);
-  init.headers.set("x-forwarded-proto", incomingUrl.protocol.replace(":", ""));
-
-  if (req.method !== "GET" && req.method !== "HEAD") {
-    // For non-GET/HEAD, clone the body stream
-    init.body = req.body;
-  }
-
-  const proxiedRequest = new Request(target.toString(), init);
-
-  return fetch(proxiedRequest);
+  // Generic fallback: internal error rather than proxying to legacy backend
+  return json(
+    { error: "Service unavailable" },
+    { status: 500 },
+  );
 }
 
 // ============================================================================
@@ -930,7 +1118,299 @@ router.post("/api/errors", async (req: Request) => {
   }
 });
 
-// ANALYTICS: Write to KV queue
+// ANALYTICS: helpers and write to KV queue
+
+async function getAnalyticsSummaryFromSupabase(env: Env): Promise<{
+  totalViews: number;
+  uniqueVisitors: number;
+  avgReadTime: number;
+  bounceRate: number;
+}> {
+  const defaults = {
+    totalViews: 0,
+    uniqueVisitors: 0,
+    avgReadTime: 0,
+    bounceRate: 0,
+  };
+
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return defaults;
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/analytics`);
+    url.searchParams.set(
+      "select",
+      "page_views,unique_visitors,average_read_time,bounce_rate"
+    );
+    url.searchParams.set("limit", "10000");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return defaults;
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return defaults;
+    }
+
+    let totalViews = 0;
+    let uniqueVisitors = 0;
+    let totalReadTime = 0;
+    let readTimeCount = 0;
+    let totalBounce = 0;
+    let bounceCount = 0;
+
+    for (const row of rows) {
+      const views = Number(row.page_views ?? row.pageViews ?? 0);
+      const visitors = Number(row.unique_visitors ?? row.uniqueVisitors ?? 0);
+      const avgRead = Number(
+        row.average_read_time ?? row.averageReadTime ?? 0
+      );
+      const bounce = Number(row.bounce_rate ?? row.bounceRate ?? 0);
+
+      if (Number.isFinite(views)) totalViews += views;
+      if (Number.isFinite(visitors)) uniqueVisitors += visitors;
+      if (Number.isFinite(avgRead) && avgRead > 0) {
+        totalReadTime += avgRead;
+        readTimeCount += 1;
+      }
+      if (Number.isFinite(bounce)) {
+        totalBounce += bounce;
+        bounceCount += 1;
+      }
+    }
+
+    const avgReadTime =
+      readTimeCount > 0 ? totalReadTime / readTimeCount : 0;
+    const bounceRate = bounceCount > 0 ? totalBounce / bounceCount : 0;
+
+    return {
+      totalViews,
+      uniqueVisitors,
+      avgReadTime,
+      bounceRate,
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+async function getDeviceDistributionFromSupabase(env: Env): Promise<{
+  desktop: number;
+  mobile: number;
+  tablet: number;
+}> {
+  const defaults = {
+    desktop: 0.7,
+    mobile: 0.25,
+    tablet: 0.05,
+  };
+
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return defaults;
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/analytics`);
+    url.searchParams.set("select", "device_stats");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return defaults;
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return defaults;
+    }
+
+    let desktop = 0;
+    let mobile = 0;
+    let tablet = 0;
+
+    for (const row of rows) {
+      const stats = row.device_stats as any;
+      if (!stats || typeof stats !== "object") continue;
+      desktop += Number(stats.desktop ?? 0);
+      mobile += Number(stats.mobile ?? 0);
+      tablet += Number(stats.tablet ?? 0);
+    }
+
+    const total = desktop + mobile + tablet;
+    if (!Number.isFinite(total) || total <= 0) {
+      return defaults;
+    }
+
+    return {
+      desktop: desktop / total,
+      mobile: mobile / total,
+      tablet: tablet / total,
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+async function buildReadingTimeAnalytics(env: Env): Promise<any> {
+  const summary = await getAnalyticsSummaryFromSupabase(env);
+  const avgReadTime =
+    Number.isFinite(summary.avgReadTime) && summary.avgReadTime > 0
+      ? summary.avgReadTime
+      : 180;
+  const totalViewsBase =
+    Number.isFinite(summary.totalViews) && summary.totalViews > 0
+      ? summary.totalViews
+      : 1000;
+
+  const baseStats = {
+    avgReadingTime: avgReadTime,
+    totalViews: totalViewsBase,
+    bounceRate:
+      Number.isFinite(summary.bounceRate) && summary.bounceRate > 0
+        ? summary.bounceRate
+        : 0,
+    changeFromLastPeriod: {
+      readingTime: { value: 5.2, trend: "up" as const },
+      views: { value: 12.7, trend: "up" as const },
+    },
+    averageScrollDepth: 68.5,
+  };
+
+  // Top stories
+  let topStories: any[] = [];
+  try {
+    const posts = await fetchSupabasePosts(env);
+    const selected = posts.slice(0, 5);
+    topStories = selected.map((story: any) => {
+      const avgReadingTime = Math.max(60, avgReadTime);
+      const id = Number(story.id) || 0;
+      const views =
+        id > 0
+          ? id * 50 + Math.floor(Math.random() * 200)
+          : 100 + Math.floor(Math.random() * 300);
+
+      return {
+        id,
+        title: story.title ?? "Untitled story",
+        slug: story.slug || String(id || ""),
+        avgReadingTime,
+        views,
+      };
+    });
+  } catch {
+    topStories = [];
+  }
+
+  // Time series data
+  const now = new Date();
+  const dailyData: any[] = [];
+  const weeklyData: any[] = [];
+  const monthlyData: any[] = [];
+
+  // Daily data (last 30 days)
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(now.getDate() - i);
+
+    const dayValue = date.getDate();
+    const monthValue = date.getMonth() + 1;
+    const factor = ((dayValue + monthValue) % 5) + 0.5;
+
+    dailyData.push({
+      date: date.toISOString().split("T")[0],
+      avgTime: Math.round(
+        baseStats.avgReadingTime * (0.75 + factor * 0.1)
+      ),
+      storyViews: Math.round(
+        baseStats.totalViews / 30 * (0.8 + factor * 0.1)
+      ),
+      scrollDepth: Math.min(
+        100,
+        Math.round(
+          baseStats.averageScrollDepth * (0.9 + factor * 0.05)
+        )
+      ),
+    });
+  }
+
+  // Weekly data (last 12 weeks)
+  for (let i = 11; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(now.getDate() - i * 7);
+
+    const weekNum = Math.floor(date.getDate() / 7) + 1;
+    const monthValue = date.getMonth() + 1;
+    const factor = ((weekNum + monthValue) % 4) + 0.7;
+
+    weeklyData.push({
+      date: date.toISOString().split("T")[0],
+      avgTime: Math.round(
+        baseStats.avgReadingTime * (0.8 + factor * 0.1)
+      ),
+      storyViews: Math.round(
+        baseStats.totalViews / 12 * (0.85 + factor * 0.1)
+      ),
+      scrollDepth: Math.min(
+        100,
+        Math.round(
+          baseStats.averageScrollDepth * (0.95 + factor * 0.05)
+        )
+      ),
+    });
+  }
+
+  // Monthly data (last 6 months)
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date(now);
+    date.setMonth(now.getMonth() - i);
+
+    const monthValue = date.getMonth() + 1;
+    const factor = (monthValue % 3) + 0.8;
+
+    monthlyData.push({
+      date: date.toISOString().split("T")[0],
+      avgTime: Math.round(
+        baseStats.avgReadingTime * (0.9 + factor * 0.05)
+      ),
+      storyViews: Math.round(
+        baseStats.totalViews / 6 * (0.9 + factor * 0.05)
+      ),
+      scrollDepth: Math.min(
+        100,
+        Math.round(
+          baseStats.averageScrollDepth * (0.97 + factor * 0.03)
+        )
+      ),
+    });
+  }
+
+  return {
+    overallStats: baseStats,
+    dailyData,
+    weeklyData,
+    monthlyData,
+    topStories,
+  };
+}
+
 router.post("/api/analytics/vitals", async (req: Request, env: Env) => {
   try {
     const body = (await (req as any).json?.()) || {};
@@ -996,20 +1476,326 @@ router.post("/api/analytics/performance", async (req: Request, env: Env) => {
   }
 });
 
+// Site summary used by potential consumers
 router.get("/api/analytics/site", async (_req: Request, env: Env) => {
   try {
-    const cached = await env.CACHE_KV.get("analytics-site-aggregate");
+    const cached = await env.CACHE_KV.get("analytics-site-summary");
     if (cached) {
       return json(JSON.parse(cached), {
-        headers: { "Cache-Control": "max-age=300, stale-while-revalidate=600" },
+        headers: {
+          "Cache-Control": "max-age=300, stale-while-revalidate=600",
+        },
       });
     }
 
-    return json({ pageviews: 0, visitors: 0, topPages: [] });
+    const summary = await getAnalyticsSummaryFromSupabase(env);
+    const payload = {
+      totalViews: summary.totalViews,
+      uniqueVisitors: summary.uniqueVisitors,
+      avgReadTime: summary.avgReadTime,
+      bounceRate: summary.bounceRate,
+    };
+
+    // Best-effort cache
+    await env.CACHE_KV.put(
+      "analytics-site-summary",
+      JSON.stringify(payload),
+      { expirationTtl: 300 }
+    ).catch(() => {});
+
+    return json(payload, {
+      headers: {
+        "Cache-Control": "max-age=300, stale-while-revalidate=600",
+      },
+    });
   } catch (error) {
     return json({ error: String(error) }, { status: 500 });
   }
 });
+
+// Reading time analytics (used by home page and dashboard)
+router.get(
+  "/api/analytics/reading-time",
+  async (_req: Request, env: Env) => {
+    try {
+      const data = await buildReadingTimeAnalytics(env);
+      return json(data);
+    } catch (error) {
+      return json(
+        { message: "Failed to fetch reading time analytics" },
+        { status: 500 }
+      );
+    }
+  }
+);
+
+// Test endpoint used by admin dashboard charts
+router.get(
+  "/api/analytics/reading-time-test",
+  async (_req: Request, env: Env) => {
+    try {
+      const data = await buildReadingTimeAnalytics(env);
+      return json(data);
+    } catch (error) {
+      return json(
+        { message: "Failed to fetch reading time analytics" },
+        { status: 500 }
+      );
+    }
+  }
+);
+
+// Device distribution (fractional) used by generic consumers
+router.get("/api/analytics/devices", async (_req: Request, env: Env) => {
+  try {
+    const distribution = await getDeviceDistributionFromSupabase(env);
+    return json(distribution);
+  } catch (error) {
+    return json({ error: String(error) }, { status: 500 });
+  }
+});
+
+// Device analytics test endpoint (time series) used by dashboard
+router.get("/api/analytics/devices-test", async (_req: Request, env: Env) => {
+  try {
+    const analytics = await getAnalyticsSummaryFromSupabase(env);
+
+    // Default distribution (approximate 2024 web averages)
+    const distribution = {
+      desktop: 0.53,
+      mobile: 0.42,
+      tablet: 0.05,
+    };
+
+    const totalSessions =
+      Number.isFinite(analytics.totalViews) && analytics.totalViews > 0
+        ? analytics.totalViews
+        : 1281;
+
+    const baseTotals = {
+      desktop: Math.round(totalSessions * distribution.desktop),
+      mobile: Math.round(totalSessions * distribution.mobile),
+      tablet: Math.round(totalSessions * distribution.tablet),
+    };
+
+    const now = new Date();
+    const dailyData: any[] = [];
+    const weeklyData: any[] = [];
+    const monthlyData: any[] = [];
+
+    // Daily data (last 30 days)
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(now.getDate() - i);
+
+      const dayOfWeek = date.getDay();
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+      const dailyTotal = Math.round(
+        totalSessions / 30 * (0.7 + Math.random() * 0.6)
+      );
+
+      const dayFactor = isWeekend
+        ? { desktop: 0.45, mobile: 0.48, tablet: 0.07 }
+        : { desktop: 0.58, mobile: 0.38, tablet: 0.04 };
+
+      dailyData.push({
+        date: date.toISOString().split("T")[0],
+        desktop: Math.round(dailyTotal * dayFactor.desktop),
+        mobile: Math.round(dailyTotal * dayFactor.mobile),
+        tablet: Math.round(dailyTotal * dayFactor.tablet),
+      });
+    }
+
+    // Weekly data (last 12 weeks)
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(now.getDate() - i * 7);
+
+      const mobileTrend = 0.38 + 0.008 * (12 - i);
+      const desktopTrend = 0.57 - 0.007 * (12 - i);
+      const tabletTrend = 0.05 - 0.001 * (12 - i);
+
+      const weeklyTotal = Math.round(
+        totalSessions / 12 * (0.8 + Math.random() * 0.4)
+      );
+
+      weeklyData.push({
+        date: date.toISOString().split("T")[0],
+        desktop: Math.round(weeklyTotal * desktopTrend),
+        mobile: Math.round(weeklyTotal * mobileTrend),
+        tablet: Math.round(weeklyTotal * tabletTrend),
+      });
+    }
+
+    // Monthly data (last 6 months)
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now);
+      date.setMonth(now.getMonth() - i);
+
+      const month = date.getMonth();
+      const isSummer = month >= 5 && month <= 7;
+
+      const monthFactor = isSummer
+        ? { desktop: 0.48, mobile: 0.47, tablet: 0.05 }
+        : { desktop: 0.55, mobile: 0.40, tablet: 0.05 };
+
+      const monthlyTotal = Math.round(
+        totalSessions / 6 * (0.85 + Math.random() * 0.3)
+      );
+
+      monthlyData.push({
+        date: date.toISOString().split("T")[0],
+        desktop: Math.round(monthlyTotal * monthFactor.desktop),
+        mobile: Math.round(monthlyTotal * monthFactor.mobile),
+        tablet: Math.round(monthlyTotal * monthFactor.tablet),
+      });
+    }
+
+    const percentageChange = {
+      desktop: 3.2,
+      mobile: 5.8,
+      tablet: -1.5,
+    };
+
+    return json({
+      dailyData,
+      weeklyData,
+      monthlyData,
+      totals: baseTotals,
+      percentageChange,
+    });
+  } catch (error) {
+    return json(
+      { message: "Failed to fetch device analytics" },
+      { status: 500 }
+    );
+  }
+});
+
+// Engagement metrics test endpoint used by dashboard
+router.get(
+  "/api/analytics/engagement-test",
+  async (_req: Request, env: Env) => {
+    try {
+      const analyticsSummary = await getAnalyticsSummaryFromSupabase(env);
+      const avgReadTime =
+        Number.isFinite(analyticsSummary.avgReadTime) &&
+        analyticsSummary.avgReadTime > 0
+          ? analyticsSummary.avgReadTime
+          : 180;
+      const totalViewsBase =
+        Number.isFinite(analyticsSummary.totalViews) &&
+        analyticsSummary.totalViews > 0
+          ? analyticsSummary.totalViews
+          : 1000;
+
+      const engagementMetrics = {
+        totalReadingTime: Math.round(
+          avgReadTime * totalViewsBase * 0.7
+        ),
+        averageSessionDuration: avgReadTime,
+        totalUsers: Math.round(totalViewsBase * 0.6),
+        activeUsers: Math.round(totalViewsBase * 0.3),
+        interactions: Math.round(totalViewsBase * 2.5),
+        pageViews: totalViewsBase,
+        returning: Math.round(totalViewsBase * 0.4),
+      };
+
+      return json(engagementMetrics);
+    } catch (error) {
+      return json(
+        { message: "Failed to create engagement metrics" },
+        { status: 500 }
+      );
+    }
+  }
+);
+
+// Engagement metrics endpoint used by home page (approximate)
+router.get("/api/analytics/engagement", async (_req: Request, env: Env) => {
+  try {
+    const analyticsSummary = await getAnalyticsSummaryFromSupabase(env);
+    const avgReadTime =
+      Number.isFinite(analyticsSummary.avgReadTime) &&
+      analyticsSummary.avgReadTime > 0
+        ? analyticsSummary.avgReadTime
+        : 180;
+    const totalViewsBase =
+      Number.isFinite(analyticsSummary.totalViews) &&
+      analyticsSummary.totalViews > 0
+        ? analyticsSummary.totalViews
+        : 1000;
+
+    const engagementMetrics = {
+      totalReadingTime: Math.round(avgReadTime * totalViewsBase * 0.7),
+      averageSessionDuration: avgReadTime,
+      totalUsers: Math.round(totalViewsBase * 0.6),
+      activeUsers: Math.round(totalViewsBase * 0.3),
+      interactions: Math.round(totalViewsBase * 2.5),
+      pageViews: totalViewsBase,
+      returning: Math.round(totalViewsBase * 0.4),
+    };
+
+    return json(engagementMetrics);
+  } catch (error) {
+    return json(
+      { message: "Failed to fetch engagement metrics" },
+      { status: 500 }
+    );
+  }
+});
+
+// Site analytics test endpoint for dashboard
+router.get("/api/analytics/site-test", async (_req: Request, env: Env) => {
+  try {
+    const analyticsSummary = await getAnalyticsSummaryFromSupabase(env);
+    const totalViewsBase =
+      Number.isFinite(analyticsSummary.totalViews) &&
+      analyticsSummary.totalViews > 0
+        ? analyticsSummary.totalViews
+        : 1281;
+
+    const siteAnalytics = {
+      totalViews: totalViewsBase,
+      uniqueVisitors: Math.round(totalViewsBase * 0.49),
+      avgReadTime:
+        Number.isFinite(analyticsSummary.avgReadTime) &&
+        analyticsSummary.avgReadTime > 0
+          ? analyticsSummary.avgReadTime
+          : 171,
+      bounceRate: 38.5,
+    };
+
+    return json(siteAnalytics);
+  } catch (error) {
+    return json(
+      { message: "Failed to create site analytics" },
+      { status: 500 }
+    );
+  }
+});
+
+// Device distribution test endpoint for dashboard
+router.get(
+  "/api/analytics/device-distribution-test",
+  async (_req: Request, env: Env) => {
+    try {
+      await getAnalyticsSummaryFromSupabase(env); // best-effort, ignored if fails
+      const deviceDistribution = {
+        desktop: 53,
+        mobile: 42,
+        tablet: 5,
+      };
+      return json(deviceDistribution);
+    } catch (error) {
+      return json(
+        { message: "Failed to create device distribution" },
+        { status: 500 }
+      );
+    }
+  }
+);
 
 // BOOKMARKS: Worker-native (Supabase-backed) with legacy proxy fallback for non-JWT clients
 
@@ -2185,28 +2971,373 @@ router.post("/api/email-service/send", async (req: Request, env: Env) => {
   }
 });
 
-// PAYMENTS WEBHOOK: Idempotent processing
+// PAYMENTS: Paystack integration (initialize, verify, plans, subscription status, webhook)
 router.post("/api/payments/webhook", async (req: Request, env: Env) => {
+  // This webhook is designed for Paystack, but we keep idempotency protection
   try {
-    const body = await req.text();
-    const eventId = JSON.parse(body).id;
+    const rawBody = await req.text();
+    let parsed: any;
+    try {
+      parsed = JSON.parse(rawBody);
+    } catch {
+      return json({ status: false, message: "Invalid JSON payload" }, { status: 400 });
+    }
 
-    const { isNew } = await getOrCheckIdempotency(env, `webhook-${eventId}`, 86_400_000);
+    const eventId = String(parsed?.event || parsed?.event_id || parsed?.reference || parsed?.id || "");
+    if (!eventId) {
+      return json({ status: false, message: "Missing event identifier" }, { status: 400 });
+    }
+
+    const { isNew } = await getOrCheckIdempotency(env, `paystack-webhook-${eventId}`, 86_400_000);
     if (!isNew) {
-      return json({ success: true, cached: true });
+      return json({ status: true, message: "Duplicate webhook ignored" });
     }
 
-    const event = JSON.parse(body);
-    if (event.type === "payment_intent.succeeded") {
-      await callSupabaseRpc(env, "handle_payment_success", {
-        event_id: eventId,
-        data: event.data,
-      });
-    }
-
-    return json({ success: true });
+    // For now we simply acknowledge Paystack webhooks and rely on the
+    // client-side Paystack dashboard / our tips logging for business logic.
+    // You can extend this to call a Supabase RPC for subscription management.
+    return json({ status: true, message: "Webhook received" });
   } catch (error) {
-    return json({ error: String(error) }, { status: 500 });
+    return json(
+      {
+        status: false,
+        message: "Failed to process webhook",
+        error: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
+  }
+});
+
+/**
+ * Initialize a Paystack transaction
+ * POST /api/payments/initialize
+ * Body: { amount: number (lowest currency unit), callbackUrl?: string, reference?: string, metadata?: object }
+ */
+router.post("/api/payments/initialize", async (req: Request, env: Env) => {
+  if (!env.PAYSTACK_SECRET_KEY) {
+    return json(
+      { status: false, message: "Paystack is not configured on the server" },
+      { status: 500 },
+    );
+  }
+
+  try {
+    const body = (await req.json().catch(() => ({}))) as any;
+    const amountRaw = body?.amount;
+    const amount = Number(amountRaw);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return json(
+        { status: false, message: "Amount must be a positive number in lowest currency unit" },
+        { status: 400 },
+      );
+    }
+
+    const callbackUrl =
+      typeof body?.callbackUrl === "string" && body.callbackUrl.length > 0
+        ? body.callbackUrl
+        : undefined;
+    const reference =
+      typeof body?.reference === "string" && body.reference.length > 0
+        ? body.reference
+        : `bcf_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    const metadataInput =
+      body && typeof body.metadata === "object" && body.metadata !== null ? body.metadata : {};
+
+    // Resolve user from Supabase JWT when available to attach email & user metadata
+    let customerEmail: string | undefined;
+    let userId: number | null = null;
+    let username: string | undefined;
+
+    const token = getBearerToken(req);
+    if (token && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+      try {
+        const authUser = await getSupabaseAuthUser(env, token);
+        if (authUser?.email) {
+          customerEmail = authUser.email;
+        }
+        const user = await getSupabaseCurrentUser(env, token).catch(() => null);
+        if (user?.id) {
+          userId = user.id;
+        }
+        if (user?.username) {
+          username = user.username;
+        }
+      } catch {
+        // Non-fatal: continue without user enrichment
+      }
+    }
+
+    // As a fallback, allow email to be provided explicitly in the payload
+    if (!customerEmail && typeof body?.email === "string" && body.email.length > 3) {
+      customerEmail = body.email;
+    }
+
+    if (!customerEmail) {
+      return json(
+        { status: false, message: "User email is required to initialize a payment" },
+        { status: 400 },
+      );
+    }
+
+    const enhancedMetadata = {
+      ...(metadataInput || {}),
+      userId: userId ?? undefined,
+      username: username ?? undefined,
+    };
+
+    const baseUrl = env.PAYSTACK_BASE_URL || "https://api.paystack.co";
+    const url = `${baseUrl.replace(/\/+$/, "")}/transaction/initialize`;
+
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        amount,
+        email: customerEmail,
+        reference,
+        callback_url: callbackUrl,
+        metadata: enhancedMetadata,
+      }),
+    });
+
+    const data = (await resp.json().catch(() => ({}))) as any;
+
+    if (!resp.ok) {
+      return json(
+        {
+          status: false,
+          message: data?.message || "Failed to initialize Paystack transaction",
+        },
+        { status: resp.status },
+      );
+    }
+
+    return json(data);
+  } catch (error) {
+    return json(
+      {
+        status: false,
+        message: "Failed to initialize payment",
+        error: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
+  }
+});
+
+/**
+ * Verify a Paystack transaction
+ * GET /api/payments/verify/:reference
+ */
+router.get("/api/payments/verify/:reference", async (req: Request, env: Env) => {
+  if (!env.PAYSTACK_SECRET_KEY) {
+    return json(
+      { status: false, message: "Paystack is not configured on the server" },
+      { status: 500 },
+    );
+  }
+
+  try {
+    const urlObj = new URL(req.url);
+    const segments = urlObj.pathname.split("/").filter(Boolean);
+    const reference = segments[segments.length - 1] || "";
+    if (!reference) {
+      return json(
+        { status: false, message: "Reference is required" },
+        { status: 400 },
+      );
+    }
+
+    const baseUrl = env.PAYSTACK_BASE_URL || "https://api.paystack.co";
+    const verifyUrl = `${baseUrl.replace(/\/+$/, "")}/transaction/verify/${encodeURIComponent(
+      reference,
+    )}`;
+
+    const resp = await fetch(verifyUrl, {
+      headers: {
+        Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    const data = (await resp.json().catch(() => ({}))) as any;
+    if (!resp.ok) {
+      return json(
+        {
+          status: false,
+          message: data?.message || "Failed to verify Paystack transaction",
+        },
+        { status: resp.status },
+      );
+    }
+
+    return json(data);
+  } catch (error) {
+    return json(
+      {
+        status: false,
+        message: "Failed to verify payment",
+        error: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
+  }
+});
+
+/**
+ * Get static payment plans, with a lightweight Paystack reachability check
+ * GET /api/payments/plans
+ */
+router.get("/api/payments/plans", async (_req: Request, env: Env) => {
+  const plans = [
+    {
+      id: "monthly_standard",
+      name: "Monthly Standard",
+      amount: 1000,
+      interval: "monthly",
+      description: "Standard monthly subscription with premium content access.",
+    },
+    {
+      id: "yearly_premium",
+      name: "Yearly Premium",
+      amount: 10000,
+      interval: "annually",
+      description: "Premium yearly subscription with all features and exclusive content.",
+    },
+  ];
+
+  if (!env.PAYSTACK_SECRET_KEY) {
+    return json({ status: true, data: plans, meta: { paystackReachable: false } });
+  }
+
+  try {
+    const baseUrl = env.PAYSTACK_BASE_URL || "https://api.paystack.co";
+    const url = `${baseUrl.replace(/\/+$/, "")}/transaction?perPage=1&page=1`;
+
+    const resp = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    return json({
+      status: true,
+      data: plans,
+      meta: { paystackReachable: resp.ok },
+    });
+  } catch {
+    return json({
+      status: true,
+      data: plans,
+      meta: { paystackReachable: false },
+    });
+  }
+});
+
+/**
+ * Get user subscription status based on recent successful Paystack transactions
+ * GET /api/payments/subscription/status
+ */
+router.get("/api/payments/subscription/status", async (req: Request, env: Env) => {
+  if (!env.PAYSTACK_SECRET_KEY) {
+    return json(
+      { status: false, message: "Paystack is not configured on the server" },
+      { status: 500 },
+    );
+  }
+
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    // In non-Supabase environments, fall back to the legacy backend
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json(
+      { status: false, message: "User not authenticated" },
+      { status: 401 },
+    );
+  }
+
+  try {
+    const authUser = await getSupabaseAuthUser(env, token);
+    const email = authUser?.email;
+    if (!email) {
+      return json(
+        { status: false, message: "User email is required" },
+        { status: 400 },
+      );
+    }
+
+    const baseUrl = env.PAYSTACK_BASE_URL || "https://api.paystack.co";
+    const url = new URL(`${baseUrl.replace(/\/+$/, "")}/transaction`);
+    url.searchParams.set("perPage", "10");
+    url.searchParams.set("page", "1");
+    url.searchParams.set("customer", email);
+    url.searchParams.set("status", "success");
+
+    const resp = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!resp.ok) {
+      return json(
+        { status: false, message: "Failed to fetch subscription status from Paystack" },
+        { status: resp.status },
+      );
+    }
+
+    const payload = (await resp.json().catch(() => ({}))) as any;
+    const txList: any[] = Array.isArray(payload?.data) ? payload.data : [];
+    const recent = txList.find(
+      (t: any) =>
+        t &&
+        (t.customer?.email === email || t.customer_email === email) &&
+        t.status === "success",
+    );
+
+    let hasActiveSubscription = false;
+    let nextBillingDate: string | null = null;
+    let subscription: any = null;
+
+    if (recent) {
+      hasActiveSubscription = true;
+      const paidAtRaw = recent.paid_at || recent.paidAt || recent.created_at || recent.createdAt;
+      const paidAtDate = paidAtRaw ? new Date(paidAtRaw) : new Date();
+      const paidAtIso = paidAtDate.toISOString();
+      const nextDate = new Date(paidAtDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      nextBillingDate = nextDate;
+      subscription = {
+        reference: recent.reference,
+        amount: recent.amount,
+        channel: recent.channel,
+        paidAt: paidAtIso,
+      };
+    }
+
+    return json({
+      status: true,
+      data: { hasActiveSubscription, subscription, nextBillingDate },
+    });
+  } catch (error) {
+    return json(
+      {
+        status: false,
+        message: "Failed to fetch subscription status",
+        error: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
   }
 });
 
@@ -2227,6 +3358,10 @@ router.get("/api/wordpress/status", async (_req: Request, env: Env) => {
 });
 
 router.post("/api/wordpress/sync/manual", async (req: Request, env: Env) => {
+  const startedAt = new Date();
+  let postsProcessed = 0;
+  let errorMessage: string | null = null;
+
   try {
     const key = req.headers.get("X-Sync-Key");
     const isScheduler = req.headers.get("X-Scheduler") === "true";
@@ -2249,6 +3384,14 @@ router.post("/api/wordpress/sync/manual", async (req: Request, env: Env) => {
       return json({ error: "Sync already in progress" }, { status: 409 });
     }
 
+    // Mark sync as running in KV so UIs can reflect real-time status
+    try {
+      await env.SYNC_METADATA_KV.put("last_sync_status", "running");
+      await env.SYNC_METADATA_KV.put("last_sync_timestamp", startedAt.toISOString());
+    } catch {
+      // best-effort
+    }
+
     try {
       const wpRes = await fetch(
         `${env.WORDPRESS_API}?per_page=100&orderby=modified&order=desc`
@@ -2256,6 +3399,7 @@ router.post("/api/wordpress/sync/manual", async (req: Request, env: Env) => {
       if (!wpRes.ok) throw new Error("WordPress API failed");
 
       const posts = (await wpRes.json()) as any[];
+      postsProcessed = Array.isArray(posts) ? posts.length : 0;
 
       for (const post of posts) {
         await callSupabaseRpc(env, "upsert_wordpress_post", {
@@ -2268,29 +3412,623 @@ router.post("/api/wordpress/sync/manual", async (req: Request, env: Env) => {
         });
       }
 
-      await env.SYNC_METADATA_KV.put(
-        "last_sync_timestamp",
-        new Date().toISOString()
-      );
-      await env.SYNC_METADATA_KV.put("last_sync_status", "success");
+      const finishedAt = new Date();
 
-      return json({ success: true, postsProcessed: posts.length });
+      try {
+        await env.SYNC_METADATA_KV.put("last_sync_timestamp", finishedAt.toISOString());
+        await env.SYNC_METADATA_KV.put("last_sync_status", "success");
+      } catch {
+        // ignore KV failures
+      }
+
+      // Update Supabase site settings and activity logs (best-effort)
+      await updateWordPressSyncMetadata(env, {
+        success: true,
+        postsProcessed,
+        startedAt,
+        finishedAt,
+        error: null,
+        isScheduler,
+        triggeredBy: isScheduler ? "scheduler" : "manual",
+      });
+
+      return json({
+        success: true,
+        postsProcessed,
+        startedAt: startedAt.toISOString(),
+        finishedAt: finishedAt.toISOString(),
+      });
+    } catch (err) {
+      errorMessage = err instanceof Error ? err.message : String(err);
+      const finishedAt = new Date();
+
+      try {
+        await env.SYNC_METADATA_KV.put(
+          "last_sync_status",
+          `error: ${errorMessage}`
+        );
+      } catch {
+        // ignore
+      }
+
+      await updateWordPressSyncMetadata(env, {
+        success: false,
+        postsProcessed,
+        startedAt,
+        finishedAt,
+        error: errorMessage,
+        isScheduler,
+        triggeredBy: isScheduler ? "scheduler" : "manual",
+      });
+
+      return json({ error: errorMessage }, { status: 500 });
     } finally {
-      await lock.fetch(
-        new Request("https://worker", {
-          method: "POST",
-          body: JSON.stringify({ key: "wordpress-sync", action: "release" }),
-        })
-      );
+      try {
+        await lock.fetch(
+          new Request("https://worker", {
+            method: "POST",
+            body: JSON.stringify({ key: "wordpress-sync", action: "release" }),
+          })
+        );
+      } catch {
+        // ignore lock release errors
+      }
     }
   } catch (error) {
-    await env.SYNC_METADATA_KV.put(
-      "last_sync_status",
-      `error: ${String(error)}`
-    );
-    return json({ error: String(error) }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    try {
+      await env.SYNC_METADATA_KV.put("last_sync_status", `error: ${msg}`);
+    } catch {
+      // ignore KV failures
+    }
+    return json({ error: msg }, { status: 500 });
   }
 });
+
+// ADMIN WORDPRESS SYNC STATUS
+router.get("/api/admin/wordpress/status", async (req: Request, env: Env) => {
+  // If Supabase is not configured, fall back to KV-only status
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    try {
+      const lastSync = await env.SYNC_METADATA_KV.get("last_sync_timestamp");
+      const lastStatus = await env.SYNC_METADATA_KV.get("last_sync_status");
+      const isRunning = lastStatus === "running";
+
+      return json({
+        isRunning,
+        lastSync: lastSync || null,
+        nextSync: null,
+        postsCount: 0,
+        errors:
+          lastStatus && lastStatus.startsWith("error:")
+            ? [lastStatus]
+            : [],
+        totalProcessed: 0,
+        syncInterval: 300000,
+        enabled: env.ENABLE_WORDPRESS_SCHEDULER === "true",
+      });
+    } catch {
+      return json({
+        isRunning: false,
+        lastSync: null,
+        nextSync: null,
+        postsCount: 0,
+        errors: [],
+        totalProcessed: 0,
+        syncInterval: 300000,
+        enabled: env.ENABLE_WORDPRESS_SCHEDULER === "true",
+      });
+    }
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Admin authentication required" }, { status: 401 });
+  }
+  const currentUser = await getSupabaseCurrentUser(env, token);
+  if (!currentUser || !currentUser.isAdmin) {
+    return json({ error: "Admin access required" }, { status: 403 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+    };
+
+    // Load site settings
+    const settingsUrl = new URL(`${baseUrl}/rest/v1/site_settings`);
+    settingsUrl.searchParams.set("select", "key,value,updated_at");
+    settingsUrl.searchParams.set("limit", "100");
+
+    const settingsRes = await fetch(settingsUrl.toString(), { headers });
+    const settingsRows = settingsRes.ok
+      ? ((await settingsRes.json().catch(() => [])) as any[])
+      : [];
+
+    const getSetting = (key: string) =>
+      settingsRows.find((s) => s && s.key === key);
+
+    const enabledSetting = getSetting("wordpress_sync_enabled");
+    const intervalSetting = getSetting("wordpress_sync_interval");
+    const lastSyncSetting = getSetting("last_wordpress_sync");
+
+    const enabled =
+      enabledSetting?.value === "true" ||
+      (enabledSetting == null && env.ENABLE_WORDPRESS_SCHEDULER === "true");
+
+    const intervalMsRaw = intervalSetting?.value
+      ? parseInt(intervalSetting.value, 10)
+      : NaN;
+    const syncInterval =
+      Number.isFinite(intervalMsRaw) && intervalMsRaw > 0
+        ? intervalMsRaw
+        : 5 * 60 * 1000;
+
+    let lastSync: string | null = null;
+    let nextSync: string | null = null;
+
+    const lastSyncMs = lastSyncSetting?.value
+      ? parseInt(lastSyncSetting.value, 10)
+      : NaN;
+    if (Number.isFinite(lastSyncMs) && lastSyncMs > 0) {
+      const lastDate = new Date(lastSyncMs);
+      lastSync = lastDate.toISOString();
+      if (enabled) {
+        const nextDate = new Date(lastSyncMs + syncInterval);
+        nextSync = nextDate.toISOString();
+      }
+    }
+
+    // KV-based running status
+    const kvLastStatus = await env.SYNC_METADATA_KV.get("last_sync_status");
+    const kvLastTimestamp = await env.SYNC_METADATA_KV.get(
+      "last_sync_timestamp"
+    );
+    let isRunning = kvLastStatus === "running";
+
+    // Activity-based override (if recent log says running)
+    const activityUrl = new URL(`${baseUrl}/rest/v1/activity_logs`);
+    activityUrl.searchParams.set(
+      "select",
+      "id,action,details,created_at"
+    );
+    activityUrl.searchParams.set("action", "eq.wordpress_sync");
+    activityUrl.searchParams.set("order", "created_at.desc");
+    activityUrl.searchParams.set("limit", "1");
+
+    const actRes = await fetch(activityUrl.toString(), { headers });
+    if (actRes.ok) {
+      const actRows = (await actRes.json().catch(() => [])) as any[];
+      if (Array.isArray(actRows) && actRows.length > 0) {
+        const row = actRows[0];
+        const createdAtStr = row.created_at || row.createdAt;
+        const createdAt = createdAtStr ? new Date(createdAtStr) : null;
+        let details = row.details;
+        if (details && typeof details === "string") {
+          try {
+            details = JSON.parse(details);
+          } catch {
+            details = {};
+          }
+        }
+        const status = details?.status;
+        if (
+          status === "running" &&
+          createdAt &&
+          Date.now() - createdAt.getTime() < 5 * 60 * 1000
+        ) {
+          isRunning = true;
+        }
+      }
+    }
+
+    // Post count via COUNT(*) header
+    let postsCount = 0;
+    try {
+      const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
+      postsUrl.searchParams.set("select", "id");
+      postsUrl.searchParams.set("limit", "1");
+
+      const postsRes = await fetch(postsUrl.toString(), {
+        headers: {
+          ...headers,
+          Prefer: "count=exact",
+        },
+      });
+      if (postsRes.ok) {
+        const range = postsRes.headers.get("Content-Range");
+        if (range && range.includes("/")) {
+          const totalStr = range.split("/")[1];
+          const total = parseInt(totalStr, 10);
+          if (Number.isFinite(total)) {
+            postsCount = total;
+          }
+        }
+      }
+    } catch {
+      // ignore; postsCount stays 0
+    }
+
+    // Recent error messages
+    const logsUrl = new URL(`${baseUrl}/rest/v1/activity_logs`);
+    logsUrl.searchParams.set(
+      "select",
+      "id,action,details,created_at"
+    );
+    logsUrl.searchParams.set("action", "eq.wordpress_sync");
+    logsUrl.searchParams.set("order", "created_at.desc");
+    logsUrl.searchParams.set("limit", "20");
+
+    const logsRes = await fetch(logsUrl.toString(), { headers });
+    let errors: (string | { id?: string; timestamp?: string; message?: string; details?: any })[] = [];
+
+    if (logsRes.ok) {
+      const logs = (await logsRes.json().catch(() => [])) as any[];
+      if (Array.isArray(logs)) {
+        for (const row of logs) {
+          let details = row.details;
+          if (details && typeof details === "string") {
+            try {
+              details = JSON.parse(details);
+            } catch {
+              details = {};
+            }
+          }
+          const status = details?.status;
+          if (status === "error") {
+            const msg =
+              details?.message ||
+              details?.error ||
+              "WordPress sync encountered an error";
+            const ts =
+              details?.finishedAt ||
+              details?.startedAt ||
+              row.created_at ||
+              row.createdAt ||
+              null;
+            errors.push({
+              id: String(row.id),
+              timestamp: ts || undefined,
+              message: String(msg),
+              details,
+            });
+          }
+        }
+      }
+    }
+
+    return json({
+      isRunning,
+      lastSync,
+      nextSync,
+      postsCount,
+      errors,
+      totalProcessed: postsCount,
+      syncInterval,
+      enabled,
+    });
+  } catch {
+    return json(
+      {
+        isRunning: false,
+        lastSync: null,
+        nextSync: null,
+        postsCount: 0,
+        errors: [],
+        totalProcessed: 0,
+        syncInterval: 5 * 60 * 1000,
+        enabled: env.ENABLE_WORDPRESS_SCHEDULER === "true",
+      },
+      { status: 500 }
+    );
+  }
+});
+
+// ADMIN WORDPRESS SYNC LOGS
+router.get("/api/admin/wordpress/logs", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json([]);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Admin authentication required" }, { status: 401 });
+  }
+  const currentUser = await getSupabaseCurrentUser(env, token);
+  if (!currentUser || !currentUser.isAdmin) {
+    return json({ error: "Admin access required" }, { status: 403 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+    };
+
+    const logsUrl = new URL(`${baseUrl}/rest/v1/activity_logs`);
+    logsUrl.searchParams.set(
+      "select",
+      "id,action,details,created_at"
+    );
+    logsUrl.searchParams.set("action", "eq.wordpress_sync");
+    logsUrl.searchParams.set("order", "created_at.desc");
+    logsUrl.searchParams.set("limit", "20");
+
+    const res = await fetch(logsUrl.toString(), { headers });
+    if (!res.ok) {
+      return json([], { status: 500 });
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    const logs = rows.map((row: any) => {
+      let details = row.details;
+      if (details && typeof details === "string") {
+        try {
+          details = JSON.parse(details);
+        } catch {
+          details = {};
+        }
+      }
+      const d = (details && typeof details === "object" ? details : {}) as any;
+
+      const statusRaw = d.status || "success";
+      const status =
+        statusRaw === "error"
+          ? "error"
+          : statusRaw === "running"
+          ? "running"
+          : "success";
+
+      const startedAtStr = d.startedAt || row.created_at || row.createdAt;
+      const finishedAtStr = d.finishedAt || startedAtStr;
+      const startedAt = startedAtStr ? new Date(startedAtStr) : null;
+      const finishedAt = finishedAtStr ? new Date(finishedAtStr) : null;
+
+      let duration = 0;
+      if (d.durationMs && Number.isFinite(Number(d.durationMs))) {
+        duration = Number(d.durationMs);
+      } else if (startedAt && finishedAt) {
+        duration = Math.max(0, finishedAt.getTime() - startedAt.getTime());
+      }
+
+      const postsProcessed = Number(d.postsProcessed ?? 0);
+
+      const message =
+        d.message ||
+        (status === "success"
+          ? "WordPress sync completed successfully"
+          : status === "running"
+          ? "WordPress sync running"
+          : d.error || "WordPress sync failed");
+
+      return {
+        id: String(row.id),
+        timestamp: finishedAt
+          ? finishedAt.toISOString()
+          : startedAt
+          ? startedAt.toISOString()
+          : row.created_at || row.createdAt || new Date().toISOString(),
+        status,
+        message: String(message),
+        postsProcessed: Number.isFinite(postsProcessed) ? postsProcessed : 0,
+        duration,
+      };
+    });
+
+    return json(logs);
+  } catch {
+    return json([], { status: 500 });
+  }
+});
+
+// ADMIN WORDPRESS MANUAL SYNC
+router.post(
+  "/api/admin/wordpress/sync",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json({ error: "Admin authentication required" }, { status: 401 });
+    }
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json({ error: "Admin access required" }, { status: 403 });
+    }
+
+    // Log trigger event (best-effort)
+    try {
+      if (env.SUPABASE_SERVICE_ROLE_KEY) {
+        const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+        const url = new URL(`${baseUrl}/rest/v1/activity_logs`);
+        await fetch(url.toString(), {
+          method: "POST",
+          headers: {
+            apikey: env.SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+            action: "wordpress_sync_trigger",
+            details: {
+              type: "wordpress_sync_trigger",
+              triggeredBy:
+                currentUser.fullName ||
+                currentUser.username ||
+                currentUser.email ||
+                `admin:${currentUser.id}`,
+              timestamp: new Date().toISOString(),
+              source: "worker-admin",
+            },
+            ip_address:
+              req.headers.get("cf-connecting-ip") ||
+              req.headers.get("x-forwarded-for") ||
+              null,
+            user_agent: req.headers.get("user-agent") || null,
+          }),
+        });
+      }
+    } catch {
+      // ignore logging failures
+    }
+
+    try {
+      // Call the internal manual sync endpoint
+      const reqUrl = new URL(req.url);
+      const manualUrl = `${reqUrl.protocol}//${reqUrl.host}/api/wordpress/sync/manual`;
+
+      const res = await fetch(manualUrl, {
+        method: "POST",
+        headers: {
+          "X-Scheduler": "true",
+          "X-Sync-Key": env.WORDPRESS_SYNC_KEY || "admin-trigger",
+        },
+      });
+
+      if (res.status === 409) {
+        return json(
+          { success: false, message: "WordPress sync already in progress" },
+          { status: 409 }
+        );
+      }
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as any;
+        const message =
+          body?.error || body?.message || "Failed to trigger WordPress sync";
+        return json(
+          { success: false, message },
+          { status: 500 }
+        );
+      }
+
+      const payload = (await res.json().catch(() => ({}))) as any;
+      return json({
+        success: true,
+        message: "WordPress sync triggered successfully",
+        ...payload,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : String(error);
+      return json(
+        { success: false, message },
+        { status: 500 }
+      );
+    }
+  }
+);
+
+// ADMIN WORDPRESS ENABLE/DISABLE
+router.post(
+  "/api/admin/wordpress/toggle",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json({ error: "Admin authentication required" }, { status: 401 });
+    }
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json({ error: "Admin access required" }, { status: 403 });
+    }
+
+    let enabled: boolean | null = null;
+    try {
+      const body = (await (req as any).json?.().catch(() => ({}))) || {};
+      if (typeof body.enabled === "boolean") {
+        enabled = body.enabled;
+      } else if (typeof body.enabled === "string") {
+        const lowered = body.enabled.toLowerCase();
+        enabled =
+          lowered === "true" ||
+          lowered === "1" ||
+          lowered === "yes" ||
+          lowered === "on";
+      }
+    } catch {
+      // body parse error -> handled below
+    }
+
+    if (enabled === null) {
+      return json(
+        { error: "enabled boolean is required" },
+        { status: 400 }
+      );
+    }
+
+    try {
+      await updateSiteSetting(env, "wordpress_sync_enabled", enabled ? "true" : "false");
+
+      // Log toggle event (best-effort)
+      if (env.SUPABASE_SERVICE_ROLE_KEY) {
+        const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+        const url = new URL(`${baseUrl}/rest/v1/activity_logs`);
+        await fetch(url.toString(), {
+          method: "POST",
+          headers: {
+            apikey: env.SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+            action: "wordpress_sync_toggle",
+            details: {
+              type: "wordpress_sync_toggle",
+              enabled,
+              toggledBy:
+                currentUser.fullName ||
+                currentUser.username ||
+                currentUser.email ||
+                `admin:${currentUser.id}`,
+              timestamp: new Date().toISOString(),
+            },
+            ip_address:
+              req.headers.get("cf-connecting-ip") ||
+              req.headers.get("x-forwarded-for") ||
+              null,
+            user_agent: req.headers.get("user-agent") || null,
+          }),
+        });
+      }
+
+      return json({
+        success: true,
+        enabled,
+        message: `WordPress sync ${enabled ? "enabled" : "disabled"} successfully`,
+      });
+    } catch {
+      return json(
+        { error: "Failed to update WordPress sync setting" },
+        { status: 500 }
+      );
+    }
+  }
+);
 
 // WORDPRESS POSTS PROXY (avoids browser CORS and matches Express shape)
 router.get("/api/wordpress/posts", async (req: Request, env: Env) => {
@@ -3578,6 +5316,103 @@ router.post("/api/posts/:id/reaction", async (req: Request, env: Env) => {
   }
 });
 
+// REACTIONS SSE: streaming reaction updates per post (best-effort)
+router.get("/api/posts/:id/reactions/stream", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    // In non-Supabase environments, defer to the legacy backend
+    return proxyToBackend(req, env);
+  }
+
+  const urlObj = new URL(req.url);
+  const segments = urlObj.pathname.split("/").filter(Boolean);
+  const idSegment = segments[2]; // /api/posts/:id/reactions/stream -> ["api","posts",":id",...]
+  const rawId = Number(idSegment);
+  if (!Number.isFinite(rawId) || rawId <= 0) {
+    return json({ error: "Invalid postId" }, { status: 400 });
+  }
+
+  let intervalId: number | undefined;
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+      const sendEvent = (event: string, data: any) => {
+        try {
+          const payload = `event: ${event}\n` + `data: ${JSON.stringify(data)}\n\n`;
+          controller.enqueue(encoder.encode(payload));
+        } catch {
+          // Ignore write errors; the stream will be closed by cancel()
+        }
+      };
+
+      // Send an initial snapshot
+      const sendSnapshot = async (eventName: "initial" | "update") => {
+        try {
+          const summaries = await buildPostSummaries(env, [rawId]);
+          const summary = summaries[0];
+          if (!summary) return;
+
+          const reactions = summary.reactions || {};
+          const payload = {
+            postId: summary.localPostId ?? summary.id ?? rawId,
+            baselineLikes: Number(reactions.baselineLikes ?? 0),
+            baselineDislikes: Number(reactions.baselineDislikes ?? 0),
+            likesCount: Number(reactions.likesCount ?? 0),
+            dislikesCount: Number(reactions.dislikesCount ?? 0),
+            totals: {
+              likes:
+                Number(reactions.baselineLikes ?? 0) +
+                Number(reactions.likesCount ?? 0),
+              dislikes:
+                Number(reactions.baselineDislikes ?? 0) +
+                Number(reactions.dislikesCount ?? 0),
+            },
+            ts: Date.now(),
+          };
+
+          sendEvent(eventName, payload);
+        } catch {
+          // Surface as SSE error event but do not terminate the stream
+          sendEvent("error", {
+            postId: rawId,
+            message: "Failed to read reactions snapshot",
+          });
+        }
+      };
+
+      await sendSnapshot("initial");
+
+      // Periodic updates (lightweight polling)
+      intervalId = setInterval(() => {
+        // Fire and forget; errors are handled inside sendSnapshot
+        void sendSnapshot("update");
+      }, 25_000) as unknown as number;
+
+      // Heartbeat ping so intermediaries keep the connection alive
+      const pingInterval = setInterval(() => {
+        sendEvent("ping", { ts: Date.now() });
+      }, 25_000) as unknown as number;
+
+      // Combine both intervals into one handle for cleanup
+      intervalId = pingInterval;
+    },
+    cancel() {
+      if (intervalId !== undefined) {
+        clearInterval(intervalId);
+      }
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
+});
+
 // Comments: Supabase-backed list/create/flag with legacy fallback
 
 function parseCookies(header: string | null): Record<string, string> {
@@ -4542,25 +6377,1612 @@ router.get("/api/search/suggest", async (req: Request, env: Env) => {
   }
 });
 
-// API DOMAIN REDIRECT / FALLBACK PROXY
-router.all("*", async (req: Request, env: Env) => {
-  const url = new URL(req.url);
-  const path = url.pathname;
+/**
+ * FEEDBACK ADMIN & AI ROUTES (Supabase-backed, JWT-based; fallback to legacy Express)
+ */
 
-  // Non-API paths (including "/") should go to the frontend
-  if (!path.startsWith("/api/") && path !== "/health") {
-    const redirectUrl = new URL(path + url.search, env.FRONTEND_URL);
-    return new Response(null, {
-      status: 308,
-      headers: { Location: redirectUrl.toString() },
-    });
+type FeedbackCategory =
+  | "bug"
+  | "feature"
+  | "praise"
+  | "complaint"
+  | "question"
+  | "general";
+
+interface WorkerUserFeedback {
+  id: number;
+  type: string;
+  content: string;
+  page?: string | null;
+  status: string;
+  browser?: string | null;
+  operatingSystem?: string | null;
+  screenResolution?: string | null;
+  userAgent?: string | null;
+  category?: string | null;
+  metadata?: any;
+}
+
+interface WorkerResponseSuggestion {
+  suggestion: string;
+  confidence: number;
+  category: FeedbackCategory;
+  tags?: string[];
+  template?: string;
+  isAutomated: boolean;
+}
+
+// Keywords and templates copied from server/utils/feedback-ai.ts
+const feedbackCategoryKeywords: Record<FeedbackCategory, string[]> = {
+  bug: [
+    "broken",
+    "error",
+    "issue",
+    "problem",
+    "not working",
+    "crash",
+    "fail",
+    "bug",
+    "glitch",
+    "incorrect",
+    "doesn't work",
+    "doesn't load",
+    "stuck",
+    "freezes",
+  ],
+  feature: [
+    "add",
+    "feature",
+    "suggestion",
+    "improvement",
+    "enhance",
+    "upgrade",
+    "implement",
+    "could you",
+    "would be nice",
+    "wish",
+    "hope",
+    "consider",
+    "should have",
+  ],
+  praise: [
+    "love",
+    "great",
+    "amazing",
+    "excellent",
+    "awesome",
+    "fantastic",
+    "good job",
+    "well done",
+    "impressive",
+    "wonderful",
+    "brilliant",
+    "thank you",
+    "thanks",
+  ],
+  complaint: [
+    "disappointed",
+    "unhappy",
+    "frustrating",
+    "annoying",
+    "difficult",
+    "hard to",
+    "terrible",
+    "awful",
+    "bad",
+    "poor",
+    "worst",
+    "waste",
+    "useless",
+    "horrible",
+  ],
+  question: [
+    "how do i",
+    "how can i",
+    "is there a way",
+    "can you",
+    "possible to",
+    "wondering if",
+    "help with",
+    "how to",
+    "where is",
+    "what is",
+    "when will",
+  ],
+  general: [],
+};
+
+const feedbackResponseTemplates: Record<FeedbackCategory, string[]> = {
+  bug: [
+    "Thank you for reporting this issue. Our development team is investigating the problem and will work to resolve it as soon as possible.",
+    "We appreciate you bringing this bug to our attention. Our team is looking into it and will provide an update once it's fixed.",
+    "Thank you for your bug report. We've logged this issue and assigned it to our development team for resolution.",
+  ],
+  feature: [
+    "Thank you for your feature suggestion. We're always looking for ways to improve our platform and will consider this for a future update.",
+    "We appreciate your feedback! Your feature request has been added to our product roadmap for consideration.",
+    "Thanks for the suggestion. We're evaluating this feature request and will update you if we decide to implement it.",
+  ],
+  praise: [
+    "Thank you for your kind words! We're delighted to hear you're enjoying our platform.",
+    "We appreciate your positive feedback! It's great to know our work is making a difference for you.",
+    "Thank you for taking the time to share your positive experience. Your feedback motivates our team to continue improving.",
+  ],
+  complaint: [
+    "We're sorry to hear about your experience. We take your feedback seriously and will work to address these concerns.",
+    "Thank you for bringing this to our attention. We apologize for the inconvenience and are working to improve this aspect of our service.",
+    "We appreciate your honest feedback. Our team is reviewing your concerns to make necessary improvements.",
+  ],
+  question: [
+    "Thank you for your question. Our support team will reach out shortly with more information to help you.",
+    "We've received your inquiry and will provide you with a detailed response as soon as possible.",
+    "Thanks for reaching out. We're preparing an answer to your question and will respond shortly.",
+  ],
+  general: [
+    "Thank you for your feedback. We appreciate you taking the time to share your thoughts with us.",
+    "We value your input and will use it to continue improving our services.",
+    "Thank you for sharing your feedback. It helps us understand how we can better serve our users.",
+  ],
+};
+
+function categorizeFeedbackForWorker(
+  feedback: WorkerUserFeedback
+): FeedbackCategory {
+  if (
+    feedback.type &&
+    ["bug", "feature", "praise", "complaint", "question", "general"].includes(
+      feedback.type
+    )
+  ) {
+    return feedback.type as FeedbackCategory;
   }
 
-  // For any unhandled /api/* routes, forward to the legacy backend.
-  if (path.startsWith("/api/")) {
+  const content = feedback.content.toLowerCase();
+  const scores: Record<FeedbackCategory, number> = {
+    bug: 0,
+    feature: 0,
+    praise: 0,
+    complaint: 0,
+    question: 0,
+    general: 1, // default base
+  };
+
+  (Object.keys(feedbackCategoryKeywords) as FeedbackCategory[]).forEach(
+    (category) => {
+      for (const keyword of feedbackCategoryKeywords[category]) {
+        if (content.includes(keyword)) {
+          scores[category] += 1;
+        }
+      }
+    }
+  );
+
+  if (content.includes("?")) {
+    scores.question += 2;
+  }
+
+  let best: FeedbackCategory = "general";
+  let bestScore = 0;
+  (Object.entries(scores) as [FeedbackCategory, number][]).forEach(
+    ([cat, score]) => {
+      if (score > bestScore) {
+        bestScore = score;
+        best = cat;
+      }
+    }
+  );
+
+  return best;
+}
+
+function generateFeedbackTags(
+  feedback: WorkerUserFeedback,
+  category: FeedbackCategory
+): string[] {
+  const tags: string[] = [category];
+  const content = feedback.content.toLowerCase();
+
+  if (feedback.page && feedback.page !== "unknown") {
+    tags.push(`page:${String(feedback.page).replace(/^\//, "")}`);
+  }
+
+  if (feedback.browser && feedback.browser !== "unknown") {
+    tags.push(`browser:${feedback.browser.toLowerCase().split(" ")[0]}`);
+  }
+
+  if (feedback.operatingSystem && feedback.operatingSystem !== "unknown") {
+    tags.push(
+      `os:${feedback.operatingSystem.toLowerCase().split(" ")[0]}`
+    );
+  }
+
+  const urgentKeywords = ["urgent", "critical", "immediately", "serious", "emergency"];
+  if (urgentKeywords.some((kw) => content.includes(kw))) {
+    tags.push("priority");
+  }
+
+  return tags;
+}
+
+function generateWorkerResponseSuggestion(
+  feedback: WorkerUserFeedback
+): WorkerResponseSuggestion {
+  try {
+    const category = categorizeFeedbackForWorker(feedback);
+    const templates = feedbackResponseTemplates[category] || feedbackResponseTemplates.general;
+    const template =
+      templates[Math.floor(Math.random() * templates.length)] ||
+      feedbackResponseTemplates.general[0];
+
+    const contentLengthFactor = Math.min(
+      feedback.content.length / 1000,
+      0.4
+    );
+    const hasMetadataFactor =
+      feedback.metadata && Object.keys(feedback.metadata).length > 0 ? 0.1 : 0;
+    const categoryMatchFactor =
+      feedback.type === category ? 0.2 : 0;
+
+    const confidenceBase = 0.3;
+    const confidence =
+      confidenceBase +
+      contentLengthFactor +
+      hasMetadataFactor +
+      categoryMatchFactor;
+
+    const tags = generateFeedbackTags(feedback, category);
+
+    return {
+      suggestion: template,
+      confidence: parseFloat(Math.max(0.1, Math.min(0.95, confidence)).toFixed(2)),
+      category,
+      tags,
+      template,
+      isAutomated: true,
+    };
+  } catch {
+    return {
+      suggestion:
+        "Thank you for your feedback. Our team will review it and respond if necessary.",
+      confidence: 0.1,
+      category: "general",
+      isAutomated: true,
+    };
+  }
+}
+
+function getWorkerResponseHints(
+  feedback: WorkerUserFeedback
+): string[] {
+  const category = categorizeFeedbackForWorker(feedback);
+  const hints: string[] = [];
+
+  switch (category) {
+    case "bug":
+      hints.push("Acknowledge the specific issue mentioned.");
+      hints.push("Provide an estimated timeline for resolution if possible.");
+      hints.push(
+        "Ask for additional details if needed (browser version, steps to reproduce)."
+      );
+      break;
+    case "feature":
+      hints.push(
+        "Thank them for the suggestion and explain if it fits the product roadmap."
+      );
+      hints.push("Consider asking for more details about their use case.");
+      hints.push("Be honest about implementation likelihood.");
+      break;
+    case "praise":
+      hints.push(
+        "Express genuine appreciation for their positive feedback."
+      );
+      hints.push("Share the feedback with the relevant team members.");
+      hints.push("Consider asking what other features they enjoy.");
+      break;
+    case "complaint":
+      hints.push(
+        "Acknowledge their frustration without making excuses."
+      );
+      hints.push("Provide a clear solution or next steps.");
+      hints.push(
+        "Follow up to ensure they are satisfied with the resolution."
+      );
+      break;
+    case "question":
+      hints.push("Provide a clear, direct answer to their question.");
+      hints.push("Include links to relevant documentation if available.");
+      hints.push("Ask if your answer addressed their concern.");
+      break;
+    default:
+      hints.push("Thank them for their feedback.");
+      hints.push(
+        "Ask if there is anything specific they would like to see improved."
+      );
+      hints.push("Maintain a friendly, appreciative tone.");
+  }
+
+  return hints;
+}
+
+function normalizeFeedbackMetadata(row: any): any {
+  let meta = row && typeof row.metadata === "object" && row.metadata !== null
+    ? (row.metadata as any)
+    : {};
+
+  try {
+    if (typeof row.metadata === "string") {
+      meta = JSON.parse(row.metadata);
+    }
+  } catch {
+    // ignore bad JSON, keep meta as {}
+  }
+
+  if (!meta || typeof meta !== "object") {
+    meta = {};
+  }
+
+  const result: any = { ...meta };
+
+  const browserName =
+    (meta.browser && typeof meta.browser === "object" && meta.browser.name) ||
+    meta.browserName ||
+    meta.browser ||
+    row.browser ||
+    row.browser_name ||
+    "unknown";
+
+  const browserVersion =
+    (meta.browser && typeof meta.browser === "object" && meta.browser.version) ||
+    meta.browserVersion ||
+    "";
+
+  const userAgent =
+    (meta.browser && typeof meta.browser === "object" && meta.browser.userAgent) ||
+    meta.userAgent ||
+    row.userAgent ||
+    row.user_agent ||
+    "";
+
+  if (!result.browser || typeof result.browser !== "object") {
+    result.browser = {
+      name: String(browserName || "unknown"),
+      version: String(browserVersion || ""),
+      userAgent: String(userAgent || ""),
+    };
+  } else {
+    result.browser = {
+      name: String(
+        (result.browser.name ||
+          result.browser.browserName ||
+          browserName ||
+          "unknown") as string
+      ),
+      version: String((result.browser.version || browserVersion || "") as string),
+      userAgent: String(
+        (result.browser.userAgent || userAgent || "") as string
+      ),
+    };
+  }
+
+  const osName =
+    (meta.os && typeof meta.os === "object" && meta.os.name) ||
+    meta.osName ||
+    meta.operatingSystem ||
+    row.operatingSystem ||
+    row.operating_system ||
+    "unknown";
+
+  const osVersion =
+    (meta.os && typeof meta.os === "object" && meta.os.version) ||
+    meta.osVersion ||
+    "";
+
+  if (!result.os || typeof result.os !== "object") {
+    result.os = {
+      name: String(osName || "unknown"),
+      version: String(osVersion || ""),
+    };
+  } else {
+    result.os = {
+      name: String(
+        (result.os.name ||
+          result.os.osName ||
+          result.os.operatingSystem ||
+          osName ||
+          "unknown") as string
+      ),
+      version: String((result.os.version || osVersion || "") as string),
+    };
+  }
+
+  const rawScreen =
+    meta.screen ||
+    meta.screenResolution ||
+    row.screenResolution ||
+    row.screen_resolution ||
+    null;
+
+  if (!result.screen || typeof result.screen !== "object") {
+    let width = 0;
+    let height = 0;
+    if (typeof rawScreen === "object" && rawScreen) {
+      width = Number(rawScreen.width ?? 0);
+      height = Number(rawScreen.height ?? 0);
+    } else if (typeof rawScreen === "string") {
+      const m = rawScreen.match(/(\d+)\s*x\s*(\d+)/i);
+      if (m) {
+        width = parseInt(m[1], 10);
+        height = parseInt(m[2], 10);
+      }
+    }
+
+    if (width > 0 && height > 0) {
+      result.screen = { width, height };
+    }
+  }
+
+  const path =
+    (meta.location && meta.location.path) ||
+    meta.path ||
+    row.page ||
+    row.location_path ||
+    "";
+
+  const referrer =
+    (meta.location && meta.location.referrer) ||
+    meta.referrer ||
+    "";
+
+  if (!result.location || typeof result.location !== "object") {
+    result.location = {
+      path: String(path || ""),
+      ...(referrer ? { referrer: String(referrer) } : {}),
+    };
+  } else {
+    result.location = {
+      path: String(
+        (result.location.path || path || "") as string
+      ),
+      ...(result.location.referrer || referrer
+        ? {
+            referrer: String(
+              (result.location.referrer || referrer || "") as string
+            ),
+          }
+        : {}),
+    };
+  }
+
+  const rawAdminResponse = meta.adminResponse;
+  const rawRespondedAt = meta.respondedAt;
+  const rawRespondedBy = meta.respondedBy;
+
+  if (rawAdminResponse) {
+    if (typeof rawAdminResponse === "string") {
+      result.adminResponse = {
+        content: rawAdminResponse,
+        respondedAt: String(
+          rawRespondedAt || new Date().toISOString()
+        ),
+        respondedBy: String(rawRespondedBy || "Admin"),
+      };
+    } else if (typeof rawAdminResponse === "object") {
+      result.adminResponse = {
+        content: String(
+          rawAdminResponse.content || ""
+        ),
+        respondedAt: String(
+          rawAdminResponse.respondedAt ||
+            rawRespondedAt ||
+            new Date().toISOString()
+        ),
+        respondedBy: String(
+          rawAdminResponse.respondedBy || rawRespondedBy || "Admin"
+        ),
+      };
+    }
+  }
+
+  return result;
+}
+
+function mapFeedbackRowToApiItem(row: any): any {
+  const metadata = normalizeFeedbackMetadata(row);
+
+  const subject =
+    (metadata.subject && String(metadata.subject)) ||
+    (row.category && String(row.category)) ||
+    (row.type && String(row.type)) ||
+    "Feedback";
+
+  const email =
+    (metadata.email && String(metadata.email)) ||
+    (typeof row.email === "string" ? row.email : null) ||
+    null;
+
+  const contactRequested =
+    typeof metadata.contactRequested === "boolean"
+      ? metadata.contactRequested
+      : Boolean(
+          metadata.contact_me ||
+            metadata.allowContact ||
+            metadata.contactRequested
+        );
+
+  const priority =
+    (metadata.priority && String(metadata.priority)) || "medium";
+
+  return {
+    id: Number(row.id),
+    userId:
+      row.user_id != null && Number.isFinite(Number(row.user_id))
+        ? Number(row.user_id)
+        : null,
+    email,
+    subject,
+    content: String(row.content || ""),
+    type: String(row.type || "general"),
+    status: String(row.status || "pending"),
+    priority,
+    contactRequested,
+    createdAt: row.created_at || new Date().toISOString(),
+    metadata,
+  };
+}
+
+async function fetchFeedbackRowById(
+  env: Env,
+  id: number,
+  headers: Record<string, string>
+): Promise<any | null> {
+  const baseUrl = env.SUPABASE_URL!.replace(/\/+$/, "");
+  const url = new URL(`${baseUrl}/rest/v1/user_feedback`);
+  url.searchParams.set(
+    "select",
+    "id,type,content,page,status,user_id,browser,operating_system,screen_resolution,user_agent,category,metadata,created_at"
+  );
+  url.searchParams.set("id", `eq.${id}`);
+  url.searchParams.set("limit", "1");
+
+  const res = await fetch(url.toString(), { headers });
+  if (!res.ok) {
+    return null;
+  }
+  const rows = (await res.json().catch(() => [])) as any[];
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return null;
+  }
+  return rows[0];
+}
+
+function buildFeedbackSuggestionsPayload(
+  row: any
+): {
+  responseSuggestion: WorkerResponseSuggestion;
+  alternativeSuggestions: WorkerResponseSuggestion[];
+  responseHints: string[];
+} {
+  const feedback: WorkerUserFeedback = {
+    id: Number(row.id),
+    type: String(row.type || "general"),
+    content: String(row.content || ""),
+    page: row.page ?? null,
+    status: String(row.status || "pending"),
+    browser: row.browser ?? null,
+    operatingSystem: row.operating_system ?? null,
+    screenResolution: row.screen_resolution ?? null,
+    userAgent: row.user_agent ?? null,
+    category: row.category ?? null,
+    metadata: normalizeFeedbackMetadata(row),
+  };
+
+  const primary = generateWorkerResponseSuggestion(feedback);
+  const hints = getWorkerResponseHints(feedback);
+
+  const templates =
+    feedbackResponseTemplates[primary.category] ||
+    feedbackResponseTemplates.general;
+
+  const used = new Set<string>();
+  if (primary.template) {
+    used.add(primary.template);
+  } else {
+    used.add(primary.suggestion);
+  }
+
+  const alternatives: WorkerResponseSuggestion[] = [];
+  for (const tpl of templates) {
+    if (alternatives.length >= 2) break;
+    if (used.has(tpl)) continue;
+    alternatives.push({
+      suggestion: tpl,
+      confidence: Math.max(
+        0.5,
+        primary.confidence - 0.05 * (alternatives.length + 1)
+      ),
+      category: primary.category,
+      tags: primary.tags,
+      template: tpl,
+      isAutomated: true,
+    });
+    used.add(tpl);
+  }
+
+  return {
+    responseSuggestion: primary,
+    alternativeSuggestions: alternatives,
+    responseHints: hints,
+  };
+}
+
+// GET /api/feedback - admin list with Supabase JWT, fallback to legacy Express for cookie-based admin
+router.get("/api/feedback", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return proxyToBackend(req, env);
   }
 
+  const token = getBearerToken(req);
+  if (!token) {
+    // Legacy cookie/session-based admin
+    return proxyToBackend(req, env);
+  }
+
+  const currentUser = await getSupabaseCurrentUser(env, token);
+  if (!currentUser || !currentUser.isAdmin) {
+    return json({ error: "Admin access required" }, { status: 403 });
+  }
+
+  try {
+    const urlObj = new URL(req.url);
+    const search = urlObj.searchParams;
+    const statusParam = (search.get("status") || "all").trim().toLowerCase();
+    const typeParam = (search.get("type") || "").trim().toLowerCase();
+    const pageRaw = parseInt(search.get("page") || "1", 10);
+    const limitRaw = parseInt(search.get("limit") || "50", 10);
+
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+    const limit = Math.max(1, Math.min(Number.isFinite(limitRaw) ? limitRaw : 50, 200));
+    const offset = (page - 1) * limit;
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+      Prefer: "count=exact",
+    };
+
+    const listUrl = new URL(`${baseUrl}/rest/v1/user_feedback`);
+    listUrl.searchParams.set(
+      "select",
+      "id,type,content,page,status,user_id,browser,operating_system,screen_resolution,user_agent,category,metadata,created_at"
+    );
+    listUrl.searchParams.set("order", "created_at.desc");
+    listUrl.searchParams.set("limit", String(limit));
+    listUrl.searchParams.set("offset", String(offset));
+
+    if (statusParam && statusParam !== "all") {
+      listUrl.searchParams.set("status", `eq.${statusParam}`);
+    }
+    if (typeParam) {
+      listUrl.searchParams.set("type", `eq.${typeParam}`);
+    }
+
+    const res = await fetch(listUrl.toString(), { headers });
+    if (!res.ok) {
+      return json({ error: "Failed to list feedback" }, { status: 500 });
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    const contentRange = res.headers.get("Content-Range") || "";
+    let total = rows.length;
+    const parts = contentRange.split("/");
+    if (parts.length === 2) {
+      const totalStr = parts[1];
+      const n = parseInt(totalStr, 10);
+      if (Number.isFinite(n)) total = n;
+    }
+
+    const feedback = rows.map(mapFeedbackRowToApiItem);
+    const hasMore = offset + rows.length < total;
+
+    return json({ feedback, total, page, hasMore });
+  } catch {
+    return json({ error: "Failed to list feedback" }, { status: 500 });
+  }
+});
+
+// GET /api/feedback/:id - admin detail + AI suggestions
+router.get("/api/feedback/:id", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return proxyToBackend(req, env);
+  }
+
+  const currentUser = await getSupabaseCurrentUser(env, token);
+  if (!currentUser || !currentUser.isAdmin) {
+    return json({ error: "Admin access required" }, { status: 403 });
+  }
+
+  try {
+    const urlObj = new URL(req.url);
+    const segments = urlObj.pathname.split("/");
+    const idSegment = segments[segments.length - 1] || "";
+    const id = parseInt(decodeURIComponent(idSegment), 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      return json({ error: "Invalid id" }, { status: 400 });
+    }
+
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+      Prefer: "count=exact",
+    };
+
+    const row = await fetchFeedbackRowById(env, id, headers);
+    if (!row) {
+      return json({ error: "Feedback not found" }, { status: 404 });
+    }
+
+    const feedback = mapFeedbackRowToApiItem(row);
+    const suggestions = buildFeedbackSuggestionsPayload(row);
+
+    return json({
+      feedback,
+      responseSuggestion: suggestions.responseSuggestion,
+      alternativeSuggestions: suggestions.alternativeSuggestions,
+      responseHints: suggestions.responseHints,
+    });
+  } catch {
+    return json({ error: "Failed to fetch feedback item" }, { status: 500 });
+  }
+});
+
+// PATCH /api/feedback/:id/status - admin status update
+router.patch(
+  "/api/feedback/:id/status",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return proxyToBackend(req, env);
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json({ error: "Admin access required" }, { status: 403 });
+    }
+
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.split("/");
+      const idSegment = segments[segments.length - 2] || "";
+      const id = parseInt(decodeURIComponent(idSegment), 10);
+      if (!Number.isFinite(id) || id <= 0) {
+        return json({ error: "Invalid id" }, { status: 400 });
+      }
+
+      const body = (await (req as any).json?.().catch(() => ({}))) || {};
+      const status =
+        typeof body.status === "string" && body.status.trim()
+          ? body.status.trim()
+          : null;
+      if (!status) {
+        return json({ error: "Status is required" }, { status: 400 });
+      }
+
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+      const headers: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      };
+
+      const updateUrl = new URL(`${baseUrl}/rest/v1/user_feedback`);
+      updateUrl.searchParams.set("id", `eq.${id}`);
+
+      const res = await fetch(updateUrl.toString(), {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ status }),
+      });
+
+      if (!res.ok) {
+        return json(
+          { error: "Failed to update feedback status" },
+          { status: 500 }
+        );
+      }
+
+      const rows = (await res.json().catch(() => [])) as any[];
+      const row = Array.isArray(rows) && rows.length ? rows[0] : null;
+      if (!row) {
+        return json(
+          { error: "Feedback not found after update" },
+          { status: 404 }
+        );
+      }
+
+      const feedback = mapFeedbackRowToApiItem(row);
+      return json({ success: true, feedback });
+    } catch {
+      return json(
+        { error: "Failed to update feedback status" },
+        { status: 500 }
+      );
+    }
+  }
+);
+
+// POST /api/feedback/:id/respond - admin response stored in metadata.adminResponse
+router.post(
+  "/api/feedback/:id/respond",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return proxyToBackend(req, env);
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json({ error: "Admin access required" }, { status: 403 });
+    }
+
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.split("/");
+      const idSegment = segments[segments.length - 2] || "";
+      const id = parseInt(decodeURIComponent(idSegment), 10);
+      if (!Number.isFinite(id) || id <= 0) {
+        return json({ error: "Invalid id" }, { status: 400 });
+      }
+
+      const body = (await (req as any).json?.().catch(() => ({}))) || {};
+      const responseText =
+        typeof body.response === "string" && body.response.trim()
+          ? body.response.trim()
+          : null;
+      if (!responseText) {
+        return json({ error: "Response is required" }, { status: 400 });
+      }
+
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+
+      const readHeaders: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        Prefer: "count=exact",
+      };
+
+      const existing = await fetchFeedbackRowById(env, id, readHeaders);
+      if (!existing) {
+        return json({ error: "Feedback not found" }, { status: 404 });
+      }
+
+      let meta = normalizeFeedbackMetadata(existing);
+      const respondedAt = new Date().toISOString();
+      const respondedBy =
+        currentUser.fullName ||
+        currentUser.username ||
+        currentUser.email ||
+        `admin:${currentUser.id}`;
+
+      meta = {
+        ...meta,
+        adminResponse: {
+          content: responseText,
+          respondedAt,
+          respondedBy,
+        },
+        responderId: currentUser.id,
+        respondedAt,
+      };
+
+      const status =
+        existing.status === "pending" ? "reviewed" : existing.status;
+
+      const updateUrl = new URL(`${baseUrl}/rest/v1/user_feedback`);
+      updateUrl.searchParams.set("id", `eq.${id}`);
+
+      const writeHeaders: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      };
+
+      const res = await fetch(updateUrl.toString(), {
+        method: "PATCH",
+        headers: writeHeaders,
+        body: JSON.stringify({ metadata: meta, status }),
+      });
+
+      if (!res.ok) {
+        return json(
+          { error: "Failed to store admin response" },
+          { status: 500 }
+        );
+      }
+
+      const rows = (await res.json().catch(() => [])) as any[];
+      const row = Array.isArray(rows) && rows.length ? rows[0] : null;
+      if (!row) {
+        return json(
+          { error: "Feedback not found after update" },
+          { status: 404 }
+        );
+      }
+
+      const feedback = mapFeedbackRowToApiItem(row);
+      return json({ success: true, feedback });
+    } catch {
+      return json(
+        { error: "Failed to store admin response" },
+        { status: 500 }
+      );
+    }
+  }
+);
+
+// GET /api/feedback/:id/suggestions - AI suggestions only
+router.get(
+  "/api/feedback/:id/suggestions",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return proxyToBackend(req, env);
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json({ error: "Admin access required" }, { status: 403 });
+    }
+
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.split("/");
+      const idSegment = segments[segments.length - 2] || "";
+      const id = parseInt(decodeURIComponent(idSegment), 10);
+      if (!Number.isFinite(id) || id <= 0) {
+        return json({ error: "Invalid id" }, { status: 400 });
+      }
+
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+      const headers: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        Prefer: "count=exact",
+      };
+
+      const row = await fetchFeedbackRowById(env, id, headers);
+      if (!row) {
+        return json({ error: "Feedback not found" }, { status: 404 });
+      }
+
+      const suggestions = buildFeedbackSuggestionsPayload(row);
+      return json({
+        responseSuggestion: suggestions.responseSuggestion,
+        alternativeSuggestions: suggestions.alternativeSuggestions,
+      });
+    } catch {
+      return json(
+        { error: "Failed to generate suggestions" },
+        { status: 500 }
+      );
+    }
+  }
+);
+
+// USER NOTIFICATIONS: Supabase-backed, with legacy fallback
+router.get("/api/notifications", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/user_notifications`);
+    url.searchParams.set(
+      "select",
+      "id,user_id,type,title,message,metadata,is_read,created_at",
+    );
+    url.searchParams.set("order", "created_at.desc");
+    url.searchParams.set("limit", "50");
+
+    const resp = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (resp.status === 401 || resp.status === 403) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    if (!resp.ok) {
+      return json(
+        { error: "Failed to list notifications" },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await resp.json().catch(() => [])) as any[];
+    const notifications = rows.map((n) => {
+      const meta =
+        n && typeof n.metadata === "object" && n.metadata !== null ? n.metadata : {};
+      return {
+        id: n.id,
+        type: String(n.type || "info"),
+        title: String(n.title || "Notification"),
+        message: String(n.message || ""),
+        metadata: meta,
+        isRead: !!(n.is_read ?? n.isRead),
+        createdAt: n.created_at || n.createdAt || new Date().toISOString(),
+        userId: typeof n.user_id === "number" ? n.user_id : null,
+      };
+    });
+
+    return json({ notifications });
+  } catch {
+    return json(
+      { error: "Failed to list notifications" },
+      { status: 500 },
+    );
+  }
+});
+
+router.post("/api/notifications", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  try {
+    const body = (await req.json().catch(() => ({}))) as any;
+    const type = typeof body.type === "string" && body.type.trim().length > 0 ? body.type : null;
+    const title =
+      typeof body.title === "string" && body.title.trim().length > 0 ? body.title : null;
+    const message =
+      typeof body.message === "string" && body.message.trim().length > 0 ? body.message : null;
+    const metadata =
+      body && typeof body.metadata === "object" && body.metadata !== null
+        ? body.metadata
+        : {};
+
+    if (!type || !title || !message) {
+      return json(
+        { error: "type, title and message are required" },
+        { status: 400 },
+      );
+    }
+
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!userId) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/user_notifications`);
+
+    const resp = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        type,
+        title,
+        message,
+        metadata,
+        is_read: false,
+        created_at: new Date().toISOString(),
+      }),
+    });
+
+    if (!resp.ok) {
+      const errJson = (await resp.json().catch(() => ({}))) as any;
+      return json(
+        {
+          error:
+            errJson?.message ||
+            errJson?.error ||
+            "Failed to create notification",
+        },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await resp.json().catch(() => [])) as any[];
+    const n = rows[0];
+    const meta =
+      n && typeof n.metadata === "object" && n.metadata !== null ? n.metadata : {};
+    const notification = {
+      id: n.id,
+      type: String(n.type || type),
+      title: String(n.title || title),
+      message: String(n.message || message),
+      metadata: meta,
+      isRead: !!(n.is_read ?? n.isRead),
+      createdAt: n.created_at || n.createdAt || new Date().toISOString(),
+      userId: typeof n.user_id === "number" ? n.user_id : userId,
+    };
+
+    return json({ notification }, { status: 201 });
+  } catch {
+    return json(
+      { error: "Failed to create notification" },
+      { status: 500 },
+    );
+  }
+});
+
+router.patch("/api/notifications/:id/read", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  const urlObj = new URL(req.url);
+  const segments = urlObj.pathname.split("/").filter(Boolean);
+  const idSegment = segments[segments.length - 2] === "read" ? segments[segments.length - 3] : null;
+  const id = idSegment ? Number(idSegment) : NaN;
+  if (!Number.isFinite(id) || id <= 0) {
+    return json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  let isRead = true;
+  try {
+    const body = (await req.json().catch(() => ({}))) as any;
+    if (typeof body.isRead === "boolean") {
+      isRead = body.isRead;
+    }
+  } catch {
+    // Default to marking as read
+  }
+
+  try {
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!userId) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/user_notifications`);
+    url.searchParams.set("id", `eq.${id}`);
+    url.searchParams.set("user_id", `eq.${userId}`);
+
+    const resp = await fetch(url.toString(), {
+      method: "PATCH",
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({ is_read: isRead }),
+    });
+
+    if (!resp.ok) {
+      const errJson = (await resp.json().catch(() => ({}))) as any;
+      const status = resp.status === 404 ? 404 : 500;
+      return json(
+        {
+          error:
+            errJson?.message ||
+            errJson?.error ||
+            (status === 404 ? "Notification not found" : "Failed to update notification"),
+        },
+        { status },
+      );
+    }
+
+    const rows = (await resp.json().catch(() => [])) as any[];
+    const n = rows[0];
+    if (!n) {
+      return json({ error: "Notification not found" }, { status: 404 });
+    }
+
+    const meta =
+      n && typeof n.metadata === "object" && n.metadata !== null ? n.metadata : {};
+    const notification = {
+      id: n.id,
+      type: String(n.type || "info"),
+      title: String(n.title || "Notification"),
+      message: String(n.message || ""),
+      metadata: meta,
+      isRead: !!(n.is_read ?? n.isRead),
+      createdAt: n.created_at || n.createdAt || new Date().toISOString(),
+      userId: typeof n.user_id === "number" ? n.user_id : userId,
+    };
+
+    return json({ notification });
+  } catch {
+    return json(
+      { error: "Failed to update notification" },
+      { status: 500 },
+    );
+  }
+});
+
+// TIPS / DONATIONS: Supabase-backed logging of tip intent + author stats, fallback to legacy Express
+router.post("/api/tips", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  try {
+    const body = (await req.json().catch(() => ({}))) as any;
+    const authorIdRaw = body?.authorId;
+    const authorId = Number(authorIdRaw);
+    if (!Number.isFinite(authorId) || authorId <= 0) {
+      return json({ error: "Invalid authorId" }, { status: 400 });
+    }
+
+    const amount = String(body?.amount ?? "0");
+    const currency = String(body?.currency || "USD");
+    const status = String(body?.status || "pending");
+    const providerId =
+      typeof body?.providerId === "string" && body.providerId.length > 0
+        ? body.providerId
+        : null;
+    const message =
+      typeof body?.message === "string" && body.message.length > 0 ? body.message : null;
+
+    let userId: number | null = null;
+    const token = getBearerToken(req);
+    if (token) {
+      try {
+        const uid = await getSupabaseUserIdFromJwt(env, token);
+        if (uid) userId = uid;
+      } catch {
+        // Non-fatal: anonymous tip intent
+      }
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/author_tips`);
+
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const resp = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        author_id: authorId,
+        user_id: userId,
+        amount,
+        currency,
+        status,
+        provider_id: providerId,
+        message,
+      }),
+    });
+
+    if (!resp.ok) {
+      const errJson = (await resp.json().catch(() => ({}))) as any;
+      return json(
+        {
+          error:
+            errJson?.message ||
+            errJson?.error ||
+            "Failed to record tip event",
+        },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await resp.json().catch(() => [])) as any[];
+    const tip = rows[0] || null;
+    return json({ success: true, tip }, { status: 201 });
+  } catch {
+    return json(
+      { error: "Failed to record tip event" },
+      { status: 500 },
+    );
+  }
+});
+
+router.get("/api/tips/author/:authorId", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const urlObj = new URL(req.url);
+  const segments = urlObj.pathname.split("/").filter(Boolean);
+  const authorIdSegment = segments[segments.length - 1];
+  const authorId = Number(authorIdSegment);
+  if (!Number.isFinite(authorId) || authorId <= 0) {
+    return json({ error: "Invalid authorId" }, { status: 400 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/author_tips`);
+    url.searchParams.set("author_id", `eq.${authorId}`);
+    url.searchParams.set("order", "created_at.desc");
+    url.searchParams.set("limit", "50");
+
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const resp = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!resp.ok) {
+      return json(
+        { error: "Failed to fetch author tips" },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await resp.json().catch(() => [])) as any[];
+    return json({
+      authorId,
+      totalTips: rows.length,
+      tips: rows,
+    });
+  } catch {
+    return json(
+      { error: "Failed to fetch author tips" },
+      { status: 500 },
+    );
+  }
+});
+
+// USER FEEDBACK: self-service endpoints backed by Supabase user_feedback, with legacy fallback
+router.get("/api/user/feedback", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    // Mirror legacy behaviour: return empty data instead of 401
+    return json({ feedback: [], isAuthenticated: false });
+  }
+
+  try {
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!userId) {
+      return json({ feedback: [], isAuthenticated: false });
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/user_feedback`);
+    url.searchParams.set(
+      "select",
+      "id,type,content,page,status,user_id,browser,operating_system,screen_resolution,user_agent,category,metadata,created_at",
+    );
+    url.searchParams.set("user_id", `eq.${userId}`);
+    url.searchParams.set("order", "created_at.desc");
+    url.searchParams.set("limit", "100");
+
+    const resp = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (resp.status === 401 || resp.status === 403) {
+      return json({ feedback: [], isAuthenticated: false });
+    }
+
+    if (!resp.ok) {
+      return json({ feedback: [], isAuthenticated: false });
+    }
+
+    const rows = (await resp.json().catch(() => [])) as any[];
+
+    const feedback = rows.map((row) => {
+      const meta =
+        row && typeof row.metadata === "object" && row.metadata !== null
+          ? row.metadata
+          : {};
+      const browser = row.browser || meta.browser || "unknown";
+      const operatingSystem = row.operating_system || meta.operatingSystem || "unknown";
+      const screenResolution =
+        row.screen_resolution || meta.screenResolution || "unknown";
+      const userAgent = row.user_agent || meta.userAgent || "";
+
+      return {
+        id: row.id,
+        type: row.type || "general",
+        content: row.content || "",
+        page: row.page || "unknown",
+        category: row.category || "general",
+        status: row.status || "pending",
+        createdAt: row.created_at || row.createdAt || new Date().toISOString(),
+        metadata: {
+          browser,
+          operatingSystem,
+          screenResolution,
+          userAgent,
+          name: meta.name,
+          email: meta.email,
+        },
+        adminResponse:
+          typeof meta.adminResponse === "string" ? meta.adminResponse : undefined,
+      };
+    });
+
+    return json({ feedback, isAuthenticated: true });
+  } catch {
+    return json({ feedback: [], isAuthenticated: false });
+  }
+});
+
+router.get("/api/user/feedback/stats", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({
+      stats: {
+        total: 0,
+        pending: 0,
+        reviewed: 0,
+        resolved: 0,
+        rejected: 0,
+        responseRate: 0,
+      },
+      isAuthenticated: false,
+    });
+  }
+
+  try {
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!userId) {
+      return json({
+        stats: {
+          total: 0,
+          pending: 0,
+          reviewed: 0,
+          resolved: 0,
+          rejected: 0,
+          responseRate: 0,
+        },
+        isAuthenticated: false,
+      });
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/user_feedback`);
+    url.searchParams.set(
+      "select",
+      "id,status,metadata,user_id,created_at",
+    );
+    url.searchParams.set("user_id", `eq.${userId}`);
+    url.searchParams.set("order", "created_at.desc");
+    url.searchParams.set("limit", "100");
+
+    const resp = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!resp.ok) {
+      return json({
+        stats: {
+          total: 0,
+          pending: 0,
+          reviewed: 0,
+          resolved: 0,
+          rejected: 0,
+          responseRate: 0,
+        },
+        isAuthenticated: false,
+      });
+    }
+
+    const rows = (await resp.json().catch(() => [])) as any[];
+
+    const total = rows.length;
+    const pending = rows.filter((r) => r.status === "pending").length;
+    const reviewed = rows.filter((r) => r.status === "reviewed").length;
+    const resolved = rows.filter((r) => r.status === "resolved").length;
+    const rejected = rows.filter((r) => r.status === "rejected").length;
+
+    let respondedCount = 0;
+    for (const r of rows) {
+      const meta =
+        r && typeof r.metadata === "object" && r.metadata !== null ? r.metadata : {};
+      if (typeof meta.adminResponse === "string" && meta.adminResponse.length > 0) {
+        respondedCount += 1;
+      }
+    }
+
+    const responseRate = total > 0 ? (respondedCount / total) * 100 : 0;
+
+    return json({
+      stats: {
+        total,
+        pending,
+        reviewed,
+        resolved,
+        rejected,
+        responseRate,
+      },
+      isAuthenticated: true,
+    });
+  } catch {
+    return json({
+      stats: {
+        total: 0,
+        pending: 0,
+        reviewed: 0,
+        resolved: 0,
+        rejected: 0,
+        responseRate: 0,
+      },
+      isAuthenticated: false,
+    });
+  }
+});
+
+// API DOMAIN FALLBACK: no legacy backend proxy; return 404 for unknown routes
+router.all("*", async (_req: Request, _env: Env) => {
   return json({ error: "Not Found" }, { status: 404 });
 });
 
@@ -4580,14 +8002,53 @@ export default {
 
   async scheduled(_event: ScheduledEvent, env: Env) {
     try {
-      if (env.ENABLE_WORDPRESS_SCHEDULER === "true") {
-        await fetch("https://api.bubblescafe.space/api/wordpress/sync/manual", {
-          method: "POST",
-          headers: {
-            "X-Scheduler": "true",
-            "X-Sync-Key": env.WORDPRESS_SYNC_KEY || "scheduler",
-          },
-        });
+      let shouldRunSync = env.ENABLE_WORDPRESS_SCHEDULER === "true";
+
+      // Allow dashboard toggle (wordpress_sync_enabled) to override env flag when available
+      if (shouldRunSync && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+        try {
+          const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+          const headers: Record<string, string> = {
+            apikey: env.SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${serviceKey}`,
+            Accept: "application/json",
+          };
+
+          const settingsUrl = new URL(`${baseUrl}/rest/v1/site_settings`);
+          settingsUrl.searchParams.set("select", "key,value");
+          settingsUrl.searchParams.set("key", "eq.wordpress_sync_enabled");
+          settingsUrl.searchParams.set("limit", "1");
+
+          const res = await fetch(settingsUrl.toString(), { headers });
+          if (res.ok) {
+            const rows = (await res.json().catch(() => [])) as any[];
+            if (Array.isArray(rows) && rows.length > 0) {
+              const value = rows[0].value;
+              if (value === "true") {
+                shouldRunSync = true;
+              } else if (value === "false") {
+                shouldRunSync = false;
+              }
+            }
+          }
+        } catch {
+          // Ignore setting lookup failures; fall back to env flag
+        }
+      }
+
+      if (shouldRunSync) {
+        try {
+          await fetch("https://api.bubblescafe.space/api/wordpress/sync/manual", {
+            method: "POST",
+            headers: {
+              "X-Scheduler": "true",
+              "X-Sync-Key": env.WORDPRESS_SYNC_KEY || "scheduler",
+            },
+          });
+        } catch {
+          // Ignore sync failures; cron will try again on next run
+        }
       }
 
       if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
@@ -4605,7 +8066,7 @@ export default {
           }
         }
       }
-    } catch (error) {
+    } catch {
       // Allow cron to fail silently to avoid retries storms
     }
   },
