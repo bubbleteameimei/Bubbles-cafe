@@ -610,6 +610,141 @@ function stripHtml(value: any): string {
   }
 }
 
+/**
+ * Best-effort upsert of a text-based site setting in Supabase.
+ * Uses service role key when available but falls back to anon key.
+ */
+async function updateSiteSetting(env: Env, key: string, value: string): Promise<void> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return;
+  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+
+  const url = new URL(`${baseUrl}/rest/v1/site_settings`);
+  url.searchParams.set("on_conflict", "key");
+
+  try {
+    await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({
+        key,
+        value,
+        category: "wordpress",
+        description: `Managed WordPress setting: ${key}`,
+        updated_at: new Date().toISOString(),
+      }),
+    });
+  } catch {
+    // Non-fatal; callers treat failure as best-effort
+  }
+}
+
+/**
+ * Log a WordPress sync activity record into the activity_logs table.
+ */
+async function logWordPressSyncActivity(
+  env: Env,
+  info: {
+    success: boolean;
+    postsProcessed: number;
+    startedAt: Date;
+    finishedAt: Date;
+    error?: string | null;
+    triggeredBy?: string | null;
+    isScheduler?: boolean;
+  }
+): Promise<void> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return;
+  }
+
+  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+  const url = new URL(`${baseUrl}/rest/v1/activity_logs`);
+
+  const durationMs = info.finishedAt.getTime() - info.startedAt.getTime();
+
+  const details = {
+    type: "wordpress_sync",
+    status: info.success ? "success" : "error",
+    postsProcessed: info.postsProcessed,
+    startedAt: info.startedAt.toISOString(),
+    finishedAt: info.finishedAt.toISOString(),
+    durationMs,
+    error: info.error || null,
+    triggeredBy: info.triggeredBy || null,
+    isScheduler: info.isScheduler === true,
+  };
+
+  try {
+    await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        user_id: null,
+        action: "wordpress_sync",
+        details,
+        ip_address: null,
+        user_agent: "worker",
+      }),
+    });
+  } catch {
+    // Best-effort logging only
+  }
+}
+
+/**
+ * Update both site settings and activity logs after a WordPress sync run.
+ */
+async function updateWordPressSyncMetadata(
+  env: Env,
+  info: {
+    success: boolean;
+    postsProcessed: number;
+    startedAt: Date;
+    finishedAt: Date;
+    error?: string | null;
+    isScheduler?: boolean;
+    triggeredBy?: string | null;
+  }
+): Promise<void> {
+  try {
+    await updateSiteSetting(env, "last_wordpress_sync", String(info.finishedAt.getTime()));
+  } catch {
+    // ignore
+  }
+
+  try {
+    await logWordPressSyncActivity(env, info);
+  } catch {
+    // ignore
+  }
+}
+
+// In-memory cache and trending tracker for search (ephemeral per Worker isolate)
+const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const searchCache = new Map<string, { ts: number; data: any }>();
+const trendingQueries = new Map<string, number>();mple HTML stripper for safe text rendering in search/trending responses
+function stripHtml(value: any): string {
+  try {
+    const str = String(value ?? "");
+    return str.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  } catch {
+    return "";
+  }
+}
+
 // In-memory cache and trending tracker for search (ephemeral per Worker isolate)
 const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const searchCache = new Map<string, { ts: number; data: any }>();
@@ -2638,6 +2773,10 @@ router.get("/api/wordpress/status", async (_req: Request, env: Env) => {
 });
 
 router.post("/api/wordpress/sync/manual", async (req: Request, env: Env) => {
+  const startedAt = new Date();
+  let postsProcessed = 0;
+  let errorMessage: string | null = null;
+
   try {
     const key = req.headers.get("X-Sync-Key");
     const isScheduler = req.headers.get("X-Scheduler") === "true";
@@ -2660,6 +2799,14 @@ router.post("/api/wordpress/sync/manual", async (req: Request, env: Env) => {
       return json({ error: "Sync already in progress" }, { status: 409 });
     }
 
+    // Mark sync as running in KV so UIs can reflect real-time status
+    try {
+      await env.SYNC_METADATA_KV.put("last_sync_status", "running");
+      await env.SYNC_METADATA_KV.put("last_sync_timestamp", startedAt.toISOString());
+    } catch {
+      // best-effort
+    }
+
     try {
       const wpRes = await fetch(
         `${env.WORDPRESS_API}?per_page=100&orderby=modified&order=desc`
@@ -2667,6 +2814,7 @@ router.post("/api/wordpress/sync/manual", async (req: Request, env: Env) => {
       if (!wpRes.ok) throw new Error("WordPress API failed");
 
       const posts = (await wpRes.json()) as any[];
+      postsProcessed = Array.isArray(posts) ? posts.length : 0;
 
       for (const post of posts) {
         await callSupabaseRpc(env, "upsert_wordpress_post", {
@@ -2679,29 +2827,623 @@ router.post("/api/wordpress/sync/manual", async (req: Request, env: Env) => {
         });
       }
 
-      await env.SYNC_METADATA_KV.put(
-        "last_sync_timestamp",
-        new Date().toISOString()
-      );
-      await env.SYNC_METADATA_KV.put("last_sync_status", "success");
+      const finishedAt = new Date();
 
-      return json({ success: true, postsProcessed: posts.length });
+      try {
+        await env.SYNC_METADATA_KV.put("last_sync_timestamp", finishedAt.toISOString());
+        await env.SYNC_METADATA_KV.put("last_sync_status", "success");
+      } catch {
+        // ignore KV failures
+      }
+
+      // Update Supabase site settings and activity logs (best-effort)
+      await updateWordPressSyncMetadata(env, {
+        success: true,
+        postsProcessed,
+        startedAt,
+        finishedAt,
+        error: null,
+        isScheduler,
+        triggeredBy: isScheduler ? "scheduler" : "manual",
+      });
+
+      return json({
+        success: true,
+        postsProcessed,
+        startedAt: startedAt.toISOString(),
+        finishedAt: finishedAt.toISOString(),
+      });
+    } catch (err) {
+      errorMessage = err instanceof Error ? err.message : String(err);
+      const finishedAt = new Date();
+
+      try {
+        await env.SYNC_METADATA_KV.put(
+          "last_sync_status",
+          `error: ${errorMessage}`
+        );
+      } catch {
+        // ignore
+      }
+
+      await updateWordPressSyncMetadata(env, {
+        success: false,
+        postsProcessed,
+        startedAt,
+        finishedAt,
+        error: errorMessage,
+        isScheduler,
+        triggeredBy: isScheduler ? "scheduler" : "manual",
+      });
+
+      return json({ error: errorMessage }, { status: 500 });
     } finally {
-      await lock.fetch(
-        new Request("https://worker", {
-          method: "POST",
-          body: JSON.stringify({ key: "wordpress-sync", action: "release" }),
-        })
-      );
+      try {
+        await lock.fetch(
+          new Request("https://worker", {
+            method: "POST",
+            body: JSON.stringify({ key: "wordpress-sync", action: "release" }),
+          })
+        );
+      } catch {
+        // ignore lock release errors
+      }
     }
   } catch (error) {
-    await env.SYNC_METADATA_KV.put(
-      "last_sync_status",
-      `error: ${String(error)}`
-    );
-    return json({ error: String(error) }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    try {
+      await env.SYNC_METADATA_KV.put("last_sync_status", `error: ${msg}`);
+    } catch {
+      // ignore KV failures
+    }
+    return json({ error: msg }, { status: 500 });
   }
 });
+
+// ADMIN WORDPRESS SYNC STATUS
+router.get("/api/admin/wordpress/status", async (req: Request, env: Env) => {
+  // If Supabase is not configured, fall back to KV-only status
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    try {
+      const lastSync = await env.SYNC_METADATA_KV.get("last_sync_timestamp");
+      const lastStatus = await env.SYNC_METADATA_KV.get("last_sync_status");
+      const isRunning = lastStatus === "running";
+
+      return json({
+        isRunning,
+        lastSync: lastSync || null,
+        nextSync: null,
+        postsCount: 0,
+        errors:
+          lastStatus && lastStatus.startsWith("error:")
+            ? [lastStatus]
+            : [],
+        totalProcessed: 0,
+        syncInterval: 300000,
+        enabled: env.ENABLE_WORDPRESS_SCHEDULER === "true",
+      });
+    } catch {
+      return json({
+        isRunning: false,
+        lastSync: null,
+        nextSync: null,
+        postsCount: 0,
+        errors: [],
+        totalProcessed: 0,
+        syncInterval: 300000,
+        enabled: env.ENABLE_WORDPRESS_SCHEDULER === "true",
+      });
+    }
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Admin authentication required" }, { status: 401 });
+  }
+  const currentUser = await getSupabaseCurrentUser(env, token);
+  if (!currentUser || !currentUser.isAdmin) {
+    return json({ error: "Admin access required" }, { status: 403 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+    };
+
+    // Load site settings
+    const settingsUrl = new URL(`${baseUrl}/rest/v1/site_settings`);
+    settingsUrl.searchParams.set("select", "key,value,updated_at");
+    settingsUrl.searchParams.set("limit", "100");
+
+    const settingsRes = await fetch(settingsUrl.toString(), { headers });
+    const settingsRows = settingsRes.ok
+      ? ((await settingsRes.json().catch(() => [])) as any[])
+      : [];
+
+    const getSetting = (key: string) =>
+      settingsRows.find((s) => s && s.key === key);
+
+    const enabledSetting = getSetting("wordpress_sync_enabled");
+    const intervalSetting = getSetting("wordpress_sync_interval");
+    const lastSyncSetting = getSetting("last_wordpress_sync");
+
+    const enabled =
+      enabledSetting?.value === "true" ||
+      (enabledSetting == null && env.ENABLE_WORDPRESS_SCHEDULER === "true");
+
+    const intervalMsRaw = intervalSetting?.value
+      ? parseInt(intervalSetting.value, 10)
+      : NaN;
+    const syncInterval =
+      Number.isFinite(intervalMsRaw) && intervalMsRaw > 0
+        ? intervalMsRaw
+        : 5 * 60 * 1000;
+
+    let lastSync: string | null = null;
+    let nextSync: string | null = null;
+
+    const lastSyncMs = lastSyncSetting?.value
+      ? parseInt(lastSyncSetting.value, 10)
+      : NaN;
+    if (Number.isFinite(lastSyncMs) && lastSyncMs > 0) {
+      const lastDate = new Date(lastSyncMs);
+      lastSync = lastDate.toISOString();
+      if (enabled) {
+        const nextDate = new Date(lastSyncMs + syncInterval);
+        nextSync = nextDate.toISOString();
+      }
+    }
+
+    // KV-based running status
+    const kvLastStatus = await env.SYNC_METADATA_KV.get("last_sync_status");
+    const kvLastTimestamp = await env.SYNC_METADATA_KV.get(
+      "last_sync_timestamp"
+    );
+    let isRunning = kvLastStatus === "running";
+
+    // Activity-based override (if recent log says running)
+    const activityUrl = new URL(`${baseUrl}/rest/v1/activity_logs`);
+    activityUrl.searchParams.set(
+      "select",
+      "id,action,details,created_at"
+    );
+    activityUrl.searchParams.set("action", "eq.wordpress_sync");
+    activityUrl.searchParams.set("order", "created_at.desc");
+    activityUrl.searchParams.set("limit", "1");
+
+    const actRes = await fetch(activityUrl.toString(), { headers });
+    if (actRes.ok) {
+      const actRows = (await actRes.json().catch(() => [])) as any[];
+      if (Array.isArray(actRows) && actRows.length > 0) {
+        const row = actRows[0];
+        const createdAtStr = row.created_at || row.createdAt;
+        const createdAt = createdAtStr ? new Date(createdAtStr) : null;
+        let details = row.details;
+        if (details && typeof details === "string") {
+          try {
+            details = JSON.parse(details);
+          } catch {
+            details = {};
+          }
+        }
+        const status = details?.status;
+        if (
+          status === "running" &&
+          createdAt &&
+          Date.now() - createdAt.getTime() < 5 * 60 * 1000
+        ) {
+          isRunning = true;
+        }
+      }
+    }
+
+    // Post count via COUNT(*) header
+    let postsCount = 0;
+    try {
+      const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
+      postsUrl.searchParams.set("select", "id");
+      postsUrl.searchParams.set("limit", "1");
+
+      const postsRes = await fetch(postsUrl.toString(), {
+        headers: {
+          ...headers,
+          Prefer: "count=exact",
+        },
+      });
+      if (postsRes.ok) {
+        const range = postsRes.headers.get("Content-Range");
+        if (range && range.includes("/")) {
+          const totalStr = range.split("/")[1];
+          const total = parseInt(totalStr, 10);
+          if (Number.isFinite(total)) {
+            postsCount = total;
+          }
+        }
+      }
+    } catch {
+      // ignore; postsCount stays 0
+    }
+
+    // Recent error messages
+    const logsUrl = new URL(`${baseUrl}/rest/v1/activity_logs`);
+    logsUrl.searchParams.set(
+      "select",
+      "id,action,details,created_at"
+    );
+    logsUrl.searchParams.set("action", "eq.wordpress_sync");
+    logsUrl.searchParams.set("order", "created_at.desc");
+    logsUrl.searchParams.set("limit", "20");
+
+    const logsRes = await fetch(logsUrl.toString(), { headers });
+    let errors: (string | { id?: string; timestamp?: string; message?: string; details?: any })[] = [];
+
+    if (logsRes.ok) {
+      const logs = (await logsRes.json().catch(() => [])) as any[];
+      if (Array.isArray(logs)) {
+        for (const row of logs) {
+          let details = row.details;
+          if (details && typeof details === "string") {
+            try {
+              details = JSON.parse(details);
+            } catch {
+              details = {};
+            }
+          }
+          const status = details?.status;
+          if (status === "error") {
+            const msg =
+              details?.message ||
+              details?.error ||
+              "WordPress sync encountered an error";
+            const ts =
+              details?.finishedAt ||
+              details?.startedAt ||
+              row.created_at ||
+              row.createdAt ||
+              null;
+            errors.push({
+              id: String(row.id),
+              timestamp: ts || undefined,
+              message: String(msg),
+              details,
+            });
+          }
+        }
+      }
+    }
+
+    return json({
+      isRunning,
+      lastSync,
+      nextSync,
+      postsCount,
+      errors,
+      totalProcessed: postsCount,
+      syncInterval,
+      enabled,
+    });
+  } catch {
+    return json(
+      {
+        isRunning: false,
+        lastSync: null,
+        nextSync: null,
+        postsCount: 0,
+        errors: [],
+        totalProcessed: 0,
+        syncInterval: 5 * 60 * 1000,
+        enabled: env.ENABLE_WORDPRESS_SCHEDULER === "true",
+      },
+      { status: 500 }
+    );
+  }
+});
+
+// ADMIN WORDPRESS SYNC LOGS
+router.get("/api/admin/wordpress/logs", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json([]);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Admin authentication required" }, { status: 401 });
+  }
+  const currentUser = await getSupabaseCurrentUser(env, token);
+  if (!currentUser || !currentUser.isAdmin) {
+    return json({ error: "Admin access required" }, { status: 403 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+    };
+
+    const logsUrl = new URL(`${baseUrl}/rest/v1/activity_logs`);
+    logsUrl.searchParams.set(
+      "select",
+      "id,action,details,created_at"
+    );
+    logsUrl.searchParams.set("action", "eq.wordpress_sync");
+    logsUrl.searchParams.set("order", "created_at.desc");
+    logsUrl.searchParams.set("limit", "20");
+
+    const res = await fetch(logsUrl.toString(), { headers });
+    if (!res.ok) {
+      return json([], { status: 500 });
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    const logs = rows.map((row: any) => {
+      let details = row.details;
+      if (details && typeof details === "string") {
+        try {
+          details = JSON.parse(details);
+        } catch {
+          details = {};
+        }
+      }
+      const d = (details && typeof details === "object" ? details : {}) as any;
+
+      const statusRaw = d.status || "success";
+      const status =
+        statusRaw === "error"
+          ? "error"
+          : statusRaw === "running"
+          ? "running"
+          : "success";
+
+      const startedAtStr = d.startedAt || row.created_at || row.createdAt;
+      const finishedAtStr = d.finishedAt || startedAtStr;
+      const startedAt = startedAtStr ? new Date(startedAtStr) : null;
+      const finishedAt = finishedAtStr ? new Date(finishedAtStr) : null;
+
+      let duration = 0;
+      if (d.durationMs && Number.isFinite(Number(d.durationMs))) {
+        duration = Number(d.durationMs);
+      } else if (startedAt && finishedAt) {
+        duration = Math.max(0, finishedAt.getTime() - startedAt.getTime());
+      }
+
+      const postsProcessed = Number(d.postsProcessed ?? 0);
+
+      const message =
+        d.message ||
+        (status === "success"
+          ? "WordPress sync completed successfully"
+          : status === "running"
+          ? "WordPress sync running"
+          : d.error || "WordPress sync failed");
+
+      return {
+        id: String(row.id),
+        timestamp: finishedAt
+          ? finishedAt.toISOString()
+          : startedAt
+          ? startedAt.toISOString()
+          : row.created_at || row.createdAt || new Date().toISOString(),
+        status,
+        message: String(message),
+        postsProcessed: Number.isFinite(postsProcessed) ? postsProcessed : 0,
+        duration,
+      };
+    });
+
+    return json(logs);
+  } catch {
+    return json([], { status: 500 });
+  }
+});
+
+// ADMIN WORDPRESS MANUAL SYNC
+router.post(
+  "/api/admin/wordpress/sync",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json({ error: "Admin authentication required" }, { status: 401 });
+    }
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json({ error: "Admin access required" }, { status: 403 });
+    }
+
+    // Log trigger event (best-effort)
+    try {
+      if (env.SUPABASE_SERVICE_ROLE_KEY) {
+        const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+        const url = new URL(`${baseUrl}/rest/v1/activity_logs`);
+        await fetch(url.toString(), {
+          method: "POST",
+          headers: {
+            apikey: env.SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+            action: "wordpress_sync_trigger",
+            details: {
+              type: "wordpress_sync_trigger",
+              triggeredBy:
+                currentUser.fullName ||
+                currentUser.username ||
+                currentUser.email ||
+                `admin:${currentUser.id}`,
+              timestamp: new Date().toISOString(),
+              source: "worker-admin",
+            },
+            ip_address:
+              req.headers.get("cf-connecting-ip") ||
+              req.headers.get("x-forwarded-for") ||
+              null,
+            user_agent: req.headers.get("user-agent") || null,
+          }),
+        });
+      }
+    } catch {
+      // ignore logging failures
+    }
+
+    try {
+      // Call the internal manual sync endpoint
+      const reqUrl = new URL(req.url);
+      const manualUrl = `${reqUrl.protocol}//${reqUrl.host}/api/wordpress/sync/manual`;
+
+      const res = await fetch(manualUrl, {
+        method: "POST",
+        headers: {
+          "X-Scheduler": "true",
+          "X-Sync-Key": env.WORDPRESS_SYNC_KEY || "admin-trigger",
+        },
+      });
+
+      if (res.status === 409) {
+        return json(
+          { success: false, message: "WordPress sync already in progress" },
+          { status: 409 }
+        );
+      }
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as any;
+        const message =
+          body?.error || body?.message || "Failed to trigger WordPress sync";
+        return json(
+          { success: false, message },
+          { status: 500 }
+        );
+      }
+
+      const payload = (await res.json().catch(() => ({}))) as any;
+      return json({
+        success: true,
+        message: "WordPress sync triggered successfully",
+        ...payload,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : String(error);
+      return json(
+        { success: false, message },
+        { status: 500 }
+      );
+    }
+  }
+);
+
+// ADMIN WORDPRESS ENABLE/DISABLE
+router.post(
+  "/api/admin/wordpress/toggle",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json({ error: "Admin authentication required" }, { status: 401 });
+    }
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json({ error: "Admin access required" }, { status: 403 });
+    }
+
+    let enabled: boolean | null = null;
+    try {
+      const body = (await (req as any).json?.().catch(() => ({}))) || {};
+      if (typeof body.enabled === "boolean") {
+        enabled = body.enabled;
+      } else if (typeof body.enabled === "string") {
+        const lowered = body.enabled.toLowerCase();
+        enabled =
+          lowered === "true" ||
+          lowered === "1" ||
+          lowered === "yes" ||
+          lowered === "on";
+      }
+    } catch {
+      // body parse error -> handled below
+    }
+
+    if (enabled === null) {
+      return json(
+        { error: "enabled boolean is required" },
+        { status: 400 }
+      );
+    }
+
+    try {
+      await updateSiteSetting(env, "wordpress_sync_enabled", enabled ? "true" : "false");
+
+      // Log toggle event (best-effort)
+      if (env.SUPABASE_SERVICE_ROLE_KEY) {
+        const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+        const url = new URL(`${baseUrl}/rest/v1/activity_logs`);
+        await fetch(url.toString(), {
+          method: "POST",
+          headers: {
+            apikey: env.SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+            action: "wordpress_sync_toggle",
+            details: {
+              type: "wordpress_sync_toggle",
+              enabled,
+              toggledBy:
+                currentUser.fullName ||
+                currentUser.username ||
+                currentUser.email ||
+                `admin:${currentUser.id}`,
+              timestamp: new Date().toISOString(),
+            },
+            ip_address:
+              req.headers.get("cf-connecting-ip") ||
+              req.headers.get("x-forwarded-for") ||
+              null,
+            user_agent: req.headers.get("user-agent") || null,
+          }),
+        });
+      }
+
+      return json({
+        success: true,
+        enabled,
+        message: `WordPress sync ${enabled ? "enabled" : "disabled"} successfully`,
+      });
+    } catch {
+      return json(
+        { error: "Failed to update WordPress sync setting" },
+        { status: 500 }
+      );
+    }
+  }
+);
 
 // WORDPRESS POSTS PROXY (avoids browser CORS and matches Express shape)
 router.get("/api/wordpress/posts", async (req: Request, env: Env) => {
@@ -6675,14 +7417,53 @@ export default {
 
   async scheduled(_event: ScheduledEvent, env: Env) {
     try {
-      if (env.ENABLE_WORDPRESS_SCHEDULER === "true") {
-        await fetch("https://api.bubblescafe.space/api/wordpress/sync/manual", {
-          method: "POST",
-          headers: {
-            "X-Scheduler": "true",
-            "X-Sync-Key": env.WORDPRESS_SYNC_KEY || "scheduler",
-          },
-        });
+      let shouldRunSync = env.ENABLE_WORDPRESS_SCHEDULER === "true";
+
+      // Allow dashboard toggle (wordpress_sync_enabled) to override env flag when available
+      if (shouldRunSync && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+        try {
+          const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+          const headers: Record<string, string> = {
+            apikey: env.SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${serviceKey}`,
+            Accept: "application/json",
+          };
+
+          const settingsUrl = new URL(`${baseUrl}/rest/v1/site_settings`);
+          settingsUrl.searchParams.set("select", "key,value");
+          settingsUrl.searchParams.set("key", "eq.wordpress_sync_enabled");
+          settingsUrl.searchParams.set("limit", "1");
+
+          const res = await fetch(settingsUrl.toString(), { headers });
+          if (res.ok) {
+            const rows = (await res.json().catch(() => [])) as any[];
+            if (Array.isArray(rows) && rows.length > 0) {
+              const value = rows[0].value;
+              if (value === "true") {
+                shouldRunSync = true;
+              } else if (value === "false") {
+                shouldRunSync = false;
+              }
+            }
+          }
+        } catch {
+          // Ignore setting lookup failures; fall back to env flag
+        }
+      }
+
+      if (shouldRunSync) {
+        try {
+          await fetch("https://api.bubblescafe.space/api/wordpress/sync/manual", {
+            method: "POST",
+            headers: {
+              "X-Scheduler": "true",
+              "X-Sync-Key": env.WORDPRESS_SYNC_KEY || "scheduler",
+            },
+          });
+        } catch {
+          // Ignore sync failures; cron will try again on next run
+        }
       }
 
       if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
@@ -6700,7 +7481,7 @@ export default {
           }
         }
       }
-    } catch (error) {
+    } catch {
       // Allow cron to fail silently to avoid retries storms
     }
   },
