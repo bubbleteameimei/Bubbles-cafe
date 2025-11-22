@@ -428,6 +428,51 @@ async function getSupabaseUserIdFromJwt(
 }
 
 /**
+ * Resolve current Supabase-authenticated user (id/email/username/isAdmin) from JWT.
+ * Uses RLS on users table to restrict to the current row.
+ */
+async function getSupabaseCurrentUser(
+  env: Env,
+  token: string
+): Promise<{
+  id: number;
+  email: string;
+  username: string;
+  isAdmin: boolean;
+  fullName?: string | null;
+  bio?: string | null;
+  avatar?: string | null;
+} | null> {
+  try {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return null;
+    }
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/users`);
+    url.searchParams.set("select", "id,email,username,is_admin,metadata");
+    url.searchParams.set("limit", "1");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+    if (!res.ok) {
+      return null;
+    }
+    const rows = (await res.json().catch(() => [])) as any[];
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return null;
+    }
+    return mapDbUserRowToApiUser(rows[0]);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Resolve a local posts.id from an external WordPress post ID.
  * Strategy:
  *   1) Try direct posts.id match
@@ -4541,6 +4586,1028 @@ router.get("/api/search/suggest", async (req: Request, env: Env) => {
     return json({ suggestions: [] }, { status: 500 });
   }
 });
+
+/**
+ * FEEDBACK ADMIN & AI ROUTES (Supabase-backed, JWT-based; fallback to legacy Express)
+ */
+
+type FeedbackCategory =
+  | "bug"
+  | "feature"
+  | "praise"
+  | "complaint"
+  | "question"
+  | "general";
+
+interface WorkerUserFeedback {
+  id: number;
+  type: string;
+  content: string;
+  page?: string | null;
+  status: string;
+  browser?: string | null;
+  operatingSystem?: string | null;
+  screenResolution?: string | null;
+  userAgent?: string | null;
+  category?: string | null;
+  metadata?: any;
+}
+
+interface WorkerResponseSuggestion {
+  suggestion: string;
+  confidence: number;
+  category: FeedbackCategory;
+  tags?: string[];
+  template?: string;
+  isAutomated: boolean;
+}
+
+// Keywords and templates copied from server/utils/feedback-ai.ts
+const feedbackCategoryKeywords: Record<FeedbackCategory, string[]> = {
+  bug: [
+    "broken",
+    "error",
+    "issue",
+    "problem",
+    "not working",
+    "crash",
+    "fail",
+    "bug",
+    "glitch",
+    "incorrect",
+    "doesn't work",
+    "doesn't load",
+    "stuck",
+    "freezes",
+  ],
+  feature: [
+    "add",
+    "feature",
+    "suggestion",
+    "improvement",
+    "enhance",
+    "upgrade",
+    "implement",
+    "could you",
+    "would be nice",
+    "wish",
+    "hope",
+    "consider",
+    "should have",
+  ],
+  praise: [
+    "love",
+    "great",
+    "amazing",
+    "excellent",
+    "awesome",
+    "fantastic",
+    "good job",
+    "well done",
+    "impressive",
+    "wonderful",
+    "brilliant",
+    "thank you",
+    "thanks",
+  ],
+  complaint: [
+    "disappointed",
+    "unhappy",
+    "frustrating",
+    "annoying",
+    "difficult",
+    "hard to",
+    "terrible",
+    "awful",
+    "bad",
+    "poor",
+    "worst",
+    "waste",
+    "useless",
+    "horrible",
+  ],
+  question: [
+    "how do i",
+    "how can i",
+    "is there a way",
+    "can you",
+    "possible to",
+    "wondering if",
+    "help with",
+    "how to",
+    "where is",
+    "what is",
+    "when will",
+  ],
+  general: [],
+};
+
+const feedbackResponseTemplates: Record<FeedbackCategory, string[]> = {
+  bug: [
+    "Thank you for reporting this issue. Our development team is investigating the problem and will work to resolve it as soon as possible.",
+    "We appreciate you bringing this bug to our attention. Our team is looking into it and will provide an update once it's fixed.",
+    "Thank you for your bug report. We've logged this issue and assigned it to our development team for resolution.",
+  ],
+  feature: [
+    "Thank you for your feature suggestion. We're always looking for ways to improve our platform and will consider this for a future update.",
+    "We appreciate your feedback! Your feature request has been added to our product roadmap for consideration.",
+    "Thanks for the suggestion. We're evaluating this feature request and will update you if we decide to implement it.",
+  ],
+  praise: [
+    "Thank you for your kind words! We're delighted to hear you're enjoying our platform.",
+    "We appreciate your positive feedback! It's great to know our work is making a difference for you.",
+    "Thank you for taking the time to share your positive experience. Your feedback motivates our team to continue improving.",
+  ],
+  complaint: [
+    "We're sorry to hear about your experience. We take your feedback seriously and will work to address these concerns.",
+    "Thank you for bringing this to our attention. We apologize for the inconvenience and are working to improve this aspect of our service.",
+    "We appreciate your honest feedback. Our team is reviewing your concerns to make necessary improvements.",
+  ],
+  question: [
+    "Thank you for your question. Our support team will reach out shortly with more information to help you.",
+    "We've received your inquiry and will provide you with a detailed response as soon as possible.",
+    "Thanks for reaching out. We're preparing an answer to your question and will respond shortly.",
+  ],
+  general: [
+    "Thank you for your feedback. We appreciate you taking the time to share your thoughts with us.",
+    "We value your input and will use it to continue improving our services.",
+    "Thank you for sharing your feedback. It helps us understand how we can better serve our users.",
+  ],
+};
+
+function categorizeFeedbackForWorker(
+  feedback: WorkerUserFeedback
+): FeedbackCategory {
+  if (
+    feedback.type &&
+    ["bug", "feature", "praise", "complaint", "question", "general"].includes(
+      feedback.type
+    )
+  ) {
+    return feedback.type as FeedbackCategory;
+  }
+
+  const content = feedback.content.toLowerCase();
+  const scores: Record<FeedbackCategory, number> = {
+    bug: 0,
+    feature: 0,
+    praise: 0,
+    complaint: 0,
+    question: 0,
+    general: 1, // default base
+  };
+
+  (Object.keys(feedbackCategoryKeywords) as FeedbackCategory[]).forEach(
+    (category) => {
+      for (const keyword of feedbackCategoryKeywords[category]) {
+        if (content.includes(keyword)) {
+          scores[category] += 1;
+        }
+      }
+    }
+  );
+
+  if (content.includes("?")) {
+    scores.question += 2;
+  }
+
+  let best: FeedbackCategory = "general";
+  let bestScore = 0;
+  (Object.entries(scores) as [FeedbackCategory, number][]).forEach(
+    ([cat, score]) => {
+      if (score > bestScore) {
+        bestScore = score;
+        best = cat;
+      }
+    }
+  );
+
+  return best;
+}
+
+function generateFeedbackTags(
+  feedback: WorkerUserFeedback,
+  category: FeedbackCategory
+): string[] {
+  const tags: string[] = [category];
+  const content = feedback.content.toLowerCase();
+
+  if (feedback.page && feedback.page !== "unknown") {
+    tags.push(`page:${String(feedback.page).replace(/^\//, "")}`);
+  }
+
+  if (feedback.browser && feedback.browser !== "unknown") {
+    tags.push(`browser:${feedback.browser.toLowerCase().split(" ")[0]}`);
+  }
+
+  if (feedback.operatingSystem && feedback.operatingSystem !== "unknown") {
+    tags.push(
+      `os:${feedback.operatingSystem.toLowerCase().split(" ")[0]}`
+    );
+  }
+
+  const urgentKeywords = ["urgent", "critical", "immediately", "serious", "emergency"];
+  if (urgentKeywords.some((kw) => content.includes(kw))) {
+    tags.push("priority");
+  }
+
+  return tags;
+}
+
+function generateWorkerResponseSuggestion(
+  feedback: WorkerUserFeedback
+): WorkerResponseSuggestion {
+  try {
+    const category = categorizeFeedbackForWorker(feedback);
+    const templates = feedbackResponseTemplates[category] || feedbackResponseTemplates.general;
+    const template =
+      templates[Math.floor(Math.random() * templates.length)] ||
+      feedbackResponseTemplates.general[0];
+
+    const contentLengthFactor = Math.min(
+      feedback.content.length / 1000,
+      0.4
+    );
+    const hasMetadataFactor =
+      feedback.metadata && Object.keys(feedback.metadata).length > 0 ? 0.1 : 0;
+    const categoryMatchFactor =
+      feedback.type === category ? 0.2 : 0;
+
+    const confidenceBase = 0.3;
+    const confidence =
+      confidenceBase +
+      contentLengthFactor +
+      hasMetadataFactor +
+      categoryMatchFactor;
+
+    const tags = generateFeedbackTags(feedback, category);
+
+    return {
+      suggestion: template,
+      confidence: parseFloat(Math.max(0.1, Math.min(0.95, confidence)).toFixed(2)),
+      category,
+      tags,
+      template,
+      isAutomated: true,
+    };
+  } catch {
+    return {
+      suggestion:
+        "Thank you for your feedback. Our team will review it and respond if necessary.",
+      confidence: 0.1,
+      category: "general",
+      isAutomated: true,
+    };
+  }
+}
+
+function getWorkerResponseHints(
+  feedback: WorkerUserFeedback
+): string[] {
+  const category = categorizeFeedbackForWorker(feedback);
+  const hints: string[] = [];
+
+  switch (category) {
+    case "bug":
+      hints.push("Acknowledge the specific issue mentioned.");
+      hints.push("Provide an estimated timeline for resolution if possible.");
+      hints.push(
+        "Ask for additional details if needed (browser version, steps to reproduce)."
+      );
+      break;
+    case "feature":
+      hints.push(
+        "Thank them for the suggestion and explain if it fits the product roadmap."
+      );
+      hints.push("Consider asking for more details about their use case.");
+      hints.push("Be honest about implementation likelihood.");
+      break;
+    case "praise":
+      hints.push(
+        "Express genuine appreciation for their positive feedback."
+      );
+      hints.push("Share the feedback with the relevant team members.");
+      hints.push("Consider asking what other features they enjoy.");
+      break;
+    case "complaint":
+      hints.push(
+        "Acknowledge their frustration without making excuses."
+      );
+      hints.push("Provide a clear solution or next steps.");
+      hints.push(
+        "Follow up to ensure they are satisfied with the resolution."
+      );
+      break;
+    case "question":
+      hints.push("Provide a clear, direct answer to their question.");
+      hints.push("Include links to relevant documentation if available.");
+      hints.push("Ask if your answer addressed their concern.");
+      break;
+    default:
+      hints.push("Thank them for their feedback.");
+      hints.push(
+        "Ask if there is anything specific they would like to see improved."
+      );
+      hints.push("Maintain a friendly, appreciative tone.");
+  }
+
+  return hints;
+}
+
+function normalizeFeedbackMetadata(row: any): any {
+  let meta = row && typeof row.metadata === "object" && row.metadata !== null
+    ? (row.metadata as any)
+    : {};
+
+  try {
+    if (typeof row.metadata === "string") {
+      meta = JSON.parse(row.metadata);
+    }
+  } catch {
+    // ignore bad JSON, keep meta as {}
+  }
+
+  if (!meta || typeof meta !== "object") {
+    meta = {};
+  }
+
+  const result: any = { ...meta };
+
+  const browserName =
+    (meta.browser && typeof meta.browser === "object" && meta.browser.name) ||
+    meta.browserName ||
+    meta.browser ||
+    row.browser ||
+    row.browser_name ||
+    "unknown";
+
+  const browserVersion =
+    (meta.browser && typeof meta.browser === "object" && meta.browser.version) ||
+    meta.browserVersion ||
+    "";
+
+  const userAgent =
+    (meta.browser && typeof meta.browser === "object" && meta.browser.userAgent) ||
+    meta.userAgent ||
+    row.userAgent ||
+    row.user_agent ||
+    "";
+
+  if (!result.browser || typeof result.browser !== "object") {
+    result.browser = {
+      name: String(browserName || "unknown"),
+      version: String(browserVersion || ""),
+      userAgent: String(userAgent || ""),
+    };
+  } else {
+    result.browser = {
+      name: String(
+        (result.browser.name ||
+          result.browser.browserName ||
+          browserName ||
+          "unknown") as string
+      ),
+      version: String((result.browser.version || browserVersion || "") as string),
+      userAgent: String(
+        (result.browser.userAgent || userAgent || "") as string
+      ),
+    };
+  }
+
+  const osName =
+    (meta.os && typeof meta.os === "object" && meta.os.name) ||
+    meta.osName ||
+    meta.operatingSystem ||
+    row.operatingSystem ||
+    row.operating_system ||
+    "unknown";
+
+  const osVersion =
+    (meta.os && typeof meta.os === "object" && meta.os.version) ||
+    meta.osVersion ||
+    "";
+
+  if (!result.os || typeof result.os !== "object") {
+    result.os = {
+      name: String(osName || "unknown"),
+      version: String(osVersion || ""),
+    };
+  } else {
+    result.os = {
+      name: String(
+        (result.os.name ||
+          result.os.osName ||
+          result.os.operatingSystem ||
+          osName ||
+          "unknown") as string
+      ),
+      version: String((result.os.version || osVersion || "") as string),
+    };
+  }
+
+  const rawScreen =
+    meta.screen ||
+    meta.screenResolution ||
+    row.screenResolution ||
+    row.screen_resolution ||
+    null;
+
+  if (!result.screen || typeof result.screen !== "object") {
+    let width = 0;
+    let height = 0;
+    if (typeof rawScreen === "object" && rawScreen) {
+      width = Number(rawScreen.width ?? 0);
+      height = Number(rawScreen.height ?? 0);
+    } else if (typeof rawScreen === "string") {
+      const m = rawScreen.match(/(\d+)\s*x\s*(\d+)/i);
+      if (m) {
+        width = parseInt(m[1], 10);
+        height = parseInt(m[2], 10);
+      }
+    }
+
+    if (width > 0 && height > 0) {
+      result.screen = { width, height };
+    }
+  }
+
+  const path =
+    (meta.location && meta.location.path) ||
+    meta.path ||
+    row.page ||
+    row.location_path ||
+    "";
+
+  const referrer =
+    (meta.location && meta.location.referrer) ||
+    meta.referrer ||
+    "";
+
+  if (!result.location || typeof result.location !== "object") {
+    result.location = {
+      path: String(path || ""),
+      ...(referrer ? { referrer: String(referrer) } : {}),
+    };
+  } else {
+    result.location = {
+      path: String(
+        (result.location.path || path || "") as string
+      ),
+      ...(result.location.referrer || referrer
+        ? {
+            referrer: String(
+              (result.location.referrer || referrer || "") as string
+            ),
+          }
+        : {}),
+    };
+  }
+
+  const rawAdminResponse = meta.adminResponse;
+  const rawRespondedAt = meta.respondedAt;
+  const rawRespondedBy = meta.respondedBy;
+
+  if (rawAdminResponse) {
+    if (typeof rawAdminResponse === "string") {
+      result.adminResponse = {
+        content: rawAdminResponse,
+        respondedAt: String(
+          rawRespondedAt || new Date().toISOString()
+        ),
+        respondedBy: String(rawRespondedBy || "Admin"),
+      };
+    } else if (typeof rawAdminResponse === "object") {
+      result.adminResponse = {
+        content: String(
+          rawAdminResponse.content || ""
+        ),
+        respondedAt: String(
+          rawAdminResponse.respondedAt ||
+            rawRespondedAt ||
+            new Date().toISOString()
+        ),
+        respondedBy: String(
+          rawAdminResponse.respondedBy || rawRespondedBy || "Admin"
+        ),
+      };
+    }
+  }
+
+  return result;
+}
+
+function mapFeedbackRowToApiItem(row: any): any {
+  const metadata = normalizeFeedbackMetadata(row);
+
+  const subject =
+    (metadata.subject && String(metadata.subject)) ||
+    (row.category && String(row.category)) ||
+    (row.type && String(row.type)) ||
+    "Feedback";
+
+  const email =
+    (metadata.email && String(metadata.email)) ||
+    (typeof row.email === "string" ? row.email : null) ||
+    null;
+
+  const contactRequested =
+    typeof metadata.contactRequested === "boolean"
+      ? metadata.contactRequested
+      : Boolean(
+          metadata.contact_me ||
+            metadata.allowContact ||
+            metadata.contactRequested
+        );
+
+  const priority =
+    (metadata.priority && String(metadata.priority)) || "medium";
+
+  return {
+    id: Number(row.id),
+    userId:
+      row.user_id != null && Number.isFinite(Number(row.user_id))
+        ? Number(row.user_id)
+        : null,
+    email,
+    subject,
+    content: String(row.content || ""),
+    type: String(row.type || "general"),
+    status: String(row.status || "pending"),
+    priority,
+    contactRequested,
+    createdAt: row.created_at || new Date().toISOString(),
+    metadata,
+  };
+}
+
+async function fetchFeedbackRowById(
+  env: Env,
+  id: number,
+  headers: Record<string, string>
+): Promise<any | null> {
+  const baseUrl = env.SUPABASE_URL!.replace(/\/+$/, "");
+  const url = new URL(`${baseUrl}/rest/v1/user_feedback`);
+  url.searchParams.set(
+    "select",
+    "id,type,content,page,status,user_id,browser,operating_system,screen_resolution,user_agent,category,metadata,created_at"
+  );
+  url.searchParams.set("id", `eq.${id}`);
+  url.searchParams.set("limit", "1");
+
+  const res = await fetch(url.toString(), { headers });
+  if (!res.ok) {
+    return null;
+  }
+  const rows = (await res.json().catch(() => [])) as any[];
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return null;
+  }
+  return rows[0];
+}
+
+function buildFeedbackSuggestionsPayload(
+  row: any
+): {
+  responseSuggestion: WorkerResponseSuggestion;
+  alternativeSuggestions: WorkerResponseSuggestion[];
+  responseHints: string[];
+} {
+  const feedback: WorkerUserFeedback = {
+    id: Number(row.id),
+    type: String(row.type || "general"),
+    content: String(row.content || ""),
+    page: row.page ?? null,
+    status: String(row.status || "pending"),
+    browser: row.browser ?? null,
+    operatingSystem: row.operating_system ?? null,
+    screenResolution: row.screen_resolution ?? null,
+    userAgent: row.user_agent ?? null,
+    category: row.category ?? null,
+    metadata: normalizeFeedbackMetadata(row),
+  };
+
+  const primary = generateWorkerResponseSuggestion(feedback);
+  const hints = getWorkerResponseHints(feedback);
+
+  const templates =
+    feedbackResponseTemplates[primary.category] ||
+    feedbackResponseTemplates.general;
+
+  const used = new Set<string>();
+  if (primary.template) {
+    used.add(primary.template);
+  } else {
+    used.add(primary.suggestion);
+  }
+
+  const alternatives: WorkerResponseSuggestion[] = [];
+  for (const tpl of templates) {
+    if (alternatives.length >= 2) break;
+    if (used.has(tpl)) continue;
+    alternatives.push({
+      suggestion: tpl,
+      confidence: Math.max(
+        0.5,
+        primary.confidence - 0.05 * (alternatives.length + 1)
+      ),
+      category: primary.category,
+      tags: primary.tags,
+      template: tpl,
+      isAutomated: true,
+    });
+    used.add(tpl);
+  }
+
+  return {
+    responseSuggestion: primary,
+    alternativeSuggestions: alternatives,
+    responseHints: hints,
+  };
+}
+
+// GET /api/feedback - admin list with Supabase JWT, fallback to legacy Express for cookie-based admin
+router.get("/api/feedback", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    // Legacy cookie/session-based admin
+    return proxyToBackend(req, env);
+  }
+
+  const currentUser = await getSupabaseCurrentUser(env, token);
+  if (!currentUser || !currentUser.isAdmin) {
+    return json({ error: "Admin access required" }, { status: 403 });
+  }
+
+  try {
+    const urlObj = new URL(req.url);
+    const search = urlObj.searchParams;
+    const statusParam = (search.get("status") || "all").trim().toLowerCase();
+    const typeParam = (search.get("type") || "").trim().toLowerCase();
+    const pageRaw = parseInt(search.get("page") || "1", 10);
+    const limitRaw = parseInt(search.get("limit") || "50", 10);
+
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+    const limit = Math.max(1, Math.min(Number.isFinite(limitRaw) ? limitRaw : 50, 200));
+    const offset = (page - 1) * limit;
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+      Prefer: "count=exact",
+    };
+
+    const listUrl = new URL(`${baseUrl}/rest/v1/user_feedback`);
+    listUrl.searchParams.set(
+      "select",
+      "id,type,content,page,status,user_id,browser,operating_system,screen_resolution,user_agent,category,metadata,created_at"
+    );
+    listUrl.searchParams.set("order", "created_at.desc");
+    listUrl.searchParams.set("limit", String(limit));
+    listUrl.searchParams.set("offset", String(offset));
+
+    if (statusParam && statusParam !== "all") {
+      listUrl.searchParams.set("status", `eq.${statusParam}`);
+    }
+    if (typeParam) {
+      listUrl.searchParams.set("type", `eq.${typeParam}`);
+    }
+
+    const res = await fetch(listUrl.toString(), { headers });
+    if (!res.ok) {
+      return json({ error: "Failed to list feedback" }, { status: 500 });
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    const contentRange = res.headers.get("Content-Range") || "";
+    let total = rows.length;
+    const parts = contentRange.split("/");
+    if (parts.length === 2) {
+      const totalStr = parts[1];
+      const n = parseInt(totalStr, 10);
+      if (Number.isFinite(n)) total = n;
+    }
+
+    const feedback = rows.map(mapFeedbackRowToApiItem);
+    const hasMore = offset + rows.length < total;
+
+    return json({ feedback, total, page, hasMore });
+  } catch {
+    return json({ error: "Failed to list feedback" }, { status: 500 });
+  }
+});
+
+// GET /api/feedback/:id - admin detail + AI suggestions
+router.get("/api/feedback/:id", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return proxyToBackend(req, env);
+  }
+
+  const currentUser = await getSupabaseCurrentUser(env, token);
+  if (!currentUser || !currentUser.isAdmin) {
+    return json({ error: "Admin access required" }, { status: 403 });
+  }
+
+  try {
+    const urlObj = new URL(req.url);
+    const segments = urlObj.pathname.split("/");
+    const idSegment = segments[segments.length - 1] || "";
+    const id = parseInt(decodeURIComponent(idSegment), 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      return json({ error: "Invalid id" }, { status: 400 });
+    }
+
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+      Prefer: "count=exact",
+    };
+
+    const row = await fetchFeedbackRowById(env, id, headers);
+    if (!row) {
+      return json({ error: "Feedback not found" }, { status: 404 });
+    }
+
+    const feedback = mapFeedbackRowToApiItem(row);
+    const suggestions = buildFeedbackSuggestionsPayload(row);
+
+    return json({
+      feedback,
+      responseSuggestion: suggestions.responseSuggestion,
+      alternativeSuggestions: suggestions.alternativeSuggestions,
+      responseHints: suggestions.responseHints,
+    });
+  } catch {
+    return json({ error: "Failed to fetch feedback item" }, { status: 500 });
+  }
+});
+
+// PATCH /api/feedback/:id/status - admin status update
+router.patch(
+  "/api/feedback/:id/status",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return proxyToBackend(req, env);
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json({ error: "Admin access required" }, { status: 403 });
+    }
+
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.split("/");
+      const idSegment = segments[segments.length - 2] || "";
+      const id = parseInt(decodeURIComponent(idSegment), 10);
+      if (!Number.isFinite(id) || id <= 0) {
+        return json({ error: "Invalid id" }, { status: 400 });
+      }
+
+      const body = (await (req as any).json?.().catch(() => ({}))) || {};
+      const status =
+        typeof body.status === "string" && body.status.trim()
+          ? body.status.trim()
+          : null;
+      if (!status) {
+        return json({ error: "Status is required" }, { status: 400 });
+      }
+
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+      const headers: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      };
+
+      const updateUrl = new URL(`${baseUrl}/rest/v1/user_feedback`);
+      updateUrl.searchParams.set("id", `eq.${id}`);
+
+      const res = await fetch(updateUrl.toString(), {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ status }),
+      });
+
+      if (!res.ok) {
+        return json(
+          { error: "Failed to update feedback status" },
+          { status: 500 }
+        );
+      }
+
+      const rows = (await res.json().catch(() => [])) as any[];
+      const row = Array.isArray(rows) && rows.length ? rows[0] : null;
+      if (!row) {
+        return json(
+          { error: "Feedback not found after update" },
+          { status: 404 }
+        );
+      }
+
+      const feedback = mapFeedbackRowToApiItem(row);
+      return json({ success: true, feedback });
+    } catch {
+      return json(
+        { error: "Failed to update feedback status" },
+        { status: 500 }
+      );
+    }
+  }
+);
+
+// POST /api/feedback/:id/respond - admin response stored in metadata.adminResponse
+router.post(
+  "/api/feedback/:id/respond",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return proxyToBackend(req, env);
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json({ error: "Admin access required" }, { status: 403 });
+    }
+
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.split("/");
+      const idSegment = segments[segments.length - 2] || "";
+      const id = parseInt(decodeURIComponent(idSegment), 10);
+      if (!Number.isFinite(id) || id <= 0) {
+        return json({ error: "Invalid id" }, { status: 400 });
+      }
+
+      const body = (await (req as any).json?.().catch(() => ({}))) || {};
+      const responseText =
+        typeof body.response === "string" && body.response.trim()
+          ? body.response.trim()
+          : null;
+      if (!responseText) {
+        return json({ error: "Response is required" }, { status: 400 });
+      }
+
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+
+      const readHeaders: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        Prefer: "count=exact",
+      };
+
+      const existing = await fetchFeedbackRowById(env, id, readHeaders);
+      if (!existing) {
+        return json({ error: "Feedback not found" }, { status: 404 });
+      }
+
+      let meta = normalizeFeedbackMetadata(existing);
+      const respondedAt = new Date().toISOString();
+      const respondedBy =
+        currentUser.fullName ||
+        currentUser.username ||
+        currentUser.email ||
+        `admin:${currentUser.id}`;
+
+      meta = {
+        ...meta,
+        adminResponse: {
+          content: responseText,
+          respondedAt,
+          respondedBy,
+        },
+        responderId: currentUser.id,
+        respondedAt,
+      };
+
+      const status =
+        existing.status === "pending" ? "reviewed" : existing.status;
+
+      const updateUrl = new URL(`${baseUrl}/rest/v1/user_feedback`);
+      updateUrl.searchParams.set("id", `eq.${id}`);
+
+      const writeHeaders: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      };
+
+      const res = await fetch(updateUrl.toString(), {
+        method: "PATCH",
+        headers: writeHeaders,
+        body: JSON.stringify({ metadata: meta, status }),
+      });
+
+      if (!res.ok) {
+        return json(
+          { error: "Failed to store admin response" },
+          { status: 500 }
+        );
+      }
+
+      const rows = (await res.json().catch(() => [])) as any[];
+      const row = Array.isArray(rows) && rows.length ? rows[0] : null;
+      if (!row) {
+        return json(
+          { error: "Feedback not found after update" },
+          { status: 404 }
+        );
+      }
+
+      const feedback = mapFeedbackRowToApiItem(row);
+      return json({ success: true, feedback });
+    } catch {
+      return json(
+        { error: "Failed to store admin response" },
+        { status: 500 }
+      );
+    }
+  }
+);
+
+// GET /api/feedback/:id/suggestions - AI suggestions only
+router.get(
+  "/api/feedback/:id/suggestions",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return proxyToBackend(req, env);
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json({ error: "Admin access required" }, { status: 403 });
+    }
+
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.split("/");
+      const idSegment = segments[segments.length - 2] || "";
+      const id = parseInt(decodeURIComponent(idSegment), 10);
+      if (!Number.isFinite(id) || id <= 0) {
+        return json({ error: "Invalid id" }, { status: 400 });
+      }
+
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+      const headers: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        Prefer: "count=exact",
+      };
+
+      const row = await fetchFeedbackRowById(env, id, headers);
+      if (!row) {
+        return json({ error: "Feedback not found" }, { status: 404 });
+      }
+
+      const suggestions = buildFeedbackSuggestionsPayload(row);
+      return json({
+        responseSuggestion: suggestions.responseSuggestion,
+        alternativeSuggestions: suggestions.alternativeSuggestions,
+      });
+    } catch {
+      return json(
+        { error: "Failed to generate suggestions" },
+        { status: 500 }
+      );
+    }
+  }
+);
 
 // API DOMAIN REDIRECT / FALLBACK PROXY
 router.all("*", async (req: Request, env: Env) => {
