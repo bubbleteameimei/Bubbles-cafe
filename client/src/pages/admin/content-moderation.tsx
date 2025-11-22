@@ -302,6 +302,31 @@ export default function ContentModerationPage() {
     }
   });
 
+  const moderateComment = useMutation({
+    mutationFn: async ({ id, action, postId }: { id: number; action: 'approve' | 'reject'; postId?: number }) => {
+      return await apiJson<any>('POST', `/api/comments/${id}/${action}`);
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/comments/pending'] });
+      if (variables.postId) {
+        queryClient.invalidateQueries({ queryKey: [`/api/posts/${variables.postId}/comments`] });
+      }
+      toast({
+        title: variables.action === 'approve' ? 'Comment Approved' : 'Comment Rejected',
+        description: variables.action === 'approve'
+          ? 'The comment has been approved and is now visible.'
+          : 'The comment has been rejected and removed.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
   // Filter content based on search term, type and status
   const filteredContent = reportedContent?.filter(content => {
     const matchesSearch = searchTerm === "" || 
@@ -766,12 +791,13 @@ export default function ContentModerationPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            // Implement comment approval
-                            toast({
-                              title: "Comment Approved",
-                              description: "The comment has been approved and is now visible.",
+                            moderateComment.mutate({
+                              id: comment.id,
+                              action: 'approve',
+                              postId: comment.postId,
                             });
                           }}
+                          disabled={moderateComment.isPending}
                           className="text-green-600"
                         >
                           <CheckCircle className="h-4 w-4 mr-1" />
@@ -781,12 +807,13 @@ export default function ContentModerationPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            // Implement comment rejection
-                            toast({
-                              title: "Comment Rejected",
-                              description: "The comment has been rejected and removed.",
+                            moderateComment.mutate({
+                              id: comment.id,
+                              action: 'reject',
+                              postId: comment.postId,
                             });
                           }}
+                          disabled={moderateComment.isPending}
                           className="text-red-600"
                         >
                           <XCircle className="h-4 w-4 mr-1" />
