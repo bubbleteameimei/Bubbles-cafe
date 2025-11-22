@@ -630,14 +630,82 @@ function recordTrendingQuery(query: string): void {
 }
 
 /**
- * Legacy backend proxy stub.
+ * Internal fallback handler.
  *
  * Previously, this forwarded requests to an Express/Render backend using
- * BACKEND_BASE_URL. That backend is now retired; we keep this function so
- * existing call sites compile, but it no longer performs any network proxying.
+ * BACKEND_BASE_URL. That backend is now retired; this function now returns
+ * explicit JSON responses (401/500 or safe defaults) instead of proxying.
  */
-async function proxyToBackend(_req: Request, _env: Env): Promise<Response> {
-  return json({ error: "Not Found" }, { status: 404 });
+async function proxyToBackend(req: Request, env: Env): Promise<Response> {
+  const url = new URL(req.url);
+  const path = url.pathname;
+  const hasSupabase = !!(env.SUPABASE_URL && env.SUPABASE_ANON_KEY);
+  const token = getBearerToken(req);
+
+  // Non-Supabase environments: respond explicitly or with safe defaults
+  if (!hasSupabase) {
+    // User-facing feedback pages should continue to work gracefully even
+    // if Supabase is not configured; return empty data instead of errors.
+    if (path.startsWith("/api/user/feedback/stats")) {
+      return json({
+        stats: {
+          total: 0,
+          pending: 0,
+          reviewed: 0,
+          resolved: 0,
+          rejected: 0,
+          responseRate: 0,
+        },
+        isAuthenticated: false,
+      });
+    }
+
+    if (path.startsWith("/api/user/feedback")) {
+      return json({ feedback: [], isAuthenticated: false });
+    }
+
+    if (path.startsWith("/api/bookmarks/migrate")) {
+      return json(
+        { success: false, message: "Supabase not configured" },
+        { status: 500 },
+      );
+    }
+
+    // For all other API routes, surface the configuration issue
+    return json(
+      { error: "Supabase not configured" },
+      { status: 500 },
+    );
+  }
+
+  // Supabase is configured but we reached the fallback: likely auth or runtime error
+
+  // User/authenticated routes where missing JWT should be a 401
+  if (
+    path.startsWith("/api/bookmarks") ||
+    path.startsWith("/api/notifications") ||
+    path.startsWith("/api/reading-progress") ||
+    path.startsWith("/api/tips") ||
+    path.startsWith("/api/feedback")
+  ) {
+    if (!token) {
+      const isAdminFeedback = path.startsWith("/api/feedback");
+      return json(
+        {
+          error: isAdminFeedback
+            ? "Admin authentication required"
+            : "Authentication required",
+        },
+        { status: 401 },
+      );
+    }
+  }
+
+  // Generic fallback: internal error rather than proxying to legacy backend
+  return json(
+    { error: "Service unavailable" },
+    { status: 500 },
+  );
 }
 
 // ============================================================================
@@ -6586,23 +6654,9 @@ router.get("/api/user/feedback/stats", async (req: Request, env: Env) => {
   }
 });
 
-// API DOMAIN REDIRECT / FALLBACK PROXY
-router.all("*", async (req: Request, env: Env) => {
-  const requestUrl = new URL(req.url);
-  const host = requestUrl.host.toLowerCase();
-
-  // Only redirect /api paths on the primary domain to the API domain
-  if (host === (env.PRIMARY_DOMAIN || "").toLowerCase() && requestUrl.pathname.startsWith("/api/")) {
-    const apiHost = (env.API_DOMAIN || "").toLowerCase();
-    if (apiHost && apiHost !== host) {
-      const targetUrl = new URL(req.url);
-      targetUrl.host = apiHost;
-      return Response.redirect(targetUrl.toString(), 302);
-    }
-  }
-
-  // Otherwise, fall back to the legacy backend
-  return proxyToBackend(req, env);
+// API DOMAIN FALLBACK: no legacy backend proxy; return 404 for unknown routes
+router.all("*", async (_req: Request, _env: Env) => {
+  return json({ error: "Not Found" }, { status: 404 });
 });
 
 // ============================================================================
