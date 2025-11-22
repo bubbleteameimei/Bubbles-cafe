@@ -2230,28 +2230,373 @@ router.post("/api/email-service/send", async (req: Request, env: Env) => {
   }
 });
 
-// PAYMENTS WEBHOOK: Idempotent processing
+// PAYMENTS: Paystack integration (initialize, verify, plans, subscription status, webhook)
 router.post("/api/payments/webhook", async (req: Request, env: Env) => {
+  // This webhook is designed for Paystack, but we keep idempotency protection
   try {
-    const body = await req.text();
-    const eventId = JSON.parse(body).id;
+    const rawBody = await req.text();
+    let parsed: any;
+    try {
+      parsed = JSON.parse(rawBody);
+    } catch {
+      return json({ status: false, message: "Invalid JSON payload" }, { status: 400 });
+    }
 
-    const { isNew } = await getOrCheckIdempotency(env, `webhook-${eventId}`, 86_400_000);
+    const eventId = String(parsed?.event || parsed?.event_id || parsed?.reference || parsed?.id || "");
+    if (!eventId) {
+      return json({ status: false, message: "Missing event identifier" }, { status: 400 });
+    }
+
+    const { isNew } = await getOrCheckIdempotency(env, `paystack-webhook-${eventId}`, 86_400_000);
     if (!isNew) {
-      return json({ success: true, cached: true });
+      return json({ status: true, message: "Duplicate webhook ignored" });
     }
 
-    const event = JSON.parse(body);
-    if (event.type === "payment_intent.succeeded") {
-      await callSupabaseRpc(env, "handle_payment_success", {
-        event_id: eventId,
-        data: event.data,
-      });
-    }
-
-    return json({ success: true });
+    // For now we simply acknowledge Paystack webhooks and rely on the
+    // client-side Paystack dashboard / our tips logging for business logic.
+    // You can extend this to call a Supabase RPC for subscription management.
+    return json({ status: true, message: "Webhook received" });
   } catch (error) {
-    return json({ error: String(error) }, { status: 500 });
+    return json(
+      {
+        status: false,
+        message: "Failed to process webhook",
+        error: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
+  }
+});
+
+/**
+ * Initialize a Paystack transaction
+ * POST /api/payments/initialize
+ * Body: { amount: number (lowest currency unit), callbackUrl?: string, reference?: string, metadata?: object }
+ */
+router.post("/api/payments/initialize", async (req: Request, env: Env) => {
+  if (!env.PAYSTACK_SECRET_KEY) {
+    return json(
+      { status: false, message: "Paystack is not configured on the server" },
+      { status: 500 },
+    );
+  }
+
+  try {
+    const body = (await req.json().catch(() => ({}))) as any;
+    const amountRaw = body?.amount;
+    const amount = Number(amountRaw);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return json(
+        { status: false, message: "Amount must be a positive number in lowest currency unit" },
+        { status: 400 },
+      );
+    }
+
+    const callbackUrl =
+      typeof body?.callbackUrl === "string" && body.callbackUrl.length > 0
+        ? body.callbackUrl
+        : undefined;
+    const reference =
+      typeof body?.reference === "string" && body.reference.length > 0
+        ? body.reference
+        : `bcf_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    const metadataInput =
+      body && typeof body.metadata === "object" && body.metadata !== null ? body.metadata : {};
+
+    // Resolve user from Supabase JWT when available to attach email & user metadata
+    let customerEmail: string | undefined;
+    let userId: number | null = null;
+    let username: string | undefined;
+
+    const token = getBearerToken(req);
+    if (token && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+      try {
+        const authUser = await getSupabaseAuthUser(env, token);
+        if (authUser?.email) {
+          customerEmail = authUser.email;
+        }
+        const user = await getSupabaseCurrentUser(env, token).catch(() => null);
+        if (user?.id) {
+          userId = user.id;
+        }
+        if (user?.username) {
+          username = user.username;
+        }
+      } catch {
+        // Non-fatal: continue without user enrichment
+      }
+    }
+
+    // As a fallback, allow email to be provided explicitly in the payload
+    if (!customerEmail && typeof body?.email === "string" && body.email.length > 3) {
+      customerEmail = body.email;
+    }
+
+    if (!customerEmail) {
+      return json(
+        { status: false, message: "User email is required to initialize a payment" },
+        { status: 400 },
+      );
+    }
+
+    const enhancedMetadata = {
+      ...(metadataInput || {}),
+      userId: userId ?? undefined,
+      username: username ?? undefined,
+    };
+
+    const baseUrl = env.PAYSTACK_BASE_URL || "https://api.paystack.co";
+    const url = `${baseUrl.replace(/\/+$/, "")}/transaction/initialize`;
+
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        amount,
+        email: customerEmail,
+        reference,
+        callback_url: callbackUrl,
+        metadata: enhancedMetadata,
+      }),
+    });
+
+    const data = (await resp.json().catch(() => ({}))) as any;
+
+    if (!resp.ok) {
+      return json(
+        {
+          status: false,
+          message: data?.message || "Failed to initialize Paystack transaction",
+        },
+        { status: resp.status },
+      );
+    }
+
+    return json(data);
+  } catch (error) {
+    return json(
+      {
+        status: false,
+        message: "Failed to initialize payment",
+        error: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
+  }
+});
+
+/**
+ * Verify a Paystack transaction
+ * GET /api/payments/verify/:reference
+ */
+router.get("/api/payments/verify/:reference", async (req: Request, env: Env) => {
+  if (!env.PAYSTACK_SECRET_KEY) {
+    return json(
+      { status: false, message: "Paystack is not configured on the server" },
+      { status: 500 },
+    );
+  }
+
+  try {
+    const urlObj = new URL(req.url);
+    const segments = urlObj.pathname.split("/").filter(Boolean);
+    const reference = segments[segments.length - 1] || "";
+    if (!reference) {
+      return json(
+        { status: false, message: "Reference is required" },
+        { status: 400 },
+      );
+    }
+
+    const baseUrl = env.PAYSTACK_BASE_URL || "https://api.paystack.co";
+    const verifyUrl = `${baseUrl.replace(/\/+$/, "")}/transaction/verify/${encodeURIComponent(
+      reference,
+    )}`;
+
+    const resp = await fetch(verifyUrl, {
+      headers: {
+        Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    const data = (await resp.json().catch(() => ({}))) as any;
+    if (!resp.ok) {
+      return json(
+        {
+          status: false,
+          message: data?.message || "Failed to verify Paystack transaction",
+        },
+        { status: resp.status },
+      );
+    }
+
+    return json(data);
+  } catch (error) {
+    return json(
+      {
+        status: false,
+        message: "Failed to verify payment",
+        error: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
+  }
+});
+
+/**
+ * Get static payment plans, with a lightweight Paystack reachability check
+ * GET /api/payments/plans
+ */
+router.get("/api/payments/plans", async (_req: Request, env: Env) => {
+  const plans = [
+    {
+      id: "monthly_standard",
+      name: "Monthly Standard",
+      amount: 1000,
+      interval: "monthly",
+      description: "Standard monthly subscription with premium content access.",
+    },
+    {
+      id: "yearly_premium",
+      name: "Yearly Premium",
+      amount: 10000,
+      interval: "annually",
+      description: "Premium yearly subscription with all features and exclusive content.",
+    },
+  ];
+
+  if (!env.PAYSTACK_SECRET_KEY) {
+    return json({ status: true, data: plans, meta: { paystackReachable: false } });
+  }
+
+  try {
+    const baseUrl = env.PAYSTACK_BASE_URL || "https://api.paystack.co";
+    const url = `${baseUrl.replace(/\/+$/, "")}/transaction?perPage=1&page=1`;
+
+    const resp = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    return json({
+      status: true,
+      data: plans,
+      meta: { paystackReachable: resp.ok },
+    });
+  } catch {
+    return json({
+      status: true,
+      data: plans,
+      meta: { paystackReachable: false },
+    });
+  }
+});
+
+/**
+ * Get user subscription status based on recent successful Paystack transactions
+ * GET /api/payments/subscription/status
+ */
+router.get("/api/payments/subscription/status", async (req: Request, env: Env) => {
+  if (!env.PAYSTACK_SECRET_KEY) {
+    return json(
+      { status: false, message: "Paystack is not configured on the server" },
+      { status: 500 },
+    );
+  }
+
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    // In non-Supabase environments, fall back to the legacy backend
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json(
+      { status: false, message: "User not authenticated" },
+      { status: 401 },
+    );
+  }
+
+  try {
+    const authUser = await getSupabaseAuthUser(env, token);
+    const email = authUser?.email;
+    if (!email) {
+      return json(
+        { status: false, message: "User email is required" },
+        { status: 400 },
+      );
+    }
+
+    const baseUrl = env.PAYSTACK_BASE_URL || "https://api.paystack.co";
+    const url = new URL(`${baseUrl.replace(/\/+$/, "")}/transaction`);
+    url.searchParams.set("perPage", "10");
+    url.searchParams.set("page", "1");
+    url.searchParams.set("customer", email);
+    url.searchParams.set("status", "success");
+
+    const resp = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!resp.ok) {
+      return json(
+        { status: false, message: "Failed to fetch subscription status from Paystack" },
+        { status: resp.status },
+      );
+    }
+
+    const payload = (await resp.json().catch(() => ({}))) as any;
+    const txList: any[] = Array.isArray(payload?.data) ? payload.data : [];
+    const recent = txList.find(
+      (t: any) =>
+        t &&
+        (t.customer?.email === email || t.customer_email === email) &&
+        t.status === "success",
+    );
+
+    let hasActiveSubscription = false;
+    let nextBillingDate: string | null = null;
+    let subscription: any = null;
+
+    if (recent) {
+      hasActiveSubscription = true;
+      const paidAtRaw = recent.paid_at || recent.paidAt || recent.created_at || recent.createdAt;
+      const paidAtDate = paidAtRaw ? new Date(paidAtRaw) : new Date();
+      const paidAtIso = paidAtDate.toISOString();
+      const nextDate = new Date(paidAtDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      nextBillingDate = nextDate;
+      subscription = {
+        reference: recent.reference,
+        amount: recent.amount,
+        channel: recent.channel,
+        paidAt: paidAtIso,
+      };
+    }
+
+    return json({
+      status: true,
+      data: { hasActiveSubscription, subscription, nextBillingDate },
+    });
+  } catch (error) {
+    return json(
+      {
+        status: false,
+        message: "Failed to fetch subscription status",
+        error: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
   }
 });
 
@@ -3621,6 +3966,103 @@ router.post("/api/posts/:id/reaction", async (req: Request, env: Env) => {
   } catch {
     return proxyToBackend(req, env);
   }
+});
+
+// REACTIONS SSE: streaming reaction updates per post (best-effort)
+router.get("/api/posts/:id/reactions/stream", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    // In non-Supabase environments, defer to the legacy backend
+    return proxyToBackend(req, env);
+  }
+
+  const urlObj = new URL(req.url);
+  const segments = urlObj.pathname.split("/").filter(Boolean);
+  const idSegment = segments[2]; // /api/posts/:id/reactions/stream -> ["api","posts",":id",...]
+  const rawId = Number(idSegment);
+  if (!Number.isFinite(rawId) || rawId <= 0) {
+    return json({ error: "Invalid postId" }, { status: 400 });
+  }
+
+  let intervalId: number | undefined;
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+      const sendEvent = (event: string, data: any) => {
+        try {
+          const payload = `event: ${event}\n` + `data: ${JSON.stringify(data)}\n\n`;
+          controller.enqueue(encoder.encode(payload));
+        } catch {
+          // Ignore write errors; the stream will be closed by cancel()
+        }
+      };
+
+      // Send an initial snapshot
+      const sendSnapshot = async (eventName: "initial" | "update") => {
+        try {
+          const summaries = await buildPostSummaries(env, [rawId]);
+          const summary = summaries[0];
+          if (!summary) return;
+
+          const reactions = summary.reactions || {};
+          const payload = {
+            postId: summary.localPostId ?? summary.id ?? rawId,
+            baselineLikes: Number(reactions.baselineLikes ?? 0),
+            baselineDislikes: Number(reactions.baselineDislikes ?? 0),
+            likesCount: Number(reactions.likesCount ?? 0),
+            dislikesCount: Number(reactions.dislikesCount ?? 0),
+            totals: {
+              likes:
+                Number(reactions.baselineLikes ?? 0) +
+                Number(reactions.likesCount ?? 0),
+              dislikes:
+                Number(reactions.baselineDislikes ?? 0) +
+                Number(reactions.dislikesCount ?? 0),
+            },
+            ts: Date.now(),
+          };
+
+          sendEvent(eventName, payload);
+        } catch {
+          // Surface as SSE error event but do not terminate the stream
+          sendEvent("error", {
+            postId: rawId,
+            message: "Failed to read reactions snapshot",
+          });
+        }
+      };
+
+      await sendSnapshot("initial");
+
+      // Periodic updates (lightweight polling)
+      intervalId = setInterval(() => {
+        // Fire and forget; errors are handled inside sendSnapshot
+        void sendSnapshot("update");
+      }, 25_000) as unknown as number;
+
+      // Heartbeat ping so intermediaries keep the connection alive
+      const pingInterval = setInterval(() => {
+        sendEvent("ping", { ts: Date.now() });
+      }, 25_000) as unknown as number;
+
+      // Combine both intervals into one handle for cleanup
+      intervalId = pingInterval;
+    },
+    cancel() {
+      if (intervalId !== undefined) {
+        clearInterval(intervalId);
+      }
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 });
 
 // Comments: Supabase-backed list/create/flag with legacy fallback
@@ -5609,26 +6051,605 @@ router.get(
   }
 );
 
-// API DOMAIN REDIRECT / FALLBACK PROXY
-router.all("*", async (req: Request, env: Env) => {
-  const url = new URL(req.url);
-  const path = url.pathname;
-
-  // Non-API paths (including "/") should go to the frontend
-  if (!path.startsWith("/api/") && path !== "/health") {
-    const redirectUrl = new URL(path + url.search, env.FRONTEND_URL);
-    return new Response(null, {
-      status: 308,
-      headers: { Location: redirectUrl.toString() },
-    });
-  }
-
-  // For any unhandled /api/* routes, forward to the legacy backend.
-  if (path.startsWith("/api/")) {
+// USER NOTIFICATIONS: Supabase-backed, with legacy fallback
+router.get("/api/notifications", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return proxyToBackend(req, env);
   }
 
-  return json({ error: "Not Found" }, { status: 404 });
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/user_notifications`);
+    url.searchParams.set(
+      "select",
+      "id,user_id,type,title,message,metadata,is_read,created_at",
+    );
+    url.searchParams.set("order", "created_at.desc");
+    url.searchParams.set("limit", "50");
+
+    const resp = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (resp.status === 401 || resp.status === 403) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    if (!resp.ok) {
+      return json(
+        { error: "Failed to list notifications" },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await resp.json().catch(() => [])) as any[];
+    const notifications = rows.map((n) => {
+      const meta =
+        n && typeof n.metadata === "object" && n.metadata !== null ? n.metadata : {};
+      return {
+        id: n.id,
+        type: String(n.type || "info"),
+        title: String(n.title || "Notification"),
+        message: String(n.message || ""),
+        metadata: meta,
+        isRead: !!(n.is_read ?? n.isRead),
+        createdAt: n.created_at || n.createdAt || new Date().toISOString(),
+        userId: typeof n.user_id === "number" ? n.user_id : null,
+      };
+    });
+
+    return json({ notifications });
+  } catch {
+    return json(
+      { error: "Failed to list notifications" },
+      { status: 500 },
+    );
+  }
+});
+
+router.post("/api/notifications", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  try {
+    const body = (await req.json().catch(() => ({}))) as any;
+    const type = typeof body.type === "string" && body.type.trim().length > 0 ? body.type : null;
+    const title =
+      typeof body.title === "string" && body.title.trim().length > 0 ? body.title : null;
+    const message =
+      typeof body.message === "string" && body.message.trim().length > 0 ? body.message : null;
+    const metadata =
+      body && typeof body.metadata === "object" && body.metadata !== null
+        ? body.metadata
+        : {};
+
+    if (!type || !title || !message) {
+      return json(
+        { error: "type, title and message are required" },
+        { status: 400 },
+      );
+    }
+
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!userId) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/user_notifications`);
+
+    const resp = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        type,
+        title,
+        message,
+        metadata,
+        is_read: false,
+        created_at: new Date().toISOString(),
+      }),
+    });
+
+    if (!resp.ok) {
+      const errJson = (await resp.json().catch(() => ({}))) as any;
+      return json(
+        {
+          error:
+            errJson?.message ||
+            errJson?.error ||
+            "Failed to create notification",
+        },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await resp.json().catch(() => [])) as any[];
+    const n = rows[0];
+    const meta =
+      n && typeof n.metadata === "object" && n.metadata !== null ? n.metadata : {};
+    const notification = {
+      id: n.id,
+      type: String(n.type || type),
+      title: String(n.title || title),
+      message: String(n.message || message),
+      metadata: meta,
+      isRead: !!(n.is_read ?? n.isRead),
+      createdAt: n.created_at || n.createdAt || new Date().toISOString(),
+      userId: typeof n.user_id === "number" ? n.user_id : userId,
+    };
+
+    return json({ notification }, { status: 201 });
+  } catch {
+    return json(
+      { error: "Failed to create notification" },
+      { status: 500 },
+    );
+  }
+});
+
+router.patch("/api/notifications/:id/read", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  const urlObj = new URL(req.url);
+  const segments = urlObj.pathname.split("/").filter(Boolean);
+  const idSegment = segments[segments.length - 2] === "read" ? segments[segments.length - 3] : null;
+  const id = idSegment ? Number(idSegment) : NaN;
+  if (!Number.isFinite(id) || id <= 0) {
+    return json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  let isRead = true;
+  try {
+    const body = (await req.json().catch(() => ({}))) as any;
+    if (typeof body.isRead === "boolean") {
+      isRead = body.isRead;
+    }
+  } catch {
+    // Default to marking as read
+  }
+
+  try {
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!userId) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/user_notifications`);
+    url.searchParams.set("id", `eq.${id}`);
+    url.searchParams.set("user_id", `eq.${userId}`);
+
+    const resp = await fetch(url.toString(), {
+      method: "PATCH",
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({ is_read: isRead }),
+    });
+
+    if (!resp.ok) {
+      const errJson = (await resp.json().catch(() => ({}))) as any;
+      const status = resp.status === 404 ? 404 : 500;
+      return json(
+        {
+          error:
+            errJson?.message ||
+            errJson?.error ||
+            (status === 404 ? "Notification not found" : "Failed to update notification"),
+        },
+        { status },
+      );
+    }
+
+    const rows = (await resp.json().catch(() => [])) as any[];
+    const n = rows[0];
+    if (!n) {
+      return json({ error: "Notification not found" }, { status: 404 });
+    }
+
+    const meta =
+      n && typeof n.metadata === "object" && n.metadata !== null ? n.metadata : {};
+    const notification = {
+      id: n.id,
+      type: String(n.type || "info"),
+      title: String(n.title || "Notification"),
+      message: String(n.message || ""),
+      metadata: meta,
+      isRead: !!(n.is_read ?? n.isRead),
+      createdAt: n.created_at || n.createdAt || new Date().toISOString(),
+      userId: typeof n.user_id === "number" ? n.user_id : userId,
+    };
+
+    return json({ notification });
+  } catch {
+    return json(
+      { error: "Failed to update notification" },
+      { status: 500 },
+    );
+  }
+});
+
+// TIPS / DONATIONS: Supabase-backed logging of tip intent + author stats, fallback to legacy Express
+router.post("/api/tips", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  try {
+    const body = (await req.json().catch(() => ({}))) as any;
+    const authorIdRaw = body?.authorId;
+    const authorId = Number(authorIdRaw);
+    if (!Number.isFinite(authorId) || authorId <= 0) {
+      return json({ error: "Invalid authorId" }, { status: 400 });
+    }
+
+    const amount = String(body?.amount ?? "0");
+    const currency = String(body?.currency || "USD");
+    const status = String(body?.status || "pending");
+    const providerId =
+      typeof body?.providerId === "string" && body.providerId.length > 0
+        ? body.providerId
+        : null;
+    const message =
+      typeof body?.message === "string" && body.message.length > 0 ? body.message : null;
+
+    let userId: number | null = null;
+    const token = getBearerToken(req);
+    if (token) {
+      try {
+        const uid = await getSupabaseUserIdFromJwt(env, token);
+        if (uid) userId = uid;
+      } catch {
+        // Non-fatal: anonymous tip intent
+      }
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/author_tips`);
+
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const resp = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        author_id: authorId,
+        user_id: userId,
+        amount,
+        currency,
+        status,
+        provider_id: providerId,
+        message,
+      }),
+    });
+
+    if (!resp.ok) {
+      const errJson = (await resp.json().catch(() => ({}))) as any;
+      return json(
+        {
+          error:
+            errJson?.message ||
+            errJson?.error ||
+            "Failed to record tip event",
+        },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await resp.json().catch(() => [])) as any[];
+    const tip = rows[0] || null;
+    return json({ success: true, tip }, { status: 201 });
+  } catch {
+    return json(
+      { error: "Failed to record tip event" },
+      { status: 500 },
+    );
+  }
+});
+
+router.get("/api/tips/author/:authorId", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const urlObj = new URL(req.url);
+  const segments = urlObj.pathname.split("/").filter(Boolean);
+  const authorIdSegment = segments[segments.length - 1];
+  const authorId = Number(authorIdSegment);
+  if (!Number.isFinite(authorId) || authorId <= 0) {
+    return json({ error: "Invalid authorId" }, { status: 400 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/author_tips`);
+    url.searchParams.set("author_id", `eq.${authorId}`);
+    url.searchParams.set("order", "created_at.desc");
+    url.searchParams.set("limit", "50");
+
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const resp = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!resp.ok) {
+      return json(
+        { error: "Failed to fetch author tips" },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await resp.json().catch(() => [])) as any[];
+    return json({
+      authorId,
+      totalTips: rows.length,
+      tips: rows,
+    });
+  } catch {
+    return json(
+      { error: "Failed to fetch author tips" },
+      { status: 500 },
+    );
+  }
+});
+
+// USER FEEDBACK: self-service endpoints backed by Supabase user_feedback, with legacy fallback
+router.get("/api/user/feedback", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    // Mirror legacy behaviour: return empty data instead of 401
+    return json({ feedback: [], isAuthenticated: false });
+  }
+
+  try {
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!userId) {
+      return json({ feedback: [], isAuthenticated: false });
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/user_feedback`);
+    url.searchParams.set(
+      "select",
+      "id,type,content,page,status,user_id,browser,operating_system,screen_resolution,user_agent,category,metadata,created_at",
+    );
+    url.searchParams.set("user_id", `eq.${userId}`);
+    url.searchParams.set("order", "created_at.desc");
+    url.searchParams.set("limit", "100");
+
+    const resp = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (resp.status === 401 || resp.status === 403) {
+      return json({ feedback: [], isAuthenticated: false });
+    }
+
+    if (!resp.ok) {
+      return json({ feedback: [], isAuthenticated: false });
+    }
+
+    const rows = (await resp.json().catch(() => [])) as any[];
+
+    const feedback = rows.map((row) => {
+      const meta =
+        row && typeof row.metadata === "object" && row.metadata !== null
+          ? row.metadata
+          : {};
+      const browser = row.browser || meta.browser || "unknown";
+      const operatingSystem = row.operating_system || meta.operatingSystem || "unknown";
+      const screenResolution =
+        row.screen_resolution || meta.screenResolution || "unknown";
+      const userAgent = row.user_agent || meta.userAgent || "";
+
+      return {
+        id: row.id,
+        type: row.type || "general",
+        content: row.content || "",
+        page: row.page || "unknown",
+        category: row.category || "general",
+        status: row.status || "pending",
+        createdAt: row.created_at || row.createdAt || new Date().toISOString(),
+        metadata: {
+          browser,
+          operatingSystem,
+          screenResolution,
+          userAgent,
+          name: meta.name,
+          email: meta.email,
+        },
+        adminResponse:
+          typeof meta.adminResponse === "string" ? meta.adminResponse : undefined,
+      };
+    });
+
+    return json({ feedback, isAuthenticated: true });
+  } catch {
+    return json({ feedback: [], isAuthenticated: false });
+  }
+});
+
+router.get("/api/user/feedback/stats", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({
+      stats: {
+        total: 0,
+        pending: 0,
+        reviewed: 0,
+        resolved: 0,
+        rejected: 0,
+        responseRate: 0,
+      },
+      isAuthenticated: false,
+    });
+  }
+
+  try {
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!userId) {
+      return json({
+        stats: {
+          total: 0,
+          pending: 0,
+          reviewed: 0,
+          resolved: 0,
+          rejected: 0,
+          responseRate: 0,
+        },
+        isAuthenticated: false,
+      });
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/user_feedback`);
+    url.searchParams.set(
+      "select",
+      "id,status,metadata,user_id,created_at",
+    );
+    url.searchParams.set("user_id", `eq.${userId}`);
+    url.searchParams.set("order", "created_at.desc");
+    url.searchParams.set("limit", "100");
+
+    const resp = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!resp.ok) {
+      return json({
+        stats: {
+          total: 0,
+          pending: 0,
+          reviewed: 0,
+          resolved: 0,
+          rejected: 0,
+          responseRate: 0,
+        },
+        isAuthenticated: false,
+      });
+    }
+
+    const rows = (await resp.json().catch(() => [])) as any[];
+
+    const total = rows.length;
+    const pending = rows.filter((r) => r.status === "pending").length;
+    const reviewed = rows.filter((r) => r.status === "reviewed").length;
+    const resolved = rows.filter((r) => r.status === "resolved").length;
+    const rejected = rows.filter((r) => r.status === "rejected").length;
+
+    let respondedCount = 0;
+    for (const r of rows) {
+      const meta =
+        r && typeof r.metadata === "object" && r.metadata !== null ? r.metadata : {};
+      if (typeof meta.adminResponse === "string" && meta.adminResponse.length > 0) {
+        respondedCount += 1;
+      }
+    }
+
+    const responseRate = total > 0 ? (respondedCount / total) * 100 : 0;
+
+    return json({
+      stats: {
+        total,
+        pending,
+        reviewed,
+        resolved,
+        rejected,
+        responseRate,
+      },
+      isAuthenticated: true,
+    });
+  } catch {
+    return json({
+      stats: {
+        total: 0,
+        pending: 0,
+        reviewed: 0,
+        resolved: 0,
+        rejected: 0,
+        responseRate: 0,
+      },
+      isAuthenticated: false,
+    });
+  }
+});
+
+// API DOMAIN REDIRECT / FALLBACK PROXY
+router.all("*", async (req: Request, env: Env) => {
+  const requestUrl = new URL(req.url);
+  const host = requestUrl.host.toLowerCase();
+
+  // Only redirect /api paths on the primary domain to the API domain
+  if (host === (env.PRIMARY_DOMAIN || "").toLowerCase() && requestUrl.pathname.startsWith("/api/")) {
+    const apiHost = (env.API_DOMAIN || "").toLowerCase();
+    if (apiHost && apiHost !== host) {
+      const targetUrl = new URL(req.url);
+      targetUrl.host = apiHost;
+      return Response.redirect(targetUrl.toString(), 302);
+    }
+  }
+
+  // Otherwise, fall back to the legacy backend
+  return proxyToBackend(req, env);
 });
 
 // ============================================================================

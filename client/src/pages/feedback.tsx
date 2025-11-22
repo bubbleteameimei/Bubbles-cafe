@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, PlusCircle, RefreshCw, AlertCircle, LogIn } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { apiRequest, APIError } from '@/lib/queryClient';
 
 // Status badge component with appropriate colors and icons
 const StatusBadge = ({ status }: { status: string }) => {
@@ -83,11 +84,7 @@ export default function UserFeedbackPage() {
   const { data: authData, isLoading: authLoading } = useQuery({
     queryKey: ['/api/auth/status'],
     queryFn: async () => {
-      const response = await fetch('/api/auth/status');
-      if (!response.ok) {
-        throw new Error('Failed to fetch auth status');
-      }
-      return response.json();
+      return apiRequest<{ isAuthenticated: boolean; user?: any }>('/api/auth/status');
     },
   });
   
@@ -95,11 +92,15 @@ export default function UserFeedbackPage() {
   const { data: feedbackData, isLoading: feedbackLoading, isError, refetch } = useQuery({
     queryKey: ['/api/user/feedback'],
     queryFn: async () => {
-      const response = await fetch('/api/user/feedback');
-      if (!response.ok) {
-        throw new Error('Failed to fetch user feedback');
+      try {
+        return await apiRequest<{ feedback: any[]; isAuthenticated: boolean }>('/api/user/feedback');
+      } catch (error) {
+        if (error instanceof APIError && error.isAuthError) {
+          // Treat as unauthenticated; the page will render the anonymous variant
+          return { feedback: [], isAuthenticated: false };
+        }
+        throw error;
       }
-      return response.json();
     },
     enabled: authData?.isAuthenticated,
   });
@@ -108,11 +109,24 @@ export default function UserFeedbackPage() {
   const { data: statsData, isLoading: statsLoading } = useQuery({
     queryKey: ['/api/user/feedback/stats'],
     queryFn: async () => {
-      const response = await fetch('/api/user/feedback/stats');
-      if (!response.ok) {
-        throw new Error('Failed to fetch feedback stats');
+      try {
+        return await apiRequest<{ stats: any; isAuthenticated: boolean }>('/api/user/feedback/stats');
+      } catch (error) {
+        if (error instanceof APIError && error.isAuthError) {
+          return {
+            stats: {
+              total: 0,
+              pending: 0,
+              reviewed: 0,
+              resolved: 0,
+              rejected: 0,
+              responseRate: 0,
+            },
+            isAuthenticated: false,
+          };
+        }
+        throw error;
       }
-      return response.json();
     },
     enabled: authData?.isAuthenticated,
   });
