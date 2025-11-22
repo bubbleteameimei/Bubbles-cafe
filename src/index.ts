@@ -835,7 +835,7 @@ async function proxyToBackend(req: Request, env: Env): Promise<Response> {
 // ============================================================================
 
 // HEALTH
-router.get("/api/health", async (_req: Request, _env: Env) => {
+router.get("/api/health", async (_req: Request, _env: Env) =&gt; {
   try {
     const started = Date.now();
     const healthRes = {
@@ -855,18 +855,40 @@ router.get("/api/health", async (_req: Request, _env: Env) => {
   }
 });
 
-router.get("/health", async () => {
+router.get("/health", async () =&gt; {
   return json({ status: "ok" });
 });
 
+// CSRF TOKEN: compatibility endpoint for legacy clients
+// Note: Worker APIs are JWT-based and do not require CSRF protection.
+// This endpoint returns a stateless token so clients expecting /api/csrf-token
+// can continue to function without relying on the legacy Express backend.
+router.get("/api/csrf-token", async (_req: Request) =&gt; {
+  try {
+    const token = crypto.randomUUID();
+    const headers: Record&lt;string, string&gt; = {
+      "Cache-Control": "no-store, max-age=0",
+    };
+    try {
+      headers["Set-Cookie"] =
+        `XSRF-TOKEN=${encodeURIComponent(token)}; Path=/; SameSite=Lax; Secure`;
+    } catch {
+      // Ignore cookie errors (non-browser contexts)
+    }
+    return json({ csrfToken: token }, { headers });
+  } catch {
+    return json({ csrfToken: null }, { status: 200 });
+  }
+});
+
 // CONFIG: Public client bootstrap (Supabase, URLs, Google OAuth)
-router.get("/api/config/public", async (req: Request, env: Env) => {
+router.get("/api/config/public", async (req: Request, env: Env) =&gt; {
   try {
     const url = new URL(req.url);
     const protocol = url.protocol; // e.g. "https:"
     const host = url.host.toLowerCase();
 
-    const apiBase = (() => {
+    const apiBase = (() =&gt; {
       try {
         if (host.startsWith("api.")) return `${protocol}//${host}`;
         const cleanHost = host.startsWith("www.") ? host.slice(4) : host;
@@ -4030,6 +4052,783 @@ router.post(
   }
 );
 
+// Admin posts management: list, filters, and bulk actions
+router.get("/api/admin/posts", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json(
+      { error: "Supabase not configured" },
+      { status: 500 }
+    );
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json(
+      { error: "Admin authentication required" },
+      { status: 401 }
+    );
+  }
+
+  const currentUser = await getSupabaseCurrentUser(env, token);
+  if (!currentUser || !currentUser.isAdmin) {
+    return json(
+      { error: "Admin access required" },
+      { status: 403 }
+    );
+  }
+
+  try {
+    const urlObj = new URL(req.url);
+    const search = urlObj.searchParams;
+
+    const pageRaw = parseInt(search.get("page") || "1", 10);
+    const limitRaw = parseInt(search.get("limit") || "50", 10);
+    const page =
+      Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+    const limitValue =
+      Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 50;
+    const limit = Math.max(1, Math.min(limitValue, 500));
+
+    const searchTerm = (search.get("search") || "").trim().toLowerCase();
+    const categoryParam = (search.get("category") || "")
+      .trim()
+      .toLowerCase();
+    const statusParam = (search.get("status") || "all")
+      .trim()
+      .toLowerCase();
+    const featuredOnly = search.get("featured") === "true";
+
+    const allPosts = await fetchSupabasePosts(env);
+    let posts = allPosts;
+
+    if (searchTerm) {
+      posts = posts.filter((post) => {
+        const title = String(post.title || "").toLowerCase();
+        const excerpt = String(post.excerpt || "").toLowerCase();
+        const content = String(post.content || "").toLowerCase();
+        return (
+          title.includes(searchTerm) ||
+          excerpt.includes(searchTerm) ||
+          content.includes(searchTerm)
+        );
+      });
+    }
+
+    if (categoryParam) {
+      posts = posts.filter((post) => {
+        const meta =
+          post.metadata && typeof post.metadata === "object"
+            ? (post.metadata as any)
+            : {};
+        const theme = String(
+          post.themeCategory || meta.themeCategory || ""
+        ).toLowerCase();
+        return theme === categoryParam;
+      });
+    }
+
+    if (statusParam && statusParam !== "all") {
+      posts = posts.filter((post) => {
+        const meta =
+          post.metadata && typeof post.metadata === "object"
+            ? (post.metadata as any)
+            : {};
+        const s = String(meta.status || "").toLowerCase();
+
+        if (statusParam === "published") {
+          return s === "publish";
+        }
+        if (statusParam === "draft") {
+          return s === "draft" || s === "pending";
+        }
+        if (statusParam === "flagged") {
+          const flagged =
+            meta.flagged === true ||
+            Number(meta.flagCount || meta.flaggedCount || 0) > 0;
+          return flagged;
+        }
+        return true;
+      });
+    }
+
+    if (featuredOnly) {
+      posts = posts.filter((post) => {
+        const meta =
+          post.metadata && typeof post.metadata === "object"
+            ? (post.metadata as any)
+            : {};
+        return meta.featured === true;
+      });
+    }
+
+    const total = posts.length;
+
+    const stats = {
+      published: posts.filter((post) => {
+        const meta =
+          post.metadata && typeof post.metadata === "object"
+            ? (post.metadata as any)
+            : {};
+        return String(meta.status || "").toLowerCase() === "publish";
+      }).length,
+      pending: posts.filter((post) => {
+        const meta =
+          post.metadata && typeof post.metadata === "object"
+            ? (post.metadata as any)
+            : {};
+        return String(meta.status || "").toLowerCase() === "pending";
+      }).length,
+      flagged: posts.filter((post) => {
+        const meta =
+          post.metadata && typeof post.metadata === "object"
+            ? (post.metadata as any)
+            : {};
+        return (
+          meta.flagged === true ||
+          Number(meta.flagCount || meta.flaggedCount || 0) > 0
+        );
+      }).length,
+    };
+
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const slice =
+      start < total ? posts.slice(start, end) : [];
+    const hasMore = end < total;
+
+    return json({ posts: slice, total, stats, hasMore });
+  } catch {
+    return json(
+      { error: "Failed to fetch posts" },
+      { status: 500 }
+    );
+  }
+});
+
+router.get("/api/admin/posts/pending", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json(
+      { error: "Supabase not configured" },
+      { status: 500 }
+    );
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json(
+      { error: "Admin authentication required" },
+      { status: 401 }
+    );
+  }
+
+  const currentUser = await getSupabaseCurrentUser(env, token);
+  if (!currentUser || !currentUser.isAdmin) {
+    return json(
+      { error: "Admin access required" },
+      { status: 403 }
+    );
+  }
+
+  try {
+    const posts = await fetchSupabasePosts(env);
+    const pending = posts.filter((post) => {
+      const meta =
+        post.metadata && typeof post.metadata === "object"
+          ? (post.metadata as any)
+          : {};
+      return String(meta.status || "").toLowerCase() === "pending";
+    });
+
+    const stats = {
+      pending: pending.length,
+      flagged: 0,
+      published: 0,
+    };
+
+    return json({
+      posts: pending,
+      total: pending.length,
+      stats,
+    });
+  } catch {
+    return json(
+      { error: "Failed to fetch pending posts" },
+      { status: 500 }
+    );
+  }
+});
+
+router.get("/api/admin/posts/flagged", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json(
+      { error: "Supabase not configured" },
+      { status: 500 }
+    );
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json(
+      { error: "Admin authentication required" },
+      { status: 401 }
+    );
+  }
+
+  const currentUser = await getSupabaseCurrentUser(env, token);
+  if (!currentUser || !currentUser.isAdmin) {
+    return json(
+      { error: "Admin access required" },
+      { status: 403 }
+    );
+  }
+
+  try {
+    const posts = await fetchSupabasePosts(env);
+    const flagged = posts.filter((post) => {
+      const meta =
+        post.metadata && typeof post.metadata === "object"
+          ? (post.metadata as any)
+          : {};
+      return (
+        meta.flagged === true ||
+        Number(meta.flagCount || meta.flaggedCount || 0) > 0
+      );
+    });
+
+    const stats = {
+      flagged: flagged.length,
+      pending: 0,
+      published: 0,
+    };
+
+    return json({
+      posts: flagged,
+      total: flagged.length,
+      stats,
+    });
+  } catch {
+    return json(
+      { error: "Failed to fetch flagged posts" },
+      { status: 500 }
+    );
+  }
+});
+
+router.patch(
+  "/api/admin/posts/:id/publish",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json(
+        { error: "Admin authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.split("/");
+      const idSegment =
+        segments.length >= 2
+          ? segments[segments.length - 2]
+          : "";
+      const id = parseInt(decodeURIComponent(idSegment || ""), 10);
+
+      if (!Number.isFinite(id) || id <= 0) {
+        return json(
+          { error: "Invalid post id" },
+          { status: 400 }
+        );
+      }
+
+      const updated = await adminUpdateSupabasePost(env, id, {
+        published: true,
+      });
+
+      return json(updated);
+    } catch {
+      return json(
+        { error: "Failed to publish post" },
+        { status: 500 }
+      );
+    }
+  }
+);
+
+router.patch(
+  "/api/admin/posts/:id/unpublish",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json(
+        { error: "Admin authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.split("/");
+      const idSegment =
+        segments.length >= 2
+          ? segments[segments.length - 2]
+          : "";
+      const id = parseInt(decodeURIComponent(idSegment || ""), 10);
+
+      if (!Number.isFinite(id) || id <= 0) {
+        return json(
+          { error: "Invalid post id" },
+          { status: 400 }
+        );
+      }
+
+      const updated = await adminUpdateSupabasePost(env, id, {
+        published: false,
+      });
+
+      return json(updated);
+    } catch {
+      return json(
+        { error: "Failed to unpublish post" },
+        { status: 500 }
+      );
+    }
+  }
+);
+
+router.patch(
+  "/api/admin/posts/:id/feature",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json(
+        { error: "Admin authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.split("/");
+      const idSegment =
+        segments.length >= 2
+          ? segments[segments.length - 2]
+          : "";
+      const id = parseInt(decodeURIComponent(idSegment || ""), 10);
+
+      if (!Number.isFinite(id) || id <= 0) {
+        return json(
+          { error: "Invalid post id" },
+          { status: 400 }
+        );
+      }
+
+      const updated = await adminUpdateSupabasePost(env, id, {
+        featured: true,
+      });
+
+      return json(updated);
+    } catch {
+      return json(
+        { error: "Failed to feature post" },
+        { status: 500 }
+      );
+    }
+  }
+);
+
+router.patch(
+  "/api/admin/posts/:id/unfeature",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json(
+        { error: "Admin authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.split("/");
+      const idSegment =
+        segments.length >= 2
+          ? segments[segments.length - 2]
+          : "";
+      const id = parseInt(decodeURIComponent(idSegment || ""), 10);
+
+      if (!Number.isFinite(id) || id <= 0) {
+        return json(
+          { error: "Invalid post id" },
+          { status: 400 }
+        );
+      }
+
+      const updated = await adminUpdateSupabasePost(env, id, {
+        featured: false,
+      });
+
+      return json(updated);
+    } catch {
+      return json(
+        { error: "Failed to unfeature post" },
+        { status: 500 }
+      );
+    }
+  }
+);
+
+router.patch(
+  "/api/admin/posts/:id",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json(
+        { error: "Admin authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.split("/");
+      const idSegment =
+        segments.length >= 1
+          ? segments[segments.length - 1]
+          : "";
+      const id = parseInt(decodeURIComponent(idSegment || ""), 10);
+
+      if (!Number.isFinite(id) || id <= 0) {
+        return json(
+          { error: "Invalid post id" },
+          { status: 400 }
+        );
+      }
+
+      const body =
+        (await (req as any).json?.().catch(() => ({}))) || {};
+
+      const updated = await adminUpdateSupabasePost(env, id, body);
+
+      return json(updated);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to update post";
+      const status = message === "Post not found" ? 404 : 500;
+      return json({ error: message }, { status });
+    }
+  }
+);
+
+router.delete(
+  "/api/admin/posts/:id",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json(
+        { error: "Admin authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.split("/");
+      const idSegment =
+        segments.length >= 1
+          ? segments[segments.length - 1]
+          : "";
+      const id = parseInt(decodeURIComponent(idSegment || ""), 10);
+
+      if (!Number.isFinite(id) || id <= 0) {
+        return json(
+          { error: "Invalid post id" },
+          { status: 400 }
+        );
+      }
+
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const serviceKey =
+        env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+
+      const deleteUrl = new URL(`${baseUrl}/rest/v1/posts`);
+      deleteUrl.searchParams.set("id", `eq.${id}`);
+
+      const res = await fetch(deleteUrl.toString(), {
+        method: "DELETE",
+        headers: {
+          apikey: env.SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${serviceKey}`,
+          Accept: "application/json",
+          Prefer: "return=representation",
+        },
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        return json(
+          {
+            error: `Failed to delete post: ${res.status} ${res.statusText} ${text.slice(
+              0,
+              200
+            )}`,
+          },
+          { status: 500 }
+        );
+      }
+
+      const rows = (await res.json().catch(() => [])) as any[];
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return json(
+          { error: "Post not found" },
+          { status: 404 }
+        );
+      }
+
+      const deleted = mapSupabasePostRowToPost(rows[0]);
+      return json(deleted);
+    } catch {
+      return json(
+        { error: "Failed to delete post" },
+        { status: 500 }
+      );
+    }
+  }
+);
+
+router.post(
+  "/api/admin/posts/bulk",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json(
+        { error: "Admin authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    try {
+      const body =
+        (await (req as any).json?.().catch(() => ({}))) || {};
+
+      const action = typeof body.action === "string" ? body.action : "";
+      const validActions = [
+        "publish",
+        "unpublish",
+        "delete",
+        "feature",
+        "unfeature",
+      ];
+
+      if (!validActions.includes(action)) {
+        return json(
+          { error: "Invalid action" },
+          { status: 400 }
+        );
+      }
+
+      const idsInput = Array.isArray(body.postIds)
+        ? body.postIds
+        : [];
+      const postIds = idsInput
+        .map((id: any) => Number(id))
+        .filter((n: number) => Number.isFinite(n) && n > 0);
+
+      if (!postIds.length) {
+        return json(
+          { error: "postIds array is required" },
+          { status: 400 }
+        );
+      }
+
+      const results: any[] = [];
+      let successCount = 0;
+
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const serviceKey =
+        env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+
+      for (const id of postIds) {
+        try {
+          if (action === "delete") {
+            const deleteUrl = new URL(`${baseUrl}/rest/v1/posts`);
+            deleteUrl.searchParams.set("id", `eq.${id}`);
+
+            const res = await fetch(deleteUrl.toString(), {
+              method: "DELETE",
+              headers: {
+                apikey: env.SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${serviceKey}`,
+                Accept: "application/json",
+                Prefer: "return=representation",
+              },
+            });
+
+            if (!res.ok) {
+              const text = await res.text().catch(() => "");
+              results.push({
+                id,
+                error: `Failed to delete post: ${res.status} ${res.statusText} ${text.slice(
+                  0,
+                  200
+                )}`,
+              });
+              continue;
+            }
+
+            const rows = (await res.json().catch(() => [])) as any[];
+            if (!Array.isArray(rows) || rows.length === 0) {
+              results.push({ id, error: "Post not found" });
+              continue;
+            }
+
+            const deleted = mapSupabasePostRowToPost(rows[0]);
+            results.push({ id, result: deleted });
+            successCount += 1;
+          } else {
+            let payload: any;
+            if (action === "publish") {
+              payload = { published: true };
+            } else if (action === "unpublish") {
+              payload = { published: false };
+            } else if (action === "feature") {
+              payload = { featured: true };
+            } else {
+              payload = { featured: false };
+            }
+
+            const updated = await adminUpdateSupabasePost(env, id, payload);
+            results.push({ id, result: updated });
+            successCount += 1;
+          }
+        } catch (e) {
+          results.push({
+            id,
+            error:
+              e instanceof Error ? e.message : "Operation failed",
+          });
+        }
+      }
+
+      return json({
+        success: true,
+        count: successCount,
+        results,
+      });
+    } catch {
+      return json(
+        { error: "Failed to process bulk action" },
+        { status: 500 }
+      );
+    }
+  }
+);
+
 // WORDPRESS POSTS PROXY (avoids browser CORS and matches Express shape)
 router.get("/api/wordpress/posts", async (req: Request, env: Env) => {
   try {
@@ -4893,6 +5692,172 @@ async function fetchSupabasePosts(env: Env): Promise<any[]> {
   }
 
   return rows.map(mapSupabasePostRowToPost);
+}
+
+async function fetchSupabasePostRowById(
+  env: Env,
+  id: number
+): Promise<any | null> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return null;
+  }
+
+  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+
+  const url = new URL(`${baseUrl}/rest/v1/posts`);
+  url.searchParams.set(
+    "select",
+    "id,title,content,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at"
+  );
+  url.searchParams.set("id", `eq.${id}`);
+  url.searchParams.set("limit", "1");
+
+  const res = await fetch(url.toString(), {
+    headers: {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    return null;
+  }
+
+  const rows = (await res.json().catch(() => [])) as any[];
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return null;
+  }
+
+  return rows[0];
+}
+
+async function adminUpdateSupabasePost(
+  env: Env,
+  id: number,
+  body: any
+): Promise<any> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    throw new Error("Supabase not configured");
+  }
+
+  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+
+  const hasOwn = Object.prototype.hasOwnProperty;
+
+  const hasMetadataPatch =
+    body &&
+    typeof body.metadata === "object" &&
+    body.metadata !== null &&
+    !Array.isArray(body.metadata);
+  const hasFeaturedPatch = body && hasOwn.call(body, "featured");
+  const hasPublishedPatch = body && hasOwn.call(body, "published");
+  const needsMetadataUpdate =
+    hasMetadataPatch || hasFeaturedPatch || hasPublishedPatch;
+
+  let existingMeta: any = {};
+  if (needsMetadataUpdate) {
+    const row = await fetchSupabasePostRowById(env, id);
+    if (!row) {
+      throw new Error("Post not found");
+    }
+    const meta = row.metadata;
+    existingMeta =
+      meta && typeof meta === "object" && !Array.isArray(meta) ? meta : {};
+  }
+
+  const patch: any = {};
+
+  if (body && typeof body.title === "string") {
+    patch.title = body.title;
+  }
+  if (body && typeof body.content === "string") {
+    patch.content = body.content;
+  }
+  if (body && typeof body.excerpt === "string") {
+    patch.excerpt = body.excerpt;
+  }
+  if (body && typeof body.isSecret === "boolean") {
+    patch.is_secret = body.isSecret;
+  }
+  if (body && typeof body.matureContent === "boolean") {
+    patch.mature_content = body.matureContent;
+  }
+  if (body && typeof body.themeCategory === "string") {
+    patch.theme_category = body.themeCategory;
+  }
+  if (
+    body &&
+    typeof body.readingTimeMinutes === "number" &&
+    Number.isFinite(body.readingTimeMinutes)
+  ) {
+    patch.reading_time_minutes = Math.max(
+      1,
+      Math.round(body.readingTimeMinutes)
+    );
+  }
+
+  if (needsMetadataUpdate) {
+    let meta = { ...existingMeta };
+
+    if (hasMetadataPatch) {
+      meta = { ...meta, ...body.metadata };
+    }
+
+    if (hasFeaturedPatch) {
+      meta.featured = !!body.featured;
+    }
+
+    if (hasPublishedPatch) {
+      meta.status = body.published ? "publish" : "pending";
+    }
+
+    patch.metadata = meta;
+
+    const metaTheme =
+      meta && typeof meta === "object" ? (meta as any).themeCategory : null;
+    if (!patch.theme_category && typeof metaTheme === "string" && metaTheme) {
+      patch.theme_category = metaTheme;
+    }
+  }
+
+  if (Object.keys(patch).length === 0) {
+    throw new Error("No valid fields to update");
+  }
+
+  const updateUrl = new URL(`${baseUrl}/rest/v1/posts`);
+  updateUrl.searchParams.set("id", `eq.${id}`);
+
+  const res = await fetch(updateUrl.toString(), {
+    method: "PATCH",
+    headers: {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(patch),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(
+      `Failed to update post: ${res.status} ${res.statusText} ${text.slice(
+        0,
+        200
+      )}`
+    );
+  }
+
+  const rows = (await res.json().catch(() => [])) as any[];
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error("Post not found");
+  }
+
+  return mapSupabasePostRowToPost(rows[0]);
 }
 
 router.get("/api/posts", async (req: Request, env: Env) => {
@@ -7400,7 +8365,525 @@ router.get(
 );
 
 // USER NOTIFICATIONS: Supabase-backed, with legacy fallback
-router.get("/api/notifications", async (req: Request, env: Env) => {
+
+// User privacy settings (Supabase-backed) - replaces Express /api/user/privacy-settings
+router.get("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Supabase not configured" }, { status: 500 });
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const userId = await getSupabaseUserIdFromJwt(env, token);
+  if (!Number.isFinite(userId || NaN)) {
+    return json({ error: "User not authenticated" }, { status: 401 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record&lt;string, string&gt; = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    };
+
+    const listUrl = new URL(`${baseUrl}/rest/v1/user_privacy_settings`);
+    listUrl.searchParams.set(
+      "select",
+      "user_id,profile_visible,share_reading_history,anonymous_commenting,two_factor_auth_enabled,login_notifications,updated_at",
+    );
+    listUrl.searchParams.set("user_id", `eq.${userId}`);
+    listUrl.searchParams.set("limit", "1");
+
+    const res = await fetch(listUrl.toString(), { headers });
+    if (!res.ok) {
+      return json(
+        { error: "Failed to load privacy settings" },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await res.json().catch(() =&gt; [])) as any[];
+    let row = Array.isArray(rows) &amp;&amp; rows.length &gt; 0 ? rows[0] : null;
+
+    if (!row) {
+      const defaults = {
+        user_id: Number(userId),
+        profile_visible: true,
+        share_reading_history: false,
+        anonymous_commenting: false,
+        two_factor_auth_enabled: false,
+        login_notifications: true,
+      };
+      const insertRes = await fetch(
+        `${baseUrl}/rest/v1/user_privacy_settings`,
+        {
+          method: "POST",
+          headers: { ...headers, Prefer: "return=representation" },
+          body: JSON.stringify(defaults),
+        },
+      );
+      if (!insertRes.ok) {
+        return json(
+          { error: "Failed to create privacy settings" },
+          { status: 500 },
+        );
+      }
+      const inserted = (await insertRes.json().catch(() =&gt; [])) as any[];
+      row =
+        Array.isArray(inserted) &amp;&amp; inserted.length &gt; 0
+          ? inserted[0]
+          : defaults;
+    }
+
+    const payload = {
+      profileVisible: row.profile_visible === true,
+      shareReadingHistory: row.share_reading_history === true,
+      anonymousCommenting: row.anonymous_commenting === true,
+      twoFactorAuthEnabled: row.two_factor_auth_enabled === true,
+      loginNotifications: row.login_notifications !== false,
+    };
+
+    return json(payload);
+  } catch {
+    return json(
+      { error: "Failed to load privacy settings" },
+      { status: 500 },
+    );
+  }
+});
+
+router.patch("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Supabase not configured" }, { status: 500 });
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const userId = await getSupabaseUserIdFromJwt(env, token);
+  if (!Number.isFinite(userId || NaN)) {
+    return json({ error: "User not authenticated" }, { status: 401 });
+  }
+
+  let body: any;
+  try {
+    body = (await (req as any).json?.().catch(() =&gt; ({}))) || {};
+  } catch {
+    body = {};
+  }
+
+  const patch: Record&lt;string, any&gt; = {};
+
+  if (Object.prototype.hasOwnProperty.call(body, "profileVisible")) {
+    patch.profile_visible = !!body.profileVisible;
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "shareReadingHistory")) {
+    patch.share_reading_history = !!body.shareReadingHistory;
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "anonymousCommenting")) {
+    patch.anonymous_commenting = !!body.anonymousCommenting;
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "twoFactorAuthEnabled")) {
+    patch.two_factor_auth_enabled = !!body.twoFactorAuthEnabled;
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "loginNotifications")) {
+    patch.login_notifications = !!body.loginNotifications;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return json(
+      { error: "No valid fields in request" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record&lt;string, string&gt; = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    };
+
+    // Check for existing row
+    const listUrl = new URL(`${baseUrl}/rest/v1/user_privacy_settings`);
+    listUrl.searchParams.set(
+      "select",
+      "user_id,profile_visible,share_reading_history,anonymous_commenting,two_factor_auth_enabled,login_notifications,updated_at",
+    );
+    listUrl.searchParams.set("user_id", `eq.${userId}`);
+    listUrl.searchParams.set("limit", "1");
+
+    const res = await fetch(listUrl.toString(), { headers });
+    if (!res.ok) {
+      return json(
+        { error: "Failed to update privacy settings" },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await res.json().catch(() =&gt; [])) as any[];
+    const existing = Array.isArray(rows) &amp;&amp; rows.length &gt; 0 ? rows[0] : null;
+
+    let row: any;
+
+    if (existing) {
+      const updateUrl = new URL(`${baseUrl}/rest/v1/user_privacy_settings`);
+      updateUrl.searchParams.set("user_id", `eq.${userId}`);
+
+      const updateRes = await fetch(updateUrl.toString(), {
+        method: "PATCH",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify(patch),
+      });
+
+      if (!updateRes.ok) {
+        return json(
+          { error: "Failed to update privacy settings" },
+          { status: 500 },
+        );
+      }
+
+      const updatedRows = (await updateRes.json().catch(() =&gt; [])) as any[];
+      row =
+        Array.isArray(updatedRows) &amp;&amp; updatedRows.length &gt; 0
+          ? updatedRows[0]
+          : existing;
+    } else {
+      const defaults = {
+        user_id: Number(userId),
+        profile_visible: true,
+        share_reading_history: false,
+        anonymous_commenting: false,
+        two_factor_auth_enabled: false,
+        login_notifications: true,
+      };
+      const insertBody = { ...defaults, ...patch };
+
+      const insertRes = await fetch(
+        `${baseUrl}/rest/v1/user_privacy_settings`,
+        {
+          method: "POST",
+          headers: { ...headers, Prefer: "return=representation" },
+          body: JSON.stringify(insertBody),
+        },
+      );
+
+      if (!insertRes.ok) {
+        return json(
+          { error: "Failed to save privacy settings" },
+          { status: 500 },
+        );
+      }
+
+      const inserted = (await insertRes.json().catch(() =&gt; [])) as any[];
+      row =
+        Array.isArray(inserted) &amp;&amp; inserted.length &gt; 0
+          ? inserted[0]
+          : insertBody;
+    }
+
+    const payload = {
+      profileVisible: row.profile_visible === true,
+      shareReadingHistory: row.share_reading_history === true,
+      anonymousCommenting: row.anonymous_commenting === true,
+      twoFactorAuthEnabled: row.two_factor_auth_enabled === true,
+      loginNotifications: row.login_notifications !== false,
+    };
+
+    return json(payload);
+  } catch {
+    return json(
+      { error: "Failed to save privacy settings" },
+      { status: 500 },
+    );
+  }
+});
+
+// User notification preferences (Supabase-backed) - replaces Express /api/user/notification-preferences
+router.get(
+  "/api/user/notification-preferences",
+  async (req: Request, env: Env) =&gt; {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json({ error: "Supabase not configured" }, { status: 500 });
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!Number.isFinite(userId || NaN)) {
+      return json({ error: "User not authenticated" }, { status: 401 });
+    }
+
+    try {
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const serviceKey =
+        env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+      const headers: Record&lt;string, string&gt; = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      };
+
+      const listUrl = new URL(
+        `${baseUrl}/rest/v1/user_notification_preferences`,
+      );
+      listUrl.searchParams.set(
+        "select",
+        "user_id,story_updates,community_activity,security_alerts,reading_reminders,recommendations,preferred_time,timezone,updated_at",
+      );
+      listUrl.searchParams.set("user_id", `eq.${userId}`);
+      listUrl.searchParams.set("limit", "1");
+
+      const res = await fetch(listUrl.toString(), { headers });
+      if (!res.ok) {
+        return json(
+          { error: "Failed to load notification preferences" },
+          { status: 500 },
+        );
+      }
+
+      const rows = (await res.json().catch(() =&gt; [])) as any[];
+      let row = Array.isArray(rows) &amp;&amp; rows.length &gt; 0 ? rows[0] : null;
+
+      if (!row) {
+        const defaults = {
+          user_id: Number(userId),
+          story_updates: true,
+          community_activity: true,
+          security_alerts: true,
+          reading_reminders: false,
+          recommendations: true,
+          preferred_time: "evening",
+          timezone: "pst",
+        };
+        const insertRes = await fetch(
+          `${baseUrl}/rest/v1/user_notification_preferences`,
+          {
+            method: "POST",
+            headers: { ...headers, Prefer: "return=representation" },
+            body: JSON.stringify(defaults),
+          },
+        );
+        if (!insertRes.ok) {
+          return json(
+            { error: "Failed to create notification preferences" },
+            { status: 500 },
+          );
+        }
+        const inserted = (await insertRes.json().catch(() =&gt; [])) as any[];
+        row =
+          Array.isArray(inserted) &amp;&amp; inserted.length &gt; 0
+            ? inserted[0]
+            : defaults;
+      }
+
+      const payload = {
+        storyUpdates: row.story_updates !== false,
+        communityActivity: row.community_activity !== false,
+        securityAlerts: row.security_alerts !== false,
+        readingReminders: row.reading_reminders === true,
+        recommendations: row.recommendations !== false,
+        preferredTime: row.preferred_time || "evening",
+        timezone: row.timezone || "pst",
+      };
+
+      return json(payload);
+    } catch {
+      return json(
+        { error: "Failed to load notification preferences" },
+        { status: 500 },
+      );
+    }
+  },
+);
+
+router.patch(
+  "/api/user/notification-preferences",
+  async (req: Request, env: Env) =&gt; {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json({ error: "Supabase not configured" }, { status: 500 });
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!Number.isFinite(userId || NaN)) {
+      return json({ error: "User not authenticated" }, { status: 401 });
+    }
+
+    let body: any;
+    try {
+      body = (await (req as any).json?.().catch(() =&gt; ({}))) || {};
+    } catch {
+      body = {};
+    }
+
+    const patch: Record&lt;string, any&gt; = {};
+
+    const coerceBool = (value: any) =&gt; !!value;
+
+    const applyBool = (keys: string[], column: string) =&gt; {
+      for (const key of keys) {
+        if (Object.prototype.hasOwnProperty.call(body, key)) {
+          patch[column] = coerceBool((body as any)[key]);
+          break;
+        }
+      }
+    };
+
+    applyBool(["storyUpdates", "story_updates"], "story_updates");
+    applyBool(["communityActivity", "community_activity"], "community_activity");
+    applyBool(["securityAlerts", "security_alerts"], "security_alerts");
+    applyBool(["readingReminders", "reading_reminders"], "reading_reminders");
+    applyBool(["recommendations"], "recommendations");
+
+    if (Object.prototype.hasOwnProperty.call(body, "preferredTime")) {
+      patch.preferred_time = String(body.preferredTime);
+    }
+    if (Object.prototype.hasOwnProperty.call(body, "timezone")) {
+      patch.timezone = String(body.timezone);
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return json(
+        { error: "No valid fields in request" },
+        { status: 400 },
+      );
+    }
+
+    try {
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const serviceKey =
+        env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+      const headers: Record&lt;string, string&gt; = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      };
+
+      const listUrl = new URL(
+        `${baseUrl}/rest/v1/user_notification_preferences`,
+      );
+      listUrl.searchParams.set(
+        "select",
+        "user_id,story_updates,community_activity,security_alerts,reading_reminders,recommendations,preferred_time,timezone,updated_at",
+      );
+      listUrl.searchParams.set("user_id", `eq.${userId}`);
+      listUrl.searchParams.set("limit", "1");
+
+      const res = await fetch(listUrl.toString(), { headers });
+      if (!res.ok) {
+        return json(
+          { error: "Failed to update notification preferences" },
+          { status: 500 },
+        );
+      }
+
+      const rows = (await res.json().catch(() =&gt; [])) as any[];
+      const existing = Array.isArray(rows) &amp;&amp; rows.length &gt; 0 ? rows[0] : null;
+
+      let row: any;
+
+      if (existing) {
+        const updateUrl = new URL(
+          `${baseUrl}/rest/v1/user_notification_preferences`,
+        );
+        updateUrl.searchParams.set("user_id", `eq.${userId}`);
+
+        const updateRes = await fetch(updateUrl.toString(), {
+          method: "PATCH",
+          headers: { ...headers, Prefer: "return=representation" },
+          body: JSON.stringify(patch),
+        });
+
+        if (!updateRes.ok) {
+          return json(
+            { error: "Failed to update notification preferences" },
+            { status: 500 },
+          );
+        }
+
+        const updatedRows = (await updateRes.json().catch(() =&gt; [])) as any[];
+        row =
+          Array.isArray(updatedRows) &amp;&amp; updatedRows.length &gt; 0
+            ? updatedRows[0]
+            : existing;
+      } else {
+        const defaults = {
+          user_id: Number(userId),
+          story_updates: true,
+          community_activity: true,
+          security_alerts: true,
+          reading_reminders: false,
+          recommendations: true,
+          preferred_time: "evening",
+          timezone: "pst",
+        };
+        const insertBody = { ...defaults, ...patch };
+
+        const insertRes = await fetch(
+          `${baseUrl}/rest/v1/user_notification_preferences`,
+          {
+            method: "POST",
+            headers: { ...headers, Prefer: "return=representation" },
+            body: JSON.stringify(insertBody),
+          },
+        );
+
+        if (!insertRes.ok) {
+          return json(
+            { error: "Failed to save notification preferences" },
+            { status: 500 },
+          );
+        }
+
+        const inserted = (await insertRes.json().catch(() =&gt; [])) as any[];
+        row =
+          Array.isArray(inserted) &amp;&amp; inserted.length &gt; 0
+            ? inserted[0]
+            : insertBody;
+      }
+
+      const payload = {
+        storyUpdates: row.story_updates !== false,
+        communityActivity: row.community_activity !== false,
+        securityAlerts: row.security_alerts !== false,
+        readingReminders: row.reading_reminders === true,
+        recommendations: row.recommendations !== false,
+        preferredTime: row.preferred_time || "evening",
+        timezone: row.timezone || "pst",
+      };
+
+      return json(payload);
+    } catch {
+      return json(
+        { error: "Failed to save notification preferences" },
+        { status: 500 },
+      );
+    }
+  },
+);
+
+router.get("/api/notifications", async (req: Request, env: Env) =&gt; {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return proxyToBackend(req, env);
   }
@@ -7439,10 +8922,10 @@ router.get("/api/notifications", async (req: Request, env: Env) => {
       );
     }
 
-    const rows = (await resp.json().catch(() => [])) as any[];
-    const notifications = rows.map((n) => {
+    const rows = (await resp.json().catch(() =&gt; [])) as any[];
+    const notifications = rows.map((n) =&gt; {
       const meta =
-        n && typeof n.metadata === "object" && n.metadata !== null ? n.metadata : {};
+        n &amp;&amp; typeof n.metadata === "object" &amp;&amp; n.metadata !== null ? n.metadata : {};
       return {
         id: n.id,
         type: String(n.type || "info"),
