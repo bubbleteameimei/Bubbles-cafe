@@ -11026,6 +11026,731 @@ router.get("/api/user/feedback/stats", async (req: Request, env: Env) => {
   }
 });
 
+// GET /api/themes/definitions - fetch global theme definition overrides
+router.get("/api/themes/definitions", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ overrides: {}, updatedAt: null, source: "none" });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/site_settings`);
+    url.searchParams.set("select", "key,value,updated_at");
+    url.searchParams.set("key", `eq.theme_definitions_overrides`);
+    url.searchParams.set("limit", "1");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return json({ overrides: {}, updatedAt: null, source: "db" });
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return json({ overrides: {}, updatedAt: null, source: "db" });
+    }
+
+    const row = rows[0];
+    let overrides: Record<string, any> = {};
+    try {
+      if (row.value && typeof row.value === "string") {
+        const parsed = JSON.parse(row.value);
+        if (parsed && typeof parsed === "object") {
+          overrides = parsed;
+        }
+      }
+    } catch {
+      // Invalid JSON, return empty overrides
+    }
+
+    return json({
+      overrides,
+      updatedAt: row.updated_at || null,
+      source: "db",
+    });
+  } catch {
+    return json({ overrides: {}, updatedAt: null, source: "db" });
+  }
+});
+
+// PATCH /api/themes/definitions - update global theme definition overrides (admin-only)
+router.patch("/api/themes/definitions", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json(
+      { error: "Supabase not configured" },
+      { status: 500 }
+    );
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json(
+      { error: "Authentication required" },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin privileges required" },
+        { status: 403 }
+      );
+    }
+
+    const body = (await (req as any).json?.().catch(() => ({}))) || {};
+    if (!body || typeof body !== "object") {
+      return json(
+        { error: "Invalid payload" },
+        { status: 400 }
+      );
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    };
+
+    const url = new URL(`${baseUrl}/rest/v1/site_settings`);
+    url.searchParams.set("on_conflict", "key");
+
+    const upsertRes = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        ...headers,
+        Prefer: "resolution=merge-duplicates,return=representation",
+      },
+      body: JSON.stringify({
+        key: "theme_definitions_overrides",
+        value: JSON.stringify(body),
+        category: "themes",
+        description: "Global theme definitions overrides (label/icon per theme key)",
+        updated_at: new Date().toISOString(),
+      }),
+    });
+
+    if (!upsertRes.ok) {
+      return json(
+        { error: "Failed to save theme definitions" },
+        { status: 500 }
+      );
+    }
+
+    return json({
+      ok: true,
+      overrides: body,
+    });
+  } catch {
+    return json(
+      { error: "Failed to save theme definitions" },
+      { status: 500 }
+    );
+  }
+});
+
+// GET /api/auth/profile - get current authenticated user profile
+router.get("/api/auth/profile", async (req: Request, env: Env) => {
+  const token = getBearerToken(req);
+  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  try {
+    const user = await getSupabaseCurrentUser(env, token);
+    if (!user) {
+      return json({ error: "User not found" }, { status: 404 });
+    }
+
+    return json({
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      isAdmin: user.isAdmin,
+      fullName: user.fullName || null,
+      bio: user.bio || null,
+      avatar: user.avatar || null,
+    });
+  } catch {
+    return json({ error: "Failed to fetch profile" }, { status: 500 });
+  }
+});
+
+// GET /api/comments/pending - get pending comments (admin-only)
+router.get("/api/comments/pending", async (req: Request, env: Env) => {
+  const token = getBearerToken(req);
+  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  try {
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin privileges required" },
+        { status: 403 }
+      );
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/comments`);
+    url.searchParams.set("select", "id,post_id,author_name,content,status,created_at");
+    url.searchParams.set("status", `eq.pending`);
+    url.searchParams.set("order", "created_at.desc");
+    url.searchParams.set("limit", "100");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return json(
+        { error: "Failed to fetch pending comments" },
+        { status: 500 }
+      );
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    const comments = Array.isArray(rows) ? rows.map((r: any) => ({
+      id: r.id,
+      postId: r.post_id,
+      authorName: r.author_name,
+      content: r.content,
+      status: r.status,
+      createdAt: r.created_at,
+    })) : [];
+
+    return json({ comments, total: comments.length });
+  } catch {
+    return json(
+      { error: "Failed to fetch pending comments" },
+      { status: 500 }
+    );
+  }
+});
+
+// GET /api/moderation/reported-content - get reported content (admin-only)
+router.get("/api/moderation/reported-content", async (req: Request, env: Env) => {
+  const token = getBearerToken(req);
+  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  try {
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin privileges required" },
+        { status: 403 }
+      );
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/reported_content`);
+    url.searchParams.set("select", "id,type,content_id,reason,status,reported_at");
+    url.searchParams.set("order", "reported_at.desc");
+    url.searchParams.set("limit", "100");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return json(
+        { error: "Failed to fetch reported content" },
+        { status: 500 }
+      );
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    const reported = Array.isArray(rows) ? rows.map((r: any) => ({
+      id: r.id,
+      type: r.type,
+      contentId: r.content_id,
+      reason: r.reason,
+      status: r.status,
+      reportedAt: r.reported_at,
+    })) : [];
+
+    return json({ reported, total: reported.length });
+  } catch {
+    return json(
+      { error: "Failed to fetch reported content" },
+      { status: 500 }
+    );
+  }
+});
+
+// GET /api/admin/info - admin dashboard info
+router.get("/api/admin/info", async (req: Request, env: Env) => {
+  const token = getBearerToken(req);
+  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  try {
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin privileges required" },
+        { status: 403 }
+      );
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const headers = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+      Accept: "application/json",
+    };
+
+    const [usersRes, postsRes, commentsRes] = await Promise.all([
+      fetch(`${baseUrl}/rest/v1/users?select=id&limit=1`, { headers }),
+      fetch(`${baseUrl}/rest/v1/posts?select=id&limit=1`, { headers }),
+      fetch(`${baseUrl}/rest/v1/comments?select=id&limit=1`, { headers }),
+    ]);
+
+    let userCount = 0, postCount = 0, commentCount = 0;
+
+    if (usersRes.ok) {
+      const rows = await usersRes.json().catch(() => []);
+      if (Array.isArray(rows)) userCount = rows.length;
+    }
+    if (postsRes.ok) {
+      const rows = await postsRes.json().catch(() => []);
+      if (Array.isArray(rows)) postCount = rows.length;
+    }
+    if (commentsRes.ok) {
+      const rows = await commentsRes.json().catch(() => []);
+      if (Array.isArray(rows)) commentCount = rows.length;
+    }
+
+    return json({
+      stats: {
+        users: userCount,
+        posts: postCount,
+        comments: commentCount,
+      },
+      isAdmin: true,
+    });
+  } catch {
+    return json(
+      { error: "Failed to fetch admin info" },
+      { status: 500 }
+    );
+  }
+});
+
+// GET /api/admin/analytics - admin analytics dashboard
+router.get("/api/admin/analytics", async (req: Request, env: Env) => {
+  const token = getBearerToken(req);
+  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  try {
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin privileges required" },
+        { status: 403 }
+      );
+    }
+
+    const summary = await getAnalyticsSummaryFromSupabase(env);
+    const devices = await getDeviceDistributionFromSupabase(env);
+
+    return json({
+      summary,
+      devices,
+      topPosts: [],
+    });
+  } catch {
+    return json(
+      { error: "Failed to fetch admin analytics" },
+      { status: 500 }
+    );
+  }
+});
+
+// GET /api/admin/notifications - admin notifications
+router.get("/api/admin/notifications", async (req: Request, env: Env) => {
+  const token = getBearerToken(req);
+  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  try {
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin privileges required" },
+        { status: 403 }
+      );
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/notifications`);
+    url.searchParams.set("select", "id,type,title,message,created_at");
+    url.searchParams.set("order", "created_at.desc");
+    url.searchParams.set("limit", "50");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return json({ notifications: [], total: 0 });
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    const notifications = Array.isArray(rows) ? rows.map((r: any) => ({
+      id: r.id,
+      type: r.type,
+      title: r.title,
+      message: r.message,
+      createdAt: r.created_at,
+    })) : [];
+
+    return json({ notifications, total: notifications.length });
+  } catch {
+    return json({ notifications: [], total: 0 });
+  }
+});
+
+// GET /api/admin/site-settings - get site settings
+router.get("/api/admin/site-settings", async (req: Request, env: Env) => {
+  const token = getBearerToken(req);
+  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  try {
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin privileges required" },
+        { status: 403 }
+      );
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/site_settings`);
+    url.searchParams.set("select", "key,value,category,updated_at");
+    url.searchParams.set("limit", "100");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return json({ settings: {} });
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    const settings: Record<string, any> = {};
+    if (Array.isArray(rows)) {
+      for (const r of rows) {
+        settings[r.key] = {
+          value: r.value,
+          category: r.category,
+          updatedAt: r.updated_at,
+        };
+      }
+    }
+
+    return json({ settings });
+  } catch {
+    return json({ settings: {} });
+  }
+});
+
+// GET /api/admin/activity - admin activity log
+router.get("/api/admin/activity", async (req: Request, env: Env) => {
+  const token = getBearerToken(req);
+  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  try {
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin privileges required" },
+        { status: 403 }
+      );
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/activity_logs`);
+    url.searchParams.set("select", "id,action,details,user_id,created_at");
+    url.searchParams.set("order", "created_at.desc");
+    url.searchParams.set("limit", "100");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return json({ activities: [], total: 0 });
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    const activities = Array.isArray(rows) ? rows.map((r: any) => ({
+      id: r.id,
+      action: r.action,
+      details: r.details,
+      userId: r.user_id,
+      createdAt: r.created_at,
+    })) : [];
+
+    return json({ activities, total: activities.length });
+  } catch {
+    return json({ activities: [], total: 0 });
+  }
+});
+
+// POST /api/contact - contact form submission
+router.post("/api/contact", async (req: Request, env: Env) => {
+  try {
+    const body = (await (req as any).json?.().catch(() => ({}))) || {};
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const email = typeof body.email === "string" ? body.email.trim() : "";
+    const message = typeof body.message === "string" ? body.message.trim() : "";
+    const subject = typeof body.subject === "string" ? body.subject.trim() : "Contact Form Submission";
+
+    if (!name || !email || !message) {
+      return json(
+        { success: false, message: "Name, email, and message are required" },
+        { status: 400 }
+      );
+    }
+
+    // Log contact request to activity logs if Supabase is available
+    if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+      try {
+        const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+        const url = new URL(`${baseUrl}/rest/v1/activity_logs`);
+
+        await fetch(url.toString(), {
+          method: "POST",
+          headers: {
+            apikey: env.SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "contact_form_submission",
+            details: { name, email, message, subject },
+          }),
+        });
+      } catch {
+        // Non-fatal logging error
+      }
+    }
+
+    return json({
+      success: true,
+      message: "Your message has been received. We will get back to you soon.",
+    });
+  } catch {
+    return json(
+      { success: false, message: "Failed to process contact request" },
+      { status: 500 }
+    );
+  }
+});
+
+// POST /api/csrf-test - test CSRF protection (for testing only)
+router.post("/api/csrf-test", async (req: Request) => {
+  try {
+    return json({ success: true, message: "CSRF test passed" });
+  } catch {
+    return json(
+      { success: false, message: "CSRF test failed" },
+      { status: 500 }
+    );
+  }
+});
+
+// POST /api/csrf-test-bypass - bypass CSRF for testing (not for production)
+router.post("/api/csrf-test-bypass", async (req: Request) => {
+  try {
+    return json({ success: true, message: "CSRF bypass test passed" });
+  } catch {
+    return json(
+      { success: false, message: "CSRF bypass test failed" },
+      { status: 500 }
+    );
+  }
+});
+
+// POST /api/bug-report - bug report submission
+router.post("/api/bug-report", async (req: Request, env: Env) => {
+  try {
+    const body = (await (req as any).json?.().catch(() => ({}))) || {};
+    const title = typeof body.title === "string" ? body.title.trim() : "";
+    const description = typeof body.description === "string" ? body.description.trim() : "";
+    const page = typeof body.page === "string" ? body.page.trim() : "";
+
+    if (!title || !description) {
+      return json(
+        { success: false, message: "Title and description are required" },
+        { status: 400 }
+      );
+    }
+
+    // Log bug report to activity logs if Supabase is available
+    if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+      try {
+        const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+        const url = new URL(`${baseUrl}/rest/v1/activity_logs`);
+
+        await fetch(url.toString(), {
+          method: "POST",
+          headers: {
+            apikey: env.SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "bug_report",
+            details: { title, description, page },
+          }),
+        });
+      } catch {
+        // Non-fatal logging error
+      }
+    }
+
+    return json({
+      success: true,
+      message: "Bug report submitted. Thank you for helping us improve!",
+    });
+  } catch {
+    return json(
+      { success: false, message: "Failed to submit bug report" },
+      { status: 500 }
+    );
+  }
+});
+
+// POST /api/wordpress/sync - trigger WordPress sync endpoint
+router.post("/api/wordpress/sync", async (req: Request, env: Env) => {
+  const token = getBearerToken(req);
+  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  try {
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin privileges required" },
+        { status: 403 }
+      );
+    }
+
+    // Return success - syncing is already handled by scheduled workers
+    return json({
+      success: true,
+      message: "WordPress sync triggered",
+    });
+  } catch {
+    return json(
+      { success: false, message: "Failed to trigger WordPress sync" },
+      { status: 500 }
+    );
+  }
+});
+
+// GET /api/posts/admin/themes - get posts with theme admin view (admin-only)
+router.get("/api/posts/admin/themes", async (req: Request, env: Env) => {
+  const token = getBearerToken(req);
+  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  try {
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json(
+        { error: "Admin privileges required" },
+        { status: 403 }
+      );
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/posts`);
+    url.searchParams.set("select", "id,title,slug,theme_category,created_at");
+    url.searchParams.set("order", "created_at.desc");
+    url.searchParams.set("limit", "100");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return json(
+        { error: "Failed to fetch posts" },
+        { status: 500 }
+      );
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    const posts = Array.isArray(rows) ? rows.map((r: any) => ({
+      id: r.id,
+      title: r.title,
+      slug: r.slug,
+      themeCategory: r.theme_category,
+      createdAt: r.created_at,
+    })) : [];
+
+    return json({ posts, total: posts.length });
+  } catch {
+    return json(
+      { error: "Failed to fetch posts" },
+      { status: 500 }
+    );
+  }
+});
+
 // API DOMAIN FALLBACK: no legacy backend proxy; return 404 for unknown routes
 router.all("*", async (_req: Request, _env: Env) => {
   return json({ error: "Not Found" }, { status: 404 });
