@@ -23,7 +23,6 @@ export async function syncThemeDefinitionOverridesFromServer(): Promise<
   Record<string, ThemeDefinitionOverride>
 > {
   try {
-    const { getApiPath } = await import('./asset-path');
     const res = await fetch(getApiPath('/api/themes/definitions'), { credentials: 'include' });
     if (!res.ok) throw new Error('GET /api/themes/definitions failed');
     const data = await res.json().catch(() => ({ overrides: {} }));
