@@ -806,6 +806,10 @@ router.get('/health', async () => {
   return json({ status: 'ok' });
 });
 
+router.get('/', async () => {
+  return json({ error: 'Not Found' }, { status: 404 });
+});
+
 // CSRF TOKEN: compatibility endpoint for legacy clients
 // Note: Worker APIs are JWT-based and do not require CSRF protection.
 // This endpoint returns a stateless token so clients expecting /api/csrf-token
