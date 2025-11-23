@@ -42,10 +42,11 @@ export async function syncThemeDefinitionOverridesFromServer(): Promise<Record<s
 export async function saveThemeDefinitionOverrides(map: Record<string, ThemeDefinitionOverride>): Promise<void> {
   // Try server first
   try {
+    const { getApiPath } = await import('./asset-path');
     const csrf = (typeof document !== 'undefined')
       ? document.cookie.replace(/(?:(?:^|.*;\s*)XSRF-TOKEN\s*=\s*([^;]*).*$)|^.*$/, "$1")
       : '';
-    const res = await fetch('/api/themes/definitions', {
+    const res = await fetch(getApiPath('/api/themes/definitions'), {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRF-Token': csrf } : {}) },
