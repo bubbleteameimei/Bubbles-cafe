@@ -44,7 +44,6 @@ interface Env {
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_REDIRECT_URI?: string;
 
-  BACKEND_BASE_URL: string;
   FRONTEND_URL: string;
   NODE_ENV: string;
   ENABLE_WORDPRESS_SCHEDULER: string;
