@@ -115,6 +115,9 @@ export default function StoriesIndexContent() {
 
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [pageSize, setPageSize] = useState<number>(6);
+  const [isManualLoadingMore, setIsManualLoadingMore] = useState(false);
+  const cardsGridRef = React.useRef&lt;HTMLDivElement | null&gt;(null);isibleCount, setVisibleCount] = useState<number>(6);
+  const [pageSize, setPageSize] = useState<number>(6);
   const cardsGridRef = React.useRef<HTMLDivElement | null>(null);
   const breakpointRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null);
   const fetchedReactionIdsRef = React.useRef<Set<number>>(new Set());
@@ -2239,8 +2242,10 @@ export default function StoriesIndexContent() {
               <div className="mt-4 flex justify-center">
                 <Button
                   className="h-10 px-5 rounded-lg border border-border/60 shadow-sm"
-                  disabled={isFetchingNextPage}
+                  disabled={isManualLoadingMore}
                   onClick={async () => {
+                    if (isManualLoadingMore) return;
+                    setIsManualLoadingMore(true);
                     try {
                       const current = visibleCount;
                       const needed = current + pageSize;
@@ -2263,10 +2268,12 @@ export default function StoriesIndexContent() {
                       });
                     } catch {
                       setVisibleCount((c) => c + pageSize);
+                    } finally {
+                      setIsManualLoadingMore(false);
                     }
                   }}
                 >
-                  {isFetchingNextPage ? 'Loading…' : 'Read more'}
+                  {isManualLoadingMore ? 'Loading…' : 'Read more'}
                 </Button>
               </div>
             )}
