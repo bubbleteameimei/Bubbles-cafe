@@ -14,8 +14,8 @@ const PORT = process.env.PORT || 3001;
 const CHECK_INTERVAL = 500; // ms
 
 // Start the server
-console.log(`Starting server on port ${PORT}...`);
-const server = spawn('npx', ['tsx', 'server/index.ts'], {
+console.log(`Starting dev environment on port ${PORT}...`);
+const server = spawn('npm', ['run', 'dev'], {
   stdio: 'inherit',
   detached: false, // Keep the process attached to parent
   env: { ...process.env }

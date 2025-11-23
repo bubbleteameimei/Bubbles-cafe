@@ -3,9 +3,9 @@
 const { spawn } = require('child_process');
 const path = require('path');
 
-console.log('Starting server process...');
+console.log('Starting dev environment...');
 
-const serverProcess = spawn('tsx', ['server/index.ts'], {
+const serverProcess = spawn('npm', ['run', 'dev'], {
   cwd: '/home/runner/workspace',
   env: {
     ...process.env,
@@ -18,25 +18,25 @@ const serverProcess = spawn('tsx', ['server/index.ts'], {
 });
 
 serverProcess.stdout.on('data', (data) => {
-  console.log(`Server: ${data.toString()}`);
+  console.log(`Dev: ${data.toString()}`);
 });
 
 serverProcess.stderr.on('data', (data) => {
-  console.error(`Server Error: ${data.toString()}`);
+  console.error(`Dev Error: ${data.toString()}`);
 });
 
 serverProcess.on('close', (code) => {
-  console.log(`Server process exited with code ${code}`);
+  console.log(`Dev process exited with code ${code}`);
 });
 
 // Keep the parent process alive
 process.on('SIGTERM', () => {
-  console.log('Received SIGTERM, terminating server...');
+  console.log('Received SIGTERM, terminating dev environment...');
   serverProcess.kill();
   process.exit(0);
 });
 
-console.log(`Server process started with PID: ${serverProcess.pid}`);
+console.log(`Dev process started with PID: ${serverProcess.pid}`);
 
 // Prevent the script from exiting
 setInterval(() => {

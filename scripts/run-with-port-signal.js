@@ -26,14 +26,14 @@ if (process.send) {
   console.log('✅ Port readiness signal sent to Replit!');
 }
 
-// Now start the server
-const serverProcess = spawn('npx', ['tsx', 'server/index.ts'], {
+// Now start the dev environment (Worker + Vite)
+const serverProcess = spawn('npm', ['run', 'dev'], {
   stdio: 'inherit',
   shell: true,
   env: { ...process.env }
 });
 
-console.log('✅ Server process started!');
+console.log('✅ Dev process started!');
 
 // Handle process events
 serverProcess.on('error', (error) => {
