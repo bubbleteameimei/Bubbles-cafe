@@ -2,6 +2,8 @@
  * Client-side theme definition overrides (label/icon per theme key).
  * Persisted in localStorage and optionally synced with server (/api/themes/definitions).
  */
+import { getApiPath } from '../lib/asset-path';
+
 export type ThemeDefinitionOverride = { label?: string; icon?: string };
 
 const STORAGE_KEY = 'themeDefinitionsOverrides';
