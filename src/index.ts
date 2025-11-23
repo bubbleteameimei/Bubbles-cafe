@@ -3030,6 +3030,192 @@ router.post(
   async (req: Request, env: Env) => handleNewsletterUnsubscribe(req, env),
 );
 
+// CONTACT FORM: create contact_messages row in Supabase and notify admin via email
+async function handleContactSubmit(req: Request, env: Env): Promise<Response> {
+  // Basic IP-based rate limiting to reduce spam: 10 requests per 10 minutes per IP
+  const ip = req.headers.get("cf-connecting-ip") || "unknown";
+  const allowed = await checkRateLimit(env, `contact-${ip}`, 10, 600);
+  if (!allowed) {
+    return json({ error: "Rate limited" }, { status: 429 });
+  }
+
+  let body: any;
+  try {
+    body = (await (req as any).json?.().catch(() => ({}))) || {};
+  } catch {
+    body = {};
+  }
+
+  const name =
+    typeof body.name === "string" ? body.name.trim() : "";
+  const email =
+    typeof body.email === "string" ? body.email.trim() : "";
+  const subjectRaw =
+    typeof body.subject === "string" ? body.subject.trim() : "";
+  const message =
+    typeof body.message === "string" ? body.message.trim() : "";
+  const metadata =
+    body && typeof body.metadata === "object" && body.metadata !== null
+      ? (body.metadata as Record<string, any>)
+      : undefined;
+
+  const errors: Record<string, string> = {};
+
+  if (!name || name.length < 2) {
+    errors.name = "Name must be at least 2 characters long";
+  }
+
+  const simpleEmailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  if (!email || !simpleEmailRegex.test(email)) {
+    errors.email = "Please enter a valid email address";
+  }
+
+  const subject = subjectRaw || "General Inquiry";
+  if (!subject || subject.length < 3) {
+    errors.subject = "Subject must be at least 3 characters long";
+  }
+
+  if (!message || message.length < 10) {
+    errors.message = "Message must be at least 10 characters long";
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return json(
+      {
+        error: "Validation failed",
+        details: errors,
+      },
+      { status: 400 },
+    );
+  }
+
+  const hasSupabase = !!(env.SUPABASE_URL && env.SUPABASE_ANON_KEY);
+  const hasEmail = !!(env.EMAIL_PROVIDER_API_KEY && env.GMAIL_ADMIN_EMAIL);
+
+  if (!hasSupabase && !hasEmail) {
+    return json(
+      { error: "Contact service not configured" },
+      { status: 500 },
+    );
+  }
+
+  const mergedMetadata: Record<string, any> = {
+    ...(metadata || {}),
+    ip: ip !== "unknown" ? ip : undefined,
+    userAgent: req.headers.get("user-agent") || undefined,
+    referer:
+      req.headers.get("referer") ||
+      req.headers.get("referrer") ||
+      undefined,
+    receivedAt: new Date().toISOString(),
+  };
+
+  // Remove undefined fields from metadata to keep payload clean
+  for (const key of Object.keys(mergedMetadata)) {
+    if (mergedMetadata[key] === undefined) {
+      delete mergedMetadata[key];
+    }
+  }
+
+  let savedRecord: any = null;
+  let emailStatus: "success" | "failed" = "failed";
+
+  // Persist message to Supabase when configured
+  if (hasSupabase) {
+    try {
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const res = await fetch(`${baseUrl}/rest/v1/contact_messages`, {
+        method: "POST",
+        headers: {
+          apikey: env.SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          subject,
+          message,
+          metadata: mergedMetadata,
+        }),
+      });
+
+      if (res.ok) {
+        const rows = (await res.json().catch(() => [])) as any[];
+        if (Array.isArray(rows) && rows.length > 0) {
+          savedRecord = rows[0];
+        } else {
+          savedRecord = { name, email, subject, message };
+        }
+      }
+    } catch {
+      // Best-effort: continue even if Supabase insert fails
+    }
+  }
+
+  // Send notification email to admin when email provider is configured
+  if (hasEmail) {
+    try {
+      const textBody = [
+        `New contact message from ${name}`,
+        "",
+        `Email: ${email}`,
+        `Subject: ${subject}`,
+        "",
+        "Message:",
+        message,
+        "",
+        "Metadata:",
+        JSON.stringify(mergedMetadata, null, 2),
+      ].join("\n");
+
+      const emailRes = await fetch(
+        "https://api.sendgrid.com/v3/mail/send",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${env.EMAIL_PROVIDER_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            personalizations: [
+              { to: [{ email: env.GMAIL_ADMIN_EMAIL }] },
+            ],
+            from: { email: env.GMAIL_ADMIN_EMAIL },
+            subject: `[Contact] ${subject}`,
+            content: [
+              {
+                type: "text/plain",
+                value: textBody,
+              },
+            ],
+          }),
+        },
+      );
+
+      emailStatus = emailRes.ok ? "success" : "failed";
+    } catch {
+      emailStatus = "failed";
+    }
+  }
+
+  const responseBody: any = {
+    message:
+      "Thank you for your message. We have received it and will get back to you soon.",
+    data: savedRecord || { name, email, subject },
+    emailStatus,
+  };
+
+  return json(responseBody, { status: 201 });
+}
+
+router.post(
+  "/api/contact",
+  async (req: Request, env: Env) => handleContactSubmit(req, env),
+);
+
 // EMAIL SERVICE
 router.get("/api/email/status", async (_req: Request, env: Env) => {
   try {
@@ -7229,6 +7415,204 @@ router.get("/api/themes/categories", async (_req: Request, env: Env) => {
   } catch {
     return json(
       { categories: [], total: 0, source: "supabase-error" },
+      { status: 500 },
+    );
+  }
+});
+
+router.get("/api/themes/definitions", async (_req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({
+      overrides: {},
+      updatedAt: null,
+      source: "supabase-not-configured",
+    });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+
+    const url = new URL(`${baseUrl}/rest/v1/site_settings`);
+    url.searchParams.set("select", "key,value,updated_at");
+    url.searchParams.set("key", "eq.theme_definitions_overrides");
+    url.searchParams.set("limit", "1");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+      },
+    });
+
+    let overrides: Record<string, { label?: string; icon?: string }> = {};
+    let updatedAt: string | null = null;
+
+    if (res.ok) {
+      const rows = (await res.json().catch(() => [])) as any[];
+      if (Array.isArray(rows) && rows.length > 0) {
+        const row = rows[0] as any;
+        updatedAt =
+          typeof row.updated_at === "string" && row.updated_at
+            ? row.updated_at
+            : null;
+        const rawValue = row.value;
+        if (rawValue != null) {
+          try {
+            const parsed =
+              typeof rawValue === "string"
+                ? JSON.parse(rawValue)
+                : rawValue;
+            if (parsed && typeof parsed === "object") {
+              overrides = parsed as Record<
+                string,
+                { label?: string; icon?: string }
+              >;
+            }
+          } catch {
+            // ignore parse errors, fall back to empty overrides
+          }
+        }
+      }
+    }
+
+    return json({
+      overrides,
+      updatedAt,
+      source: "supabase",
+    });
+  } catch (error) {
+    return json(
+      {
+        error: "Failed to load theme definitions",
+        detail: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
+  }
+});
+
+router.patch("/api/themes/definitions", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json(
+      { error: "Supabase not configured" },
+      { status: 500 },
+    );
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json(
+      { error: "Admin authentication required" },
+      { status: 401 },
+    );
+  }
+
+  const currentUser = await getSupabaseCurrentUser(env, token);
+  if (!currentUser || !currentUser.isAdmin) {
+    return json(
+      { error: "Admin access required" },
+      { status: 403 },
+    );
+  }
+
+  let body: any;
+  try {
+    body =
+      (await (req as any).json?.().catch(() => ({}))) || {};
+  } catch {
+    body = {};
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return json(
+      { error: "Invalid payload" },
+      { status: 400 },
+    );
+  }
+
+  const parsed: Record<string, { label?: string; icon?: string }> = {};
+
+  try {
+    for (const [key, value] of Object.entries(body)) {
+      if (!key || typeof key !== "string") {
+        throw new Error("Invalid theme key");
+      }
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error("Each theme must be an object");
+      }
+      const v = value as any;
+      const out: { label?: string; icon?: string } = {};
+
+      if (v.label !== undefined) {
+        if (typeof v.label !== "string" || !v.label.trim()) {
+          throw new Error("label must be a non-empty string when provided");
+        }
+        out.label = v.label.trim();
+      }
+
+      if (v.icon !== undefined) {
+        if (typeof v.icon !== "string" || !v.icon.trim()) {
+          throw new Error("icon must be a non-empty string when provided");
+        }
+        out.icon = v.icon.trim();
+      }
+
+      parsed[key] = out;
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return json(
+      { error: "Invalid payload", detail: msg },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+
+    const url = new URL(`${baseUrl}/rest/v1/site_settings`);
+    url.searchParams.set("on_conflict", "key");
+
+    const res = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({
+        key: "theme_definitions_overrides",
+        value: JSON.stringify(parsed),
+        category: "themes",
+        description:
+          "Global theme definitions overrides (label/icon per theme key)",
+        updated_at: new Date().toISOString(),
+      }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      return json(
+        {
+          error: "Failed to save theme definitions",
+          detail: text.slice(0, 200),
+        },
+        { status: 500 },
+      );
+    }
+
+    return json({ ok: true, overrides: parsed });
+  } catch (error) {
+    return json(
+      {
+        error: "Failed to save theme definitions",
+        detail: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 },
     );
   }
