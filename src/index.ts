@@ -7234,6 +7234,204 @@ router.get("/api/themes/categories", async (_req: Request, env: Env) => {
   }
 });
 
+router.get("/api/themes/definitions", async (_req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({
+      overrides: {},
+      updatedAt: null,
+      source: "supabase-not-configured",
+    });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+
+    const url = new URL(`${baseUrl}/rest/v1/site_settings`);
+    url.searchParams.set("select", "key,value,updated_at");
+    url.searchParams.set("key", "eq.theme_definitions_overrides");
+    url.searchParams.set("limit", "1");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+      },
+    });
+
+    let overrides: Record<string, { label?: string; icon?: string }> = {};
+    let updatedAt: string | null = null;
+
+    if (res.ok) {
+      const rows = (await res.json().catch(() => [])) as any[];
+      if (Array.isArray(rows) && rows.length > 0) {
+        const row = rows[0] as any;
+        updatedAt =
+          typeof row.updated_at === "string" && row.updated_at
+            ? row.updated_at
+            : null;
+        const rawValue = row.value;
+        if (rawValue != null) {
+          try {
+            const parsed =
+              typeof rawValue === "string"
+                ? JSON.parse(rawValue)
+                : rawValue;
+            if (parsed && typeof parsed === "object") {
+              overrides = parsed as Record<
+                string,
+                { label?: string; icon?: string }
+              >;
+            }
+          } catch {
+            // ignore parse errors, fall back to empty overrides
+          }
+        }
+      }
+    }
+
+    return json({
+      overrides,
+      updatedAt,
+      source: "supabase",
+    });
+  } catch (error) {
+    return json(
+      {
+        error: "Failed to load theme definitions",
+        detail: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
+  }
+});
+
+router.patch("/api/themes/definitions", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json(
+      { error: "Supabase not configured" },
+      { status: 500 },
+    );
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json(
+      { error: "Admin authentication required" },
+      { status: 401 },
+    );
+  }
+
+  const currentUser = await getSupabaseCurrentUser(env, token);
+  if (!currentUser || !currentUser.isAdmin) {
+    return json(
+      { error: "Admin access required" },
+      { status: 403 },
+    );
+  }
+
+  let body: any;
+  try {
+    body =
+      (await (req as any).json?.().catch(() => ({}))) || {};
+  } catch {
+    body = {};
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return json(
+      { error: "Invalid payload" },
+      { status: 400 },
+    );
+  }
+
+  const parsed: Record<string, { label?: string; icon?: string }> = {};
+
+  try {
+    for (const [key, value] of Object.entries(body)) {
+      if (!key || typeof key !== "string") {
+        throw new Error("Invalid theme key");
+      }
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error("Each theme must be an object");
+      }
+      const v = value as any;
+      const out: { label?: string; icon?: string } = {};
+
+      if (v.label !== undefined) {
+        if (typeof v.label !== "string" || !v.label.trim()) {
+          throw new Error("label must be a non-empty string when provided");
+        }
+        out.label = v.label.trim();
+      }
+
+      if (v.icon !== undefined) {
+        if (typeof v.icon !== "string" || !v.icon.trim()) {
+          throw new Error("icon must be a non-empty string when provided");
+        }
+        out.icon = v.icon.trim();
+      }
+
+      parsed[key] = out;
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return json(
+      { error: "Invalid payload", detail: msg },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+
+    const url = new URL(`${baseUrl}/rest/v1/site_settings`);
+    url.searchParams.set("on_conflict", "key");
+
+    const res = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({
+        key: "theme_definitions_overrides",
+        value: JSON.stringify(parsed),
+        category: "themes",
+        description:
+          "Global theme definitions overrides (label/icon per theme key)",
+        updated_at: new Date().toISOString(),
+      }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      return json(
+        {
+          error: "Failed to save theme definitions",
+          detail: text.slice(0, 200),
+        },
+        { status: 500 },
+      );
+    }
+
+    return json({ ok: true, overrides: parsed });
+  } catch (error) {
+    return json(
+      {
+        error: "Failed to save theme definitions",
+        detail: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
+  }
+});
+
 router.get("/api/trending-stories", async (_req: Request, env: Env) => {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return json({ posts: [] });
