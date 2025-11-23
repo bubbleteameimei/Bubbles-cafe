@@ -9926,7 +9926,9 @@ router.patch("/api/user/privacy-settings", async (req: Request, env: Env) => {
       { status: 500 },
     );
   }
-});rivacy settings (Supabase-backed) - replaces Express /api/user/privacy-settings
+});
+
+// Privacy settings (Supabase-backed) - replaces Express /api/user/privacy-settings
 router.get("/api/user/privacy-settings", async (req: Request, env: Env) => {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return json({ error: "Supabase not configured" }, { status: 500 });
