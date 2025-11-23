@@ -11,19 +11,21 @@ export function getThemeDefinitionOverrides(): Record<string, ThemeDefinitionOve
     const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
     if (!raw) return {};
     const parsed = JSON.parse(raw);
-    return (parsed && typeof parsed === 'object') ? parsed : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
   } catch {
     return {};
   }
 }
 
-export async function syncThemeDefinitionOverridesFromServer(): Promise<Record<string, ThemeDefinitionOverride>> {
+export async function syncThemeDefinitionOverridesFromServer(): Promise<
+  Record<string, ThemeDefinitionOverride>
+> {
   try {
     const { getApiPath } = await import('./asset-path');
     const res = await fetch(getApiPath('/api/themes/definitions'), { credentials: 'include' });
     if (!res.ok) throw new Error('GET /api/themes/definitions failed');
     const data = await res.json().catch(() => ({ overrides: {} }));
-    const overrides = (data?.overrides && typeof data.overrides === 'object') ? data.overrides : {};
+    const overrides = data?.overrides && typeof data.overrides === 'object' ? data.overrides : {};
     // Merge into localStorage
     const current = getThemeDefinitionOverrides();
     const merged = { ...current, ...overrides };
@@ -39,13 +41,16 @@ export async function syncThemeDefinitionOverridesFromServer(): Promise<Record<s
   }
 }
 
-export async function saveThemeDefinitionOverrides(map: Record<string, ThemeDefinitionOverride>): Promise<void> {
+export async function saveThemeDefinitionOverrides(
+  map: Record<string, ThemeDefinitionOverride>,
+): Promise<void> {
   // Try server first
   try {
     const { getApiPath } = await import('./asset-path');
-    const csrf = (typeof document !== 'undefined')
-      ? document.cookie.replace(/(?:(?:^|.*;\s*)XSRF-TOKEN\s*=\s*([^;]*).*$)|^.*$/, "$1")
-      : '';
+    const csrf =
+      typeof document !== 'undefined'
+        ? document.cookie.replace(/(?:(?:^|.*;\s*)XSRF-TOKEN\s*=\s*([^;]*).*$)|^.*$/, '$1')
+        : '';
     const res = await fetch(getApiPath('/api/themes/definitions'), {
       method: 'PATCH',
       credentials: 'include',
