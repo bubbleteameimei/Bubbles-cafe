@@ -36,6 +36,7 @@ interface Env {
   STRIPE_WEBHOOK_SECRET: string;
   PAYSTACK_SECRET_KEY: string;
   PAYSTACK_PUBLIC_KEY: string;
+  PAYSTACK_BASE_URL?: string;
   EMAIL_PROVIDER_API_KEY: string;
   GMAIL_APP_PASSWORD: string;
   GMAIL_ADMIN_EMAIL: string;
@@ -835,7 +836,7 @@ async function proxyToBackend(req: Request, env: Env): Promise<Response> {
 // ============================================================================
 
 // HEALTH
-router.get("/api/health", async (_req: Request, _env: Env) =&gt; {
+router.get("/api/health", async (_req: Request, _env: Env) => {
   try {
     const started = Date.now();
     const healthRes = {
@@ -855,7 +856,7 @@ router.get("/api/health", async (_req: Request, _env: Env) =&gt; {
   }
 });
 
-router.get("/health", async () =&gt; {
+router.get("/health", async () => {
   return json({ status: "ok" });
 });
 
@@ -863,10 +864,10 @@ router.get("/health", async () =&gt; {
 // Note: Worker APIs are JWT-based and do not require CSRF protection.
 // This endpoint returns a stateless token so clients expecting /api/csrf-token
 // can continue to function without relying on the legacy Express backend.
-router.get("/api/csrf-token", async (_req: Request) =&gt; {
+router.get("/api/csrf-token", async (_req: Request) => {
   try {
     const token = crypto.randomUUID();
-    const headers: Record&lt;string, string&gt; = {
+    const headers: Record<string, string> = {
       "Cache-Control": "no-store, max-age=0",
     };
     try {
@@ -882,13 +883,13 @@ router.get("/api/csrf-token", async (_req: Request) =&gt; {
 });
 
 // CONFIG: Public client bootstrap (Supabase, URLs, Google OAuth)
-router.get("/api/config/public", async (req: Request, env: Env) =&gt; {
+router.get("/api/config/public", async (req: Request, env: Env) => {
   try {
     const url = new URL(req.url);
     const protocol = url.protocol; // e.g. "https:"
     const host = url.host.toLowerCase();
 
-    const apiBase = (() =&gt; {
+    const apiBase = (() => {
       try {
         if (host.startsWith("api.")) return `${protocol}//${host}`;
         const cleanHost = host.startsWith("www.") ? host.slice(4) : host;
@@ -6907,6 +6908,66 @@ router.post(
   }
 );
 
+router.get("/api/themes/categories", async (_req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({
+      categories: [],
+      total: 0,
+      source: "supabase-not-configured",
+    });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/theme_categories`);
+    url.searchParams.set(
+      "select",
+      "key,label,icon,is_active,sort_order",
+    );
+    url.searchParams.set("is_active", "eq.true");
+    url.searchParams.set("order", "sort_order.asc,label.asc");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return json(
+        { categories: [], total: 0, source: "supabase-error" },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    const categories = Array.isArray(rows)
+      ? rows
+          .filter((row) => row && row.key)
+          .map((row) => ({
+            key: String(row.key),
+            label: String(row.label || row.key),
+            icon: row.icon ? String(row.icon) : null,
+            sortOrder:
+              row.sort_order != null ? Number(row.sort_order) : 0,
+          }))
+      : [];
+
+    return json({
+      categories,
+      total: categories.length,
+      source: "supabase",
+    });
+  } catch {
+    return json(
+      { categories: [], total: 0, source: "supabase-error" },
+      { status: 500 },
+    );
+  }
+});
+
 router.get("/api/trending-stories", async (_req: Request, env: Env) => {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return json({ posts: [] });
@@ -7339,6 +7400,229 @@ router.get("/api/search/suggest", async (req: Request, env: Env) => {
     return json({ suggestions });
   } catch {
     return json({ suggestions: [] }, { status: 500 });
+  }
+});
+
+// USER NOTIFICATIONS: Supabase-backed, mirrors Express /api/notifications behavior
+router.get("/api/notifications", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return proxyToBackend(req, env);
+  }
+
+  try {
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!Number.isFinite(userId || NaN)) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/user_notifications`);
+    url.searchParams.set(
+      "select",
+      "id,user_id,type,title,message,metadata,is_read,created_at"
+    );
+    url.searchParams.set("user_id", `eq.${userId}`);
+    url.searchParams.set("order", "created_at.desc");
+    url.searchParams.set("limit", "50");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+    if (!res.ok) {
+      return json({ error: "Failed to list notifications" }, { status: 500 });
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    if (!Array.isArray(rows)) {
+      return json({ notifications: [] });
+    }
+
+    return json({ notifications: rows });
+  } catch {
+    return json({ error: "Failed to list notifications" }, { status: 500 });
+  }
+});
+
+// POST /api/notifications - create a notification for current user
+router.post("/api/notifications", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return proxyToBackend(req, env);
+  }
+
+  try {
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!Number.isFinite(userId || NaN)) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    let body: any;
+    try {
+      body = (await (req as any).json?.().catch(() => ({}))) || {};
+    } catch {
+      body = {};
+    }
+
+    const type =
+      typeof body.type === "string" && body.type.trim() ? body.type.trim() : null;
+    const title =
+      typeof body.title === "string" && body.title.trim()
+        ? body.title.trim()
+        : null;
+    const message =
+      typeof body.message === "string" && body.message.trim()
+        ? body.message.trim()
+        : null;
+    const metadata =
+      body && typeof body.metadata === "object" && body.metadata !== null
+        ? body.metadata
+        : {};
+
+    if (!type || !title || !message) {
+      return json(
+        { error: "Invalid payload" },
+        { status: 400 }
+      );
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const res = await fetch(`${baseUrl}/rest/v1/user_notifications`, {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        user_id: Number(userId),
+        type,
+        title,
+        message,
+        metadata,
+        is_read: false,
+        created_at: new Date().toISOString(),
+      }),
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+    if (!res.ok) {
+      return json(
+        { error: "Failed to create notification" },
+        { status: 500 }
+      );
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    const created = Array.isArray(rows) && rows.length ? rows[0] : null;
+
+    return json(
+      { notification: created },
+      { status: 201 }
+    );
+  } catch {
+    return json(
+      { error: "Failed to create notification" },
+      { status: 500 }
+    );
+  }
+});
+
+// PATCH /api/notifications/:id/read - mark as read/unread for current user
+router.patch("/api/notifications/:id/read", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return proxyToBackend(req, env);
+  }
+
+  try {
+    const urlObj = new URL(req.url);
+    const segments = urlObj.pathname.split("/").filter(Boolean);
+    // /api/notifications/:id/read -> ["api","notifications",":id","read"]
+    const idSegment = segments[2] || "";
+    const id = parseInt(decodeURIComponent(idSegment), 10);
+    if (!Number.isFinite(id)) {
+      return json({ error: "Invalid id" }, { status: 400 });
+    }
+
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!Number.isFinite(userId || NaN)) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    let body: any;
+    try {
+      body = (await (req as any).json?.().catch(() => ({}))) || {};
+    } catch {
+      body = {};
+    }
+    const isRead =
+      typeof body.isRead === "boolean" ? body.isRead : true;
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const updateUrl = new URL(`${baseUrl}/rest/v1/user_notifications`);
+    updateUrl.searchParams.set("id", `eq.${id}`);
+    updateUrl.searchParams.set("user_id", `eq.${userId}`);
+
+    const res = await fetch(updateUrl.toString(), {
+      method: "PATCH",
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({ is_read: !!isRead }),
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      return json({ error: "Authentication required" }, { status: 401 });
+    }
+    if (!res.ok) {
+      return json(
+        { error: "Failed to update notification" },
+        { status: 500 }
+      );
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    const updated = Array.isArray(rows) && rows.length ? rows[0] : null;
+
+    if (!updated) {
+      return json({ error: "Notification not found" }, { status: 404 });
+    }
+
+    return json({ notification: updated });
+  } catch {
+    return json(
+      { error: "Failed to update notification" },
+      { status: 500 }
+    );
   }
 });
 
@@ -8364,9 +8648,733 @@ router.get(
   }
 );
 
+// PATCH /api/user/notification-preferences - upsert preferences for current user
+router.patch(
+  "/api/user/notification-preferences",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 },
+      );
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!Number.isFinite(userId || NaN)) {
+      return json({ error: "User not authenticated" }, { status: 401 });
+    }
+
+    let body: any;
+    try {
+      body = (await (req as any).json?.().catch(() => ({}))) || {};
+    } catch {
+      body = {};
+    }
+
+    const patch: Record<string, any> = {};
+
+    const applyBool = (
+      camelKey: string,
+      snakeKey: string | null,
+      column: string
+    ) => {
+      let value: any;
+      if (Object.prototype.hasOwnProperty.call(body, camelKey)) {
+        value = body[camelKey];
+      }
+      if (snakeKey && Object.prototype.hasOwnProperty.call(body, snakeKey)) {
+        value = body[snakeKey];
+      }
+      if (typeof value === "boolean") {
+        patch[column] = value;
+      }
+    };
+
+    applyBool("storyUpdates", "story_updates", "story_updates");
+    applyBool("communityActivity", "community_activity", "community_activity");
+    applyBool("securityAlerts", null, "security_alerts");
+    applyBool("readingReminders", "reading_reminders", "reading_reminders");
+    applyBool("recommendations", null, "recommendations");
+
+    if (Object.prototype.hasOwnProperty.call(body, "preferredTime")) {
+      const v = body.preferredTime;
+      patch.preferred_time = v == null ? null : String(v);
+    }
+    if (Object.prototype.hasOwnProperty.call(body, "timezone")) {
+      const v = body.timezone;
+      patch.timezone = v == null ? null : String(v);
+    }
+
+    patch.updated_at = new Date().toISOString();
+
+    try {
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+      const headersBase: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      };
+
+      const listUrl = new URL(
+        `${baseUrl}/rest/v1/user_notification_preferences`
+      );
+      listUrl.searchParams.set(
+        "select",
+        "user_id,story_updates,community_activity,security_alerts,reading_reminders,recommendations,preferred_time,timezone,updated_at",
+      );
+      listUrl.searchParams.set("user_id", `eq.${userId}`);
+      listUrl.searchParams.set("limit", "1");
+
+      const existingRes = await fetch(listUrl.toString(), {
+        method: "GET",
+        headers: headersBase,
+      });
+
+      if (!existingRes.ok && existingRes.status !== 406) {
+        return json(
+          { error: "Failed to update notification preferences" },
+          { status: 500 },
+        );
+      }
+
+      const existingRows = (await existingRes
+        .json()
+        .catch(() => [])) as any[];
+      const existing =
+        Array.isArray(existingRows) && existingRows.length > 0
+          ? existingRows[0]
+          : null;
+
+      const writeUrl = new URL(
+        `${baseUrl}/rest/v1/user_notification_preferences`
+      );
+      let method: "PATCH" | "POST" = "PATCH";
+      let writeBody: any = patch;
+
+      if (!existing) {
+        method = "POST";
+        writeBody = { user_id: userId, ...patch };
+      } else {
+        writeUrl.searchParams.set("user_id", `eq.${userId}`);
+      }
+
+      const writeRes = await fetch(writeUrl.toString(), {
+        method,
+        headers: {
+          ...headersBase,
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify(writeBody),
+      });
+
+      if (!writeRes.ok) {
+        return json(
+          { error: "Failed to update notification preferences" },
+          { status: 500 },
+        );
+      }
+
+      const rows = (await writeRes.json().catch(() => [])) as any[];
+      const row =
+        Array.isArray(rows) && rows.length > 0
+          ? rows[0]
+          : existing;
+
+      if (!row) {
+        return json(
+          { error: "Failed to update notification preferences" },
+          { status: 500 },
+        );
+      }
+
+      const preferences = {
+        storyUpdates:
+          typeof row.story_updates === "boolean"
+            ? row.story_updates
+            : true,
+        communityActivity:
+          typeof row.community_activity === "boolean"
+            ? row.community_activity
+            : true,
+        securityAlerts:
+          typeof row.security_alerts === "boolean"
+            ? row.security_alerts
+            : true,
+        readingReminders:
+          typeof row.reading_reminders === "boolean"
+            ? row.reading_reminders
+            : false,
+        recommendations:
+          typeof row.recommendations === "boolean"
+            ? row.recommendations
+            : true,
+        preferredTime:
+          typeof row.preferred_time === "string" &&
+          row.preferred_time.trim()
+            ? row.preferred_time
+            : null,
+        timezone:
+          typeof row.timezone === "string" && row.timezone.trim()
+            ? row.timezone
+            : null,
+      };
+
+      return json(preferences);
+    } catch {
+      return json(
+        { error: "Failed to update notification preferences" },
+        { status: 500 },
+      );
+    }
+  }
+);
+
 // USER NOTIFICATIONS: Supabase-backed, with legacy fallback
 
+// User notification preferences (Supabase-backed) - replaces Express /api/user/notification-preferences
+router.get("/api/user/notification-preferences", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json(
+      { error: "Supabase not configured" },
+      { status: 500 },
+    );
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const userId = await getSupabaseUserIdFromJwt(env, token);
+  if (!Number.isFinite(userId || NaN)) {
+    return json({ error: "User not authenticated" }, { status: 401 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    };
+
+    const listUrl = new URL(`${baseUrl}/rest/v1/user_notification_preferences`);
+    listUrl.searchParams.set(
+      "select",
+      "user_id,story_updates,community_activity,security_alerts,reading_reminders,recommendations,preferred_time,timezone,updated_at",
+    );
+    listUrl.searchParams.set("user_id", `eq.${userId}`);
+    listUrl.searchParams.set("limit", "1");
+
+    const res = await fetch(listUrl.toString(), { headers });
+    if (!res.ok) {
+      return json(
+        { error: "Failed to load notification preferences" },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    let row = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+
+    if (!row) {
+      const __defaultNotificationPreferences = {
+        user_id: userId,
+        story_updates: true,
+        community_activity: true,
+        security_alerts: true,
+        reading_reminders: false,
+        recommendations: true,
+        preferred_time: null,
+        timezone: null,
+      };
+
+      const createRes = await fetch(
+        `${baseUrl}/rest/v1/user_notification_preferences`,
+        {
+          method: "POST",
+          headers: {
+            ...headers,
+            Prefer: "return=representation",
+          },
+          body: JSON.stringify(__defaultNotificationPreferences),
+        },
+      );
+
+      if (!createRes.ok) {
+        return json(
+          { error: "Failed to create notification preferences" },
+          { status: 500 },
+        );
+      }
+
+      const createdRows = (await createRes.json().catch(() => [])) as any[];
+      row =
+        Array.isArray(createdRows) && createdRows.length > 0
+          ? createdRows[0]
+          : __defaultNotificationPreferences;
+    }
+
+    if (!row) {
+      return json(
+        { error: "Failed to load notification preferences" },
+        { status: 500 },
+      );
+    }
+
+    const __notificationPreferences = {
+      storyUpdates:
+        typeof row.story_updates === "boolean" ? row.story_updates : true,
+      communityActivity:
+        typeof row.community_activity === "boolean"
+          ? row.community_activity
+          : true,
+      securityAlerts:
+        typeof row.security_alerts === "boolean"
+          ? row.security_alerts
+          : true,
+      readingReminders:
+        typeof row.reading_reminders === "boolean"
+          ? row.reading_reminders
+          : false,
+      recommendations:
+        typeof row.recommendations === "boolean"
+          ? row.recommendations
+          : true,
+      preferredTime:
+        typeof row.preferred_time === "string" && row.preferred_time.trim()
+          ? row.preferred_time
+          : null,
+      timezone:
+        typeof row.timezone === "string" && row.timezone.trim()
+          ? row.timezone
+          : null,
+    };
+
+    return json(__notificationPreferences);
+
+    if (!row) {
+      const defaults = {
+        user_id: Number(userId),
+        story_updates: true,
+        community_activity: true,
+        security_alerts: true,
+        reading_reminders: false,
+        recommendations: true,
+        preferred_time: "evening",
+        timezone: "pst",
+      };
+
+      const insertRes = await fetch(
+        `${baseUrl}/rest/v1/user_notification_preferences`,
+        {
+          method: "POST",
+          headers: { ...headers, Prefer: "return=representation" },
+          body: JSON.stringify(defaults),
+        },
+      );
+
+      if (!insertRes.ok) {
+        return json(
+          { error: "Failed to create notification preferences" },
+          { status: 500 },
+        );
+      }
+
+      const inserted = (await insertRes.json().catch(() => [])) as any[];
+      row =
+        Array.isArray(inserted) && inserted.length > 0
+          ? inserted[0]
+          : defaults;
+    }
+
+    const payload = {
+      storyUpdates: row.story_updates !== false,
+      communityActivity: row.community_activity !== false,
+      securityAlerts: row.security_alerts !== false,
+      readingReminders: row.reading_reminders === true,
+      recommendations: row.recommendations !== false,
+      preferredTime: row.preferred_time || "evening",
+      timezone: row.timezone || "pst",
+    };
+
+    return json(payload);
+  } catch {
+    return json(
+      { error: "Failed to load notification preferences" },
+      { status: 500 },
+    );
+  }
+});
+
+router.patch(
+  "/api/user/notification-preferences",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json(
+        { error: "Supabase not configured" },
+        { status: 500 },
+      );
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const userId = await getSupabaseUserIdFromJwt(env, token);
+    if (!Number.isFinite(userId || NaN)) {
+      return json({ error: "User not authenticated" }, { status: 401 });
+    }
+
+    let body: any;
+    try {
+      body = (await (req as any).json?.().catch(() => ({}))) || {};
+    } catch {
+      return json(
+        { error: "Invalid payload" },
+        { status: 400 },
+      );
+    }
+
+    const update: any = {};
+
+    if (typeof body.storyUpdates === "boolean") {
+      update.story_updates = body.storyUpdates;
+    }
+    if (typeof body.communityActivity === "boolean") {
+      update.community_activity = body.communityActivity;
+    }
+    if (typeof body.securityAlerts === "boolean") {
+      update.security_alerts = body.securityAlerts;
+    }
+    if (typeof body.readingReminders === "boolean") {
+      update.reading_reminders = body.readingReminders;
+    }
+    if (typeof body.recommendations === "boolean") {
+      update.recommendations = body.recommendations;
+    }
+    if (typeof body.preferredTime === "string") {
+      update.preferred_time = body.preferredTime;
+    }
+    if (typeof body.timezone === "string") {
+      update.timezone = body.timezone;
+    }
+
+    // Backward-compatible snake_case keys
+    if (typeof body.story_updates === "boolean") {
+      update.story_updates = body.story_updates;
+    }
+    if (typeof body.community_activity === "boolean") {
+      update.community_activity = body.community_activity;
+    }
+    if (typeof body.reading_reminders === "boolean") {
+      update.reading_reminders = body.reading_reminders;
+    }
+
+    if (Object.keys(update).length === 0) {
+      return json(
+        { error: "No valid fields to update" },
+        { status: 400 },
+      );
+    }
+
+    try {
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+      const headers: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      };
+
+      const upsertUrl = new URL(
+        `${baseUrl}/rest/v1/user_notification_preferences`,
+      );
+      upsertUrl.searchParams.set("on_conflict", "user_id");
+
+      const upsertRes = await fetch(upsertUrl.toString(), {
+        method: "POST",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify({
+          user_id: Number(userId),
+          ...update,
+        }),
+      });
+
+      if (!upsertRes.ok) {
+        return json(
+          { error: "Failed to update notification preferences" },
+          { status: 500 },
+        );
+      }
+
+      const rows = (await upsertRes.json().catch(() => [])) as any[];
+      const row =
+        Array.isArray(rows) && rows.length > 0
+          ? rows[0]
+          : {
+              user_id: Number(userId),
+              ...update,
+            };
+
+      const payload = {
+        storyUpdates: row.story_updates !== false,
+        communityActivity: row.community_activity !== false,
+        securityAlerts: row.security_alerts !== false,
+        readingReminders: row.reading_reminders === true,
+        recommendations: row.recommendations !== false,
+        preferredTime: row.preferred_time || "evening",
+        timezone: row.timezone || "pst",
+      };
+
+      return json(payload);
+    } catch {
+      return json(
+        { error: "Failed to update notification preferences" },
+        { status: 500 },
+      );
+    }
+  },
+);
+
 // User privacy settings (Supabase-backed) - replaces Express /api/user/privacy-settings
+router.get("/api/user/privacy-settings", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Supabase not configured" }, { status: 500 });
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const userId = await getSupabaseUserIdFromJwt(env, token);
+  if (!Number.isFinite(userId || NaN)) {
+    return json({ error: "User not authenticated" }, { status: 401 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    };
+
+    const listUrl = new URL(`${baseUrl}/rest/v1/user_privacy_settings`);
+    listUrl.searchParams.set(
+      "select",
+      "user_id,profile_visible,share_reading_history,anonymous_commenting,two_factor_auth_enabled,login_notifications,updated_at",
+    );
+    listUrl.searchParams.set("user_id", `eq.${userId}`);
+    listUrl.searchParams.set("limit", "1");
+
+    const res = await fetch(listUrl.toString(), { headers });
+    if (!res.ok) {
+      return json(
+        { error: "Failed to load privacy settings" },
+        { status: 500 },
+      );
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    let row = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+
+    if (!row) {
+      const defaults = {
+        user_id: Number(userId),
+        profile_visible: true,
+        share_reading_history: false,
+        anonymous_commenting: false,
+        two_factor_auth_enabled: false,
+        login_notifications: true,
+      };
+      const insertRes = await fetch(
+        `${baseUrl}/rest/v1/user_privacy_settings`,
+        {
+          method: "POST",
+          headers: { ...headers, Prefer: "return=representation" },
+          body: JSON.stringify(defaults),
+        },
+      );
+      if (!insertRes.ok) {
+        return json(
+          { error: "Failed to create privacy settings" },
+          { status: 500 },
+        );
+      }
+      const inserted = (await insertRes.json().catch(() => [])) as any[];
+      row =
+        Array.isArray(inserted) && inserted.length > 0
+          ? inserted[0]
+          : defaults;
+    }
+
+    const payload = {
+      profileVisible: row.profile_visible === true,
+      shareReadingHistory: row.share_reading_history === true,
+      anonymousCommenting: row.anonymous_commenting === true,
+      twoFactorAuthEnabled: row.two_factor_auth_enabled === true,
+      loginNotifications: row.login_notifications !== false,
+    };
+
+    return json(payload);
+  } catch {
+    return json(
+      { error: "Failed to load privacy settings" },
+      { status: 500 },
+    );
+  }
+});
+
+router.patch("/api/user/privacy-settings", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: "Supabase not configured" }, { status: 500 });
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const userId = await getSupabaseUserIdFromJwt(env, token);
+  if (!Number.isFinite(userId || NaN)) {
+    return json({ error: "User not authenticated" }, { status: 401 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    };
+
+    const body = (await (req as any).json?.().catch(() => ({}))) || {};
+
+    const allowedKeys: Record<string, string> = {
+      profileVisible: "profile_visible",
+      shareReadingHistory: "share_reading_history",
+      anonymousCommenting: "anonymous_commenting",
+      twoFactorAuthEnabled: "two_factor_auth_enabled",
+      loginNotifications: "login_notifications",
+    };
+
+    const updatePayload: Record<string, any> = {};
+    for (const [key, dbKey] of Object.entries(allowedKeys)) {
+      if (Object.prototype.hasOwnProperty.call(body, key)) {
+        const value = (body as any)[key];
+        if (typeof value !== "boolean") {
+          return json(
+            { error: `Field "${key}" must be a boolean` },
+            { status: 400 },
+          );
+        }
+        updatePayload[dbKey] = value;
+      }
+    }
+
+    if (Object.keys(updatePayload).length === 0) {
+      return json(
+        { error: "No valid fields provided" },
+        { status: 400 },
+      );
+    }
+
+    // First try to PATCH an existing row
+    const patchUrl = new URL(`${baseUrl}/rest/v1/user_privacy_settings`);
+    patchUrl.searchParams.set("user_id", `eq.${userId}`);
+
+    let row: any | null = null;
+
+    try {
+      const patchRes = await fetch(patchUrl.toString(), {
+        method: "PATCH",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify(updatePayload),
+      });
+
+      if (!patchRes.ok && patchRes.status !== 406) {
+        return json(
+          { error: "Failed to update privacy settings" },
+          { status: 500 },
+        );
+      }
+
+      const rows = (await patchRes.json().catch(() => [])) as any[];
+      if (Array.isArray(rows) && rows.length > 0) {
+        row = rows[0];
+      }
+    } catch {
+      // If PATCH fails for any reason, we'll fall back to an insert below
+    }
+
+    // If no existing row was updated, insert a new one with defaults + patch
+    if (!row) {
+      const defaults = {
+        user_id: Number(userId),
+        profile_visible: true,
+        share_reading_history: false,
+        anonymous_commenting: false,
+        two_factor_auth_enabled: false,
+        login_notifications: true,
+      };
+      const insertBody = { ...defaults, ...updatePayload };
+
+      const insertRes = await fetch(
+        `${baseUrl}/rest/v1/user_privacy_settings`,
+        {
+          method: "POST",
+          headers: { ...headers, Prefer: "return=representation" },
+          body: JSON.stringify(insertBody),
+        },
+      );
+
+      if (!insertRes.ok) {
+        return json(
+          { error: "Failed to update privacy settings" },
+          { status: 500 },
+        );
+      }
+
+      const inserted = (await insertRes.json().catch(() => [])) as any[];
+      row =
+        Array.isArray(inserted) && inserted.length > 0
+          ? inserted[0]
+          : insertBody;
+    }
+
+    const payload = {
+      profileVisible: row.profile_visible === true,
+      shareReadingHistory: row.share_reading_history === true,
+      anonymousCommenting: row.anonymous_commenting === true,
+      twoFactorAuthEnabled: row.two_factor_auth_enabled === true,
+      loginNotifications: row.login_notifications !== false,
+    };
+
+    return json(payload);
+  } catch {
+    return json(
+      { error: "Failed to update privacy settings" },
+      { status: 500 },
+    );
+  }
+});rivacy settings (Supabase-backed) - replaces Express /api/user/privacy-settings
 router.get("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return json({ error: "Supabase not configured" }, { status: 500 });

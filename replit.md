@@ -59,7 +59,7 @@ Preferred communication style: Simple, everyday language.
 - **User Management**: Registration, authentication, profile management, admin user management, role-based access control.
 - **Reader Experience**: Responsive design, theme support, progress tracking, bookmarking, interactive elements, mobile optimization.
 - **Administrative Features**: Consolidated admin menu with sections for Dashboard, Content Management (Stories, Content, WordPress Sync), User Management (Users, Moderation), and Insights & Reports (Analytics, Statistics, Feedback, Bug Reports).
-- **Deployment Strategy**: Split architecture with Frontend on Vercel, API on Cloudflare Workers, and PostgreSQL on Supabase. A legacy Express/Render backend remains for local development and SSR but is no longer used in production for the public API. Cross-domain CORS, secure cookie configuration, environment-specific rate limiting, database connection pooling. HTTPS enforcement, SameSite=None cookies, IP whitelisting.
+- **Deployment Strategy**: Split architecture with Frontend on Vercel, API on Cloudflare Workers, and PostgreSQL on Supabase. A legacy Express backend remains for optional local development and SSR but is no longer used in production for the public API. Cross-domain CORS, secure cookie configuration, environment-specific rate limiting, database connection pooling. HTTPS enforcement, SameSite=None cookies, IP whitelisting.
 
 ## External Dependencies
 - **React Ecosystem**: React, React DOM, React Query
@@ -75,3 +75,13 @@ Preferred communication style: Simple, everyday language.
 - **Analytics**: PostHog
 - **Performance**: Web Vitals
 - **Content Source**: WordPress API (bubbleteameimei.wordpress.com)
+
+## Local Development (preferred)
+
+For day-to-day development, use the Cloudflare Worker + Vite workflow instead of the legacy Node/Express server:
+
+- API (Cloudflare Worker): `npm run dev:worker`
+- Frontend (Vite): `npm run dev:client`
+- Both in parallel: `npm run dev:full`
+
+The legacy Express server (`npm run dev`, `npm run dev:server`) is kept only for optional local experimentation and SSR and is no longer used in production for the public API.

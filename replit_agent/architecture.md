@@ -16,26 +16,29 @@ This document outlines the architecture of "Bubble's Cafe," a horror-themed blog
 
 ## 2. System Architecture
 
-The application follows a modern client-server architecture with clear separation of concerns:
+The application follows a modern split-frontend/serverless-backend architecture with clear separation of concerns:
 
 ```
-┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│                 │      │                 │      │                 │
-│  React Client   ├──────┤  Express Server ├──────┤  PostgreSQL DB  │
-│  (SPA)          │      │  (API)          │      │  (Data Storage) │
-│                 │      │                 │      │                 │
-└─────────────────┘      └─────────────────┘      └─────────────────┘
+┌──────────────────────┐      ┌─────────────────────────────┐      ┌───────────────────────┐
+│                      │      │                             │      │                       │
+│  React Client (SPA)  ├──────┤  Cloudflare Workers API     ├──────┤  Supabase PostgreSQL  │
+│     (Vercel)         │      │  (Serverless API + Cron)    │      │   (Data Storage)      │
+│                      │      │                             │      │                       │
+└──────────────────────┘      └─────────────────────────────┘      └───────────────────────┘
 ```
+
+A legacy Node/Express server still exists under `/server` for local experimentation and historical SSR, but the production API is served by Cloudflare Workers with Supabase as the primary database.
 
 ### 2.1 Technology Stack
 
 - **Frontend**: React, TypeScript, TailwindCSS, Radix UI components, Framer Motion
-- **Backend**: Node.js, Express, TypeScript
-- **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: Session-based auth with Passport.js, OAuth integrations
+- **Backend/API (production)**: Cloudflare Workers (TypeScript, itty-router), Supabase REST/RPC
+- **Legacy backend (local/experimental)**: Node.js, Express, TypeScript
+- **Database**: PostgreSQL with Drizzle ORM (hosted on Supabase)
+- **Authentication**: Supabase Auth (JWT-based); legacy session-based auth with Passport.js for the Express server
 - **State Management**: React Query for server state, local React state
 - **Build Tools**: Vite, ESBuild, PostCSS
-- **Deployment**: Cloud Run (per Replit configuration)
+- **Deployment**: Vercel (frontend), Cloudflare Workers (API), Supabase (PostgreSQL)
 
 ## 3. Key Components
 

@@ -2,6 +2,7 @@
 // Provides a map keyed by theme key and a list for iteration, both suitable for reader/index UI.
 import { useEffect, useMemo, useState } from "react";
 import { THEME_CATEGORIES as STATIC_THEME_CATEGORIES } from "@shared/theme-categories";
+import { getApiPath } from "@/lib/asset-path";
 
 export type ThemeCategoryItem = { key: string; label: string; icon?: string | null; sortOrder?: number };
 
@@ -48,7 +49,7 @@ export function useThemeCategories(): {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch("/api/themes/categories", { credentials: "include" });
+        const res = await fetch(getApiPath("/api/themes/categories"), { credentials: "include" });
         if (!res.ok) throw new Error("Failed to fetch categories");
         const data: CategoriesResponse = await res.json();
         const arr = Array.isArray(data?.categories) ? data.categories : [];

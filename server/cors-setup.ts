@@ -65,10 +65,7 @@ export function setupCors(app: Express) {
     /\.pages\.dev$/.test(o)
   );
 
-  // Render preview domains (*.onrender.com)
-  const isRenderOrigin = (o?: string) => !!o && (
-    /\.onrender\.com$/.test(o)
-  );
+  
 
   // CORS middleware
   app.use((req: Request, res: Response, next: NextFunction) => {
@@ -133,12 +130,6 @@ export function setupCors(app: Express) {
       res.setHeader("Access-Control-Allow-Origin", origin as string);
       res.setHeader("Access-Control-Allow-Credentials", "true");
       console.log(`[CORS] Allowed Cloudflare Pages domain: ${origin}`);
-    }
-    // Allow Render preview domains
-    else if (isRenderOrigin(origin)) {
-      res.setHeader("Access-Control-Allow-Origin", origin as string);
-      res.setHeader("Access-Control-Allow-Credentials", "true");
-      console.log(`[CORS] Allowed Render domain: ${origin}`);
     }
     // If no match but we're not in production, allow the origin anyway for development convenience
     else if (origin && process.env.NODE_ENV !== 'production') {

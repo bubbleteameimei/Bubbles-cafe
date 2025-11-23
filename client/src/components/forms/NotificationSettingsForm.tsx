@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useToast } from "@/hooks/use-toast"
-import { getApiPath } from "@/lib/asset-path"
+import { apiRequest } from "@/lib/queryClient"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -203,9 +203,7 @@ export function NotificationSettingsForm() {
     let isMounted = true;
     (async () => {
       try {
-        const res = await fetch(getApiPath("/api/user/notification-preferences"), { credentials: "include" });
-        if (!res.ok) return;
-        const prefs = await res.json();
+        const prefs = await apiRequest<any>("/api/user/notification-preferences");
         if (isMounted && prefs) {
           form.reset({
             storyUpdates: !!prefs.storyUpdates,
@@ -213,43 +211,39 @@ export function NotificationSettingsForm() {
             securityAlerts: !!prefs.securityAlerts,
             readingReminders: !!prefs.readingReminders,
             recommendations: !!prefs.recommendations,
-            preferredTime: prefs.preferredTime || 'evening',
-            timezone: prefs.timezone || 'pst'
+            preferredTime: prefs.preferredTime || "evening",
+            timezone: prefs.timezone || "pst",
           });
         }
       } catch {
-        // non-fatal
+        // non-fatal; keep defaults
       }
     })();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [form]);
   
   // Memoize the submit handler to prevent recreation on renders
   const onSubmit = useCallback(async (data: z.infer<typeof NotificationFormSchema>) => {
     try {
-      const res = await fetch(getApiPath("/api/user/notification-preferences"), {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+      const saved = await apiRequest<any>("/api/user/notification-preferences", {
+        method: "PATCH",
+        body: JSON.stringify(data),
       });
-      if (!res.ok) {
-        throw new Error('Failed to save preferences');
-      }
-      const saved = await res.json();
       toast({
         title: "Preferences saved",
         description: "Your notification preferences have been updated.",
       });
       // Sync form with server response
       form.reset({
-        storyUpdates: !!saved.storyUpdates,
-        communityActivity: !!saved.communityActivity,
-        securityAlerts: !!saved.securityAlerts,
-        readingReminders: !!saved.readingReminders,
-        recommendations: !!saved.recommendations,
-        preferredTime: saved.preferredTime || 'evening',
-        timezone: saved.timezone || 'pst'
+        storyUpdates: !!saved?.storyUpdates,
+        communityActivity: !!saved?.communityActivity,
+        securityAlerts: !!saved?.securityAlerts,
+        readingReminders: !!saved?.readingReminders,
+        recommendations: !!saved?.recommendations,
+        preferredTime: saved?.preferredTime || "evening",
+        timezone: saved?.timezone || "pst",
       });
     } catch (e) {
       toast({
