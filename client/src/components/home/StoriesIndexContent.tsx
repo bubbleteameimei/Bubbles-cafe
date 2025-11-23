@@ -117,12 +117,6 @@ export default function StoriesIndexContent() {
   const [pageSize, setPageSize] = useState<number>(6);
   const [isManualLoadingMore, setIsManualLoadingMore] = useState(false);
   const cardsGridRef = React.useRef<HTMLDivElement | null>(null);
-  const breakpointRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null);isibleCount, setVisibleCount] = useState<number>(6);
-  const [pageSize, setPageSize] = useState<number>(6);
-  const [isManualLoadingMore, setIsManualLoadingMore] = useState(false);
-  const cardsGridRef = React.useRef&lt;HTMLDivElement | null&gt;(null);isibleCount, setVisibleCount] = useState<number>(6);
-  const [pageSize, setPageSize] = useState<number>(6);
-  const cardsGridRef = React.useRef<HTMLDivElement | null>(null);
   const breakpointRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null);
   const fetchedReactionIdsRef = React.useRef<Set<number>>(new Set());
   // SSE sources per post to stream live updates (LRU-limited)
