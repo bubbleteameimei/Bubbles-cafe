@@ -47,7 +47,6 @@ export async function saveThemeDefinitionOverrides(
 ): Promise<void> {
   // Try server first
   try {
-    const { getApiPath } = await import('./asset-path');
     const csrf =
       typeof document !== 'undefined'
         ? document.cookie.replace(/(?:(?:^|.*;\s*)XSRF-TOKEN\s*=\s*([^;]*).*$)|^.*$/, '$1')
