@@ -9927,7 +9927,7 @@ router.patch("/api/user/privacy-settings", async (req: Request, env: Env) => {
     );
   }
 });rivacy settings (Supabase-backed) - replaces Express /api/user/privacy-settings
-router.get("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; {
+router.get("/api/user/privacy-settings", async (req: Request, env: Env) => {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return json({ error: "Supabase not configured" }, { status: 500 });
   }
@@ -9945,7 +9945,7 @@ router.get("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; {
   try {
     const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
     const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
-    const headers: Record&lt;string, string&gt; = {
+    const headers: Record<string, string> = {
       apikey: env.SUPABASE_ANON_KEY,
       Authorization: `Bearer ${serviceKey}`,
       Accept: "application/json",
@@ -9968,8 +9968,8 @@ router.get("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; {
       );
     }
 
-    const rows = (await res.json().catch(() =&gt; [])) as any[];
-    let row = Array.isArray(rows) &amp;&amp; rows.length &gt; 0 ? rows[0] : null;
+    const rows = (await res.json().catch(() => [])) as any[];
+    let row = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
 
     if (!row) {
       const defaults = {
@@ -9994,9 +9994,9 @@ router.get("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; {
           { status: 500 },
         );
       }
-      const inserted = (await insertRes.json().catch(() =&gt; [])) as any[];
+      const inserted = (await insertRes.json().catch(() => [])) as any[];
       row =
-        Array.isArray(inserted) &amp;&amp; inserted.length &gt; 0
+        Array.isArray(inserted) && inserted.length > 0
           ? inserted[0]
           : defaults;
     }
@@ -10018,7 +10018,7 @@ router.get("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; {
   }
 });
 
-router.patch("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; {
+router.patch("/api/user/privacy-settings", async (req: Request, env: Env) => {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return json({ error: "Supabase not configured" }, { status: 500 });
   }
@@ -10035,12 +10035,12 @@ router.patch("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; 
 
   let body: any;
   try {
-    body = (await (req as any).json?.().catch(() =&gt; ({}))) || {};
+    body = (await (req as any).json?.().catch(() => ({}))) || {};
   } catch {
     body = {};
   }
 
-  const patch: Record&lt;string, any&gt; = {};
+  const patch: Record<string, any> = {};
 
   if (Object.prototype.hasOwnProperty.call(body, "profileVisible")) {
     patch.profile_visible = !!body.profileVisible;
@@ -10068,7 +10068,7 @@ router.patch("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; 
   try {
     const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
     const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
-    const headers: Record&lt;string, string&gt; = {
+    const headers: Record<string, string> = {
       apikey: env.SUPABASE_ANON_KEY,
       Authorization: `Bearer ${serviceKey}`,
       Accept: "application/json",
@@ -10092,8 +10092,8 @@ router.patch("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; 
       );
     }
 
-    const rows = (await res.json().catch(() =&gt; [])) as any[];
-    const existing = Array.isArray(rows) &amp;&amp; rows.length &gt; 0 ? rows[0] : null;
+    const rows = (await res.json().catch(() => [])) as any[];
+    const existing = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
 
     let row: any;
 
@@ -10114,9 +10114,9 @@ router.patch("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; 
         );
       }
 
-      const updatedRows = (await updateRes.json().catch(() =&gt; [])) as any[];
+      const updatedRows = (await updateRes.json().catch(() => [])) as any[];
       row =
-        Array.isArray(updatedRows) &amp;&amp; updatedRows.length &gt; 0
+        Array.isArray(updatedRows) && updatedRows.length > 0
           ? updatedRows[0]
           : existing;
     } else {
@@ -10146,9 +10146,9 @@ router.patch("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; 
         );
       }
 
-      const inserted = (await insertRes.json().catch(() =&gt; [])) as any[];
+      const inserted = (await insertRes.json().catch(() => [])) as any[];
       row =
-        Array.isArray(inserted) &amp;&amp; inserted.length &gt; 0
+        Array.isArray(inserted) && inserted.length > 0
           ? inserted[0]
           : insertBody;
     }
@@ -10173,7 +10173,7 @@ router.patch("/api/user/privacy-settings", async (req: Request, env: Env) =&gt; 
 // User notification preferences (Supabase-backed) - replaces Express /api/user/notification-preferences
 router.get(
   "/api/user/notification-preferences",
-  async (req: Request, env: Env) =&gt; {
+  async (req: Request, env: Env) => {
     if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
       return json({ error: "Supabase not configured" }, { status: 500 });
     }
@@ -10192,7 +10192,7 @@ router.get(
       const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
       const serviceKey =
         env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
-      const headers: Record&lt;string, string&gt; = {
+      const headers: Record<string, string> = {
         apikey: env.SUPABASE_ANON_KEY,
         Authorization: `Bearer ${serviceKey}`,
         Accept: "application/json",
@@ -10217,8 +10217,8 @@ router.get(
         );
       }
 
-      const rows = (await res.json().catch(() =&gt; [])) as any[];
-      let row = Array.isArray(rows) &amp;&amp; rows.length &gt; 0 ? rows[0] : null;
+      const rows = (await res.json().catch(() => [])) as any[];
+      let row = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
 
       if (!row) {
         const defaults = {
@@ -10245,9 +10245,9 @@ router.get(
             { status: 500 },
           );
         }
-        const inserted = (await insertRes.json().catch(() =&gt; [])) as any[];
+        const inserted = (await insertRes.json().catch(() => [])) as any[];
         row =
-          Array.isArray(inserted) &amp;&amp; inserted.length &gt; 0
+          Array.isArray(inserted) && inserted.length > 0
             ? inserted[0]
             : defaults;
       }
@@ -10274,7 +10274,7 @@ router.get(
 
 router.patch(
   "/api/user/notification-preferences",
-  async (req: Request, env: Env) =&gt; {
+  async (req: Request, env: Env) => {
     if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
       return json({ error: "Supabase not configured" }, { status: 500 });
     }
@@ -10291,16 +10291,16 @@ router.patch(
 
     let body: any;
     try {
-      body = (await (req as any).json?.().catch(() =&gt; ({}))) || {};
+      body = (await (req as any).json?.().catch(() => ({}))) || {};
     } catch {
       body = {};
     }
 
-    const patch: Record&lt;string, any&gt; = {};
+    const patch: Record<string, any> = {};
 
-    const coerceBool = (value: any) =&gt; !!value;
+    const coerceBool = (value: any) => !!value;
 
-    const applyBool = (keys: string[], column: string) =&gt; {
+    const applyBool = (keys: string[], column: string) => {
       for (const key of keys) {
         if (Object.prototype.hasOwnProperty.call(body, key)) {
           patch[column] = coerceBool((body as any)[key]);
@@ -10333,7 +10333,7 @@ router.patch(
       const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
       const serviceKey =
         env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
-      const headers: Record&lt;string, string&gt; = {
+      const headers: Record<string, string> = {
         apikey: env.SUPABASE_ANON_KEY,
         Authorization: `Bearer ${serviceKey}`,
         Accept: "application/json",
@@ -10358,8 +10358,8 @@ router.patch(
         );
       }
 
-      const rows = (await res.json().catch(() =&gt; [])) as any[];
-      const existing = Array.isArray(rows) &amp;&amp; rows.length &gt; 0 ? rows[0] : null;
+      const rows = (await res.json().catch(() => [])) as any[];
+      const existing = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
 
       let row: any;
 
@@ -10382,9 +10382,9 @@ router.patch(
           );
         }
 
-        const updatedRows = (await updateRes.json().catch(() =&gt; [])) as any[];
+        const updatedRows = (await updateRes.json().catch(() => [])) as any[];
         row =
-          Array.isArray(updatedRows) &amp;&amp; updatedRows.length &gt; 0
+          Array.isArray(updatedRows) && updatedRows.length > 0
             ? updatedRows[0]
             : existing;
       } else {
@@ -10416,9 +10416,9 @@ router.patch(
           );
         }
 
-        const inserted = (await insertRes.json().catch(() =&gt; [])) as any[];
+        const inserted = (await insertRes.json().catch(() => [])) as any[];
         row =
-          Array.isArray(inserted) &amp;&amp; inserted.length &gt; 0
+          Array.isArray(inserted) && inserted.length > 0
             ? inserted[0]
             : insertBody;
       }
@@ -10443,7 +10443,7 @@ router.patch(
   },
 );
 
-router.get("/api/notifications", async (req: Request, env: Env) =&gt; {
+router.get("/api/notifications", async (req: Request, env: Env) => {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return proxyToBackend(req, env);
   }
@@ -10482,10 +10482,10 @@ router.get("/api/notifications", async (req: Request, env: Env) =&gt; {
       );
     }
 
-    const rows = (await resp.json().catch(() =&gt; [])) as any[];
-    const notifications = rows.map((n) =&gt; {
+    const rows = (await resp.json().catch(() => [])) as any[];
+    const notifications = rows.map((n) => {
       const meta =
-        n &amp;&amp; typeof n.metadata === "object" &amp;&amp; n.metadata !== null ? n.metadata : {};
+        n && typeof n.metadata === "object" && n.metadata !== null ? n.metadata : {};
       return {
         id: n.id,
         type: String(n.type || "info"),
