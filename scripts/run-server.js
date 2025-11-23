@@ -41,9 +41,9 @@ server.listen(3000, '0.0.0.0', () => {
     console.log('✅ Sent port readiness signal to Replit');
   }
   
-  // Start the actual app server
-  console.log('🚀 Starting the application server...');
-  const serverProcess = spawn('npx', ['tsx', 'server/index.ts'], {
+  // Start the actual app dev environment (Worker + Vite)
+  console.log('🚀 Starting the application dev environment...');
+  const serverProcess = spawn('npm', ['run', 'dev'], {
     stdio: 'inherit',
     shell: true,
     env: {

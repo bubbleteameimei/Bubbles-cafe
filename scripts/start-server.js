@@ -15,8 +15,8 @@ const __dirname = dirname(__filename);
 console.clear();
 console.log('🚀 Starting the application server...');
 
-// Start the server process
-const serverProcess = spawn('npx', ['tsx', 'server/index.ts'], {
+// Start the dev environment (Worker + Vite)
+const serverProcess = spawn('npm', ['run', 'dev'], {
   stdio: 'inherit',
   shell: true
 });
