@@ -36,6 +36,7 @@ interface Env {
   STRIPE_WEBHOOK_SECRET: string;
   PAYSTACK_SECRET_KEY: string;
   PAYSTACK_PUBLIC_KEY: string;
+  PAYSTACK_BASE_URL?: string;
   EMAIL_PROVIDER_API_KEY: string;
   GMAIL_APP_PASSWORD: string;
   GMAIL_ADMIN_EMAIL: string;
