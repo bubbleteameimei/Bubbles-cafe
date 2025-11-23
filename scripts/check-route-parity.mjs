@@ -111,6 +111,34 @@ function collectWorkerRoutes(rootDir) {
   return routes;
 }
 
+function normalizeRoutePath(route) {
+  if (typeof route !== "string") return "";
+
+  let pathOnly = route;
+
+  const qIndex = pathOnly.indexOf("?");
+  const hashIndex = pathOnly.indexOf("#");
+  const cutIndex =
+    qIndex === -1
+      ? hashIndex
+      : hashIndex === -1
+      ? qIndex
+      : Math.min(qIndex, hashIndex);
+
+  if (cutIndex !== -1) {
+    pathOnly = pathOnly.slice(0, cutIndex);
+  }
+
+  pathOnly = pathOnly.trim();
+  if (!pathOnly) return "";
+
+  if (pathOnly.length > 1 && pathOnly.endsWith("/")) {
+    pathOnly = pathOnly.slice(0, -1);
+  }
+
+  return pathOnly;
+}
+
 function main() {
   const rootDir = process.cwd();
 
@@ -128,26 +156,42 @@ function main() {
     process.exit(1);
   }
 
-  const missing = [];
+  const normalizedWorkerRoutes = new Set();
+  for (const route of workerRoutes) {
+    const normalized = normalizeRoutePath(route);
+    if (normalized) normalizedWorkerRoutes.add(normalized);
+  }
+
+  const normalizedClientRoutes = new Map();
 
   for (const route of clientRoutes) {
     // Only check obvious static routes; skip if they look parameterised or dynamic
     if (route.includes("${")) continue;
 
-    const exact = workerRoutes.has(route);
-    const withoutTrailingSlash =
-      route.endsWith("/") && workerRoutes.has(route.slice(0, -1));
-    const withTrailingSlash =
-      !route.endsWith("/") && workerRoutes.has(`${route}/`);
+    const normalized = normalizeRoutePath(route);
+    if (!normalized) continue;
 
-    if (!exact && !withoutTrailingSlash && !withTrailingSlash) {
-      missing.push(route);
+    let originals = normalizedClientRoutes.get(normalized);
+    if (!originals) {
+      originals = new Set();
+      normalizedClientRoutes.set(normalized, originals);
+    }
+    originals.add(route);
+  }
+
+  const missing = [];
+
+  for (const [normalized, originals] of normalizedClientRoutes.entries()) {
+    if (!normalizedWorkerRoutes.has(normalized)) {
+      for (const r of originals) {
+        missing.push(r);
+      }
     }
   }
 
   if (missing.length > 0) {
     console.error(
-      "[route-parity] The following client-used API routes have no matching Worker route in src/index.ts:"
+      "[route-parity] The following client-used API routes have no matching Worker route in src/index.ts (query strings ignored):"
     );
     for (const r of missing) {
       console.error(`  - ${r}`);
