@@ -1123,6 +1123,81 @@ router.get(
   }
 );
 
+// AUTH: password reset via Supabase recover endpoint
+router.post(
+  "/api/auth/forgot-password",
+  async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      // In non-Supabase environments we can't send a reset email, but for
+      // security we still return a generic success response.
+      return json({
+        success: true,
+        message:
+          "If an account with that email exists, a password reset link has been sent.",
+        emailSent: false,
+      });
+    }
+
+    try {
+      const body =
+        (await (req as any).json?.().catch(() => ({}))) || {};
+      const rawEmail =
+        typeof body.email === "string" ? body.email.trim() : "";
+      if (!rawEmail) {
+        return json(
+          { error: "Email is required" },
+          { status: 400 }
+        );
+      }
+
+      const email = rawEmail.toLowerCase();
+      const frontendBase = (env.FRONTEND_URL ||
+        "https://bubblescafe.space"
+      ).replace(/\/+$/, "");
+      const redirectTo = `${frontendBase}/reset-password`;
+
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+      const url = `${baseUrl}/auth/v1/recover`;
+
+      let emailSent = false;
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            apikey: env.SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            redirect_to: redirectTo,
+          }),
+        });
+        emailSent = res.ok;
+      } catch {
+        emailSent = false;
+      }
+
+      return json({
+        success: true,
+        message:
+          "If an account with that email exists, a password reset link has been sent.",
+        emailSent,
+      });
+    } catch {
+      return json(
+        {
+          success: true,
+          message:
+            "If an account with that email exists, a password reset link has been sent.",
+        },
+        { status: 200 }
+      );
+    }
+  }
+);
+
 // ERROR REPORTING endpoint used by client metrics logger
 router.post("/api/errors", async (req: Request) => {
   try {
@@ -2956,6 +3031,149 @@ router.post(
 );
 
 // EMAIL SERVICE
+router.get("/api/email/status", async (_req: Request, env: Env) => {
+  try {
+    const gmailAvailable =
+      !!env.GMAIL_APP_PASSWORD && !!env.GMAIL_ADMIN_EMAIL;
+    const sendgridAvailable =
+      !!env.EMAIL_PROVIDER_API_KEY && !!env.GMAIL_ADMIN_EMAIL;
+    const mailersendAvailable = false;
+
+    let primaryService: "gmail" | "sendgrid" | "mailersend" | "none" = "none";
+    if (sendgridAvailable) {
+      primaryService = "sendgrid";
+    } else if (gmailAvailable) {
+      primaryService = "gmail";
+    } else if (mailersendAvailable) {
+      primaryService = "mailersend";
+    }
+
+    return json({
+      success: primaryService !== "none",
+      services: {
+        gmail: gmailAvailable,
+        sendgrid: sendgridAvailable,
+        mailersend: mailersendAvailable,
+      },
+      primaryService,
+    });
+  } catch (error) {
+    return json(
+      {
+        success: false,
+        services: {
+          gmail: false,
+          sendgrid: false,
+          mailersend: false,
+        },
+        primaryService: "none",
+        error: String(error),
+      },
+      { status: 500 }
+    );
+  }
+});
+
+router.post("/api/email/test", async (req: Request, env: Env) => {
+  if (!env.EMAIL_PROVIDER_API_KEY || !env.GMAIL_ADMIN_EMAIL) {
+    return json(
+      {
+        success: false,
+        message: "Email provider is not configured on the server",
+      },
+      { status: 500 }
+    );
+  }
+
+  try {
+    const ip = req.headers.get("cf-connecting-ip") || "unknown";
+    const allowed = await checkRateLimit(
+      env,
+      `email-test-${ip}`,
+      5,
+      3600
+    );
+    if (!allowed) {
+      return json(
+        { success: false, message: "Rate limited" },
+        { status: 429 }
+      );
+    }
+
+    const body =
+      (await (req as any).json?.().catch(() => ({}))) || {};
+
+    const to =
+      typeof body.to === "string" ? body.to.trim() : "";
+    if (!to) {
+      return json(
+        { success: false, message: "Recipient email address is required" },
+        { status: 400 }
+      );
+    }
+
+    const subject =
+      typeof body.subject === "string" && body.subject.trim()
+        ? body.subject.trim()
+        : "Test Email from Bubble's Cafe";
+    const text =
+      typeof body.text === "string" && body.text.trim()
+        ? body.text
+        : "This is a test email from the Bubble's Cafe admin panel.";
+    const html =
+      typeof body.html === "string" && body.html.trim()
+        ? body.html
+        : `<h1>${subject}</h1><p>${text}</p>`;
+
+    const emailRes = await fetch(
+      "https://api.sendgrid.com/v3/mail/send",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.EMAIL_PROVIDER_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          personalizations: [{ to: [{ email: to }] }],
+          from: { email: env.GMAIL_ADMIN_EMAIL },
+          subject,
+          content: [
+            { type: "text/plain", value: text },
+            { type: "text/html", value: html },
+          ],
+        }),
+      }
+    );
+
+    if (!emailRes.ok) {
+      const errText = await emailRes.text().catch(() => "");
+      return json(
+        {
+          success: false,
+          message: "Failed to send test email",
+          error: errText.slice(0, 200),
+        },
+        { status: 500 }
+      );
+    }
+
+    const messageId = crypto.randomUUID();
+    return json({
+      success: true,
+      message: "Test email sent successfully",
+      details: {
+        service: "sendgrid",
+        messageId,
+      },
+    });
+  } catch (error) {
+    return json(
+      { success: false, message: String(error) },
+      { status: 500 }
+    );
+  }
+});
+
 router.post("/api/email-service/send", async (req: Request, env: Env) => {
   try {
     const ip = req.headers.get("cf-connecting-ip") || "unknown";
@@ -6908,6 +7126,54 @@ router.post(
   }
 );
 
+// GET /api/comments/recent - list recent approved comments for sidebar widgets
+router.get("/api/comments/recent", async (_req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json([]);
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+    const url = new URL(`${baseUrl}/rest/v1/comments`);
+    url.searchParams.set(
+      "select",
+      "id,content,created_at,is_approved"
+    );
+    url.searchParams.set("is_approved", "eq.true");
+    url.searchParams.set("order", "created_at.desc");
+    url.searchParams.set("limit", "10");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return json([]);
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    if (!Array.isArray(rows)) {
+      return json([]);
+    }
+
+    const items = rows.map((row: any) => ({
+      id: row.id,
+      content:
+        typeof row.content === "string" ? row.content : "",
+      createdAt:
+        row.created_at || new Date().toISOString(),
+    }));
+
+    return json(items);
+  } catch {
+    return json([]);
+  }
+});
+
 router.get("/api/themes/categories", async (_req: Request, env: Env) => {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return json({
@@ -8179,6 +8445,76 @@ function mapFeedbackRowToApiItem(row: any): any {
   };
 }
 
+async function insertFeedbackRow(
+  env: Env,
+  data: {
+    type?: string;
+    content: string;
+    page?: string | null;
+    category?: string | null;
+    browser?: string | null;
+    operatingSystem?: string | null;
+    screenResolution?: string | null;
+    userAgent?: string | null;
+    metadata?: any;
+    userId?: number | null;
+  }
+): Promise<any | null> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return null;
+  }
+
+  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+
+  const headers: Record<string, string> = {
+    apikey: env.SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${serviceKey}`,
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    Prefer: "return=representation",
+  };
+
+  const type =
+    typeof data.type === "string" && data.type.trim()
+      ? data.type.trim().toLowerCase()
+      : "general";
+
+  const payload: any = {
+    type,
+    content: data.content,
+    page: data.page || "unknown",
+    status: "pending",
+    user_id:
+      data.userId != null && Number.isFinite(data.userId)
+        ? data.userId
+        : null,
+    browser: data.browser || "unknown",
+    operating_system: data.operatingSystem || "unknown",
+    screen_resolution: data.screenResolution || "unknown",
+    user_agent: data.userAgent || "",
+    category: data.category || type,
+    metadata: data.metadata || {},
+  };
+
+  const res = await fetch(`${baseUrl}/rest/v1/user_feedback`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    return null;
+  }
+
+  const rows = (await res.json().catch(() => [])) as any[];
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return null;
+  }
+
+  return rows[0];
+}
+
 async function fetchFeedbackRowById(
   env: Env,
   id: number,
@@ -8263,6 +8599,222 @@ function buildFeedbackSuggestionsPayload(
     responseHints: hints,
   };
 }
+
+// POST /api/feedback - user feedback submission (general/bug/feature/content)
+router.post("/api/feedback", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return proxyToBackend(req, env);
+  }
+
+  try {
+    const body =
+      (await (req as any).json?.().catch(() => ({}))) || {};
+
+    const rawContent =
+      typeof body.content === "string" ? body.content.trim() : "";
+    if (!rawContent || rawContent.length < 5) {
+      return json(
+        { error: "Feedback content must be at least 5 characters" },
+        { status: 400 }
+      );
+    }
+
+    const rawType =
+      typeof body.type === "string"
+        ? body.type.trim().toLowerCase()
+        : "general";
+    const allowedTypes = new Set([
+      "general",
+      "bug",
+      "feature",
+      "content",
+    ]);
+    const type = allowedTypes.has(rawType) ? rawType : "general";
+
+    const page =
+      typeof body.page === "string" && body.page.trim()
+        ? body.page.trim()
+        : undefined;
+    const category =
+      typeof body.category === "string" && body.category.trim()
+        ? body.category.trim()
+        : undefined;
+    const browser =
+      typeof body.browser === "string" && body.browser.trim()
+        ? body.browser.trim()
+        : undefined;
+    const operatingSystem =
+      typeof body.operatingSystem === "string" &&
+      body.operatingSystem.trim()
+        ? body.operatingSystem.trim()
+        : undefined;
+    const screenResolution =
+      typeof body.screenResolution === "string" &&
+      body.screenResolution.trim()
+        ? body.screenResolution.trim()
+        : undefined;
+    const userAgentFromBody =
+      typeof body.userAgent === "string" && body.userAgent.trim()
+        ? body.userAgent.trim()
+        : undefined;
+
+    const metadata =
+      body && typeof body.metadata === "object" && body.metadata !== null
+        ? body.metadata
+        : {};
+
+    const headerUa =
+      req.headers.get("User-Agent") ||
+      req.headers.get("user-agent") ||
+      undefined;
+    const userAgent = userAgentFromBody || headerUa;
+
+    const token = getBearerToken(req);
+    let userId: number | null = null;
+    if (token) {
+      const uid = await getSupabaseUserIdFromJwt(env, token);
+      if (Number.isFinite(uid || NaN)) {
+        userId = Number(uid);
+      }
+    }
+
+    const row = await insertFeedbackRow(env, {
+      type,
+      content: rawContent,
+      page,
+      category,
+      browser,
+      operatingSystem,
+      screenResolution,
+      userAgent,
+      metadata,
+      userId,
+    });
+
+    if (!row) {
+      return json(
+        { error: "Failed to submit feedback" },
+        { status: 500 }
+      );
+    }
+
+    const feedback = mapFeedbackRowToApiItem(row);
+    return json({ success: true, feedback }, { status: 201 });
+  } catch {
+    return json(
+      { error: "Failed to submit feedback" },
+      { status: 500 }
+    );
+  }
+});
+
+// POST /api/user-feedback - lightweight endpoint used by global error boundary
+router.post("/api/user-feedback", async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    // No persistent store; best-effort log and acknowledge
+    try {
+      const body = await req.json().catch(() => ({}));
+      console.warn("[UserFeedback] received without Supabase", body);
+    } catch {
+      // ignore
+    }
+    return json({ success: true, stored: false });
+  }
+
+  try {
+    const body =
+      (await (req as any).json?.().catch(() => ({}))) || {};
+
+    const rawContent =
+      typeof body.content === "string" ? body.content.trim() : "";
+    if (!rawContent) {
+      return json(
+        { error: "Feedback content is required" },
+        { status: 400 }
+      );
+    }
+
+    const rawType =
+      typeof body.type === "string"
+        ? body.type.trim().toLowerCase()
+        : "bug";
+    const type = rawType || "bug";
+
+    const metadataInput =
+      body && typeof body.metadata === "object" && body.metadata !== null
+        ? body.metadata
+        : {};
+
+    let page: string | undefined;
+    const urlValue =
+      typeof (metadataInput as any).url === "string"
+        ? (metadataInput as any).url
+        : undefined;
+    if (typeof body.page === "string" && body.page.trim()) {
+      page = body.page.trim();
+    } else if (urlValue) {
+      try {
+        const urlObj = new URL(urlValue);
+        page = urlObj.pathname || undefined;
+      } catch {
+        page = urlValue;
+      }
+    }
+
+    const uaFromMeta =
+      typeof (metadataInput as any).userAgent === "string"
+        ? (metadataInput as any).userAgent
+        : undefined;
+    const headerUa =
+      req.headers.get("User-Agent") ||
+      req.headers.get("user-agent") ||
+      undefined;
+    const userAgent = uaFromMeta || headerUa;
+
+    const category =
+      typeof body.category === "string" && body.category.trim()
+        ? body.category.trim()
+        : "bug";
+
+    const token = getBearerToken(req);
+    let userId: number | null = null;
+    if (token) {
+      const uid = await getSupabaseUserIdFromJwt(env, token);
+      if (Number.isFinite(uid || NaN)) {
+        userId = Number(uid);
+      }
+    }
+
+    const metadata = {
+      source: "error-boundary",
+      ...metadataInput,
+    };
+
+    const row = await insertFeedbackRow(env, {
+      type,
+      content: rawContent,
+      page,
+      category,
+      userAgent,
+      metadata,
+      userId,
+    });
+
+    if (!row) {
+      return json(
+        { error: "Failed to submit feedback" },
+        { status: 500 }
+      );
+    }
+
+    return json({ success: true, id: row.id }, { status: 201 });
+  } catch {
+    return json(
+      { error: "Failed to submit feedback" },
+      { status: 500 }
+    );
+  }
+});
 
 // GET /api/feedback - admin list with Supabase JWT, fallback to legacy Express for cookie-based admin
 router.get("/api/feedback", async (req: Request, env: Env) => {
