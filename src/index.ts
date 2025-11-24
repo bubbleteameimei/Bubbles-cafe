@@ -15,57 +15,52 @@ const router = Router();
 // ============================================================================
 
 interface Env {
-  SUPABASE_URL: string;
-  SUPABASE_ANON_KEY: string;
-  SUPABASE_SERVICE_ROLE_KEY?: string;
-  SUPABASE_POOLER_URL?: string;
-  DATABASE_URL?: string;
-  WORDPRESS_API: string;
-  WORDPRESS_SYNC_KEY: string;
-  CSRF_SECRET: string;
-  STRIPE_WEBHOOK_SECRET: string;
-  PAYSTACK_SECRET_KEY: string;
-  PAYSTACK_PUBLIC_KEY: string;
-  PAYSTACK_BASE_URL?: string;
-  PAYSTACK_LINK?: string;
-  EMAIL_PROVIDER_API_KEY: string;
-  GMAIL_APP_PASSWORD: string;
-  GMAIL_ADMIN_EMAIL: string;
-  FRONTEND_URL: string;
-  NODE_ENV: string;
-  ENABLE_WORDPRESS_SCHEDULER?: string;nv {
+  // KV namespaces
   IDEMPOTENCY_KV: KVNamespace;
   USER_CACHE_KV: KVNamespace;
   SYNC_METADATA_KV: KVNamespace;
   ANALYTICS_KV: KVNamespace;
   CACHE_KV: KVNamespace;
 
+  // Durable Objects
   LOCKS_DO: DurableObjectNamespace;
   RATE_LIMIT_DO: DurableObjectNamespace;
   IDEMPOTENCY_DO: DurableObjectNamespace;
 
+  // Supabase / database
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   SUPABASE_POOLER_URL?: string;
   DATABASE_URL?: string;
+
+  // WordPress / sync
   WORDPRESS_API: string;
   WORDPRESS_SYNC_KEY: string;
+
+  // Security / auth
   CSRF_SECRET: string;
   STRIPE_WEBHOOK_SECRET: string;
+
+  // Payments
   PAYSTACK_SECRET_KEY: string;
   PAYSTACK_PUBLIC_KEY: string;
   PAYSTACK_BASE_URL?: string;
+  PAYSTACK_LINK?: string;
+
+  // Email
   EMAIL_PROVIDER_API_KEY: string;
   GMAIL_APP_PASSWORD: string;
   GMAIL_ADMIN_EMAIL: string;
 
+  // OAuth
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_REDIRECT_URI?: string;
 
+  // App URLs / environment
   FRONTEND_URL: string;
   NODE_ENV: string;
-  ENABLE_WORDPRESS_SCHEDULER: string;
+  ENABLE_WORDPRESS_SCHEDULER?: string;
 }
 
 // ============================================================================
@@ -910,12 +905,8 @@ router.get('/api/config/public', async (req: Request, env: Env) => {
       {
         error: 'Failed to load configuration',
       },
-      { status: 500 }
+      { status: 500 },
     );
-  }
-});
-  } catch (e) {
-    return json({ error: 'Failed to load public configuration' }, { status: 500 });
   }
 });
 
