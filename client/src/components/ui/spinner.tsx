@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTheme } from '@/hooks/use-theme';
 
 interface SpinnerProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -17,13 +18,19 @@ export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
     xl: 'w-12 h-12 border-4',
   };
 
+  const { theme } = useTheme();
+  const mode = theme.mode; // 'light' or 'dark'
+
   const reduceMotion =
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const baseTrackColor = 'hsl(var(--foreground))';
-  const accentColor = 'hsl(var(--primary))';
+  const isDark = mode === 'dark';
+
+  // In dark mode, use theme primary as accent; in other modes, use solid black
+  const baseTrackColor = isDark ? 'hsl(var(--muted-foreground))' : 'rgba(0,0,0,0.28)';
+  const accentColor = isDark ? 'hsl(var(--primary))' : '#000000';
 
   return (
     <div

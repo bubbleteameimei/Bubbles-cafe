@@ -59,24 +59,24 @@
   --clr-info-a20: #92b2e5;
 
   /* Map to shadcn/tailwind tokens (HSL channels) */
-  /* Slightly tinted, blood-dark background for horror aesthetic */
-  --background: 350 25% 4%;
+  /* Neutral near-black background with red used only for accents */
+  --background: 220 18% 4%;
   --foreground: 0 0% 98%;
 
-  --card: 350 20% 8%;
+  --card: 220 16% 8%;
   --card-foreground: 0 0% 98%;
 
-  --popover: 350 20% 8%;
+  --popover: 220 16% 8%;
   --popover-foreground: 0 0% 98%;
 
   /* Primary accent: very dark old blood red for core actions */
   --primary: 0 70% 32%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 350 18% 12%;
+  --secondary: 220 14% 12%;
   --secondary-foreground: 0 0% 98%;
 
-  --muted: 350 16% 11%;
+  --muted: 220 12% 10%;
   --muted-foreground: 0 0% 65%;
 
   /* Accent: dark red for hover states and subtle highlights */
