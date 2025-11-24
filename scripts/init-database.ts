@@ -66,7 +66,7 @@ async function initializeDatabase() {
         reading_time_minutes INTEGER,
         "likesCount" INTEGER DEFAULT 0,
         "dislikesCount" INTEGER DEFAULT 0,
-        metadata JSON DEFAULT '{}' NOT NULL,
+        metadata JSONB DEFAULT '{}' NOT NULL,
         created_at TIMESTAMP DEFAULT NOW() NOT NULL
       );
       CREATE INDEX IF NOT EXISTS post_author_idx ON posts(author_id);
@@ -87,7 +87,7 @@ async function initializeDatabase() {
         is_approved BOOLEAN DEFAULT false NOT NULL,
         edited BOOLEAN DEFAULT false NOT NULL,
         edited_at TIMESTAMP,
-        metadata JSON DEFAULT '{}' NOT NULL,
+        metadata JSONB DEFAULT '{}' NOT NULL,
         created_at TIMESTAMP DEFAULT NOW() NOT NULL
       );
       ALTER TABLE comments ADD CONSTRAINT parent_id_fk FOREIGN KEY (parent_id) REFERENCES comments(id);
@@ -109,7 +109,7 @@ async function initializeDatabase() {
             author_id INTEGER NOT NULL REFERENCES users(id),
             total_posts INTEGER DEFAULT 0 NOT NULL,
             total_likes INTEGER DEFAULT 0 NOT NULL,
-            total_tips TEXT DEFAULT '0' NOT NULL,
+            total_tips NUMERIC(14,2) DEFAULT '0' NOT NULL,
             updated_at TIMESTAMP DEFAULT NOW() NOT NULL
           );
         `
@@ -146,7 +146,7 @@ async function initializeDatabase() {
             email TEXT NOT NULL,
             subject TEXT NOT NULL,
             message TEXT NOT NULL,
-            metadata JSON,
+            metadata JSONB,
             created_at TIMESTAMP DEFAULT NOW() NOT NULL
           );
         `
@@ -158,7 +158,7 @@ async function initializeDatabase() {
             id SERIAL PRIMARY KEY,
             email TEXT NOT NULL UNIQUE,
             status TEXT DEFAULT 'active' NOT NULL,
-            metadata JSON DEFAULT '{}',
+            metadata JSONB DEFAULT '{}',
             created_at TIMESTAMP DEFAULT NOW() NOT NULL,
             updated_at TIMESTAMP DEFAULT NOW() NOT NULL
           );
@@ -211,7 +211,7 @@ async function initializeDatabase() {
             post_id INTEGER NOT NULL REFERENCES posts(id),
             created_at TIMESTAMP DEFAULT NOW() NOT NULL,
             notes TEXT,
-            last_position DECIMAL DEFAULT 0 NOT NULL,
+            last_position TEXT DEFAULT '0' NOT NULL,
             tags TEXT[],
             UNIQUE(user_id, post_id)
           );
@@ -258,7 +258,7 @@ async function initializeDatabase() {
             id SERIAL PRIMARY KEY,
             user_id INTEGER REFERENCES users(id),
             action TEXT NOT NULL,
-            details JSON DEFAULT '{}' NOT NULL,
+            details JSONB DEFAULT '{}' NOT NULL,
             ip_address TEXT,
             user_agent TEXT,
             created_at TIMESTAMP DEFAULT NOW() NOT NULL
@@ -275,7 +275,7 @@ async function initializeDatabase() {
             unique_visitors INTEGER DEFAULT 0 NOT NULL,
             average_read_time DOUBLE PRECISION DEFAULT 0 NOT NULL,
             bounce_rate DOUBLE PRECISION DEFAULT 0 NOT NULL,
-            device_stats JSON DEFAULT '{}' NOT NULL,
+            device_stats JSONB DEFAULT '{}' NOT NULL,
             updated_at TIMESTAMP DEFAULT NOW() NOT NULL
           );
           CREATE INDEX IF NOT EXISTS analytics_post_id_idx ON analytics(post_id);

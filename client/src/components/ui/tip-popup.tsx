@@ -8,6 +8,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Coffee, Heart } from "lucide-react";
+import { resolvePaystackLink } from "@/lib/paystack";
 
 interface TipPopupProps {
   autoShow?: boolean; // For reader page auto-popup
@@ -34,8 +35,13 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
     return () => {};
   }, [autoShow]);
 
-  const handleTip = () => {
-    window.open('https://paystack.com/pay/z7fmj9rge1', '_blank', 'noopener,noreferrer');
+  const handleTip = async () => {
+    try {
+      const link = await resolvePaystackLink();
+      window.open(link, '_blank', 'noopener,noreferrer');
+    } catch {
+      // Silent failure; user can retry or use other support options.
+    }
     setIsOpen(false);
   };
 

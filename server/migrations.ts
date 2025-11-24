@@ -122,6 +122,18 @@ async function createMissingTables(existingTables: string[], client: any) {
           user_agent TEXT
         )
       `);
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS performance_metrics_metric_idx
+        ON performance_metrics(metric_name)
+      `);
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS performance_metrics_timestamp_idx
+        ON performance_metrics(timestamp)
+      `);
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS performance_metrics_identifier_idx
+        ON performance_metrics(identifier)
+      `);
       log("[Migrations] performance_metrics table created");
       creationAttempts['performance_metrics'] = true;
     } catch (error) {
@@ -382,6 +394,8 @@ async function createMissingTables(existingTables: string[], client: any) {
     }
   }
 
+  // DEPRECATED: tag_relations is a legacy helper table and is no longer used by the Worker API.
+  // It remains for backward compatibility with older services.
   // Create tag_relations table if it doesn't exist (depends on posts)
   if (!existingTables.includes('tag_relations')) {
     if (!existingTables.includes('posts')) {
@@ -407,6 +421,8 @@ async function createMissingTables(existingTables: string[], client: any) {
     }
   }
 
+  // DEPRECATED: user_preferences is a legacy key/value preferences table.
+  // New code should use user_privacy_settings or user_notification_preferences instead.
   // Create user_preferences table if it doesn't exist (depends on users)
   if (!existingTables.includes('user_preferences')) {
     if (!existingTables.includes('users')) {

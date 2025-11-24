@@ -79,8 +79,16 @@ try {
 })();
 
 // Service worker registration (enabled by default in production)
+// Can be disabled by setting VITE_ENABLE_SW=false at build time.
 try {
-  if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  const envAny: any = (import.meta as any)?.env || {};
+  const swFlag = envAny.VITE_ENABLE_SW;
+  const enableSw =
+    swFlag === undefined
+      ? true
+      : String(swFlag).toLowerCase() === "true";
+
+  if (import.meta.env.PROD && enableSw && "serviceWorker" in navigator) {
     const hostname = location.hostname;
     const isLocalhost = ["localhost", "127.0.0.1"].includes(hostname);
     const isPreviewHost =
