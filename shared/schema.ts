@@ -41,6 +41,7 @@ export const updateUserSchema = insertUserSchema.partial().omit({
   password_hash: true // Separate endpoint for password changes
 });
 
+// Legacy registration/login schemas (kept for backward compatibility; prefer registrationSchema/loginSchema below)
 export const userRegistrationSchema = z.object({
   email: emailSchema,
   username: usernameSchema,
@@ -70,7 +71,7 @@ export const posts = pgTable("posts", {
   dislikesCount: integer("dislikes_count").default(0),
   baselineLikes: integer("baseline_likes").default(0),
   baselineDislikes: integer("baseline_dislikes").default(0),
-  metadata: json("metadata").default({}).notNull(),
+  metadata: jsonb("metadata").default({}).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 }, (table) => ({
   // Indexes for frequently accessed columns
@@ -105,24 +106,26 @@ export const updatePostSchema = insertPostSchema.partial().omit({
 // Author Stats - removed fear rating
 export const authorStats = pgTable("author_stats", {
   id: serial("id").primaryKey(),
-  authorId: integer("author_id").references(() => users.id).notNull(),
+  authorId: integer("author_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   totalPosts: integer("total_posts").default(0).notNull(),
   totalLikes: integer("total_likes").default(0).notNull(),
-  totalTips: text("total_tips").default("0").notNull(),
+  totalTips: decimal("total_tips", { precision: 14, scale: 2 }).default("0").notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
-});
+}, (table) => ({
+  authorUnique: unique("author_stats_author_unique").on(table.authorId)
+}));
 
 // Unified comments table with self-referencing structure
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
-  postId: integer("post_id").references(() => posts.id),
+  postId: integer("post_id").references(() => posts.id, { onDelete: "cascade" }),
   parentId: integer("parent_id"), // Remove circular reference temporarily
-  userId: integer("user_id").references(() => users.id), // Optional for anonymous users
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }), // Optional for anonymous users
   is_approved: boolean("is_approved").default(false).notNull(),
   edited: boolean("edited").default(false).notNull(),
   editedAt: timestamp("edited_at"),
-  metadata: json("metadata").default({}).notNull(),
+  metadata: jsonb("metadata").default({}).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 }, (table) => {
   return {
@@ -187,17 +190,19 @@ export const commentVotes = pgTable("comment_votes", {
 // Reading Progress
 export const readingProgress = pgTable("reading_progress", {
   id: serial("id").primaryKey(),
-  postId: integer("post_id").references(() => posts.id).notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  postId: integer("post_id").references(() => posts.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   progress: decimal("progress").notNull(),
   lastReadAt: timestamp("last_read_at").defaultNow().notNull()
-});
+}, (table) => ({
+  userPostUnique: unique("reading_progress_user_post_unique").on(table.userId, table.postId)
+}));
 
 // Secret Progress
 export const secretProgress = pgTable("secret_progress", {
   id: serial("id").primaryKey(),
-  postId: integer("post_id").references(() => posts.id).notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  postId: integer("post_id").references(() => posts.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   discoveryDate: timestamp("discovery_date").defaultNow().notNull()
 });
 
@@ -208,7 +213,7 @@ export const contactMessages = pgTable("contact_messages", {
   email: text("email").notNull(),
   subject: text("subject").notNull(),
   message: text("message").notNull(),
-  metadata: json("metadata"),
+  metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
@@ -217,7 +222,7 @@ export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   status: text("status").default("active").notNull(), // active, unsubscribed, bounced
-  metadata: json("metadata").default({}),
+  metadata: jsonb("metadata").default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
@@ -226,7 +231,7 @@ export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
 export const sessions = pgTable("sessions", {
   id: serial("id").primaryKey(),
   token: text("token").notNull().unique(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   lastAccessedAt: timestamp("last_accessed_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
@@ -235,7 +240,7 @@ export const sessions = pgTable("sessions", {
 // Password Reset Tokens
 export const resetTokens = pgTable("reset_tokens", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   token: text("token").notNull().unique(),
   expiresAt: timestamp("expires_at").notNull(),
   used: boolean("used").default(false).notNull(),
@@ -245,8 +250,8 @@ export const resetTokens = pgTable("reset_tokens", {
 // Keep post likes table intact
 export const postLikes = pgTable("post_likes", {
   id: serial("id").primaryKey(),
-  postId: integer("post_id").references(() => posts.id).notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  postId: integer("post_id").references(() => posts.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   isLike: boolean("is_like").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
@@ -264,8 +269,8 @@ export const writingChallenges = pgTable("writing_challenges", {
 // Challenge Entries
 export const challengeEntries = pgTable("challenge_entries", {
   id: serial("id").primaryKey(),
-  challengeId: integer("challenge_id").references(() => writingChallenges.id).notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  challengeId: integer("challenge_id").references(() => writingChallenges.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   content: text("content").notNull(),
   submissionDate: timestamp("submission_date").defaultNow().notNull()
 });
@@ -283,7 +288,7 @@ export const reportedContent = pgTable("reported_content", {
   id: serial("id").primaryKey(),
   contentType: text("content_type").notNull(),
   contentId: integer("content_id").notNull(),
-  reporterId: integer("reporter_id").references(() => users.id).notNull(),
+  reporterId: integer("reporter_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   reason: text("reason").notNull(),
   status: text("status").default("pending").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
@@ -292,9 +297,9 @@ export const reportedContent = pgTable("reported_content", {
 // Author Tips
 export const authorTips = pgTable("author_tips", {
   id: serial("id").primaryKey(),
-  authorId: integer("author_id").references(() => users.id).notNull(),
-  userId: integer("user_id").references(() => users.id),
-  amount: text("amount").notNull(),
+  authorId: integer("author_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   currency: text("currency").default("USD"),
   status: text("status").default("pending"), // pending, succeeded, failed
   providerId: text("provider_id"),
@@ -314,17 +319,18 @@ export const webhooks = pgTable("webhooks", {
 // Analytics
 export const analytics = pgTable("analytics", {
   id: serial("id").primaryKey(),
-  postId: integer("post_id").references(() => posts.id).notNull(),
+  postId: integer("post_id").references(() => posts.id, { onDelete: "cascade" }).notNull(),
   pageViews: integer("page_views").default(0).notNull(),
   uniqueVisitors: integer("unique_visitors").default(0).notNull(),
   averageReadTime: doublePrecision("average_read_time").default(0).notNull(),
   bounceRate: doublePrecision("bounce_rate").default(0).notNull(),
-  deviceStats: json("device_stats").default({}).notNull(),
+  deviceStats: jsonb("device_stats").default({}).notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 }, (table) => ({
   // Add indexes for analytics queries
   postIdIdx: index("analytics_post_id_idx").on(table.postId),
-  updatedAtIdx: index("analytics_updated_at_idx").on(table.updatedAt)
+  updatedAtIdx: index("analytics_updated_at_idx").on(table.updatedAt),
+  postIdUnique: unique("analytics_post_id_unique").on(table.postId)
 }));
 
 // Add performance metrics table definition after the analytics table
@@ -337,14 +343,18 @@ export const performanceMetrics = pgTable("performance_metrics", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
   url: text("url").notNull(),
   userAgent: text("user_agent"),
-});
+}, (table) => ({
+  metricNameIdx: index("performance_metrics_metric_idx").on(table.metricName),
+  timestampIdx: index("performance_metrics_timestamp_idx").on(table.timestamp),
+  identifierIdx: index("performance_metrics_identifier_idx").on(table.identifier)
+}));
 
 // Activity Logs
 export const activityLogs = pgTable("activity_logs", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
   action: text("action").notNull(),
-  details: json("details").default({}).notNull(),
+  details: jsonb("details").default({}).notNull(),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
   createdAt: timestamp("created_at").defaultNow().notNull()
@@ -374,12 +384,12 @@ export const adminNotifications = pgTable("admin_notifications", {
 // User Notifications (for user-facing in-app notifications)
 export const userNotifications = pgTable("user_notifications", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   type: text("type").notNull(), // 'story', 'comment', 'system'
   title: text("title").notNull(),
   message: text("message").notNull(),
   isRead: boolean("is_read").default(false).notNull(),
-  metadata: json("metadata").default({}),
+  data: jsonb("data").default({}),
   createdAt: timestamp("created_at").defaultNow().notNull()
 }, (table) => ({
   userIdx: index("user_notifications_user_idx").on(table.userId),
@@ -390,12 +400,19 @@ export const userNotifications = pgTable("user_notifications", {
 
 export const userProgress = pgTable("user_progress", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   progressType: text("progress_type").notNull(), // 'reading' or 'writing'
-  postId: integer("post_id").references(() => posts.id),
+  postId: integer("post_id").references(() => posts.id, { onDelete: "cascade" }),
   progress: decimal("progress").notNull(),
   lastActivityAt: timestamp("last_activity_at").defaultNow().notNull()
-});
+}, (table) => ({
+  userTypePostUnique: unique("user_progress_user_type_post_unique").on(
+    table.userId,
+    table.progressType,
+    table.postId
+  ),
+  userTypeIdx: index("user_progress_user_type_idx").on(table.userId, table.progressType)
+}));
 
 export const siteAnalytics = pgTable("site_analytics", {
   id: serial("id").primaryKey(),
@@ -405,17 +422,20 @@ export const siteAnalytics = pgTable("site_analytics", {
   uniqueVisitors: integer("unique_visitors").default(0).notNull(),
   averageReadTime: doublePrecision("average_read_time").default(0).notNull(),
   bounceRate: doublePrecision("bounce_rate").default(0).notNull(),
-  deviceStats: json("device_stats").default({}).notNull()
-});
+  deviceStats: jsonb("device_stats").default({}).notNull()
+}, (table) => ({
+  identifierIdx: index("site_analytics_identifier_idx").on(table.identifier),
+  timestampIdx: index("site_analytics_timestamp_idx").on(table.timestamp)
+}));
 
 // Story Bookmarks
 export const bookmarks = pgTable("bookmarks", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  postId: integer("post_id").references(() => posts.id).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  postId: integer("post_id").references(() => posts.id, { onDelete: "cascade" }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   notes: text("notes"), // Optional user notes about the bookmark
-  lastPosition: decimal("last_position").default("0").notNull(), // Reading position
+  lastPosition: text("last_position").default("0").notNull(), // Reading position
   tags: text("tags").array(), // User-defined tags for organizing bookmarks
 }, (table) => ({
   userPostUnique: unique().on(table.userId, table.postId), // A user can bookmark a post only once
@@ -433,20 +453,20 @@ export const userFeedback = pgTable("user_feedback", {
   // rating field removed
   page: text("page").default("unknown"),
   status: text("status").default("pending").notNull(), // pending, reviewed, resolved, rejected
-  userId: integer("user_id").references(() => users.id), // Optional, as feedback can be anonymous
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }), // Optional, as feedback can be anonymous
   browser: text("browser").default("unknown"),
   operatingSystem: text("operating_system").default("unknown"),
   screenResolution: text("screen_resolution").default("unknown"),
   userAgent: text("user_agent").default("unknown"),
   category: text("category").default("general"),
-  metadata: json("metadata").default({}), // For storing additional info
+  metadata: jsonb("metadata").default({}), // For storing additional info
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
 // User Privacy Settings
 export const userPrivacySettings = pgTable("user_privacy_settings", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull().unique(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull().unique(),
   profileVisible: boolean("profile_visible").default(true).notNull(),
   shareReadingHistory: boolean("share_reading_history").default(false).notNull(),
   anonymousCommenting: boolean("anonymous_commenting").default(false).notNull(),
@@ -458,7 +478,7 @@ export const userPrivacySettings = pgTable("user_privacy_settings", {
 // User Notification Preferences (persisted preferences for notifications)
 export const userNotificationPreferences = pgTable("user_notification_preferences", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull().unique(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull().unique(),
   storyUpdates: boolean("story_updates").default(true).notNull(),
   communityActivity: boolean("community_activity").default(true).notNull(),
   securityAlerts: boolean("security_alerts").default(true).notNull(),

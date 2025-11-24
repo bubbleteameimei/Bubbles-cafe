@@ -4815,23 +4815,67 @@ router.post('/api/reading-progress', async (req: Request, env: Env) => {
       return json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    // Insert reading progress row; RLS ensures user_id matches auth.uid() via users table
-    const progressUrl = `${baseUrl}/rest/v1/reading_progress`;
-    const insertRes = await fetch(progressUrl, {
-      method: 'POST',
+    // Upsert reading progress row; ensure a single record per (user, post)
+    const progressBase = `${baseUrl}/rest/v1/reading_progress`;
+
+    // Check for existing progress for this user/post
+    const checkUrl = new URL(progressBase);
+    checkUrl.searchParams.set('select', 'id,progress,last_read_at');
+    checkUrl.searchParams.set('post_id', `eq.${postId}`);
+    checkUrl.searchParams.set('user_id', `eq.${userId}`);
+    checkUrl.searchParams.set('limit', '1');
+
+    const checkRes = await fetch(checkUrl.toString(), {
       headers,
-      body: JSON.stringify({
-        post_id: postId,
-        user_id: userId,
-        progress: String(percent),
-        last_read_at: new Date().toISOString(),
-      }),
     });
 
-    if (insertRes.status === 401 || insertRes.status === 403) {
+    if (checkRes.status === 401 || checkRes.status === 403) {
       return json({ error: 'Authentication required' }, { status: 401 });
     }
-    if (!insertRes.ok) {
+    if (!checkRes.ok) {
+      return json({ error: 'Failed to save reading progress' }, { status: 500 });
+    }
+
+    const existingRows = (await checkRes.json().catch(() => [])) as any[];
+    const existing = Array.isArray(existingRows) && existingRows.length > 0 ? existingRows[0] : null;
+
+    const payload = {
+      post_id: postId,
+      user_id: userId,
+      progress: String(percent),
+      last_read_at: new Date().toISOString(),
+    };
+
+    let writeRes: Response;
+
+    if (existing && existing.id != null) {
+      // Update existing row
+      const updateUrl = new URL(progressBase);
+      updateUrl.searchParams.set('id', `eq.${existing.id}`);
+      writeRes = await fetch(updateUrl.toString(), {
+        method: 'PATCH',
+        headers: {
+          ...headers,
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({
+          progress: payload.progress,
+          last_read_at: payload.last_read_at,
+        }),
+      });
+    } else {
+      // Insert new row
+      writeRes = await fetch(progressBase, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+    }
+
+    if (writeRes.status === 401 || writeRes.status === 403) {
+      return json({ error: 'Authentication required' }, { status: 401 });
+    }
+    if (!writeRes.ok) {
       return json({ error: 'Failed to save reading progress' }, { status: 500 });
     }
 
