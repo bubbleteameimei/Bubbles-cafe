@@ -512,6 +512,290 @@ async function ensureReadingProgressForeignKeys(client: any): Promise<void> {
   await ensureCascadeForColumn('user_id', 'users');
 }
 
+async function deduplicateSecretProgress(client: any): Promise<void> {
+  console.log('🔧 Deduplicating secret_progress rows (by user_id, post_id)...');
+
+  try {
+    await client.query(`
+      DELETE FROM secret_progress sp
+      USING (
+        SELECT id,
+               row_number() OVER (
+                 PARTITION BY user_id, post_id
+                 ORDER BY discovery_date DESC, id DESC
+               ) AS rn
+        FROM secret_progress
+      ) dup
+      WHERE sp.id = dup.id
+        AND dup.rn > 1
+    `);
+    console.log('  ✓ Duplicate secret_progress rows (if any) have been removed');
+  } catch (err: any) {
+    console.warn(
+      `  ⚠️ Failed to deduplicate secret_progress: ${err?.message || String(err)}`,
+    );
+  }
+}
+
+async function addSecretProgressUniqueConstraint(client: any): Promise<void> {
+  console.log('🔧 Ensuring UNIQUE(user_id, post_id) on secret_progress...');
+
+  const res = await client.query(
+    `
+    SELECT 1
+    FROM information_schema.table_constraints
+    WHERE table_schema = 'public'
+      AND table_name = 'secret_progress'
+      AND constraint_type = 'UNIQUE'
+      AND constraint_name = 'secret_progress_user_post_unique'
+  `,
+  );
+
+  if (res.rows.length > 0) {
+    console.log('  • UNIQUE constraint secret_progress_user_post_unique already exists');
+    return;
+  }
+
+  try {
+    await client.query(`
+      ALTER TABLE secret_progress
+      ADD CONSTRAINT secret_progress_user_post_unique
+      UNIQUE (user_id, post_id)
+    `);
+    console.log('  ✓ Added UNIQUE(user_id, post_id) on secret_progress');
+  } catch (err: any) {
+    console.warn(
+      `  ⚠️ Failed to add UNIQUE(user_id, post_id) on secret_progress: ${err?.message || String(err)}`,
+    );
+  }
+}
+
+async function ensureSecretProgressForeignKeys(client: any): Promise<void> {
+  console.log('🔧 Ensuring secret_progress foreign keys use ON DELETE CASCADE...');
+
+  type FKRow = {
+    constraint_name: string;
+    column_name: string;
+    foreign_table_name: string;
+    foreign_column_name: string;
+    delete_rule: string;
+    update_rule: string;
+  };
+
+  let rows: FKRow[] = [];
+  try {
+    const res = await client.query(
+      `
+      SELECT
+        tc.constraint_name,
+        kcu.column_name,
+        ccu.table_name AS foreign_table_name,
+        ccu.column_name AS foreign_column_name,
+        rc.update_rule,
+        rc.delete_rule
+      FROM information_schema.table_constraints AS tc
+      JOIN information_schema.key_column_usage AS kcu
+        ON tc.constraint_name = kcu.constraint_name
+       AND tc.table_schema = kcu.table_schema
+      JOIN information_schema.referential_constraints AS rc
+        ON tc.constraint_name = rc.constraint_name
+       AND tc.table_schema = rc.constraint_schema
+      JOIN information_schema.constraint_column_usage AS ccu
+        ON ccu.constraint_name = tc.constraint_name
+       AND ccu.table_schema = tc.table_schema
+      WHERE tc.constraint_type = 'FOREIGN KEY'
+        AND tc.table_schema = 'public'
+        AND tc.table_name = 'secret_progress'
+    `,
+    );
+    rows = res.rows as FKRow[];
+  } catch (err: any) {
+    console.warn(
+      `  ⚠️ Failed to inspect secret_progress foreign keys: ${err?.message || String(err)}`,
+    );
+    return;
+  }
+
+  const byColumn = (column: string) =>
+    rows.filter((fk) => fk.column_name === column);
+
+  async function ensureCascadeForColumn(
+    column: 'post_id' | 'user_id',
+    refTable: 'posts' | 'users',
+  ) {
+    const fks = byColumn(column);
+
+    const hasCascade = fks.some(
+      (fk) =>
+        fk.foreign_table_name === refTable &&
+        fk.delete_rule.toUpperCase() === 'CASCADE',
+    );
+
+    if (hasCascade) {
+      console.log(`  • secret_progress.${column} already has ON DELETE CASCADE`);
+      return;
+    }
+
+    // Drop existing FKs on this column (if any)
+    for (const fk of fks) {
+      try {
+        console.log(
+          `  → Dropping FK ${fk.constraint_name} on secret_progress.${column}`,
+        );
+        await client.query(
+          `ALTER TABLE secret_progress DROP CONSTRAINT "${fk.constraint_name}"`,
+        );
+      } catch (err: any) {
+        console.warn(
+          `    ⚠️ Failed to drop constraint ${fk.constraint_name}: ${err?.message || String(err)}`,
+        );
+      }
+    }
+
+    // Add the desired FK
+    const newName =
+      column === 'post_id'
+        ? 'secret_progress_post_id_fkey'
+        : 'secret_progress_user_id_fkey';
+
+    try {
+      console.log(
+        `  → Adding FK ${newName} ON DELETE CASCADE for secret_progress.${column} → ${refTable}.id`,
+      );
+      await client.query(`
+        ALTER TABLE secret_progress
+        ADD CONSTRAINT ${newName}
+        FOREIGN KEY (${column})
+        REFERENCES ${refTable}(id)
+        ON DELETE CASCADE
+      `);
+      console.log(`    ✓ Added ${newName}`);
+    } catch (err: any) {
+      console.warn(
+        `    ⚠️ Failed to add ${newName}: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  await ensureCascadeForColumn('post_id', 'posts');
+  await ensureCascadeForColumn('user_id', 'users');
+}
+
+async function ensureCommentForeignKeysCascade(client: any): Promise<void> {
+  console.log('🔧 Ensuring comment_votes/comment_reactions FKs cascade on delete of comments...');
+
+  if (!(await tableExists(client, 'comments'))) {
+    console.log('  • Skipping comment FK cascade: comments table does not exist');
+    return;
+  }
+
+  type FKRow = {
+    constraint_name: string;
+    column_name: string;
+    foreign_table_name: string;
+    foreign_column_name: string;
+    delete_rule: string;
+    update_rule: string;
+  };
+
+  async function fixChildTable(tableName: 'comment_votes' | 'comment_reactions') {
+    if (!(await tableExists(client, tableName))) {
+      console.log(`  • Skipping ${tableName}: table does not exist`);
+      return;
+    }
+
+    let rows: FKRow[] = [];
+    try {
+      const res = await client.query(
+        `
+        SELECT
+          tc.constraint_name,
+          kcu.column_name,
+          ccu.table_name AS foreign_table_name,
+          ccu.column_name AS foreign_column_name,
+          rc.update_rule,
+          rc.delete_rule
+        FROM information_schema.table_constraints AS tc
+        JOIN information_schema.key_column_usage AS kcu
+          ON tc.constraint_name = kcu.constraint_name
+         AND tc.table_schema = kcu.table_schema
+        JOIN information_schema.referential_constraints AS rc
+          ON tc.constraint_name = rc.constraint_name
+         AND tc.table_schema = rc.constraint_schema
+        JOIN information_schema.constraint_column_usage AS ccu
+          ON ccu.constraint_name = tc.constraint_name
+         AND ccu.table_schema = tc.table_schema
+        WHERE tc.constraint_type = 'FOREIGN KEY'
+          AND tc.table_schema = 'public'
+          AND tc.table_name = $1
+          AND ccu.table_name = 'comments'
+          AND kcu.column_name = 'comment_id'
+      `,
+        [tableName],
+      );
+      rows = res.rows as FKRow[];
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to inspect ${tableName} foreign keys: ${err?.message || String(err)}`,
+      );
+      return;
+    }
+
+    if (!rows.length) {
+      console.log(`  • No FK from ${tableName}.comment_id to comments found; skipping`);
+      return;
+    }
+
+    const hasCascade = rows.some(
+      (fk) =>
+        fk.delete_rule.toUpperCase() === 'CASCADE' &&
+        fk.foreign_table_name === 'comments' &&
+        fk.column_name === 'comment_id',
+    );
+
+    if (hasCascade) {
+      console.log(`  • ${tableName}.comment_id already has ON DELETE CASCADE`);
+      return;
+    }
+
+    // Drop existing FKs on comment_id
+    for (const fk of rows) {
+      try {
+        console.log(`  → Dropping FK ${fk.constraint_name} on ${tableName}.comment_id`);
+        await client.query(
+          `ALTER TABLE ${tableName} DROP CONSTRAINT "${fk.constraint_name}"`,
+        );
+      } catch (err: any) {
+        console.warn(
+          `    ⚠️ Failed to drop constraint ${fk.constraint_name} on ${tableName}: ${err?.message || String(err)}`,
+        );
+      }
+    }
+
+    const newName = `${tableName}_comment_id_fkey`;
+    try {
+      console.log(
+        `  → Adding FK ${newName} ON DELETE CASCADE for ${tableName}.comment_id → comments.id`,
+      );
+      await client.query(`
+        ALTER TABLE ${tableName}
+        ADD CONSTRAINT ${newName}
+        FOREIGN KEY (comment_id)
+        REFERENCES comments(id)
+        ON DELETE CASCADE
+      `);
+      console.log(`    ✓ Added ${newName}`);
+    } catch (err: any) {
+      console.warn(
+        `    ⚠️ Failed to add ${newName} on ${tableName}: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  await fixChildTable('comment_votes');
+  await fixChildTable('comment_reactions');
+}
+
 /**
  * Optionally enforce UNIQUE(post_id) on analytics when safe.
  */
@@ -784,6 +1068,366 @@ async function ensureIndexCoverage(client: any): Promise<void> {
       );
     }
   }
+
+  // user_feedback indexes (status, created_at), (user_id, created_at)
+  if (await tableExists(client, 'user_feedback')) {
+    try {
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS user_feedback_status_created_at_idx ON user_feedback(status, created_at DESC)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS user_feedback_user_id_created_at_idx ON user_feedback(user_id, created_at DESC)',
+      );
+      console.log('  ✓ user_feedback indexes ensured');
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to ensure user_feedback indexes: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  // reported_content indexes
+  if (await tableExists(client, 'reported_content')) {
+    try {
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS reported_content_status_created_at_idx ON reported_content(status, created_at DESC)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS reported_content_content_type_created_at_idx ON reported_content(content_type, created_at DESC)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS reported_content_content_id_idx ON reported_content(content_id)',
+      );
+      console.log('  ✓ reported_content indexes ensured');
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to ensure reported_content indexes: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  // author_tips indexes
+  if (await tableExists(client, 'author_tips')) {
+    try {
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS author_tips_author_id_created_at_idx ON author_tips(author_id, created_at DESC)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS author_tips_user_id_created_at_idx ON author_tips(user_id, created_at DESC)',
+      );
+      console.log('  ✓ author_tips indexes ensured');
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to ensure author_tips indexes: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  // activity_logs indexes (user_id, created_at), (created_at)
+  if (await tableExists(client, 'activity_logs')) {
+    try {
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS activity_logs_user_id_created_at_idx ON activity_logs(user_id, created_at DESC)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS activity_logs_created_at_idx ON activity_logs(created_at DESC)',
+      );
+      console.log('  ✓ activity_logs indexes ensured');
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to ensure activity_logs indexes: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  // admin_notifications indexes (is_read, created_at)
+  if (await tableExists(client, 'admin_notifications')) {
+    try {
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS admin_notifications_is_read_created_at_idx ON admin_notifications(is_read, created_at DESC)',
+      );
+      console.log('  ✓ admin_notifications indexes ensured');
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to ensure admin_notifications indexes: ${err?.message || String(err)}`,
+      );
+    }
+  }
+}
+
+async function deduplicateSecretProgress(client: any): Promise<void> {
+  console.log('🔧 Deduplicating secret_progress rows (by user_id, post_id)...');
+
+  try {
+    await client.query(`
+      DELETE FROM secret_progress sp
+      USING (
+        SELECT id,
+               row_number() OVER (
+                 PARTITION BY user_id, post_id
+                 ORDER BY discovery_date DESC, id DESC
+               ) AS rn
+        FROM secret_progress
+      ) dup
+      WHERE sp.id = dup.id
+        AND dup.rn > 1
+    `);
+    console.log('  ✓ Duplicate secret_progress rows (if any) have been removed');
+  } catch (err: any) {
+    console.warn(
+      `  ⚠️ Failed to deduplicate secret_progress: ${err?.message || String(err)}`,
+    );
+  }
+}
+
+async function addSecretProgressUniqueConstraint(client: any): Promise<void> {
+  console.log('🔧 Ensuring UNIQUE(user_id, post_id) on secret_progress...');
+
+  const res = await client.query(
+    `
+    SELECT 1
+    FROM information_schema.table_constraints
+    WHERE table_schema = 'public'
+      AND table_name = 'secret_progress'
+      AND constraint_type = 'UNIQUE'
+      AND constraint_name = 'secret_progress_user_post_unique'
+  `,
+  );
+
+  if (res.rows.length > 0) {
+    console.log('  • UNIQUE constraint secret_progress_user_post_unique already exists');
+    return;
+  }
+
+  try {
+    await client.query(`
+      ALTER TABLE secret_progress
+      ADD CONSTRAINT secret_progress_user_post_unique
+      UNIQUE (user_id, post_id)
+    `);
+    console.log('  ✓ Added UNIQUE(user_id, post_id) on secret_progress');
+  } catch (err: any) {
+    console.warn(
+      `  ⚠️ Failed to add UNIQUE(user_id, post_id) on secret_progress: ${err?.message || String(err)}`,
+    );
+  }
+}
+
+async function ensureSecretProgressForeignKeys(client: any): Promise<void> {
+  console.log('🔧 Ensuring secret_progress foreign keys use ON DELETE CASCADE...');
+
+  type FKRow = {
+    constraint_name: string;
+    column_name: string;
+    foreign_table_name: string;
+    foreign_column_name: string;
+    delete_rule: string;
+    update_rule: string;
+  };
+
+  let rows: FKRow[] = [];
+  try {
+    const res = await client.query(
+      `
+      SELECT
+        tc.constraint_name,
+        kcu.column_name,
+        ccu.table_name AS foreign_table_name,
+        ccu.column_name AS foreign_column_name,
+        rc.update_rule,
+        rc.delete_rule
+      FROM information_schema.table_constraints AS tc
+      JOIN information_schema.key_column_usage AS kcu
+        ON tc.constraint_name = kcu.constraint_name
+       AND tc.table_schema = kcu.table_schema
+      JOIN information_schema.referential_constraints AS rc
+        ON tc.constraint_name = rc.constraint_name
+       AND tc.table_schema = rc.constraint_schema
+      JOIN information_schema.constraint_column_usage AS ccu
+        ON ccu.constraint_name = tc.constraint_name
+       AND ccu.table_schema = tc.table_schema
+      WHERE tc.constraint_type = 'FOREIGN KEY'
+        AND tc.table_schema = 'public'
+        AND tc.table_name = 'secret_progress'
+    `,
+    );
+    rows = res.rows as FKRow[];
+  } catch (err: any) {
+    console.warn(
+      `  ⚠️ Failed to inspect secret_progress foreign keys: ${err?.message || String(err)}`,
+    );
+    return;
+  }
+
+  const byColumn = (column: string) =>
+    rows.filter((fk) => fk.column_name === column);
+
+  async function ensureCascadeForColumn(
+    column: 'post_id' | 'user_id',
+    refTable: 'posts' | 'users',
+  ) {
+    const fks = byColumn(column);
+
+    const hasCascade = fks.some(
+      (fk) =>
+        fk.foreign_table_name === refTable &&
+        fk.delete_rule.toUpperCase() === 'CASCADE',
+    );
+
+    if (hasCascade) {
+      console.log(`  • secret_progress.${column} already has ON DELETE CASCADE`);
+      return;
+    }
+
+    for (const fk of fks) {
+      try {
+        console.log(
+          `  → Dropping FK ${fk.constraint_name} on secret_progress.${column}`,
+        );
+        await client.query(
+          `ALTER TABLE secret_progress DROP CONSTRAINT "${fk.constraint_name}"`,
+        );
+      } catch (err: any) {
+        console.warn(
+          `    ⚠️ Failed to drop constraint ${fk.constraint_name}: ${err?.message || String(err)}`,
+        );
+      }
+    }
+
+    const newName =
+      column === 'post_id'
+        ? 'secret_progress_post_id_fkey'
+        : 'secret_progress_user_id_fkey';
+
+    try {
+      console.log(
+        `  → Adding FK ${newName} ON DELETE CASCADE for secret_progress.${column} → ${refTable}.id`,
+      );
+      await client.query(`
+        ALTER TABLE secret_progress
+        ADD CONSTRAINT ${newName}
+        FOREIGN KEY (${column})
+        REFERENCES ${refTable}(id)
+        ON DELETE CASCADE
+      `);
+      console.log(`    ✓ Added ${newName}`);
+    } catch (err: any) {
+      console.warn(
+        `    ⚠️ Failed to add ${newName}: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  await ensureCascadeForColumn('post_id', 'posts');
+  await ensureCascadeForColumn('user_id', 'users');
+}
+
+async function ensureCommentForeignKeysCascade(client: any): Promise<void> {
+  console.log('🔧 Ensuring comment_* foreign keys use ON DELETE CASCADE for comment_id...');
+
+  type FKRow = {
+    constraint_name: string;
+    column_name: string;
+    foreign_table_name: string;
+    foreign_column_name: string;
+    delete_rule: string;
+    update_rule: string;
+  };
+
+  async function fixTable(tableName: 'comment_votes' | 'comment_reactions'): Promise<void> {
+    if (!(await tableExists(client, tableName))) {
+      console.log(`  • Skipping ${tableName}: table does not exist`);
+      return;
+    }
+
+    let rows: FKRow[] = [];
+    try {
+      const res = await client.query(
+        `
+        SELECT
+          tc.constraint_name,
+          kcu.column_name,
+          ccu.table_name AS foreign_table_name,
+          ccu.column_name AS foreign_column_name,
+          rc.update_rule,
+          rc.delete_rule
+        FROM information_schema.table_constraints AS tc
+        JOIN information_schema.key_column_usage AS kcu
+          ON tc.constraint_name = kcu.constraint_name
+         AND tc.table_schema = kcu.table_schema
+        JOIN information_schema.referential_constraints AS rc
+          ON tc.constraint_name = rc.constraint_name
+         AND tc.table_schema = rc.constraint_schema
+        JOIN information_schema.constraint_column_usage AS ccu
+          ON ccu.constraint_name = tc.constraint_name
+         AND ccu.table_schema = tc.table_schema
+        WHERE tc.constraint_type = 'FOREIGN KEY'
+          AND tc.table_schema = 'public'
+          AND tc.table_name = $1
+          AND kcu.column_name = 'comment_id'
+      `,
+        [tableName],
+      );
+      rows = res.rows as FKRow[];
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to inspect ${tableName} foreign keys: ${err?.message || String(err)}`,
+      );
+      return;
+    }
+
+    const hasCascade = rows.some(
+      (fk) =>
+        fk.foreign_table_name === 'comments' &&
+        fk.delete_rule.toUpperCase() === 'CASCADE',
+    );
+
+    if (hasCascade) {
+      console.log(`  • ${tableName}.comment_id already has ON DELETE CASCADE`);
+      return;
+    }
+
+    for (const fk of rows) {
+      try {
+        console.log(
+          `  → Dropping FK ${fk.constraint_name} on ${tableName}.comment_id`,
+        );
+        await client.query(
+          `ALTER TABLE ${tableName} DROP CONSTRAINT "${fk.constraint_name}"`,
+        );
+      } catch (err: any) {
+        console.warn(
+          `    ⚠️ Failed to drop constraint ${fk.constraint_name} on ${tableName}: ${err?.message || String(err)}`,
+        );
+      }
+    }
+
+    const newName =
+      tableName === 'comment_votes'
+        ? 'comment_votes_comment_id_fkey'
+        : 'comment_reactions_comment_id_fkey';
+
+    try {
+      console.log(
+        `  → Adding FK ${newName} ON DELETE CASCADE for ${tableName}.comment_id → comments.id`,
+      );
+      await client.query(`
+        ALTER TABLE ${tableName}
+        ADD CONSTRAINT ${newName}
+        FOREIGN KEY (comment_id)
+        REFERENCES comments(id)
+        ON DELETE CASCADE
+      `);
+      console.log(`    ✓ Added ${newName}`);
+    } catch (err: any) {
+      console.warn(
+        `    ⚠️ Failed to add ${newName} on ${tableName}: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  await fixTable('comment_votes');
+  await fixTable('comment_reactions');
 }
 
 async function migrateSupabaseSchema(): Promise<void> {
@@ -806,7 +1450,16 @@ async function migrateSupabaseSchema(): Promise<void> {
       console.log('ℹ️ reading_progress table not found, skipping reading progress fixes');
     }
 
+    if (await tableExists(client, 'secret_progress')) {
+      await deduplicateSecretProgress(client);
+      await addSecretProgressUniqueConstraint(client);
+      await ensureSecretProgressForeignKeys(client);
+    } else {
+      console.log('ℹ️ secret_progress table not found, skipping secret progress fixes');
+    }
+
     await ensureAnalyticsUnique(client);
+    await ensureCommentForeignKeysCascade(client);
     await ensureIndexCoverage(client);
 
     console.log('✅ Supabase schema migration completed');
