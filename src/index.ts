@@ -7467,7 +7467,7 @@ router.get("/api/trending-stories", async (_req: Request, env: Env) => {
       });
     }
 
-    const baseUrl = env.SUPABASE_URL.replace(/\\/+$/, '');
+    const baseUrl = (env.SUPABASE_URL || '').replace(/\/+$/, '');
     const headers: Record<string, string> = {
       apikey: env.SUPABASE_ANON_KEY,
       Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
