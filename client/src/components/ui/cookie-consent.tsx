@@ -139,7 +139,7 @@ const overlay = (
       aria-describedby="cookie-consent-description"
     >
       {!isPreferencesModalOpen && (
-        <div className="max-w-[340px] w-full mx-auto bg-card rounded-lg shadow-xl border border-border/50 p-6 space-y-4">
+        <div className="max-w-[340px] w-full mx-auto bg-background rounded-lg shadow-xl border border-border/50 p-6 space-y-4">
           <div className="flex justify-center relative">
             <svg
               className="w-[50px] h-[50px] transition-all duration-300 hover:rotate-12 hover:scale-110"
@@ -189,31 +189,31 @@ const overlay = (
 
           <div className="flex flex-col items-center gap-0.5">
           <div className="flex justify-center gap-4">
-            {/* Accept uses neutral secondary styling to avoid strong red fatigue in dark mode */}
+            {/* Accept: emphasize using primary accent, but on neutral dark surfaces */}
             <button
               ref={acceptBtnRef}
               onClick={handleAccept}
               className={cn(
-                "px-6 py-2 rounded-full bg-secondary text-secondary-foreground font-medium",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
-                "transition-all duration-300 hover:bg-secondary/90 hover:scale-105 hover:shadow-lg"
+                "px-6 py-2 rounded-full bg-primary text-primary-foreground font-medium",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                "transition-all duration-300 hover:bg-primary/90 hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
               )}
             >
               Accept
             </button>
-            {/* Decline uses a slightly toned neutral style for consistency across themes */}
+            {/* Decline: neutral secondary styling for contrast without more red */}
             <button
               onClick={handleDecline}
               className={cn(
-                "px-6 py-2 rounded-full bg-muted text-foreground font-medium hover:bg-muted/80",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+                "px-6 py-2 rounded-full bg-secondary text-secondary-foreground font-medium hover:bg-secondary/90",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
               )}
             >
               Decline
             </button>
           </div>
 
-          {/* Less prominent but visible preferences link below buttons */}
+          {/* Less prominent but visible preferences link below buttons (neutral text) */}
           <button
             type="button"
             onClick={handleOpenPreferences}

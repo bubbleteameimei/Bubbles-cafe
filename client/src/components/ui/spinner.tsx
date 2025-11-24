@@ -27,8 +27,8 @@ export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // In dark mode: use theme colors; in other modes: strong black accent with a softer gray track
-  const baseTrackColor = isDark ? 'hsl(var(--muted-foreground))' : 'rgba(0,0,0,0.25)';
+  // In dark mode: use theme colors; in other modes: a solid black arc on transparent track for maximum contrast
+  const baseTrackColor = isDark ? 'rgba(255,255,255,0.18)' : 'transparent';
   const accentColor = isDark ? 'hsl(var(--primary))' : '#000000';
 
   return (
