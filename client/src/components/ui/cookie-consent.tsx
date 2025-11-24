@@ -164,11 +164,19 @@ const overlay = (
             <h2 id="cookie-consent-title" className="text-xl font-bold text-foreground">We use cookies</h2>
             <p id="cookie-consent-description" className="text-sm text-muted-foreground">
               This website uses cookies to personalize content, analyze traffic, and enhance your experience. Read our{" "}
-              <Link href="/privacy" onClick={handlePolicyClick} className="underline text-primary hover:text-primary/80">
+              <Link
+                href="/privacy"
+                onClick={handlePolicyClick}
+                className="underline text-foreground hover:text-foreground/80"
+              >
                 Privacy Policy
               </Link>{" "}
               and{" "}
-              <Link href="/legal/terms" onClick={handlePolicyClick} className="underline text-primary hover:text-primary/80">
+              <Link
+                href="/legal/terms"
+                onClick={handlePolicyClick}
+                className="underline text-foreground hover:text-foreground/80"
+              >
                 Terms of Service
               </Link>.
             </p>
@@ -181,24 +189,24 @@ const overlay = (
 
           <div className="flex flex-col items-center gap-0.5">
           <div className="flex justify-center gap-4">
-            {/* Accept matches footer Email button color (bg-primary) */}
+            {/* Accept uses neutral secondary styling to avoid strong red fatigue in dark mode */}
             <button
               ref={acceptBtnRef}
               onClick={handleAccept}
               className={cn(
-                "px-6 py-2 rounded-full bg-primary text-primary-foreground font-medium",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                "transition-all duration-300 hover:bg-primary/90 hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
+                "px-6 py-2 rounded-full bg-secondary text-secondary-foreground font-medium",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+                "transition-all duration-300 hover:bg-secondary/90 hover:scale-105 hover:shadow-lg"
               )}
             >
               Accept
             </button>
-            {/* Decline uses neutral secondary token styling for readability across themes */}
+            {/* Decline uses a slightly toned neutral style for consistency across themes */}
             <button
               onClick={handleDecline}
               className={cn(
-                "px-6 py-2 rounded-full bg-secondary text-secondary-foreground font-medium hover:bg-secondary/90",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                "px-6 py-2 rounded-full bg-muted text-foreground font-medium hover:bg-muted/80",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
               )}
             >
               Decline
@@ -209,7 +217,7 @@ const overlay = (
           <button
             type="button"
             onClick={handleOpenPreferences}
-            className="text-xs leading-none underline text-primary/90 hover:text-primary bg-transparent p-0 border-0"
+            className="text-xs leading-none underline text-foreground hover:text-foreground/80 bg-transparent p-0 border-0"
           >
             Manage preferences
           </button>
