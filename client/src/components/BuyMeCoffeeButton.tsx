@@ -19,10 +19,10 @@ export const BuyMeCoffeeButton = ({ authorId }: BuyMeCoffeeButtonProps) => {
   let gradientClass =
     "bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500";
 
-  // Dark mode: very dark blood-red gradient to match the horror theme
+  // Dark mode: deeper blood gradient with subtle highlight for a richer horror feel
   if (appearance === "dark") {
     gradientClass =
-      "bg-gradient-to-r from-[#190306] via-[#4c0509] to-[#7f1014] hover:from-[#2b0508] hover:via-[#7a1014] hover:to-[#b91c1c]";
+      "bg-gradient-to-r from-[#090103] via-[#360309] to-[#7f1014] hover:from-[#1a0205] hover:via-[#4c0509] hover:to-[#b91c1c]";
   }
   // Sky theme: cool, moody sky gradient
   else if (appearance === "sky") {
