@@ -11,6 +11,7 @@ import {
   DialogHeader,
 } from "@/components/ui/dialog";
 import { apiJson } from "@/lib/api";
+import { resolvePaystackLink } from "@/lib/paystack";
 
 interface SupportWritingCardProps {
   className?: string;
@@ -66,7 +67,13 @@ export const SupportWritingCard = ({ className = "", authorId, hideCard = false 
       // non-fatal
     }
 
-    window.open("https://paystack.com/pay/z7fmj9rge1", "_blank", "noopener,noreferrer");
+    try {
+      const link = await resolvePaystackLink();
+      window.open(link, "_blank", "noopener,noreferrer");
+    } catch {
+      // Silent failure to avoid blocking UI; user can retry
+    }
+
     setIsOpen(false);
     
     // Reset processing state after a short delay

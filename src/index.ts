@@ -15,6 +15,25 @@ const router = Router();
 // ============================================================================
 
 interface Env {
+  SUPABASE_URL: string;
+  SUPABASE_ANON_KEY: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
+  SUPABASE_POOLER_URL?: string;
+  DATABASE_URL?: string;
+  WORDPRESS_API: string;
+  WORDPRESS_SYNC_KEY: string;
+  CSRF_SECRET: string;
+  STRIPE_WEBHOOK_SECRET: string;
+  PAYSTACK_SECRET_KEY: string;
+  PAYSTACK_PUBLIC_KEY: string;
+  PAYSTACK_BASE_URL?: string;
+  PAYSTACK_LINK?: string;
+  EMAIL_PROVIDER_API_KEY: string;
+  GMAIL_APP_PASSWORD: string;
+  GMAIL_ADMIN_EMAIL: string;
+  FRONTEND_URL: string;
+  NODE_ENV: string;
+  ENABLE_WORDPRESS_SCHEDULER?: string;nv {
   IDEMPOTENCY_KV: KVNamespace;
   USER_CACHE_KV: KVNamespace;
   SYNC_METADATA_KV: KVNamespace;
@@ -848,27 +867,17 @@ router.get('/api/csrf-token', async (_req: Request) => {
 // CONFIG: Public client bootstrap (Supabase, URLs, Google OAuth)
 router.get('/api/config/public', async (req: Request, env: Env) => {
   try {
-    const url = new URL(req.url);
-    const protocol = url.protocol; // e.g. "https:"
-    const host = url.host.toLowerCase();
-
-    const apiBase = (() => {
-      try {
-        if (host.startsWith('api.')) return `${protocol}//${host}`;
-        const cleanHost = host.startsWith('www.') ? host.slice(4) : host;
-        return `${protocol}//api.${cleanHost}`;
-      } catch {
-        return 'https://api.bubblescafe.space';
-      }
-    })();
-
-    const frontendBase = (env.FRONTEND_URL || 'https://bubblescafe.space').replace(/\/+$/, '');
+    const apiBase = getApiBase(env);
+    const frontendBase = (env.FRONTEND_URL || 'https://bubblescafe.space').replace(/\/*$/, '');
 
     const supabaseUrl = env.SUPABASE_URL || '';
     const supabaseAnonKey = env.SUPABASE_ANON_KEY || '';
 
     const googleClientId = env.GOOGLE_CLIENT_ID || null;
     const googleRedirectUri = env.GOOGLE_REDIRECT_URI || `${apiBase}/api/auth/callback`;
+
+    const paystackPublicKey = env.PAYSTACK_PUBLIC_KEY || null;
+    const paystackLink = env.PAYSTACK_LINK || null;
 
     const payload = {
       apiBase,
@@ -881,13 +890,30 @@ router.get('/api/config/public', async (req: Request, env: Env) => {
         clientId: googleClientId,
         redirectUri: googleRedirectUri,
       },
+      payments: {
+        paystack: {
+          publicKey: paystackPublicKey,
+          link: paystackLink,
+        },
+      },
     };
 
     return json(payload, {
       headers: {
-        'Cache-Control': 'no-store, max-age=0',
+        'Access-Control-Allow-Origin': frontendBase,
+        'Access-Control-Allow-Credentials': 'true',
       },
     });
+  } catch (error) {
+    console.error('[Config] Failed to build public config:', error);
+    return json(
+      {
+        error: 'Failed to load configuration',
+      },
+      { status: 500 }
+    );
+  }
+});
   } catch (e) {
     return json({ error: 'Failed to load public configuration' }, { status: 500 });
   }

@@ -21,12 +21,60 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
     const fetchConfig = async () => {
       try {
         const res = await fetch('/api/config/public', { credentials: 'include' });
+        let next: GoogleConfig = { clientId: null, redirectUri: '' };
+
         if (res.ok) {
           const data = await res.json();
-          setGoogleConfig(data.googleOAuth || { clientId: null, redirectUri: '' });
+          const fromServer = (data && data.googleOAuth) as GoogleConfig | undefined;
+          if (fromServer && (fromServer.clientId || fromServer.redirectUri)) {
+            next = {
+              clientId: fromServer.clientId,
+              redirectUri: fromServer.redirectUri,
+            };
+          }
         }
+
+        // Fallback to Vite-provided env config when server config is missing/partial
+        try {
+          const envAny: any = (import.meta as any)?.env || {};
+          const viteClientId = envAny.VITE_GOOGLE_CLIENT_ID as string | undefined;
+          const viteRedirectUri = envAny.VITE_GOOGLE_LOGIN_URI as string | undefined;
+
+          if (!next.clientId && typeof viteClientId === 'string' && viteClientId.trim()) {
+            next.clientId = viteClientId.trim();
+          }
+
+          if (!next.redirectUri) {
+            if (typeof viteRedirectUri === 'string' && viteRedirectUri.trim()) {
+              next.redirectUri = viteRedirectUri.trim();
+            } else if (typeof window !== 'undefined' && window.location?.origin) {
+              next.redirectUri = `${window.location.origin}/api/auth/callback`;
+            }
+          }
+        } catch {
+          // Ignore env access issues
+        }
+
+        setGoogleConfig(next);
       } catch (e) {
         console.error('[SocialLoginButtons] Failed to fetch config:', e);
+        // Last-resort: try to build config purely from Vite env
+        try {
+          const envAny: any = (import.meta as any)?.env || {};
+          const viteClientId = envAny.VITE_GOOGLE_CLIENT_ID as string | undefined;
+          const viteRedirectUri = envAny.VITE_GOOGLE_LOGIN_URI as string | undefined;
+          const fallback: GoogleConfig = {
+            clientId: viteClientId && viteClientId.trim() ? viteClientId.trim() : null,
+            redirectUri:
+              (viteRedirectUri && viteRedirectUri.trim()) ||
+              (typeof window !== 'undefined' && window.location?.origin
+                ? `${window.location.origin}/api/auth/callback`
+                : ''),
+          };
+          setGoogleConfig(fallback);
+        } catch {
+          // keep googleConfig as null
+        }
       } finally {
         setConfigLoaded(true);
       }

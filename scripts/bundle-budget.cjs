@@ -3,7 +3,11 @@ const fs = require('fs');
 const path = require('path');
 
 const dist = path.resolve(__dirname, '..', 'dist', 'public', 'assets');
-const BUDGET_KB = Number(process.env.BUNDLE_BUDGET_KB || 400);
+
+// Allow values like "1500" or "1500kb" (case-insensitive); default to 400kb when unset/invalid.
+const rawBudget = process.env.BUNDLE_BUDGET_KB || '400';
+const match = String(rawBudget).match(/(\d+(?:\.\d+)?)/);
+const BUDGET_KB = match ? Number(match[1]) : 400;
 
 function getFiles(dir) {
   try { return fs.readdirSync(dir).map(f => path.join(dir, f)); } catch { return []; }
