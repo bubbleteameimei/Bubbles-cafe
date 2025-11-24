@@ -22,7 +22,7 @@ export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const baseTrackColor = 'hsl(var(--muted-foreground))';
+  const baseTrackColor = 'hsl(var(--foreground))';
   const accentColor = 'hsl(var(--primary))';
 
   return (
@@ -38,11 +38,13 @@ export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
               borderColor: baseTrackColor,
               borderTopColor: accentColor,
               borderRightColor: 'transparent',
+              filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.35))',
             }
           : {
               borderColor: baseTrackColor,
               borderTopColor: accentColor,
               borderRightColor: 'transparent',
+              filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.35))',
             }
       }
     >

@@ -69,8 +69,8 @@
   --popover: 350 20% 8%;
   --popover-foreground: 0 0% 98%;
 
-  /* Primary accent: dark old blood red, closely matching the homepage “the unsettling” */
-  --primary: 0 72% 39%;
+  /* Primary accent: very dark old blood red for core actions */
+  --primary: 0 70% 32%;
   --primary-foreground: 0 0% 100%;
 
   --secondary: 350 18% 12%;
@@ -79,8 +79,8 @@
   --muted: 350 16% 11%;
   --muted-foreground: 0 0% 65%;
 
-  /* Accent: rich but slightly darker red for hover states and subtle highlights */
-  --accent: 0 65% 45%;
+  /* Accent: dark red for hover states and subtle highlights */
+  --accent: 0 60% 37%;
   --accent-foreground: 0 0% 8%;
 
   /* Status mappings */

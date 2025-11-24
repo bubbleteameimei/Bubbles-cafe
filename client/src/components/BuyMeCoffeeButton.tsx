@@ -2,6 +2,8 @@ import React from "react";
 import { Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import useTheme from "@/hooks/use-theme";
 
 interface BuyMeCoffeeButtonProps {
   authorId?: number;
@@ -10,11 +12,37 @@ interface BuyMeCoffeeButtonProps {
 export const BuyMeCoffeeButton = ({ authorId }: BuyMeCoffeeButtonProps) => {
   const href = "#open-support-overlay";
 
+  const { theme } = useTheme();
+  const appearance = theme.appearance;
+
+  // Default gradient (light mode + system) matches original homepage button
+  let gradientClass =
+    "bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500";
+
+  // Dark mode: very dark blood-red gradient to match the horror theme
+  if (appearance === "dark") {
+    gradientClass =
+      "bg-gradient-to-r from-[#190306] via-[#4c0509] to-[#7f1014] hover:from-[#2b0508] hover:via-[#7a1014] hover:to-[#b91c1c]";
+  }
+  // Sky theme: cool, moody sky gradient
+  else if (appearance === "sky") {
+    gradientClass =
+      "bg-gradient-to-r from-sky-800 via-sky-600 to-sky-400 hover:from-sky-700 hover:via-sky-500 hover:to-sky-300";
+  }
+  // Eco theme: deep forest to vivid green gradient
+  else if (appearance === "eco") {
+    gradientClass =
+      "bg-gradient-to-r from-emerald-800 via-emerald-600 to-lime-500 hover:from-emerald-700 hover:via-emerald-500 hover:to-lime-400";
+  }
+  // appearance === "light" or "system" use the default purple/pink gradient
+
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     // Open the existing Support My Writing overlay instead of navigating directly
     e.preventDefault();
     try {
-      window.dispatchEvent(new CustomEvent('support-writing:open', { detail: { authorId } }));
+      window.dispatchEvent(
+        new CustomEvent("support-writing:open", { detail: { authorId } }),
+      );
     } catch {
       // no-op
     }
@@ -24,7 +52,10 @@ export const BuyMeCoffeeButton = ({ authorId }: BuyMeCoffeeButtonProps) => {
     <Button
       asChild
       size="lg"
-      className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white rounded-full shadow-lg transition-colors"
+      className={cn(
+        "px-6 py-3 text-white rounded-full shadow-lg transition-colors",
+        gradientClass,
+      )}
       aria-label="Buy me a coffee"
     >
       <motion.a
@@ -32,11 +63,20 @@ export const BuyMeCoffeeButton = ({ authorId }: BuyMeCoffeeButtonProps) => {
         onClick={handleClick}
         className="inline-flex items-center gap-2"
         animate={{ scale: [1, 1.04, 1] }}
-        transition={{ duration: 2.4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+        transition={{
+          duration: 2.4,
+          repeat: Infinity,
+          repeatType: "reverse",
+          ease: "easeInOut",
+        }}
       >
         <motion.span
           animate={{ rotate: [0, 8, -8, 0] }}
-          transition={{ duration: 1.8, repeat: Infinity, repeatType: "reverse" }}
+          transition={{
+            duration: 1.8,
+            repeat: Infinity,
+            repeatType: "reverse",
+          }}
           className="inline-flex"
         >
           <Coffee className="w-5 h-5 drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]" />
