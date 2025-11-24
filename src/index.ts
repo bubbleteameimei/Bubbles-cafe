@@ -58,12 +58,20 @@ async function callSupabaseRpc(
   functionName: string,
   payload: Record<string, any>,
 ): Promise<Response> {
-  const url = `${env.SUPABASE_URL}/rest/v1/rpc/${functionName}`;
+  const baseUrl = env.SUPABASE_URL?.replace(/\/+$/, '');
+  if (!baseUrl || !env.SUPABASE_ANON_KEY) {
+    throw new Error('Supabase is not configured for RPC calls');
+  }
+
+  const url = `${baseUrl}/rest/v1/rpc/${functionName}`;
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+
   return fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
       'X-Client-Info': 'bubbles-worker',
     },
     body: JSON.stringify(payload),
@@ -615,18 +623,12 @@ async function logWordPressSyncActivity(
     error?: string | null;
     triggeredBy?: string | null;
     isScheduler?: boolean;
+    failedPostIds?: number[];
   },
 ): Promise<void> {
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.SUPABASE_SERVICE_ROLE_KEY) {
-    return;
-  }
-
-  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-  const url = new URL(`${baseUrl}/rest/v1/activity_logs`);
-
   const durationMs = info.finishedAt.getTime() - info.startedAt.getTime();
 
-  const details = {
+  const details: any = {
     type: 'wordpress_sync',
     status: info.success ? 'success' : 'error',
     postsProcessed: info.postsProcessed,
@@ -638,26 +640,17 @@ async function logWordPressSyncActivity(
     isScheduler: info.isScheduler === true,
   };
 
+  if (info.failedPostIds && info.failedPostIds.length) {
+    details.failedPostIds = info.failedPostIds;
+  }
+
   try {
-    await fetch(url.toString(), {
-      method: 'POST',
-      headers: {
-        apikey: env.SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal',
-      },
-      body: JSON.stringify({
-        user_id: null,
-        action: 'wordpress_sync',
-        details,
-        ip_address: null,
-        user_agent: 'worker',
-      }),
+    await callSupabaseRpc(env, 'log_activity', {
+      action: 'wordpress_sync',
+      details,
     });
-  } catch {
-    // Best-effort logging only
+  } catch (err) {
+    console.error('Failed to write WordPress sync activity_log', err);
   }
 }
 
@@ -674,28 +667,31 @@ async function updateWordPressSyncMetadata(
     error?: string | null;
     isScheduler?: boolean;
     triggeredBy?: string | null;
+    failedPostIds?: number[];
   },
 ): Promise<void> {
   try {
-    await updateSiteSetting(env, 'last_wordpress_sync', String(info.finishedAt.getTime()));
-  } catch {
-    // ignore
-  }
+    const statusValue = info.success ? 'success' : 'error';
+    const lastSyncIso = info.finishedAt.toISOString();
 
-  try {
+    await callSupabaseRpc(env, 'update_site_setting', {
+      key: 'wordpress_last_sync_status',
+      value: statusValue,
+      category: 'sync',
+      description: 'Last WordPress sync status',
+    });
+
+    await callSupabaseRpc(env, 'update_site_setting', {
+      key: 'wordpress_last_sync_time',
+      value: lastSyncIso,
+      category: 'sync',
+      description: 'Last WordPress sync completion time',
+    });
+
     await logWordPressSyncActivity(env, info);
-  } catch {
-    // ignore
+  } catch (err) {
+    console.error('Failed to update WordPress sync metadata', err);
   }
-}
-
-// In-memory cache and trending tracker for search (ephemeral per Worker isolate)
-const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const searchCache = new Map<string, { ts: number; data: any }>();
-const trendingQueries = new Map<string, number>();
-
-function makeSearchCacheKey(params: Record<string, unknown>): string {
-  return JSON.stringify(params);
 }
 
 function recordTrendingQuery(query: string): void {
@@ -3565,35 +3561,68 @@ router.post('/api/wordpress/sync/manual', async (req: Request, env: Env) => {
       const posts = (await wpRes.json()) as any[];
       postsProcessed = Array.isArray(posts) ? posts.length : 0;
 
+      const failed: Array<{ id: any; slug?: string; status: number; error?: string }> = [];
+
       for (const post of posts) {
-        await callSupabaseRpc(env, 'upsert_wordpress_post', {
-          post_id: post.id,
-          title: post.title?.rendered,
-          content: post.content?.rendered,
-          excerpt: post.excerpt?.rendered,
-          slug: post.slug,
-          date: post.date,
-        });
+        try {
+          const res = await callSupabaseRpc(env, 'upsert_wordpress_post', {
+            post_id: post.id,
+            title: post.title?.rendered,
+            content: post.content?.rendered,
+            excerpt: post.excerpt?.rendered,
+            slug: post.slug,
+            date: post.date,
+          });
+
+          if (!res.ok) {
+            const body = await res.text().catch(() => '');
+            failed.push({
+              id: post.id,
+              slug: typeof post.slug === 'string' ? post.slug : undefined,
+              status: res.status,
+              error: body ? body.slice(0, 200) : undefined,
+            });
+          }
+        } catch (err: any) {
+          failed.push({
+            id: post.id,
+            slug: typeof post.slug === 'string' ? post.slug : undefined,
+            status: 0,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
       }
 
       const finishedAt = new Date();
+      const hadFailures = typeof failed !== 'undefined' && failed.length > 0;
 
       try {
         await env.SYNC_METADATA_KV.put('last_sync_timestamp', finishedAt.toISOString());
-        await env.SYNC_METADATA_KV.put('last_sync_status', 'success');
+        await env.SYNC_METADATA_KV.put('last_sync_status', hadFailures ? 'partial-error' : 'success');
       } catch {
         // ignore KV failures
       }
 
+      if (hadFailures) {
+        const detail = failed
+          .map((f) => `id=${String(f.id)} slug=${f.slug || '-'} status=${f.status}`)
+          .slice(0, 10)
+          .join('; ');
+        errorMessage = `upsert_wordpress_post failed for ${failed.length} posts: ${detail}`;
+      }
+
       // Update Supabase site settings and activity logs (best-effort)
       await updateWordPressSyncMetadata(env, {
-        success: true,
+        success: !hadFailures,
         postsProcessed,
         startedAt,
         finishedAt,
-        error: null,
+        error: errorMessage,
         isScheduler,
         triggeredBy: isScheduler ? 'scheduler' : 'manual',
+        failedPostIds: hadFailures
+          ? failed.map((f) => Number(f.id)).filter((id) => Number.isFinite(id))
+          : undefined,
       });
 
       return json({
