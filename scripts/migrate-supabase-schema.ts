@@ -259,6 +259,82 @@ async function adjustBookmarksLastPosition(client: any): Promise<void> {
 }
 
 /**
+ * Align user_notifications schema with current application expectations.
+ * - If a legacy metadata JSON/JSONB column exists, rename/merge into data JSONB.
+ */
+async function fixUserNotificationsSchema(client: any): Promise<void> {
+  console.log('🔧 Ensuring user_notifications uses data JSONB column...');
+
+  if (!(await tableExists(client, 'user_notifications'))) {
+    console.log('  • Skipping user_notifications: table does not exist');
+    return;
+  }
+
+  const dataInfo = await getColumnInfo(client, 'user_notifications', 'data');
+  const metadataInfo = await getColumnInfo(client, 'user_notifications', 'metadata');
+
+  if (!metadataInfo && !dataInfo) {
+    console.log('  • user_notifications has neither data nor metadata column; skipping');
+    return;
+  }
+
+  try {
+    if (metadataInfo && !dataInfo) {
+      console.log(
+        '  → Renaming user_notifications.metadata to data and converting to JSONB if needed...',
+      );
+      await client.query(`
+        ALTER TABLE "user_notifications"
+        RENAME COLUMN "metadata" TO "data"
+      `);
+
+      const infoAfter = await getColumnInfo(client, 'user_notifications', 'data');
+      const dt = (infoAfter?.data_type || '').toLowerCase();
+      const udt = (infoAfter?.udt_name || '').toLowerCase();
+      if (dt !== 'jsonb' && udt !== 'jsonb') {
+        await client.query(`
+          ALTER TABLE "user_notifications"
+          ALTER COLUMN "data"
+          TYPE JSONB
+          USING "data"::jsonb
+        `);
+      }
+      console.log('    ✓ user_notifications.data column ready as JSONB');
+    } else if (metadataInfo && dataInfo) {
+      console.log('  → Merging legacy metadata column into data on user_notifications...');
+      await client.query(`
+        UPDATE "user_notifications"
+        SET "data" = COALESCE("data", "metadata"::jsonb)
+        WHERE "data" IS NULL
+          AND "metadata" IS NOT NULL
+      `);
+      await client.query(`
+        ALTER TABLE "user_notifications"
+        DROP COLUMN "metadata"
+      `);
+      console.log('    ✓ Merged metadata into data and dropped metadata column');
+    } else if (dataInfo) {
+      const dt = (dataInfo.data_type || '').toLowerCase();
+      const udt = (dataInfo.udt_name || '').toLowerCase();
+      if (dt !== 'jsonb' && udt !== 'jsonb') {
+        console.log('  → Converting user_notifications.data to JSONB...');
+        await client.query(`
+          ALTER TABLE "user_notifications"
+          ALTER COLUMN "data"
+          TYPE JSONB
+          USING "data"::jsonb
+        `);
+      }
+      console.log('  • user_notifications.data already present; no rename needed');
+    }
+  } catch (err: any) {
+    console.warn(
+      `    ⚠️ Failed to normalise user_notifications schema: ${err?.message || String(err)}`,
+    );
+  }
+}
+
+/**
  * Remove duplicate reading_progress rows so we can safely add a UNIQUE constraint.
  */
 async function deduplicateReadingProgress(client: any): Promise<void> {
@@ -500,6 +576,216 @@ async function ensureAnalyticsUnique(client: any): Promise<void> {
   }
 }
 
+/**
+ * Ensure important foreign keys and analytics tables have supporting indexes.
+ * This reduces Supabase \"unindexed foreign keys\" warnings and improves query performance.
+ */
+async function ensureIndexCoverage(client: any): Promise<void> {
+  console.log('🔧 Ensuring foreign key and analytics indexes...');
+
+  // reading_progress indexes
+  if (await tableExists(client, 'reading_progress')) {
+    try {
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS reading_progress_user_id_idx ON reading_progress(user_id)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS reading_progress_post_id_idx ON reading_progress(post_id)',
+      );
+      console.log('  ✓ reading_progress indexes ensured');
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to ensure reading_progress indexes: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  // secret_progress indexes
+  if (await tableExists(client, 'secret_progress')) {
+    try {
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS secret_progress_user_id_idx ON secret_progress(user_id)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS secret_progress_post_id_idx ON secret_progress(post_id)',
+      );
+      console.log('  ✓ secret_progress indexes ensured');
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to ensure secret_progress indexes: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  // user_progress indexes
+  if (await tableExists(client, 'user_progress')) {
+    try {
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS user_progress_user_id_idx ON user_progress(user_id)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS user_progress_post_id_idx ON user_progress(post_id)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS user_progress_user_type_idx ON user_progress(user_id, progress_type)',
+      );
+      console.log('  ✓ user_progress indexes ensured');
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to ensure user_progress indexes: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  // comments indexes
+  if (await tableExists(client, 'comments')) {
+    try {
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS comment_post_id_idx ON comments(post_id)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS comment_user_id_idx ON comments(user_id)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS comment_parent_id_idx ON comments(parent_id)',
+      );
+      console.log('  ✓ comments indexes ensured');
+    } catch (err: any) {
+      console.warn(`  ⚠️ Failed to ensure comments indexes: ${err?.message || String(err)}`);
+    }
+  }
+
+  // comment_votes indexes
+  if (await tableExists(client, 'comment_votes')) {
+    try {
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS comment_votes_comment_id_idx ON comment_votes(comment_id)',
+      );
+      console.log('  ✓ comment_votes indexes ensured');
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to ensure comment_votes indexes: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  // bookmarks indexes
+  if (await tableExists(client, 'bookmarks')) {
+    try {
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS bookmark_user_id_idx ON bookmarks(user_id)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS bookmark_post_id_idx ON bookmarks(post_id)',
+      );
+      console.log('  ✓ bookmarks indexes ensured');
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to ensure bookmarks indexes: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  // analytics indexes (support queries by post_id and updated_at)
+  if (await tableExists(client, 'analytics')) {
+    try {
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS analytics_post_id_idx ON analytics(post_id)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS analytics_updated_at_idx ON analytics(updated_at)',
+      );
+      console.log('  ✓ analytics indexes ensured');
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to ensure analytics indexes: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  // performance_metrics indexes (metric_name, identifier, timestamp)
+  if (await tableExists(client, 'performance_metrics')) {
+    try {
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS performance_metrics_metric_idx ON performance_metrics(metric_name)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS performance_metrics_timestamp_idx ON performance_metrics(timestamp)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS performance_metrics_identifier_idx ON performance_metrics(identifier)',
+      );
+      console.log('  ✓ performance_metrics indexes ensured');
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to ensure performance_metrics indexes: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  // site_analytics indexes (identifier, timestamp)
+  if (await tableExists(client, 'site_analytics')) {
+    try {
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS site_analytics_identifier_idx ON site_analytics(identifier)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS site_analytics_timestamp_idx ON site_analytics(timestamp)',
+      );
+      console.log('  ✓ site_analytics indexes ensured');
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to ensure site_analytics indexes: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  // user_notifications indexes (user_id, is_read)
+  if (await tableExists(client, 'user_notifications')) {
+    try {
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS user_notifications_user_idx ON user_notifications(user_id)',
+      );
+      await client.query(
+        'CREATE INDEX IF NOT EXISTS user_notifications_read_idx ON user_notifications(is_read)',
+      );
+      console.log('  ✓ user_notifications indexes ensured');
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to ensure user_notifications indexes: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  // user_notification_preferences unique index on user_id
+  if (await tableExists(client, 'user_notification_preferences')) {
+    try {
+      await client.query(
+        'CREATE UNIQUE INDEX IF NOT EXISTS user_notification_preferences_user_unique ON user_notification_preferences(user_id)',
+      );
+      console.log('  ✓ user_notification_preferences indexes ensured');
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to ensure user_notification_preferences indexes: ${err?.message || String(err)}`,
+      );
+    }
+  }
+
+  // user_privacy_settings unique index on user_id
+  if (await tableExists(client, 'user_privacy_settings')) {
+    try {
+      await client.query(
+        'CREATE UNIQUE INDEX IF NOT EXISTS user_privacy_settings_user_unique ON user_privacy_settings(user_id)',
+      );
+      console.log('  ✓ user_privacy_settings indexes ensured');
+    } catch (err: any) {
+      console.warn(
+        `  ⚠️ Failed to ensure user_privacy_settings indexes: ${err?.message || String(err)}`,
+      );
+    }
+  }
+}
+
 async function migrateSupabaseSchema(): Promise<void> {
   console.log('🚀 Starting Supabase-compatible schema migration...');
 
@@ -510,6 +796,7 @@ async function migrateSupabaseSchema(): Promise<void> {
     await convertJsonColumns(client);
     await migrateMonetaryColumns(client);
     await adjustBookmarksLastPosition(client);
+    await fixUserNotificationsSchema(client);
 
     if (await tableExists(client, 'reading_progress')) {
       await deduplicateReadingProgress(client);
@@ -520,6 +807,7 @@ async function migrateSupabaseSchema(): Promise<void> {
     }
 
     await ensureAnalyticsUnique(client);
+    await ensureIndexCoverage(client);
 
     console.log('✅ Supabase schema migration completed');
   } catch (err: any) {
