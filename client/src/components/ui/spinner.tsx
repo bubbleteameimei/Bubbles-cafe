@@ -10,10 +10,10 @@ interface SpinnerProps {
  */
 export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
   const sizeClasses = {
-    xs: 'w-3 h-3 border-1',
+    xs: 'w-3 h-3 border-[1.5px]',
     sm: 'w-4 h-4 border-2',
     md: 'w-6 h-6 border-2',
-    lg: 'w-8 h-8 border-3',
+    lg: 'w-8 h-8 border-[3px]',
     xl: 'w-12 h-12 border-4',
   };
 
@@ -22,11 +22,29 @@ export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  const baseTrackColor = 'hsl(var(--muted-foreground))';
+  const accentColor = 'hsl(var(--primary))';
+
   return (
-    <div 
-      className={`inline-block ${reduceMotion ? '' : 'animate-spin'} rounded-full border-solid border-primary border-r-transparent align-[-0.125em] ${sizeClasses[size]} ${className}`}
+    <div
+      className={`inline-block ${
+        reduceMotion ? '' : 'animate-spin'
+      } rounded-full border-solid align-[-0.125em] ${sizeClasses[size]} ${className}`}
       role="status"
-      style={reduceMotion ? { animation: 'none' } : undefined}
+      style={
+        reduceMotion
+          ? {
+              animation: 'none',
+              borderColor: baseTrackColor,
+              borderTopColor: accentColor,
+              borderRightColor: 'transparent',
+            }
+          : {
+              borderColor: baseTrackColor,
+              borderTopColor: accentColor,
+              borderRightColor: 'transparent',
+            }
+      }
     >
       <span className="sr-only">Loading...</span>
     </div>

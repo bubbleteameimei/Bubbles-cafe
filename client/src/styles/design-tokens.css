@@ -69,8 +69,8 @@
   --popover: 350 20% 8%;
   --popover-foreground: 0 0% 98%;
 
-  /* Primary accent: deep blood red, similar to the homepage “the unsettling” */
-  --primary: 0 76% 42%;
+  /* Primary accent: dark old blood red, closely matching the homepage “the unsettling” */
+  --primary: 0 72% 39%;
   --primary-foreground: 0 0% 100%;
 
   --secondary: 350 18% 12%;
@@ -79,8 +79,8 @@
   --muted: 350 16% 11%;
   --muted-foreground: 0 0% 65%;
 
-  /* Accent: rich red for hover states and subtle highlights */
-  --accent: 0 70% 50%;
+  /* Accent: rich but slightly darker red for hover states and subtle highlights */
+  --accent: 0 65% 45%;
   --accent-foreground: 0 0% 8%;
 
   /* Status mappings */
@@ -121,11 +121,11 @@
 
 /* LIGHT THEME */
 .light {
-  /* Neutral light palette tuned to reduce white fatigue */
-  --background: 0 0% 96%;               /* #F5F5F5 */
+  /* Light theme with a subtle lavender tint to reduce white fatigue */
+  --background: 270 20% 96%;            /* soft lavender-gray */
   --foreground: 0 0% 10%;               /* #1A1A1A */
 
-  --card: 0 0% 99%;                     /* #FCFCFC */
+  --card: 270 18% 99%;                  /* almost white with a hint of tint */
   --card-foreground: var(--foreground);
 
   --popover: 0 0% 100%;
@@ -135,11 +135,11 @@
   --primary: 266 85% 60%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 0 0% 95%;                /* neutral soft */
+  --secondary: 270 18% 93%;             /* softly tinted panel */
   --secondary-foreground: 0 0% 12%;
 
-  --muted: 0 0% 94%;
-  --muted-foreground: 0 0% 38%;
+  --muted: 270 16% 93%;
+  --muted-foreground: 270 10% 34%;
 
   /* Accent: very light purple tint for subtle surfaces */
   --accent: 266 100% 94%;
@@ -155,8 +155,8 @@
   --info: 266 85% 60%;
   --info-foreground: 0 0% 100%;
 
-  --border: 0 0% 78%;
-  --input: 0 0% 78%;
+  --border: 270 10% 78%;
+  --input: 270 10% 78%;
   --ring: 266 85% 60%;
 
   /* Chart tokens (purple-forward palette for light mode) */
