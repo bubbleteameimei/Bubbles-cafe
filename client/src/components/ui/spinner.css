@@ -1,0 +1,67 @@
+.loader {
+  position: relative;
+  display: inline-block;
+  box-sizing: border-box;
+  border-radius: 50%;
+  width: var(--loader-size, 48px);
+  height: var(--loader-size, 48px);
+  border-width: var(--loader-border, 4px);
+  border-style: solid;
+  border-color: transparent;
+  border-top-color: #ffffff;
+  border-right-color: transparent;
+  animation: spinner-rotation 1s linear infinite;
+}
+
+/* Inner arc */
+.loader::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  width: var(--loader-size, 48px);
+  height: var(--loader-size, 48px);
+  border-radius: 50%;
+  border-width: var(--loader-border, 4px);
+  border-style: solid;
+  border-color: transparent;
+  border-left-color: #ff3d00;
+  border-bottom-color: transparent;
+  animation: spinner-rotation 0.5s linear infinite reverse;
+}
+
+/* Dark theme: white outer arc, blood-red inner arc */
+.dark .loader {
+  border-top-color: #ffffff;
+}
+.dark .loader::after {
+  border-left-color: hsl(var(--primary));
+}
+
+/* Light and other themes: high contrast black spinner */
+.light .loader,
+.sky .loader,
+.eco .loader {
+  border-top-color: #000000;
+}
+.light .loader::after,
+.sky .loader::after,
+.eco .loader::after {
+  border-left-color: #000000;
+}
+
+/* Reduced-motion variant: animations disabled */
+.loader--static,
+.loader--static::after {
+  animation: none !important;
+}
+
+@keyframes spinner-rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

@@ -708,6 +708,24 @@ function recordTrendingQuery(query: string): void {
   }
 }
 
+async function getJsonFromCache<T = any>(env: Env, key: string): Promise<T | null> {
+  try {
+    const cached = await env.CACHE_KV.get(key);
+    if (!cached) return null;
+    return JSON.parse(cached) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function setJsonCache(env: Env, key: string, value: any, ttlSeconds: number): Promise<void> {
+  try {
+    await env.CACHE_KV.put(key, JSON.stringify(value), { expirationTtl: ttlSeconds });
+  } catch {
+    // best-effort; cache failures should not break responses
+  }
+}
+
 /**
  * Internal fallback handler.
  *
@@ -1423,11 +1441,12 @@ router.post('/api/analytics/performance', async (req: Request, env: Env) => {
 // Site summary used by potential consumers
 router.get('/api/analytics/site', async (_req: Request, env: Env) => {
   try {
-    const cached = await env.CACHE_KV.get('analytics-site-summary');
+    const cacheKey = 'analytics-site-summary';
+    const cached = await getJsonFromCache(env, cacheKey);
     if (cached) {
-      return json(JSON.parse(cached), {
+      return json(cached, {
         headers: {
-          'Cache-Control': 'max-age=300, stale-while-revalidate=600',
+          'Cache-Control': 'max-age=900, stale-while-revalidate=900',
         },
       });
     }
@@ -1440,14 +1459,11 @@ router.get('/api/analytics/site', async (_req: Request, env: Env) => {
       bounceRate: summary.bounceRate,
     };
 
-    // Best-effort cache
-    await env.CACHE_KV.put('analytics-site-summary', JSON.stringify(payload), {
-      expirationTtl: 300,
-    }).catch(() => {});
+    await setJsonCache(env, cacheKey, payload, 900);
 
     return json(payload, {
       headers: {
-        'Cache-Control': 'max-age=300, stale-while-revalidate=600',
+        'Cache-Control': 'max-age=900, stale-while-revalidate=900',
       },
     });
   } catch (error) {
@@ -1458,8 +1474,24 @@ router.get('/api/analytics/site', async (_req: Request, env: Env) => {
 // Reading time analytics (used by home page and dashboard)
 router.get('/api/analytics/reading-time', async (_req: Request, env: Env) => {
   try {
+    const cacheKey = 'analytics:reading-time:v1';
+    const cached = await getJsonFromCache(env, cacheKey);
+    if (cached) {
+      return json(cached, {
+        headers: {
+          'Cache-Control': 'max-age=900, stale-while-revalidate=900',
+        },
+      });
+    }
+
     const data = await buildReadingTimeAnalytics(env);
-    return json(data);
+    await setJsonCache(env, cacheKey, data, 900);
+
+    return json(data, {
+      headers: {
+        'Cache-Control': 'max-age=900, stale-while-revalidate=900',
+      },
+    });
   } catch (error) {
     return json({ message: 'Failed to fetch reading time analytics' }, { status: 500 });
   }
@@ -1468,8 +1500,24 @@ router.get('/api/analytics/reading-time', async (_req: Request, env: Env) => {
 // Test endpoint used by admin dashboard charts
 router.get('/api/analytics/reading-time-test', async (_req: Request, env: Env) => {
   try {
+    const cacheKey = 'analytics:reading-time-test:v1';
+    const cached = await getJsonFromCache(env, cacheKey);
+    if (cached) {
+      return json(cached, {
+        headers: {
+          'Cache-Control': 'max-age=900, stale-while-revalidate=900',
+        },
+      });
+    }
+
     const data = await buildReadingTimeAnalytics(env);
-    return json(data);
+    await setJsonCache(env, cacheKey, data, 900);
+
+    return json(data, {
+      headers: {
+        'Cache-Control': 'max-age=900, stale-while-revalidate=900',
+      },
+    });
   } catch (error) {
     return json({ message: 'Failed to fetch reading time analytics' }, { status: 500 });
   }
@@ -1478,8 +1526,24 @@ router.get('/api/analytics/reading-time-test', async (_req: Request, env: Env) =
 // Device distribution (fractional) used by generic consumers
 router.get('/api/analytics/devices', async (_req: Request, env: Env) => {
   try {
+    const cacheKey = 'analytics:devices-summary:v1';
+    const cached = await getJsonFromCache(env, cacheKey);
+    if (cached) {
+      return json(cached, {
+        headers: {
+          'Cache-Control': 'max-age=900, stale-while-revalidate=900',
+        },
+      });
+    }
+
     const distribution = await getDeviceDistributionFromSupabase(env);
-    return json(distribution);
+    await setJsonCache(env, cacheKey, distribution, 900);
+
+    return json(distribution, {
+      headers: {
+        'Cache-Control': 'max-age=900, stale-while-revalidate=900',
+      },
+    });
   } catch (error) {
     return json({ error: String(error) }, { status: 500 });
   }
@@ -1488,6 +1552,16 @@ router.get('/api/analytics/devices', async (_req: Request, env: Env) => {
 // Device analytics test endpoint (time series) used by dashboard
 router.get('/api/analytics/devices-test', async (_req: Request, env: Env) => {
   try {
+    const cacheKey = 'analytics:devices-test:v1';
+    const cached = await getJsonFromCache(env, cacheKey);
+    if (cached) {
+      return json(cached, {
+        headers: {
+          'Cache-Control': 'max-age=900, stale-while-revalidate=900',
+        },
+      });
+    }
+
     const analytics = await getAnalyticsSummaryFromSupabase(env);
 
     // Default distribution (approximate 2024 web averages)
@@ -1582,12 +1656,20 @@ router.get('/api/analytics/devices-test', async (_req: Request, env: Env) => {
       tablet: -1.5,
     };
 
-    return json({
+    const payload = {
       dailyData,
       weeklyData,
       monthlyData,
       totals: baseTotals,
       percentageChange,
+    };
+
+    await setJsonCache(env, cacheKey, payload, 900);
+
+    return json(payload, {
+      headers: {
+        'Cache-Control': 'max-age=900, stale-while-revalidate=900',
+      },
     });
   } catch (error) {
     return json({ message: 'Failed to fetch device analytics' }, { status: 500 });
@@ -1597,6 +1679,16 @@ router.get('/api/analytics/devices-test', async (_req: Request, env: Env) => {
 // Engagement metrics test endpoint used by dashboard
 router.get('/api/analytics/engagement-test', async (_req: Request, env: Env) => {
   try {
+    const cacheKey = 'analytics:engagement-test:v1';
+    const cached = await getJsonFromCache(env, cacheKey);
+    if (cached) {
+      return json(cached, {
+        headers: {
+          'Cache-Control': 'max-age=900, stale-while-revalidate=900',
+        },
+      });
+    }
+
     const analyticsSummary = await getAnalyticsSummaryFromSupabase(env);
     const avgReadTime =
       Number.isFinite(analyticsSummary.avgReadTime) && analyticsSummary.avgReadTime > 0
@@ -1617,7 +1709,13 @@ router.get('/api/analytics/engagement-test', async (_req: Request, env: Env) => 
       returning: Math.round(totalViewsBase * 0.4),
     };
 
-    return json(engagementMetrics);
+    await setJsonCache(env, cacheKey, engagementMetrics, 900);
+
+    return json(engagementMetrics, {
+      headers: {
+        'Cache-Control': 'max-age=900, stale-while-revalidate=900',
+      },
+    });
   } catch (error) {
     return json({ message: 'Failed to create engagement metrics' }, { status: 500 });
   }
@@ -1626,6 +1724,16 @@ router.get('/api/analytics/engagement-test', async (_req: Request, env: Env) => 
 // Engagement metrics endpoint used by home page (approximate)
 router.get('/api/analytics/engagement', async (_req: Request, env: Env) => {
   try {
+    const cacheKey = 'analytics:engagement-summary:v1';
+    const cached = await getJsonFromCache(env, cacheKey);
+    if (cached) {
+      return json(cached, {
+        headers: {
+          'Cache-Control': 'max-age=900, stale-while-revalidate=900',
+        },
+      });
+    }
+
     const analyticsSummary = await getAnalyticsSummaryFromSupabase(env);
     const avgReadTime =
       Number.isFinite(analyticsSummary.avgReadTime) && analyticsSummary.avgReadTime > 0
@@ -1646,7 +1754,13 @@ router.get('/api/analytics/engagement', async (_req: Request, env: Env) => {
       returning: Math.round(totalViewsBase * 0.4),
     };
 
-    return json(engagementMetrics);
+    await setJsonCache(env, cacheKey, engagementMetrics, 900);
+
+    return json(engagementMetrics, {
+      headers: {
+        'Cache-Control': 'max-age=900, stale-while-revalidate=900',
+      },
+    });
   } catch (error) {
     return json({ message: 'Failed to fetch engagement metrics' }, { status: 500 });
   }
@@ -1655,6 +1769,16 @@ router.get('/api/analytics/engagement', async (_req: Request, env: Env) => {
 // Site analytics test endpoint for dashboard
 router.get('/api/analytics/site-test', async (_req: Request, env: Env) => {
   try {
+    const cacheKey = 'analytics:site-test:v1';
+    const cached = await getJsonFromCache(env, cacheKey);
+    if (cached) {
+      return json(cached, {
+        headers: {
+          'Cache-Control': 'max-age=900, stale-while-revalidate=900',
+        },
+      });
+    }
+
     const analyticsSummary = await getAnalyticsSummaryFromSupabase(env);
     const totalViewsBase =
       Number.isFinite(analyticsSummary.totalViews) && analyticsSummary.totalViews > 0
@@ -1671,7 +1795,13 @@ router.get('/api/analytics/site-test', async (_req: Request, env: Env) => {
       bounceRate: 38.5,
     };
 
-    return json(siteAnalytics);
+    await setJsonCache(env, cacheKey, siteAnalytics, 900);
+
+    return json(siteAnalytics, {
+      headers: {
+        'Cache-Control': 'max-age=900, stale-while-revalidate=900',
+      },
+    });
   } catch (error) {
     return json({ message: 'Failed to create site analytics' }, { status: 500 });
   }
@@ -1680,13 +1810,30 @@ router.get('/api/analytics/site-test', async (_req: Request, env: Env) => {
 // Device distribution test endpoint for dashboard
 router.get('/api/analytics/device-distribution-test', async (_req: Request, env: Env) => {
   try {
+    const cacheKey = 'analytics:device-distribution-test:v1';
+    const cached = await getJsonFromCache(env, cacheKey);
+    if (cached) {
+      return json(cached, {
+        headers: {
+          'Cache-Control': 'max-age=900, stale-while-revalidate=900',
+        },
+      });
+    }
+
     await getAnalyticsSummaryFromSupabase(env); // best-effort, ignored if fails
     const deviceDistribution = {
       desktop: 53,
       mobile: 42,
       tablet: 5,
     };
-    return json(deviceDistribution);
+
+    await setJsonCache(env, cacheKey, deviceDistribution, 900);
+
+    return json(deviceDistribution, {
+      headers: {
+        'Cache-Control': 'max-age=900, stale-while-revalidate=900',
+      },
+    });
   } catch (error) {
     return json({ message: 'Failed to create device distribution' }, { status: 500 });
   }
@@ -5402,50 +5549,146 @@ router.get('/api/posts', async (req: Request, env: Env) => {
   try {
     const urlObj = new URL(req.url);
     const search = urlObj.searchParams;
-    const pageParam = Number(search.get('page') || '1');
-    const limitParam = Number(search.get('limit') || '16');
+
+    const pageParam = parseInt(search.get('page') || '1', 10);
+    const limitParam = parseInt(search.get('limit') || '16', 10);
+    const cursor = search.get('cursor');
 
     const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
-    const limitRaw = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 16;
-    const limit = Math.max(1, Math.min(limitRaw, 100));
+    const rawLimit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 16;
+    const limit = Math.max(1, Math.min(rawLimit, 100));
 
     const category = (search.get('category') || '').trim();
-    const searchTerm = (search.get('search') || '').trim().toLowerCase();
+    const searchTermRaw = (search.get('search') || '').trim();
+    const searchTerm = searchTermRaw.toLowerCase();
 
-    const allPosts = await fetchSupabasePosts(env);
-    if (!allPosts.length) {
-      return json({ posts: [], hasMore: false });
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+
+    const isFirstPageDefaultFeed =
+      !cursor && page === 1 && !category && !searchTerm && !!env.CACHE_KV;
+
+    const cacheKey =
+      isFirstPageDefaultFeed ? `posts:first-page:v1:limit=${limit}` : null;
+
+    if (isFirstPageDefaultFeed && cacheKey) {
+      const cached = await getJsonFromCache(env, cacheKey);
+      if (cached) {
+        return json(cached, {
+          headers: {
+            'Cache-Control': 'max-age=300, stale-while-revalidate=300',
+          },
+        });
+      }
     }
 
-    let filtered = allPosts;
+    const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
+    postsUrl.searchParams.set(
+      'select',
+      'id,title,content,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at',
+    );
+    postsUrl.searchParams.set('order', 'created_at.desc');
+
+    const useCursor = typeof cursor === 'string' && cursor.length > 0;
+    const limitForQuery = useCursor ? limit + 1 : limit;
+    postsUrl.searchParams.set('limit', String(limitForQuery));
+
+    if (useCursor) {
+      postsUrl.searchParams.set('created_at', `lt.${cursor}`);
+    } else {
+      const offset = (page - 1) * limit;
+      if (offset > 0) {
+        postsUrl.searchParams.set('offset', String(offset));
+      }
+    }
 
     if (category) {
-      const catLower = category.toLowerCase();
-      filtered = filtered.filter((post) => {
-        const meta = post.metadata && typeof post.metadata === 'object' ? post.metadata : {};
-        const theme = String(post.themeCategory || (meta as any).themeCategory || '').toLowerCase();
-        return theme === catLower;
+      postsUrl.searchParams.set('theme_category', `eq.${category}`);
+    }
+
+    const searchValue = searchTerm.replace(/[%*]/g, '').trim();
+    if (searchValue) {
+      const pattern = `*${searchValue}*`;
+      postsUrl.searchParams.set(
+        'or',
+        `(title.ilike.${pattern},excerpt.ilike.${pattern},content.ilike.${pattern})`,
+      );
+    }
+
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+      Accept: 'application/json',
+      Prefer: 'count=exact',
+    };
+
+    const res = await fetch(postsUrl.toString(), { headers });
+
+    if (!res.ok) {
+      return proxyToBackend(req, env);
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    if (!Array.isArray(rows) || rows.length === 0) {
+      const emptyPayload = { posts: [], hasMore: false, nextCursor: null as string | null };
+      if (isFirstPageDefaultFeed && cacheKey) {
+        await setJsonCache(env, cacheKey, emptyPayload, 300);
+      }
+      return json(emptyPayload, {
+        headers: {
+          'Cache-Control': useCursor
+            ? 'max-age=60, stale-while-revalidate=120'
+            : 'max-age=300, stale-while-revalidate=300',
+        },
       });
     }
 
-    if (searchTerm) {
-      filtered = filtered.filter((post) => {
-        const title = String(post.title || '').toLowerCase();
-        const excerpt = String(post.excerpt || '').toLowerCase();
-        const content = String(post.content || '').toLowerCase();
-        return (
-          title.includes(searchTerm) || excerpt.includes(searchTerm) || content.includes(searchTerm)
-        );
-      });
+    const mapped = rows.map(mapSupabasePostRowToPost);
+
+    let posts = mapped;
+    let hasMore = false;
+    let nextCursor: string | null = null;
+
+    if (useCursor) {
+      const slice = mapped.slice(0, limit);
+      posts = slice;
+      hasMore = mapped.length > limit;
+      const last = slice[slice.length - 1];
+      nextCursor = hasMore && last && typeof last.createdAt === 'string' ? last.createdAt : null;
+    } else {
+      const contentRange = res.headers.get('Content-Range');
+      if (contentRange && contentRange.includes('/')) {
+        const parts = contentRange.split('/');
+        const totalStr = parts[1];
+        const total = parseInt(totalStr, 10);
+        if (Number.isFinite(total)) {
+          hasMore = page * limit < total;
+        }
+      } else {
+        hasMore = posts.length === limit;
+      }
+
+      const last = posts[posts.length - 1];
+      nextCursor = last && typeof last.createdAt === 'string' ? last.createdAt : null;
     }
 
-    const total = filtered.length;
-    const start = (page - 1) * limit;
-    const end = start + limit;
-    const pageItems = start < total ? filtered.slice(start, end) : [];
-    const hasMore = end < total;
+    const payload: any = { posts, hasMore };
+    if (nextCursor) {
+      payload.nextCursor = nextCursor;
+    }
 
-    return json({ posts: pageItems, hasMore });
+    const cacheControl = useCursor
+      ? 'max-age=60, stale-while-revalidate=120'
+      : 'max-age=300, stale-while-revalidate=300';
+
+    if (isFirstPageDefaultFeed && cacheKey) {
+      await setJsonCache(env, cacheKey, payload, 300);
+    }
+
+    return json(payload, {
+      headers: {
+        'Cache-Control': cacheControl,
+      },
+    });
   } catch {
     return proxyToBackend(req, env);
   }
@@ -5459,54 +5702,126 @@ router.get('/api/posts/community', async (req: Request, env: Env) => {
   try {
     const urlObj = new URL(req.url);
     const search = urlObj.searchParams;
-    const pageParam = Number(search.get('page') || '1');
-    const limitParam = Number(search.get('limit') || '16');
+
+    const pageParam = parseInt(search.get('page') || '1', 10);
+    const limitParam = parseInt(search.get('limit') || '16', 10);
+    const cursor = search.get('cursor');
 
     const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
-    const limitRaw = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 16;
-    const limit = Math.max(1, Math.min(limitRaw, 100));
+    const rawLimit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 16;
+    const limit = Math.max(1, Math.min(rawLimit, 100));
 
     const category = (search.get('category') || '').trim();
-    const searchTerm = (search.get('search') || '').trim().toLowerCase();
+    const searchTermRaw = (search.get('search') || '').trim();
+    const searchTerm = searchTermRaw.toLowerCase();
 
-    const allPosts = await fetchSupabasePosts(env);
-    if (!allPosts.length) {
-      return json({ posts: [], hasMore: false });
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+    const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
+    postsUrl.searchParams.set(
+      'select',
+      'id,title,content,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at',
+    );
+    postsUrl.searchParams.set('order', 'created_at.desc');
+
+    const useCursor = typeof cursor === 'string' && cursor.length > 0;
+    const limitForQuery = useCursor ? limit + 1 : limit;
+    postsUrl.searchParams.set('limit', String(limitForQuery));
+
+    if (useCursor) {
+      postsUrl.searchParams.set('created_at', `lt.${cursor}`);
+    } else {
+      const offset = (page - 1) * limit;
+      if (offset > 0) {
+        postsUrl.searchParams.set('offset', String(offset));
+      }
     }
 
     // Restrict to community posts (metadata.isCommunityPost === true)
-    let filtered = allPosts.filter((post) => {
-      const meta = post.metadata && typeof post.metadata === 'object' ? post.metadata : {};
-      return (meta as any).isCommunityPost === true;
-    });
+    postsUrl.searchParams.set('metadata->>isCommunityPost', 'eq.true');
 
     if (category) {
-      const catLower = category.toLowerCase();
-      filtered = filtered.filter((post) => {
-        const meta = post.metadata && typeof post.metadata === 'object' ? post.metadata : {};
-        const theme = String(post.themeCategory || (meta as any).themeCategory || '').toLowerCase();
-        return theme === catLower;
-      });
+      postsUrl.searchParams.set('theme_category', `eq.${category}`);
     }
 
-    if (searchTerm) {
-      filtered = filtered.filter((post) => {
-        const title = String(post.title || '').toLowerCase();
-        const excerpt = String(post.excerpt || '').toLowerCase();
-        const content = String(post.content || '').toLowerCase();
-        return (
-          title.includes(searchTerm) || excerpt.includes(searchTerm) || content.includes(searchTerm)
-        );
-      });
+    const searchValue = searchTerm.replace(/[%*]/g, '').trim();
+    if (searchValue) {
+      const pattern = `*${searchValue}*`;
+      postsUrl.searchParams.set(
+        'or',
+        `(title.ilike.${pattern},excerpt.ilike.${pattern},content.ilike.${pattern})`,
+      );
     }
 
-    const total = filtered.length;
-    const start = (page - 1) * limit;
-    const end = start + limit;
-    const pageItems = start < total ? filtered.slice(start, end) : [];
-    const hasMore = end < total;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+      Accept: 'application/json',
+      Prefer: 'count=exact',
+    };
 
-    return json({ posts: pageItems, hasMore });
+    const res = await fetch(postsUrl.toString(), { headers });
+
+    if (!res.ok) {
+      return proxyToBackend(req, env);
+    }
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return json(
+        { posts: [], hasMore: false, nextCursor: null as string | null },
+        {
+          headers: {
+            'Cache-Control': useCursor
+              ? 'max-age=60, stale-while-revalidate=120'
+              : 'max-age=120, stale-while-revalidate=240',
+          },
+        },
+      );
+    }
+
+    const mapped = rows.map(mapSupabasePostRowToPost);
+
+    let posts = mapped;
+    let hasMore = false;
+    let nextCursor: string | null = null;
+
+    if (useCursor) {
+      const slice = mapped.slice(0, limit);
+      posts = slice;
+      hasMore = mapped.length > limit;
+      const last = slice[slice.length - 1];
+      nextCursor = hasMore && last && typeof last.createdAt === 'string' ? last.createdAt : null;
+    } else {
+      const contentRange = res.headers.get('Content-Range');
+      if (contentRange && contentRange.includes('/')) {
+        const parts = contentRange.split('/');
+        const totalStr = parts[1];
+        const total = parseInt(totalStr, 10);
+        if (Number.isFinite(total)) {
+          hasMore = page * limit < total;
+        }
+      } else {
+        hasMore = posts.length === limit;
+      }
+
+      const last = posts[posts.length - 1];
+      nextCursor = last && typeof last.createdAt === 'string' ? last.createdAt : null;
+    }
+
+    const cacheControl = useCursor
+      ? 'max-age=60, stale-while-revalidate=120'
+      : 'max-age=120, stale-while-revalidate=240';
+
+    const payload: any = { posts, hasMore };
+    if (nextCursor) {
+      payload.nextCursor = nextCursor;
+    }
+
+    return json(payload, {
+      headers: {
+        'Cache-Control': cacheControl,
+      },
+    });
   } catch {
     return proxyToBackend(req, env);
   }
@@ -7142,7 +7457,17 @@ router.get("/api/trending-stories", async (_req: Request, env: Env) => {
   }
 
   try {
-    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+    const cacheKey = 'trending:stories:v1';
+    const cached = await getJsonFromCache(env, cacheKey);
+    if (cached) {
+      return json(cached, {
+        headers: {
+          'Cache-Control': 'max-age=600, stale-while-revalidate=600',
+        },
+      });
+    }
+
+    const baseUrl = (env.SUPABASE_URL || '').replace(/\/+$/, '');
     const headers: Record<string, string> = {
       apikey: env.SUPABASE_ANON_KEY,
       Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
@@ -7171,7 +7496,13 @@ router.get("/api/trending-stories", async (_req: Request, env: Env) => {
     );
 
     if (postIds.length === 0) {
-      return json({ posts: [] });
+      const emptyPayload = { posts: [] as any[] };
+      await setJsonCache(env, cacheKey, emptyPayload, 600);
+      return json(emptyPayload, {
+        headers: {
+          'Cache-Control': 'max-age=600, stale-while-revalidate=600',
+        },
+      });
     }
 
     const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
@@ -7226,7 +7557,7 @@ router.get("/api/trending-stories", async (_req: Request, env: Env) => {
           ? Number(row.reading_time_minutes)
           : Math.max(
               1,
-              Math.ceil(contentText.split(/\s+/).filter((w: string) => w.length > 0).length / 200),
+              Math.ceil(contentText.split(/\\s+/).filter((w: string) => w.length > 0).length / 200),
             );
 
       const a = analyticsMap.get(localId) as any;
@@ -7269,7 +7600,13 @@ router.get("/api/trending-stories", async (_req: Request, env: Env) => {
     }
 
     if (!scored.length) {
-      return json({ posts: [] });
+      const emptyPayload = { posts: [] as any[] };
+      await setJsonCache(env, cacheKey, emptyPayload, 600);
+      return json(emptyPayload, {
+        headers: {
+          'Cache-Control': 'max-age=600, stale-while-revalidate=600',
+        },
+      });
     }
 
     const top = scored
@@ -7277,7 +7614,15 @@ router.get("/api/trending-stories", async (_req: Request, env: Env) => {
       .slice(0, 12)
       .map((e) => e.item);
 
-    return json({ posts: top });
+    const payload = { posts: top };
+
+    await setJsonCache(env, cacheKey, payload, 600);
+
+    return json(payload, {
+      headers: {
+        'Cache-Control': 'max-age=600, stale-while-revalidate=600',
+      },
+    });
   } catch {
     return json({ posts: [] });
   }

@@ -520,9 +520,14 @@ body.error-page-active footer.site-footer {
   margin-top: 0 !important;
 }
 
-/* Hero typography color: match theme primary across modes */
+/* Hero typography color */
 .hero-bubbles {
   color: hsl(var(--primary)) !important;
+}
+
+/* In dark mode, force hero text to white to avoid red fatigue */
+.dark .hero-bubbles {
+  color: hsl(var(--foreground)) !important;
 }
 
 /* User-controlled reduced motion override (Accessibility setting)

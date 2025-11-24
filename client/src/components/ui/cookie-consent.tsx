@@ -139,7 +139,7 @@ const overlay = (
       aria-describedby="cookie-consent-description"
     >
       {!isPreferencesModalOpen && (
-        <div className="max-w-[340px] w-full mx-auto bg-card rounded-lg shadow-xl border border-border/50 p-6 space-y-4">
+        <div className="max-w-[340px] w-full mx-auto bg-background rounded-lg shadow-xl border border-border/50 p-6 space-y-4">
           <div className="flex justify-center relative">
             <svg
               className="w-[50px] h-[50px] transition-all duration-300 hover:rotate-12 hover:scale-110"
@@ -164,11 +164,19 @@ const overlay = (
             <h2 id="cookie-consent-title" className="text-xl font-bold text-foreground">We use cookies</h2>
             <p id="cookie-consent-description" className="text-sm text-muted-foreground">
               This website uses cookies to personalize content, analyze traffic, and enhance your experience. Read our{" "}
-              <Link href="/privacy" onClick={handlePolicyClick} className="underline text-primary hover:text-primary/80">
+              <Link
+                href="/privacy"
+                onClick={handlePolicyClick}
+                className="underline text-foreground hover:text-foreground/80"
+              >
                 Privacy Policy
               </Link>{" "}
               and{" "}
-              <Link href="/legal/terms" onClick={handlePolicyClick} className="underline text-primary hover:text-primary/80">
+              <Link
+                href="/legal/terms"
+                onClick={handlePolicyClick}
+                className="underline text-foreground hover:text-foreground/80"
+              >
                 Terms of Service
               </Link>.
             </p>
@@ -181,7 +189,7 @@ const overlay = (
 
           <div className="flex flex-col items-center gap-0.5">
           <div className="flex justify-center gap-4">
-            {/* Accept matches footer Email button color (bg-primary) */}
+            {/* Accept: emphasize using primary accent, but on neutral dark surfaces */}
             <button
               ref={acceptBtnRef}
               onClick={handleAccept}
@@ -193,7 +201,7 @@ const overlay = (
             >
               Accept
             </button>
-            {/* Decline uses neutral secondary token styling for readability across themes */}
+            {/* Decline: neutral secondary styling for contrast without more red */}
             <button
               onClick={handleDecline}
               className={cn(
@@ -205,11 +213,11 @@ const overlay = (
             </button>
           </div>
 
-          {/* Less prominent but visible preferences link below buttons */}
+          {/* Less prominent but visible preferences link below buttons (neutral text) */}
           <button
             type="button"
             onClick={handleOpenPreferences}
-            className="text-xs leading-none underline text-primary/90 hover:text-primary bg-transparent p-0 border-0"
+            className="text-xs leading-none underline text-foreground hover:text-foreground/80 bg-transparent p-0 border-0"
           >
             Manage preferences
           </button>
