@@ -59,27 +59,28 @@
   --clr-info-a20: #92b2e5;
 
   /* Map to shadcn/tailwind tokens (HSL channels) */
-  --background: 0 0% 3%;                 /* deeper dark for stronger contrast */
+  /* Slightly tinted, blood-dark background for horror aesthetic */
+  --background: 350 25% 4%;
   --foreground: 0 0% 98%;
 
-  --card: 0 0% 7%;
+  --card: 350 20% 8%;
   --card-foreground: 0 0% 98%;
 
-  --popover: 0 0% 7%;
+  --popover: 350 20% 8%;
   --popover-foreground: 0 0% 98%;
 
-  /* Primary accent: deep horror red for dark mode */
-  --primary: 0 84% 60%;
+  /* Primary accent: deep blood red, similar to the homepage “the unsettling” */
+  --primary: 0 76% 42%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 0 0% 12%;
+  --secondary: 350 18% 12%;
   --secondary-foreground: 0 0% 98%;
 
-  --muted: 0 0% 9%;
+  --muted: 350 16% 11%;
   --muted-foreground: 0 0% 65%;
 
-  /* Accent: lighter red for subtle highlights */
-  --accent: 0 90% 72%;
+  /* Accent: rich red for hover states and subtle highlights */
+  --accent: 0 70% 50%;
   --accent-foreground: 0 0% 8%;
 
   /* Status mappings */
@@ -120,11 +121,11 @@
 
 /* LIGHT THEME */
 .light {
-  /* Neutral light palette with higher contrast and less tint */
-  --background: 0 0% 98%;               /* #FAFAFA */
+  /* Neutral light palette tuned to reduce white fatigue */
+  --background: 0 0% 96%;               /* #F5F5F5 */
   --foreground: 0 0% 10%;               /* #1A1A1A */
 
-  --card: 0 0% 100%;                    /* #FFFFFF */
+  --card: 0 0% 99%;                     /* #FCFCFC */
   --card-foreground: var(--foreground);
 
   --popover: 0 0% 100%;
@@ -137,8 +138,8 @@
   --secondary: 0 0% 95%;                /* neutral soft */
   --secondary-foreground: 0 0% 12%;
 
-  --muted: 0 0% 96%;
-  --muted-foreground: 0 0% 40%;
+  --muted: 0 0% 94%;
+  --muted-foreground: 0 0% 38%;
 
   /* Accent: very light purple tint for subtle surfaces */
   --accent: 266 100% 94%;
@@ -154,8 +155,8 @@
   --info: 266 85% 60%;
   --info-foreground: 0 0% 100%;
 
-  --border: 0 0% 80%;
-  --input: 0 0% 80%;
+  --border: 0 0% 78%;
+  --input: 0 0% 78%;
   --ring: 266 85% 60%;
 
   /* Chart tokens (purple-forward palette for light mode) */
