@@ -3,7 +3,7 @@ import { Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import useTheme from "@/hooks/use-theme";
+import { useTheme } from "@/hooks/use-theme";
 
 interface BuyMeCoffeeButtonProps {
   authorId?: number;
