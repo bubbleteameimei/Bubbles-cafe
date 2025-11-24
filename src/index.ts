@@ -59,6 +59,7 @@ interface Env {
 
   // App URLs / environment
   FRONTEND_URL: string;
+  BACKEND_BASE_URL?: string;
   NODE_ENV: string;
   ENABLE_WORDPRESS_SCHEDULER?: string;
 }
@@ -707,6 +708,29 @@ async function updateWordPressSyncMetadata(
     console.error('Failed to update WordPress sync metadata', err);
   }
 }
+
+function getApiBase(env: Env): string {
+  try {
+    const explicit = (env.BACKEND_BASE_URL || '').trim();
+    if (explicit) {
+      try {
+        const u = new URL(explicit);
+        return `${u.protocol}//${u.host}`;
+      } catch {
+        return explicit.replace(/\/+$/, '');
+      }
+    }
+
+    const frontend = (env.FRONTEND_URL || 'https://bubblescafe.space').trim();
+    const u = new URL(frontend);
+    const host = u.host.startsWith('www.') ? u.host.slice(4) : u.host;
+    return `${u.protocol}//api.${host}`;
+  } catch {
+    return 'https://api.bubblescafe.space';
+  }
+}
+
+const trendingQueries = new Map<string, number>();
 
 function recordTrendingQuery(query: string): void {
   try {
