@@ -435,6 +435,35 @@ export async function buildPostSummaries(env: Env, rawIds: number[]): Promise<an
 }
 
 /**
+ * Get a JSON value from CACHE_KV; returns null on missing/parse errors.
+ */
+export async function getJsonFromCache<T = any>(env: Env, key: string): Promise<T | null> {
+  try {
+    const cached = await env.CACHE_KV.get(key);
+    if (!cached) return null;
+    return JSON.parse(cached) as T;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Put a JSON value into CACHE_KV with a TTL, ignoring write errors.
+ */
+export async function setJsonCache(
+  env: Env,
+  key: string,
+  value: any,
+  ttlSeconds: number,
+): Promise<void> {
+  try {
+    await env.CACHE_KV.put(key, JSON.stringify(value), { expirationTtl: ttlSeconds });
+  } catch {
+    // best-effort; cache failures should not break responses
+  }
+}
+
+/**
  * Internal fallback handler.
  *
  * Mirrors src/index.ts proxyToBackend behavior but is exported so that
