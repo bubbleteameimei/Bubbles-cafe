@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { ThumbsUp, ThumbsDown } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ThumbsDown, ThumbsUp } from 'lucide-react';
 import { fetchReactions, submitReaction } from '@/api/reactions';
 
 import type { ReactionTotals } from '@/api/reactions';
@@ -17,14 +17,10 @@ interface LikeDislikeProps {
   initialTotals?: ReactionTotals | null;
 }
 
-interface Stats {
-  likes: number;
-  dislikes: number;
-  baseStats: {
-    likes: number;
-    dislikes: number;
-  };
-  userInteracted: boolean;
+type ReactionState = 'like' | 'dislike' | 'none';
+
+interface Stats extends ReactionTotals {
+  hasServerData: boolean;
 }
 
 const ACTION_THROTTLE_MS = 250;
@@ -32,23 +28,94 @@ const ACTION_THROTTLE_MS = 250;
 const getStorageKey = (postId: number, slug?: string, source: 'local' | 'wp' = 'local') =>
   slug && slug.trim() ? `reaction-${source}:${slug.trim()}` : `reaction-${source}:post-${postId}`;
 
-function readLocalReaction(storageKey: string): 'like' | 'dislike' | 'none' {
+function normalizeTotals(postId: number, totals: ReactionTotals | null, hasServerData: boolean): Stats {
+  const base: ReactionTotals =
+    totals && typeof totals === 'object'
+      ? totals
+      : {
+          postId,
+          baselineLikes: 0,
+          baselineDislikes: 0,
+          likesCount: 0,
+          dislikesCount: 0,
+          totals: { likes: 0, dislikes: 0 },
+        };
+
+  const baselineLikes = Number(base.baselineLikes ?? 0);
+  const baselineDislikes = Number(base.baselineDislikes ?? 0);
+  const likesCount = Number(base.likesCount ?? 0);
+  const dislikesCount = Number(base.dislikesCount ?? 0);
+  const totalsLikes =
+    base.totals && typeof base.totals.likes === 'number'
+      ? base.totals.likes
+      : baselineLikes + likesCount;
+  const totalsDislikes =
+    base.totals && typeof base.totals.dislikes === 'number'
+      ? base.totals.dislikes
+      : baselineDislikes + dislikesCount;
+
+  return {
+    postId,
+    baselineLikes,
+    baselineDislikes,
+    likesCount: Math.max(0, likesCount),
+    dislikesCount: Math.max(0, dislikesCount),
+    totals: {
+      likes: Math.max(0, totalsLikes),
+      dislikes: Math.max(0, totalsDislikes),
+    },
+    hasServerData,
+  };
+}
+
+function computeReactionDelta(prev: ReactionState, next: ReactionState) {
+  if (prev === next) return { deltaLikes: 0, deltaDislikes: 0 };
+
+  let deltaLikes = 0;
+  let deltaDislikes = 0;
+
+  if (prev === 'none') {
+    if (next === 'like') deltaLikes = 1;
+    else if (next === 'dislike') deltaDislikes = 1;
+  } else if (prev === 'like') {
+    if (next === 'none') {
+      deltaLikes = -1;
+    } else if (next === 'dislike') {
+      deltaLikes = -1;
+      deltaDislikes = 1;
+    }
+  } else if (prev === 'dislike') {
+    if (next === 'none') {
+      deltaDislikes = -1;
+    } else if (next === 'like') {
+      deltaLikes = 1;
+      deltaDislikes = -1;
+    }
+  }
+
+  return { deltaLikes, deltaDislikes };
+}
+
+function readLocalReaction(storageKey: string): { state: ReactionState; stats: ReactionTotals | null } {
   try {
-    const v = localStorage.getItem(storageKey);
-    if (!v) return 'none';
-    const parsed = JSON.parse(v);
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return { state: 'none', stats: null };
+    const parsed = JSON.parse(raw);
     const state = parsed?.state;
-    if (state === 'like' || state === 'dislike') return state;
-    return 'none';
+    const stats = parsed?.stats;
+    const safeState: ReactionState = state === 'like' || state === 'dislike' ? state : 'none';
+    return { state: safeState, stats: stats && typeof stats === 'object' ? stats : null };
   } catch {
-    return 'none';
+    return { state: 'none', stats: null };
   }
 }
 
-function writeLocalReaction(storageKey: string, state: 'like' | 'dislike' | 'none', stats: Stats) {
+function writeLocalReaction(storageKey: string, state: ReactionState, stats: ReactionTotals | null) {
   try {
     localStorage.setItem(storageKey, JSON.stringify({ state, stats }));
-  } catch {}
+  } catch {
+    // ignore storage errors
+  }
 }
 
 export function LikeDislike({
@@ -63,126 +130,162 @@ export function LikeDislike({
   variant = 'index',
   initialTotals = null,
 }: LikeDislikeProps) {
-  const initialLocalState = (() => {
+  const storageKey = getStorageKey(postId, slug, source);
+
+  const initialLocal = (() => {
     try {
-      return readLocalReaction(getStorageKey(postId, slug, source));
+      return readLocalReaction(storageKey);
     } catch {
-      return 'none';
+      return { state: 'none' as ReactionState, stats: null as ReactionTotals | null };
     }
   })();
 
-  const [liked, setLiked] = useState(
-    userLikeStatus ? userLikeStatus === 'like' : initialLocalState === 'like',
-  );
-  const [disliked, setDisliked] = useState(
-    userLikeStatus ? userLikeStatus === 'dislike' : initialLocalState === 'dislike',
-  );
+  const initialStateFromProp: ReactionState =
+    userLikeStatus === 'like' ? 'like' : userLikeStatus === 'dislike' ? 'dislike' : 'none';
 
-  const [stats, setStats] = useState<Stats>({
-    likes: 0,
-    dislikes: 0,
-    baseStats: { likes: 0, dislikes: 0 },
-    userInteracted: false,
-  });
-  const [reactionError, setReactionError] = useState(false);
-  const [isLoadingTotals, setIsLoadingTotals] = useState(true);
+  const initialReaction: ReactionState =
+    initialStateFromProp !== 'none' ? initialStateFromProp : initialLocal.state;
+
+  const [reaction, setReaction] = useState<ReactionState>(initialReaction);
+  const [stats, setStats] = useState<Stats | null>(() =>
+    initialTotals
+      ? normalizeTotals(postId, initialTotals, true)
+      : initialLocal.stats
+        ? normalizeTotals(postId, initialLocal.stats, false)
+        : null,
+  );
+  const [isLoadingTotals, setIsLoadingTotals] = useState<boolean>(!initialTotals);
+  const [isPending, setIsPending] = useState(false);
+
   const [inlineToast, setInlineToast] = useState<{
     message: string;
-    type: 'like' | 'dislike' | 'error' | null;
+    type: 'like' | 'dislike' | 'error';
   } | null>(null);
   const [isToastVisible, setIsToastVisible] = useState(false);
-  const storageKey = getStorageKey(postId, slug, source);
+
   const hideTimerRef = useRef<number | null>(null);
   const removeTimerRef = useRef<number | null>(null);
   const isPendingRef = useRef(false);
-  const [isPending, setIsPending] = useState(false);
   const lastActionTsRef = useRef<number>(0);
-  const lastTotalsUpdateTsRef = useRef<number>(0);
+  const reactionRef = useRef<ReactionState>(initialReaction);
+  const statsRef = useRef<Stats | null>(stats);
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
+    reactionRef.current = reaction;
+  }, [reaction]);
+
+  useEffect(() => {
+    statsRef.current = stats;
+  }, [stats]);
+
+  // Keep stats in sync if initialTotals prop changes (e.g. list prefetch / SSE).
+  useEffect(() => {
+    if (!initialTotals) return;
+    const next = normalizeTotals(postId, initialTotals, true);
+    setStats(next);
+    setIsLoadingTotals(false);
+    onUpdate?.(next.totals.likes, next.totals.dislikes);
+    writeLocalReaction(storageKey, reactionRef.current, {
+      postId: next.postId,
+      baselineLikes: next.baselineLikes,
+      baselineDislikes: next.baselineDislikes,
+      likesCount: next.likesCount,
+      dislikesCount: next.dislikesCount,
+      totals: next.totals,
+    });
+    try {
+      window.dispatchEvent(
+        new CustomEvent('reaction:updated', {
+          detail: {
+            postId: next.postId,
+            baselineLikes: next.baselineLikes,
+            baselineDislikes: next.baselineDislikes,
+            likesCount: next.likesCount,
+            dislikesCount: next.dislikesCount,
+            totals: { ...next.totals },
+          } satisfies ReactionTotals,
+        }),
+      );
+    } catch {
+      // ignore event errors
+    }
+  }, [initialTotals, onUpdate, postId, storageKey]);
+
+  // Initial load from server when we don't have initialTotals.
+  useEffect(() => {
+    if (initialTotals) {
+      setIsLoadingTotals(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const load = async () => {
+      setIsLoadingTotals(true);
       try {
-        let data: ReactionTotals;
-        if (initialTotals && typeof initialTotals === 'object') {
-          const now = Date.now();
-          if (now - (lastTotalsUpdateTsRef.current || 0) < 200) {
-            return;
-          }
-          lastTotalsUpdateTsRef.current = now;
-          data = initialTotals;
-        } else {
-          data = await fetchReactions(postId);
-          if (!mounted) return;
-        }
-
-        let likes = Number(data?.totals?.likes ?? 0);
-        let dislikes = Number(data?.totals?.dislikes ?? 0);
-        let baseLikes = Number(data?.baselineLikes ?? 0);
-        let baseDislikes = Number(data?.baselineDislikes ?? 0);
-
-        const computedStats: Stats = {
-          likes,
-          dislikes,
-          baseStats: {
-            likes: baseLikes,
-            dislikes: baseDislikes,
-          },
-          userInteracted: false,
-        };
-        setStats(computedStats);
-        setReactionError(false);
+        const data = await fetchReactions(postId);
+        if (cancelled || !data) return;
+        const next = normalizeTotals(postId, data, true);
+        setStats(next);
         setIsLoadingTotals(false);
-
-        const localState = readLocalReaction(storageKey);
-        setLiked(localState === 'like');
-        setDisliked(localState === 'dislike');
-
-        onUpdate?.(computedStats.likes, computedStats.dislikes);
+        onUpdate?.(next.totals.likes, next.totals.dislikes);
+        writeLocalReaction(storageKey, reactionRef.current, {
+          postId: next.postId,
+          baselineLikes: next.baselineLikes,
+          baselineDislikes: next.baselineDislikes,
+          likesCount: next.likesCount,
+          dislikesCount: next.dislikesCount,
+          totals: next.totals,
+        });
         try {
-          const detail = {
-            postId,
-            baselineLikes: Number(computedStats.baseStats.likes || 0),
-            baselineDislikes: Number(computedStats.baseStats.dislikes || 0),
-            likesCount: Math.max(
-              0,
-              Number(computedStats.likes) - Number(computedStats.baseStats.likes || 0),
-            ),
-            dislikesCount: Math.max(
-              0,
-              Number(computedStats.dislikes) - Number(computedStats.baseStats.dislikes || 0),
-            ),
-            totals: {
-              likes: Number(computedStats.likes),
-              dislikes: Number(computedStats.dislikes),
-            },
-          };
-          window.dispatchEvent(new CustomEvent('reaction:updated', { detail }));
-        } catch {}
+          window.dispatchEvent(
+            new CustomEvent('reaction:updated', {
+              detail: {
+                postId: next.postId,
+                baselineLikes: next.baselineLikes,
+                baselineDislikes: next.baselineDislikes,
+                likesCount: next.likesCount,
+                dislikesCount: next.dislikesCount,
+                totals: { ...next.totals },
+              } satisfies ReactionTotals,
+            }),
+          );
+        } catch {
+          // ignore
+        }
       } catch (error) {
+        // Backend unavailable: fall back to local-only counts (0/0 by default).
         console.error('[LikeDislike] Failed to load reactions:', error);
-        // Fall back to local-only state: show 0/0 but keep buttons working smoothly.
+        if (cancelled) return;
         setIsLoadingTotals(false);
-        setReactionError(false);
-
-        const localState = readLocalReaction(storageKey);
-        setLiked(localState === 'like');
-        setDisliked(localState === 'dislike');
-
-        // Ensure we have a sane stats object even if the server is unavailable.
         setStats((prev) =>
-          prev || {
-            likes: 0,
-            dislikes: 0,
-            baseStats: { likes: 0, dislikes: 0 },
-            userInteracted: false,
-          },
+          prev ??
+          normalizeTotals(
+            postId,
+            {
+              postId,
+              baselineLikes: 0,
+              baselineDislikes: 0,
+              likesCount: 0,
+              dislikesCount: 0,
+              totals: { likes: 0, dislikes: 0 },
+            },
+            false,
+          ),
         );
       }
-    })();
+    };
+
+    void load();
 
     return () => {
-      mounted = false;
+      cancelled = true;
+    };
+  }, [postId, storageKey, onUpdate, initialTotals]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
       if (hideTimerRef.current) {
         window.clearTimeout(hideTimerRef.current);
         hideTimerRef.current = null;
@@ -192,7 +295,7 @@ export function LikeDislike({
         removeTimerRef.current = null;
       }
     };
-  }, [postId, slug, source, onUpdate, initialTotals, storageKey]);
+  }, []);
 
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
     setInlineToast({ message, type });
@@ -209,228 +312,166 @@ export function LikeDislike({
     }, 1200);
   };
 
-  const applyServerTotals = (data: any) => {
-    const likes = Number(data?.totals?.likes ?? 0);
-    const dislikes = Number(data?.totals?.dislikes ?? 0);
-    const baseLikes = Number(data?.baselineLikes ?? 0);
-    const baseDislikes = Number(data?.baselineDislikes ?? 0);
+  const applyServerTotals = (data: ReactionTotals) => {
+    const next = normalizeTotals(postId, data, true);
+    setStats(next);
+    onUpdate?.(next.totals.likes, next.totals.dislikes);
+    writeLocalReaction(storageKey, reactionRef.current, {
+      postId: next.postId,
+      baselineLikes: next.baselineLikes,
+      baselineDislikes: next.baselineDislikes,
+      likesCount: next.likesCount,
+      dislikesCount: next.dislikesCount,
+      totals: next.totals,
+    });
+    try {
+      window.dispatchEvent(
+        new CustomEvent('reaction:updated', {
+          detail: {
+            postId: next.postId,
+            baselineLikes: next.baselineLikes,
+            baselineDislikes: next.baselineDislikes,
+            likesCount: next.likesCount,
+            dislikesCount: next.dislikesCount,
+            totals: { ...next.totals },
+          } satisfies ReactionTotals,
+        }),
+      );
+    } catch {
+      // ignore
+    }
+  };
 
-    const newStats: Stats = {
-      likes,
-      dislikes,
-      baseStats: {
-        likes: baseLikes,
-        dislikes: baseDislikes,
+  const commitOptimisticUpdate = (
+    prevState: ReactionState,
+    nextState: ReactionState,
+    targetIsLike: boolean,
+  ) => {
+    const current = statsRef.current;
+    const base = current ?? normalizeTotals(postId, null, false);
+    const { deltaLikes, deltaDislikes } = computeReactionDelta(prevState, nextState);
+
+    const likesCount = Math.max(0, (base.likesCount || 0) + deltaLikes);
+    const dislikesCount = Math.max(0, (base.dislikesCount || 0) + deltaDislikes);
+
+    const nextStats: Stats = {
+      postId,
+      baselineLikes: base.baselineLikes,
+      baselineDislikes: base.baselineDislikes,
+      likesCount,
+      dislikesCount,
+      totals: {
+        likes: base.baselineLikes + likesCount,
+        dislikes: base.baselineDislikes + dislikesCount,
       },
-      userInteracted: true,
+      hasServerData: base.hasServerData,
     };
-    setStats(newStats);
-    setReactionError(false);
-    setIsLoadingTotals(false);
-    onUpdate?.(newStats.likes, newStats.dislikes);
-    writeLocalReaction(storageKey, liked ? 'like' : disliked ? 'dislike' : 'none', newStats);
+
+    setStats(nextStats);
+    statsRef.current = nextStats;
+    setReaction(nextState);
+    reactionRef.current = nextState;
+
+    writeLocalReaction(storageKey, nextState, {
+      postId: nextStats.postId,
+      baselineLikes: nextStats.baselineLikes,
+      baselineDislikes: nextStats.baselineDislikes,
+      likesCount: nextStats.likesCount,
+      dislikesCount: nextStats.dislikesCount,
+      totals: nextStats.totals,
+    });
+
+    onLike?.(nextState === 'like');
+    onDislike?.(nextState === 'dislike');
+    onUpdate?.(nextStats.totals.likes, nextStats.totals.dislikes);
 
     try {
       window.dispatchEvent(
         new CustomEvent('reaction:updated', {
           detail: {
-            postId,
-            baselineLikes: baseLikes,
-            baselineDislikes: baseDislikes,
-            likesCount: Math.max(0, Number(likes) - Number(baseLikes)),
-            dislikesCount: Math.max(0, Number(dislikes) - Number(baseDislikes)),
-            totals: { likes: Number(likes), dislikes: Number(dislikes) },
-          },
+            postId: nextStats.postId,
+            baselineLikes: nextStats.baselineLikes,
+            baselineDislikes: nextStats.baselineDislikes,
+            likesCount: nextStats.likesCount,
+            dislikesCount: nextStats.dislikesCount,
+            totals: { ...nextStats.totals },
+          } satisfies ReactionTotals,
         }),
       );
-    } catch {}
-  };
-
-  const composeTotals = (s: Stats): import('@/api/reactions').ReactionTotals => {
-    const baseLikes = Number(s.baseStats.likes || 0);
-    const baseDislikes = Number(s.baseStats.dislikes || 0);
-    const totalsLikes = Number(s.likes);
-    const totalsDislikes = Number(s.dislikes);
-    return {
-      postId,
-      baselineLikes: baseLikes,
-      baselineDislikes: baseDislikes,
-      likesCount: Math.max(0, totalsLikes - baseLikes),
-      dislikesCount: Math.max(0, totalsDislikes - baseDislikes),
-      totals: {
-        likes: totalsLikes,
-        dislikes: totalsDislikes,
-      },
-    };
-  };
-
-  const handleLike = async () => {
-    const now = Date.now();
-    if (isPendingRef.current || now - lastActionTsRef.current < ACTION_THROTTLE_MS) return;
-    isPendingRef.current = true;
-    setIsPending(true);
-    lastActionTsRef.current = now;
-
-    const nextLiked = !liked;
-    const nextDisliked = nextLiked ? false : disliked;
-
-    const baseLikes = Number(stats.baseStats.likes || 0);
-    const baseDislikes = Number(stats.baseStats.dislikes || 0);
-    let likes = Number(stats.likes || baseLikes);
-    let dislikes = Number(stats.dislikes || baseDislikes);
-
-    if (!liked && !disliked && nextLiked) {
-      likes += 1;
-    } else if (disliked && nextLiked) {
-      dislikes = Math.max(0, dislikes - 1);
-      likes += 1;
-    } else if (liked && !nextLiked) {
-      likes = Math.max(0, likes - 1);
+    } catch {
+      // ignore
     }
 
-    const optimistic: Stats = {
-      likes,
-      dislikes,
-      baseStats: { likes: baseLikes, dislikes: baseDislikes },
-      userInteracted: true,
-    };
-
-    setLiked(nextLiked);
-    setDisliked(nextDisliked);
-    setStats(optimistic);
-    writeLocalReaction(
-      storageKey,
-      nextLiked ? 'like' : nextDisliked ? 'dislike' : 'none',
-      optimistic,
-    );
-    onUpdate?.(optimistic.likes, optimistic.dislikes);
-    try {
-      window.dispatchEvent(
-        new CustomEvent('reaction:updated', { detail: composeTotals(optimistic) }),
-      );
-    } catch {}
-
-    if (nextLiked) {
+    if (nextState === 'like' && targetIsLike) {
       showInlineToast('Thanks for liking! 😘', 'like');
-      onLike?.(true);
-    } else {
-      onLike?.(false);
-    }
-
-    try {
-      const data = await submitReaction(postId, true);
-      applyServerTotals(data);
-    } catch (error) {
-      console.error(`[LikeDislike] Error handling like for post ${postId}:`, error);
-      showInlineToast('Failed to update like. Please try again.', 'error');
-      // Keep optimistic UI state; a later fetch can gently resync totals.
-      setReactionError(false);
-      window.setTimeout(async () => {
-        try {
-          const data = await fetchReactions(postId);
-          applyServerTotals(data);
-        } catch {
-          // If even the retry fails, we still keep the optimistic local state.
-        }
-      }, 800);
-    } finally {
-      isPendingRef.current = false;
-      setIsPending(false);
+    } else if (nextState === 'dislike' && !targetIsLike) {
+      showInlineToast('Thanks for the feedback! 😔', 'dislike');
     }
   };
 
-  const handleDislike = async () => {
+  const handleToggle = async (target: 'like' | 'dislike') => {
     const now = Date.now();
     if (isPendingRef.current || now - lastActionTsRef.current < ACTION_THROTTLE_MS) return;
     isPendingRef.current = true;
     setIsPending(true);
     lastActionTsRef.current = now;
 
-    const nextDisliked = !disliked;
-    const nextLiked = nextDisliked ? false : liked;
-
-    const baseLikes = Number(stats.baseStats.likes || 0);
-    const baseDislikes = Number(stats.baseStats.dislikes || 0);
-    let likes = Number(stats.likes || baseLikes);
-    let dislikes = Number(stats.dislikes || baseDislikes);
-
-    if (!disliked && !liked && nextDisliked) {
-      dislikes += 1;
-    } else if (liked && nextDisliked) {
-      likes = Math.max(0, likes - 1);
-      dislikes += 1;
-    } else if (disliked && !nextDisliked) {
-      dislikes = Math.max(0, dislikes - 1);
-    }
-
-    const optimistic: Stats = {
-      likes,
-      dislikes,
-      baseStats: { likes: baseLikes, dislikes: baseDislikes },
-      userInteracted: true,
-    };
-
-    setDisliked(nextDisliked);
-    setLiked(nextLiked);
-    setStats(optimistic);
-    writeLocalReaction(
-      storageKey,
-      nextDisliked ? 'dislike' : nextLiked ? 'like' : 'none',
-      optimistic,
-    );
-    onUpdate?.(optimistic.likes, optimistic.dislikes);
-    try {
-      window.dispatchEvent(
-        new CustomEvent('reaction:updated', { detail: composeTotals(optimistic) }),
-      );
-    } catch {}
-
-    if (nextDisliked) {
-      showInlineToast('Thanks for the feedback! 😔', 'dislike');
-      onDislike?.(true);
+    const prevState: ReactionState = reactionRef.current;
+    let nextState: ReactionState;
+    if (target === 'like') {
+      nextState = prevState === 'like' ? 'none' : 'like';
     } else {
-      onDislike?.(false);
+      nextState = prevState === 'dislike' ? 'none' : 'dislike';
     }
 
+    const isLike = target === 'like';
+
+    commitOptimisticUpdate(prevState, nextState, isLike);
+
     try {
-      const data = await submitReaction(postId, false);
-      setDisliked(nextDisliked);
-      setLiked(nextLiked);
+      const data = await submitReaction(postId, isLike, {
+        prevState,
+        nextState,
+      });
       applyServerTotals(data);
     } catch (error) {
-      console.error(`[LikeDislike] Error handling dislike for post ${postId}:`, error);
-      showInlineToast('Failed to update dislike. Please try again.', 'error');
-      // Keep optimistic UI state; a later fetch can gently resync totals.
-      setReactionError(false);
-      window.setTimeout(async () => {
-        try {
-          const data = await fetchReactions(postId);
-          applyServerTotals(data);
-        } catch {
-          // If even the retry fails, we still keep the optimistic local state.
-        }
-      }, 800);
+      console.error(
+        `[LikeDislike] Error handling ${isLike ? 'like' : 'dislike'} for post ${postId}:`,
+        error,
+      );
+      showInlineToast(
+        isLike ? 'Failed to sync like. Saved locally.' : 'Failed to sync dislike. Saved locally.',
+        'error',
+      );
+      // Keep optimistic UI; a future refresh or navigation can resync.
     } finally {
       isPendingRef.current = false;
       setIsPending(false);
     }
   };
+
+  const liked = reaction === 'like';
+  const disliked = reaction === 'dislike';
+  const totalLikes = stats?.totals?.likes ?? 0;
+  const totalDislikes = stats?.totals?.dislikes ?? 0;
 
   return (
-    <div className={`relative ${className}`} data-toast-container>
+    <div className={`relative ${className || ''}`} data-toast-container>
       {variant === 'reader' && (
         <p className="text-center text-sm font-medium mb-4 text-muted-foreground uppercase tracking-wide font-sans">
           Loved this story? Let me know with a like—or a dislike if you must
         </p>
       )}
       <div
-        className={`flex items-center gap-3 ${variant === 'reader' ? 'justify-center' : 'justify-start'}`}
+        className={`flex items-center gap-3 ${
+          variant === 'reader' ? 'justify-center' : 'justify-start'
+        }`}
       >
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            handleLike();
+            void handleToggle('like');
           }}
           className={`
             inline-flex items-center gap-2 font-sans font-medium text-sm
@@ -452,9 +493,9 @@ export function LikeDislike({
           aria-label="Like this story"
           disabled={isLoadingTotals || isPending}
         >
-          <ThumbsUp className={`${variant === 'reader' ? 'h-4 w-4' : 'h-3 w-3'}`} />
+          <ThumbsUp className={variant === 'reader' ? 'h-4 w-4' : 'h-3 w-3'} />
           <span className="font-sans tabular-nums">
-            {isLoadingTotals ? '—' : stats.likes}
+            {isLoadingTotals ? '—' : totalLikes}
           </span>
         </button>
 
@@ -462,7 +503,7 @@ export function LikeDislike({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            handleDislike();
+            void handleToggle('dislike');
           }}
           className={`
             inline-flex items-center gap-2 font-sans font-medium text-sm
@@ -484,9 +525,9 @@ export function LikeDislike({
           aria-label="Dislike this story"
           disabled={isLoadingTotals || isPending}
         >
-          <ThumbsDown className={`${variant === 'reader' ? 'h-4 w-4' : 'h-3 w-3'}`} />
+          <ThumbsDown className={variant === 'reader' ? 'h-4 w-4' : 'h-3 w-3'} />
           <span className="font-sans tabular-nums">
-            {isLoadingTotals ? '—' : stats.dislikes}
+            {isLoadingTotals ? '—' : totalDislikes}
           </span>
         </button>
       </div>
