@@ -103,6 +103,114 @@ export async function callSupabaseRpc(
 }
 
 /**
+ * Map a Supabase users row to the API user shape.
+ * Duplicated from src/index.ts so modular files can use a shared mapper.
+ */
+export function mapDbUserRowToApiUser(row: any): {
+  id: number;
+  email: string;
+  username: string;
+  isAdmin: boolean;
+  fullName?: string | null;
+  bio?: string | null;
+  avatar?: string | null;
+} {
+  const meta =
+    row && typeof row.metadata === 'object' && row.metadata !== null ? (row.metadata as any) : {};
+  const fullName = meta.fullName ?? meta.displayName ?? null;
+  const avatar = meta.avatar ?? meta.photoURL ?? null;
+  const bio = meta.bio ?? null;
+  return {
+    id: Number(row.id),
+    email: String(row.email || ''),
+    username: String(row.username || ''),
+    isAdmin: row.is_admin === true || row.isAdmin === true,
+    fullName,
+    bio,
+    avatar,
+  };
+}
+
+/**
+ * Resolve numeric user id from Supabase JWT via the users table.
+ * RLS on users ensures we only see the current user row.
+ * Duplicated from src/index.ts for modular route files.
+ */
+export async function getSupabaseUserIdFromJwt(env: Env, token: string): Promise<number | null> {
+  try {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return null;
+    }
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+    const url = `${baseUrl}/rest/v1/users?select=id&limit=1`;
+    const res = await fetch(url, {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+    if (!res.ok) {
+      return null;
+    }
+    const rows = (await res.json().catch(() => [])) as any[];
+    if (!Array.isArray(rows) || rows.length === 0 || rows[0]?.id == null) {
+      return null;
+    }
+    const id = Number(rows[0].id);
+    return Number.isFinite(id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve current Supabase-authenticated user (id/email/username/isAdmin) from JWT.
+ * Uses RLS on users table to restrict to the current row.
+ * Duplicated from src/index.ts for modular route files.
+ */
+export async function getSupabaseCurrentUser(
+  env: Env,
+  token: string,
+): Promise<{
+  id: number;
+  email: string;
+  username: string;
+  isAdmin: boolean;
+  fullName?: string | null;
+  bio?: string | null;
+  avatar?: string | null;
+} | null> {
+  try {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return null;
+    }
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+    const url = new URL(`${baseUrl}/rest/v1/users`);
+    url.searchParams.set('select', 'id,email,username,is_admin,metadata');
+    url.searchParams.set('limit', '1');
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+    if (!res.ok) {
+      return null;
+    }
+    const rows = (await res.json().catch(() => [])) as any[];
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return null;
+    }
+    return mapDbUserRowToApiUser(rows[0]);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Resolve a local posts.id from an external WordPress or numeric post ID.
  * Duplicated from src/index.ts to allow reuse in modular route files.
  */

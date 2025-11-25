@@ -89,23 +89,39 @@ function collectClientRoutes(rootDir) {
 }
 
 function collectWorkerRoutes(rootDir) {
-  const workerFile = path.join(rootDir, "src", "index.ts");
-  if (!fs.existsSync(workerFile)) {
-    return new Set();
-  }
-
-  let src;
-  try {
-    src = fs.readFileSync(workerFile, "utf8");
-  } catch {
-    return new Set();
-  }
-
   const routes = new Set();
+  const exts = new Set([".ts"]);
+
+  const files = [];
+
+  const indexFile = path.join(rootDir, "src", "index.ts");
+  if (fs.existsSync(indexFile)) {
+    files.push(indexFile);
+  }
+
+  const workerDir = path.join(rootDir, "src", "worker");
+  if (fs.existsSync(workerDir)) {
+    files.push(...collectFiles(workerDir, exts));
+  }
+
+  if (files.length === 0) {
+    return routes;
+  }
+
   const re = /router\.(get|post|patch|delete|all)\(\s*["'`](\/[^"'`]+)["'`]/g;
-  let match;
-  while ((match = re.exec(src)) !== null) {
-    routes.add(match[2]);
+
+  for (const file of files) {
+    let src;
+    try {
+      src = fs.readFileSync(file, "utf8");
+    } catch {
+      continue;
+    }
+
+    let match;
+    while ((match = re.exec(src)) !== null) {
+      routes.add(match[2]);
+    }
   }
 
   return routes;
