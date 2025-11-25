@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, createElement } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import CreepyTextGlitch from '@/components/errors/CreepyTextGlitch';
 
@@ -126,7 +126,7 @@ export function useReaderHorrorOverlay(): ReaderHorrorOverlayState {
         // Toast with the same creepy effect as before.
         toast({
           title: 'NOTICE',
-          description: <CreepyTextGlitch text={message} intensityFactor={8} />,
+          description: createElement(CreepyTextGlitch, { text: message, intensityFactor: 8 }),
           variant: 'destructive',
           duration: 9000,
         });
