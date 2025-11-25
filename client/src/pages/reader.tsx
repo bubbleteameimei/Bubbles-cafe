@@ -21,20 +21,16 @@ import { motion } from "framer-motion";
 import { format } from 'date-fns';
 import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
-import { useFontSize } from "@/hooks/use-font-size";
-import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
+import type { FontFamilyKey } from "@/hooks/use-font-family";
 import { detectThemes, THEME_CATEGORIES, getExcerpt } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
-import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
-import ApiLoader from "@/components/api-loader";
 import RouteLoader from "@/components/ui/RouteLoader";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import SimplifiedErrorPage from "@/components/errors/SimplifiedErrorPage";
 import { useToast } from "@/hooks/use-toast";
 import { apiJson } from "@/lib/api";
-
 
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import { resolveAuthorId } from "@/lib/reader-navigation";
@@ -43,12 +39,6 @@ import SEO from "@/components/SEO";
 import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
 import type { WordPressPost } from "@/lib/wordpress-api";
 import { sanitizeHtml } from "@/lib/sanitize";
-import { trackWordPressRead } from "@/lib/wp-reads";
-import { useCookieConsent } from "@/hooks/use-cookie-consent";
-import { trackInteraction } from "@/lib/metrics";
-import { fetchReactionsBatch, type ReactionTotals } from "@/api/reactions";
-
-
 import {
   Dialog,
   DialogContent,
@@ -77,6 +67,12 @@ import { getBadgeTint } from "@/lib/theme-badges";
 import { useThemeCategories } from "@/hooks/use-theme-categories";
 
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
+import { useReaderScrollProgress } from "@/hooks/reader/use-reader-scroll-progress";
+import { useReaderFonts } from "@/hooks/reader/use-reader-fonts";
+import { useReaderHorrorOverlay } from "@/hooks/reader/use-reader-horror-overlay";
+import { useReaderDebugInstrumentation } from "@/hooks/reader/use-reader-debug";
+import { useReaderProgressPersistence } from "@/hooks/reader/use-reader-progress-persistence";
+import { useReaderAnalytics } from "@/hooks/reader/use-reader-analytics";
 
 // Lazy-mount comment section when near viewport to reduce initial load cost
 function LazyCommentSection({ postId }: { postId: number }): JSX.Element {
@@ -110,29 +106,29 @@ function LazyCommentSection({ postId }: { postId: number }): JSX.Element {
 }
 
 // Native HTML sanitization function (now powered by DOMPurify with extra hardening)
-  const sanitizeHtmlContent = (html: string): string => {
-    try {
-      return sanitizeHtml(html);
-    } catch (error) {
-      console.error('[Reader] Error sanitizing HTML:', error);
-      return html;
-    }
-  };
+const sanitizeHtmlContent = (html: string): string => {
+  try {
+    return sanitizeHtml(html);
+  } catch (error) {
+    console.error('[Reader] Error sanitizing HTML:', error);
+    return html;
+  }
+};
 
-  // Normalize WordPress fields (string or { rendered: string }) to a string
-  const getRenderedText = (value: any): string => {
-    try {
-      if (typeof value === 'string') return value;
-      if (value && typeof value === 'object' && typeof value.rendered === 'string') {
-        return value.rendered;
-      }
-      return '';
-    } catch {
-      return '';
+// Normalize WordPress fields (string or { rendered: string }) to a string
+const getRenderedText = (value: any): string => {
+  try {
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object' && typeof value.rendered === 'string') {
+      return value.rendered;
     }
-  };
+    return '';
+  } catch {
+    return '';
+  }
+};
 
-  interface ReaderPageProps {
+interface ReaderPageProps {
   slug?: string;
   params?: { slug?: string };
   isCommunityContent?: boolean;
@@ -143,12 +139,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   if (import.meta.env?.DEV) {
     console.log('[ReaderPage] Initializing with params:', { routeSlug: params?.slug || slug, params, slug });
   }
+
   // Extract slug from route params if provided
   const routeSlug = params?.slug || slug;
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   const { CommentDialog } = useInlineCommenting({
     enabled: true,
     onSubmitComment: async (text, selection, range) => {
@@ -169,7 +166,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     },
     contentSelector: '.story-content'
   });
-  
+
   const logReaderError = (id: string, message: any, extra?: any) => {
     try {
       const key = `reader_error_logged_${id}`;
@@ -189,79 +186,34 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       }).catch(() => {});
     } catch {}
   };
-  
-  // Add authentication hook to check user role for admin actions
+
+  // Authentication hook to check user role for admin actions
   const { user, isAuthenticated } = useAuth();
   const isAdmin = user?.isAdmin === true;
-  
-  // Theme is now managed by the useTheme hook
-  const { theme, toggleTheme } = useTheme();
-  
-  // Font size and family adjustments
-  const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
-  const { fontFamily, availableFonts, updateFontFamily } = useFontFamily();
+
+  // Reader-specific fonts and theme handling (CSS variables applied in hook).
+  const {
+    theme,
+    fontSize,
+    increaseFontSize,
+    decreaseFontSize,
+    fontFamily,
+    availableFonts,
+    updateFontFamily,
+  } = useReaderFonts();
+
   const { categoriesMap, categoriesList } = useThemeCategories();
-  
-  // Night mode functionality has been completely removed
-  
+
   // One-click distraction-free mode - toggle UI visibility with click
   const { isUIHidden, toggleUI, showTooltip, setUIHidden } = useReaderUIToggle();
 
-  // Debug: wrap toggle to trace invocations
-  const toggleUIWithDebug = (reason: string) => {
-    try {
-      if (debugEnabled) {
-        console.log('[Reader.debug] toggleUI invoked', { reason, isUIHiddenBefore: isUIHidden });
-      }
-    } catch {}
-    toggleUI();
-    try {
-      if (debugEnabled) {
-        console.log('[Reader.debug] toggleUI scheduled state flip');
-      }
-    } catch {}
-  };
-
-  // Reset UI hidden state on theme changes to avoid unpredictable layout shifts
-  useEffect(() => {
-    try { setUIHidden(false); } catch {}
-  }, [theme, setUIHidden]);
-
-  // Reading progress state - moved to top level with other state hooks
-  const [readingProgress, setReadingProgress] = useState(0);
-  // Smooth, GPU-accelerated animated progress value
-  const [animatedProgress, setAnimatedProgress] = useState(0);
-  const progressCurrentRef = useRef(0);
-  const progressTargetRef = useRef(0);
-  const progressRAFRef = useRef<number | null>(null);
-  
-  // Will initialize this after data is loaded
-  const [autoSaveSlug, setAutoSaveSlug] = useState<string>("");
-
-  // Fixed constants for better text readability (replacing auto-contrast)
-  const DARK_TEXT_COLOR = 'rgba(255, 255, 255, 0.95)';
-  const LIGHT_TEXT_COLOR = 'rgba(0, 0, 0, 0.95)';
-  
   // State for dialog controls
   const [fontDialogOpen, setFontDialogOpen] = useState(false);
   const [contentsDialogOpen, setContentsDialogOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [randomTipOpen, setRandomTipOpen] = useState(false);
-  
 
-  /* isAnyDialogOpen is declared below, after themeEditorOpen is defined */
-
-  // Debug instrumentation toggle: enable when DEV or localStorage('reader_debug') === '1'
-  const [debugEnabled, setDebugEnabled] = useState<boolean>(() => {
-    try {
-      const flag = localStorage.getItem('reader_debug');
-      return flag === '1' || import.meta.env?.DEV === true;
-    } catch {
-      return import.meta.env?.DEV === true;
-    }
-  });
-
-  // Refs for bounds and style logging
+  // Debug instrumentation references (controls/meta/nav/pager/share rows and content container)
   const controlsRowRef = useRef<HTMLDivElement | null>(null);
   const metaRowRef = useRef<HTMLDivElement | null>(null);
   const navRowRef = useRef<HTMLDivElement | null>(null);
@@ -276,245 +228,70 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [overrideThemeCategory, setOverrideThemeCategory] = useState<string | null>(null);
   const [overrideThemeIcon, setOverrideThemeIcon] = useState<string | null>(null);
 
-  // Derived: any dialog open (used to stabilize layout during overlays/dropdowns)
+  // Derived: any dialog open (used to stabilise layout during overlays/dropdowns)
   const isAnyDialogOpen = fontDialogOpen || contentsDialogOpen || showDeleteDialog || themeEditorOpen;
-  
-  
-  // Dialogs are controlled via state; avoid querying DOM for close buttons
-  
-  // Reading progress tracking with scroll-based calculation and rAF smoothing
-  useEffect(() => {
-    let ticking = false;
-    let scrollRafId: number | null = null;
 
-    const animate = () => {
-      const target = progressTargetRef.current;
-      const current = progressCurrentRef.current;
-      // Use direction-aware smoothing: slower when decreasing (scrolling up), faster when increasing
-      const factor = target < current ? 0.12 : 0.24;
-      const next = current + (target - current) * factor;
-      progressCurrentRef.current = next;
-      setAnimatedProgress(next);
-      if (Math.abs(target - next) > 0.08) {
-        progressRAFRef.current = requestAnimationFrame(animate);
-      } else {
-        progressCurrentRef.current = target;
-        setAnimatedProgress(target);
-        progressRAFRef.current = null;
-      }
-    };
-
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const scrollPercent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-      const progress = Math.min(100, Math.max(0, scrollPercent));
-      setReadingProgress(progress);
-      progressTargetRef.current = progress;
-      if (!progressRAFRef.current) {
-        progressRAFRef.current = requestAnimationFrame(animate);
-      }
-    };
-
-    // Throttle scroll events for better performance
-    const throttledHandleScroll = () => {
-      if (!ticking) {
-        scrollRafId = requestAnimationFrame(() => {
-          handleScroll();
-          ticking = false;
-          scrollRafId = null;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', throttledHandleScroll, { passive: true });
-    
-    // Initial calculation
-    handleScroll();
-    
-    return () => {
-      window.removeEventListener('scroll', throttledHandleScroll);
-      if (scrollRafId) cancelAnimationFrame(scrollRafId);
-      if (progressRAFRef.current) {
-        cancelAnimationFrame(progressRAFRef.current);
-        progressRAFRef.current = null;
-      }
-    };
-  }, []);
-  
-  // Horror easter egg - track rapid navigation
-  const [showHorrorMessage, setShowHorrorMessage] = useState(false);
-  const [horrorMessageText, setHorrorMessageText] = useState("Are you avoiding something?");
-  const skipCountRef = useRef(0);
-  const lastNavigationTimeRef = useRef(Date.now());
-
-  // Persist rapid navigation counters across remounts and restore overlay if active
-  useEffect(() => {
-    try {
-      // Restore counters
-      const savedSkip = parseInt(sessionStorage.getItem('reader_skip_count') || '0', 10);
-      if (Number.isFinite(savedSkip)) {
-        skipCountRef.current = savedSkip;
-      }
-      const savedLast = parseInt(sessionStorage.getItem('reader_last_nav_time') || '0', 10);
-      if (Number.isFinite(savedLast) && savedLast > 0) {
-        lastNavigationTimeRef.current = savedLast;
-      }
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    try {
-      // Restore active overlay if still within expiry window
-      const active = sessionStorage.getItem('reader_horror_active') === '1';
-      const expiry = parseInt(sessionStorage.getItem('reader_horror_expiry_ts') || '0', 10);
-      const msg = sessionStorage.getItem('reader_horror_message') || '';
-      const now = Date.now();
-      if (active && Number.isFinite(expiry) && expiry > now) {
-        setHorrorMessageText(msg || "I SEE YOU SKIPPING!!!");
-        setShowHorrorMessage(true);
-        const remaining = expiry - now;
-        setTimeout(() => {
-          setShowHorrorMessage(false);
-          try {
-            sessionStorage.removeItem('reader_horror_active');
-            sessionStorage.removeItem('reader_horror_message');
-            sessionStorage.removeItem('reader_horror_expiry_ts');
-          } catch {}
-        }, remaining);
-      } else {
-        // Clean up stale overlay keys
-        sessionStorage.removeItem('reader_horror_active');
-        sessionStorage.removeItem('reader_horror_message');
-        sessionStorage.removeItem('reader_horror_expiry_ts');
-      }
-    } catch {}
-    // Overlay state restored; footer rendering handled globally
-  }, []);
-
-  
-  
-  // Create a ref for the content container to attach swipe events and copy protection
+  // Create a ref for the content container to attach copy protection
   const contentRef = useCopyProtection(false);
-  // Removed positionRestoredRef as we no longer save reading position
 
-  // Debug: toggle via localStorage key "reader_debug" (set to "1" to enable)
+  // Reader horror overlay / rapid navigation easter egg
+  const {
+    showHorrorMessage,
+    horrorMessageText,
+    triggerRapidNavigation,
+    handleOverlayClose,
+  } = useReaderHorrorOverlay();
+
+  // Reading progress (scroll-based) with rAF smoothing, centralised in a hook
+  const { readingProgress } = useReaderScrollProgress();
+
+  // Will initialise this after data is loaded (kept for behaviour parity with existing persistence)
+  const [autoSaveSlug, setAutoSaveSlug] = useState<string>("");
+
+  // Debug instrumentation (DEV or localStorage('reader_debug') === '1')
+  const debugEnabled = useReaderDebugInstrumentation({
+    contentRef,
+    controlsRowRef,
+    metaRowRef,
+    navRowRef,
+    pagerRowRef,
+    shareRowRef,
+    isUIHidden,
+    fontDialogOpen,
+    contentsDialogOpen,
+    themeEditorOpen,
+    isAnyDialogOpen,
+  });
+
+  // Dialogs are controlled via state; avoid querying DOM for close buttons
+
+  // Reset UI hidden state on theme changes to avoid unpredictable layout shifts
   useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === 'reader_debug') {
-        try {
-          setDebugEnabled(e.newValue === '1' || import.meta.env?.DEV === true);
-        } catch {}
-      }
-    };
+    try { setUIHidden(false); } catch {}
+  }, [theme, setUIHidden]);
+
+  // Toggle UI with debug logging wrapper
+  const toggleUIWithDebug = (reason: string) => {
     try {
-      window.addEventListener('storage', onStorage);
+      if (debugEnabled) {
+        console.log('[Reader.debug] toggleUI invoked', { reason, isUIHiddenBefore: isUIHidden });
+      }
     } catch {}
-    return () => {
-      try { window.removeEventListener('storage', onStorage); } catch {}
-    };
-  }, []);
-
-  // Debug: global click tracer (capture phase)
-  useEffect(() => {
-    if (!debugEnabled) return undefined;
-    const handler = (e: Event) => {
-      try {
-        const t = e.target as HTMLElement | null;
-        const withinContent = !!(t && contentRef.current && contentRef.current.contains(t));
-        const path = (e as any).composedPath ? (e as any).composedPath().map((n: any) => n?.nodeName || n?.tagName || n?.className || 'node').slice(0, 6) : undefined;
-        console.log('[Reader.debug] click', {
-          target: t?.tagName,
-          class: t?.className,
-          id: t?.id,
-          withinContent,
-          isUIHidden,
-          fontDialogOpen,
-          contentsDialogOpen,
-          themeEditorOpen,
-          path
-        });
-      } catch {}
-    };
-    document.addEventListener('click', handler, true);
-    return () => document.removeEventListener('click', handler, true);
-  }, [debugEnabled, isUIHidden, fontDialogOpen, contentsDialogOpen, themeEditorOpen, contentRef]);
-
-  // Debug: log bounds and key computed styles when modals open/close and on DF mode change
-  useEffect(() => {
-    if (!debugEnabled) return undefined;
-    const logEl = (name: string, el: HTMLElement | null | undefined) => {
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      const cs = window.getComputedStyle(el);
-      console.log('[Reader.debug] bounds', name, {
-        rect: { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) },
-        opacity: cs.opacity,
-        zIndex: cs.zIndex,
-        pointerEvents: cs.pointerEvents,
-        bg: cs.backgroundColor,
-        filter: cs.filter,
-        backdropFilter: (cs as any).backdropFilter
-      });
-    };
-    logEl('controlsRow', controlsRowRef.current || undefined);
-    logEl('metaRow', metaRowRef.current || undefined);
-    logEl('navRow', navRowRef.current || undefined);
-    logEl('pagerRow', pagerRowRef.current || undefined);
-    logEl('shareRow', shareRowRef.current || undefined);
-    logEl('storyContent', contentRef.current || undefined);
+    toggleUI();
     try {
-      const b = document.body;
-      if (b) {
-        const cs = window.getComputedStyle(b);
-        console.log('[Reader.debug] body styles', {
-          pointerEvents: cs.pointerEvents,
-          paddingRightInline: b.style.paddingRight,
-          overflowX: cs.overflowX,
-          overflowY: cs.overflowY
-        });
+      if (debugEnabled) {
+        console.log('[Reader.debug] toggleUI scheduled state flip');
       }
-      const dlg = document.querySelector('[role="dialog"]') as HTMLElement | null;
-      if (dlg) {
-        const r = dlg.getBoundingClientRect();
-        const cs2 = window.getComputedStyle(dlg);
-        console.log('[Reader.debug] dialog content styles', {
-          rect: { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) },
-          opacity: cs2.opacity,
-          zIndex: cs2.zIndex,
-          pointerEvents: cs2.pointerEvents,
-          bg: cs2.backgroundColor,
-          filter: cs2.filter,
-          backdropFilter: (cs2 as any).backdropFilter
-        });
-      }
-      const overlay = document.querySelector('[data-radix-dialog-overlay]') as HTMLElement | null;
-      if (overlay) {
-        const r = overlay.getBoundingClientRect();
-        const cs3 = window.getComputedStyle(overlay);
-        console.log('[Reader.debug] dialog overlay styles', {
-          rect: { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) },
-          opacity: cs3.opacity,
-          zIndex: cs3.zIndex,
-          pointerEvents: cs3.pointerEvents,
-          bg: cs3.backgroundColor,
-          filter: cs3.filter,
-          backdropFilter: (cs3 as any).backdropFilter
-        });
-      }
-      console.log('[Reader.debug] content-visibility', { isAnyDialogOpen, applied: isAnyDialogOpen ? 'visible (no CV)' : 'auto (CV enabled)' });
     } catch {}
-    return undefined;
-  }, [debugEnabled, fontDialogOpen, contentsDialogOpen, themeEditorOpen, isUIHidden, isAnyDialogOpen, contentRef]);
-  
+  };
+
   // Delete Post Mutation for admin actions
   const deleteMutation = useMutation({
     mutationFn: async (postId: number) => {
       if (import.meta.env?.DEV) {
         console.log(`[Reader] Attempting to delete post with ID: ${postId}`);
       }
-      const csrfToken = document.cookie.replace(/(?:(?:^|.*;\s*)XSRF-TOKEN\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+      const csrfToken = document.cookie.replace(/(?:(?:^|.*;\s*)XSRF-TOKEN\s*=\s*([^;]*).*$)|^.*$/, "$1");
       if (import.meta.env?.DEV) {
         console.log('[Reader] Using CSRF token for deletion');
       }
@@ -619,10 +396,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     console.log('[Reader] Component mounted with slug:', routeSlug);
   }
   
-  // Clear any cached data to ensure fresh fetch after sample story removal
-  // Removed broad cache invalidation; reader now targets only its own query keys
-
-  // Initialize currentIndex with validation
+  // Initialise currentIndex with validation
   const [currentIndex, setCurrentIndex] = useState(() => {
     try {
       const savedIndex = sessionStorage.getItem('selectedStoryIndex');
@@ -651,7 +425,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   });
 
   const { data: postsData, isLoading, error } = useQuery<{ posts: WordPressPost[]; totalPages: number; total: number }>({
-    // Stabilize the query key so the list is reused across slug changes
+    // Stabilise the query key so the list is reused across slug changes
     queryKey: ["wordpress", "reader", "list", isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
       if (import.meta.env?.DEV) {
@@ -676,9 +450,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     refetchOnWindowFocus: false
   });
 
-  
-
-  // Memoized posts array for consistent usage across hooks
+  // Memoised posts array for consistent usage across hooks
   const posts = useMemo<WordPressPost[]>(() => {
     const dataPosts: WordPressPost[] | undefined = (postsData as any)?.posts;
     return Array.isArray(dataPosts) ? dataPosts : [];
@@ -716,8 +488,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   }, [currentIndex, postsData, routeSlug]);
 
-  // Position restoration notification has been removed as requested
-
   useEffect(() => {
     if (import.meta.env?.DEV) {
       console.log('[Reader] Verifying social icons:', {
@@ -742,92 +512,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   }, [posts, currentIndex]);
 
-  // Reaction totals for the current post (prefetch + SSE to minimize pop-in)
-  const [currentTotals, setCurrentTotals] = useState<ReactionTotals | null>(null);
-  const sseRef = useRef<EventSource | null>(null);
-  const sseErrorCountRef = useRef(0);
-
-  // Defer reactions prefetch and SSE subscription until user interaction or short delay
-  const [sseReady, setSseReady] = useState(false);
-
-  useEffect(() => {
-    setSseReady(false);
-    const pid = Number(currentPostId);
-    if (!Number.isFinite(pid)) return;
-
-    const delay = window.setTimeout(() => { setSseReady(true); }, 3000);
-    const onInteract = () => { setSseReady(true); };
-
-    window.addEventListener('pointerdown', onInteract);
-    window.addEventListener('keydown', onInteract);
-    window.addEventListener('touchstart', onInteract);
-
-    return () => {
-      window.clearTimeout(delay);
-      window.removeEventListener('pointerdown', onInteract);
-      window.removeEventListener('keydown', onInteract);
-      window.removeEventListener('touchstart', onInteract);
-    };
-  }, [currentPostId]);
-
-  useEffect(() => {
-    try { sseRef.current?.close(); } catch {}
-    setCurrentTotals(null);
-
-    const pid = Number(currentPostId);
-    if (!sseReady || !Number.isFinite(pid)) return;
-
-    // Prefetch totals once ready
-    (async () => {
-      try {
-        const totals = await fetchReactionsBatch([pid]);
-        const first = totals && totals[0];
-        if (first && Number(first.postId) === pid) {
-          setCurrentTotals(first);
-        }
-      } catch { /* ignore */ }
-    })();
-
-    // Subscribe to SSE for live totals
-    try {
-      const es = new EventSource(`/api/posts/${pid}/reactions/stream`, { withCredentials: true } as any);
-      sseErrorCountRef.current = 0;
-      const onMessage = (e: MessageEvent) => {
-        try {
-          const payload = JSON.parse(e.data || '{}');
-          if (payload && typeof payload.postId === 'number') {
-            setCurrentTotals({
-              postId: Number(payload.postId),
-              baselineLikes: Number(payload.baselineLikes || 0),
-              baselineDislikes: Number(payload.baselineDislikes || 0),
-              likesCount: Number(payload.likesCount || 0),
-              dislikesCount: Number(payload.dislikesCount || 0),
-              totals: {
-                likes: Number(payload.totals?.likes || (Number(payload.baselineLikes || 0) + Number(payload.likesCount || 0))),
-                dislikes: Number(payload.totals?.dislikes || (Number(payload.baselineDislikes || 0) + Number(payload.dislikesCount || 0))),
-              }
-            });
-          }
-        } catch {}
-      };
-      es.addEventListener('initial', onMessage);
-      es.addEventListener('update', onMessage);
-      es.onerror = () => {
-        sseErrorCountRef.current += 1;
-        if (sseErrorCountRef.current === 3) {
-          try { logReaderError('reader.sse.error', 'SSE connection error', { postId: pid }); } catch {}
-        }
-        // keep alive; browser will reconnect
-      };
-      sseRef.current = es;
-    } catch { /* ignore */ }
-
-    return () => {
-      try { sseRef.current?.close(); } catch {}
-      sseRef.current = null;
-    };
-  }, [currentPostId, sseReady]);
-
   const currentPostLink = useMemo(() => {
     try {
       const post = posts?.[currentIndex];
@@ -837,223 +521,30 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   }, [posts, currentIndex]);
 
-  // Cookie consent for analytics
-  const { isCategoryAllowed } = useCookieConsent();
+  // Reader analytics effects (WordPress pixel + finish_read interaction + active time)
+  useReaderAnalytics({
+    currentPostId,
+    currentPostLink,
+    readingProgress,
+    posts,
+    currentIndex,
+  });
 
-  // Interaction gating
-  const userInteractedRef = useRef<boolean>(false);
-  const [interactionCount, setInteractionCount] = useState(0);
-  useEffect(() => {
-    const onInteract = () => {
-      if (!userInteractedRef.current) {
-        userInteractedRef.current = true;
-        setInteractionCount((c) => c + 1);
-        window.removeEventListener('pointerdown', onInteract);
-        window.removeEventListener('keydown', onInteract);
-        window.removeEventListener('touchstart', onInteract);
-      }
-    };
-    window.addEventListener('pointerdown', onInteract, { passive: true });
-    window.addEventListener('keydown', onInteract);
-    window.addEventListener('touchstart', onInteract, { passive: true });
-    return () => {
-      window.removeEventListener('pointerdown', onInteract);
-      window.removeEventListener('keydown', onInteract);
-      window.removeEventListener('touchstart', onInteract);
-    };
-  }, []);
+  // Persist reading progress locally and (if authenticated) to the server.
+  useReaderProgressPersistence({
+    readingProgress,
+    routeSlug,
+    autoSaveSlug,
+    posts,
+    currentIndex,
+    isAuthenticated,
+  });
 
-  // Visibility-aware active time tracking
-  const readActiveStartRef = useRef<number | null>(null);
-  const activeAccumulatedMsRef = useRef<number>(0);
-  const [visibilityTick, setVisibilityTick] = useState(0);
-
-  // Persist reading progress locally and to server for cross-device resume (throttled)
-  const lastProgressSentRef = useRef<{ percent: number; ts: number }>({ percent: 0, ts: 0 });
-  useEffect(() => {
-    try {
-      const slug = routeSlug || autoSaveSlug || (posts?.[currentIndex] as any)?.slug;
-      if (!slug) return;
-
-      // Always update local storage so the "Continue Reading" banner works for all users
-      if (typeof window !== 'undefined') {
-        const scrollPosition = window.scrollY || 0;
-        const progressData = {
-          slug: String(slug),
-          scrollPosition,
-          percentRead: Math.max(0, Math.min(100, readingProgress)),
-          lastRead: new Date().toISOString()
-        };
-        try {
-          localStorage.setItem(`readingProgress_${slug}`, JSON.stringify(progressData));
-        } catch {
-          // Ignore storage errors (private mode, quotas, etc.)
-        }
-      }
-
-      // Server sync only for authenticated users
-      if (!isAuthenticated) return;
-
-      const now = Date.now();
-      const rounded = Math.round(readingProgress);
-      const diff = Math.abs(rounded - (lastProgressSentRef.current.percent || 0));
-      const tooSoon = now - (lastProgressSentRef.current.ts || 0) < 15000; // 15s throttle
-
-      if (diff >= 10 && !tooSoon) {
-        apiJson<any>('POST', '/api/reading-progress', {
-          postSlug: String(slug),
-          percentCompleted: rounded
-        })
-          .then(() => {
-            // Successful; record timestamp and last percent sent
-            lastProgressSentRef.current = { percent: rounded, ts: Date.now() };
-          })
-          .catch(() => {
-            // Non-fatal: keep local progress even if server call fails
-          });
-      }
-    } catch {
-      // Non-fatal: reading should never break due to progress persistence
-    }
-  }, [readingProgress, routeSlug, autoSaveSlug, posts, currentIndex, isAuthenticated]);
-
-  // Reset active timers when post changes
-  useEffect(() => {
-    activeAccumulatedMsRef.current = 0;
-    readActiveStartRef.current = (typeof document !== 'undefined' && document.visibilityState === 'visible') ? Date.now() : null;
-  }, [currentPostId]);
-
-  // Accumulate active time only when document is visible
-  useEffect(() => {
-    const handler = () => {
-      if (document.visibilityState === 'hidden') {
-        if (readActiveStartRef.current != null) {
-          activeAccumulatedMsRef.current += Date.now() - readActiveStartRef.current;
-          readActiveStartRef.current = null;
-        }
-      } else {
-        if (readActiveStartRef.current == null) {
-          readActiveStartRef.current = Date.now();
-        }
-      }
-      setVisibilityTick((t) => t + 1);
-    };
-    document.addEventListener('visibilitychange', handler);
-    // Initialize
-    handler();
-    return () => document.removeEventListener('visibilitychange', handler);
-  }, []);
-
-  // Fire a WordPress.com stats pixel once per session when:
-  // - user has scrolled at least 30%
-  // - at least 2 seconds of active (visible) time on the current post
-  // - user has interacted (click/keydown/touch)
-  // - analytics consent is allowed
-  // - tab is visible at the moment of firing
-  useEffect(() => {
-    try {
-      if (!currentPostId) return;
-
-      const sessionKey = `wp_read_tracked_${currentPostId}`;
-      const dayKey = (() => {
-        const d = new Date();
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `wp_read_tracked_day_${currentPostId}_${y}${m}${day}`;
-      })();
-
-      const alreadySession = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(sessionKey) : null;
-      const alreadyDay = typeof localStorage !== 'undefined' ? localStorage.getItem(dayKey) : null;
-      const isVisible = typeof document !== 'undefined' ? document.visibilityState === 'visible' : true;
-      const analyticsAllowed = (() => { try { return isCategoryAllowed('analytics'); } catch { return true; } })();
-
-      const elapsedActiveMs =
-        activeAccumulatedMsRef.current +
-        (readActiveStartRef.current != null ? (Date.now() - readActiveStartRef.current) : 0);
-
-      if (
-        readingProgress >= 30 &&
-        elapsedActiveMs >= 2000 &&
-        !alreadySession &&
-        !alreadyDay &&
-        analyticsAllowed &&
-        userInteractedRef.current &&
-        isVisible
-      ) {
-        trackWordPressRead(currentPostId, currentPostLink);
-      }
-    } catch {
-      // no-op
-    }
-    // Re-evaluate on progress changes, post changes, interaction and visibility transitions
-  }, [readingProgress, currentPostId, currentPostLink, interactionCount, visibilityTick, isCategoryAllowed]);
-
-  // Finish-read tracking (local analytics): 90% scroll and ≥ 60s active time
-  useEffect(() => {
-    try {
-      if (!currentPostId) return;
-      const isVisible = typeof document !== 'undefined' ? document.visibilityState === 'visible' : true;
-      const analyticsAllowed = (() => { try { return isCategoryAllowed('analytics'); } catch { return true; } })();
-      if (!analyticsAllowed || !userInteractedRef.current || !isVisible) return;
-
-      const elapsedActiveMs =
-        activeAccumulatedMsRef.current +
-        (readActiveStartRef.current != null ? (Date.now() - readActiveStartRef.current) : 0);
-
-      const finishKey = `finish_read_tracked_${currentPostId}`;
-      const already = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(finishKey) : null;
-
-      if (readingProgress >= 90 && elapsedActiveMs >= 60000 && !already) {
-        try {
-          if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem(finishKey, '1');
-          }
-        } catch {}
-        // Record local engagement metric
-        const post = posts?.[currentIndex] as any;
-        trackInteraction('finish_read', {
-          postId: currentPostId,
-          slug: post?.slug,
-          progress: readingProgress,
-          timeMs: elapsedActiveMs
-        });
-      }
-    } catch {
-      // no-op
-    }
-  }, [readingProgress, currentPostId, interactionCount, visibilityTick, isCategoryAllowed, currentIndex, posts]);
-
-  
-
-  // Apply font styles using CSS variables for smooth transitions
-  useEffect(() => {
-    try {
-      if (import.meta.env?.DEV) {
-        console.log('[Reader] Updating font styles with CSS variables:', { fontFamily, fontSize, theme });
-      }
-      // Set CSS variables on the document root for smooth transitions
-      const root = document.documentElement;
-      root.style.setProperty('--reader-font-family', availableFonts[fontFamily].family);
-      root.style.setProperty('--reader-font-size', `${fontSize}px`);
-      root.style.setProperty('--reader-text-color', theme === 'dark' ? DARK_TEXT_COLOR : LIGHT_TEXT_COLOR);
-    } catch (error) {
-      console.error('[Reader] Error applying font styles:', error);
-    }
-  }, [fontFamily, fontSize, availableFonts, theme]);
-  
-  // This duplicate has been removed - reading progress tracking is handled above
-
-  
-  // Removed duplicate deleted posts detection useEffect block
-
-  // Stabilize index and set up canonical URL synchronization before any early returns
+  // Stabilise index and set up canonical URL synchronisation before any early returns
   const validCurrentIndex = useMemo(
     () => Math.max(0, Math.min(currentIndex, posts.length - 1)),
     [currentIndex, posts.length]
   );
-
-  // Avoid auto-redirect from /reader; let the page render predictably without route changes
 
   // Determine current slug and fetch full post content by slug (prefer full content for the active story)
   const currentSlugToUse = routeSlug || (posts[validCurrentIndex]?.slug as any);
@@ -1103,12 +594,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       />
     );
   }
+
   // Get current post: prefer fully-fetched content
   const currentPost = (currentPostFull as any) || posts[validCurrentIndex];
-
-  
-
-  
 
   // SEO values for this story
   const stripHtml = (s: string): string => (s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '');
@@ -1156,84 +644,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Apply theme detection to current post
   const detectedThemes = detectThemes(getRenderedText(currentPost.content) || '');
 
-  // Horror easter egg function
-  const checkRapidNavigation = () => {
-    const now = Date.now();
-    const timeSinceLastNavigation = now - lastNavigationTimeRef.current;
-    
-    // Check if rapid navigation (less than 1.5 seconds between skips)
-    if (timeSinceLastNavigation < 1500) {
-      skipCountRef.current += 1;
-      // Persist updated skip count
-      try {
-        sessionStorage.setItem('reader_skip_count', String(skipCountRef.current));
-      } catch {}
-      
-      // After 3 rapid skips, show the horror Easter egg
-      if (skipCountRef.current >= 3 && !showHorrorMessage) {
-        if (import.meta.env?.DEV) {
-          console.log('[Reader] Horror Easter egg triggered after rapid navigation');
-        }
-        
-        // Highly threatening message for maximum creepiness with subtle psychological impact
-        const message = "I SEE YOU SKIPPING!!!";
-        setHorrorMessageText(message);
-        setShowHorrorMessage(true);
-
-        // Persist overlay state with expiry so it survives route remounts
-        try {
-          sessionStorage.setItem('reader_horror_active', '1');
-          sessionStorage.setItem('reader_horror_message', message);
-          sessionStorage.setItem('reader_horror_expiry_ts', String(now + 9000));
-        } catch {}
-        
-        // Show toast with extremely creepy text using maximum intensity
-        // The CreepyTextGlitch component has been enhanced for a rapid, unnerving effect
-        toast({
-          title: "NOTICE",
-          description: <CreepyTextGlitch text={message} intensityFactor={8} />,
-          variant: "destructive",
-          duration: 9000,
-        });
-        
-        // Reset after showing - match the extended toast duration
-        setTimeout(() => {
-          setShowHorrorMessage(false);
-          skipCountRef.current = 0;
-          try {
-            sessionStorage.setItem('reader_skip_count', '0');
-            sessionStorage.removeItem('reader_horror_active');
-            sessionStorage.removeItem('reader_horror_message');
-            sessionStorage.removeItem('reader_horror_expiry_ts');
-          } catch {}
-        }, 9000); // Extended to match the 9000ms toast duration
-      }
-    } else {
-      // If navigation is slow, gradually reduce the skip count
-      skipCountRef.current = Math.max(0, skipCountRef.current - 1);
-      try {
-        sessionStorage.setItem('reader_skip_count', String(skipCountRef.current));
-      } catch {}
-    }
-    
-    // Update last navigation time (persisted)
-    lastNavigationTimeRef.current = now;
-    try {
-      sessionStorage.setItem('reader_last_nav_time', String(now));
-    } catch {}
-  };
-
-  // These navigation function declarations need to be hoisted to avoid errors with hooks
-  // Do not use early returns that might mess with React's hooks execution order
+  // Navigation helpers that integrate the horror overlay trigger.
   const goToRandomStory = () => {
-    // Only execute logic if we have more than one story
     if (posts && posts.length > 1) {
       let randomIndex;
       do {
         randomIndex = Math.floor(Math.random() * posts.length);
       } while (randomIndex === currentIndex);
-      
-      checkRapidNavigation();
+
+      triggerRapidNavigation();
       setCurrentIndex(randomIndex);
       try {
         const nextSlug = String(posts[randomIndex]?.slug ?? posts[randomIndex]?.id);
@@ -1241,16 +660,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+      window.scrollTo({ top: 0, behavior: 'auto' });
     }
   };
   
-  // Function to navigate to previous story
   const goToPreviousStory = () => {
-    // Only execute logic if we have posts and we're not at the first one
     if (posts && posts.length > 1 && currentIndex > 0) {
       const newIndex = currentIndex - 1;
-      checkRapidNavigation();
+      triggerRapidNavigation();
       setCurrentIndex(newIndex);
       try {
         const nextSlug = String(posts[newIndex]?.slug ?? posts[newIndex]?.id);
@@ -1258,16 +675,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+      window.scrollTo({ top: 0, behavior: 'auto' });
     }
   };
   
-  // Function to navigate to next story
   const goToNextStory = () => {
-    // Only execute logic if we have posts and we're not at the last one
     if (posts && posts.length > 1 && currentIndex < posts.length - 1) {
       const newIndex = currentIndex + 1;
-      checkRapidNavigation();
+      triggerRapidNavigation();
       setCurrentIndex(newIndex);
       try {
         const nextSlug = String(posts[newIndex]?.slug ?? posts[newIndex]?.id);
@@ -1275,25 +690,20 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+      window.scrollTo({ top: 0, behavior: 'auto' });
     }
   };
   
-  // Check if we're at first or last story
   const isFirstStory = currentIndex === 0;
   const isLastStory = currentIndex === posts.length - 1;
 
-  // We've moved the swipe navigation logic to a dedicated component
-  // This avoids hook execution order issues by keeping related logic in a single component
-
-  // The theme and toggleTheme functions are already declared at the top of the component
-  
   return (
-    <div className="relative bg-background reader-page overflow-x-hidden overflow-y-visible pt-0 pb-0 flex flex-col"
+    <div
+      className="relative bg-background reader-page overflow-x-hidden overflow-y-visible pt-0 pb-0 flex flex-col"
       data-reader-page="true" 
       data-distraction-free={isUIHidden ? "true" : "false"}
-      data-debug={debugEnabled ? "1" : "0"}>
-      
+      data-debug={debugEnabled ? "1" : "0"}
+    >
       <SEO 
         title={titleText}
         description={descriptionText}
@@ -1306,13 +716,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         readingTime={readingMinutes}
         wordCount={wordCount}
       />
-      
-      
-      
+
       {/* Reader tooltip for distraction-free mode instructions */}
       <ReaderTooltip show={showTooltip} />
+
       {/* CSS for distraction-free mode transitions */}
-      <style dangerouslySetInnerHTML={{__html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         /* Distraction-free fade: dim UI chrome while preserving layout */
         .ui-fade-element {
           transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1400,9 +811,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           transition: opacity 0.4s ease, visibility 0.4s ease;
           will-change: opacity, visibility;
         }
-      `}} />
+      `,
+        }}
+      />
       {debugEnabled ? (
-        <style dangerouslySetInnerHTML={{__html: `
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
           /* Reader debug outlines for hit-testing and bounds */
           .reader-page[data-debug="1"] .debug-outline { outline: 1px dashed rgba(255,0,0,.6); outline-offset: 0; }
           .reader-page[data-debug="1"] .debug-outline-controls { outline-color: #d97706; } /* amber */
@@ -1411,38 +826,25 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           .reader-page[data-debug="1"] .debug-outline-pager { outline-color: #a855f7; } /* purple */
           .reader-page[data-debug="1"] .debug-outline-share { outline-color: #ef4444; } /* red */
           .reader-page[data-debug="1"] .debug-outline-content { outline-color: #22d3ee; } /* cyan */
-        `}} />
+        `,
+          }}
+        />
       ) : null}
-      
-      {/* Reader content styles moved to reader-typography.css */}
 
       {/* Horror overlay rendered via portal to ensure visibility without scrolling; modal and text unchanged */}
       <ReaderHorrorOverlayPortal
         visible={showHorrorMessage}
         message={horrorMessageText}
-        onClose={() => {
-          setShowHorrorMessage(false);
-          try {
-            sessionStorage.removeItem('reader_horror_active');
-            sessionStorage.removeItem('reader_horror_message');
-            sessionStorage.removeItem('reader_horror_expiry_ts');
-            sessionStorage.setItem('reader_skip_count', '0');
-          } catch {}
-        }}
+        onClose={handleOverlayClose}
       />
-      
-      
-      
-      {/* Floating pagination has been removed */}
-      
-      {/* Navigation buttons removed as requested */}
-      {/* Full width immersive reading experience */}
 
       <div className={`pt-0 pb-0 bg-background mt-0 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
-        
-
         {/* Font controls/TOC spacing below header and progress bar */}
-        <div ref={controlsRowRef} className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-0.5 py-0.5 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-controls`} style={{ minHeight: '40px' }}>
+        <div
+          ref={controlsRowRef}
+          className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 mt-0.5 py-0.5 m-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-controls`}
+          style={{ minHeight: '40px' }}
+        >
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <TooltipProvider>
@@ -1490,7 +892,18 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </TooltipProvider>
             
             {/* Font Dialog with controlled open state */}
-            <Dialog open={fontDialogOpen} onOpenChange={(open) => { if (debugEnabled) { try { console.log('[Reader.debug] FontDialog openChange:', open); } catch {} } setFontDialogOpen(open); try { setUIHidden(false); } catch {} }}>
+            <Dialog
+              open={fontDialogOpen}
+              onOpenChange={(open) => {
+                if (debugEnabled) {
+                  try {
+                    console.log('[Reader.debug] FontDialog openChange:', open);
+                  } catch {}
+                }
+                setFontDialogOpen(open);
+                try { setUIHidden(false); } catch {}
+              }}
+            >
               <DialogTrigger asChild>
                 <Button
                   variant="outline"
@@ -1518,7 +931,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                           className="justify-start h-auto py-3"
                           onClick={() => {
                             updateFontFamily(key as FontFamilyKey);
-                            setFontDialogOpen(false); // Close the dialog after changing font
+                            setFontDialogOpen(false);
                           }}
                         >
                           <div className="flex flex-col items-start">
@@ -1534,8 +947,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </Dialog>
           </div>
 
-          
-
           {/* Integrated BookmarkButton in top controls */}
           <BookmarkButton 
             postId={currentPost.id} 
@@ -1544,10 +955,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             className="h-8 w-8 rounded-full bg-background hover:bg-background/80 mx-2 cursor-pointer"
           />
 
-          {/* Text-to-speech functionality removed */}
-
           {/* Contents Dialog with controlled open state - non-fullscreen with close button */}
-          <Dialog open={contentsDialogOpen} onOpenChange={(open) => { if (debugEnabled) { try { console.log('[Reader.debug] TOC Dialog openChange:', open); } catch {} } setContentsDialogOpen(open); try { setUIHidden(false); } catch {} }}>
+          <Dialog
+            open={contentsDialogOpen}
+            onOpenChange={(open) => {
+              if (debugEnabled) {
+                try {
+                  console.log('[Reader.debug] TOC Dialog openChange:', open);
+                } catch {}
+              }
+              setContentsDialogOpen(open);
+              try { setUIHidden(false); } catch {}
+            }}
+          >
             <DialogTrigger asChild>
               <Button
                 variant="default"
@@ -1561,49 +981,49 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 <span className="hidden sm:inline text-xs font-semibold tracking-wide">TOC</span>
               </Button>
             </DialogTrigger>
-            {/* Wrap the TableOfContents component to ensure DialogContent has proper aria attributes */}
             <DialogContent 
               className="max-w-md" 
               aria-labelledby="toc-dialog-title" 
               aria-describedby="toc-dialog-description"
             >
-                <div className="flex items-center">
-                  <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
-                </div>
-                <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
-                <TableOfContents 
-                  currentPostId={currentPost.id}
-                  posts={posts.map((p: any) => ({
-                    id: p.id,
-                    title: getRenderedText(p.title) || 'Untitled',
-                    slug: (p.slug || `post-${p.id}`) as string,
-                    date: (p.date || p.createdAt || new Date().toISOString()) as string
-                  }))}
-                  onSelect={(selected) => {
-                    try {
-                      // Prefer match by slug when available
-                      const foundIndex = posts.findIndex((p: any) =>
-                        (selected.slug && p.slug === selected.slug) || p.id === selected.id
-                      );
-                      if (foundIndex >= 0) {
-                        setCurrentIndex(foundIndex);
-                        // Keep URL in sync with selected story to fix TOC routing
-                        setLocation(`/reader/${encodeURIComponent(String(posts[foundIndex].slug || posts[foundIndex].id))}`);
-                        // Scroll to top for a clean transition
-                        window.scrollTo({ top: 0, behavior: 'auto' });
-                      }
-                    } catch (err) {
-                      console.error('[Reader] TOC onSelect error:', err);
-                      try { logReaderError('reader.toc.onSelect', err); } catch {}
-                    } finally {
-                      setContentsDialogOpen(false);
+              <div className="flex items-center">
+                <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
+              </div>
+              <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
+              <TableOfContents 
+                currentPostId={currentPost.id}
+                posts={posts.map((p: any) => ({
+                  id: p.id,
+                  title: getRenderedText(p.title) || 'Untitled',
+                  slug: (p.slug || `post-${p.id}`) as string,
+                  date: (p.date || p.createdAt || new Date().toISOString()) as string
+                }))}
+                onSelect={(selected) => {
+                  try {
+                    // Prefer match by slug when available
+                    const foundIndex = posts.findIndex((p: any) =>
+                      (selected.slug && p.slug === selected.slug) || p.id === selected.id
+                    );
+                    if (foundIndex >= 0) {
+                      setCurrentIndex(foundIndex);
+                      // Keep URL in sync with selected story to fix TOC routing
+                      setLocation(`/reader/${encodeURIComponent(String(posts[foundIndex].slug || posts[foundIndex].id))}`);
+                      // Scroll to top for a clean transition
+                      window.scrollTo({ top: 0, behavior: 'auto' });
                     }
-                  }}
-                  onClose={() => setContentsDialogOpen(false)} 
-                />
-              </DialogContent>
+                  } catch (err) {
+                    console.error('[Reader] TOC onSelect error:', err);
+                    try { logReaderError('reader.toc.onSelect', err); } catch {}
+                  } finally {
+                    setContentsDialogOpen(false);
+                  }
+                }}
+                onClose={() => setContentsDialogOpen(false)} 
+              />
+            </DialogContent>
           </Dialog>
         </div>
+
         {/* Full-bleed separator under controls row (thin, end-to-end) */}
         <div
           aria-hidden="true"
@@ -1620,726 +1040,751 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         />
       
         <article
-            key={currentPost.id}
-            className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
-          >
-            {/* Navigation buttons above story content removed; now placed under time-to-read */}
+          key={currentPost.id}
+          className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
+        >
+          {/* Full-bleed separator above story title (thin, end-to-end) */}
+          <div
+            aria-hidden="true"
+            className="border-b border-border/20"
+            style={{ 
+              width: '100%', 
+              marginLeft: '0', 
+              marginRight: '0', 
+              position: 'relative', 
+              left: 0, 
+              transform: 'none' 
+            }}
+          />
 
-            {/* Full-bleed separator above story title (thin, end-to-end) */}
-            <div
-              aria-hidden="true"
-              className="border-b border-border/20"
-              style={{ 
-                width: '100%', 
-                marginLeft: '0', 
-                marginRight: '0', 
-                position: 'relative', 
-                left: 0, 
-                transform: 'none' 
-              }}
-            />
-
-            <div className="flex flex-col items-center mb-2 mt-0">
-              <div className="relative flex flex-col items-center">
-                {isCommunityContent && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge 
-                      variant="secondary" 
-                      className="bg-primary/10 text-foreground border-primary/20"
-                    >
-                      Community Story
-                    </Badge>
-                    {/* Show delete button for admins or post authors */}
-                    {(isAdmin || (isCommunityContent && user?.id === (currentPost as any)?.authorId)) && isCommunityContent && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-7 px-2 border-red-200 bg-red-50 hover:bg-red-100 text-red-600"
-                        onClick={() => setShowDeleteDialog(true)}
-                      >
-                        <Trash className="h-3.5 w-3.5 mr-1" />
-                        <span className="text-xs">Delete</span>
-                      </Button>
-                    )}
-                  </div>
-                )}
-                <h1
-              className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
-              style={{ minHeight: '48px' }}
-              dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(getRenderedText(currentPost.title) || 'Story') }}
-            />
-              </div>
-              
-              {/* Story Delete Dialog */}
-              <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center text-xl">
-                      <Trash className="h-5 w-5 mr-2 text-red-500" />
-                      {isAdmin && user?.id !== (currentPost as any)?.authorId ? 
-                        "Delete Community Story" : 
-                        "Delete Your Story"}
-                    </DialogTitle>
-                    <DialogDescription className="pt-2 text-sm">
-                      {isAdmin && user?.id !== (currentPost as any)?.authorId ? 
-                        "As an admin, you are about to delete a user-submitted community story. This action cannot be undone." : 
-                        "You are about to delete your community story. This action cannot be undone."}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="flex items-center justify-between border p-3 rounded-md bg-muted/50 mt-2">
-                    <div className="font-medium truncate pr-2">
-                      {getRenderedText(currentPost.title) || 'Story'}
-                    </div>
-                    <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
-                      Community
-                    </Badge>
-                  </div>
-                  <DialogFooter className="gap-2 sm:gap-0 mt-4">
-                    <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-                      Cancel
-                    </Button>
+          <div className="flex flex-col items-center mb-2 mt-0">
+            <div className="relative flex flex-col items-center">
+              {isCommunityContent && (
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge 
+                    variant="secondary" 
+                    className="bg-primary/10 text-foreground border-primary/20"
+                  >
+                    Community Story
+                  </Badge>
+                  {(isAdmin || (isCommunityContent && user?.id === (currentPost as any)?.authorId)) && isCommunityContent && (
                     <Button 
-                      variant="destructive" 
-                      onClick={() => deleteMutation.mutate(currentPost.id)}
-                      disabled={deleteMutation.isPending}
+                      variant="outline" 
+                      size="sm" 
+                      className="h-7 px-2 border-red-200 bg-red-50 hover:bg-red-100 text-red-600"
+                      onClick={() => setShowDeleteDialog(true)}
                     >
-                      {deleteMutation.isPending ? 'Deleting...' : 'Delete Story'}
+                      <Trash className="h-3.5 w-3.5 mr-1" />
+                      <span className="text-xs">Delete</span>
                     </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                  )}
+                </div>
+              )}
+              <h1
+                className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
+                style={{ minHeight: '48px' }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(getRenderedText(currentPost.title) || 'Story') }}
+              />
+            </div>
+            
+            {/* Story Delete Dialog */}
+            <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center text-xl">
+                    <Trash className="h-5 w-5 mr-2 text-red-500" />
+                    {isAdmin && user?.id !== (currentPost as any)?.authorId ? 
+                      "Delete Community Story" : 
+                      "Delete Your Story"}
+                  </DialogTitle>
+                  <DialogDescription className="pt-2 text-sm">
+                    {isAdmin && user?.id !== (currentPost as any)?.authorId ? 
+                      "As an admin, you are about to delete a user-submitted community story. This action cannot be undone." : 
+                      "You are about to delete your community story. This action cannot be undone."}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex items-center justify-between border p-3 rounded-md bg-muted/50 mt-2">
+                  <div className="font-medium truncate pr-2">
+                    {getRenderedText(currentPost.title) || 'Story'}
+                  </div>
+                  <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+                    Community
+                  </Badge>
+                </div>
+                <DialogFooter className="gap-2 sm:gap-0 mt-4">
+                  <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => deleteMutation.mutate(currentPost.id)}
+                    disabled={deleteMutation.isPending}
+                  >
+                    {deleteMutation.isPending ? 'Deleting...' : 'Delete Story'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
-              <div className="flex flex-col items-center gap-1">
-                <div ref={metaRowRef} className={`flex flex-nowrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/30 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-border/60 ui-fade-element overflow-x-auto whitespace-nowrap ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-meta`} style={{ minHeight: '32px' }}>
-                  {/* Story theme category with icon (index as source of truth) */}
-                  {(() => {
-                    const md: any = (currentPost as any)?.metadata || {};
+            <div className="flex flex-col items-center gap-1">
+              <div
+                ref={metaRowRef}
+                className={`flex flex-nowrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/30 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-border/60 ui-fade-element overflow-x-auto whitespace-nowrap ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-meta`}
+                style={{ minHeight: '32px' }}
+              >
+                {/* Story theme category with icon (index as source of truth) */}
+                {(() => {
+                  const md: any = (currentPost as any)?.metadata || {};
 
-                    // Determine primary theme: override -> metadata -> shared detection from title/content
-                    const primaryThemeRaw =
-                      overrideThemeCategory ||
-                      md.themeCategory ||
-                      determineThemeCategory(
-                        titleText || 'Story',
-                        plainText || ''
-                      );
-
-                    // Story-specific override mapping by slug/title
-                    const override = getStoryThemeOverride((currentPost as any)?.slug as any, titleText as any);
-
-                    // Resolve shared theme key from label or raw category when no override
-                    const derivedKey = (() => {
-                      const raw = String(primaryThemeRaw || '').trim();
-                      if (!raw) return 'HORROR';
-                      for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
-                        if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
-                      }
-                      return raw.toUpperCase().replace(/\s+/g, '_');
-                    })();
-
-                    const themeKey = override?.key || derivedKey;
-
-                    const defOverride = getThemeDefinitionOverride(themeKey);
-
-                    // Icon slug priority: story override -> editor override -> metadata -> global override -> shared definition -> ghost
-                    const chosenIconSlug =
-                      override?.icon ||
-                      overrideThemeIcon ||
-                      md.themeIcon ||
-                      defOverride?.icon ||
-                      categoriesMap[derivedKey]?.icon ||
-                      (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
-                      'ghost';
-
-                    // Lucide icon mapping with broader coverage and theme-key fallbacks
-                    const ThemeIcon = (() => {
-                      const slug = String(chosenIconSlug).toLowerCase();
-                      switch (slug) {
-                        case 'skull': return Skull;
-                        case 'brain': return Brain;
-                        case 'pill': return Pill;
-                        case 'cpu': return Cpu;
-                        case 'dna': return Dna;
-                        case 'ghost': return Ghost;
-                        case 'umbrella': return Umbrella;
-                        case 'footprints': return Footprints;
-                        case 'cloud-rain':
-                        case 'cloudrain': return CloudRain;
-                        case 'castle': return Castle;
-                        case 'bug': return Bug;
-                        case 'radiation': return Radiation;
-                        case 'user-minus2':
-                        case 'userminus2': return UserMinus2;
-                        case 'user-plus':
-                        case 'userplus': return UserPlus;
-                        case 'anchor': return Anchor;
-                        case 'alert-triangle':
-                        case 'alerttriangle': return AlertTriangle;
-                        case 'building': return Building;
-                        case 'worm': return Worm;
-                        case 'cloud': return Cloud;
-                        case 'cloud-fog':
-                        case 'cloudfog': return CloudFog;
-                        case 'eye': return Eye;
-                        case 'hourglass': return Hourglass;
-                        case 'knife': return ForkKnife;
-                        case 'utensils':
-                        case 'fork-knife':
-                        case 'forkknife': return ForkKnife;
-                        case 'cat': return Cat;
-                        case 'moon': return Moon;
-                        case 'dog': return Dog;
-                        case 'radio': return Radio;
-                        case 'moon-star':
-                        case 'moonstar': return MoonStar;
-                        case 'box': return Box;
-                        case 'car': return Car;
-                        case 'alien': return Moon;
-                        case 'flask': return FlaskConical;
-                        case 'trees':
-                        case 'tree': return Trees;
-                      }
-                      // Fallback by theme key for diversity when slug is unknown
-                      switch (themeKey) {
-                        case 'TECHNOLOGICAL': return Cpu;
-                        case 'PSYCHOLOGICAL': return Brain;
-                        case 'SUPERNATURAL': return Ghost;
-                        case 'UNCANNY': return Eye;
-                        case 'EXISTENTIAL': return Hourglass;
-                        case 'DOPPELGANGER': return UserPlus;
-                        case 'CANNIBALISM': return ForkKnife;
-                        case 'SLASHER': return Skull;
-                        case 'MONSTER': return Cat;
-                        case 'ZOMBIE': return Footprints;
-                        case 'VAMPIRE': return Moon;
-                        case 'WEREWOLF': return Dog;
-                        case 'PARANORMAL': return Radio;
-                        case 'DREAM_HORROR': return MoonStar;
-                        case 'CURSED_OBJECT': return Box;
-                        case 'TIME_HORROR': return Clock;
-                        case 'APOCALYPTIC': return Radiation;
-                        case 'SCIENCE_HORROR': return FlaskConical;
-                        case 'FOLK_HORROR': return Trees;
-                        case 'GOTHIC': return Castle;
-                        case 'COSMIC': return Moon;
-                        case 'VEHICULAR': return Car;
-                        default: return Ghost;
-                      }
-                    })();
-
-                    // Human-friendly label with specific "Horror" suffixes; prefer override label
-                    const baseLabel =
-                      override?.label ||
-                      defOverride?.label ||
-                      categoriesMap[derivedKey]?.label ||
-                      (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
-                      primaryThemeRaw ||
-                      'Horror';
-
-                    const prettyLabel = (() => {
-                      if (override?.label) return override.label;
-                      const l = String(baseLabel).toLowerCase();
-                      if (l.includes('cosmic')) return 'Cosmic Horror';
-                      if (l.includes('existential')) return 'Existential Horror';
-                      if (l.includes('vehicular')) return 'Vehicular Horror';
-                      if (l.includes('psychological')) return 'Psychological Horror';
-                      if (l.includes('supernatural')) return 'Supernatural Horror';
-                      if (l.includes('technological')) return 'Technological Horror';
-                      if (l.includes('uncanny')) return 'Uncanny Horror';
-                      return baseLabel;
-                    })();
-
-                    // Tinted badge styles per theme
-                    const badgeTint = getBadgeTint(themeKey);
-
-                    return (
-                      <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border whitespace-nowrap ${badgeTint}`}>
-                        {String(chosenIconSlug).includes(':')
-                          ? (<Icon icon={String(chosenIconSlug)} className="h-4 w-4" />)
-                          : (<ThemeIcon className="h-4 w-4" />)
-                        }
-                        <span className="text-xs font-medium whitespace-nowrap">{prettyLabel}</span>
-                      </div>
+                  // Determine primary theme: override -> metadata -> shared detection from title/content
+                  const primaryThemeRaw =
+                    overrideThemeCategory ||
+                    md.themeCategory ||
+                    determineThemeCategory(
+                      titleText || 'Story',
+                      plainText || ''
                     );
-                  })()}
-                  
-                  <span className="text-muted-foreground">•</span>
-                  
-                  {/* Date indicator */}
-                  <span className="text-xs px-2 py-1 bg-muted/80 border border-border/50 rounded-md whitespace-nowrap">
-                    {currentPost.date ? format(new Date(currentPost.date), 'MMM d, yyyy') : 'No date'}
-                  </span>
-                  
-                  <span className="text-muted-foreground">•</span>
-                  
-                  {/* Estimated reading time */}
-                  <span className="text-xs px-2 py-1 bg-accent/50 rounded-md whitespace-nowrap">
-                    {readingMinutes} min read
-                  </span>
 
-                  {/* Admin: inline edit theme */}
-                  {isAdmin && (
-                    <>
-                      <span className="text-muted-foreground">•</span>
+                  // Story-specific override mapping by slug/title
+                  const override = getStoryThemeOverride((currentPost as any)?.slug as any, titleText as any);
+
+                  // Resolve shared theme key from label or raw category when no override
+                  const derivedKey = (() => {
+                    const raw = String(primaryThemeRaw || '').trim();
+                    if (!raw) return 'HORROR';
+                    for (const [key, info] of Object.entries(SHARED_THEME_CATEGORIES as Record<string, any>)) {
+                      if (String((info as any)?.label || '').toLowerCase() === raw.toLowerCase()) return key;
+                    }
+                    return raw.toUpperCase().replace(/\s+/g, '_');
+                  })();
+
+                  const themeKey = override?.key || derivedKey;
+
+                  const defOverride = getThemeDefinitionOverride(themeKey);
+
+                  // Icon slug priority: story override -> editor override -> metadata -> global override -> shared definition -> ghost
+                  const chosenIconSlug =
+                    override?.icon ||
+                    overrideThemeIcon ||
+                    md.themeIcon ||
+                    defOverride?.icon ||
+                    categoriesMap[derivedKey]?.icon ||
+                    (SHARED_THEME_CATEGORIES as any)[derivedKey]?.icon ||
+                    'ghost';
+
+                  // Lucide icon mapping with broader coverage and theme-key fallbacks
+                  const ThemeIcon = (() => {
+                    const slug = String(chosenIconSlug).toLowerCase();
+                    switch (slug) {
+                      case 'skull': return Skull;
+                      case 'brain': return Brain;
+                      case 'pill': return Pill;
+                      case 'cpu': return Cpu;
+                      case 'dna': return Dna;
+                      case 'ghost': return Ghost;
+                      case 'umbrella': return Umbrella;
+                      case 'footprints': return Footprints;
+                      case 'cloud-rain':
+                      case 'cloudrain': return CloudRain;
+                      case 'castle': return Castle;
+                      case 'bug': return Bug;
+                      case 'radiation': return Radiation;
+                      case 'user-minus2':
+                      case 'userminus2': return UserMinus2;
+                      case 'user-plus':
+                      case 'userplus': return UserPlus;
+                      case 'anchor': return Anchor;
+                      case 'alert-triangle':
+                      case 'alerttriangle': return AlertTriangle;
+                      case 'building': return Building;
+                      case 'worm': return Worm;
+                      case 'cloud': return Cloud;
+                      case 'cloud-fog':
+                      case 'cloudfog': return CloudFog;
+                      case 'eye': return Eye;
+                      case 'hourglass': return Hourglass;
+                      case 'knife':
+                      case 'utensils':
+                      case 'fork-knife':
+                      case 'forkknife': return ForkKnife;
+                      case 'cat': return Cat;
+                      case 'moon': return Moon;
+                      case 'dog': return Dog;
+                      case 'radio': return Radio;
+                      case 'moon-star':
+                      case 'moonstar': return MoonStar;
+                      case 'box': return Box;
+                      case 'car': return Car;
+                      case 'alien': return Moon;
+                      case 'flask': return FlaskConical;
+                      case 'trees':
+                      case 'tree': return Trees;
+                    }
+                    // Fallback by theme key for diversity when slug is unknown
+                    switch (themeKey) {
+                      case 'TECHNOLOGICAL': return Cpu;
+                      case 'PSYCHOLOGICAL': return Brain;
+                      case 'SUPERNATURAL': return Ghost;
+                      case 'UNCANNY': return Eye;
+                      case 'EXISTENTIAL': return Hourglass;
+                      case 'DOPPELGANGER': return UserPlus;
+                      case 'CANNIBALISM': return ForkKnife;
+                      case 'SLASHER': return Skull;
+                      case 'MONSTER': return Cat;
+                      case 'ZOMBIE': return Footprints;
+                      case 'VAMPIRE': return Moon;
+                      case 'WEREWOLF': return Dog;
+                      case 'PARANORMAL': return Radio;
+                      case 'DREAM_HORROR': return MoonStar;
+                      case 'CURSED_OBJECT': return Box;
+                      case 'TIME_HORROR': return Clock;
+                      case 'APOCALYPTIC': return Radiation;
+                      case 'SCIENCE_HORROR': return FlaskConical;
+                      case 'FOLK_HORROR': return Trees;
+                      case 'GOTHIC': return Castle;
+                      case 'COSMIC': return Moon;
+                      case 'VEHICULAR': return Car;
+                      default: return Ghost;
+                    }
+                  })();
+
+                  // Human-friendly label with specific "Horror" suffixes; prefer override label
+                  const baseLabel =
+                    override?.label ||
+                    defOverride?.label ||
+                    categoriesMap[derivedKey]?.label ||
+                    (SHARED_THEME_CATEGORIES as any)[derivedKey]?.label ||
+                    primaryThemeRaw ||
+                    'Horror';
+
+                  const prettyLabel = (() => {
+                    if (override?.label) return override.label;
+                    const l = String(baseLabel).toLowerCase();
+                    if (l.includes('cosmic')) return 'Cosmic Horror';
+                    if (l.includes('existential')) return 'Existential Horror';
+                    if (l.includes('vehicular')) return 'Vehicular Horror';
+                    if (l.includes('psychological')) return 'Psychological Horror';
+                    if (l.includes('supernatural')) return 'Supernatural Horror';
+                    if (l.includes('technological')) return 'Technological Horror';
+                    if (l.includes('uncanny')) return 'Uncanny Horror';
+                    return baseLabel;
+                  })();
+
+                  // Tinted badge styles per theme
+                  const badgeTint = getBadgeTint(themeKey);
+
+                  return (
+                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border whitespace-nowrap ${badgeTint}`}>
+                      {String(chosenIconSlug).includes(':')
+                        ? (<Icon icon={String(chosenIconSlug)} className="h-4 w-4" />)
+                        : (<ThemeIcon className="h-4 w-4" />)
+                      }
+                      <span className="text-xs font-medium whitespace-nowrap">{prettyLabel}</span>
+                    </div>
+                  );
+                })()}
+                
+                <span className="text-muted-foreground">•</span>
+                
+                {/* Date indicator */}
+                <span className="text-xs px-2 py-1 bg-muted/80 border border-border/50 rounded-md whitespace-nowrap">
+                  {currentPost.date ? format(new Date(currentPost.date), 'MMM d, yyyy') : 'No date'}
+                </span>
+                
+                <span className="text-muted-foreground">•</span>
+                
+                {/* Estimated reading time */}
+                <span className="text-xs px-2 py-1 bg-accent/50 rounded-md whitespace-nowrap">
+                  {readingMinutes} min read
+                </span>
+
+                {/* Admin: inline edit theme */}
+                {isAdmin && (
+                  <>
+                    <span className="text-muted-foreground">•</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => {
+                        try {
+                          const currentCat =
+                            (currentPost as any)?.themeCategory ||
+                            (currentPost as any)?.metadata?.themeCategory ||
+                            '';
+                          const auto = determineThemeCategory(
+                            titleText || 'Story',
+                            plainText || ''
+                          );
+                          const initCat = String(currentCat || auto || 'HORROR');
+                          setSelectedThemeCat(initCat);
+                          const metaIcon = (currentPost as any)?.metadata?.themeIcon as string | undefined;
+                          const defIcon =
+                            SHARED_THEME_CATEGORIES[
+                              initCat as keyof typeof SHARED_THEME_CATEGORIES
+                            ]?.icon || 'ghost';
+                          setSelectedThemeIcon(String(metaIcon || defIcon));
+                          setThemeEditorOpen(true);
+                        } catch {
+                          setSelectedThemeCat('HORROR');
+                          setSelectedThemeIcon('ghost');
+                          setThemeEditorOpen(true);
+                        }
+                      }}
+                    >
+                      <Pencil className="h-3.5 w-3.5 mr-1" />
+                      <span className="text-xs">Edit theme</span>
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              {/* Admin Theme Editor Dialog */}
+              {isAdmin && (
+                <Dialog
+                  open={themeEditorOpen}
+                  onOpenChange={(open) => {
+                    if (debugEnabled) {
+                      try {
+                        console.log('[Reader.debug] ThemeEditor dialog openChange:', open);
+                      } catch {}
+                    }
+                    setThemeEditorOpen(open);
+                  }}
+                >
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Edit Story Theme</DialogTitle>
+                      <DialogDescription>
+                        Choose the theme category and icon shown on this story.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                      <div className="space-y-2">
+                        <span id="theme-category-label" className="text-sm font-medium">Theme category</span>
+                        <Select
+                          value={selectedThemeCat}
+                          onValueChange={(v) => {
+                            setSelectedThemeCat(v);
+                            // Update default icon when category changes
+                            const def =
+                              SHARED_THEME_CATEGORIES[
+                                v as keyof typeof SHARED_THEME_CATEGORIES
+                              ]?.icon || 'ghost';
+                            setSelectedThemeIcon(def);
+                          }}
+                        >
+                          <SelectTrigger className="w-full" aria-labelledby="theme-category-label">
+                            <SelectValue placeholder="Select a theme" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(categoriesList.length
+                              ? categoriesList.map((item) => {
+                                  const key = String(item.key);
+                                  const label = String(item.label);
+                                  const base = label;
+                                  const l = String(base).toLowerCase();
+                                  const refined = (() => {
+                                    if (l.includes('cosmic')) return 'Cosmic Horror';
+                                    if (l.includes('existential')) return 'Existential Horror';
+                                    if (l.includes('vehicular')) return 'Vehicular Horror';
+                                    if (l.includes('psychological')) return 'Psychological Horror';
+                                    if (l.includes('supernatural')) return 'Supernatural Horror';
+                                    if (l.includes('technological')) return 'Technological Horror';
+                                    if (l.includes('uncanny')) return 'Uncanny Horror';
+                                    if (l.includes('gothic')) return 'Gothic Horror';
+                                    if (l.includes('folk')) return 'Folk Horror';
+                                    if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
+                                    if (l.includes('cannibal')) return 'Cannibalism Horror';
+                                    if (l.includes('science')) return 'Science Horror';
+                                    if (l.includes('apocalyptic')) return 'Apocalyptic Horror';
+                                    if (l.includes('stalking')) return 'Stalker/Pursuit Horror';
+                                    if (l.includes('doppelganger')) return 'Identity Horror';
+                                    return base;
+                                  })();
+                                  return (
+                                    <SelectItem key={key} value={key}>
+                                      {refined}
+                                    </SelectItem>
+                                  );
+                                })
+                              : Object.entries(SHARED_THEME_CATEGORIES as Record<string, { label: string; icon: string }>).map(([key, info]) => {
+                                  const base = info.label;
+                                  const l = String(base).toLowerCase();
+                                  const refined = (() => {
+                                    if (l.includes('cosmic')) return 'Cosmic Horror';
+                                    if (l.includes('existential')) return 'Existential Horror';
+                                    if (l.includes('vehicular')) return 'Vehicular Horror';
+                                    if (l.includes('psychological')) return 'Psychological Horror';
+                                    if (l.includes('supernatural')) return 'Supernatural Horror';
+                                    if (l.includes('technological')) return 'Technological Horror';
+                                    if (l.includes('uncanny')) return 'Uncanny Horror';
+                                    if (l.includes('gothic')) return 'Gothic Horror';
+                                    if (l.includes('folk')) return 'Folk Horror';
+                                    if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
+                                    if (l.includes('cannibal')) return 'Cannibalism Horror';
+                                    if (l.includes('science')) return 'Science Horror';
+                                    if (l.includes('apocalyptic')) return 'Apocalyptic Horror';
+                                    if (l.includes('stalking')) return 'Stalker/Pursuit Horror';
+                                    if (l.includes('doppelganger')) return 'Identity Horror';
+                                    return base;
+                                  })();
+                                  return (
+                                    <SelectItem key={key} value={key}>
+                                      {refined}
+                                    </SelectItem>
+                                  );
+                                })
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="theme-icon" className="text-sm font-medium">Icon (slug)</Label>
+                        <Input
+                          id="theme-icon"
+                          value={selectedThemeIcon}
+                          onChange={(e) => setSelectedThemeIcon(e.target.value)}
+                          placeholder="e.g., ghost, skull, brain"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Common options: ghost, skull, brain, bug, cpu, footprints, cloud-rain, castle
+                        </p>
+                      </div>
+                    </div>
+                    <DialogFooter className="gap-2">
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2"
+                        variant="outline"
                         onClick={() => {
                           try {
-                            const currentCat =
-                              (currentPost as any)?.themeCategory ||
-                              (currentPost as any)?.metadata?.themeCategory ||
-                              '';
                             const auto = determineThemeCategory(
                               titleText || 'Story',
                               plainText || ''
                             );
-                            const initCat = String(currentCat || auto || 'HORROR');
-                            setSelectedThemeCat(initCat);
-                            const metaIcon = (currentPost as any)?.metadata?.themeIcon as string | undefined;
+                            const autoCat = String(auto || 'HORROR');
+                            setSelectedThemeCat(autoCat);
                             const defIcon =
                               SHARED_THEME_CATEGORIES[
-                                initCat as keyof typeof SHARED_THEME_CATEGORIES
+                                autoCat as keyof typeof SHARED_THEME_CATEGORIES
                               ]?.icon || 'ghost';
-                            setSelectedThemeIcon(String(metaIcon || defIcon));
-                            setThemeEditorOpen(true);
+                            setSelectedThemeIcon(defIcon);
                           } catch {
                             setSelectedThemeCat('HORROR');
                             setSelectedThemeIcon('ghost');
-                            setThemeEditorOpen(true);
                           }
                         }}
                       >
-                        <Pencil className="h-3.5 w-3.5 mr-1" />
-                        <span className="text-xs">Edit theme</span>
+                        Auto-detect
                       </Button>
-                    </>
-                  )}
-                </div>
-
-                {/* Admin Theme Editor Dialog */}
-                {isAdmin && (
-                  <Dialog open={themeEditorOpen} onOpenChange={(open) => { if (debugEnabled) { try { console.log('[Reader.debug] ThemeEditor dialog openChange:', open); } catch {} } setThemeEditorOpen(open); }}>
-                    <DialogContent className="max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Edit Story Theme</DialogTitle>
-                        <DialogDescription>
-                          Choose the theme category and icon shown on this story.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-2">
-                        <div className="space-y-2">
-                          <span id="theme-category-label" className="text-sm font-medium">Theme category</span>
-                          <Select
-                            value={selectedThemeCat}
-                            onValueChange={(v) => {
-                              setSelectedThemeCat(v);
-                              // Update default icon when category changes
-                              const def =
-                                SHARED_THEME_CATEGORIES[
-                                  v as keyof typeof SHARED_THEME_CATEGORIES
-                                ]?.icon || 'ghost';
-                              setSelectedThemeIcon(def);
-                            }}
-                          >
-                            <SelectTrigger className="w-full" aria-labelledby="theme-category-label">
-                              <SelectValue placeholder="Select a theme" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {(categoriesList.length
-                                ? categoriesList.map((item) => {
-                                    const key = String(item.key);
-                                    const label = String(item.label);
-                                    const base = label;
-                                    const l = String(base).toLowerCase();
-                                    const refined = (() => {
-                                      if (l.includes('cosmic')) return 'Cosmic Horror';
-                                      if (l.includes('existential')) return 'Existential Horror';
-                                      if (l.includes('vehicular')) return 'Vehicular Horror';
-                                      if (l.includes('psychological')) return 'Psychological Horror';
-                                      if (l.includes('supernatural')) return 'Supernatural Horror';
-                                      if (l.includes('technological')) return 'Technological Horror';
-                                      if (l.includes('uncanny')) return 'Uncanny Horror';
-                                      if (l.includes('gothic')) return 'Gothic Horror';
-                                      if (l.includes('folk')) return 'Folk Horror';
-                                      if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
-                                      if (l.includes('cannibal')) return 'Cannibalism Horror';
-                                      if (l.includes('science')) return 'Science Horror';
-                                      if (l.includes('apocalyptic')) return 'Apocalyptic Horror';
-                                      if (l.includes('stalking')) return 'Stalker/Pursuit Horror';
-                                      if (l.includes('doppelganger')) return 'Identity Horror';
-                                      return base;
-                                    })();
-                                    return (
-                                      <SelectItem key={key} value={key}>
-                                        {refined}
-                                      </SelectItem>
-                                    );
-                                  })
-                                : Object.entries(SHARED_THEME_CATEGORIES as Record<string, { label: string; icon: string }>).map(([key, info]) => {
-                                    const base = info.label;
-                                    const l = String(base).toLowerCase();
-                                    const refined = (() => {
-                                      if (l.includes('cosmic')) return 'Cosmic Horror';
-                                      if (l.includes('existential')) return 'Existential Horror';
-                                      if (l.includes('vehicular')) return 'Vehicular Horror';
-                                      if (l.includes('psychological')) return 'Psychological Horror';
-                                      if (l.includes('supernatural')) return 'Supernatural Horror';
-                                      if (l.includes('technological')) return 'Technological Horror';
-                                      if (l.includes('uncanny')) return 'Uncanny Horror';
-                                      if (l.includes('gothic')) return 'Gothic Horror';
-                                      if (l.includes('folk')) return 'Folk Horror';
-                                      if (l.includes('parasite') || l.includes('parasitic') || l.includes('infestation')) return 'Parasitic Horror';
-                                      if (l.includes('cannibal')) return 'Cannibalism Horror';
-                                      if (l.includes('science')) return 'Science Horror';
-                                      if (l.includes('apocalyptic')) return 'Apocalyptic Horror';
-                                      if (l.includes('stalking')) return 'Stalker/Pursuit Horror';
-                                      if (l.includes('doppelganger')) return 'Identity Horror';
-                                      return base;
-                                    })();
-                                    return (
-                                      <SelectItem key={key} value={key}>
-                                        {refined}
-                                      </SelectItem>
-                                    );
-                                  })
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="theme-icon" className="text-sm font-medium">Icon (slug)</Label>
-                          <Input
-                            id="theme-icon"
-                            value={selectedThemeIcon}
-                            onChange={(e) => setSelectedThemeIcon(e.target.value)}
-                            placeholder="e.g., ghost, skull, brain"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Common options: ghost, skull, brain, bug, cpu, footprints, cloud-rain, castle
-                          </p>
-                        </div>
-                      </div>
-                      <DialogFooter className="gap-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            try {
-                              const auto = determineThemeCategory(
-                                titleText || 'Story',
-                                plainText || ''
-                              );
-                              const autoCat = String(auto || 'HORROR');
-                              setSelectedThemeCat(autoCat);
-                              const defIcon =
-                                SHARED_THEME_CATEGORIES[
-                                  autoCat as keyof typeof SHARED_THEME_CATEGORIES
-                                ]?.icon || 'ghost';
-                              setSelectedThemeIcon(defIcon);
-                            } catch {
-                              setSelectedThemeCat('HORROR');
-                              setSelectedThemeIcon('ghost');
+                      <Button
+                        onClick={async () => {
+                          try {
+                            setSavingTheme(true);
+                            const csrfToken = document.cookie.replace(
+                              /(?:(?:^|.*;\s*)XSRF-TOKEN\s*=\s*([^;]*).*$)|^.*$/,
+                              "$1"
+                            );
+                            const res = await fetch(`/api/posts/${currentPost.id}/theme`, {
+                              method: 'PATCH',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-Token': csrfToken
+                              },
+                              credentials: 'include',
+                              body: JSON.stringify({
+                                themeCategory: selectedThemeCat,
+                                themeIcon: selectedThemeIcon,
+                                // snake_case for older compatibility
+                                theme_category: selectedThemeCat,
+                                icon: selectedThemeIcon
+                              })
+                            });
+                            if (!res.ok) {
+                              const data = await res.json().catch(() => null);
+                              throw new Error(data?.error || 'Failed to update theme');
                             }
-                          }}
-                        >
-                          Auto-detect
-                        </Button>
-                        <Button
-                          onClick={async () => {
-                            try {
-                              setSavingTheme(true);
-                              const csrfToken = document.cookie.replace(
-                                /(?:(?:^|.*;\s*)XSRF-TOKEN\s*\=\s*([^;]*).*$)|^.*$/,
-                                "$1"
-                              );
-                              const res = await fetch(`/api/posts/${currentPost.id}/theme`, {
-                                method: 'PATCH',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                  'X-CSRF-Token': csrfToken
-                                },
-                                credentials: 'include',
-                                body: JSON.stringify({
-                                  themeCategory: selectedThemeCat,
-                                  themeIcon: selectedThemeIcon,
-                                  // snake_case for older compatibility
-                                  theme_category: selectedThemeCat,
-                                  icon: selectedThemeIcon
-                                })
-                              });
-                              if (!res.ok) {
-                                const data = await res.json().catch(() => null);
-                                throw new Error(data?.error || 'Failed to update theme');
-                              }
-                              setOverrideThemeCategory(selectedThemeCat);
-                              setOverrideThemeIcon(selectedThemeIcon);
-                              setThemeEditorOpen(false);
-                              toast({
-                                title: 'Theme updated',
-                                description: 'Theme and icon were updated for this story.'
-                              });
-                            } catch (err: any) {
-                              toast({
-                                title: 'Update failed',
-                                description: err?.message || 'Could not update theme. Make sure this story exists in the database.',
-                                variant: 'destructive'
-                              });
-                            } finally {
-                              setSavingTheme(false);
-                            }
-                          }}
-                          disabled={savingTheme}
-                        >
-                          {savingTheme ? 'Saving…' : 'Save'}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                )}
+                            setOverrideThemeCategory(selectedThemeCat);
+                            setOverrideThemeIcon(selectedThemeIcon);
+                            setThemeEditorOpen(false);
+                            toast({
+                              title: 'Theme updated',
+                              description: 'Theme and icon were updated for this story.'
+                            });
+                          } catch (err: any) {
+                            toast({
+                              title: 'Update failed',
+                              description: err?.message || 'Could not update theme. Make sure this story exists in the database.',
+                              variant: 'destructive'
+                            });
+                          } finally {
+                            setSavingTheme(false);
+                          }
+                        }}
+                        disabled={savingTheme}
+                      >
+                        {savingTheme ? 'Saving…' : 'Save'}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
 
-                {/* Original navigation controls moved here under time-to-read */}
-                <div ref={navRowRef} className={`flex justify-center items-center gap-4 py-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-nav`}>
-                  {/* Previous - match Next size and feel */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={goToPreviousStory}
-                    disabled={posts.length <= 1 || isFirstStory}
-                    className="h-10 w-28 rounded-md bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-2" />
-                    <span className="font-medium">Previous</span>
-                  </Button>
-
-                  {/* Random - icon only, circular */}
-                  <TooltipProvider>
-                    <Tooltip open={randomTipOpen} onOpenChange={setRandomTipOpen}>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => {
-                            setRandomTipOpen(true);
-                            window.setTimeout(() => setRandomTipOpen(false), 800);
-                            goToRandomStory();
-                          }}
-                          disabled={posts.length <= 1}
-                          aria-label="Random story"
-                          title="Random"
-                          className="h-10 w-10 rounded-full bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
-                        >
-                          <Shuffle className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" align="center">Random</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-
-                  {/* Next - keep as baseline and match sizing */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={goToNextStory}
-                    disabled={posts.length <= 1 || isLastStory}
-                    className="h-10 w-28 rounded-md bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    <span className="font-medium">Next</span>
-                    <ChevronRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <div className="story-container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
-              <div 
-                className="story-content cursor-pointer text-justify"
-                ref={contentRef}
-                onClick={() => {
-                  if (!fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
-                    toggleUIWithDebug('contentClick');
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if ((e.key === 'Enter' || e.key === ' ') && !fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
-                    e.preventDefault();
-                    toggleUIWithDebug('contentKey');
-                  }
-                }}
-                role="button"
-                tabIndex={0}
-                aria-label="Toggle user interface visibility"
-                aria-pressed={isUIHidden}
-                {...(isContentReady ? { dangerouslySetInnerHTML: { __html: contentHtml } } : {})}
+              {/* Navigation controls under time-to-read */}
+              <div
+                ref={navRowRef}
+                className={`flex justify-center items-center gap-4 py-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-nav`}
               >
-                {!isContentReady ? (
-                  isFetchingPost ? (
-                    <div aria-busy="true" aria-live="polite" className="text-sm text-muted-foreground py-2">
-                      Loading story…
-                    </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
-                  )
-                ) : null}
+                {/* Previous */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToPreviousStory}
+                  disabled={posts.length <= 1 || isFirstStory}
+                  className="h-10 w-28 rounded-md bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-2" />
+                  <span className="font-medium">Previous</span>
+                </Button>
+
+                {/* Random */}
+                <TooltipProvider>
+                  <Tooltip open={randomTipOpen} onOpenChange={setRandomTipOpen}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          setRandomTipOpen(true);
+                          window.setTimeout(() => setRandomTipOpen(false), 800);
+                          goToRandomStory();
+                        }}
+                        disabled={posts.length <= 1}
+                        aria-label="Random story"
+                        title="Random"
+                        className="h-10 w-10 rounded-full bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        <Shuffle className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" align="center">Random</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                {/* Next */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToNextStory}
+                  disabled={posts.length <= 1 || isLastStory}
+                  className="h-10 w-28 rounded-md bg-background/90 border border-border/50 text-foreground hover:bg-muted/40 hover:text-foreground active:bg-muted/60 active:scale-[0.99] transition-colors transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  <span className="font-medium">Next</span>
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                </Button>
               </div>
-              {/* Inline comment dialog (selection-based) */}
-              <CommentDialog />
             </div>
-            
-            {/* Simple pagination at bottom of story content - extremely compact */}
-            <div ref={pagerRowRef} className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-pager`} style={{ minHeight: '64px' }}>
-              <div className="relative overflow-visible flex items-center justify-center gap-1 bg-background/90 backdrop-blur-md border border-transparent rounded-full h-16 px-1.5 shadow-sm">
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 rounded-full"
-                  style={{ border: '1px solid', borderColor: 'hsl(var(--border) / 0.4)', transform: 'translateY(-1px)' }}
-                />
-                <div className="flex items-center gap-1 translate-y-2">
-                  {/* Previous story button */}
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={goToPreviousStory}
-                    className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
-                      isFirstStory 
-                        ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
-                        : 'text-foreground hover:bg-primary/60 hover:text-foreground dark:text-foreground dark:hover:bg-primary/35'
-                    } focus-visible:ring-2 focus-visible:ring-primary/70 hover:ring-2 hover:ring-primary/70 active:bg-primary/60`}
-                    aria-label="Previous story"
-                    disabled={posts.length <= 1 || isFirstStory}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
-                      <path d="m15 18-6-6 6-6"/>
-                    </svg>
-                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-                      Previous Story
-                    </span>
-                  </Button>
-                  
-                  {/* Story counter */}
-                  <div className="px-1 h-5 flex items-center -translate-y-2.5 text-[10px] leading-none text-muted-foreground font-medium">
-                    {currentIndex + 1} of {posts.length}
+          </div>
+
+          <div className="story-container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
+            <div 
+              className="story-content cursor-pointer text-justify"
+              ref={contentRef}
+              onClick={() => {
+                if (!fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
+                  toggleUIWithDebug('contentClick');
+                }
+              }}
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' || e.key === ' ') && !fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
+                  e.preventDefault();
+                  toggleUIWithDebug('contentKey');
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label="Toggle user interface visibility"
+              aria-pressed={isUIHidden}
+              {...(isContentReady ? { dangerouslySetInnerHTML: { __html: contentHtml } } : {})}
+            >
+              {!isContentReady ? (
+                isFetchingPost ? (
+                  <div aria-busy="true" aria-live="polite" className="text-sm text-muted-foreground py-2">
+                    Loading story…
                   </div>
-                  
-                  {/* Next story button */}
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={goToNextStory}
-                    className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
-                      isLastStory 
-                        ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
-                        : 'text-foreground hover:bg-primary/60 hover:text-foreground dark:text-foreground dark:hover:bg-primary/35'
-                    } focus-visible:ring-2 focus-visible:ring-primary/70 hover:ring-2 hover:ring-primary/70 active:bg-primary/60`}
-                    aria-label="Next story"
-                    disabled={posts.length <= 1 || isLastStory}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
-                      <path d="m9 18 6-6-6-6"/>
-                    </svg>
-                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-                      Next Story
-                    </span>
-                  </Button>
+                ) : (
+                  <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
+                )
+              ) : null}
+            </div>
+            {/* Inline comment dialog (selection-based) */}
+            <CommentDialog />
+          </div>
+          
+          {/* Simple pagination at bottom of story content - extremely compact */}
+          <div
+            ref={pagerRowRef}
+            className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-pager`}
+            style={{ minHeight: '64px' }}
+          >
+            <div className="relative overflow-visible flex items-center justify-center gap-1 bg-background/90 backdrop-blur-md border border-transparent rounded-full h-16 px-1.5 shadow-sm">
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-full"
+                style={{ border: '1px solid', borderColor: 'hsl(var(--border) / 0.4)', transform: 'translateY(-1px)' }}
+              />
+              <div className="flex items-center gap-1 translate-y-2">
+                {/* Previous story button */}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={goToPreviousStory}
+                  className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
+                    isFirstStory 
+                      ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
+                      : 'text-foreground hover:bg-primary/60 hover:text-foreground dark:text-foreground dark:hover:bg-primary/35'
+                  } focus-visible:ring-2 focus-visible:ring-primary/70 hover:ring-2 hover:ring-primary/70 active:bg-primary/60`}
+                  aria-label="Previous story"
+                  disabled={posts.length <= 1 || isFirstStory}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                    <path d="m15 18-6-6 6-6"/>
+                  </svg>
+                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                    Previous Story
+                  </span>
+                </Button>
+                
+                {/* Story counter */}
+                <div className="px-1 h-5 flex items-center -translate-y-2.5 text-[10px] leading-none text-muted-foreground font-medium">
+                  {currentIndex + 1} of {posts.length}
                 </div>
+                
+                {/* Next story button */}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={goToNextStory}
+                  className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
+                    isLastStory 
+                      ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
+                      : 'text-foreground hover:bg-primary/60 hover:text-foreground dark:text-foreground dark:hover:bg-primary/35'
+                  } focus-visible:ring-2 focus-visible:ring-primary/70 hover:ring-2 hover:ring-primary/70 active:bg-primary/60`}
+                  aria-label="Next story"
+                  disabled={posts.length <= 1 || isLastStory}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                    <path d="m9 18 6-6-6-6"/>
+                  </svg>
+                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                    Next Story
+                  </span>
+                </Button>
               </div>
             </div>
+          </div>
 
-            
-           
-            <div className="mt-2 pt-3">
-              <div className="flex flex-col items-center justify-center gap-6">
-                {/* Centered Like/Dislike buttons */}
-                <div className="flex justify-center w-full">
-                  <LikeDislike postId={currentPost.id} slug={currentPost.slug} source="wp" variant="reader" initialTotals={currentTotals} />
-                </div>
+          <div className="mt-2 pt-3">
+            <div className="flex flex-col items-center justify-center gap-6">
+              {/* Centered Like/Dislike buttons */}
+              <div className="flex justify-center w-full">
+                <LikeDislike
+                  postId={currentPost.id}
+                  slug={currentPost.slug}
+                  source="wp"
+                  variant="reader"
+                />
+              </div>
 
-                <div ref={shareRowRef} className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-share`}>
-                  <p className="text-sm text-muted-foreground font-medium">✨ Loved the story? Share it or follow for more! ✨</p>
-                  <div className="flex items-center gap-3">
-                    {/* Native Share Button */}
+              <div
+                ref={shareRowRef}
+                className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-share`}
+              >
+                <p className="text-sm text-muted-foreground font-medium">
+                  ✨ Loved the story? Share it or follow for more! ✨
+                </p>
+                <div className="flex items-center gap-3">
+                  {/* Native Share Button */}
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({
+                          title: getRenderedText(currentPost.title) || 'Story',
+                          url: window.location.href
+                        });
+                      } else {
+                        navigator.clipboard.writeText(window.location.href);
+                        toast({
+                          title: "Link Copied",
+                          description: "Story link copied to clipboard!"
+                        });
+                      }
+                    }}
+                    className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    <span className="sr-only">Share</span>
+                  </Button>
+
+                  {/* Social Icons */}
+                  <div className="flex gap-3">
+                    {/* Twitter */}
                     <Button
                       variant="outline"
                       size="icon"
                       onClick={() => {
-                        if (navigator.share) {
-                          navigator.share({
-                            title: getRenderedText(currentPost.title) || 'Story',
-                            url: window.location.href
-                          });
-                        } else {
-                          navigator.clipboard.writeText(window.location.href);
-                          toast({
-                            title: "Link Copied",
-                            description: "Story link copied to clipboard!"
-                          });
-                        }
+                        window.open('https://twitter.com/Bubbleteameimei', '_blank', 'noopener,noreferrer');
                       }}
                       className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
                     >
-                      <Share2 className="h-4 w-4" />
-                      <span className="sr-only">Share</span>
+                      <FaTwitter className="h-4 w-4" />
+                      <span className="sr-only">Follow on Twitter</span>
                     </Button>
-
-                    {/* Social Icons */}
-                    <div className="flex gap-3">
-                      {/* Twitter */}
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          window.open('https://twitter.com/Bubbleteameimei', '_blank', 'noopener,noreferrer');
-                        }}
-                        className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
-                      >
-                        <FaTwitter className="h-4 w-4" />
-                        <span className="sr-only">Follow on Twitter</span>
-                      </Button>
-                      
-                      {/* WordPress */}
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          window.open('https://bubbleteameimei.wordpress.com/', '_blank', 'noopener,noreferrer');
-                        }}
-                        className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
-                      >
-                        <FaWordpress className="h-4 w-4" />
-                        <span className="sr-only">Follow on WordPress</span>
-                      </Button>
-                      
-                      {/* Instagram */}
-                      <Button
-                        asChild
-                        variant="outline"
-                        size="icon"
-                        className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
-                      >
-                        <a href="https://www.instagram.com/Bubbleteameimei/" target="_blank" rel="noreferrer">
-                          <FaInstagram className="h-4 w-4" />
-                          <span className="sr-only">Follow on Instagram</span>
-                        </a>
-                      </Button>
-                    </div>
+                    
+                    {/* WordPress */}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        window.open('https://bubbleteameimei.wordpress.com/', '_blank', 'noopener,noreferrer');
+                      }}
+                      className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                    >
+                      <FaWordpress className="h-4 w-4" />
+                      <span className="sr-only">Follow on WordPress</span>
+                    </Button>
+                    
+                    {/* Instagram */}
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                    >
+                      <a href="https://www.instagram.com/Bubbleteameimei/" target="__blank" rel="noreferrer">
+                        <FaInstagram className="h-4 w-4" />
+                        <span className="sr-only">Follow on Instagram</span>
+                      </a>
+                    </Button>
                   </div>
                 </div>
               </div>
             </div>
-            
-            {/* Comment section (lazy-mounted near viewport) */}
-            <div className="mt-8">
-              <LazyCommentSection postId={currentPost.id} />
-            </div>
+          </div>
+          
+          {/* Comment section (lazy-mounted near viewport) */}
+          <div className="mt-8">
+            <LazyCommentSection postId={currentPost.id} />
+          </div>
 
-            {/* Social sharing and support section */}
-              <div className="social-support-section mt-4 pt-2">
-                {/* Support writing card with auto-wired authorId */}
-                <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
-              </div>
+          {/* Social sharing and support section */}
+          <div className="social-support-section mt-4 pt-2">
+            {/* Support writing card with auto-wired authorId */}
+            <SupportWritingCard authorId={resolveAuthorId(currentPost)} />
+          </div>
         </article>
-        
       </div>
     </div>
   );
