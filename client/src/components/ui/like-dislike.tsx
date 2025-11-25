@@ -161,12 +161,23 @@ export function LikeDislike({
         } catch {}
       } catch (error) {
         console.error('[LikeDislike] Failed to load reactions:', error);
-        setReactionError(true);
+        // Fall back to local-only state: show 0/0 but keep buttons working smoothly.
         setIsLoadingTotals(false);
+        setReactionError(false);
 
         const localState = readLocalReaction(storageKey);
         setLiked(localState === 'like');
         setDisliked(localState === 'dislike');
+
+        // Ensure we have a sane stats object even if the server is unavailable.
+        setStats((prev) =>
+          prev || {
+            likes: 0,
+            dislikes: 0,
+            baseStats: { likes: 0, dislikes: 0 },
+            userInteracted: false,
+          },
+        );
       }
     })();
 
@@ -312,17 +323,15 @@ export function LikeDislike({
     } catch (error) {
       console.error(`[LikeDislike] Error handling like for post ${postId}:`, error);
       showInlineToast('Failed to update like. Please try again.', 'error');
-      const prevState = readLocalReaction(storageKey);
-      const prevLiked = prevState === 'like';
-      const prevDisliked = prevState === 'dislike';
-      setLiked(prevLiked);
-      setDisliked(prevDisliked);
-      setReactionError(true);
+      // Keep optimistic UI state; a later fetch can gently resync totals.
+      setReactionError(false);
       window.setTimeout(async () => {
         try {
           const data = await fetchReactions(postId);
           applyServerTotals(data);
-        } catch {}
+        } catch {
+          // If even the retry fails, we still keep the optimistic local state.
+        }
       }, 800);
     } finally {
       isPendingRef.current = false;
@@ -391,17 +400,15 @@ export function LikeDislike({
     } catch (error) {
       console.error(`[LikeDislike] Error handling dislike for post ${postId}:`, error);
       showInlineToast('Failed to update dislike. Please try again.', 'error');
-      const prevState = readLocalReaction(storageKey);
-      const prevLiked = prevState === 'like';
-      const prevDisliked = prevState === 'dislike';
-      setLiked(prevLiked);
-      setDisliked(prevDisliked);
-      setReactionError(true);
+      // Keep optimistic UI state; a later fetch can gently resync totals.
+      setReactionError(false);
       window.setTimeout(async () => {
         try {
           const data = await fetchReactions(postId);
           applyServerTotals(data);
-        } catch {}
+        } catch {
+          // If even the retry fails, we still keep the optimistic local state.
+        }
       }, 800);
     } finally {
       isPendingRef.current = false;
@@ -447,7 +454,7 @@ export function LikeDislike({
         >
           <ThumbsUp className={`${variant === 'reader' ? 'h-4 w-4' : 'h-3 w-3'}`} />
           <span className="font-sans tabular-nums">
-            {isLoadingTotals || reactionError ? '—' : stats.likes}
+            {isLoadingTotals ? '—' : stats.likes}
           </span>
         </button>
 
@@ -479,7 +486,7 @@ export function LikeDislike({
         >
           <ThumbsDown className={`${variant === 'reader' ? 'h-4 w-4' : 'h-3 w-3'}`} />
           <span className="font-sans tabular-nums">
-            {isLoadingTotals || reactionError ? '—' : stats.dislikes}
+            {isLoadingTotals ? '—' : stats.dislikes}
           </span>
         </button>
       </div>
