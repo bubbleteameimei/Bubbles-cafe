@@ -6,6 +6,7 @@ import { registerPostsRoutes } from './worker/posts';
 import { registerCommentsRoutes } from './worker/comments';
 import { registerWordpressRoutes } from './worker/wordpress';
 import { registerNotificationsRoutes } from './worker/notifications';
+import { registerBookmarksRoutes } from './worker/bookmarks';
 
 // Minimal JSON helper to avoid extras dependency
 const json = (data: any, init?: ResponseInit) =>
@@ -21,6 +22,7 @@ registerPostsRoutes(router);
 registerCommentsRoutes(router);
 registerWordpressRoutes(router);
 registerNotificationsRoutes(router);
+registerBookmarksRoutes(router);
 
 // ============================================================================
 // TYPE DEFINITIONS
