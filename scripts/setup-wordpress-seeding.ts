@@ -72,7 +72,7 @@ async function setupWordPressSeeding() {
         VALUES 
         ('wordpress_api_url', 'https://bubbleteameimei.wordpress.com/wp-json/wp/v2/posts', 'sync', 'WordPress API endpoint for content sync', NOW()),
         ('wordpress_sync_enabled', 'true', 'sync', 'Enable automatic WordPress content sync', NOW()),
-        ('wordpress_sync_interval', '300000', 'sync', 'WordPress sync interval in milliseconds (5 minutes)', NOW()),
+        ('wordpress_sync_interval', '1800000', 'sync', 'WordPress sync interval in milliseconds (30 minutes)', NOW()),
         ('last_wordpress_sync', '0', 'sync', 'Timestamp of last successful WordPress sync', NOW())
         ON CONFLICT (key) DO UPDATE SET
         value = EXCLUDED.value,
