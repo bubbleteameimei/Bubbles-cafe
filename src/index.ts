@@ -2504,38 +2504,40 @@ router.post('/api/email-service/send', async (req: Request, env: Env) => {
       try {
         parsed = JSON.parse(rawBody);
       } catch {
-        parsed = null;
-      } catch {
-      return json({ status: false, message: 'Invalid JSON payload' }, { status: 400 });
-    }
+        return json({ status: false, message: 'Invalid JSON payload' }, { status: 400 });
+      }
 
-    const eventId = String(
-      parsed?.event || parsed?.event_id || parsed?.reference || parsed?.id || '',
-    );
-    if (!eventId) {
-      return json({ status: false, message: 'Missing event identifier' }, { status: 400 });
-    }
+      const eventId = String(
+        parsed?.event || parsed?.event_id || parsed?.reference || parsed?.id || '',
+      );
+      if (!eventId) {
+        return json({ status: false, message: 'Missing event identifier' }, { status: 400 });
+      }
 
-    const { isNew } = await getOrCheckIdempotency(env, `paystack-webhook-${eventId}`, 86_400_000);
-    if (!isNew) {
-      return json({ status: true, message: 'Duplicate webhook ignored' });
-    }
+      const { isNew } = await getOrCheckIdempotency(
+        env,
+        `paystack-webhook-${eventId}`,
+        86_400_000,
+      );
+      if (!isNew) {
+        return json({ status: true, message: 'Duplicate webhook ignored' });
+      }
 
-    // For now we simply acknowledge Paystack webhooks and rely on the
-    // client-side Paystack dashboard / our tips logging for business logic.
-    // You can extend this to call a Supabase RPC for subscription management.
-    return json({ status: true, message: 'Webhook received' });
-  } catch (error) {
-    return json(
-      {
-        status: false,
-        message: 'Failed to process webhook',
-        error: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    );
-  }
-});
+      // For now we simply acknowledge Paystack webhooks and rely on the
+      // client-side Paystack dashboard / our tips logging for business logic.
+      // You can extend this to call a Supabase RPC for subscription management.
+      return json({ status: true, message: 'Webhook received' });
+    } catch (error) {
+      return json(
+        {
+          status: false,
+          message: 'Failed to process webhook',
+          error: error instanceof Error ? error.message : String(error),
+        },
+        { status: 500 },
+      );
+    }
+  });
 
 /**
  * Initialize a Paystack transaction
