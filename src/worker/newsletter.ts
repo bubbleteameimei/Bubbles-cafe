@@ -3,7 +3,7 @@
 // preserving existing behavior.
 
 import type { Env } from './utils';
-import { json } from './utils';
+import { json, sendBrevoEmail } from './utils';
 
 // Shared newsletter subscribe handler (Supabase-backed)
 async function handleNewsletterSubscribe(req: Request, env: Env): Promise<Response> {
@@ -151,34 +151,21 @@ async function handleNewsletterSubscribe(req: Request, env: Env): Promise<Respon
     );
   }
 
-  // Send a welcome email best-effort; do not fail subscription if this fails
+  // Send a welcome email best-effort using Brevo; do not fail subscription if this fails
   let emailSent = false;
   let emailMessage =
     'Welcome email could not be sent at this time, but your subscription is active';
 
-  if (!alreadySubscribed && env.EMAIL_PROVIDER_API_KEY && env.GMAIL_ADMIN_EMAIL) {
+  if (!alreadySubscribed && env.BREVO_API_KEY && (env.BREVO_FROM_EMAIL || env.GMAIL_ADMIN_EMAIL)) {
     try {
-      const welcomeRes = await fetch('https://api.sendgrid.com/v3/mail/send', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${env.EMAIL_PROVIDER_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          personalizations: [{ to: [{ email }] }],
-          from: { email: env.GMAIL_ADMIN_EMAIL },
-          subject: "Welcome to Bubble's Cafe Newsletter",
-          content: [
-            {
-              type: 'text/html',
-              value:
-                "<p>Thank you for subscribing to Bubble's Cafe newsletter.</p><p>You'll hear from us soon.</p>",
-            },
-          ],
-        }),
+      const sent = await sendBrevoEmail(env, {
+        to: email,
+        subject: "Welcome to Bubble's Cafe Newsletter",
+        html:
+          "<p>Thank you for subscribing to Bubble's Cafe newsletter.</p><p>You'll hear from us soon.</p>",
       });
 
-      if (welcomeRes.ok) {
+      if (sent) {
         emailSent = true;
         emailMessage = 'Welcome email sent successfully';
       }

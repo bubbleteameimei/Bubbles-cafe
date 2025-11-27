@@ -2,7 +2,7 @@
 // Extracted from src/index.ts to keep the Worker entrypoint slimmer.
 
 import type { Env } from './utils';
-import { json } from './utils';
+import { json, sendBrevoEmail } from './utils';
 
 // Local rate-limit helper (mirrors checkRateLimit in index.ts)
 async function checkRateLimit(
@@ -78,7 +78,7 @@ async function handleContactSubmit(req: Request, env: Env): Promise<Response> {
   }
 
   const hasSupabase = !!(env.SUPABASE_URL && env.SUPABASE_ANON_KEY);
-  const hasEmail = !!(env.EMAIL_PROVIDER_API_KEY && env.GMAIL_ADMIN_EMAIL);
+  const hasEmail = !!(env.BREVO_API_KEY && (env.BREVO_FROM_EMAIL || env.GMAIL_ADMIN_EMAIL));
 
   if (!hasSupabase && !hasEmail) {
     return json(
@@ -153,26 +153,13 @@ async function handleContactSubmit(req: Request, env: Env): Promise<Response> {
         JSON.stringify(mergedMetadata, null, 2),
       ].join('\n');
 
-      const emailRes = await fetch('https://api.sendgrid.com/v3/mail/send', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${env.EMAIL_PROVIDER_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          personalizations: [{ to: [{ email: env.GMAIL_ADMIN_EMAIL }] }],
-          from: { email: env.GMAIL_ADMIN_EMAIL },
-          subject: `[Contact] ${subject}`,
-          content: [
-            {
-              type: 'text/plain',
-              value: textBody,
-            },
-          ],
-        }),
+      const sent = await sendBrevoEmail(env, {
+        to: env.GMAIL_ADMIN_EMAIL,
+        subject: `[Contact] ${subject}`,
+        text: textBody,
       });
 
-      emailStatus = emailRes.ok ? 'success' : 'failed';
+      emailStatus = sent ? 'success' : 'failed';
     } catch {
       emailStatus = 'failed';
     }
@@ -191,25 +178,25 @@ async function handleContactSubmit(req: Request, env: Env): Promise<Response> {
 // EMAIL SERVICE STATUS
 async function handleEmailStatus(_req: Request, env: Env): Promise<Response> {
   try {
+    const brevoAvailable = !!env.BREVO_API_KEY && !!(env.BREVO_FROM_EMAIL || env.GMAIL_ADMIN_EMAIL);
     const gmailAvailable = !!env.GMAIL_APP_PASSWORD && !!env.GMAIL_ADMIN_EMAIL;
     const sendgridAvailable = !!env.EMAIL_PROVIDER_API_KEY && !!env.GMAIL_ADMIN_EMAIL;
-    const mailersendAvailable = false;
 
-    let primaryService: 'gmail' | 'sendgrid' | 'mailersend' | 'none' = 'none';
-    if (gmailAvailable) {
+    let primaryService: 'brevo' | 'gmail' | 'sendgrid' | 'none' = 'none';
+    if (brevoAvailable) {
+      primaryService = 'brevo';
+    } else if (gmailAvailable) {
       primaryService = 'gmail';
     } else if (sendgridAvailable) {
       primaryService = 'sendgrid';
-    } else if (mailersendAvailable) {
-      primaryService = 'mailersend';
     }
 
     return json({
       success: primaryService !== 'none',
       services: {
+        brevo: brevoAvailable,
         gmail: gmailAvailable,
         sendgrid: sendgridAvailable,
-        mailersend: mailersendAvailable,
       },
       primaryService,
     });
@@ -218,9 +205,9 @@ async function handleEmailStatus(_req: Request, env: Env): Promise<Response> {
       {
         success: false,
         services: {
+          brevo: false,
           gmail: false,
           sendgrid: false,
-          mailersend: false,
         },
         primaryService: 'none',
         error: String(error),
@@ -232,124 +219,60 @@ async function handleEmailStatus(_req: Request, env: Env): Promise<Response> {
 
 // EMAIL TEST
 async function handleEmailTest(req: Request, env: Env): Promise<Response> {
-  // If a SendGrid API key is configured, prefer that HTTP-based provider.
-  if (env.EMAIL_PROVIDER_API_KEY && env.GMAIL_ADMIN_EMAIL) {
-    try {
-      const ip = req.headers.get('cf-connecting-ip') || 'unknown';
-      const allowed = await checkRateLimit(env, `email-test-${ip}`, 5, 3600);
-      if (!allowed) {
-        return json({ success: false, message: 'Rate limited' }, { status: 429 });
-      }
-
-      const body = (await (req as any).json?.().catch(() => ({}))) || {};
-
-      const to = typeof body.to === 'string' ? body.to.trim() : '';
-      if (!to) {
-        return json(
-          { success: false, message: 'Recipient email address is required' },
-          { status: 400 },
-        );
-      }
-
-      const subject =
-        typeof body.subject === 'string' && body.subject.trim()
-          ? body.subject.trim()
-          : "Test Email from Bubble's Cafe";
-      const text =
-        typeof body.text === 'string' && body.text.trim()
-          ? body.text
-          : "This is a test email from the Bubble's Cafe admin panel.";
-      const html =
-        typeof body.html === 'string' && body.html.trim()
-          ? body.html
-          : `<h1>${subject}</h1><p>${text}</p>`;
-
-      const emailRes = await fetch('https://api.sendgrid.com/v3/mail/send', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${env.EMAIL_PROVIDER_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          personalizations: [{ to: [{ email: to }] }],
-          from: { email: env.GMAIL_ADMIN_EMAIL },
-          subject,
-          content: [
-            { type: 'text/plain', value: text },
-            { type: 'text/html', value: html },
-          ],
-        }),
-      });
-
-      if (!emailRes.ok) {
-        const errText = await emailRes.text().catch(() => '');
-        return json(
-          {
-            success: false,
-            message: 'Failed to send test email',
-            error: errText.slice(0, 200),
-          },
-          { status: 500 },
-        );
-      }
-
-      const messageId = crypto.randomUUID();
-      return json({
-        success: true,
-        message: 'Test email sent successfully',
-        details: {
-          service: 'sendgrid',
-          messageId,
-        },
-      });
-    } catch (error) {
-      return json({ success: false, message: String(error) }, { status: 500 });
-    }
-  }
-
-  // If only Gmail app password is configured (no HTTP provider), we cannot send SMTP from a Worker.
-  // Instead, log a best-effort message and return a success response so the admin UX remains smooth.
-  if (env.GMAIL_APP_PASSWORD && env.GMAIL_ADMIN_EMAIL) {
-    try {
-      const body = (await (req as any).json?.().catch(() => ({}))) || {};
-      const to = typeof body.to === 'string' ? body.to.trim() : '';
-      const subject =
-        typeof body.subject === 'string' && body.subject.trim()
-          ? body.subject.trim()
-          : "Test Email from Bubble's Cafe";
-      const text =
-        typeof body.text === 'string' && body.text.trim()
-          ? body.text
-          : "This is a test email from the Bubble's Cafe admin panel (Gmail app password configured, SMTP not available from Worker).";
-
-      console.log('[EmailTest/Gmail-only] Simulated test email', {
-        from: env.GMAIL_ADMIN_EMAIL,
-        to,
-        subject,
-        text,
-      });
-    } catch {
-      // ignore
+  try {
+    const ip = req.headers.get('cf-connecting-ip') || 'unknown';
+    const allowed = await checkRateLimit(env, `email-test-${ip}`, 5, 3600);
+    if (!allowed) {
+      return json({ success: false, message: 'Rate limited' }, { status: 429 });
     }
 
+    const body = (await (req as any).json?.().catch(() => ({}))) || {};
+
+    const to = typeof body.to === 'string' ? body.to.trim() : '';
+    if (!to) {
+      return json(
+        { success: false, message: 'Recipient email address is required' },
+        { status: 400 },
+      );
+    }
+
+    const subject =
+      typeof body.subject === 'string' && body.subject.trim()
+        ? body.subject.trim()
+        : "Test Email from Bubble's Cafe";
+    const text =
+      typeof body.text === 'string' && body.text.trim()
+        ? body.text
+        : "This is a test email from the Bubble's Cafe admin panel.";
+
+    const sent = await sendBrevoEmail(env, {
+      to,
+      subject,
+      text,
+    });
+
+    if (!sent) {
+      return json(
+        {
+          success: false,
+          message: 'Failed to send test email (Brevo not configured or request failed)',
+        },
+        { status: 500 },
+      );
+    }
+
+    const messageId = crypto.randomUUID();
     return json({
       success: true,
-      message:
-        'Test email simulated using Gmail configuration. Direct SMTP is not available from the Worker runtime.',
+      message: 'Test email sent successfully',
       details: {
-        service: 'gmail-simulated',
+        service: 'brevo',
+        messageId,
       },
     });
+  } catch (error) {
+    return json({ success: false, message: String(error) }, { status: 500 });
   }
-
-  return json(
-    {
-      success: false,
-      message:
-        'Email provider is not fully configured. Set either EMAIL_PROVIDER_API_KEY (SendGrid) or GMAIL_APP_PASSWORD + GMAIL_ADMIN_EMAIL.',
-    },
-    { status: 500 },
-  );
 }
 
 // EMAIL SERVICE SEND
