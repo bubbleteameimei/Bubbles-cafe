@@ -177,17 +177,22 @@ if (!DATABASE_URL) {
               // Replace pool and drizzle instance
               pool = fallbackPool;
               db = drizzle(pool, { schema });
-              client = await pool.connect();
-              await client.query('SELECT 1');
-              try { process.stderr.write('Database connection established via IPv4 fallback\n'); } catch {}
+
+              // Test the fallback connection with a separate client instance
+              let fallbackClient: pkg.PoolClient | undefined;
+              try {
+                fallbackClient = await pool.connect();
+                await fallbackClient.query('SELECT 1');
+                try { process.stderr.write('Database connection established via IPv4 fallback\n'); } catch {}
+              } finally {
+                fallbackClient?.release();
+              }
             }
           }
         } catch (fallbackErr) {
           try {
             process.stderr.write(`IPv4 fallback failed: ${fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr)}\n`);
           } catch {}
-        } finally {
-          client?.release();
         }
         // Do not rethrow — allow app to keep running
       } finally {

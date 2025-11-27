@@ -80,12 +80,20 @@ interface Env {
 // UTILITY FUNCTIONS
 // ============================================================================
 
+/**
+ * NOTE: Several helpers in this file (Supabase RPC, auth helpers, post
+ * mapping, etc.) are also mirrored in src/worker/utils.ts so that modular
+ * route files can be used without importing from this entrypoint.
+ *
+ * Until the Worker entrypoint is fully consolidated, keep the
+ * implementations in sync when making changes here or in src/worker/utils.ts.
+ */
 async function callSupabaseRpc(
   env: Env,
   functionName: string,
-  payload: Record<string, any>,
-): Promise<Response> {
-  const baseUrl = env.SUPABASE_URL?.replace(/\/+$/, '');
+  payload: Record&lt;string, any>,
+): Promise&lt;Response> {
+  const baseUrl = env.SUPABASE_URL?.replace(/\\/+$/, '');
   if (!baseUrl || !env.SUPABASE_ANON_KEY) {
     throw new Error('Supabase is not configured for RPC calls');
   }
@@ -2483,15 +2491,21 @@ router.post('/api/email-service/send', async (req: Request, env: Env) => {
   }
 });
 
-// PAYMENTS: Paystack integration (initialize, verify, plans, subscription status, webhook)
-router.post('/api/payments/webhook', async (req: Request, env: Env) => {
-  // This webhook is designed for Paystack, but we keep idempotency protection
-  try {
-    const rawBody = await req.text();
-    let parsed: any;
+// PAYSTACK WEBHOOK (idempotent, placeholder implementation)
+  router.post('/api/payments/webhook', async (req: Request, env: Env) => {
+    // IMPORTANT: This endpoint currently does NOT verify Paystack signatures.
+    // It is intended only as a placeholder and for diagnostics, and should not
+    // be used for state-changing operations (e.g. granting access, updating
+    // subscriptions) until HMAC verification is implemented.
+    // This webhook is designed for Paystack, but we keep idempotency protection
     try {
-      parsed = JSON.parse(rawBody);
-    } catch {
+      const rawBody = await req.text();
+      let parsed: any;
+      try {
+        parsed = JSON.parse(rawBody);
+      } catch {
+        parsed = null;
+      } catch {
       return json({ status: false, message: 'Invalid JSON payload' }, { status: 400 });
     }
 
