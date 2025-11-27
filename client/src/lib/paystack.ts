@@ -17,34 +17,12 @@ export function getStaticPaystackLink(): string {
 }
 
 /**
- * Resolve the Paystack link, preferring a Vite build-time override and
- * falling back to the Worker /api/config/public response when available.
+ * Resolve the Paystack link.
+ *
+ * This implementation is intentionally simple: it just returns the static
+ * Paystack link (optionally overridden at build time via Vite env).
+ * No network calls or dynamic config are used.
  */
 export async function resolvePaystackLink(): Promise<string> {
-  const fallback = getStaticPaystackLink();
-
-  // If we already have an explicit override, use it without a network call.
-  if (fallback !== 'https://paystack.com/pay/z7fmj9rge1') {
-    return fallback;
-  }
-
-  try {
-    const res = await fetch('/api/config/public', { credentials: 'include' });
-    if (!res.ok) return fallback;
-
-    const data: any = await res.json().catch(() => null);
-    const fromConfig =
-      data?.payments?.paystack?.link ||
-      data?.paystackLink ||
-      data?.paystack?.link ||
-      data?.payments?.paystackLink;
-
-    if (typeof fromConfig === 'string' && fromConfig.trim()) {
-      return fromConfig.trim();
-    }
-  } catch {
-    // Silent: just fall back
-  }
-
-  return fallback;
+  return getStaticPaystackLink();
 }
