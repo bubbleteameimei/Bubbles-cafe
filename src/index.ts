@@ -7,6 +7,8 @@ import { registerCommentsRoutes } from './worker/comments';
 import { registerWordpressRoutes } from './worker/wordpress';
 import { registerNotificationsRoutes } from './worker/notifications';
 import { registerBookmarksRoutes } from './worker/bookmarks';
+import { registerNewsletterRoutes } from './worker/newsletter';
+import { registerContactEmailRoutes } from './worker/contact-email';
 
 // Minimal JSON helper to avoid extras dependency
 const json = (data: any, init?: ResponseInit) =>
@@ -23,6 +25,8 @@ registerCommentsRoutes(router);
 registerWordpressRoutes(router);
 registerNotificationsRoutes(router);
 registerBookmarksRoutes(router);
+registerNewsletterRoutes(router);
+registerContactEmailRoutes(router);
 registerBookmarksRoutes(router);
 
 // ============================================================================
