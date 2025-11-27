@@ -91,9 +91,11 @@ interface Env {
 async function callSupabaseRpc(
   env: Env,
   functionName: string,
-  payload: Record<string, any>,
-): Promise<Response> {
-  const baseUrl = env.SUPABASE_URL?.replace(/\\/+$/, '');
+  payload: Record&lt;string, any>,
+): Promise&lt;Response> {
+  // Normalize Supabase URL and strip trailing slashes. We avoid optional chaining
+  // here because some bundlers mis-parse it in Worker builds.
+  const baseUrl = (env.SUPABASE_URL || '').replace(/\/+$/, '');
   if (!baseUrl || !env.SUPABASE_ANON_KEY) {
     throw new Error('Supabase is not configured for RPC calls');
   }
