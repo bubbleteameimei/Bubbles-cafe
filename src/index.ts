@@ -91,8 +91,8 @@ interface Env {
 async function callSupabaseRpc(
   env: Env,
   functionName: string,
-  payload: Record&lt;string, any>,
-): Promise&lt;Response> {
+  payload: Record<string, any>,
+): Promise<Response> {
   const baseUrl = env.SUPABASE_URL?.replace(/\\/+$/, '');
   if (!baseUrl || !env.SUPABASE_ANON_KEY) {
     throw new Error('Supabase is not configured for RPC calls');
@@ -759,6 +759,40 @@ function recordTrendingQuery(query: string): void {
     trendingQueries.set(key, (trendingQueries.get(key) || 0) + 1);
   } catch {
     // ignore
+  }
+}
+
+const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000;
+
+interface SearchCacheEntry {
+  ts: number;
+  data: any;
+}
+
+const searchCache = new Map<string, SearchCacheEntry>();
+
+function makeSearchCacheKey(params: {
+  q: string;
+  types: string[];
+  limit: number;
+  page: number;
+  from: string | null;
+  category: string | null;
+  tags: string[];
+}): string {
+  try {
+    return JSON.stringify({
+      q: params.q.trim().toLowerCase(),
+      types: [...params.types].sort(),
+      limit: params.limit,
+      page: params.page,
+      from: params.from,
+      category: params.category,
+      tags: [...params.tags].sort(),
+    });
+  } catch {
+    // Fallback: just return the raw query string so search still works
+    return params.q;
   }
 }
 
@@ -3400,72 +3434,7 @@ router.post('/api/admin/posts/bulk', async (req: Request, env: Env) => {
   }
 });
 
-// WORDPRESS POSTS PROXY (avoids browser CORS and matches Express shape)
-router.get('/api/wordpress/posts', async (req: Request, env: Env) => {
-  try {
-    const incomingUrl = new URL(req.url);
-    const pageParam = incomingUrl.searchParams.get('page');
-    const perPageParam = incomingUrl.searchParams.get('per_page');
-    const slug = incomingUrl.searchParams.get('slug') || '';
-    const search = incomingUrl.searchParams.get('search') || '';
-    const fields = incomingUrl.searchParams.get('_fields') || '';
 
-    const page =
-      Number.isFinite(Number(pageParam)) && Number(pageParam) > 0 ? Number(pageParam) : 1;
-    const perPageRaw = Number(perPageParam);
-    const per_page =
-      Number.isFinite(perPageRaw) && perPageRaw > 0 ? Math.max(1, Math.min(100, perPageRaw)) : 100;
-
-    const params = new URLSearchParams();
-    if (slug) {
-      params.set('slug', slug.trim());
-    } else {
-      params.set('page', String(page));
-      params.set('per_page', String(per_page));
-    }
-    if (search) params.set('search', search.trim());
-    if (fields) params.set('_fields', fields.trim());
-
-    const wpBase =
-      env.WORDPRESS_API ||
-      'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts';
-    const wpUrl = `${wpBase}?${params.toString()}`;
-
-    const wpRes = await fetch(wpUrl);
-    if (!wpRes.ok) {
-      const text = await wpRes.text().catch(() => '');
-      throw new Error(
-        `WordPress API error: ${wpRes.status} ${wpRes.statusText} ${text.slice(0, 200)}`,
-      );
-    }
-
-    const posts = await wpRes.json();
-
-    const totalPagesHeader = wpRes.headers.get('X-WP-TotalPages');
-    const totalHeader = wpRes.headers.get('X-WP-Total');
-    const totalPages = totalPagesHeader ? parseInt(totalPagesHeader, 10) : 1;
-    const total = totalHeader ? parseInt(totalHeader, 10) : Array.isArray(posts) ? posts.length : 0;
-
-    return json({
-      success: true,
-      posts,
-      totalPages,
-      total,
-    });
-  } catch (error) {
-    console.error(
-      '[WordPress] Error fetching posts via Worker proxy',
-      error instanceof Error ? error.message : String(error),
-    );
-    return json(
-      {
-        success: false,
-        message: `Error fetching WordPress posts`,
-      },
-      { status: 500 },
-    );
-  }
-});
 
 // READING PROGRESS: Supabase-backed (JWT + RLS), Worker-native
 
