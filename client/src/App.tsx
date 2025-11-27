@@ -1,5 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
 import { queryClient } from './lib/queryClient';
 const Toaster = React.lazy(() => import('./components/ui/toaster').then(m => ({ default: m.Toaster })));
@@ -139,7 +139,6 @@ const UserFeedbackDashboardPage = React.lazy(() => import('./pages/user/feedback
 const GuidelinesPage = React.lazy(() => import('./pages/support/guidelines'));
 
 import { trackPageView } from '@/lib/metrics';
-import { usePrefersReducedMotion } from './hooks/use-prefers-reduced-motion';
 // Vercel Web Analytics (React)
 import { Analytics } from '@vercel/analytics/react';
 
@@ -170,9 +169,6 @@ const preloadWordPressPostsDeferred = () => {
 const AppContent = () => {
   const [location] = useLocation();
   const locationStr = location.toString();
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [isPageTransition, setIsPageTransition] = useState(false);
-  const [previousLocation, setPreviousLocation] = useState('');
 
   // Show a lightweight loader on key routes during lazy/data load
   const needRouteLoader =

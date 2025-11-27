@@ -10,7 +10,6 @@ import {
   DialogClose,
   DialogHeader,
 } from "@/components/ui/dialog";
-import { apiJson } from "@/lib/api";
 import { resolvePaystackLink } from "@/lib/paystack";
 
 interface SupportWritingCardProps {
@@ -42,44 +41,21 @@ export const SupportWritingCard = ({ className = "", authorId, hideCard = false 
   }, []);
 
   const handleTip = async () => {
-    // Prevent multiple clicks
     if (isProcessing) return;
-    
     setIsProcessing(true);
-
-    // Log tip intent to backend (pending status); only if authorId known
-    try {
-      if (typeof authorIdInternal === 'number' && Number.isFinite(authorIdInternal) && authorIdInternal > 0) {
-        await apiJson(
-          'POST',
-          '/api/tips',
-          {
-            authorId: authorIdInternal,
-            amount: '0', // intent only; actual amount recorded via webhook
-            currency: 'USD',
-            status: 'pending',
-            message: 'support_intent'
-          },
-          { showToast: false }
-        ).catch(() => {});
-      }
-    } catch {
-      // non-fatal
-    }
 
     try {
       const link = await resolvePaystackLink();
       window.open(link, "_blank", "noopener,noreferrer");
     } catch {
       // Silent failure to avoid blocking UI; user can retry
+    } finally {
+      setIsOpen(false);
+      // Allow another attempt after a short delay to prevent accidental double-clicks
+      setTimeout(() => {
+        setIsProcessing(false);
+      }, 500);
     }
-
-    setIsOpen(false);
-    
-    // Reset processing state after a short delay
-    setTimeout(() => {
-      setIsProcessing(false);
-    }, 2000);
   };
 
   // Steam particles animation

@@ -40,7 +40,8 @@ new_sqlite_classes = ["LocksObject", "RateLimitObject", "IdempotencyObject"]
 
 # Cron triggers
 [triggers]
-crons = ["0 * * * *"]
+# Run every 30 minutes to keep WordPress sync reasonably fresh without overloading the API
+crons = ["*/30 * * * *"]
 
 # Custom domain routing
 [[routes]]

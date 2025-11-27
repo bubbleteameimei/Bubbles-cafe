@@ -16,7 +16,6 @@ export function useReaderFonts() {
     try {
       if (import.meta.env?.DEV) {
         // Keep the same debug logging semantics the reader had previously.
-        // eslint-disable-next-line no-console
         console.log('[ReaderFonts] Updating font styles with CSS variables:', {
           fontFamily,
           fontSize,
@@ -36,7 +35,6 @@ export function useReaderFonts() {
         theme === 'dark' ? DARK_TEXT_COLOR : LIGHT_TEXT_COLOR,
       );
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('[ReaderFonts] Error applying font styles:', error);
     }
   }, [fontFamily, fontSize, availableFonts, theme]);
