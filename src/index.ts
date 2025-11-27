@@ -213,6 +213,9 @@ async function upsertLocalUserFromSupabaseAuth(
   };
 
   const email = (authUser.email && authUser.email.toLowerCase().trim()) || null;
+  const adminEmail = (env.GMAIL_ADMIN_EMAIL || '').toLowerCase().trim();
+  const isConfigAdmin = !!email && !!adminEmail && email === adminEmail;
+
   const supabaseUserId = String(authUser.id || '');
   const userMeta = (authUser.user_metadata || {}) as any;
   const appMeta = (authUser.app_metadata || {}) as any;
@@ -273,6 +276,9 @@ async function upsertLocalUserFromSupabaseAuth(
       email: meta.email ?? email ?? meta.email ?? null,
     };
 
+    // Ensure the configured admin email is always treated as admin; others remain non-admin.
+    const isAdmin = isConfigAdmin ? true : Boolean(row.is_admin === true);
+
     try {
       const patchUrl = new URL(`${baseUrl}/rest/v1/users`);
       patchUrl.searchParams.set('id', `eq.${row.id}`);
@@ -282,7 +288,7 @@ async function upsertLocalUserFromSupabaseAuth(
           ...headers,
           Prefer: 'return=representation',
         },
-        body: JSON.stringify({ metadata: meta }),
+        body: JSON.stringify({ metadata: meta, is_admin: isAdmin }),
       });
       if (patchRes.ok) {
         const rows = (await patchRes.json().catch(() => [])) as any[];
@@ -290,12 +296,15 @@ async function upsertLocalUserFromSupabaseAuth(
           row = rows[0];
         } else {
           row.metadata = meta;
+          row.is_admin = isAdmin;
         }
       } else {
         row.metadata = meta;
+        row.is_admin = isAdmin;
       }
     } catch {
       row.metadata = meta;
+      row.is_admin = isAdmin;
     }
 
     return mapDbUserRowToApiUser(row);
@@ -309,12 +318,13 @@ async function upsertLocalUserFromSupabaseAuth(
   const usernameBase = (userMeta.username as string) || (email ? email.split('@')[0] : 'user');
   const username = usernameBase.trim() || 'user';
   const passwordHashPlaceholder = 'supabase-auth-only';
+  const isAdmin = isConfigAdmin;
 
   const insertPayload = {
     email,
     username,
     password_hash: passwordHashPlaceholder,
-    is_admin: false,
+    is_admin: isAdmin,
     metadata: {
       email,
       supabaseUserId,
