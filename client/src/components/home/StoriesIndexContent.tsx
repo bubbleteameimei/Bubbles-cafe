@@ -82,7 +82,6 @@ import ContinueReadingBanner from '@/components/ContinueReadingBanner';
 import { VirtualScrollArea } from '@/components/ui/VirtualScrollArea';
 import { computeTrendingScores } from '@/lib/trending';
 import { useThemeCategories } from '@/hooks/use-theme-categories';
-import { logOnce } from '@/lib/metrics';
 
 // Lightweight converter from WordPress API post to local Post shape
 function wpToPost(post: WordPressPost): Post {
@@ -111,7 +110,6 @@ export default function StoriesIndexContent() {
     Array<{ key: string; count: number; pretty: string }>
   >([]);
   const [trendingScores, setTrendingScores] = useState<Record<number, number>>({});
-  const [reactionsUnavailable, setReactionsUnavailable] = useState<boolean>(false);
 
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [pageSize, setPageSize] = useState<number>(6);
@@ -119,14 +117,9 @@ export default function StoriesIndexContent() {
   const cardsGridRef = React.useRef<HTMLDivElement | null>(null);
   const breakpointRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null);
   const fetchedReactionIdsRef = React.useRef<Set<number>>(new Set());
-  // SSE sources per post to stream live updates (LRU-limited)
-  const sseSourcesRef = React.useRef<Map<number, { es: EventSource; ts: number }>>(new Map());
-  const MAX_SSE_CONNECTIONS = 4;
   const REACTIONS_BATCH_CHUNK_SIZE = 60;
   const FLUSH_DEBOUNCE_MS = 200;
   const INITIAL_BATCH_MIN_SIZE = 24;
-  // Track SSE/preload errors to avoid flashing the \"unavailable\" banner on transient failures
-  const reactionsErrorCountRef = React.useRef<number>(0);
   // Track whether we've prefetched totals for all posts to avoid repeated work
   const preloadedAllRef = React.useRef<boolean>(false);
   // Deduplicate zero-results analytics by query
@@ -821,6 +814,8 @@ export default function StoriesIndexContent() {
     Record<number, import('@/api/reactions').ReactionTotals>
   >({});
 
+  // Lazy-load reaction totals for visible posts using IntersectionObserver + batched fetches.
+  // This avoids opening SSE streams from the index page while still keeping counts fresh enough.
   useEffect(() => {
     if (!readyReactions) return;
     let mounted = true;
@@ -828,95 +823,6 @@ export default function StoriesIndexContent() {
     let io: IntersectionObserver | null = null;
     let pending: number[] = [];
     let flushTimer: any = null;
-
-    // Capture current SSE map reference to use in cleanup (avoid ref changing)
-    const sources = sseSourcesRef.current;
-
-    // SSE sources per post to stream live updates
-    // sseSourcesRef is defined at component scope
-
-    const ensureSse = (postId: number) => {
-      try {
-        if (!Number.isFinite(postId)) return;
-        if (sources.has(postId)) {
-          // Touch timestamp for LRU
-          const obj = sources.get(postId);
-          if (obj) obj.ts = Date.now();
-          return;
-        }
-
-        // LRU cap: close oldest connection if at capacity
-        if (sources.size >= MAX_SSE_CONNECTIONS) {
-          let oldestKey: number | null = null;
-          let oldestTs = Infinity;
-          for (const [key, obj] of sources.entries()) {
-            if (obj.ts < oldestTs) {
-              oldestTs = obj.ts;
-              oldestKey = key;
-            }
-          }
-          if (oldestKey != null) {
-            try {
-              sources.get(oldestKey)?.es.close();
-            } catch {}
-            sources.delete(oldestKey);
-          }
-        }
-
-        const url = `/api/posts/${postId}/reactions/stream`;
-        const es = new EventSource(url, { withCredentials: true } as any);
-        const onMessage = (e: MessageEvent) => {
-          try {
-            const payload = JSON.parse(e.data || '{}');
-            if (payload && typeof payload.postId === 'number') {
-              setReactionTotals((prev) => ({
-                ...prev,
-                [payload.postId]: {
-                  postId: payload.postId,
-                  baselineLikes: Number(payload.baselineLikes || 0),
-                  baselineDislikes: Number(payload.baselineDislikes || 0),
-                  likesCount: Number(payload.likesCount || 0),
-                  dislikesCount: Number(payload.dislikesCount || 0),
-                  totals: {
-                    likes: Number(
-                      payload.totals?.likes ||
-                        Number(payload.baselineLikes || 0) + Number(payload.likesCount || 0),
-                    ),
-                    dislikes: Number(
-                      payload.totals?.dislikes ||
-                        Number(payload.baselineDislikes || 0) + Number(payload.dislikesCount || 0),
-                    ),
-                  },
-                },
-              }));
-              fetched.add(payload.postId);
-              // Reset transient error state on any successful message
-              reactionsErrorCountRef.current = 0;
-              // On any successful SSE message, clear the unavailable banner without reading stale state
-              setReactionsUnavailable(false);
-            }
-          } catch {}
-        };
-        es.addEventListener('initial', onMessage);
-        es.addEventListener('update', onMessage);
-        es.onerror = () => {
-          // Increment error count; only show banner after repeated errors
-          reactionsErrorCountRef.current += 1;
-          if (reactionsErrorCountRef.current >= 3) {
-            setReactionsUnavailable(true);
-          }
-          // keep alive; browser will reconnect
-        };
-        sources.set(postId, { es, ts: Date.now() });
-      } catch (err) {
-        try {
-          logOnce('index.sse.open', 'Failed to open SSE stream', {
-            error: err instanceof Error ? err.message : String(err),
-          });
-        } catch {}
-        setReactionsUnavailable(true);
-      }
-    };
 
     // Preload a small initial batch near the top of the list to avoid empty counts above the fold
     const preloadInitial = async () => {
@@ -941,20 +847,8 @@ export default function StoriesIndexContent() {
           }
           setReactionTotals((prev) => ({ ...prev, ...map }));
         }
-        // Open SSE streams for visible/initial posts
-        for (const id of candidateIds) {
-          ensureSse(id);
-        }
-      } catch (err) {
-        try {
-          logOnce('index.reactions.preload', 'Failed to preload initial reactions', {
-            error: err instanceof Error ? err.message : String(err),
-          });
-        } catch {}
-        reactionsErrorCountRef.current += 1;
-        if (reactionsErrorCountRef.current >= 3) {
-          setReactionsUnavailable(true);
-        }
+      } catch {
+        // best-effort: reactions are non-critical for index UX
       }
     };
 
@@ -975,20 +869,8 @@ export default function StoriesIndexContent() {
           }
           setReactionTotals((prev) => ({ ...prev, ...update }));
         }
-        // Ensure SSE for all newly observed ids
-        for (const id of unique) {
-          ensureSse(id);
-        }
-      } catch (err) {
-        try {
-          logOnce('index.reactions.flush', 'Failed to flush reaction batch', {
-            error: err instanceof Error ? err.message : String(err),
-          });
-        } catch {}
-        reactionsErrorCountRef.current += 1;
-        if (reactionsErrorCountRef.current >= 3) {
-          setReactionsUnavailable(true);
-        }
+      } catch {
+        // best-effort
       }
     };
 
@@ -1044,9 +926,11 @@ export default function StoriesIndexContent() {
         }
       });
       mo.observe(document.body, { childList: true, subtree: true });
-    } catch {}
+    } catch {
+      // non-critical
+    }
 
-    // Start with a small initial preload + SSE
+    // Start with a small initial preload of reaction totals
     void preloadInitial();
 
     // Then, in the background, preload totals for remaining posts to avoid zero displays
@@ -1119,15 +1003,6 @@ export default function StoriesIndexContent() {
         io?.disconnect();
       } catch {}
       if (flushTimer) clearTimeout(flushTimer);
-      // Close SSE sources using captured reference
-      try {
-        for (const obj of sources.values()) {
-          try {
-            obj.es.close();
-          } catch {}
-        }
-        sources.clear();
-      } catch {}
     };
   }, [sortedPosts, visibleCount, gridCols, readyReactions]);
 
@@ -1556,14 +1431,6 @@ export default function StoriesIndexContent() {
             {/* Removed duplicate sort dropdown above featured story; keeping the one inside the featured box */}
           </div>
         </div>
-
-        {/* Status banner for reactions subsystem */}
-        {reactionsUnavailable && (
-          <div className="mb-4 rounded-md border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
-            Live reactions are temporarily unavailable. Counts will appear once the connection is
-            restored.
-          </div>
-        )}
 
         {/* Featured row */}
         {featuredStory &&
