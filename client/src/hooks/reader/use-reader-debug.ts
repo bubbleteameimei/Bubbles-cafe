@@ -87,7 +87,6 @@ export function useReaderDebugInstrumentation(options: ReaderDebugOptions) {
               .slice(0, 6)
           : undefined;
 
-        // eslint-disable-next-line no-console
         console.log('[Reader.debug] click', {
           target: t?.tagName,
           class: t?.className,
@@ -117,7 +116,6 @@ export function useReaderDebugInstrumentation(options: ReaderDebugOptions) {
       try {
         const r = el.getBoundingClientRect();
         const cs = window.getComputedStyle(el);
-        // eslint-disable-next-line no-console
         console.log('[Reader.debug] bounds', name, {
           rect: {
             x: Math.round(r.x),
@@ -148,7 +146,6 @@ export function useReaderDebugInstrumentation(options: ReaderDebugOptions) {
       const body = document.body;
       if (body) {
         const cs = window.getComputedStyle(body);
-        // eslint-disable-next-line no-console
         console.log('[Reader.debug] body styles', {
           pointerEvents: cs.pointerEvents,
           paddingRightInline: body.style.paddingRight,
@@ -161,7 +158,6 @@ export function useReaderDebugInstrumentation(options: ReaderDebugOptions) {
       if (dlg) {
         const r = dlg.getBoundingClientRect();
         const cs = window.getComputedStyle(dlg);
-        // eslint-disable-next-line no-console
         console.log('[Reader.debug] dialog content styles', {
           rect: {
             x: Math.round(r.x),
@@ -184,7 +180,6 @@ export function useReaderDebugInstrumentation(options: ReaderDebugOptions) {
       if (overlay) {
         const r = overlay.getBoundingClientRect();
         const cs = window.getComputedStyle(overlay);
-        // eslint-disable-next-line no-console
         console.log('[Reader.debug] dialog overlay styles', {
           rect: {
             x: Math.round(r.x),
@@ -201,7 +196,6 @@ export function useReaderDebugInstrumentation(options: ReaderDebugOptions) {
         });
       }
 
-      // eslint-disable-next-line no-console
       console.log('[Reader.debug] content-visibility', {
         isAnyDialogOpen,
         applied: isAnyDialogOpen ? 'visible (no CV)' : 'auto (CV enabled)',

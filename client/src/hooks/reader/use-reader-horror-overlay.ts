@@ -106,7 +106,6 @@ export function useReaderHorrorOverlay(): ReaderHorrorOverlayState {
       // After 3 rapid skips, show the horror Easter egg.
       if (skipCountRef.current >= 3 && !showHorrorMessage) {
         if (import.meta.env?.DEV) {
-          // eslint-disable-next-line no-console
           console.log('[ReaderHorror] Easter egg triggered after rapid navigation');
         }
 
