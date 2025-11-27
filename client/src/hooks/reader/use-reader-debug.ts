@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { safeLocalStorageGet } from '@/utils/safe';
 
 interface ReaderDebugOptions {
   contentRef: React.RefObject<HTMLElement | null>;
@@ -37,38 +38,21 @@ export function useReaderDebugInstrumentation(options: ReaderDebugOptions) {
   } = options;
 
   const [debugEnabled, setDebugEnabled] = useState<boolean>(() => {
-    try {
-      const flag = typeof window !== 'undefined' ? window.localStorage.getItem('reader_debug') : null;
-      return flag === '1' || import.meta.env?.DEV === true;
-    } catch {
-      return import.meta.env?.DEV === true;
-    }
+    const flag = safeLocalStorageGet('reader_debug');
+    return flag === '1' || import.meta.env?.DEV === true;
   });
 
   // React to storage changes for the reader_debug flag.
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key === 'reader_debug') {
-        try {
-          setDebugEnabled(e.newValue === '1' || import.meta.env?.DEV === true);
-        } catch {
-          // ignore
-        }
+        setDebugEnabled(e.newValue === '1' || import.meta.env?.DEV === true);
       }
     };
 
-    try {
-      window.addEventListener('storage', onStorage);
-    } catch {
-      // ignore
-    }
-
+    window.addEventListener('storage', onStorage);
     return () => {
-      try {
-        window.removeEventListener('storage', onStorage);
-      } catch {
-        // ignore
-      }
+      window.removeEventListener('storage', onStorage);
     };
   }, []);
 
