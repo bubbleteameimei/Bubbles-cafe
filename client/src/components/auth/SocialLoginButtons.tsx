@@ -87,14 +87,6 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
         />
         Sign in with Google
       </button>
-      {status && (
-        <div className="mt-2">
-          <Alert variant={status.toLowerCase().includes('error') ? 'destructive' : 'default'}>
-            <AlertTitle>Google Sign-in</AlertTitle>
-            <AlertDescription>{status}</AlertDescription>
-          </Alert>
-        </div>
-      )}
     </div>
   );
 }
