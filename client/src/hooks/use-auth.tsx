@@ -43,24 +43,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const finalizeServerSession = useCallback(async (access_token: string, rememberMe?: boolean) => {
     // Use relative path; getApiBaseUrl already resolves to the API domain when needed
-    const resp = await fetch('/api/auth/supabase/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${access_token}`,
-      },
-      credentials: 'include',
-      body: JSON.stringify({ access_token, rememberMe: !!rememberMe }),
-    });
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) {
-      const message = (data as any)?.error || (data as any)?.message || 'Failed to create server session';
-      const detailed = `Server session creation failed (status ${resp.status}): ${message}`;
-      setError(detailed);
-      throw new Error(detailed);
+    try {
+      const resp = await fetch('/api/auth/supabase/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${access_token}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify({ access_token, rememberMe: !!rememberMe }),
+      });
+
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        const message =
+          (data as any)?.error || (data as any)?.message || 'Failed to create server session';
+        const detailed = `Server session creation failed (status ${resp.status}): ${message}`;
+        console.error('[Auth] finalizeServerSession HTTP error:', detailed);
+        setError(detailed);
+        throw new Error(detailed);
+      }
+
+      const serverUser = (data as any)?.user ?? null;
+      setUser(serverUser);
+      return serverUser;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[Auth] finalizeServerSession unexpected error:', msg);
+      // Do not clear user here; let caller decide how to fall back.
+      throw err instanceof Error ? err : new Error(msg);
     }
-    setUser((data as any)?.user ?? null);
-    return (data as any)?.user;
   }, []);
 
   const checkAuth = useCallback(async () => {
@@ -68,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       const ready = await initSupabase();
       if (!ready) {
+        console.warn('[Auth] Supabase not configured; skipping auth check');
         setUser(null);
         return;
       }
@@ -80,14 +93,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const token = data?.session?.access_token;
-      if (token) {
-        try {
-          await finalizeServerSession(token);
-        } catch (e) {
-          console.error('[Auth] finalizeServerSession error:', e);
+      if (!token) {
+        setUser(null);
+        return;
+      }
+
+      // First, attempt to create/refresh the server session and load the mapped local user.
+      try {
+        await finalizeServerSession(token);
+        return;
+      } catch (e) {
+        console.error('[Auth] finalizeServerSession error, falling back to Supabase user:', e);
+      }
+
+      // Fallback: derive a minimal user object directly from Supabase auth if the
+      // Worker-based session/user mapping is temporarily unavailable.
+      try {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError) {
+          console.error('[Auth] Supabase getUser error during fallback:', userError.message);
           setUser(null);
+          return;
         }
-      } else {
+        const raw = userData?.user;
+        if (!raw) {
+          setUser(null);
+          return;
+        }
+
+        const email = (raw.email || '').toLowerCase();
+        const meta: any = raw.user_metadata || {};
+        const fullName =
+          meta.full_name || meta.name || meta.displayName || meta.fullName || null;
+        const avatar =
+          meta.avatar_url || meta.picture || meta.photoURL || meta.avatar || null;
+        const username =
+          (typeof meta.username === 'string' && meta.username.trim()) ||
+          (email ? email.split('@')[0] : 'user');
+
+        const fallbackUser: User = {
+          id: -1,
+          email,
+          username,
+          isAdmin: false,
+          fullName: fullName || undefined,
+          bio: undefined,
+          avatar: avatar || undefined,
+        };
+
+        setUser(fallbackUser);
+      } catch (fallbackError) {
+        console.error('[Auth] Fallback Supabase user resolution failed:', fallbackError);
         setUser(null);
       }
     } catch (error) {
