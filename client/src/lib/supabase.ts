@@ -27,31 +27,65 @@ const createAuthStub = () => ({
 // Eager init using VITE_ env when present, else lazy via /api/config/public
 function eagerInitFromEnv(): boolean {
   try {
-    const url = (import.meta as any)?.env?.VITE_SUPABASE_URL as string | undefined;
-    const anonKey = (import.meta as any)?.env?.VITE_SUPABASE_ANON_KEY as string | undefined;
+    const envAny: any = (import.meta as any)?.env || {};
+    const url = envAny.VITE_SUPABASE_URL as string | undefined;
+    const anonKey = envAny.VITE_SUPABASE_ANON_KEY as string | undefined;
     if (url && anonKey) {
+      if (import.meta.env?.DEV) {
+        console.log('[Supabase] Eager init from Vite env', {
+          hasUrl: !!url,
+          hasAnonKey: !!anonKey,
+        });
+      }
       client = createClient(url, anonKey);
       initialized = true;
       return true;
     }
-  } catch {}
+    if (import.meta.env?.DEV) {
+      console.log('[Supabase] Vite env missing or incomplete for eager init', {
+        hasUrl: !!url,
+        hasAnonKey: !!anonKey,
+      });
+    }
+  } catch (e) {
+    console.error('[Supabase] Eager init from Vite env failed:', e);
+  }
   return false;
 }
 
 async function lazyInitFromServer(): Promise<boolean> {
   try {
     const res = await fetch('/api/config/public', { credentials: 'include' });
-    if (!res.ok) return false;
+    if (!res.ok) {
+      if (import.meta.env?.DEV) {
+        console.warn('[Supabase] /api/config/public responded with non-OK status', res.status);
+      }
+      return false;
+    }
     const data = await res.json().catch(() => ({}));
     const sup = (data as any)?.supabase || {};
     const url = sup.url as string | undefined;
     const anonKey = sup.anonKey as string | undefined;
     if (url && anonKey) {
+      if (import.meta.env?.DEV) {
+        console.log('[Supabase] Lazy init from /api/config/public', {
+          hasUrl: !!url,
+          hasAnonKey: !!anonKey,
+        });
+      }
       client = createClient(url, anonKey);
       initialized = true;
       return true;
     }
-  } catch {}
+    if (import.meta.env?.DEV) {
+      console.log('[Supabase] Supabase config from /api/config/public is missing or incomplete', {
+        url,
+        anonKeyPresent: !!anonKey,
+      });
+    }
+  } catch (e) {
+    console.error('[Supabase] Lazy init from /api/config/public failed:', e);
+  }
   return false;
 }
 

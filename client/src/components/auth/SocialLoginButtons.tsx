@@ -19,12 +19,14 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
 
   useEffect(() => {
     const fetchConfig = async () => {
+      const debug: Record<string, any> = {};
       try {
         const res = await fetch('/api/config/public', { credentials: 'include' });
         let next: GoogleConfig = { clientId: null, redirectUri: '' };
 
         if (res.ok) {
           const data = await res.json();
+          debug.serverConfig = data;
           const fromServer = (data && data.googleOAuth) as GoogleConfig | undefined;
           if (fromServer && (fromServer.clientId || fromServer.redirectUri)) {
             next = {
@@ -32,6 +34,8 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
               redirectUri: fromServer.redirectUri,
             };
           }
+        } else {
+          debug.serverStatus = res.status;
         }
 
         // Fallback to Vite-provided env config when server config is missing/partial
@@ -39,6 +43,10 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
           const envAny: any = (import.meta as any)?.env || {};
           const viteClientId = envAny.VITE_GOOGLE_CLIENT_ID as string | undefined;
           const viteRedirectUri = envAny.VITE_GOOGLE_LOGIN_URI as string | undefined;
+          debug.viteEnv = {
+            VITE_GOOGLE_CLIENT_ID: viteClientId ? '[set]' : undefined,
+            VITE_GOOGLE_LOGIN_URI: viteRedirectUri ? viteRedirectUri : undefined,
+          };
 
           if (!next.clientId && typeof viteClientId === 'string' && viteClientId.trim()) {
             next.clientId = viteClientId.trim();
@@ -51,10 +59,14 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
               next.redirectUri = `${window.location.origin}/api/auth/callback`;
             }
           }
-        } catch {
-          // Ignore env access issues
+        } catch (envErr) {
+          debug.envError = envErr instanceof Error ? envErr.message : String(envErr);
         }
 
+        debug.finalConfig = next;
+        if (import.meta.env?.DEV) {
+          console.log('[SocialLoginButtons] Google OAuth config resolved:', debug);
+        }
         setGoogleConfig(next);
       } catch (e) {
         console.error('[SocialLoginButtons] Failed to fetch config:', e);
@@ -71,8 +83,18 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
                 ? `${window.location.origin}/api/auth/callback`
                 : ''),
           };
+          if (import.meta.env?.DEV) {
+            console.log('[SocialLoginButtons] Using fallback Vite-only config:', {
+              hasClientId: !!fallback.clientId,
+              redirectUri: fallback.redirectUri,
+            });
+          }
           setGoogleConfig(fallback);
-        } catch {
+        } catch (envFallbackErr) {
+          console.error(
+            '[SocialLoginButtons] Failed to build fallback Google config from Vite env:',
+            envFallbackErr,
+          );
           // keep googleConfig as null
         }
       } finally {
