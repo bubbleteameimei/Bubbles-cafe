@@ -165,7 +165,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const ready = await initSupabase();
       if (!ready) {
-        const detailed = 'Supabase not configured: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or server SUPABASE_URL/SUPABASE_ANON_KEY) to use email/password sign-in.';
+        const detailed =
+          'Supabase is not configured in this environment. Email/password sign-in is currently unavailable.';
         setError(detailed);
         throw new Error(detailed);
       }
@@ -192,7 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return serverUser;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'An unknown error occurred';
-      console.error('[Auth] Login error:', msg);
+      console.error('[Auth] Login error:', err);
       setError(msg);
       throw err;
     } finally {
@@ -206,13 +207,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const ready = await initSupabase();
       if (!ready) {
-        const detailed = 'Supabase not configured: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or server SUPABASE_URL/SUPABASE_ANON_KEY) to use email/password sign-up.';
+        const detailed =
+          'Supabase is not configured in this environment. Email/password sign-up is currently unavailable.';
         setError(detailed);
         throw new Error(detailed);
       }
 
       if (import.meta.env?.DEV) {
-        console.log('[Auth] Supabase signUp:', { email: payload.email, username: payload.username });
+        console.log('[Auth] Supabase signUp:', {
+          email: payload.email,
+          username: payload.username,
+        });
       }
       const { data, error: sError } = await supabase.auth.signUp({
         email: payload.email,
@@ -238,7 +243,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'An unknown error occurred';
-      console.error('[Auth] Registration error:', msg);
+      console.error('[Auth] Registration error:', err);
       setError(msg);
       throw err;
     } finally {

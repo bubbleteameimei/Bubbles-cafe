@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 import './SocialLoginButtons.css';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { initSupabase, supabase } from '@/lib/supabase';
 
 interface SocialLoginButtonsProps {
@@ -9,19 +8,16 @@ interface SocialLoginButtonsProps {
 }
 
 export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginButtonsProps) {
-  const [status, setStatus] = useState<string | null>(null);
   const [isLaunching, setIsLaunching] = useState(false);
 
   const handleGoogleLogin = useCallback(async () => {
     try {
       setIsLaunching(true);
-      setStatus('Starting Google sign-in…');
 
       const ready = await initSupabase();
       if (!ready) {
         const msg =
-          "Supabase is not configured. Google sign-in requires Supabase URL and anon key to be set.";
-        setStatus(msg);
+          'Supabase is not configured for Google sign-in. Please check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.';
         const err = new Error(msg);
         if (onError) onError(err);
         if (import.meta.env?.DEV) {
@@ -30,8 +26,6 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
         return;
       }
 
-      // Use Supabase-managed OAuth flow, which uses the authorized callback
-      // URLs configured in your Supabase project and Google console.
       const redirectTo =
         typeof window !== 'undefined' && window.location?.origin
           ? `${window.location.origin}/auth/callback`
@@ -58,11 +52,9 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
         throw error;
       }
 
-      // Supabase will redirect the browser; we generally don't reach here.
-      setStatus('Redirecting to Google…');
+      // Supabase will redirect the browser; normally we don't render anything else here.
     } catch (e) {
       const err = e instanceof Error ? e : new Error('Google login failed');
-      setStatus(err.message);
       if (onError) {
         onError(err);
       } else {
