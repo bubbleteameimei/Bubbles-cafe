@@ -48,12 +48,16 @@ export class RateLimitObject {
   }
 }
 
+interface IdempotencyEntry {
+  status: 'pending' | 'completed';
+  response?: any;
+  expiresAt: number;
+}
+
 /**
  * Simple idempotency helper that tracks whether a key has been seen recently.
  *
  * Notes:
- * - The current Worker-side usage only checks the `cached` flag; the stored
- *   `response` value is not relied on.
  * - Entries are kept in memory only and cleared with `setTimeout`, which is
  *   best-effort in the Workers runtime and may not survive instance restarts.
  * - For stronger guarantees, move this state into Durable Object storage and
@@ -79,37 +83,34 @@ export class IdempotencyObject {
     const operation = payload?.operation;
     const keyValue = payload?.key;
     const key = typeof keyValue === 'string' ? keyValue : String(keyValue || '');
-    const ttlMsRaw = payload?.ttlMs;
+    const ttlMsRaw = payload?.ttlMs ?? payload?.ttl;
     const ttlMs =
       typeof ttlMsRaw === 'number' && ttlMsRaw > 0 ? ttlMsRaw : 86_400_000; // default 24h
+
     if (!key) {
       return json({ error: 'Missing key' }, { status: 400 });
     }
 
-    // Note: setTimeout is not reliable for long TTLs; for production,
-    // consider using Durable Object storage + alarms for expiration instead.
-    const ttlMs = typeof ttl === "number" ? ttl : 86_400_000; // default 24h
-    setTimeout(() => {
-      this.responses.delete(key);
-    }
+    const now = Date.now();
 
     if (operation === 'check') {
       const entry = this.responses.get(key);
-      if (entry && entry.status === 'completed' && entry.response != null) {
+
+      if (entry && entry.expiresAt <= now) {
+        this.responses.delete(key);
+      } else if (entry && entry.status === 'completed' && entry.response != null) {
         return json({ state: 'completed', response: entry.response });
-      }
-      if (entry && entry.status === 'pending') {
+      } else if (entry && entry.status === 'pending') {
         return json({ state: 'pending' });
       }
 
       const expiresAt = now + ttlMs;
       this.responses.set(key, { status: 'pending', expiresAt });
 
-      // Note: setTimeout is not reliable for long TTLs; for production,
-      // use Durable Object storage + alarms.
+      // Best-effort cleanup
       setTimeout(() => {
         const current = this.responses.get(key);
-        if (current && current.status === 'pending' && current.expiresAt <= Date.now()) {
+        if (current && current.expiresAt <= Date.now()) {
           this.responses.delete(key);
         }
       }, ttlMs);
@@ -131,6 +132,28 @@ export class IdempotencyObject {
       }, ttlMs);
 
       return json({ stored: true });
+    }
+
+    // Backwards-compatible behavior: if no explicit operation is provided,
+    // behave like a simple \"seen\" cache keyed by `key` and `ttlMs`.
+    if (!operation) {
+      const existing = this.responses.get(key);
+      const isValid = existing && existing.expiresAt > now;
+      if (isValid) {
+        return json({ cached: true, response: existing.response ?? null });
+      }
+
+      const expiresAt = now + ttlMs;
+      this.responses.set(key, { status: 'completed', response: payload?.response, expiresAt });
+
+      setTimeout(() => {
+        const current = this.responses.get(key);
+        if (current && current.expiresAt <= Date.now()) {
+          this.responses.delete(key);
+        }
+      }, ttlMs);
+
+      return json({ cached: false });
     }
 
     return json({ error: 'Invalid operation' }, { status: 400 });
