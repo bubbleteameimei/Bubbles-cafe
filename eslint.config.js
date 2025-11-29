@@ -142,6 +142,7 @@ export default [
 			'Bubbles-cafe/**',
 			'bubbles-cafe/**',
 			'backups/**',
+			'server/**',
 			'**/*.test.ts',
 			'**/*.test.tsx',
 			'client/src/lib/content-analysis.test.ts',

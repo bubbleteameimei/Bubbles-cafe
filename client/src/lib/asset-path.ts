@@ -17,8 +17,23 @@ function normalizeUrl(url: string): string {
  * Prioritizes explicit environment configuration to avoid relying on rewrites.
  */
 export function getApiBaseUrl(): string {
-  // In development, prefer relative paths to use Vite proxy
-  if (import.meta.env.DEV) return '';
+  // In development, we previously relied on Vite's proxy to a Node/Express backend.
+  // That backend has been removed, so we now prefer an explicit API base URL even in dev.
+  if (import.meta.env.DEV) {
+    const devExplicit =
+      (import.meta.env.VITE_API_URL as string | undefined) ||
+      (import.meta.env.VITE_BACKEND_BASE_URL as string | undefined) ||
+      (import.meta.env.VITE_BACKEND_URL as string | undefined) ||
+      (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+      (import.meta.env.VITE_DEFAULT_API_URL as string | undefined);
+
+    if (devExplicit) {
+      return normalizeUrl(devExplicit);
+    }
+
+    // Fallback for local Worker dev (wrangler dev default)
+    return 'http://127.0.0.1:8787';
+  }
 
   // Prefer explicit env overrides first (works on preview domains without rewrites)
   const explicitCandidates = [

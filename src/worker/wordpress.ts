@@ -3,7 +3,7 @@
 // preserving existing behavior.
 
 import type { Env } from './utils';
-import { json, proxyToBackend, callSupabaseRpc } from './utils';
+import { json, proxyToBackend, callSupabaseRpc, getBearerToken, getSupabaseCurrentUser } from './utils';
 
 /**
  * Best-effort upsert of a text-based site setting in Supabase.
@@ -127,9 +127,178 @@ async function updateWordPressSyncMetadata(
   }
 }
 
+interface AdminSyncLog {
+  id: string;
+  timestamp: string;
+  status: 'success' | 'error' | 'running';
+  message: string;
+  postsProcessed: number;
+  duration: number;
+  error?: string | null;
+}
+
+/**
+ * Shared admin auth helper for WordPress admin routes.
+ */
+async function requireAdmin(
+  req: Request,
+  env: Env,
+): Promise<{ user: { isAdmin: boolean } | null; response?: Response }> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return { user: null, response: json({ error: 'Supabase not configured' }, { status: 500 }) };
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return {
+      user: null,
+      response: json({ error: 'Admin authentication required' }, { status: 401 }),
+    };
+  }
+
+  const currentUser = await getSupabaseCurrentUser(env, token);
+  if (!currentUser || !currentUser.isAdmin) {
+    return {
+      user: null,
+      response: json({ error: 'Admin access required' }, { status: 403 }),
+    };
+  }
+
+  return { user: currentUser };
+}
+
+/**
+ * Parse a single activity_logs row into an AdminSyncLog.
+ */
+function mapActivityRowToAdminSyncLog(row: any): AdminSyncLog | null {
+  if (!row) return null;
+
+  let details: any = row.details;
+  if (typeof details === 'string') {
+    try {
+      details = JSON.parse(details);
+    } catch {
+      details = {};
+    }
+  }
+  if (!details || typeof details !== 'object') {
+    details = {};
+  }
+
+  const startedAtRaw =
+    details.startedAt || details.startTime || details.started_at || row.created_at || new Date().toISOString();
+  const finishedAtRaw =
+    details.finishedAt || details.endTime || details.finished_at || row.created_at || startedAtRaw;
+
+  const startedAt = new Date(startedAtRaw);
+  const finishedAt = new Date(finishedAtRaw);
+  const duration =
+    Number.isFinite(startedAt.getTime()) && Number.isFinite(finishedAt.getTime())
+      ? Math.max(0, finishedAt.getTime() - startedAt.getTime())
+      : 0;
+
+  const statusRaw = String(details.status || '').toLowerCase();
+  let status: 'success' | 'error' | 'running';
+  if (statusRaw === 'success') {
+    status = 'success';
+  } else if (statusRaw === 'running') {
+    status = 'running';
+  } else if (statusRaw === 'partial-error') {
+    status = 'error';
+  } else {
+    status = 'error';
+  }
+
+  const postsProcessed = Number(details.postsProcessed ?? 0);
+  const error =
+    typeof details.error === 'string' && details.error.trim().length > 0
+      ? details.error.trim()
+      : null;
+
+  let message: string = '';
+  if (typeof details.message === 'string' && details.message.trim()) {
+    message = details.message.trim();
+  } else if (status === 'success') {
+    message =
+      postsProcessed > 0
+        ? `Synced ${postsProcessed} posts successfully`
+        : 'WordPress sync completed successfully';
+  } else if (status === 'running') {
+    message = 'WordPress sync in progress';
+  } else if (error) {
+    message = `WordPress sync failed: ${error}`;
+  } else {
+    message = 'WordPress sync failed';
+  }
+
+  const timestamp =
+    (details.finishedAt as string) ||
+    (details.startedAt as string) ||
+    (row.created_at as string) ||
+    new Date().toISOString();
+
+  return {
+    id: String(row.id),
+    timestamp,
+    status,
+    message,
+    postsProcessed: Number.isFinite(postsProcessed) && postsProcessed > 0 ? postsProcessed : 0,
+    duration,
+    error,
+  };
+}
+
+/**
+ * Fetch recent WordPress sync logs from activity_logs.
+ */
+async function fetchWordPressSyncLogs(env: Env, limit = 20): Promise<AdminSyncLog[]> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return [];
+  }
+
+  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+
+  const url = new URL(`${baseUrl}/rest/v1/activity_logs`);
+  url.searchParams.set('select', 'id,action,details,created_at');
+  url.searchParams.set('action', 'eq.wordpress_sync');
+  url.searchParams.set('order', 'created_at.desc');
+  url.searchParams.set('limit', String(limit));
+
+  try {
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      return [];
+    }
+
+    const rows = ((await res.json().catch(() => [])) as any[]) || [];
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return [];
+    }
+
+    const logs: AdminSyncLog[] = [];
+    for (const row of rows) {
+      const mapped = mapActivityRowToAdminSyncLog(row);
+      if (mapped) {
+        logs.push(mapped);
+      }
+    }
+    return logs;
+  } catch {
+    return [];
+  }
+}
+
 // Register all WordPress-related routes on the provided router instance.
 export function registerWordpressRoutes(router: any) {
-  // WORDPRESS SYNC STATUS
+  // WORDPRESS SYNC STATUS (public/basic)
   router.get('/api/wordpress/status', async (_req: Request, env: Env) => {
     try {
       const lastSync = await env.SYNC_METADATA_KV.get('last_sync_timestamp');
@@ -304,6 +473,231 @@ export function registerWordpressRoutes(router: any) {
         // ignore KV failures
       }
       return json({ error: msg }, { status: 500 });
+    }
+  });
+
+  // WORDPRESS ADMIN: SYNC STATUS (detailed)
+  router.get('/api/admin/wordpress/status', async (req: Request, env: Env) => {
+    const { response } = await requireAdmin(req, env);
+    if (response) return response;
+
+    try {
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+      const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+
+      const headers: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: 'application/json',
+      };
+
+      // Determine whether sync is enabled (site setting overrides env flag when present)
+      let enabled = env.ENABLE_WORDPRESS_SCHEDULER === 'true';
+      // Default to 30 minutes to match Cloudflare cron schedule unless overridden in site_settings
+      let syncIntervalMs = 30 * 60 * 1000;
+
+      try {
+        const settingsUrl = new URL(`${baseUrl}/rest/v1/site_settings`);
+        settingsUrl.searchParams.set('select', 'key,value');
+        settingsUrl.searchParams.set(
+          'key',
+          'in.(wordpress_sync_enabled,wordpress_sync_interval)',
+        );
+
+        const res = await fetch(settingsUrl.toString(), { headers });
+        if (res.ok) {
+          const rows = ((await res.json().catch(() => [])) as any[]) || [];
+          if (Array.isArray(rows)) {
+            for (const row of rows) {
+              const key = String(row.key || '');
+              const value = String(row.value ?? '').trim();
+              if (key === 'wordpress_sync_enabled' && value) {
+                const v = value.toLowerCase();
+                enabled = v === 'true' || v === '1' || v === 'yes' || v === 'on';
+              } else if (key === 'wordpress_sync_interval') {
+                const ms = Number(value);
+                if (Number.isFinite(ms) && ms > 0) {
+                  syncIntervalMs = ms;
+                }
+              }
+            }
+          }
+        }
+      } catch {
+        // ignore settings errors; fall back to env
+      }
+
+      // KV state for running/last sync
+      let isRunning = false;
+      let lastSyncTime: string | null = null;
+
+      try {
+        const lastStatus = await env.SYNC_METADATA_KV.get('last_sync_status');
+        const lastTimestamp = await env.SYNC_METADATA_KV.get('last_sync_timestamp');
+        if (lastStatus === 'running') {
+          isRunning = true;
+        }
+        if (lastTimestamp) {
+          lastSyncTime = lastTimestamp;
+        }
+      } catch {
+        // ignore KV failures
+      }
+
+      // Activity logs (for errors/last sync)
+      const logs = await fetchWordPressSyncLogs(env, 20);
+      if (!lastSyncTime && logs.length) {
+        lastSyncTime = logs[0].timestamp;
+      }
+
+      const errors = logs
+        .filter((log) => log.status === 'error' || (log.error && log.error.length > 0))
+        .slice(0, 5)
+        .map((log) => ({
+          id: log.id,
+          timestamp: log.timestamp,
+          message: log.error || log.message,
+          details: {
+            postsProcessed: log.postsProcessed,
+            durationMs: log.duration,
+          },
+        }));
+
+      const totalProcessed = logs.reduce(
+        (acc, log) =>
+          Number.isFinite(log.postsProcessed) && log.postsProcessed > 0
+            ? acc + log.postsProcessed
+            : acc,
+        0,
+      );
+
+      // Count WordPress-sourced posts (best-effort)
+      let postsCount = 0;
+      try {
+        const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
+        postsUrl.searchParams.set('select', 'id');
+        postsUrl.searchParams.set('metadata->>source', 'eq.wordpress_api');
+        postsUrl.searchParams.set('limit', '1');
+
+        const res = await fetch(postsUrl.toString(), {
+          headers: {
+            ...headers,
+            Prefer: 'count=exact',
+          },
+        });
+
+        if (res.ok) {
+          const contentRange = res.headers.get('Content-Range');
+          if (contentRange && contentRange.includes('/')) {
+            const parts = contentRange.split('/');
+            const totalStr = parts[1];
+            const n = parseInt(totalStr, 10);
+            if (Number.isFinite(n)) {
+              postsCount = n;
+            }
+          } else {
+            const rows = ((await res.json().catch(() => [])) as any[]) || [];
+            postsCount = Array.isArray(rows) ? rows.length : 0;
+          }
+        }
+      } catch {
+        // ignore post count errors
+      }
+
+      // Approximate next sync time
+      let nextSync: string | null = null;
+      if (enabled) {
+        const base = lastSyncTime ? new Date(lastSyncTime) : new Date();
+        const next = new Date(base.getTime() + syncIntervalMs);
+        if (Number.isFinite(next.getTime())) {
+          nextSync = next.toISOString();
+        }
+      }
+
+      return json({
+        isRunning,
+        lastSync: lastSyncTime,
+        nextSync,
+        postsCount,
+        errors,
+        totalProcessed,
+        syncInterval: syncIntervalMs,
+        enabled,
+      });
+    } catch {
+      return json({ error: 'Failed to load WordPress sync status' }, { status: 500 });
+    }
+  });
+
+  // WORDPRESS ADMIN: SYNC LOGS
+  router.get('/api/admin/wordpress/logs', async (req: Request, env: Env) => {
+    const { response } = await requireAdmin(req, env);
+    if (response) return response;
+
+    try {
+      const logs = await fetchWordPressSyncLogs(env, 50);
+      return json(logs);
+    } catch {
+      return json({ error: 'Failed to load WordPress sync logs' }, { status: 500 });
+    }
+  });
+
+  // WORDPRESS ADMIN: MANUAL SYNC TRIGGER
+  router.post('/api/admin/wordpress/sync', async (req: Request, env: Env) => {
+    const { response } = await requireAdmin(req, env);
+    if (response) return response;
+
+    try {
+      const currentUrl = new URL(req.url);
+      currentUrl.pathname = '/api/wordpress/sync/manual';
+      currentUrl.search = '';
+
+      const headers = new Headers();
+      if (env.WORDPRESS_SYNC_KEY) {
+        headers.set('X-Sync-Key', env.WORDPRESS_SYNC_KEY);
+      }
+      headers.set('X-Scheduler', 'false');
+
+      const res = await fetch(currentUrl.toString(), {
+        method: 'POST',
+        headers,
+      });
+
+      const bodyText = await res.text().catch(() => '');
+      const contentType =
+        res.headers.get('content-type') || 'application/json';
+
+      return new Response(bodyText, {
+        status: res.status,
+        headers: {
+          'Content-Type': contentType,
+        },
+      });
+    } catch {
+      return json({ error: 'Failed to trigger WordPress sync' }, { status: 500 });
+    }
+  });
+
+  // WORDPRESS ADMIN: TOGGLE SYNC ENABLED/DISABLED
+  router.post('/api/admin/wordpress/toggle', async (req: Request, env: Env) => {
+    const { response } = await requireAdmin(req, env);
+    if (response) return response;
+
+    let body: any;
+    try {
+      body = (await (req as any).json?.().catch(() => ({}))) || {};
+    } catch {
+      body = {};
+    }
+
+    const enabled = Boolean(body.enabled);
+
+    try {
+      await updateSiteSetting(env, 'wordpress_sync_enabled', enabled ? 'true' : 'false');
+
+      return json({ enabled });
+    } catch {
+      return json({ error: 'Failed to update WordPress sync setting' }, { status: 500 });
     }
   });
 

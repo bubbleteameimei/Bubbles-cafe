@@ -6,6 +6,9 @@ import { registerPostsRoutes } from './worker/posts';
 import { registerCommentsRoutes } from './worker/comments';
 import { registerWordpressRoutes } from './worker/wordpress';
 import { registerNotificationsRoutes } from './worker/notifications';
+import { registerBookmarksRoutes } from './worker/bookmarks';
+import { registerNewsletterRoutes } from './worker/newsletter';
+import { registerContactEmailRoutes } from './worker/contact-email';
 
 // Minimal JSON helper to avoid extras dependency
 const json = (data: any, init?: ResponseInit) =>
@@ -21,6 +24,10 @@ registerPostsRoutes(router);
 registerCommentsRoutes(router);
 registerWordpressRoutes(router);
 registerNotificationsRoutes(router);
+registerBookmarksRoutes(router);
+registerNewsletterRoutes(router);
+registerContactEmailRoutes(router);
+registerBookmarksRoutes(router);
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -54,12 +61,6 @@ interface Env {
   CSRF_SECRET: string;
   STRIPE_WEBHOOK_SECRET: string;
 
-  // Payments
-  PAYSTACK_SECRET_KEY: string;
-  PAYSTACK_PUBLIC_KEY: string;
-  PAYSTACK_BASE_URL?: string;
-  PAYSTACK_LINK?: string;
-
   // Email
   EMAIL_PROVIDER_API_KEY: string;
   GMAIL_APP_PASSWORD: string;
@@ -80,12 +81,22 @@ interface Env {
 // UTILITY FUNCTIONS
 // ============================================================================
 
+/**
+ * NOTE: Several helpers in this file (Supabase RPC, auth helpers, post
+ * mapping, etc.) are also mirrored in src/worker/utils.ts so that modular
+ * route files can be used without importing from this entrypoint.
+ *
+ * Until the Worker entrypoint is fully consolidated, keep the
+ * implementations in sync when making changes here or in src/worker/utils.ts.
+ */
 async function callSupabaseRpc(
   env: Env,
   functionName: string,
   payload: Record<string, any>,
 ): Promise<Response> {
-  const baseUrl = env.SUPABASE_URL?.replace(/\/+$/, '');
+  // Normalize Supabase URL and strip trailing slashes. We avoid optional chaining
+  // here because some bundlers mis-parse it in Worker builds.
+  const baseUrl = (env.SUPABASE_URL || '').replace(/\/+$/, '');
   if (!baseUrl || !env.SUPABASE_ANON_KEY) {
     throw new Error('Supabase is not configured for RPC calls');
   }
@@ -202,6 +213,9 @@ async function upsertLocalUserFromSupabaseAuth(
   };
 
   const email = (authUser.email && authUser.email.toLowerCase().trim()) || null;
+  const adminEmail = (env.GMAIL_ADMIN_EMAIL || '').toLowerCase().trim();
+  const isConfigAdmin = !!email && !!adminEmail && email === adminEmail;
+
   const supabaseUserId = String(authUser.id || '');
   const userMeta = (authUser.user_metadata || {}) as any;
   const appMeta = (authUser.app_metadata || {}) as any;
@@ -262,6 +276,9 @@ async function upsertLocalUserFromSupabaseAuth(
       email: meta.email ?? email ?? meta.email ?? null,
     };
 
+    // Ensure the configured admin email is always treated as admin; others remain non-admin.
+    const isAdmin = isConfigAdmin ? true : Boolean(row.is_admin === true);
+
     try {
       const patchUrl = new URL(`${baseUrl}/rest/v1/users`);
       patchUrl.searchParams.set('id', `eq.${row.id}`);
@@ -271,7 +288,7 @@ async function upsertLocalUserFromSupabaseAuth(
           ...headers,
           Prefer: 'return=representation',
         },
-        body: JSON.stringify({ metadata: meta }),
+        body: JSON.stringify({ metadata: meta, is_admin: isAdmin }),
       });
       if (patchRes.ok) {
         const rows = (await patchRes.json().catch(() => [])) as any[];
@@ -279,12 +296,15 @@ async function upsertLocalUserFromSupabaseAuth(
           row = rows[0];
         } else {
           row.metadata = meta;
+          row.is_admin = isAdmin;
         }
       } else {
         row.metadata = meta;
+        row.is_admin = isAdmin;
       }
     } catch {
       row.metadata = meta;
+      row.is_admin = isAdmin;
     }
 
     return mapDbUserRowToApiUser(row);
@@ -298,12 +318,13 @@ async function upsertLocalUserFromSupabaseAuth(
   const usernameBase = (userMeta.username as string) || (email ? email.split('@')[0] : 'user');
   const username = usernameBase.trim() || 'user';
   const passwordHashPlaceholder = 'supabase-auth-only';
+  const isAdmin = isConfigAdmin;
 
   const insertPayload = {
     email,
     username,
     password_hash: passwordHashPlaceholder,
-    is_admin: false,
+    is_admin: isAdmin,
     metadata: {
       email,
       supabaseUserId,
@@ -888,6 +909,40 @@ function recordTrendingQuery(query: string): void {
   }
 }
 
+const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000;
+
+interface SearchCacheEntry {
+  ts: number;
+  data: any;
+}
+
+const searchCache = new Map<string, SearchCacheEntry>();
+
+function makeSearchCacheKey(params: {
+  q: string;
+  types: string[];
+  limit: number;
+  page: number;
+  from: string | null;
+  category: string | null;
+  tags: string[];
+}): string {
+  try {
+    return JSON.stringify({
+      q: params.q.trim().toLowerCase(),
+      types: [...params.types].sort(),
+      limit: params.limit,
+      page: params.page,
+      from: params.from,
+      category: params.category,
+      tags: [...params.tags].sort(),
+    });
+  } catch {
+    // Fallback: just return the raw query string so search still works
+    return params.q;
+  }
+}
+
 async function getJsonFromCache<T = any>(env: Env, key: string): Promise<T | null> {
   try {
     const cached = await env.CACHE_KV.get(key);
@@ -1041,9 +1096,6 @@ router.get('/api/config/public', async (req: Request, env: Env) => {
     const googleClientId = env.GOOGLE_CLIENT_ID || null;
     const googleRedirectUri = env.GOOGLE_REDIRECT_URI || `${apiBase}/api/auth/callback`;
 
-    const paystackPublicKey = env.PAYSTACK_PUBLIC_KEY || null;
-    const paystackLink = env.PAYSTACK_LINK || null;
-
     const payload = {
       apiBase,
       frontendUrl: frontendBase,
@@ -1054,12 +1106,6 @@ router.get('/api/config/public', async (req: Request, env: Env) => {
       googleOAuth: {
         clientId: googleClientId,
         redirectUri: googleRedirectUri,
-      },
-      payments: {
-        paystack: {
-          publicKey: paystackPublicKey,
-          link: paystackLink,
-        },
       },
     };
 
@@ -1310,696 +1356,7 @@ router.post('/api/errors', async (req: Request) => {
 
 // ANALYTICS: routes are registered via src/worker/analytics.ts
 
-// BOOKMARKS: Worker-native (Supabase-backed) with legacy proxy fallback for non-JWT clients
-
-// GET /api/bookmarks - list all bookmarks for current user with post details
-router.get('/api/bookmarks', async (req: Request, env: Env) => {
-  const token = getBearerToken(req);
-  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-    return proxyToBackend(req, env);
-  }
-
-  try {
-    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-    const userHeaders: Record<string, string> = {
-      apikey: env.SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-    };
-
-    const bookmarksUrl = `${baseUrl}/rest/v1/bookmarks?select=id,user_id,post_id,created_at,notes,tags,last_position&order=created_at.desc&limit=500`;
-    const res = await fetch(bookmarksUrl, { headers: userHeaders });
-
-    if (res.status === 401 || res.status === 403) {
-      return json({ error: 'Authentication required' }, { status: 401 });
-    }
-    if (!res.ok) {
-      return json({ error: 'Failed to fetch bookmarks' }, { status: 500 });
-    }
-
-    const raw = (await res.json().catch(() => [])) as any[];
-    if (!Array.isArray(raw) || raw.length === 0) {
-      return json([]);
-    }
-
-    const postIds = Array.from(
-      new Set(raw.map((b: any) => Number(b.post_id)).filter((n: number) => Number.isFinite(n))),
-    );
-    const postsMap = new Map<number, any>();
-
-    if (postIds.length > 0) {
-      const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
-      postsUrl.searchParams.set('select', 'id,title,slug,excerpt,created_at');
-      postsUrl.searchParams.set('id', `in.(${postIds.join(',')})`);
-
-      const postsRes = await fetch(postsUrl.toString(), {
-        headers: {
-          apikey: env.SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
-          Accept: 'application/json',
-        },
-      });
-
-      if (postsRes.ok) {
-        const postsRows = (await postsRes.json().catch(() => [])) as any[];
-        if (Array.isArray(postsRows)) {
-          for (const p of postsRows) {
-            const id = Number(p.id);
-            if (Number.isFinite(id)) {
-              postsMap.set(id, {
-                id,
-                title: p.title,
-                slug: p.slug,
-                excerpt: p.excerpt,
-                createdAt: p.created_at,
-              });
-            }
-          }
-        }
-      }
-    }
-
-    const enriched = raw
-      .map((b: any) => {
-        const postId = Number(b.post_id);
-        const post = postsMap.get(postId);
-        if (!post) return null;
-        return {
-          id: b.id,
-          userId: typeof b.user_id === 'number' ? b.user_id : undefined,
-          postId,
-          createdAt: b.created_at,
-          notes: b.notes ?? null,
-          tags: Array.isArray(b.tags) ? b.tags : null,
-          lastPosition:
-            typeof b.last_position === 'string' && b.last_position ? b.last_position : '0',
-          post,
-        };
-      })
-      .filter((b) => b !== null);
-
-    return json(enriched);
-  } catch {
-    return json({ error: 'Failed to fetch bookmarks' }, { status: 500 });
-  }
-});
-
-// GET /api/bookmarks/tag/:tag - list bookmarks filtered by tag for current user
-router.get('/api/bookmarks/tag/:tag', async (req: Request, env: Env) => {
-  const token = getBearerToken(req);
-  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-    return proxyToBackend(req, env);
-  }
-
-  try {
-    const urlObj = new URL(req.url);
-    const segments = urlObj.pathname.split('/');
-    const tag = decodeURIComponent(segments[segments.length - 1] || '').trim();
-    if (!tag) {
-      return json({ success: false, message: 'Tag is required' }, { status: 400 });
-    }
-
-    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-    const userHeaders: Record<string, string> = {
-      apikey: env.SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-    };
-
-    const bookmarksUrl = new URL(`${baseUrl}/rest/v1/bookmarks`);
-    bookmarksUrl.searchParams.set(
-      'select',
-      'id,user_id,post_id,created_at,notes,tags,last_position',
-    );
-    bookmarksUrl.searchParams.set('tags', `cs.{${tag}}`);
-    bookmarksUrl.searchParams.set('order', 'created_at.desc');
-    bookmarksUrl.searchParams.set('limit', '500');
-
-    const res = await fetch(bookmarksUrl.toString(), {
-      headers: userHeaders,
-    });
-
-    if (res.status === 401 || res.status === 403) {
-      return json({ error: 'Authentication required' }, { status: 401 });
-    }
-    if (!res.ok) {
-      return json({ success: false, message: 'Failed to fetch bookmarks by tag' }, { status: 500 });
-    }
-
-    const raw = (await res.json().catch(() => [])) as any[];
-    if (!Array.isArray(raw) || raw.length === 0) {
-      return json([]);
-    }
-
-    const postIds = Array.from(
-      new Set(raw.map((b: any) => Number(b.post_id)).filter((n: number) => Number.isFinite(n))),
-    );
-    const postsMap = new Map<number, any>();
-
-    if (postIds.length > 0) {
-      const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
-      postsUrl.searchParams.set('select', 'id,title,slug,excerpt,created_at');
-      postsUrl.searchParams.set('id', `in.(${postIds.join(',')})`);
-
-      const postsRes = await fetch(postsUrl.toString(), {
-        headers: {
-          apikey: env.SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
-          Accept: 'application/json',
-        },
-      });
-
-      if (postsRes.ok) {
-        const postsRows = (await postsRes.json().catch(() => [])) as any[];
-        if (Array.isArray(postsRows)) {
-          for (const p of postsRows) {
-            const id = Number(p.id);
-            if (Number.isFinite(id)) {
-              postsMap.set(id, {
-                id,
-                title: p.title,
-                slug: p.slug,
-                excerpt: p.excerpt,
-                createdAt: p.created_at,
-              });
-            }
-          }
-        }
-      }
-    }
-
-    const enriched = raw
-      .map((b: any) => {
-        const postId = Number(b.post_id);
-        const post = postsMap.get(postId);
-        if (!post) return null;
-        return {
-          id: b.id,
-          userId: typeof b.user_id === 'number' ? b.user_id : undefined,
-          postId,
-          createdAt: b.created_at,
-          notes: b.notes ?? null,
-          tags: Array.isArray(b.tags) ? b.tags : null,
-          lastPosition:
-            typeof b.last_position === 'string' && b.last_position ? b.last_position : '0',
-          post,
-        };
-      })
-      .filter((b) => b !== null);
-
-    return json(enriched);
-  } catch {
-    return json({ success: false, message: 'Failed to fetch bookmarks by tag' }, { status: 500 });
-  }
-});
-
-// GET /api/bookmarks/:postId - check bookmark status for current user
-router.get('/api/bookmarks/:postId', async (req: Request, env: Env) => {
-  const token = getBearerToken(req);
-  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-    return proxyToBackend(req, env);
-  }
-
-  try {
-    const urlObj = new URL(req.url);
-    const segments = urlObj.pathname.split('/');
-    const rawIdStr = segments[segments.length - 1] || '';
-    const rawPostId = parseInt(decodeURIComponent(rawIdStr), 10);
-    if (!Number.isFinite(rawPostId)) {
-      return json({ success: false, message: 'Invalid post ID' }, { status: 400 });
-    }
-
-    const postId = await resolveLocalPostIdFromExternal(env, rawPostId);
-    if (!Number.isFinite(postId || NaN)) {
-      return json({ success: false, message: 'Post not found' }, { status: 404 });
-    }
-
-    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-    const userHeaders: Record<string, string> = {
-      apikey: env.SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-    };
-
-    const url = new URL(`${baseUrl}/rest/v1/bookmarks`);
-    url.searchParams.set('select', 'id,user_id,post_id,created_at,notes,tags,last_position');
-    url.searchParams.set('post_id', `eq.${postId}`);
-    url.searchParams.set('limit', '1');
-
-    const res = await fetch(url.toString(), {
-      headers: userHeaders,
-    });
-
-    if (res.status === 401 || res.status === 403) {
-      return json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    if (!res.ok) {
-      return json({ success: false, message: 'Failed to check bookmark status' }, { status: 500 });
-    }
-
-    const rows = (await res.json().catch(() => [])) as any[];
-    const bookmarked = Array.isArray(rows) && rows.length > 0;
-    const row = bookmarked ? rows[0] : null;
-
-    if (!bookmarked || !row) {
-      return json({
-        success: true,
-        bookmarked: false,
-        bookmark: null,
-      });
-    }
-
-    const bookmark = {
-      id: row.id,
-      userId: typeof row.user_id === 'number' ? row.user_id : undefined,
-      postId: Number(row.post_id),
-      createdAt: row.created_at,
-      notes: row.notes ?? null,
-      tags: Array.isArray(row.tags) ? row.tags : null,
-      lastPosition:
-        typeof row.last_position === 'string' && row.last_position ? row.last_position : '0',
-    };
-
-    return json({
-      success: true,
-      bookmarked: true,
-      bookmark,
-    });
-  } catch {
-    return json({ success: false, message: 'Failed to check bookmark status' }, { status: 500 });
-  }
-});
-
-// POST /api/bookmarks/:postId - create or update bookmark with optional notes/tags
-router.post('/api/bookmarks/:postId', async (req: Request, env: Env) => {
-  const token = getBearerToken(req);
-  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-    return proxyToBackend(req, env);
-  }
-
-  try {
-    const urlObj = new URL(req.url);
-    const segments = urlObj.pathname.split('/');
-    const rawIdStr = segments[segments.length - 1] || '';
-    const rawPostId = parseInt(decodeURIComponent(rawIdStr), 10);
-    if (!Number.isFinite(rawPostId)) {
-      return json({ success: false, message: 'Invalid post ID' }, { status: 400 });
-    }
-
-    const body = (await (req as any).json?.()) || {};
-    const notes = typeof body.notes === 'string' ? body.notes : undefined;
-    const tags = Array.isArray(body.tags) && body.tags.length ? (body.tags as string[]) : undefined;
-
-    const postId = await resolveLocalPostIdFromExternal(env, rawPostId);
-    if (!Number.isFinite(postId || NaN)) {
-      return json({ success: false, message: 'Post not found' }, { status: 404 });
-    }
-
-    const userId = await getSupabaseUserIdFromJwt(env, token);
-    if (!Number.isFinite(userId || NaN)) {
-      return json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-
-    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-    const headers: Record<string, string> = {
-      apikey: env.SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    };
-
-    // Check for existing bookmark
-    const checkUrl = new URL(`${baseUrl}/rest/v1/bookmarks`);
-    checkUrl.searchParams.set('select', 'id,user_id,post_id,created_at,notes,tags,last_position');
-    checkUrl.searchParams.set('user_id', `eq.${userId}`);
-    checkUrl.searchParams.set('post_id', `eq.${postId}`);
-    checkUrl.searchParams.set('limit', '1');
-
-    const checkRes = await fetch(checkUrl.toString(), {
-      headers,
-    });
-
-    if (checkRes.status === 401 || checkRes.status === 403) {
-      return json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    if (!checkRes.ok) {
-      return json({ success: false, message: 'Failed to bookmark post' }, { status: 500 });
-    }
-
-    const existingRows = (await checkRes.json().catch(() => [])) as any[];
-    const existing =
-      Array.isArray(existingRows) && existingRows.length > 0 ? existingRows[0] : null;
-
-    if (existing) {
-      if (notes !== undefined || tags !== undefined) {
-        const updateUrl = new URL(`${baseUrl}/rest/v1/bookmarks`);
-        updateUrl.searchParams.set('user_id', `eq.${userId}`);
-        updateUrl.searchParams.set('post_id', `eq.${postId}`);
-
-        const updateBody: Record<string, any> = {};
-        if (notes !== undefined) updateBody.notes = notes;
-        if (tags !== undefined) updateBody.tags = tags;
-
-        const updRes = await fetch(updateUrl.toString(), {
-          method: 'PATCH',
-          headers: {
-            ...headers,
-            Prefer: 'return=representation',
-          },
-          body: JSON.stringify(updateBody),
-        });
-
-        if (!updRes.ok) {
-          return json(
-            {
-              success: false,
-              message: 'Failed to update bookmark details',
-            },
-            { status: 500 },
-          );
-        }
-
-        const updRows = (await updRes.json().catch(() => [])) as any[];
-        const updated = Array.isArray(updRows) && updRows.length > 0 ? updRows[0] : existing;
-
-        return json({
-          success: true,
-          message: 'Post already bookmarked; details updated',
-          bookmark: updated,
-        });
-      }
-
-      return json({
-        success: true,
-        message: 'Post already bookmarked',
-        bookmark: existing,
-      });
-    }
-
-    // Insert new bookmark
-    const insertRes = await fetch(`${baseUrl}/rest/v1/bookmarks`, {
-      method: 'POST',
-      headers: {
-        ...headers,
-        Prefer: 'return=representation',
-      },
-      body: JSON.stringify({
-        user_id: userId,
-        post_id: postId,
-        notes: notes ?? null,
-        tags: tags ?? null,
-        last_position: '0',
-      }),
-    });
-
-    if (insertRes.status === 401 || insertRes.status === 403) {
-      return json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    if (!insertRes.ok) {
-      return json({ success: false, message: 'Failed to bookmark post' }, { status: 500 });
-    }
-
-    const insRows = (await insertRes.json().catch(() => [])) as any[];
-    const inserted = Array.isArray(insRows) && insRows.length > 0 ? insRows[0] : null;
-
-    return json(
-      {
-        success: true,
-        message: 'Post bookmarked successfully',
-        bookmark: inserted,
-      },
-      { status: 201 },
-    );
-  } catch {
-    return json({ success: false, message: 'Failed to bookmark post' }, { status: 500 });
-  }
-});
-
-// PATCH /api/bookmarks/:postId - update notes/tags/lastPosition for a bookmark
-router.patch('/api/bookmarks/:postId', async (req: Request, env: Env) => {
-  const token = getBearerToken(req);
-  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-    return proxyToBackend(req, env);
-  }
-
-  try {
-    const urlObj = new URL(req.url);
-    const segments = urlObj.pathname.split('/');
-    const rawIdStr = segments[segments.length - 1] || '';
-    const rawPostId = parseInt(decodeURIComponent(rawIdStr), 10);
-    if (!Number.isFinite(rawPostId)) {
-      return json({ success: false, message: 'Invalid post ID' }, { status: 400 });
-    }
-
-    const body = (await (req as any).json?.()) || {};
-    const notes = typeof body.notes === 'string' ? body.notes : undefined;
-    const tags = Array.isArray(body.tags) && body.tags.length ? (body.tags as string[]) : undefined;
-    const lastPosition = typeof body.lastPosition === 'string' ? body.lastPosition : undefined;
-
-    const postId = await resolveLocalPostIdFromExternal(env, rawPostId);
-    if (!Number.isFinite(postId || NaN)) {
-      return json({ success: false, message: 'Post not found' }, { status: 404 });
-    }
-
-    const userId = await getSupabaseUserIdFromJwt(env, token);
-    if (!Number.isFinite(userId || NaN)) {
-      return json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-
-    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-    const headers: Record<string, string> = {
-      apikey: env.SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    };
-
-    const updateBody: Record<string, any> = {};
-    if (notes !== undefined) updateBody.notes = notes;
-    if (tags !== undefined) updateBody.tags = tags;
-    if (lastPosition !== undefined) updateBody.last_position = lastPosition;
-
-    if (Object.keys(updateBody).length === 0) {
-      return json({ success: false, message: 'No updates provided' }, { status: 400 });
-    }
-
-    const updateUrl = new URL(`${baseUrl}/rest/v1/bookmarks`);
-    updateUrl.searchParams.set('user_id', `eq.${userId}`);
-    updateUrl.searchParams.set('post_id', `eq.${postId}`);
-
-    const updRes = await fetch(updateUrl.toString(), {
-      method: 'PATCH',
-      headers: {
-        ...headers,
-        Prefer: 'return=representation',
-      },
-      body: JSON.stringify(updateBody),
-    });
-
-    if (updRes.status === 401 || updRes.status === 403) {
-      return json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    if (!updRes.ok) {
-      return json({ success: false, message: 'Failed to update bookmark' }, { status: 500 });
-    }
-
-    const rows = (await updRes.json().catch(() => [])) as any[];
-    if (!Array.isArray(rows) || rows.length === 0) {
-      return json({ success: false, message: 'Bookmark not found' }, { status: 404 });
-    }
-
-    return json({
-      success: true,
-      bookmark: rows[0],
-    });
-  } catch {
-    return json({ success: false, message: 'Failed to update bookmark' }, { status: 500 });
-  }
-});
-
-// DELETE /api/bookmarks/:postId - remove a bookmark
-router.delete('/api/bookmarks/:postId', async (req: Request, env: Env) => {
-  const token = getBearerToken(req);
-  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-    return proxyToBackend(req, env);
-  }
-
-  try {
-    const urlObj = new URL(req.url);
-    const segments = urlObj.pathname.split('/');
-    const rawIdStr = segments[segments.length - 1] || '';
-    const rawPostId = parseInt(decodeURIComponent(rawIdStr), 10);
-    if (!Number.isFinite(rawPostId)) {
-      return json({ success: false, message: 'Invalid post ID' }, { status: 400 });
-    }
-
-    const postId = await resolveLocalPostIdFromExternal(env, rawPostId);
-    if (!Number.isFinite(postId || NaN)) {
-      return json({ success: false, message: 'Post not found' }, { status: 404 });
-    }
-
-    const userId = await getSupabaseUserIdFromJwt(env, token);
-    if (!Number.isFinite(userId || NaN)) {
-      return json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-
-    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-    const headers: Record<string, string> = {
-      apikey: env.SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    };
-
-    const deleteUrl = new URL(`${baseUrl}/rest/v1/bookmarks`);
-    deleteUrl.searchParams.set('user_id', `eq.${userId}`);
-    deleteUrl.searchParams.set('post_id', `eq.${postId}`);
-
-    const delRes = await fetch(deleteUrl.toString(), {
-      method: 'DELETE',
-      headers: {
-        ...headers,
-        Prefer: 'return=representation',
-      },
-    });
-
-    if (delRes.status === 401 || delRes.status === 403) {
-      return json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    if (!delRes.ok) {
-      return json({ success: false, message: 'Failed to remove bookmark' }, { status: 500 });
-    }
-
-    const rows = (await delRes.json().catch(() => [])) as any[];
-    if (!Array.isArray(rows) || rows.length === 0) {
-      return json({ success: false, message: 'Bookmark not found' }, { status: 404 });
-    }
-
-    return json({
-      success: true,
-      message: 'Bookmark removed successfully',
-      bookmark: rows[0],
-    });
-  } catch {
-    return json({ success: false, message: 'Failed to remove bookmark' }, { status: 500 });
-  }
-});
-
-// GET /api/bookmarks/migrate - dry-run migratable count (JWT clients use localStorage; return 0)
-// Legacy/session clients without JWT still proxy to backend.
-router.get('/api/bookmarks/migrate', async (req: Request, env: Env) => {
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-    return proxyToBackend(req, env);
-  }
-  const token = getBearerToken(req);
-  if (!token) {
-    return proxyToBackend(req, env);
-  }
-  // For Supabase-JWT clients we no longer track anonymous bookmarks on the server.
-  // Migration uses client-provided local payload only, so report zero migratable here.
-  return json({ success: true, migratable: 0 });
-});
-
-// POST /api/bookmarks/migrate - import anonymous/local bookmarks into authenticated account
-router.post('/api/bookmarks/migrate', async (req: Request, env: Env) => {
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-    return proxyToBackend(req, env);
-  }
-  const token = getBearerToken(req);
-  if (!token) {
-    return proxyToBackend(req, env);
-  }
-
-  try {
-    const body = (await (req as any).json?.()) || {};
-    const localPayload =
-      body && typeof body.local === 'object' && body.local !== null
-        ? (body.local as Record<string, any>)
-        : null;
-
-    const entries = localPayload ? Object.entries(localPayload) : [];
-    if (!entries.length) {
-      // Nothing to migrate; cleared flag reflects whether client passed local payload or not
-      return json({ success: true, migrated: 0, cleared: !!localPayload });
-    }
-
-    const userId = await getSupabaseUserIdFromJwt(env, token);
-    if (!Number.isFinite(userId || NaN)) {
-      return json({ success: false, message: 'User not authenticated' }, { status: 401 });
-    }
-
-    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-    const headers: Record<string, string> = {
-      apikey: env.SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    };
-
-    let migrated = 0;
-
-    for (const [rawId, b] of entries as [string, any][]) {
-      const wpOrLocalId = Number(rawId);
-      if (!Number.isFinite(wpOrLocalId)) continue;
-
-      const postId = await resolveLocalPostIdFromExternal(env, wpOrLocalId);
-      if (!Number.isFinite(postId || NaN)) continue;
-
-      // Check if bookmark already exists for this user/post
-      try {
-        const checkUrl = new URL(`${baseUrl}/rest/v1/bookmarks`);
-        checkUrl.searchParams.set('select', 'id');
-        checkUrl.searchParams.set('user_id', `eq.${userId}`);
-        checkUrl.searchParams.set('post_id', `eq.${postId}`);
-        checkUrl.searchParams.set('limit', '1');
-
-        const checkRes = await fetch(checkUrl.toString(), {
-          headers,
-        });
-
-        if (!checkRes.ok) {
-          // Skip this entry on error; continue with others
-          continue;
-        }
-
-        const existing = (await checkRes.json().catch(() => [])) as any[];
-        if (Array.isArray(existing) && existing.length > 0) {
-          // Already bookmarked
-          continue;
-        }
-
-        const insertBody: Record<string, any> = {
-          user_id: userId,
-          post_id: postId,
-          notes: b?.notes ?? null,
-          tags: Array.isArray(b?.tags) ? b.tags : null,
-          last_position:
-            typeof b?.lastPosition === 'string' && b.lastPosition ? b.lastPosition : '0',
-        };
-
-        const insRes = await fetch(`${baseUrl}/rest/v1/bookmarks`, {
-          method: 'POST',
-          headers: {
-            ...headers,
-            Prefer: 'return=representation',
-          },
-          body: JSON.stringify(insertBody),
-        });
-
-        if (insRes.ok) {
-          migrated += 1;
-        }
-      } catch {
-        // Ignore individual failures; continue migrating others
-        continue;
-      }
-    }
-
-    return json({ success: true, migrated, cleared: true });
-  } catch {
-    return json({ success: false, message: 'Failed to migrate bookmarks' }, { status: 500 });
-  }
-});
+// BOOKMARKS: routes are registered via src/worker/bookmarks.ts
 
 // NEWSLETTER SUBSCRIBE / UNSUBSCRIBE (Worker-native, Supabase-backed)
 async function handleNewsletterSubscribe(req: Request, env: Env): Promise<Response> {
@@ -2582,48 +1939,44 @@ router.post('/api/email/test', async (req: Request, env: Env) => {
   }
 });
 
-router.post('/api/email-service/send', async (req: Request, env: Env) =>
-  withIdempotency(req, env, 'email-send', 4 * 60 * 60 * 1000, async () => {
-    try {
-      const ip = req.headers.get('cf-connecting-ip') || 'unknown';
-      const allowed = await checkRateLimit(env, `email-${ip}`, 10, 3600);
-      if (!allowed) {
-        return json({ error: 'Rate limited' }, { status: 429 });
-      }
-
-      const body = (await (req as any).json?.()) || {};
-
-      if (!body.to || !body.subject || !body.html) {
-        return json({ error: 'Missing required fields' }, { status: 400 });
-      }
-
-      const emailRes = await fetch('https://api.sendgrid.com/v3/mail/send', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${env.EMAIL_PROVIDER_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          personalizations: [{ to: [{ email: body.to }] }],
-          from: { email: env.GMAIL_ADMIN_EMAIL },
-          subject: body.subject,
-          content: [{ type: 'text/html', value: body.html }],
-        }),
-      });
-
-      if (!emailRes.ok) {
-        return json({ error: 'Failed to send email' }, { status: 500 });
-      }
-
-      return json({ success: true, messageId: crypto.randomUUID() });
-    } catch (error) {
-      return json({ error: String(error) }, { status: 500 });
+router.post('/api/email-service/send', async (req: Request, env: Env) => {
+  try {
+    const ip = req.headers.get('cf-connecting-ip') || 'unknown';
+    const allowed = await checkRateLimit(env, `email-${ip}`, 10, 3600);
+    if (!allowed) {
+      return json({ error: 'Rate limited' }, { status: 429 });
     }
-  }),
-);
 
-// PAYMENTS: server-side Paystack routes removed.
-// The client now uses a static Paystack payment link exposed via /api/config/public.
+    const body = (await (req as any).json?.()) || {};
+
+    if (!body.to || !body.subject || !body.html) {
+      return json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const emailRes = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.EMAIL_PROVIDER_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: body.to }] }],
+        from: { email: env.GMAIL_ADMIN_EMAIL },
+        subject: body.subject,
+        content: [{ type: 'text/html', value: body.html }],
+      }),
+    });
+
+    if (!emailRes.ok) {
+      return json({ error: 'Failed to send email' }, { status: 500 });
+    }
+
+    return json({ success: true, messageId: crypto.randomUUID() });
+  } catch (error) {
+    return json({ error: String(error) }, { status: 500 });
+  }
+});
+
 // WORDPRESS routes are registered via src/worker/wordpress.ts
 
 // Admin posts management: list, filters, and bulk actions
@@ -3164,72 +2517,7 @@ router.post('/api/admin/posts/bulk', async (req: Request, env: Env) => {
   }
 });
 
-// WORDPRESS POSTS PROXY (avoids browser CORS and matches Express shape)
-router.get('/api/wordpress/posts', async (req: Request, env: Env) => {
-  try {
-    const incomingUrl = new URL(req.url);
-    const pageParam = incomingUrl.searchParams.get('page');
-    const perPageParam = incomingUrl.searchParams.get('per_page');
-    const slug = incomingUrl.searchParams.get('slug') || '';
-    const search = incomingUrl.searchParams.get('search') || '';
-    const fields = incomingUrl.searchParams.get('_fields') || '';
 
-    const page =
-      Number.isFinite(Number(pageParam)) && Number(pageParam) > 0 ? Number(pageParam) : 1;
-    const perPageRaw = Number(perPageParam);
-    const per_page =
-      Number.isFinite(perPageRaw) && perPageRaw > 0 ? Math.max(1, Math.min(100, perPageRaw)) : 100;
-
-    const params = new URLSearchParams();
-    if (slug) {
-      params.set('slug', slug.trim());
-    } else {
-      params.set('page', String(page));
-      params.set('per_page', String(per_page));
-    }
-    if (search) params.set('search', search.trim());
-    if (fields) params.set('_fields', fields.trim());
-
-    const wpBase =
-      env.WORDPRESS_API ||
-      'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts';
-    const wpUrl = `${wpBase}?${params.toString()}`;
-
-    const wpRes = await fetch(wpUrl);
-    if (!wpRes.ok) {
-      const text = await wpRes.text().catch(() => '');
-      throw new Error(
-        `WordPress API error: ${wpRes.status} ${wpRes.statusText} ${text.slice(0, 200)}`,
-      );
-    }
-
-    const posts = await wpRes.json();
-
-    const totalPagesHeader = wpRes.headers.get('X-WP-TotalPages');
-    const totalHeader = wpRes.headers.get('X-WP-Total');
-    const totalPages = totalPagesHeader ? parseInt(totalPagesHeader, 10) : 1;
-    const total = totalHeader ? parseInt(totalHeader, 10) : Array.isArray(posts) ? posts.length : 0;
-
-    return json({
-      success: true,
-      posts,
-      totalPages,
-      total,
-    });
-  } catch (error) {
-    console.error(
-      '[WordPress] Error fetching posts via Worker proxy',
-      error instanceof Error ? error.message : String(error),
-    );
-    return json(
-      {
-        success: false,
-        message: `Error fetching WordPress posts`,
-      },
-      { status: 500 },
-    );
-  }
-});
 
 // READING PROGRESS: Supabase-backed (JWT + RLS), Worker-native
 

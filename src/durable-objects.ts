@@ -10,6 +10,16 @@ const json = (data: any, init?: ResponseInit) =>
 // DURABLE OBJECTS
 // ============================================================================
 
+/**
+ * Best-effort, in-memory token bucket rate limiter.
+ *
+ * Notes:
+ * - State is held only in memory on the DO instance; it is not persisted to
+ *   Durable Object storage and will be reset if the instance is evicted or
+ *   restarted.
+ * - This is intended as a lightweight protection layer, not a strict global
+ *   rate limiter. It should not be relied on for hard security guarantees.
+ */
 export class RateLimitObject {
   private state: DurableObjectState;
   private buckets: Map<string, { tokens: number; lastRefill: number }>;
@@ -38,12 +48,17 @@ export class RateLimitObject {
   }
 }
 
-interface IdempotencyEntry {
-  status: 'pending' | 'completed';
-  response?: any;
-  expiresAt: number;
-}
-
+/**
+ * Simple idempotency helper that tracks whether a key has been seen recently.
+ *
+ * Notes:
+ * - The current Worker-side usage only checks the `cached` flag; the stored
+ *   `response` value is not relied on.
+ * - Entries are kept in memory only and cleared with `setTimeout`, which is
+ *   best-effort in the Workers runtime and may not survive instance restarts.
+ * - For stronger guarantees, move this state into Durable Object storage and
+ *   use alarms for cleanup.
+ */
 export class IdempotencyObject {
   private state: DurableObjectState;
   private responses: Map<string, IdempotencyEntry>;
@@ -71,9 +86,10 @@ export class IdempotencyObject {
       return json({ error: 'Missing key' }, { status: 400 });
     }
 
-    const now = Date.now();
-    const existing = this.responses.get(key);
-    if (existing && existing.expiresAt <= now) {
+    // Note: setTimeout is not reliable for long TTLs; for production,
+    // consider using Durable Object storage + alarms for expiration instead.
+    const ttlMs = typeof ttl === "number" ? ttl : 86_400_000; // default 24h
+    setTimeout(() => {
       this.responses.delete(key);
     }
 
@@ -121,6 +137,16 @@ export class IdempotencyObject {
   }
 }
 
+/**
+ * Lightweight in-memory lock manager.
+ *
+ * Notes:
+ * - Locks are scoped to the lifetime of the DO instance and are not persisted.
+ *   They will be released automatically if the instance is evicted or
+ *   restarted.
+ * - This is designed to prevent concurrent work within a single instance, not
+ *   to provide a global, strongly consistent locking mechanism.
+ */
 export class LocksObject {
   private state: DurableObjectState;
   private locks: Map<string, boolean>;

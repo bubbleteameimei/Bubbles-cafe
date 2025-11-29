@@ -42,6 +42,11 @@ export interface Env {
   GMAIL_APP_PASSWORD: string;
   GMAIL_ADMIN_EMAIL: string;
 
+  // Brevo (Sendinblue) HTTP email provider
+  BREVO_API_KEY?: string;
+  BREVO_FROM_EMAIL?: string;
+  BREVO_FROM_NAME?: string;
+
   // OAuth
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_REDIRECT_URI?: string;
@@ -636,4 +641,64 @@ export async function proxyToBackend(req: Request, env: Env): Promise<Response> 
 
   // Generic fallback: internal error rather than proxying to legacy backend
   return json({ error: 'Service unavailable' }, { status: 500 });
+}
+
+/**
+ * Send an email using Brevo (Sendinblue) HTTP API.
+ * Returns true on accepted, false on error.
+ */
+export async function sendBrevoEmail(
+  env: Env,
+  options: {
+    to: string;
+    subject: string;
+    html?: string;
+    text?: string;
+    fromEmailOverride?: string;
+    fromNameOverride?: string;
+  },
+): Promise<boolean> {
+  const apiKey = env.BREVO_API_KEY;
+  const fromEmail = options.fromEmailOverride || env.BREVO_FROM_EMAIL || env.GMAIL_ADMIN_EMAIL;
+  const fromName =
+    options.fromNameOverride ||
+    env.BREVO_FROM_NAME ||
+    'Bubble\'s Cafe';
+
+  if (!apiKey || !fromEmail) {
+    return false;
+  }
+
+  const htmlContent =
+    options.html ||
+    `<p>${options.text || ''}</p>`;
+  const textContent =
+    options.text ||
+    options.html?.replace(/<[^>]*>/g, ' ') ||
+    '';
+
+  try {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': apiKey,
+        'Content-Type': 'application/json',
+        accept: 'application/json',
+      },
+      body: JSON.stringify({
+        sender: {
+          email: fromEmail,
+          name: fromName,
+        },
+        to: [{ email: options.to }],
+        subject: options.subject,
+        htmlContent,
+        textContent,
+      }),
+    });
+
+    return res.ok;
+  } catch {
+    return false;
+  }
 }

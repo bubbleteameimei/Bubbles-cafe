@@ -89,7 +89,7 @@ export default defineConfig({
       provider: 'v8',
       enabled: true,
       reporter: ['text', 'html', 'lcov'],
-      include: ['client/src/**/*.{ts,tsx}', 'server/**/*.{ts,js}', 'shared/**/*.ts'],
+      include: ['client/src/**/*.{ts,tsx}', 'shared/**/*.ts'],
       exclude: [
         '**/node_modules/**',
         '**/dist/**',

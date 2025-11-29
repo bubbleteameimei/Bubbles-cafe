@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, createElement } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import CreepyTextGlitch from '@/components/errors/CreepyTextGlitch';
+import { safeSessionStorageGet, safeSessionStorageSet, safeSessionStorageRemove } from '@/utils/safe';
 
 interface ReaderHorrorOverlayState {
   showHorrorMessage: boolean;
@@ -26,64 +27,48 @@ export function useReaderHorrorOverlay(): ReaderHorrorOverlayState {
 
   // Restore rapid navigation counters across remounts.
   useEffect(() => {
-    try {
-      const savedSkip = parseInt(sessionStorage.getItem('reader_skip_count') || '0', 10);
-      if (Number.isFinite(savedSkip)) {
-        skipCountRef.current = savedSkip;
-      }
-      const savedLast = parseInt(sessionStorage.getItem('reader_last_nav_time') || '0', 10);
-      if (Number.isFinite(savedLast) && savedLast > 0) {
-        lastNavigationTimeRef.current = savedLast;
-      }
-    } catch {
-      // ignore – overlay is non-critical
+    const savedSkip = parseInt(safeSessionStorageGet('reader_skip_count') || '0', 10);
+    if (Number.isFinite(savedSkip)) {
+      skipCountRef.current = savedSkip;
+    }
+    const savedLast = parseInt(safeSessionStorageGet('reader_last_nav_time') || '0', 10);
+    if (Number.isFinite(savedLast) && savedLast > 0) {
+      lastNavigationTimeRef.current = savedLast;
     }
   }, []);
 
   // Restore overlay state if it was active recently.
   useEffect(() => {
-    try {
-      const active = sessionStorage.getItem('reader_horror_active') === '1';
-      const expiry = parseInt(sessionStorage.getItem('reader_horror_expiry_ts') || '0', 10);
-      const msg = sessionStorage.getItem('reader_horror_message') || '';
-      const now = Date.now();
+    const active = safeSessionStorageGet('reader_horror_active') === '1';
+    const expiry = parseInt(safeSessionStorageGet('reader_horror_expiry_ts') || '0', 10);
+    const msg = safeSessionStorageGet('reader_horror_message') || '';
+    const now = Date.now();
 
-      if (active && Number.isFinite(expiry) && expiry > now) {
-        setHorrorMessageText(msg || 'I SEE YOU SKIPPING!!!');
-        setShowHorrorMessage(true);
+    if (active && Number.isFinite(expiry) && expiry > now) {
+      setHorrorMessageText(msg || 'I SEE YOU SKIPPING!!!');
+      setShowHorrorMessage(true);
 
-        const remaining = expiry - now;
-        window.setTimeout(() => {
-          setShowHorrorMessage(false);
-          try {
-            sessionStorage.removeItem('reader_horror_active');
-            sessionStorage.removeItem('reader_horror_message');
-            sessionStorage.removeItem('reader_horror_expiry_ts');
-          } catch {
-            // ignore
-          }
-        }, remaining);
-      } else {
-        sessionStorage.removeItem('reader_horror_active');
-        sessionStorage.removeItem('reader_horror_message');
-        sessionStorage.removeItem('reader_horror_expiry_ts');
-      }
-    } catch {
-      // ignore – overlay is non-critical
+      const remaining = expiry - now;
+      window.setTimeout(() => {
+        setShowHorrorMessage(false);
+        safeSessionStorageRemove('reader_horror_active');
+        safeSessionStorageRemove('reader_horror_message');
+        safeSessionStorageRemove('reader_horror_expiry_ts');
+      }, remaining);
+    } else {
+      safeSessionStorageRemove('reader_horror_active');
+      safeSessionStorageRemove('reader_horror_message');
+      safeSessionStorageRemove('reader_horror_expiry_ts');
     }
   }, []);
 
   const resetOverlayState = () => {
     setShowHorrorMessage(false);
     skipCountRef.current = 0;
-    try {
-      sessionStorage.setItem('reader_skip_count', '0');
-      sessionStorage.removeItem('reader_horror_active');
-      sessionStorage.removeItem('reader_horror_message');
-      sessionStorage.removeItem('reader_horror_expiry_ts');
-    } catch {
-      // ignore
-    }
+    safeSessionStorageSet('reader_skip_count', '0');
+    safeSessionStorageRemove('reader_horror_active');
+    safeSessionStorageRemove('reader_horror_message');
+    safeSessionStorageRemove('reader_horror_expiry_ts');
   };
 
   const handleOverlayClose = () => {
@@ -97,16 +82,11 @@ export function useReaderHorrorOverlay(): ReaderHorrorOverlayState {
     // Check if rapid navigation (less than 1.5 seconds between skips).
     if (timeSinceLastNavigation < 1500) {
       skipCountRef.current += 1;
-      try {
-        sessionStorage.setItem('reader_skip_count', String(skipCountRef.current));
-      } catch {
-        // ignore
-      }
+      safeSessionStorageSet('reader_skip_count', String(skipCountRef.current));
 
       // After 3 rapid skips, show the horror Easter egg.
       if (skipCountRef.current >= 3 && !showHorrorMessage) {
         if (import.meta.env?.DEV) {
-          // eslint-disable-next-line no-console
           console.log('[ReaderHorror] Easter egg triggered after rapid navigation');
         }
 
@@ -139,20 +119,12 @@ export function useReaderHorrorOverlay(): ReaderHorrorOverlayState {
     } else {
       // If navigation slows down, gradually reduce the skip count.
       skipCountRef.current = Math.max(0, skipCountRef.current - 1);
-      try {
-        sessionStorage.setItem('reader_skip_count', String(skipCountRef.current));
-      } catch {
-        // ignore
-      }
+      safeSessionStorageSet('reader_skip_count', String(skipCountRef.current));
     }
 
     // Always update last navigation time.
     lastNavigationTimeRef.current = now;
-    try {
-      sessionStorage.setItem('reader_last_nav_time', String(now));
-    } catch {
-      // ignore
-    }
+    safeSessionStorageSet('reader_last_nav_time', String(now));
   };
 
   return {

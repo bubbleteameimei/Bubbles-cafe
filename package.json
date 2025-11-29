@@ -26,7 +26,7 @@
     "security:check": "npm audit --audit-level moderate",
     "clean": "rimraf dist logs/*.log",
     "_test": "echo 'placeholder'",
-    "lint": "eslint --ext .ts,.tsx client server shared",
+    "lint": "eslint --ext .ts,.tsx client shared",
     "format": "prettier --write .",
     "analyze": "npm run build && npx vite-bundle-analyzer dist",
     "precommit": "npm run check && npm run lint",
