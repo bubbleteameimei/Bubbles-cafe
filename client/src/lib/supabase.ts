@@ -24,31 +24,43 @@ const createAuthStub = () => ({
   },
 });
 
-// Eager init using VITE_ env when present, else lazy via /api/config/public
+// Eager init using VITE_ or NEXT_PUBLIC_ env when present, else lazy via /api/config/public
 function eagerInitFromEnv(): boolean {
   try {
     const envAny: any = (import.meta as any)?.env || {};
-    const url = envAny.VITE_SUPABASE_URL as string | undefined;
-    const anonKey = envAny.VITE_SUPABASE_ANON_KEY as string | undefined;
+    const url =
+      (envAny.VITE_SUPABASE_URL as string | undefined) ||
+      (envAny.NEXT_PUBLIC_SUPABASE_URL as string | undefined);
+    const anonKey =
+      (envAny.VITE_SUPABASE_ANON_KEY as string | undefined) ||
+      (envAny.NEXT_PUBLIC_SUPABASE_ANON_KEY as string | undefined);
+
     if (url && anonKey) {
       if (import.meta.env?.DEV) {
-        console.log('[Supabase] Eager init from Vite env', {
+        console.log('[Supabase] Eager init from env', {
           hasUrl: !!url,
           hasAnonKey: !!anonKey,
+          source: {
+            VITE_SUPABASE_URL: !!envAny.VITE_SUPABASE_URL,
+            NEXT_PUBLIC_SUPABASE_URL: !!envAny.NEXT_PUBLIC_SUPABASE_URL,
+          },
         });
       }
       client = createClient(url, anonKey);
       initialized = true;
       return true;
     }
+
     if (import.meta.env?.DEV) {
-      console.log('[Supabase] Vite env missing or incomplete for eager init', {
-        hasUrl: !!url,
-        hasAnonKey: !!anonKey,
+      console.log('[Supabase] Env missing or incomplete for eager init', {
+        hasViteUrl: !!envAny.VITE_SUPABASE_URL,
+        hasViteAnon: !!envAny.VITE_SUPABASE_ANON_KEY,
+        hasNextUrl: !!envAny.NEXT_PUBLIC_SUPABASE_URL,
+        hasNextAnon: !!envAny.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       });
     }
   } catch (e) {
-    console.error('[Supabase] Eager init from Vite env failed:', e);
+    console.error('[Supabase] Eager init from env failed:', e);
   }
   return false;
 }
@@ -109,5 +121,5 @@ export const supabase: any = new Proxy({ auth: createAuthStub() } as any, {
     }
     const value = (target as any)[prop];
     return typeof value === 'function' ? value.bind(target) : value;
-  }
+  },
 });
