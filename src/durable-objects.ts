@@ -38,9 +38,15 @@ export class RateLimitObject {
   }
 }
 
+interface IdempotencyEntry {
+  status: 'pending' | 'completed';
+  response?: any;
+  expiresAt: number;
+}
+
 export class IdempotencyObject {
   private state: DurableObjectState;
-  private responses: Map<string, { response: any; timestamp: number }>;
+  private responses: Map<string, IdempotencyEntry>;
 
   constructor(state: DurableObjectState, env: unknown) {
     this.state = state;
@@ -48,22 +54,70 @@ export class IdempotencyObject {
   }
 
   async fetch(request: Request): Promise<Response> {
-    const { key, response, ttl } = (await request.json()) as any;
-
-    if (this.responses.has(key)) {
-      return json({ cached: true, response: this.responses.get(key)!.response });
+    let payload: any;
+    try {
+      payload = await request.json();
+    } catch {
+      return json({ error: 'Invalid JSON payload' }, { status: 400 });
     }
 
-    this.responses.set(key, { response, timestamp: Date.now() });
+    const operation = payload?.operation;
+    const keyValue = payload?.key;
+    const key = typeof keyValue === 'string' ? keyValue : String(keyValue || '');
+    const ttlMsRaw = payload?.ttlMs;
+    const ttlMs =
+      typeof ttlMsRaw === 'number' && ttlMsRaw > 0 ? ttlMsRaw : 86_400_000; // default 24h
+    if (!key) {
+      return json({ error: 'Missing key' }, { status: 400 });
+    }
 
-    // Note: setTimeout is not reliable for long TTLs; for production,
-    // use Durable Object storage + alarms.
-    const ttlMs = typeof ttl === "number" ? ttl : 86_400_000; // default 24h
-    setTimeout(() => {
+    const now = Date.now();
+    const existing = this.responses.get(key);
+    if (existing && existing.expiresAt <= now) {
       this.responses.delete(key);
-    }, ttlMs);
+    }
 
-    return json({ cached: false });
+    if (operation === 'check') {
+      const entry = this.responses.get(key);
+      if (entry && entry.status === 'completed' && entry.response != null) {
+        return json({ state: 'completed', response: entry.response });
+      }
+      if (entry && entry.status === 'pending') {
+        return json({ state: 'pending' });
+      }
+
+      const expiresAt = now + ttlMs;
+      this.responses.set(key, { status: 'pending', expiresAt });
+
+      // Note: setTimeout is not reliable for long TTLs; for production,
+      // use Durable Object storage + alarms.
+      setTimeout(() => {
+        const current = this.responses.get(key);
+        if (current && current.status === 'pending' && current.expiresAt <= Date.now()) {
+          this.responses.delete(key);
+        }
+      }, ttlMs);
+
+      return json({ state: 'new' });
+    }
+
+    if (operation === 'store') {
+      const response = payload?.response;
+      const expiresAt = now + ttlMs;
+      this.responses.set(key, { status: 'completed', response, expiresAt });
+
+      // Best-effort cleanup
+      setTimeout(() => {
+        const current = this.responses.get(key);
+        if (current && current.expiresAt <= Date.now()) {
+          this.responses.delete(key);
+        }
+      }, ttlMs);
+
+      return json({ stored: true });
+    }
+
+    return json({ error: 'Invalid operation' }, { status: 400 });
   }
 }
 
