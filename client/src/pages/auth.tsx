@@ -31,7 +31,15 @@ export default function AuthPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [, setLocation] = useLocation();
-  const { login, registerMutation, error } = useAuth();
+  const { login, registerMutation, error, isAuthenticated, isAuthReady } = useAuth();
+
+  // If the user is already authenticated, redirect them away from the auth page.
+  useEffect(() => {
+    if (!isAuthReady) return;
+    if (isAuthenticated) {
+      setLocation("/");
+    }
+  }, [isAuthenticated, isAuthReady, setLocation]);
   const { toast } = useToast();
   
   // Password validation states
