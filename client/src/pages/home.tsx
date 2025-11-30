@@ -18,14 +18,31 @@ export default function Home() {
   const heroRef = useRef<HTMLDivElement | null>(null);
   const [inView, setInView] = useState(false);
   
-  // Basic setup for homepage without background images
+  // Setup for homepage background
   useEffect(() => {
-    // Set body to default background
-    document.body.style.backgroundColor = "hsl(var(--background))";
-    
+    // Use the IMG_4918 asset from public as the homepage background
+    const root = document.documentElement;
+    const previous = root.style.backgroundImage;
+    const previousSize = root.style.backgroundSize;
+    const previousPosition = root.style.backgroundPosition;
+    const previousRepeat = root.style.backgroundRepeat;
+    const previousAttachment = root.style.backgroundAttachment;
+    const previousColor = root.style.backgroundColor;
+
+    root.style.backgroundImage = "url(/IMG_4918.jpg)";
+    root.style.backgroundSize = "cover";
+    root.style.backgroundPosition = "center top";
+    root.style.backgroundRepeat = "no-repeat";
+    root.style.backgroundAttachment = "fixed";
+    root.style.backgroundColor = "hsl(var(--background))";
+
     return () => {
-      // Clean up styling
-      document.body.style.backgroundColor = "";
+      root.style.backgroundImage = previous;
+      root.style.backgroundSize = previousSize;
+      root.style.backgroundPosition = previousPosition;
+      root.style.backgroundRepeat = previousRepeat;
+      root.style.backgroundAttachment = previousAttachment;
+      root.style.backgroundColor = previousColor;
     };
   }, []);
 

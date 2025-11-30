@@ -15,14 +15,14 @@ export const BuyMeCoffeeButton = ({ authorId }: BuyMeCoffeeButtonProps) => {
   const { theme } = useTheme();
   const appearance = theme.appearance;
 
-  // Default gradient (light mode + system) matches original homepage button
+  // Default gradient (light mode + system): rich but not overpowering pink → purple
   let gradientClass =
-    "bg-gradient-to-r from-pink-500 to-[hsl(252,100%,69%)] hover:from-pink-400 hover:to-[hsl(252,100%,65%)]";
+    "bg-gradient-to-r from-pink-500 via-[hsl(252,90%,72%)] to-[hsl(252,100%,69%)] hover:from-pink-400 hover:via-[hsl(252,90%,70%)] hover:to-[hsl(252,100%,66%)]";
 
-  // Dark mode: reuse the same vibrant pink → purple gradient as light mode
+  // Dark mode: reuse the same vibrant but slightly richer gradient for consistency
   if (appearance === "dark") {
     gradientClass =
-      "bg-gradient-to-r from-pink-500 to-[hsl(252,100%,69%)] hover:from-pink-400 hover:to-[hsl(252,100%,65%)]";
+      "bg-gradient-to-r from-pink-500 via-[hsl(252,90%,72%)] to-[hsl(252,100%,69%)] hover:from-pink-400 hover:via-[hsl(252,90%,70%)] hover:to-[hsl(252,100%,66%)]";
   }
   // Sky theme: cool, moody sky gradient
   else if (appearance === "sky") {

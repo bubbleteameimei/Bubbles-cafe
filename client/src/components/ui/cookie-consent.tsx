@@ -167,7 +167,7 @@ const overlay = (
               <Link
                 href="/privacy"
                 onClick={handlePolicyClick}
-                className="underline text-foreground hover:text-foreground/80"
+                className="underline text-primary hover:text-primary/80"
               >
                 Privacy Policy
               </Link>{" "}
@@ -175,7 +175,7 @@ const overlay = (
               <Link
                 href="/legal/terms"
                 onClick={handlePolicyClick}
-                className="underline text-foreground hover:text-foreground/80"
+                className="underline text-primary hover:text-primary/80"
               >
                 Terms of Service
               </Link>.
@@ -213,11 +213,11 @@ const overlay = (
             </button>
           </div>
 
-          {/* Less prominent but visible preferences link below buttons (neutral text) */}
+          {/* Preferences link styled as a subtle primary link */}
           <button
             type="button"
             onClick={handleOpenPreferences}
-            className="text-xs leading-none underline text-foreground hover:text-foreground/80 bg-transparent p-0 border-0"
+            className="text-xs leading-none underline text-primary hover:text-primary/80 bg-transparent p-0 border-0"
           >
             Manage preferences
           </button>
