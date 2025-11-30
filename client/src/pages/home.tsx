@@ -19,14 +19,16 @@ export default function Home() {
   const [inView, setInView] = useState(false);
   
   // Setup for homepage background using the IMG_5890.jpeg asset from public.
+  // Apply the background to the <body> element so it isn't covered by the
+  // theme's solid html background color.
   useEffect(() => {
-    const root = document.documentElement;
-    const previous = root.style.backgroundImage;
-    const previousSize = root.style.backgroundSize;
-    const previousPosition = root.style.backgroundPosition;
-    const previousRepeat = root.style.backgroundRepeat;
-    const previousAttachment = root.style.backgroundAttachment;
-    const previousColor = root.style.backgroundColor;
+    const body = document.body;
+    const previousImage = body.style.backgroundImage;
+    const previousSize = body.style.backgroundSize;
+    const previousPosition = body.style.backgroundPosition;
+    const previousRepeat = body.style.backgroundRepeat;
+    const previousAttachment = body.style.backgroundAttachment;
+    const previousColor = body.style.backgroundColor;
 
     const src = "/IMG_5890.jpeg";
     const img = new Image();
@@ -34,31 +36,28 @@ export default function Home() {
 
     img.onload = () => {
       if (cancelled) return;
-      if (import.meta.env?.DEV) {
-        console.log("[Home] Using homepage background image:", src);
-      }
-      root.style.backgroundImage = `url(${src})`;
-      root.style.backgroundSize = "cover";
-      root.style.backgroundPosition = "center top";
-      root.style.backgroundRepeat = "no-repeat";
-      root.style.backgroundAttachment = "fixed";
-      root.style.backgroundColor = "hsl(var(--background))";
+      console.log("[Home] Using homepage background image:", src);
+      body.style.backgroundImage = `url(${src})`;
+      body.style.backgroundSize = "cover";
+      body.style.backgroundPosition = "center top";
+      body.style.backgroundRepeat = "no-repeat";
+      body.style.backgroundAttachment = "fixed";
+      // Keep the theme background color behind the image for fallback/edges.
+      body.style.backgroundColor = "hsl(var(--background))";
     };
     img.onerror = () => {
-      if (import.meta.env?.DEV) {
-        console.warn("[Home] Failed to load homepage background image:", src);
-      }
+      console.warn("[Home] Failed to load homepage background image:", src);
     };
     img.src = src;
 
     return () => {
       cancelled = true;
-      root.style.backgroundImage = previous;
-      root.style.backgroundSize = previousSize;
-      root.style.backgroundPosition = previousPosition;
-      root.style.backgroundRepeat = previousRepeat;
-      root.style.backgroundAttachment = previousAttachment;
-      root.style.backgroundColor = previousColor;
+      body.style.backgroundImage = previousImage;
+      body.style.backgroundSize = previousSize;
+      body.style.backgroundPosition = previousPosition;
+      body.style.backgroundRepeat = previousRepeat;
+      body.style.backgroundAttachment = previousAttachment;
+      body.style.backgroundColor = previousColor;
     };
   }, []);
 
